@@ -45,16 +45,17 @@ export default function LoginPage() {
     }}>
       <div style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
 
-        {/* Logo / Título */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 700, color: 'var(--blue)', marginBottom: 4 }}>
-            DomusOne
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            Sistema de Administración Residencial
-          </div>
-        </div>
-
+      {/* Logo / Título */}
+<div style={{ textAlign: 'center', marginBottom: 32 }}>
+  <img
+    src="/logo.png"
+    alt="DomusOne"
+    style={{ height: 80, marginBottom: 12, objectFit: 'contain' }}
+  />
+  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+    Sistema de Administración Residencial
+  </div>
+</div>
         {/* Card de login */}
         <div style={{
           background: '#ffffff', borderRadius: 16, padding: '32px',
