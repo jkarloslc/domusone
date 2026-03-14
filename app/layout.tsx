@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { ConfigProvider } from '@/lib/ConfigContext'
+import { AuthProvider } from '@/lib/AuthContext'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,9 +14,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body>
-        <ConfigProvider>
-          {children}
-        </ConfigProvider>
+        <AuthProvider>
+          <ConfigProvider>
+            {children}
+          </ConfigProvider>
+        </AuthProvider>
       </body>
     </html>
   )
