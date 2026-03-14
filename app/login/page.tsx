@@ -45,12 +45,12 @@ export default function LoginPage() {
     }}>
       <div style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
 
-      {/* Logo / Título */}
-<div style={{ textAlign: 'center', marginBottom: 32 }}>
+     {/* Logo / Título */}
+<div style={{ textAlign: 'center', marginBottom: 32, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
   <img
     src="/logo.png"
     alt="DomusOne"
-    style={{ height: 80, marginBottom: 12, objectFit: 'contain' }}
+    style={{ height: 90, width: 'auto', marginBottom: 12, objectFit: 'contain' }}
   />
   <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
     Sistema de Administración Residencial
