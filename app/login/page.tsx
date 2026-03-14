@@ -46,7 +46,7 @@ export default function LoginPage() {
       <div style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
 
      {/* Logo / Título */}
-<div style={{ textAlign: 'center', marginBottom: 32, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+<div style={{ textAlign: 'center', marginBottom: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
   <img
     src="/logo.png"
     alt="DomusOne"
