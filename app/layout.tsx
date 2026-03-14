@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ConfigProvider } from '@/lib/ConfigContext'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'DomusOne',
   description: 'Sistema de administración residencial',
