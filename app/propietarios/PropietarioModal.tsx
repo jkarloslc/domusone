@@ -21,34 +21,32 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
 
-  // Formulario principal
   const [form, setForm] = useState({
-    nombre:           propietario?.nombre ?? '',
-    apellido_paterno: (propietario as any)?.apellido_paterno ?? '',
-    apellido_materno: (propietario as any)?.apellido_materno ?? '',
-    tipo_persona:     (propietario as any)?.tipo_persona ?? 'Física',
-    razon_social:     (propietario as any)?.razon_social ?? '',
-    rfc:              propietario?.rfc ?? '',
-    curp:             (propietario as any)?.curp ?? '',
-    fecha_nacimiento: (propietario as any)?.fecha_nacimiento ?? '',
-    estado_civil:     (propietario as any)?.estado_civil ?? '',
-    regimen:          (propietario as any)?.regimen ?? '',
-    calle:            (propietario as any)?.calle ?? '',
-    colonia:          (propietario as any)?.colonia ?? '',
-    ciudad:           (propietario as any)?.ciudad ?? '',
-    estado:           (propietario as any)?.estado ?? '',
-    pais:             (propietario as any)?.pais ?? 'México',
-    cp:               (propietario as any)?.cp ?? '',
-    activo:           propietario?.activo ?? true,
+    nombre:                  propietario?.nombre ?? '',
+    apellido_paterno:        (propietario as any)?.apellido_paterno ?? '',
+    apellido_materno:        (propietario as any)?.apellido_materno ?? '',
+    tipo_persona:            (propietario as any)?.tipo_persona ?? 'Física',
+    razon_social:            (propietario as any)?.razon_social ?? '',
+    rfc:                     propietario?.rfc ?? '',
+    curp:                    (propietario as any)?.curp ?? '',
+    fecha_nacimiento:        (propietario as any)?.fecha_nacimiento ?? '',
+    estado_civil:            (propietario as any)?.estado_civil ?? '',
+    regimen:                 (propietario as any)?.regimen ?? '',
+    calle:                   (propietario as any)?.calle ?? '',
+    colonia:                 (propietario as any)?.colonia ?? '',
+    ciudad:                  (propietario as any)?.ciudad ?? '',
+    estado:                  (propietario as any)?.estado ?? '',
+    pais:                    (propietario as any)?.pais ?? 'México',
+    cp:                      (propietario as any)?.cp ?? '',
+    pertenece_asociacion:    (propietario as any)?.pertenece_asociacion ?? false,
+    activo:                  propietario?.activo ?? true,
   })
 
-  // Subtablas
   const [telefonos, setTelefonos] = useState<Tel[]>([{ tipo: 'Celular', numero: '' }])
   const [correos, setCorreos]     = useState<Email[]>([{ tipo: 'Personal', correo: '' }])
   const [lotes, setLotes]         = useState<LoteAsig[]>([])
   const [lotesDisp, setLotesDisp] = useState<Lote[]>([])
 
-  // Cargar datos existentes si es edición
   useEffect(() => {
     if (!isNew) {
       dbCat.from('propietarios_telefonos').select('*').eq('id_propietario_fk', propietario.id).eq('activo', true)
@@ -64,7 +62,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
           })))
         })
     }
-    // Lotes disponibles para asignar
     dbCat.from('lotes').select('id, cve_lote, lote, tipo_lote').order('cve_lote')
       .then(({ data }) => setLotesDisp(data as Lote[] ?? []))
   }, [isNew, propietario])
@@ -72,29 +69,29 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  // ── Guardar ────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
     setSaving(true); setError('')
 
     const payload = {
-      nombre:           form.nombre.trim(),
-      apellido_paterno: form.apellido_paterno.trim() || null,
-      apellido_materno: form.apellido_materno.trim() || null,
-      tipo_persona:     form.tipo_persona || null,
-      razon_social:     form.razon_social.trim() || null,
-      rfc:              form.rfc.trim().toUpperCase() || null,
-      curp:             form.curp.trim().toUpperCase() || null,
-      fecha_nacimiento: form.fecha_nacimiento || null,
-      estado_civil:     form.estado_civil || null,
-      regimen:          form.regimen || null,
-      calle:            form.calle.trim() || null,
-      colonia:          form.colonia.trim() || null,
-      ciudad:           form.ciudad.trim() || null,
-      estado:           form.estado.trim() || null,
-      pais:             form.pais.trim() || null,
-      cp:               form.cp.trim() || null,
-      activo:           form.activo,
+      nombre:               form.nombre.trim(),
+      apellido_paterno:     form.apellido_paterno.trim() || null,
+      apellido_materno:     form.apellido_materno.trim() || null,
+      tipo_persona:         form.tipo_persona || null,
+      razon_social:         form.razon_social.trim() || null,
+      rfc:                  form.rfc.trim().toUpperCase() || null,
+      curp:                 form.curp.trim().toUpperCase() || null,
+      fecha_nacimiento:     form.fecha_nacimiento || null,
+      estado_civil:         form.estado_civil || null,
+      regimen:              form.regimen || null,
+      calle:                form.calle.trim() || null,
+      colonia:              form.colonia.trim() || null,
+      ciudad:               form.ciudad.trim() || null,
+      estado:               form.estado.trim() || null,
+      pais:                 form.pais.trim() || null,
+      cp:                   form.cp.trim() || null,
+      pertenece_asociacion: form.pertenece_asociacion,
+      activo:               form.activo,
     }
 
     let propId = propietario?.id
@@ -107,7 +104,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
       if (err) { setError(err.message); setSaving(false); return }
     }
 
-    // Guardar teléfonos
     if (!isNew) await dbCat.from('propietarios_telefonos').update({ activo: false }).eq('id_propietario_fk', propId!)
     const telsValidos = telefonos.filter(t => t.numero.trim())
     if (telsValidos.length) {
@@ -116,7 +112,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
       )
     }
 
-    // Guardar correos
     if (!isNew) await dbCat.from('propietarios_correos').update({ activo: false }).eq('id_propietario_fk', propId!)
     const mailsValidos = correos.filter(c => c.correo.trim())
     if (mailsValidos.length) {
@@ -125,7 +120,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
       )
     }
 
-    // Guardar asignaciones de lotes
     if (!isNew) await dbCtrl.from('propietarios_lotes').update({ activo: false }).eq('id_propietario_fk', propId!)
     const lotesValidos = lotes.filter(l => l.id_lote_fk)
     if (lotesValidos.length) {
@@ -148,7 +142,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 680 }}>
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>
             {isNew ? 'Nuevo Propietario' : `${propietario.nombre} ${(propietario as any).apellido_paterno ?? ''}`}
@@ -156,7 +149,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
           <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
         </div>
 
-        {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 24px' }}>
           {TABS.map((t, i) => (
             <button key={t} onClick={() => setTab(i)} style={{
@@ -169,7 +161,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
           ))}
         </div>
 
-        {/* Body */}
         <div style={{ padding: '20px 24px', minHeight: 340 }}>
           {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
@@ -190,6 +181,30 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
                   </select>
                 </Field>
               </Row2>
+
+              {/* Campo Asociación de Condóminos */}
+              <Field label="Pertenece a Asociación de Condóminos">
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {[{ val: true, label: 'Sí' }, { val: false, label: 'No' }].map(opt => (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, pertenece_asociacion: opt.val }))}
+                      style={{
+                        flex: 1, padding: '8px', borderRadius: 7, cursor: 'pointer',
+                        fontFamily: 'var(--font-body)', fontSize: 13,
+                        border: `1px solid ${form.pertenece_asociacion === opt.val ? 'var(--blue)' : '#e2e8f0'}`,
+                        background: form.pertenece_asociacion === opt.val ? 'var(--blue-pale)' : '#fff',
+                        color: form.pertenece_asociacion === opt.val ? 'var(--blue)' : 'var(--text-secondary)',
+                        fontWeight: form.pertenece_asociacion === opt.val ? 600 : 400,
+                        transition: 'all 0.15s',
+                      }}>
+                      {opt.val ? '✓ ' : ''}{opt.label}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
               {form.tipo_persona === 'Moral' && (
                 <Field label="Razón Social">
                   <input className="input" value={form.razon_social} onChange={set('razon_social')} />
@@ -253,7 +268,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
                   </div>
                 ))}
               </div>
-
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                   <SectionDivider label="Correos Electrónicos" inline />
@@ -334,7 +348,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
           )}
         </div>
 
-        {/* Footer */}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: 8 }}>
             {tab > 0 && <button className="btn-secondary" onClick={() => setTab(t => t - 1)}>← Anterior</button>}
