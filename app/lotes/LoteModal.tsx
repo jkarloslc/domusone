@@ -14,12 +14,14 @@ const TIPOS_PER    = ['Física', 'Moral']
 
 export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const isNew = !lote
-  const [secciones, setSecciones] = useState<Seccion[]>([])
+  const [secciones, setSecciones]           = useState<Seccion[]>([])
+  const [clasificaciones, setClasificaciones] = useState<{id: number; nombre: string}[]>([])
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
 
   const [form, setForm] = useState({
     cve_lote:           lote?.cve_lote ?? '',
+    id_clasificacion_fk: (lote as any)?.id_clasificacion_fk?.toString() ?? '',
     calle:              (lote as any)?.calle ?? '',
     numero:             (lote as any)?.numero ?? '',
     manzana:            (lote as any)?.manzana ?? '',
@@ -55,6 +57,8 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
   useEffect(() => {
     dbCfg.from('secciones').select('*').order('nombre')
       .then(({ data }) => setSecciones(data ?? []))
+    dbCfg.from('clasificacion').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setClasificaciones(data ?? []))
   }, [])
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -64,6 +68,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
     setSaving(true); setError('')
     const payload: Record<string, unknown> = {
       cve_lote:           form.cve_lote || null,
+      id_clasificacion_fk: (form as any).id_clasificacion_fk ? Number((form as any).id_clasificacion_fk) : null,
       calle:              (form as any).calle.trim() || null,
       numero:             (form as any).numero.trim() || null,
       manzana:            (form as any).manzana.trim() || null,
@@ -146,7 +151,12 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
             </Row>
             <Row>
               <Field label="Número"><input className="input" value={(form as any).numero} onChange={set('numero')} placeholder="Número exterior" /></Field>
-              <Field label=""> <div /></Field>
+              <Field label="Clasificación">
+                <select className="select" value={(form as any).id_clasificacion_fk} onChange={set('id_clasificacion_fk')}>
+                  <option value="">— Seleccionar —</option>
+                  {clasificaciones.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </Field>
             </Row>
           </Section>
 
