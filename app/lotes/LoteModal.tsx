@@ -20,6 +20,9 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
 
   const [form, setForm] = useState({
     cve_lote:           lote?.cve_lote ?? '',
+    calle:              (lote as any)?.calle ?? '',
+    numero:             (lote as any)?.numero ?? '',
+    manzana:            (lote as any)?.manzana ?? '',
     lote:               lote?.lote?.toString() ?? '',
     id_seccion_fk:      lote?.id_seccion_fk?.toString() ?? '',
     tipo_lote:          lote?.tipo_lote ?? '',
@@ -61,6 +64,9 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
     setSaving(true); setError('')
     const payload: Record<string, unknown> = {
       cve_lote:           form.cve_lote || null,
+      calle:              (form as any).calle.trim() || null,
+      numero:             (form as any).numero.trim() || null,
+      manzana:            (form as any).manzana.trim() || null,
       lote:               form.lote ? Number(form.lote) : null,
       id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
       tipo_lote:          form.tipo_lote || null,
@@ -133,6 +139,14 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
                   {TIPOS_LOTE.map(t => <option key={t}>{t}</option>)}
                 </select>
               </Field>
+            </Row>
+            <Row>
+              <Field label="Calle"><input className="input" value={(form as any).calle} onChange={set('calle')} placeholder="Nombre de la calle" /></Field>
+              <Field label="Manzana"><input className="input" value={(form as any).manzana} onChange={set('manzana')} placeholder="Manzana" /></Field>
+            </Row>
+            <Row>
+              <Field label="Número"><input className="input" value={(form as any).numero} onChange={set('numero')} placeholder="Número exterior" /></Field>
+              <Field label=""> <div /></Field>
             </Row>
           </Section>
 
