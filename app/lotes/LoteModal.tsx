@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { dbCat, dbCfg, type Lote, type Seccion } from '@/lib/supabase'
 import { X, Save, Loader } from 'lucide-react'
+import FileUpload from '@/components/FileUpload'
 
 type Props = { lote: Lote | null; onClose: () => void; onSaved: () => void }
 
@@ -87,6 +88,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
       urbanizacion_disponible:   form.urbanizacion_disponible || null,
       observaciones:      form.observaciones || null,
       notas:              form.notas || null,
+      imagen_lote:        (form as any).imagen_lote || null,
     }
 
     const { error: err } = isNew
@@ -204,6 +206,17 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
               <Field label="Clave Catastral"><input className="input" value={form.clave_catastral} onChange={set('clave_catastral')} /></Field>
               <Field label="Valor Catastral"><input className="input" type="number" value={form.valor_catastral} onChange={set('valor_catastral')} /></Field>
             </Row>
+          </Section>
+
+          <Section label="Imagen del Lote">
+            <FileUpload
+              value={(form as any).imagen_lote}
+              onChange={url => setForm((f: any) => ({ ...f, imagen_lote: url }))}
+              accept="image"
+              folder="lotes"
+              label="Foto o plano del lote"
+              preview={true}
+            />
           </Section>
 
           <Section label="Observaciones">

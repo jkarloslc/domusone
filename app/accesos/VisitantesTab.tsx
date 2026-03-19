@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Edit2, Trash2, X, Save, Loader, UserCheck } from 'lucide-react'
+import FileUpload from '@/components/FileUpload'
 import { type Visitante, type VisitanteAutorizado, TIPOS_VISITANTE, TIPOS_PASE } from './types'
 
 export default function VisitantesTab() {
@@ -113,6 +114,7 @@ function VisitanteModal({ visitante, onClose, onSaved }: { visitante: Visitante 
     identificacion_num:  visitante?.identificacion_num ?? '',
     notas:               visitante?.notas ?? '',
     activo:              visitante?.activo ?? true,
+    imagen_id:           (visitante as any)?.imagen_id ?? null,
   })
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -120,7 +122,7 @@ function VisitanteModal({ visitante, onClose, onSaved }: { visitante: Visitante 
   const handleSave = async () => {
     if (!form.nombre.trim()) return
     setSaving(true)
-    const payload = { ...form, nombre: form.nombre.trim(), apellido_paterno: form.apellido_paterno.trim() || null, apellido_materno: form.apellido_materno.trim() || null, tipo_visitante: form.tipo_visitante || null, parentesco: form.parentesco.trim() || null, identificacion_tipo: form.identificacion_tipo || null, identificacion_num: form.identificacion_num.trim() || null, notas: form.notas.trim() || null }
+    const payload = { ...form, imagen_id: (form as any).imagen_id || null, nombre: form.nombre.trim(), apellido_paterno: form.apellido_paterno.trim() || null, apellido_materno: form.apellido_materno.trim() || null, tipo_visitante: form.tipo_visitante || null, parentesco: form.parentesco.trim() || null, identificacion_tipo: form.identificacion_tipo || null, identificacion_num: form.identificacion_num.trim() || null, notas: form.notas.trim() || null }
     if (isNew) await dbCat.from('visitantes').insert(payload)
     else await dbCat.from('visitantes').update(payload).eq('id', visitante.id)
     setSaving(false); onSaved()
@@ -158,6 +160,16 @@ function VisitanteModal({ visitante, onClose, onSaved }: { visitante: Visitante 
           </div>
           <div><label className="label">No. Identificación</label><input className="input" value={form.identificacion_num} onChange={set('identificacion_num')} /></div>
           <div><label className="label">Notas</label><textarea className="input" rows={2} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} /></div>
+          <div>
+            <FileUpload
+              value={(form as any).imagen_id}
+              onChange={url => setForm((f: any) => ({ ...f, imagen_id: url }))}
+              accept="image"
+              folder="visitantes"
+              label="Imagen de Identificación"
+              preview={true}
+            />
+          </div>
           <div><label className="label">Activo</label>
             <select className="select" value={form.activo ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, activo: e.target.value === 'true' }))}>
               <option value="true">Sí</option><option value="false">No</option>

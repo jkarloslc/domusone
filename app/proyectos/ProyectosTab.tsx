@@ -5,6 +5,7 @@ import {
   Plus, Search, RefreshCw, Edit2, Trash2, X, Save, Loader,
   ChevronLeft, ChevronRight, DollarSign
 } from 'lucide-react'
+import FileUpload from '@/components/FileUpload'
 
 const PAGE_SIZE = 20
 
@@ -152,6 +153,7 @@ function ProyectoModal({ proyecto, onClose, onSaved }: { proyecto: Proyecto | nu
     fecha_inicio: proyecto?.fecha_inicio ?? '', fecha_fin_estimada: proyecto?.fecha_fin_estimada ?? '',
     fecha_fin_real: proyecto?.fecha_fin_real ?? '', presupuesto: proyecto?.presupuesto?.toString() ?? '',
     notas: proyecto?.notas ?? '',
+    pdf_proyecto: (proyecto as any)?.pdf_proyecto ?? null,
   })
   useEffect(() => {
     if (loteSearch.length < 2) { setLotes([]); return }
@@ -197,6 +199,14 @@ function ProyectoModal({ proyecto, onClose, onSaved }: { proyecto: Proyecto | nu
             <div><label className="label">Fin Estimado</label><input className="input" type="date" value={form.fecha_fin_estimada} onChange={set('fecha_fin_estimada')} /></div>
             <div><label className="label">Fin Real</label><input className="input" type="date" value={form.fecha_fin_real} onChange={set('fecha_fin_real')} /></div>
           </div>
+          <FileUpload
+            value={(form as any).pdf_proyecto}
+            onChange={url => setForm((f: any) => ({ ...f, pdf_proyecto: url }))}
+            accept="pdf"
+            folder="proyectos"
+            label="PDF del Proyecto"
+            preview={false}
+          />
           <div><label className="label">Notas</label><textarea className="input" rows={3} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} /></div>
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>

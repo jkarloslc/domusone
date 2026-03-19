@@ -6,6 +6,7 @@ import {
   Eye, Edit2, Trash2, X, Save, Loader,
   ChevronLeft, ChevronRight, CheckCircle, Clock
 } from 'lucide-react'
+import MultiImageUpload from '@/components/MultiImageUpload'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Incidencia = {
@@ -279,6 +280,8 @@ function IncidenciaModal({ incidencia, onClose, onSaved }: { incidencia: Inciden
                         ? incidencia.fecha_cierre.split('T')[0]
                         : '',
     notas:            incidencia?.notas ?? '',
+    imagenes_antes:   (incidencia as any)?.imagenes_antes ?? [],
+    imagenes_despues: (incidencia as any)?.imagenes_despues ?? [],
   })
 
   useEffect(() => {
@@ -312,6 +315,8 @@ function IncidenciaModal({ incidencia, onClose, onSaved }: { incidencia: Inciden
       fecha:            form.fecha || new Date().toISOString(),
       fecha_cierre:     form.fecha_cierre || null,
       notas:            form.notas.trim() || null,
+      imagenes_antes:   (form as any).imagenes_antes ?? [],
+      imagenes_despues: (form as any).imagenes_despues ?? [],
     }
 
     const { error: err } = isNew
@@ -413,6 +418,24 @@ function IncidenciaModal({ incidencia, onClose, onSaved }: { incidencia: Inciden
               <input className="input" type="date" value={form.fecha_cierre} onChange={set('fecha_cierre')}
                 style={{ color: form.fecha_cierre ? '#4ade80' : undefined }} />
             </div>
+          </div>
+
+          {/* Imágenes */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <MultiImageUpload
+              values={(form as any).imagenes_antes ?? []}
+              onChange={urls => setForm((f: any) => ({ ...f, imagenes_antes: urls }))}
+              folder="incidencias/antes"
+              label="Imágenes Antes"
+              max={5}
+            />
+            <MultiImageUpload
+              values={(form as any).imagenes_despues ?? []}
+              onChange={urls => setForm((f: any) => ({ ...f, imagenes_despues: urls }))}
+              folder="incidencias/despues"
+              label="Imágenes Después"
+              max={5}
+            />
           </div>
 
           {/* Notas */}

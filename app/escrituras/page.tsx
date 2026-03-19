@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Building2, Eye, Edit2, Trash2, X, Save, Loader, ChevronLeft, ChevronRight } from 'lucide-react'
+import FileUpload from '@/components/FileUpload'
 
 const PAGE_SIZE = 20
 
@@ -185,6 +186,7 @@ function EscrituraModal({ escritura, onClose, onSaved }: { escritura: Escritura 
     notario:      escritura?.notario ?? '',
     fecha:        escritura?.fecha ?? '',
     propietario:  escritura?.propietario ?? '',
+    pdf_escritura: (escritura as any)?.pdf_escritura ?? null,
   })
 
   useEffect(() => {
@@ -255,6 +257,14 @@ function EscrituraModal({ escritura, onClose, onSaved }: { escritura: Escritura 
             <div><label className="label">No. Notaría</label><input className="input" type="number" value={form.notaria} onChange={set('notaria')} /></div>
             <div><label className="label">Notario</label><input className="input" value={form.notario} onChange={set('notario')} /></div>
           </div>
+          <FileUpload
+            value={(form as any).pdf_escritura}
+            onChange={url => setForm((f: any) => ({ ...f, pdf_escritura: url }))}
+            accept="pdf"
+            folder="escrituras"
+            label="PDF de la Escritura"
+            preview={false}
+          />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label className="label">Fecha</label><input className="input" type="date" value={form.fecha} onChange={set('fecha')} /></div>
             <div><label className="label">Propietario</label><input className="input" value={form.propietario} onChange={set('propietario')} /></div>

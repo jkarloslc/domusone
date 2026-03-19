@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
 import { X, Save, Loader } from 'lucide-react'
+import FileUpload from '@/components/FileUpload'
 import { type Contrato } from './page'
 
 const TIPOS    = ['Promesa de Compra-Venta', 'Cesión de Derechos', 'Compra-Venta', 'Permuta', 'Donación', 'Otro']
@@ -34,6 +35,7 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
     adendum:              contrato?.adendum ?? '',
     concesiones:          contrato?.concesiones ?? '',
     propietario_contrato: contrato?.propietario_contrato ?? '',
+    pdf_contrato:         (contrato as any)?.pdf_contrato ?? null,
   })
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
       adendum:              form.adendum.trim() || null,
       concesiones:          form.concesiones.trim() || null,
       propietario_contrato: form.propietario_contrato.trim() || null,
+      pdf_contrato:         (form as any).pdf_contrato || null,
     }
     const { error: err } = isNew
       ? await dbCtrl.from('contratos').insert(payload)
@@ -148,6 +151,17 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
               <Field label="Membresía"><input className="input" value={form.membresia} onChange={set('membresia')} placeholder="Incluye / No incluye" /></Field>
             </Grid2>
             <Field label="Cuotas de Mantenimiento"><input className="input" value={form.cuotas_mantto} onChange={set('cuotas_mantto')} /></Field>
+          </Section>
+
+          <Section label="Documento del Contrato">
+            <FileUpload
+              value={(form as any).pdf_contrato}
+              onChange={url => setForm((f: any) => ({ ...f, pdf_contrato: url }))}
+              accept="pdf"
+              folder="contratos"
+              label="PDF del Contrato"
+              preview={false}
+            />
           </Section>
 
           <Section label="Cláusulas y Notas">
