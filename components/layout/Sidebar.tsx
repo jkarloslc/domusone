@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutGrid, Users, FileText, Wrench, Building2,
   Shield, BarChart3, Settings, MapPin, ChevronRight,
-  AlertTriangle, LogOut, User, Home
+  AlertTriangle, LogOut, User, Home, BookOpen
 } from 'lucide-react'
 import { useConfig } from '@/lib/ConfigContext'
 import { useAuth } from '@/lib/AuthContext'
@@ -21,6 +21,7 @@ const NAV = [
   { label: 'Proyectos',    href: '/proyectos',     icon: Wrench,         modulo: 'proyectos' },
   { label: 'Servicios',    href: '/servicios',     icon: LayoutGrid,     modulo: 'servicios' },
   { label: 'Reportes',     href: '/reportes',      icon: BarChart3,      modulo: 'reportes' },
+  { label: 'Catálogos',    href: '/catalogos',    icon: BookOpen,       modulo: 'admin' },
   { label: 'Usuarios',     href: '/usuarios',     icon: Users,          modulo: 'admin' },
   { label: 'Config.',      href: '/configuracion', icon: Settings,       modulo: 'configuracion' },
 ]
