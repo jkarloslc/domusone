@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutGrid, Users, FileText, Wrench, Building2,
   Shield, BarChart3, Settings, MapPin, ChevronRight,
-  AlertTriangle, LogOut, User
+  AlertTriangle, LogOut, User, Home
 } from 'lucide-react'
 import { useConfig } from '@/lib/ConfigContext'
 import { useAuth } from '@/lib/AuthContext'

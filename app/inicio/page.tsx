@@ -227,10 +227,18 @@ export default function InicioPage() {
     setContratos([]); setEscrituras([]); setIncidencias([])
     setProyectos([]); setCargos([]); setCfe([]); setAgua([])
 
-    // Lote completo con sección y clasificación
+    // Lote completo con sección — clasificacion se carga por separado (cross-schema)
     const { data: loteData } = await dbCat.from('lotes')
-      .select('*, secciones:id_seccion_fk(nombre), clasificacion:id_clasificacion_fk(nombre)')
+      .select('*, secciones:id_seccion_fk(nombre)')
       .eq('id', id).single()
+
+    // Cargar clasificación por separado si aplica
+    if (loteData?.id_clasificacion_fk) {
+      const { data: clasif } = await dbCfg.from('clasificacion')
+        .select('nombre').eq('id', loteData.id_clasificacion_fk).single()
+      if (clasif) loteData.clasificacion = clasif
+    }
+
     setLote(loteData)
 
     // Paralelo: todos los datos relacionados
