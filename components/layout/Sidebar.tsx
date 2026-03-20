@@ -10,6 +10,7 @@ import { useConfig } from '@/lib/ConfigContext'
 import { useAuth } from '@/lib/AuthContext'
 
 const NAV = [
+  { label: 'Inicio',       href: '/inicio',       icon: Home,           modulo: 'lotes' },
   { label: 'Lotes',        href: '/lotes',        icon: MapPin,         modulo: 'lotes' },
   { label: 'Propietarios', href: '/propietarios',  icon: Users,          modulo: 'propietarios' },
   { label: 'Cobranza',     href: '/cobranza',      icon: FileText,       modulo: 'cobranza' },
