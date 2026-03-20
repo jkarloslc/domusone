@@ -6,7 +6,6 @@ import FileUpload from '@/components/FileUpload'
 
 type Props = { lote: Lote | null; onClose: () => void; onSaved: () => void }
 
-const TIPOS_LOTE   = ['Fairway', 'Campestre', 'Panorámico', 'Departamento', 'Casa', 'Otro']
 const STATUS_LOTE  = ['Libre', 'Vendido', 'Bloqueado']
 const STATUS_JUR   = ['Limpio', 'Litigio', 'Pendiente', 'Escriturado']
 const FORMAS_VENTA = ['Contado', 'Financiado', 'Intercambio']
@@ -14,8 +13,9 @@ const TIPOS_PER    = ['Física', 'Moral']
 
 export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const isNew = !lote
-  const [secciones, setSecciones]           = useState<Seccion[]>([])
+  const [secciones, setSecciones]             = useState<Seccion[]>([])
   const [clasificaciones, setClasificaciones] = useState<{id: number; nombre: string}[]>([])
+  const [tiposLote, setTiposLote]             = useState<{id: number; nombre: string}[]>([])
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
 
@@ -27,6 +27,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
     manzana:            (lote as any)?.manzana ?? '',
     lote:               lote?.lote?.toString() ?? '',
     id_seccion_fk:      lote?.id_seccion_fk?.toString() ?? '',
+    id_tipo_lote_fk:    (lote as any)?.id_tipo_lote_fk?.toString() ?? '',
     tipo_lote:          lote?.tipo_lote ?? '',
     superficie:         lote?.superficie?.toString() ?? '',
     sup_construccion:   lote?.sup_construccion?.toString() ?? '',
@@ -59,6 +60,8 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
       .then(({ data }) => setSecciones(data ?? []))
     dbCfg.from('clasificacion').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setClasificaciones(data ?? []))
+    dbCfg.from('tipos_lote').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setTiposLote(data ?? []))
   }, [])
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -74,6 +77,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
       manzana:            (form as any).manzana.trim() || null,
       lote:               form.lote ? Number(form.lote) : null,
       id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+      id_tipo_lote_fk:    (form as any).id_tipo_lote_fk ? Number((form as any).id_tipo_lote_fk) : null,
       tipo_lote:          form.tipo_lote || null,
       superficie:         form.superficie ? Number(form.superficie) : null,
       sup_construccion:   form.sup_construccion ? Number(form.sup_construccion) : null,
@@ -139,9 +143,9 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
                 </select>
               </Field>
               <Field label="Tipo de Lote">
-                <select className="select" value={form.tipo_lote} onChange={set('tipo_lote')}>
+                <select className="select" value={(form as any).id_tipo_lote_fk} onChange={set('id_tipo_lote_fk')}>
                   <option value="">— Seleccionar —</option>
-                  {TIPOS_LOTE.map(t => <option key={t}>{t}</option>)}
+                  {tiposLote.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                 </select>
               </Field>
             </Row>
