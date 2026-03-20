@@ -278,7 +278,7 @@ export default function InicioPage() {
   const saldoTotal = cargos.reduce((a, c) => a + (c.saldo ?? 0), 0)
 
   return (
-    <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
+    <div className="page-pad" style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
@@ -338,7 +338,7 @@ export default function InicioPage() {
 
       {/* Expediente */}
       {lote && !loading && (
-        <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 16, alignItems: 'start' }}>
+        <div className="inicio-grid" style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 16, alignItems: 'start' }}>
 
           {/* ── COLUMNA IZQUIERDA: datos del lote ── */}
           <div>

@@ -33,7 +33,7 @@ const ROL_LABELS: Record<string, string> = {
   residente: 'Residente',
 }
 
-export default function Sidebar() {
+export default function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const path    = usePathname()
   const router  = useRouter()
   const { config }   = useConfig()
@@ -44,11 +44,14 @@ export default function Sidebar() {
     router.replace('/login')
   }
 
+  // Cerrar sidebar al navegar en móvil
+  const handleNav = () => { if (onClose) onClose() }
+
   // Filtrar nav según permisos
   const navVisible = NAV.filter(n => can(n.modulo))
 
   return (
-    <aside style={{
+    <aside className={`sidebar ${open ? 'open' : ''}`} style={{
       width: 220, minHeight: '100vh',
       background: '#ffffff',
       borderRight: '1px solid #e2e8f0',
@@ -71,7 +74,7 @@ export default function Sidebar() {
         {navVisible.map(({ label, href, icon: Icon }) => {
           const active = path.startsWith(href)
           return (
-            <Link key={href} href={href} className={`nav-item ${active ? 'active' : ''}`} style={{ marginBottom: 2 }}>
+            <Link key={href} href={href} onClick={handleNav} className={`nav-item ${active ? 'active' : ''}`} style={{ marginBottom: 2 }}>
               <Icon size={15} />
               {label}
               {active && <ChevronRight size={12} style={{ marginLeft: 'auto', opacity: 0.5 }} />}
