@@ -210,13 +210,16 @@ export default function InicioPage() {
   const [cfe, setCfe]                   = useState<any[]>([])
   const [agua, setAgua]                 = useState<any[]>([])
 
-  // Buscar lotes
+  // Buscar lotes con debounce
   useEffect(() => {
     if (search.length < 2) { setResults([]); return }
-    setSearching(true)
-    dbCat.from('lotes').select('id, cve_lote, lote, tipo_lote, status_lote, id_seccion_fk')
-      .ilike('cve_lote', `%${search}%`).limit(10)
-      .then(({ data }) => { setResults(data ?? []); setSearching(false) })
+    const timer = setTimeout(() => {
+      setSearching(true)
+      dbCat.from('lotes').select('id, cve_lote, lote, tipo_lote, status_lote, id_seccion_fk')
+        .ilike('cve_lote', `%${search}%`).limit(10)
+        .then(({ data }) => { setResults(data ?? []); setSearching(false) })
+    }, 300)
+    return () => clearTimeout(timer)
   }, [search])
 
   // Cargar todos los datos del lote
@@ -227,26 +230,13 @@ export default function InicioPage() {
     setContratos([]); setEscrituras([]); setIncidencias([])
     setProyectos([]); setCargos([]); setCfe([]); setAgua([])
 
-    // Lote completo con sección — clasificacion se carga por separado (cross-schema)
-    const { data: loteData } = await dbCat.from('lotes')
-      .select('*, secciones:id_seccion_fk(nombre)')
-      .eq('id', id).single()
-
-    // Cargar clasificación por separado si aplica
-    if (loteData?.id_clasificacion_fk) {
-      const { data: clasif } = await dbCfg.from('clasificacion')
-        .select('nombre').eq('id', loteData.id_clasificacion_fk).single()
-      if (clasif) loteData.clasificacion = clasif
-    }
-
-    setLote(loteData)
-
-    // Paralelo: todos los datos relacionados
+    // Todo en paralelo — lote + clasificacion + todas las relaciones
     const [
-      { data: props }, { data: acs }, { data: vists }, { data: vehs },
+      { data: loteData }, { data: props }, { data: acs }, { data: vists }, { data: vehs },
       { data: conts }, { data: escs }, { data: incs },
       { data: projs }, { data: cars }, { data: cfes }, { data: aguas }
     ] = await Promise.all([
+      dbCat.from('lotes').select('*, secciones:id_seccion_fk(nombre)').eq('id', id).single(),
       dbCtrl.from('propietarios_lotes')
         .select('*, propietarios(id, nombre, apellido_paterno, apellido_materno, tipo_persona, rfc, curp, fecha_nacimiento, estado_civil, regimen, razon_social, calle, colonia, ciudad, estado, cp, pais, pertenece_asociacion)')
         .eq('id_lote_fk', id).eq('activo', true).order('es_principal', { ascending: false }),
@@ -261,6 +251,15 @@ export default function InicioPage() {
       dbCtrl.from('servicios_cfe').select('*').eq('id_lote_fk', id),
       dbCtrl.from('servicios_agua').select('*').eq('id_lote_fk', id),
     ])
+
+    // Clasificación por separado (cross-schema) solo si tiene FK
+    if (loteData?.id_clasificacion_fk) {
+      const { data: clasif } = await dbCfg.from('clasificacion')
+        .select('nombre').eq('id', loteData.id_clasificacion_fk).single()
+      if (clasif) loteData.clasificacion = clasif
+    }
+
+    setLote(loteData)
 
     setPropietarios(props ?? [])
     setAccesos(acs ?? [])
