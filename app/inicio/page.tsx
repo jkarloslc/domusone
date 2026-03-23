@@ -236,7 +236,7 @@ export default function InicioPage() {
       { data: conts }, { data: escs }, { data: incs },
       { data: projs }, { data: cars }, { data: cfes }, { data: aguas }
     ] = await Promise.all([
-      dbCat.from('lotes').select('*, secciones:id_seccion_fk(nombre)').eq('id', id).single(),
+      dbCat.from('lotes').select('*').eq('id', id).single(),
       dbCtrl.from('propietarios_lotes')
         .select('*')
         .eq('id_lote_fk', id).eq('activo', true).order('es_principal', { ascending: false }),
@@ -252,11 +252,16 @@ export default function InicioPage() {
       dbCtrl.from('servicios_agua').select('*').eq('id_lote_fk', id),
     ])
 
-    // Clasificación por separado (cross-schema) solo si tiene FK
+    // Clasificación y Sección por separado (cross-schema cat→cfg)
     if (loteData?.id_clasificacion_fk) {
       const { data: clasif } = await dbCfg.from('clasificacion')
         .select('nombre').eq('id', loteData.id_clasificacion_fk).single()
       if (clasif) loteData.clasificacion = clasif
+    }
+    if (loteData?.id_seccion_fk) {
+      const { data: seccion } = await dbCfg.from('secciones')
+        .select('nombre').eq('id', loteData.id_seccion_fk).single()
+      if (seccion) loteData.secciones = seccion
     }
 
     setLote(loteData)
