@@ -120,20 +120,18 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
       )
     }
 
-    if (!isNew) await dbCtrl.from('propietarios_lotes').update({ activo: false }).eq('id_propietario_fk', propId!)
+    // Lotes: eliminar registros anteriores y reinsertar siempre limpio
+    await dbCtrl.from('propietarios_lotes').delete().eq('id_propietario_fk', propId!)
     const lotesValidos = lotes.filter(l => l.id_lote_fk)
     if (lotesValidos.length) {
       const lotesPayload = lotesValidos.map(l => ({
-        ...(l.id && !isNew ? { id: l.id } : {}),
         id_propietario_fk: propId,
         id_lote_fk:        l.id_lote_fk,
         es_principal:      l.es_principal,
         porcentaje:        l.porcentaje ? Number(l.porcentaje) : null,
         activo:            true,
       }))
-      const { error: errLotes } = isNew
-        ? await dbCtrl.from('propietarios_lotes').insert(lotesPayload)
-        : await dbCtrl.from('propietarios_lotes').upsert(lotesPayload)
+      const { error: errLotes } = await dbCtrl.from('propietarios_lotes').insert(lotesPayload)
       if (errLotes) { setError('Error al asignar lotes: ' + errLotes.message); setSaving(false); return }
     }
 
