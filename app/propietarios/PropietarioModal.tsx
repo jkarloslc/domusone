@@ -53,7 +53,7 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
         .then(({ data }) => { if (data?.length) setTelefonos(data.map(d => ({ id: d.id, tipo: d.tipo ?? 'Celular', numero: d.numero }))) })
       dbCat.from('propietarios_correos').select('*').eq('id_propietario_fk', propietario.id).eq('activo', true)
         .then(({ data }) => { if (data?.length) setCorreos(data.map(d => ({ id: d.id, tipo: d.tipo ?? 'Personal', correo: d.correo }))) })
-      dbCat.from('propietarios_lotes' as any).select('*, lotes(cve_lote)').eq('id_propietario_fk', propietario.id).eq('activo', true)
+      dbCtrl.from('propietarios_lotes').select('*, lotes(cve_lote)').eq('id_propietario_fk', propietario.id).eq('activo', true)
         .then(({ data }) => {
           if (data?.length) setLotes(data.map((d: any) => ({
             id: d.id, id_lote_fk: d.id_lote_fk,
