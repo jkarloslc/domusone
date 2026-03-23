@@ -232,13 +232,13 @@ export default function InicioPage() {
 
     // Todo en paralelo — lote + clasificacion + todas las relaciones
     const [
-      { data: loteData }, { data: props }, { data: acs }, { data: vists }, { data: vehs },
+      { data: loteData }, { data: plRows }, { data: acs }, { data: vists }, { data: vehs },
       { data: conts }, { data: escs }, { data: incs },
       { data: projs }, { data: cars }, { data: cfes }, { data: aguas }
     ] = await Promise.all([
       dbCat.from('lotes').select('*, secciones:id_seccion_fk(nombre)').eq('id', id).single(),
       dbCtrl.from('propietarios_lotes')
-        .select('*, propietarios(id, nombre, apellido_paterno, apellido_materno, tipo_persona, rfc, curp, fecha_nacimiento, estado_civil, regimen, razon_social, calle, colonia, ciudad, estado, cp, pais, pertenece_asociacion)')
+        .select('*')
         .eq('id_lote_fk', id).eq('activo', true).order('es_principal', { ascending: false }),
       dbCtrl.from('accesos').select('*').eq('id_lote_fk', id).order('fecha_entrada', { ascending: false }).limit(20),
       dbCat.from('visitantes').select('*').eq('id_lote_fk', id).eq('activo', true).order('created_at', { ascending: false }),
@@ -261,7 +261,17 @@ export default function InicioPage() {
 
     setLote(loteData)
 
-    setPropietarios(props ?? [])
+    // Propietarios por separado (cross-schema ctrl→cat)
+    const propIds = [...new Set((plRows ?? []).map((r: any) => r.id_propietario_fk).filter(Boolean))]
+    let propsMap: Record<number, any> = {}
+    if (propIds.length) {
+      const { data: propsData } = await dbCat.from('propietarios')
+        .select('id, nombre, apellido_paterno, apellido_materno, tipo_persona, rfc, curp, fecha_nacimiento, estado_civil, regimen, razon_social, calle, colonia, ciudad, estado, cp, pais, pertenece_asociacion')
+        .in('id', propIds)
+      ;(propsData ?? []).forEach((p: any) => { propsMap[p.id] = p })
+    }
+    const propsConDatos = (plRows ?? []).map((r: any) => ({ ...r, propietarios: propsMap[r.id_propietario_fk] ?? null }))
+    setPropietarios(propsConDatos)
     setAccesos(acs ?? [])
     setVisitantes(vists ?? [])
     setVehiculos(vehs ?? [])

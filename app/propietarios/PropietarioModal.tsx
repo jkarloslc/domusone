@@ -122,8 +122,15 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
     }
 
     // Lotes: eliminar registros anteriores y reinsertar siempre limpio
-    await dbCtrl.from('propietarios_lotes').delete().eq('id_propietario_fk', propId!)
-    const lotesValidos = lotes.filter(l => l.id_lote_fk)
+    console.log('[LOTES] propId:', propId)
+    console.log('[LOTES] lotes state:', lotes)
+
+    const { error: errDel } = await dbCtrl.from('propietarios_lotes').delete().eq('id_propietario_fk', propId!)
+    console.log('[LOTES] delete error:', errDel)
+
+    const lotesValidos = lotes.filter(l => l.id_lote_fk && l.id_lote_fk > 0)
+    console.log('[LOTES] lotesValidos:', lotesValidos)
+
     if (lotesValidos.length) {
       const lotesPayload = lotesValidos.map(l => ({
         id_propietario_fk: propId,
@@ -132,7 +139,9 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
         porcentaje:        l.porcentaje ? Number(l.porcentaje) : null,
         activo:            true,
       }))
-      const { error: errLotes } = await dbCtrl.from('propietarios_lotes').insert(lotesPayload)
+      console.log('[LOTES] insertando:', lotesPayload)
+      const { data: insData, error: errLotes } = await dbCtrl.from('propietarios_lotes').insert(lotesPayload).select()
+      console.log('[LOTES] insert result:', insData, errLotes)
       if (errLotes) { setError('Error al asignar lotes: ' + errLotes.message); setSaving(false); return }
     }
 

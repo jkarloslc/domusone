@@ -15,8 +15,17 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
       .then(({ data }) => setTelefonos(data ?? []))
     dbCat.from('propietarios_correos').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
       .then(({ data }) => setCorreos(data ?? []))
-    dbCtrl.from('propietarios_lotes').select('*, lotes(cve_lote, tipo_lote, status_lote)').eq('id_propietario_fk', p.id).eq('activo', true)
-      .then(({ data }) => setLotes(data ?? []))
+    dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
+      .then(async ({ data }) => {
+        const rows = data ?? []
+        if (!rows.length) { setLotes([]); return }
+        const loteIds = rows.map((r: any) => r.id_lote_fk).filter(Boolean)
+        const { data: lotesData } = await dbCat.from('lotes')
+          .select('id, cve_lote, tipo_lote, status_lote').in('id', loteIds)
+        const lotesMap: Record<number, any> = {}
+        ;(lotesData ?? []).forEach((l: any) => { lotesMap[l.id] = l })
+        setLotes(rows.map((r: any) => ({ ...r, lotes: lotesMap[r.id_lote_fk] ?? null })))
+      })
   }, [p.id])
 
   const nombre = [p.nombre, (p as any).apellido_paterno, (p as any).apellido_materno].filter(Boolean).join(' ')

@@ -11,11 +11,33 @@ export default function ReporteLotesPropietarios() {
 
   useEffect(() => {
     setLoading(true)
-    dbCtrl.from('propietarios_lotes')
-      .select('es_principal, porcentaje, lotes(cve_lote, lote, tipo_lote, status_lote, id_seccion_fk), propietarios(nombre, apellido_paterno, apellido_materno, rfc, tipo_persona)')
-      .eq('activo', true)
-      .order('id')
-      .then(({ data }) => { setRows(data ?? []); setLoading(false) })
+    dbCtrl.from('propietarios_lotes').select('*').eq('activo', true).order('id')
+      .then(async ({ data }) => {
+        const rows = data ?? []
+        if (!rows.length) { setRows([]); setLoading(false); return }
+
+        // Fetch lotes y propietarios por separado (cross-schema)
+        const loteIds = [...new Set(rows.map((r: any) => r.id_lote_fk).filter(Boolean))]
+        const propIds = [...new Set(rows.map((r: any) => r.id_propietario_fk).filter(Boolean))]
+
+        const [{ data: lotesData }, { data: propsData }] = await Promise.all([
+          dbCat.from('lotes').select('id, cve_lote, lote, tipo_lote, status_lote, id_seccion_fk').in('id', loteIds),
+          dbCat.from('propietarios').select('id, nombre, apellido_paterno, apellido_materno, rfc, tipo_persona').in('id', propIds),
+        ])
+
+        const lotesMap: Record<number, any> = {}
+        const propsMap: Record<number, any> = {}
+        ;(lotesData ?? []).forEach((l: any) => { lotesMap[l.id] = l })
+        ;(propsData ?? []).forEach((p: any) => { propsMap[p.id] = p })
+
+        const combined = rows.map((r: any) => ({
+          ...r,
+          lotes:        lotesMap[r.id_lote_fk] ?? null,
+          propietarios: propsMap[r.id_propietario_fk] ?? null,
+        }))
+        setRows(combined)
+        setLoading(false)
+      })
   }, [])
 
   const filtered = rows.filter(r => {
