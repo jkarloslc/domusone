@@ -38,12 +38,33 @@ export default function HistorialPropietarios({ loteId, cveLote, onClose }: Prop
 
   const fetchHistorial = async () => {
     setLoading(true)
-    const { data } = await dbCtrl
+    // Paso 1: cargar propietarios_lotes sin join cross-schema
+    const { data: plData } = await dbCtrl
       .from('propietarios_lotes')
-      .select('*, propietarios(id, nombre, apellido_paterno, apellido_materno, rfc, tipo_persona)')
+      .select('*')
       .eq('id_lote_fk', loteId)
       .order('fecha_desde', { ascending: false })
-    setHistorial(data as PropietarioLote[] ?? [])
+
+    const rows = plData ?? []
+
+    // Paso 2: cargar propietarios de cat schema por separado
+    const propIds = [...new Set(rows.map((r: any) => r.id_propietario_fk).filter(Boolean))]
+    let propsMap: Record<number, any> = {}
+    if (propIds.length) {
+      const { data: propsData } = await dbCat
+        .from('propietarios')
+        .select('id, nombre, apellido_paterno, apellido_materno, rfc, tipo_persona')
+        .in('id', propIds)
+      ;(propsData ?? []).forEach((p: any) => { propsMap[p.id] = p })
+    }
+
+    // Combinar
+    const combined = rows.map((r: any) => ({
+      ...r,
+      propietarios: propsMap[r.id_propietario_fk] ?? null,
+    }))
+
+    setHistorial(combined as PropietarioLote[])
     setLoading(false)
   }
 
