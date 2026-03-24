@@ -1,10 +1,11 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCtrl } from '@/lib/supabase'
-import { Plus, Search, RefreshCw, Eye, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Search, RefreshCw, Eye, X, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
 import { fmt } from './types'
 import ReciboModal from './ReciboModal'
 import EstadoCuenta from './EstadoCuenta'
+import FacturaModal from '../facturas/FacturaModal'
 
 const PAGE_SIZE = 25
 
@@ -17,6 +18,7 @@ export default function RecibosTab() {
   const [loading, setLoading]       = useState(true)
   const [modalOpen, setModalOpen]   = useState(false)
   const [edoCuenta, setEdoCuenta]   = useState(false)
+  const [facturarRecibo, setFacturarRecibo] = useState<any>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -83,6 +85,7 @@ export default function RecibosTab() {
               <th>Fecha Pago</th>
               <th style={{ textAlign: 'right' }}>Monto</th>
               <th>Status</th>
+              <th style={{ width: 90 }}>Factura</th>
             </tr>
           </thead>
           <tbody>
@@ -97,6 +100,19 @@ export default function RecibosTab() {
                 <td style={{ fontSize: 12, color: r.fecha_pago ? '#15803d' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>{r.fecha_pago ? new Date(r.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX') : 'Pendiente'}</td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(r.monto)}</td>
                 <td><span className={`badge ${r.activo ? 'badge-vendido' : 'badge-bloqueado'}`}>{r.activo ? 'Activo' : 'Cancelado'}</span></td>
+                <td>
+                  {r.activo && !r.folio_fiscal && (
+                    <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', color: 'var(--blue)' }}
+                      onClick={() => setFacturarRecibo(r)} title="Facturar este recibo">
+                      <FileText size={12} /> Facturar
+                    </button>
+                  )}
+                  {r.folio_fiscal && (
+                    <span style={{ fontSize: 10, color: '#15803d', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      ✓ Facturado
+                    </span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -114,6 +130,7 @@ export default function RecibosTab() {
 
       {modalOpen  && <ReciboModal onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); fetchData() }} />}
       {edoCuenta  && <EstadoCuenta onClose={() => setEdoCuenta(false)} />}
+      {facturarRecibo && <FacturaModal reciboInicial={facturarRecibo} onClose={() => setFacturarRecibo(null)} onSaved={() => { setFacturarRecibo(null); fetchData() }} />}
     </div>
   )
 }

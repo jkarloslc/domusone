@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutGrid, Users, FileText, Wrench, Building2,
   Shield, BarChart3, Settings, MapPin, ChevronRight,
-  AlertTriangle, LogOut, User, Home, BookOpen
+  AlertTriangle, LogOut, User, Home, BookOpen, Receipt
 } from 'lucide-react'
 import { useConfig } from '@/lib/ConfigContext'
 import { useAuth } from '@/lib/AuthContext'
@@ -14,6 +14,7 @@ const NAV = [
   { label: 'Lotes',        href: '/lotes',        icon: MapPin,         modulo: 'lotes' },
   { label: 'Propietarios', href: '/propietarios',  icon: Users,          modulo: 'propietarios' },
   { label: 'Cobranza',     href: '/cobranza',      icon: FileText,       modulo: 'cobranza' },
+  { label: 'Facturas',     href: '/facturas',      icon: Receipt,        modulo: 'cobranza' },
   { label: 'Accesos',      href: '/accesos',       icon: Shield,         modulo: 'accesos' },
   { label: 'Incidencias',  href: '/incidencias',   icon: AlertTriangle,  modulo: 'incidencias' },
   { label: 'Contratos',    href: '/contratos',     icon: FileText,       modulo: 'contratos' },
