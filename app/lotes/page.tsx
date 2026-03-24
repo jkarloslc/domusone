@@ -20,6 +20,7 @@ const PAGE_SIZE = 20
 export default function LotesPage() {
   const [lotes, setLotes]             = useState<Lote[]>([])
   const [secciones, setSecciones]     = useState<Record<number, string>>({})
+  const [tiposLote, setTiposLote]     = useState<Record<number, string>>({})
   const [total, setTotal]             = useState(0)
   const [page, setPage]               = useState(0)
   const [search, setSearch]           = useState('')
@@ -38,6 +39,12 @@ export default function LotesPage() {
         const map: Record<number, string> = {}
         ;(data ?? []).forEach((s: any) => { map[s.id] = s.nombre })
         setSecciones(map)
+      })
+    dbCfg.from('tipos_lote').select('id, nombre').eq('activo', true)
+      .then(({ data }) => {
+        const map: Record<number, string> = {}
+        ;(data ?? []).forEach((t: any) => { map[t.id] = t.nombre })
+        setTiposLote(map)
       })
   }, [])
 
@@ -164,7 +171,9 @@ export default function LotesPage() {
                       {l.cve_lote ?? `#${l.lote}`}
                     </span>
                   </td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{l.tipo_lote ?? '—'}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>
+                    {(l as any).id_tipo_lote_fk ? (tiposLote[(l as any).id_tipo_lote_fk] ?? l.tipo_lote ?? '—') : (l.tipo_lote ?? '—')}
+                  </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
                     {l.id_seccion_fk ? (secciones[l.id_seccion_fk] ?? '—') : '—'}
                   </td>

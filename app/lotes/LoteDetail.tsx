@@ -1,10 +1,23 @@
 'use client'
-import { type Lote } from '@/lib/supabase'
+import { useState, useEffect } from 'react'
+import { dbCfg, type Lote } from '@/lib/supabase'
 import { X, Edit2, MapPin, DollarSign, FileText, User } from 'lucide-react'
 
 type Props = { lote: Lote; onClose: () => void; onEdit: () => void }
 
 export default function LoteDetail({ lote, onClose, onEdit }: Props) {
+  const [tipoNombre, setTipoNombre] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fk = (lote as any).id_tipo_lote_fk
+    if (fk) {
+      dbCfg.from('tipos_lote').select('nombre').eq('id', fk).single()
+        .then(({ data }) => { if (data) setTipoNombre(data.nombre) })
+    }
+  }, [(lote as any).id_tipo_lote_fk])
+
+  const tipoDisplay = tipoNombre ?? lote.tipo_lote ?? 'Sin tipo'
+
   const fmt = (v: number | null) =>
     v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 
@@ -18,7 +31,7 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
               {lote.cve_lote ?? `Lote #${lote.lote}`}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              {lote.tipo_lote ?? 'Sin tipo'} · {lote.superficie ? lote.superficie.toLocaleString('es-MX') + ' m²' : 'Sin superficie'}
+              {tipoDisplay} · {lote.superficie ? lote.superficie.toLocaleString('es-MX') + ' m²' : 'Sin superficie'}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
