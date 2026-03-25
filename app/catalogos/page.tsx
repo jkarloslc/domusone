@@ -5,7 +5,7 @@ import {
   BookOpen, Plus, Edit2, Trash2, X, Save,
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
-  Car, CheckCircle, Warehouse, Upload, ExternalLink, Layers
+  Car, CheckCircle, Upload, ExternalLink, Layers
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -118,22 +118,6 @@ const CATALOGOS: CatConfig[] = [
     desc:  'Marcas disponibles en el registro de vehículos',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
-    ],
-  },
-  {
-    key:    'almacenes',
-    tabla:  'almacenes',
-    schema: 'comp',
-    label:  'Almacenes',
-    icon:   Warehouse,
-    color:  '#0891b2',
-    desc:   'Almacenes disponibles para recepción y transferencia de mercancías',
-    campos: [
-      { key: 'clave',       label: 'Clave *',     type: 'text', required: true },
-      { key: 'nombre',      label: 'Nombre *',    type: 'text', required: true },
-      { key: 'tipo',        label: 'Tipo',        type: 'text' },
-      { key: 'area',        label: 'Área',        type: 'text' },
-      { key: 'responsable', label: 'Responsable', type: 'text' },
     ],
   },
 ]

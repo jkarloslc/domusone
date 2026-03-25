@@ -4,7 +4,7 @@ import { dbComp } from '@/lib/supabase'
 import {
   ShoppingCart, Package, Users, Warehouse, ClipboardList,
   FileText, Truck, ArrowLeftRight, BarChart3, ChevronRight,
-  AlertTriangle, CheckCircle, Clock
+  AlertTriangle, CheckCircle, Clock, Layers
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -19,8 +19,10 @@ const MODULOS = [
   { key: 'recepciones',   label: 'Recepción',         icon: Truck,         color: '#0891b2', desc: 'Entrada de mercancías a almacén' },
   { key: 'transferencias',label: 'Transferencias',    icon: ArrowLeftRight,color: '#d97706', desc: 'Movimientos entre almacenes' },
   { key: 'inventario',    label: 'Inventario',        icon: Warehouse,     color: '#dc2626', desc: 'Saldos y kardex por almacén' },
-  { key: 'articulos',     label: 'Artículos',         icon: Package,       color: '#475569', desc: 'Catálogo de productos e insumos' },
-  { key: 'proveedores',   label: 'Proveedores',       icon: Users,         color: '#92400e', desc: 'Catálogo de proveedores' },
+  { key: 'articulos',     label: 'Artículos',              icon: Package,       color: '#475569', desc: 'Catálogo de productos e insumos' },
+  { key: 'proveedores',   label: 'Proveedores',             icon: Users,         color: '#92400e', desc: 'Catálogo de proveedores' },
+  { key: 'almacenes',     label: 'Almacenes / C. Costo',    icon: Warehouse,     color: '#0891b2', desc: 'Almacenes y centros de costo' },
+  { key: 'areas',         label: 'Áreas Solicitantes',      icon: Layers,        color: '#7c3aed', desc: 'Áreas para requisiciones' },
 ]
 
 export default function ComprasPage() {

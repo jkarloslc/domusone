@@ -140,6 +140,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
   const [articulos, setArticulos] = useState<Articulo[]>([])
+  const [areas, setAreas]   = useState<{id: number; nombre: string}[]>([])
   const [form, setForm] = useState({
     area_solicitante: row?.area_solicitante ?? '',
     solicitante:      row?.solicitante ?? (authUser?.nombre ?? ''),
@@ -153,6 +154,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   useEffect(() => {
     dbComp.from('articulos').select('id, clave, nombre, unidad').eq('activo', true).order('nombre')
       .then(({ data }) => setArticulos(data as Articulo[] ?? []))
+    dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setAreas(data ?? []))
     if (!isNew && row?.id) {
       dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', row.id)
         .then(({ data }) => {
@@ -215,7 +218,13 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
 
           <Sec label="Datos de la Solicitud">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div><label className="label">Área Solicitante *</label><input className="input" value={form.area_solicitante} onChange={setF('area_solicitante')} /></div>
+              <div>
+                <label className="label">Área Solicitante *</label>
+                <select className="select" value={form.area_solicitante} onChange={setF('area_solicitante')}>
+                  <option value="">— Seleccionar —</option>
+                  {areas.map(a => <option key={a.id} value={a.nombre}>{a.nombre}</option>)}
+                </select>
+              </div>
               <div><label className="label">Solicitante *</label><input className="input" value={form.solicitante} onChange={setF('solicitante')} /></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
