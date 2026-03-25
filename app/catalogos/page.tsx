@@ -1,11 +1,11 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCfg } from '@/lib/supabase'
+import { dbCfg, dbComp } from '@/lib/supabase'
 import {
   BookOpen, Plus, Edit2, Trash2, X, Save,
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
-  Car, CheckCircle
+  Car, CheckCircle, Warehouse
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/AuthContext'
 type CatConfig = {
   key:       string
   tabla:     string
+  schema?:   'cfg' | 'comp'   // default: cfg
   label:     string
   icon:      any
   color:     string
@@ -100,6 +101,22 @@ const CATALOGOS: CatConfig[] = [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
     ],
   },
+  {
+    key:    'almacenes',
+    tabla:  'almacenes',
+    schema: 'comp',
+    label:  'Almacenes',
+    icon:   Warehouse,
+    color:  '#0891b2',
+    desc:   'Almacenes disponibles para recepción y transferencia de mercancías',
+    campos: [
+      { key: 'clave',       label: 'Clave *',       type: 'text',     required: true },
+      { key: 'nombre',      label: 'Nombre *',      type: 'text',     required: true },
+      { key: 'tipo',        label: 'Tipo',          type: 'text' },
+      { key: 'area',        label: 'Área',          type: 'text' },
+      { key: 'responsable', label: 'Responsable',   type: 'text' },
+    ],
+  },
 ]
 
 // ══════════════════════════════════════════════════════════════
@@ -172,13 +189,14 @@ export default function CatalogosPage() {
 // Tabla + CRUD genérico por catálogo
 // ══════════════════════════════════════════════════════════════
 function CatalogoTable({ config }: { config: CatConfig }) {
+  const db = config.schema === 'comp' ? dbComp : dbCfg
   const [rows, setRows]       = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { data } = await dbCfg.from(config.tabla).select('*').order('nombre')
+    const { data } = await db.from(config.tabla).select('*').order('nombre')
     setRows(data ?? [])
     setLoading(false)
   }, [config.tabla])
@@ -186,13 +204,13 @@ function CatalogoTable({ config }: { config: CatConfig }) {
   useEffect(() => { fetchData() }, [fetchData])
 
   const toggleActivo = async (row: any) => {
-    await dbCfg.from(config.tabla).update({ activo: !row.activo }).eq('id', row.id)
+    await db.from(config.tabla).update({ activo: !row.activo }).eq('id', row.id)
     fetchData()
   }
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return
-    await dbCfg.from(config.tabla).delete().eq('id', id)
+    await db.from(config.tabla).delete().eq('id', id)
     fetchData()
   }
 
@@ -345,9 +363,10 @@ function CatalogoModal({ config, row, onClose, onSaved }:
       else payload[c.key] = form[c.key]?.trim() || null
     })
 
+    const db = config.schema === 'comp' ? dbComp : dbCfg
     const { error: err } = isNew
-      ? await dbCfg.from(config.tabla).insert(payload)
-      : await dbCfg.from(config.tabla).update(payload).eq('id', row.id)
+      ? await db.from(config.tabla).insert(payload)
+      : await db.from(config.tabla).update(payload).eq('id', row.id)
 
     if (err) { setError(err.message); setSaving(false); return }
     setSaving(false); onSaved()
