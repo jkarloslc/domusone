@@ -68,7 +68,7 @@ export default function InventarioPage() {
   const porAlmacen = almacenes.map(alm => ({
     almacen: alm,
     items: rows.filter(i => i.id_almacen_fk === alm.id),
-  })).filter(g => g.items.length > 0 || filterAlm === alm.id.toString())
+  })).filter(g => g.items.length > 0 || filterAlm === g.almacen.id.toString())
 
   return (
     <div style={{ padding: '32px 36px' }}>
