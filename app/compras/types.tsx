@@ -80,5 +80,14 @@ export const PRIORIDAD_COLOR: Record<string, string> = {
 }
 
 export const UNIDADES = ['PZA', 'KG', 'LT', 'MT', 'M2', 'M3', 'CAJA', 'PAQ', 'ROLLO', 'BULTO', 'TONELADA', 'GALÓN', 'SERVICIO']
-export const CATEGORIAS_ART = ['Limpieza', 'Mantenimiento', 'Jardinería', 'Herramientas', 'Papelería', 'Uniformes', 'Equipamiento', 'Alimentos', 'Bebidas', 'Golf', 'Ecuestre', 'Otro']
+export const CATEGORIAS_ART = [
+  'Agroquimicos',
+  'Alimento para caballos',
+  'Construcción, Ferreteria y Pinturas',
+  'Jardineria',
+  'Limpieza y Suministros',
+  'Papeleria',
+  'Refacciones',
+  'Servicios',
+]
 export const FORMAS_PAGO_COMP = ['Transferencia', 'Cheque', 'Efectivo', 'Tarjeta', 'Crédito 30 días', 'Crédito 60 días', 'Crédito 90 días']
