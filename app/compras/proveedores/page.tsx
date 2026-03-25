@@ -4,7 +4,7 @@ import { dbComp, supabase } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, Edit2, X, Save, Loader,
   ArrowLeft, Phone, Mail, Upload, ExternalLink, Trash2,
-  FileText, CheckCircle, AlertCircle
+  FileText, CheckCircle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Proveedor, FORMAS_PAGO_COMP } from '../types'
@@ -67,51 +67,45 @@ export default function ProveedoresPage() {
               <th>Nombre / Razón Social</th>
               <th>RFC</th>
               <th>Contacto</th>
-              <th>Condiciones Pago</th>
-              <th style={{ textAlign: 'center' }}>Documentos</th>
               <th>Status</th>
               <th style={{ width: 60 }}></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40 }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin proveedores registrados</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin proveedores registrados</td></tr>
             ) : rows.map(r => {
               const ndocs = docsCount(r)
               return (
                 <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.45 }}>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.clave}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.clave}</td>
                   <td>
                     <div style={{ fontWeight: 500 }}>{r.nombre}</div>
-                    {r.razon_social && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.razon_social}</div>}
+                    {r.razon_social && r.razon_social !== r.nombre && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.razon_social}</div>
+                    )}
                   </td>
-                  <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{r.rfc ?? '—'}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{r.rfc ?? '—'}</td>
                   <td>
-                    <div style={{ fontSize: 12 }}>{r.contacto ?? '—'}</div>
+                    {r.contacto && <div style={{ fontSize: 13 }}>{r.contacto}</div>}
                     {r.telefono && <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}><Phone size={10} />{r.telefono}</div>}
                     {r.correo   && <div style={{ fontSize: 11, color: 'var(--blue)',        display: 'flex', alignItems: 'center', gap: 3 }}><Mail size={10} />{r.correo}</div>}
                   </td>
-                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.condiciones_pago ?? '—'}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {DOCS.map(d => (
-                        <div key={d.key} title={d.desc}
-                          style={{ width: 20, height: 20, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: r[d.key] ? d.bg : '#f1f5f9',
-                            border: `1px solid ${r[d.key] ? d.border : '#e2e8f0'}` }}>
-                          {r[d.key]
-                            ? <CheckCircle size={11} style={{ color: d.color }} />
-                            : <AlertCircle size={11} style={{ color: '#cbd5e1' }} />}
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ fontSize: 9, color: ndocs === 4 ? '#15803d' : 'var(--text-muted)', marginTop: 2 }}>
-                      {ndocs}/4
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className={`badge ${r.activo ? 'badge-vendido' : 'badge-default'}`}>{r.activo ? 'Activo' : 'Inactivo'}</span>
+                      {ndocs > 0 && (
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 10,
+                          background: ndocs === 4 ? '#f0fdf4' : '#fffbeb',
+                          color:      ndocs === 4 ? '#15803d' : '#d97706',
+                          border:     `1px solid ${ndocs === 4 ? '#bbf7d0' : '#fde68a'}` }}>
+                          {ndocs}/4 docs
+                        </span>
+                      )}
                     </div>
                   </td>
-                  <td><span className={`badge ${r.activo ? 'badge-vendido' : 'badge-default'}`}>{r.activo ? 'Activo' : 'Inactivo'}</span></td>
                   <td>
                     <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal(r)}><Edit2 size={13} /></button>
                   </td>
