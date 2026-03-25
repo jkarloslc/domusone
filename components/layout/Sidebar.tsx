@@ -10,22 +10,22 @@ import { useConfig } from '@/lib/ConfigContext'
 import { useAuth } from '@/lib/AuthContext'
 
 const NAV = [
-  { label: 'Inicio',       href: '/inicio',       icon: Home,           modulo: 'lotes' },
-  { label: 'Lotes',        href: '/lotes',        icon: MapPin,         modulo: 'lotes' },
-  { label: 'Propietarios', href: '/propietarios',  icon: Users,          modulo: 'propietarios' },
-  { label: 'Cobranza',     href: '/cobranza',      icon: FileText,       modulo: 'cobranza' },
-  { label: 'Facturas',     href: '/facturas',      icon: Receipt,        modulo: 'cobranza' },
-  { label: 'Compras',      href: '/compras',       icon: ShoppingCart,   modulo: 'compras'  },
-  { label: 'Accesos',      href: '/accesos',       icon: Shield,         modulo: 'accesos' },
-  { label: 'Incidencias',  href: '/incidencias',   icon: AlertTriangle,  modulo: 'incidencias' },
-  { label: 'Contratos',    href: '/contratos',     icon: FileText,       modulo: 'contratos' },
-  { label: 'Escrituras',   href: '/escrituras',    icon: Building2,      modulo: 'escrituras' },
-  { label: 'Proyectos',    href: '/proyectos',     icon: Wrench,         modulo: 'proyectos' },
-  { label: 'Servicios',    href: '/servicios',     icon: LayoutGrid,     modulo: 'servicios' },
-  { label: 'Reportes',     href: '/reportes',      icon: BarChart3,      modulo: 'reportes' },
-  { label: 'Catálogos',    href: '/catalogos',    icon: BookOpen,       modulo: 'admin' },
-  { label: 'Usuarios',     href: '/usuarios',     icon: Users,          modulo: 'admin' },
-  { label: 'Config.',      href: '/configuracion', icon: Settings,       modulo: 'configuracion' },
+  { label: 'Inicio',       href: '/inicio',        icon: Home,          modulo: 'lotes' },
+  { label: 'Lotes',        href: '/lotes',          icon: MapPin,        modulo: 'lotes' },
+  { label: 'Propietarios', href: '/propietarios',   icon: Users,         modulo: 'cobranza' },
+  { label: 'Cobranza',     href: '/cobranza',       icon: FileText,      modulo: 'cobranza' },
+  { label: 'Facturas',     href: '/facturas',       icon: Receipt,       modulo: 'cobranza' },
+  { label: 'Compras',      href: '/compras',        icon: ShoppingCart,  modulo: 'compras'  },
+  { label: 'Accesos',      href: '/accesos',        icon: Shield,        modulo: 'accesos' },
+  { label: 'Incidencias',  href: '/incidencias',    icon: AlertTriangle, modulo: 'cobranza' },
+  { label: 'Contratos',    href: '/contratos',      icon: FileText,      modulo: 'contratos' },
+  { label: 'Escrituras',   href: '/escrituras',     icon: Building2,     modulo: 'escrituras' },
+  { label: 'Proyectos',    href: '/proyectos',      icon: Wrench,        modulo: 'cobranza' },
+  { label: 'Servicios',    href: '/servicios',      icon: LayoutGrid,    modulo: 'cobranza' },
+  { label: 'Reportes',     href: '/reportes',       icon: BarChart3,     modulo: 'reportes' },
+  { label: 'Catálogos',    href: '/catalogos',      icon: BookOpen,      modulo: 'admin' },
+  { label: 'Usuarios',     href: '/usuarios',       icon: Users,         modulo: 'admin' },
+  { label: 'Config.',      href: '/configuracion',  icon: Settings,      modulo: 'cobranza' },
 ]
 
 const ROL_LABELS: Record<string, string> = {
