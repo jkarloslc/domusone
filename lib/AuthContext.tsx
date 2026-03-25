@@ -22,7 +22,7 @@ type AuthCtx = {
 // Permisos por rol
 const PERMISOS: Record<Rol, string[]> = {
   admin:     ['*'],
-  cobranza:  ['lotes', 'propietarios', 'cobranza', 'contratos', 'escrituras', 'reportes'],
+  cobranza:  ['lotes', 'propietarios', 'cobranza', 'contratos', 'escrituras', 'reportes', 'compras'],
   accesos:   ['accesos', 'lotes'],
   seguridad: ['accesos', 'incidencias'],
   residente: ['lotes'],

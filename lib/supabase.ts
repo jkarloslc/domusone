@@ -80,3 +80,5 @@ export type PropietarioLote = {
   activo: boolean
   propietarios?: Propietario
 }
+
+export const dbComp = base.schema('comp' as any)  // compras e inventarios
