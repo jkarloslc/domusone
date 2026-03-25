@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, type Propietario } from '@/lib/supabase'
@@ -15,6 +16,7 @@ export default function PropietariosPage() {
   const [total, setTotal]   = useState(0)
   const [page, setPage]     = useState(0)
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [loading, setLoading]     = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing]     = useState<Propietario | null>(null)
@@ -29,14 +31,14 @@ export default function PropietariosPage() {
       .order('apellido_paterno', { ascending: true })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (search) q = q.or(
-      `nombre.ilike.%${search}%,apellido_paterno.ilike.%${search}%,rfc.ilike.%${search}%`
+    if (debouncedSearch) q = q.or(
+      `nombre.ilike.%${debouncedSearch}%,apellido_paterno.ilike.%${debouncedSearch}%,rfc.ilike.%${debouncedSearch}%`
     )
 
     const { data, count, error } = await q
     if (!error) { setPropietarios(data as Propietario[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, search])
+  }, [page, debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 

@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
@@ -21,11 +22,11 @@ export default function VehiculosTab() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCat.from('vehiculos').select('*, marcas_vehiculos(nombre)').order('placas')
-    if (search) q = q.or(`placas.ilike.%${search}%,modelo.ilike.%${search}%,color.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`placas.ilike.%${debouncedSearch}%,modelo.ilike.%${debouncedSearch}%,color.ilike.%${debouncedSearch}%`)
     const { data } = await q
     setVehiculos(data as Vehiculo[] ?? [])
     setLoading(false)
-  }, [search])
+  }, [debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 

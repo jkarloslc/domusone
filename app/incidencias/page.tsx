@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
@@ -68,14 +69,14 @@ export default function IncidenciasPage() {
       .order('fecha', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (search)       q = q.or(`descripcion.ilike.%${search}%,responsable.ilike.%${search}%`)
+    if (debouncedSearch)       q = q.or(`descripcion.ilike.%${debouncedSearch}%,responsable.ilike.%${debouncedSearch}%`)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterTipo)   q = q.eq('tipo', filterTipo)
 
     const { data, count, error } = await q
     if (!error) { setIncidencias(data as Incidencia[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, search, filterStatus, filterTipo])
+  }, [page, debouncedSearch, filterStatus, filterTipo])
 
   useEffect(() => { fetchData() }, [fetchData])
 

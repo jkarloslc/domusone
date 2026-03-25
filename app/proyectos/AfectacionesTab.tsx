@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
@@ -69,7 +70,7 @@ export default function AfectacionesTab() {
       .select('*, lotes(cve_lote, lote)', { count: 'exact' })
       .order('created_at', { ascending: false })
     if (filterStatus) q = q.eq('status', filterStatus)
-    if (search) q = q.or(`descripcion.ilike.%${search}%,beneficiario.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`descripcion.ilike.%${debouncedSearch}%,beneficiario.ilike.%${debouncedSearch}%`)
     const { data, count, error } = await q
     if (!error) { setAfectaciones(data as Afectacion[]); setTotal(count ?? 0) }
     setLoading(false)

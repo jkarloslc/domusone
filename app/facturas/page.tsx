@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCat } from '@/lib/supabase'
@@ -33,11 +34,11 @@ export default function FacturasPage() {
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
-    if (search) q = q.or(`folio_interno.ilike.%${search}%,rfc_receptor.ilike.%${search}%,razon_social_receptor.ilike.%${search}%,folio_fiscal.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`folio_interno.ilike.%${debouncedSearch}%,rfc_receptor.ilike.%${debouncedSearch}%,razon_social_receptor.ilike.%${debouncedSearch}%,folio_fiscal.ilike.%${debouncedSearch}%`)
     const { data, count, error } = await q
     if (!error) { setFacturas(data ?? []); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, search, filterStatus])
+  }, [page, debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 

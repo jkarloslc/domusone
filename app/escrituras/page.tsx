@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
@@ -48,13 +49,13 @@ export default function EscriturasPage() {
       .order('fecha', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (search)       q = q.or(`no_escritura.ilike.%${search}%,propietario.ilike.%${search}%,notario.ilike.%${search}%`)
+    if (debouncedSearch)       q = q.or(`no_escritura.ilike.%${debouncedSearch}%,propietario.ilike.%${debouncedSearch}%,notario.ilike.%${debouncedSearch}%`)
     if (filterStatus) q = q.eq('status', filterStatus)
 
     const { data, count, error } = await q
     if (!error) { setEscrituras(data as Escritura[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, search, filterStatus])
+  }, [page, debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 

@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
@@ -28,12 +29,12 @@ export default function CargosTab() {
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
     if (filterStatus) q = q.eq('status', filterStatus)
-    if (search) q = q.ilike('concepto', `%${search}%`)
+    if (debouncedSearch) q = q.ilike('concepto', `%${debouncedSearch}%`)
 
     const { data, count, error } = await q
     if (!error) { setCargos(data as Cargo[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, search, filterStatus])
+  }, [page, debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 

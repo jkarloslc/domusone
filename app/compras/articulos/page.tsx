@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
@@ -22,7 +23,7 @@ export default function ArticulosPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbComp.from('articulos').select('*', { count: 'exact' }).order('nombre')
-    if (search)    q = q.or(`clave.ilike.%${search}%,nombre.ilike.%${search}%,descripcion.ilike.%${search}%`)
+    if (debouncedSearch)    q = q.or(`clave.ilike.%${debouncedSearch}%,nombre.ilike.%${debouncedSearch}%,descripcion.ilike.%${debouncedSearch}%`)
     if (filterCat) q = q.eq('categoria', filterCat)
     const { data, count } = await q
     const arts = (data as Articulo[] ?? [])
@@ -40,7 +41,7 @@ export default function ArticulosPage() {
       setInv(saldos)
     }
     setLoading(false)
-  }, [search, filterCat])
+  }, [debouncedSearch, filterCat])
 
   useEffect(() => { fetchData() }, [fetchData])
 

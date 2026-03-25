@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
@@ -77,11 +78,11 @@ function CfeTab() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('servicio_cfe').select('*, lotes(cve_lote, lote)', { count: 'exact' }).order('id')
-    if (search) q = q.or(`no_medidor.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`no_medidor.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data as ServicioCFE[] ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [search])
+  }, [debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -194,11 +195,11 @@ function AguaTab() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('servicio_agua').select('*, lotes(cve_lote, lote)').order('id')
-    if (search) q = q.or(`no_medidor.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`no_medidor.ilike.%${debouncedSearch}%`)
     const { data } = await q
     setRows(data as ServicioAgua[] ?? [])
     setLoading(false)
-  }, [search])
+  }, [debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 

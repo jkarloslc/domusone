@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
@@ -30,7 +31,7 @@ export default function OrdenesPage() {
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
-    if (search) q = q.ilike('folio', `%${search}%`)
+    if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
 
@@ -40,7 +41,7 @@ export default function OrdenesPage() {
     ;(provs ?? []).forEach((p: any) => { m[p.id] = p.nombre })
     setProvMap(m)
     setLoading(false)
-  }, [page, search, filterStatus])
+  }, [page, debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 

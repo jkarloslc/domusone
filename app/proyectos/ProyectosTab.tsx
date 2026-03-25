@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
@@ -45,12 +46,12 @@ export default function ProyectosTab() {
     setLoading(true)
     let q = dbCtrl.from('proyectos').select('*, lotes(cve_lote, lote)', { count: 'exact' })
       .order('created_at', { ascending: false }).range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
-    if (search)       q = q.or(`nombre.ilike.%${search}%,tipo.ilike.%${search}%`)
+    if (debouncedSearch)       q = q.or(`nombre.ilike.%${debouncedSearch}%,tipo.ilike.%${debouncedSearch}%`)
     if (filterStatus) q = q.eq('status', filterStatus)
     const { data, count, error } = await q
     if (!error) { setProyectos(data as Proyecto[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, search, filterStatus])
+  }, [page, debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 

@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
@@ -17,12 +18,12 @@ export default function VisitantesTab() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCat.from('visitantes').select('*', { count: 'exact' }).order('nombre')
-    if (search) q = q.or(`nombre.ilike.%${search}%,apellido_paterno.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`nombre.ilike.%${debouncedSearch}%,apellido_paterno.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setVisitantes(data as Visitante[] ?? [])
     setTotal(count ?? 0)
     setLoading(false)
-  }, [search])
+  }, [debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 

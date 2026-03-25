@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCtrl } from '@/lib/supabase'
@@ -26,11 +27,11 @@ export default function RecibosTab() {
       .order('fecha_recibo', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterActivo !== '') q = q.eq('activo', filterActivo === 'true')
-    if (search) q = q.or(`folio.ilike.%${search}%,propietario.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,propietario.ilike.%${debouncedSearch}%`)
     const { data, count, error } = await q
     if (!error) { setRecibos(data ?? []); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, search, filterActivo])
+  }, [page, debouncedSearch, filterActivo])
 
   useEffect(() => { fetchData() }, [fetchData])
 

@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
@@ -17,6 +18,7 @@ export default function CotizacionesPage() {
   const [total, setTotal]   = useState(0)
   const [page, setPage]     = useState(0)
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [loading, setLoading] = useState(true)
   const [modal, setModal]   = useState<any | null | 'new'>(null)
   const [detail, setDetail] = useState<any | null>(null)
@@ -26,10 +28,10 @@ export default function CotizacionesPage() {
     let q = dbComp.from('rfq').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
-    if (search) q = q.ilike('folio', `%${search}%`)
+    if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
-  }, [page, search])
+  }, [page, debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 

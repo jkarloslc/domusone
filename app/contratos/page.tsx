@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
@@ -55,12 +56,12 @@ export default function ContratosPage() {
       .order('fecha', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (search) q = q.or(`propietario_contrato.ilike.%${search}%,tipo_contrato.ilike.%${search}%,sucesivo.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`propietario_contrato.ilike.%${debouncedSearch}%,tipo_contrato.ilike.%${debouncedSearch}%,sucesivo.ilike.%${debouncedSearch}%`)
 
     const { data, count, error } = await q
     if (!error) { setContratos(data as Contrato[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, search])
+  }, [page, debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 

@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
@@ -19,10 +20,10 @@ export default function RecepcionesPage() {
     setLoading(true)
     let q = dbComp.from('recepciones').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-    if (search) q = q.ilike('folio', `%${search}%`)
+    if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
-  }, [search])
+  }, [debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 

@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCfg, type Lote } from '@/lib/supabase'
@@ -56,7 +57,7 @@ export default function LotesPage() {
       .order('cve_lote', { ascending: true })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (search)       q = q.or(`cve_lote.ilike.%${search}%,tipo_lote.ilike.%${search}%`)
+    if (debouncedSearch)       q = q.or(`cve_lote.ilike.%${debouncedSearch}%,tipo_lote.ilike.%${debouncedSearch}%`)
     if (filterStatus) q = q.eq('status_lote', filterStatus)
 
     const { data, count, error } = await q
@@ -65,7 +66,7 @@ export default function LotesPage() {
       setTotal(count ?? 0)
     }
     setLoading(false)
-  }, [page, search, filterStatus])
+  }, [page, debouncedSearch, filterStatus])
 
   useEffect(() => { fetchLotes() }, [fetchLotes])
 

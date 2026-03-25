@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
@@ -25,10 +26,10 @@ export default function TransferenciasPage() {
     let q = dbComp.from('transferencias').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
     if (filterStatus) q = q.eq('status', filterStatus)
-    if (search) q = q.or(`folio.ilike.%${search}%,solicitante.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,solicitante.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
-  }, [search, filterStatus])
+  }, [debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 

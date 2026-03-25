@@ -1,3 +1,4 @@
+import { useDebounce } from '@/lib/useDebounce'
 'use client'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { dbComp, supabase } from '@/lib/supabase'
@@ -27,10 +28,10 @@ export default function ProveedoresPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbComp.from('proveedores').select('*').order('nombre')
-    if (search) q = q.or(`nombre.ilike.%${search}%,rfc.ilike.%${search}%,clave.ilike.%${search}%`)
+    if (debouncedSearch) q = q.or(`nombre.ilike.%${debouncedSearch}%,rfc.ilike.%${debouncedSearch}%,clave.ilike.%${debouncedSearch}%`)
     const { data } = await q
     setRows(data ?? []); setLoading(false)
-  }, [search])
+  }, [debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 
