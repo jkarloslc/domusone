@@ -1,5 +1,5 @@
-import { useDebounce } from '@/lib/useDebounce'
 'use client'
+import { useDebounce } from '@/lib/useDebounce'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Zap, Droplets, Edit2, Trash2, X, Save, Loader } from 'lucide-react'

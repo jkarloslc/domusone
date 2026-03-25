@@ -1,5 +1,5 @@
-import { useDebounce } from '@/lib/useDebounce'
 'use client'
+import { useDebounce } from '@/lib/useDebounce'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCfg, type Lote } from '@/lib/supabase'
 import {
