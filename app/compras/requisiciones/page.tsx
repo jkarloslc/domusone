@@ -142,7 +142,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
   const [articulos, setArticulos] = useState<Articulo[]>([])
-  const [areas, setAreas]   = useState<{id: number; nombre: string}[]>([])
+  const [areas, setAreas]       = useState<{id: number; nombre: string}[]>([])
+  const [almacenes, setAlmacenes] = useState<{id: number; nombre: string}[]>([])
   const [form, setForm] = useState({
     area_solicitante: row?.area_solicitante ?? '',
     solicitante:      row?.solicitante ?? (authUser?.nombre ?? ''),
@@ -158,6 +159,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
       .then(({ data }) => setArticulos(data as Articulo[] ?? []))
     dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setAreas(data ?? []))
+    dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setAlmacenes(data ?? []))
     if (!isNew && row?.id) {
       dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', row.id)
         .then(({ data }) => {
@@ -231,7 +234,13 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div><label className="label">Fecha Requerida</label><input className="input" type="date" value={form.fecha_requerida} onChange={setF('fecha_requerida')} /></div>
-              <div><label className="label">Centro de Costo</label><input className="input" value={form.centro_costo} onChange={setF('centro_costo')} /></div>
+              <div>
+                <label className="label">Centro de Costo</label>
+                <select className="select" value={form.centro_costo} onChange={setF('centro_costo')}>
+                  <option value="">— Sin asignar —</option>
+                  {almacenes.map(a => <option key={a.id} value={a.nombre}>{a.nombre}</option>)}
+                </select>
+              </div>
               <div><label className="label">Prioridad</label>
                 <select className="select" value={form.prioridad} onChange={setF('prioridad')}>
                   {['Normal','Urgente','Crítica'].map(p => <option key={p}>{p}</option>)}
