@@ -7,8 +7,13 @@ import { useAuth } from '@/lib/AuthContext'
 type Usuario = { id: string; nombre: string; rol: string; activo: boolean; created_at: string; email?: string }
 
 const ROLES = [
-  { value: 'admin',     label: 'Administrador', desc: 'Acceso total' },
-  { value: 'cobranza',  label: 'Cobranza',      desc: 'Lotes, propietarios, cobranza, reportes' },
+  { value: 'admin',             label: 'Administrador',         desc: 'Acceso total — único que puede eliminar registros' },
+  { value: 'atencion',          label: 'Atención a Residentes',  desc: 'Lotes, propietarios, contratos, escrituras, servicios, incidencias, reportes' },
+  { value: 'cobranza',          label: 'Cobranza',               desc: 'Lotes y propietarios en consulta, cobranza, facturas, reportes' },
+  { value: 'vigilancia',        label: 'Vigilancia',             desc: 'Accesos, incidencias, lotes y propietarios en consulta' },
+  { value: 'compras',           label: 'Compras',                desc: 'Requisiciones, cotizaciones, OC, OP, artículos, proveedores, CXP' },
+  { value: 'almacenista',       label: 'Almacenista',            desc: 'Requisiciones, transferencias, artículos, inventario en consulta' },
+  { value: 'compras_supervisor',label: 'Compras Supervisor',     desc: 'Todo compras + autorización de cotizaciones, OC y requisiciones' },
   { value: 'accesos',   label: 'Accesos',        desc: 'Control de accesos y lotes' },
   { value: 'seguridad', label: 'Seguridad',      desc: 'Accesos e incidencias' },
   { value: 'residente', label: 'Residente',      desc: 'Solo su lote' },

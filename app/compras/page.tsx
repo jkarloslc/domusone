@@ -7,6 +7,7 @@ import {
   AlertTriangle, CheckCircle, Clock, Layers
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/AuthContext'
 
 type StatCard = { label: string; value: number | string; color: string; bg: string }
 
@@ -27,6 +28,7 @@ const MODULOS = [
 
 export default function ComprasPage() {
   const router = useRouter()
+  const { canCompras } = useAuth()
   const [stats, setStats] = useState({
     reqPendientes: 0, ocAbiertas: 0, transAuth: 0, artsBajoMin: 0
   })
@@ -82,7 +84,7 @@ export default function ComprasPage() {
 
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-        {MODULOS.map(m => {
+        {MODULOS.filter(m => canCompras(m.key)).map(m => {
           const Icon = m.icon
           return (
             <button key={m.key}
