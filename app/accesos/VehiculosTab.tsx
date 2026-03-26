@@ -10,6 +10,7 @@ export default function VehiculosTab() {
   const [marcas, setMarcas]       = useState<any[]>([])
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing]     = useState<Vehiculo | null>(null)
   const [autModal, setAutModal]   = useState<Vehiculo | null>(null)

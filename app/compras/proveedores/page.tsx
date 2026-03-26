@@ -23,6 +23,7 @@ export default function ProveedoresPage() {
   const [rows, setRows]       = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
 
   const fetchData = useCallback(async () => {

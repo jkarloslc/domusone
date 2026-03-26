@@ -16,6 +16,7 @@ export default function CargosTab() {
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
   const [search, setSearch]         = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter]   = useState('Pendiente')
   const [loading, setLoading]       = useState(true)
   const [nuevoModal, setNuevoModal] = useState(false)

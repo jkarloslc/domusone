@@ -54,6 +54,7 @@ export default function IncidenciasPage() {
   const [total, setTotal]             = useState(0)
   const [page, setPage]               = useState(0)
   const [search, setSearch]           = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter]     = useState('')
   const [filterTipo, setFilterTipo]   = useState('')
   const [loading, setLoading]         = useState(true)

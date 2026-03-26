@@ -17,6 +17,7 @@ export default function TransferenciasPage() {
   const [total, setTotal]     = useState(0)
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
   const [modal, setModal]     = useState(false)
   const [detail, setDetail]   = useState<any | null>(null)

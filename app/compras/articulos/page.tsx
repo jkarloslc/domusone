@@ -16,6 +16,7 @@ export default function ArticulosPage() {
   const [total, setTotal]       = useState(0)
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [filterCat, setFilterCat] = useState('')
   const [filterAlerta, setFilterAlerta] = useState(false)
   const [modal, setModal]       = useState<Articulo | null | 'new'>(null)

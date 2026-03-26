@@ -10,6 +10,7 @@ export default function VisitantesTab() {
   const [visitantes, setVisitantes] = useState<Visitante[]>([])
   const [total, setTotal]           = useState(0)
   const [search, setSearch]         = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [loading, setLoading]       = useState(true)
   const [modalOpen, setModalOpen]   = useState(false)
   const [editing, setEditing]       = useState<Visitante | null>(null)

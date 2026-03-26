@@ -13,6 +13,7 @@ export default function RecepcionesPage() {
   const [total, setTotal]     = useState(0)
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
+  const debouncedSearch = useDebounce(search, 300)
   const [modal, setModal]     = useState<boolean>(false)
   const [detail, setDetail]   = useState<any | null>(null)
 
