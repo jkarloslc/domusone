@@ -297,6 +297,12 @@ tbody tr:last-child td { border-bottom: none; }
   flex-shrink: 0;
 }
 
+/* Botón cerrar sidebar — solo en móvil */
+.sidebar-close-btn { display: none !important; }
+@media (max-width: 1024px) {
+  .sidebar-close-btn { display: flex !important; }
+}
+
 /* Modal responsive */
 @media (max-width: 640px) {
   .modal-overlay { align-items: flex-end; padding: 0; }
