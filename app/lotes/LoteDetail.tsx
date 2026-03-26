@@ -155,7 +155,7 @@ function ServiciosTab({ loteId }: { loteId: number }) {
   const deleteCFE = async (i: number) => {
     const s = cfe[i]
     if (s.id) {
-      await dbCtrl.from('servicios_cfe').update({ activo: false }).eq('id', s.id)
+      await dbCtrl.from('servicios_cfe').delete().eq('id', s.id)
     }
     setCfe(prev => prev.filter((_, j) => j !== i))
   }
@@ -171,7 +171,7 @@ function ServiciosTab({ loteId }: { loteId: number }) {
   const deleteAgua = async (i: number) => {
     const s = agua[i]
     if (s.id) {
-      await dbCtrl.from('servicios_agua').update({ activo: false }).eq('id', s.id)
+      await dbCtrl.from('servicios_agua').delete().eq('id', s.id)
     }
     setAgua(prev => prev.filter((_, j) => j !== i))
   }
@@ -189,7 +189,6 @@ function ServiciosTab({ loteId }: { loteId: number }) {
         medidor:     s.medidor?.trim() || null,
         status:      s.status || 'Activo',
         notas:       s.notas?.trim() || null,
-        activo:      true,
       }
       if (s.id) {
         await dbCtrl.from('servicios_cfe').update(payload).eq('id', s.id)
@@ -208,7 +207,6 @@ function ServiciosTab({ loteId }: { loteId: number }) {
         medidor:     s.medidor?.trim() || null,
         status:      s.status || 'Activo',
         notas:       s.notas?.trim() || null,
-        activo:      true,
       }
       if (s.id) {
         await dbCtrl.from('servicios_agua').update(payload).eq('id', s.id)
