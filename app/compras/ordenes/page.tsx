@@ -145,11 +145,13 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     dbComp.from('proveedores').select('*').eq('activo', true).order('nombre')
       .then(({ data }) => setProvs(data as Proveedor[] ?? []))
     // Solo RFQs cerradas que aún NO tienen OC generada
-    const { data: rfqsConOC } = await dbComp.from('ordenes_compra')
-      .select('id_rfq_fk').not('id_rfq_fk', 'is', null)
-    const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk))
-    dbComp.from('rfq').select('id, folio, proveedor_ganador').eq('status', 'Cerrada')
-      .then(({ data }) => setRFQs((data ?? []).filter((r: any) => !rfqsUsadas.has(r.id))))
+    ;(async () => {
+      const { data: rfqsConOC } = await dbComp.from('ordenes_compra')
+        .select('id_rfq_fk').not('id_rfq_fk', 'is', null)
+      const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk))
+      const { data } = await dbComp.from('rfq').select('id, folio, proveedor_ganador').eq('status', 'Cerrada')
+      setRFQs((data ?? []).filter((r: any) => !rfqsUsadas.has(r.id)))
+    })()
   }, [])
 
   // Auto-llenar desde RFQ seleccionada
