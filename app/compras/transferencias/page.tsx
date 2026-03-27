@@ -266,7 +266,8 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
   const [almacenes, setAlms]  = useState<any[]>([])
-  const [articulos, setArts]  = useState<any[]>([])
+  const [artSearches, setArtSearches] = useState<string[]>([''])
+  const [artOptions,  setArtOptions]  = useState<any[][]>([[]])
   const [areas, setAreas]     = useState<any[]>([])
   const [invMap, setInvMap]   = useState<Record<string, number>>({})  // artId_almId → saldo
 
@@ -284,11 +285,9 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   useEffect(() => {
     Promise.all([
       dbComp.from('almacenes').select('*').eq('activo', true).order('nombre'),
-      dbComp.from('articulos').select('id, clave, nombre, unidad').eq('activo', true).order('nombre'),
       dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre'),
-    ]).then(([{ data: alms }, { data: arts }, { data: areas }]) => {
+    ]).then(([{ data: alms }, { data: areas }]) => {
       setAlms(alms ?? [])
-      setArts(arts ?? [])
       setAreas(areas ?? [])
     })
   }, [])
@@ -308,12 +307,32 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const setD = (i: number, k: string, v: string) =>
     setDet(d => d.map((x, j) => j === i ? { ...x, [k]: v } : x))
 
-  const aplicarArticulo = (i: number, artId: string) => {
-    const art = articulos.find(a => a.id === Number(artId))
+  const buscarArticulos = async (i: number, q: string) => {
+    setArtSearches(p => { const n = [...p]; n[i] = q; return n })
+    if (q.trim().length < 2) {
+      setArtOptions(p => { const n = [...p]; n[i] = []; return n })
+      return
+    }
+    const { data } = await dbComp.from('articulos')
+      .select('id, clave, nombre, unidad').eq('activo', true)
+      .or(`clave.ilike.%${q}%,nombre.ilike.%${q}%`)
+      .order('nombre').limit(20)
+    setArtOptions(p => { const n = [...p]; n[i] = data ?? []; return n })
+  }
+
+  const seleccionarArticulo = (i: number, art: any) => {
     setDet(d => d.map((x, j) => j === i
-      ? { ...x, id_articulo_fk: artId, unidad: art?.unidad ?? x.unidad }
+      ? { ...x, id_articulo_fk: String(art.id), unidad: art.unidad ?? x.unidad }
       : x
     ))
+    setArtSearches(p => { const n = [...p]; n[i] = `${art.clave} — ${art.nombre}`; return n })
+    setArtOptions(p => { const n = [...p]; n[i] = []; return n })
+  }
+
+  const addDetLine = () => {
+    setDet(d => [...d, { id_articulo_fk: '', cantidad_solicitada: '1', unidad: 'PZA', notas: '' }])
+    setArtSearches(p => [...p, ''])
+    setArtOptions(p => [...p, []])
   }
 
   const handleSave = async () => {
@@ -427,15 +446,32 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
               <div key={i} style={{ padding: '10px 12px', background: insuficiente ? '#fef2f2' : '#f8fafc',
                 border: `1px solid ${insuficiente ? '#fecaca' : '#e2e8f0'}`, borderRadius: 8 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 80px 28px', gap: 8, alignItems: 'end' }}>
-                  <div>
+                <div style={{ position: 'relative' }}>
                     <label className="label">Artículo</label>
-                    <select className="select" value={d.id_articulo_fk}
-                      onChange={e => aplicarArticulo(i, e.target.value)}>
-                      <option value="">— Seleccionar —</option>
-                      {articulos.map(a => (
-                        <option key={a.id} value={a.id}>{a.clave} — {a.nombre}</option>
-                      ))}
-                    </select>
+                    <input className="input"
+                      placeholder="Escribe clave o nombre…"
+                      value={artSearches[i] ?? ''}
+                      onChange={e => buscarArticulos(i, e.target.value)}
+                    />
+                    {(artOptions[i]?.length ?? 0) > 0 && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                        background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
+                        {artOptions[i].map((a: any) => (
+                          <button key={a.id}
+                            onMouseDown={e => { e.preventDefault(); seleccionarArticulo(i, a) }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left',
+                              padding: '8px 12px', background: 'none', border: 'none',
+                              cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                            <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
+                            <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>{a.unidad}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="label">Cantidad</label>
@@ -450,7 +486,11 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
                       onChange={e => setD(i, 'unidad', e.target.value)} />
                   </div>
                   <button className="btn-ghost" style={{ padding: '6px 4px', marginBottom: 0 }}
-                    onClick={() => setDet(d => d.filter((_, j) => j !== i))}>
+                    onClick={() => {
+                      setDet(d => d.filter((_, j) => j !== i))
+                      setArtSearches(p => p.filter((_, j) => j !== i))
+                      setArtOptions(p => p.filter((_, j) => j !== i))
+                    }}>
                     <X size={13} />
                   </button>
                 </div>
@@ -467,8 +507,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
           })}
 
           <button className="btn-ghost" style={{ fontSize: 13, alignSelf: 'flex-start' }}
-            onClick={() => setDet(d => [...d, { id_articulo_fk: '', cantidad_solicitada: '1', unidad: 'PZA', notas: '' }])}>
-            <Plus size={12} /> Agregar artículo
+            onClick={addDetLine}>            <Plus size={12} /> Agregar artículo
           </button>
         </div>
 
