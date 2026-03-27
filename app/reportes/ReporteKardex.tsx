@@ -117,20 +117,20 @@ export default function ReporteKardex() {
 
       <PrintBar title="Kardex-Movimientos" count={rows.length} reportTitle="Kardex de Movimientos de Inventario" />
 
-      <div className="card" style={{ overflow: 'hidden' }}>
-        <table id="reporte-table">
+      <div className="card" style={{ overflow: 'auto' }}>
+        <table id="reporte-table" style={{ tableLayout: 'fixed', width: '100%', minWidth: 900 }}>
           <thead>
             <tr>
-              <th>Fecha</th>
-              <th>Artículo</th>
-              <th>Almacén</th>
-              <th>Tipo</th>
-              <th>Referencia</th>
-              <th style={{ textAlign: 'right' }}>Anterior</th>
-              <th style={{ textAlign: 'right' }}>Movimiento</th>
-              <th style={{ textAlign: 'right' }}>Saldo</th>
-              <th style={{ textAlign: 'right' }}>Precio Unit.</th>
-              <th>Usuario</th>
+              <th style={{ width: 130 }}>Fecha</th>
+              <th style={{ width: 200 }}>Artículo</th>
+              <th style={{ width: 130 }}>Almacén</th>
+              <th style={{ width: 110, whiteSpace: 'nowrap' }}>Tipo</th>
+              <th style={{ width: 100 }}>Referencia</th>
+              <th style={{ textAlign: 'right', width: 80 }}>Anterior</th>
+              <th style={{ textAlign: 'right', width: 90 }}>Movimiento</th>
+              <th style={{ textAlign: 'right', width: 80 }}>Saldo</th>
+              <th style={{ textAlign: 'right', width: 90 }}>Precio Unit.</th>
+              <th style={{ width: 90 }}>Usuario</th>
             </tr>
           </thead>
           <tbody>
@@ -151,10 +151,10 @@ export default function ReporteKardex() {
                     <div style={{ fontSize: 12 }}>{art?.nombre ?? `#${r.id_articulo_fk}`}</div>
                   </td>
                   <td style={{ fontSize: 12 }}>{almMap[r.id_almacen_fk] ?? `#${r.id_almacen_fk}`}</td>
-                  <td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
                       color: tipoColor(r.tipo_mov), background: tipoColor(r.tipo_mov) + '15',
-                      border: `1px solid ${tipoColor(r.tipo_mov)}40` }}>
+                      border: `1px solid ${tipoColor(r.tipo_mov)}40`, whiteSpace: 'nowrap' }}>
                       {tipoLabel(r.tipo_mov)}
                     </span>
                   </td>
