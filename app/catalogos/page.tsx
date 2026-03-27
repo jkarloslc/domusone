@@ -131,6 +131,17 @@ const CATALOGOS: CatConfig[] = [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
     ],
   },
+  {
+    key:   'origenes_incidencia',
+    tabla: 'origenes_incidencia',
+    label: 'Orígenes de Incidencia',
+    icon:  MapPin,
+    color: '#ea580c',
+    desc:  'Origen del reporte de incidencia (Residente, Guardia, etc.)',
+    campos: [
+      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+    ],
+  },
 ]
 
 // ══════════════════════════════════════════════════════════════
