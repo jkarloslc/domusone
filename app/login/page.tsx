@@ -50,7 +50,7 @@ export default function LoginPage() {
           <img
             src="/logo-domusone.jpg"
             alt="DomusOne"
-            style={{ height: 100, width: 'auto', marginBottom: 4, mixBlendMode: 'multiply' }}
+            style={{ height: 100, width: 'auto', marginBottom: 4, mixBlendMode: 'multiply', display: 'block', margin: '0 auto 4px' }}
           />
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
             Sistema de Administración Residencial
