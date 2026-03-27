@@ -981,7 +981,7 @@ ${todosRecursos.length > 0 ? `
   )
 }
 
-
+const DI = ({ label, value }: { label: string; value?: string | null }) => value ? (
   <div>
     <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{label}</div>
     <div style={{ fontSize: 13 }}>{value}</div>
