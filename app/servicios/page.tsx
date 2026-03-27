@@ -100,6 +100,8 @@ export default function OrdenesTrabajoPage() {
     urgentes:    rows.filter(r => r.prioridad === 'Urgente' && r.status !== 'Completada').length,
   }
 
+  const [reportModal, setReportModal] = useState(false)
+
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
@@ -117,9 +119,14 @@ export default function OrdenesTrabajoPage() {
             </p>
           </div>
         </div>
-        <button className="btn-primary" onClick={() => setModal(true)}>
-          <Plus size={14} /> Nueva OT
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn-secondary" onClick={() => setReportModal(true)}>
+            <ClipboardList size={14} /> Reporte Semanal
+          </button>
+          <button className="btn-primary" onClick={() => setModal(true)}>
+            <Plus size={14} /> Nueva OT
+          </button>
+        </div>
       </div>
 
       {/* KPIs */}
@@ -212,8 +219,9 @@ export default function OrdenesTrabajoPage() {
         </table>
       </div>
 
-      {modal  && <OTModal secciones={secciones} ot={editingOT} onClose={() => { setModal(false); setEditingOT(null) }} onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
-      {detail && <OTDetail ot={detail} secMap={secMap} onClose={() => { setDetail(null); fetchData() }} onEdit={ot => { setDetail(null); setEditingOT(ot); setModal(true) }} />}
+      {modal      && <OTModal secciones={secciones} ot={editingOT} onClose={() => { setModal(false); setEditingOT(null) }} onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
+      {detail     && <OTDetail ot={detail} secMap={secMap} onClose={() => { setDetail(null); fetchData() }} onEdit={ot => { setDetail(null); setEditingOT(ot); setModal(true) }} />}
+      {reportModal && <ReporteSemanal secciones={secciones} secMap={secMap} onClose={() => setReportModal(false)} />}
     </div>
   )
 }
@@ -725,7 +733,255 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
   )
 }
 
-const DI = ({ label, value }: { label: string; value?: string | null }) => value ? (
+// ════════════════════════════════════════════════════════════
+// Reporte Semanal PDF — mismo formato que S-38
+// ════════════════════════════════════════════════════════════
+function ReporteSemanal({ secciones, secMap, onClose }: {
+  secciones: any[]; secMap: Record<number, string>; onClose: () => void
+}) {
+  const [semana,      setSemana]      = useState(semanaActual())
+  const [anio,        setAnio]        = useState(new Date().getFullYear())
+  const [filterSec,   setFilterSec]   = useState('')
+  const [encargados,  setEncargados]  = useState('')
+  const [generating,  setGenerating]  = useState(false)
+  const [ots,         setOts]         = useState<any[]>([])
+  const [loaded,      setLoaded]      = useState(false)
+
+  const cargarOTs = useCallback(async () => {
+    setLoaded(false)
+    let q = dbCtrl.from('ordenes_trabajo').select('*')
+      .eq('semana_no', semana).eq('anio', anio).order('id_seccion_fk')
+    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
+    const { data } = await q
+    // Cargar recursos para cada OT
+    const ids = (data ?? []).map((o: any) => o.id)
+    const { data: recursos } = ids.length
+      ? await dbCtrl.from('ot_recursos').select('*').in('id_ot_fk', ids)
+      : { data: [] }
+    const recMap: Record<number, any[]> = {}
+    ;(recursos ?? []).forEach((r: any) => {
+      if (!recMap[r.id_ot_fk]) recMap[r.id_ot_fk] = []
+      recMap[r.id_ot_fk].push(r)
+    })
+    setOts((data ?? []).map((o: any) => ({ ...o, recursos: recMap[o.id] ?? [] })))
+    setLoaded(true)
+  }, [semana, anio, filterSec])
+
+  useEffect(() => { cargarOTs() }, [cargarOTs])
+
+  const generarPDF = () => {
+    setGenerating(true)
+
+    const fechaReporte = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
+    const seccionNombre = filterSec ? (secMap[Number(filterSec)] ?? 'Todas') : 'Mantenimiento Residencial'
+
+    // Agrupar OTs por sección
+    const porSeccion: Record<string, any[]> = {}
+    ots.forEach(o => {
+      const key = o.id_seccion_fk ? (secMap[o.id_seccion_fk] ?? 'Sin sección') : 'Sin sección'
+      if (!porSeccion[key]) porSeccion[key] = []
+      porSeccion[key].push(o)
+    })
+
+    // Todos los recursos de todas las OTs
+    const todosRecursos = ots.flatMap(o => o.recursos ?? [])
+    const costoTotal = todosRecursos.reduce((a, r) => a + Number(r.costo || 0), 0)
+
+    const STATUS_COLOR: Record<string, string> = {
+      'Pendiente':  '#d97706', 'En Proceso': '#2563eb',
+      'En Pausa':   '#7c3aed', 'Completada': '#15803d', 'Cancelada': '#94a3b8',
+    }
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Reporte de Mantenimiento — Semana ${semana}/${anio}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 32px; }
+  .header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 3px solid #0D4F80; padding-bottom: 16px; margin-bottom: 20px; }
+  .org-name { font-size: 20px; font-weight: 700; color: #0D4F80; }
+  .org-sub  { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .report-title { font-size: 18px; font-weight: 700; color: #0D4F80; text-align: right; }
+  .meta { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .meta-row { display: flex; gap: 8px; }
+  .meta-label { font-weight: 700; color: #475569; min-width: 140px; }
+  .meta-value { color: #1e293b; }
+  .section-title { font-size: 14px; font-weight: 700; color: #0D4F80; margin: 20px 0 10px;
+    padding-bottom: 6px; border-bottom: 2px solid #bfdbfe; }
+  .ot-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .ot-header { background: #f1f5f9; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .ot-folio { font-family: monospace; font-size: 12px; font-weight: 700; color: #0D4F80; }
+  .ot-titulo { font-size: 13px; font-weight: 600; flex: 1; margin: 0 12px; }
+  .ot-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .ot-body { padding: 10px 14px; }
+  .ot-desc { color: #475569; line-height: 1.6; margin-bottom: 8px; }
+  .ot-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 11px; color: #64748b; }
+  .ot-notas { margin-top: 8px; padding: 8px; background: #fffbeb; border-left: 3px solid #fbbf24; font-size: 11px; color: #92400e; }
+  .recursos-title { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 10px; text-align: left; border: 1px solid #e2e8f0; }
+  td { padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 11px; }
+  .total-row { background: #eff6ff; font-weight: 700; color: #0D4F80; }
+  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; }
+  @page { margin: 1.5cm; size: letter; }
+  @media print { .no-print { display: none; } }
+</style></head><body>
+
+<!-- Encabezado -->
+<div class="header">
+  <div>
+    <div class="org-name">Balvanera Polo &amp; Country Club</div>
+    <div class="org-sub">Administración Residencial — Mantenimiento</div>
+  </div>
+  <div class="report-title">REPORTE DE MANTENIMIENTO<br>
+    <span style="font-size:13px;color:#64748b">Semana No. ${semana} — ${anio}</span>
+  </div>
+</div>
+
+<!-- Datos generales -->
+<div class="meta">
+  <div class="meta-row"><span class="meta-label">Área:</span><span class="meta-value">Mantenimiento Residencial</span></div>
+  <div class="meta-row"><span class="meta-label">Fecha de reporte:</span><span class="meta-value">${fechaReporte}</span></div>
+  <div class="meta-row"><span class="meta-label">Secciones supervisadas:</span><span class="meta-value">${seccionNombre}</span></div>
+  <div class="meta-row"><span class="meta-label">Encargados de área:</span><span class="meta-value">${encargados || '—'}</span></div>
+  <div class="meta-row"><span class="meta-label">Total OTs semana:</span><span class="meta-value">${ots.length}</span></div>
+  <div class="meta-row"><span class="meta-label">Completadas:</span><span class="meta-value">${ots.filter(o => o.status === 'Completada').length} de ${ots.length}</span></div>
+</div>
+
+<!-- OTs por sección -->
+${Object.entries(porSeccion).map(([secNombre, otsSeccion]) => `
+  <div class="section-title">${secNombre} (${otsSeccion.length} OTs)</div>
+  ${otsSeccion.map(o => {
+    const statusColor = STATUS_COLOR[o.status] ?? '#64748b'
+    return `
+    <div class="ot-card">
+      <div class="ot-header">
+        <span class="ot-folio">${o.folio}</span>
+        <span class="ot-titulo">${o.titulo}</span>
+        <span class="ot-badge" style="background:${statusColor}20;color:${statusColor};border:1px solid ${statusColor}40">${o.status}</span>
+        ${o.prioridad === 'Urgente' || o.prioridad === 'Alta'
+          ? `<span class="ot-badge" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;margin-left:6px">${o.prioridad}</span>`
+          : ''}
+      </div>
+      <div class="ot-body">
+        ${o.descripcion ? `<p class="ot-desc">${o.descripcion}</p>` : ''}
+        <div class="ot-meta">
+          ${o.tipo_trabajo ? `<span>📋 ${o.tipo_trabajo}</span>` : ''}
+          ${o.asignado_a   ? `<span>👤 ${o.asignado_a}</span>` : ''}
+          ${o.ubicacion_detalle ? `<span>📍 ${o.ubicacion_detalle}</span>` : ''}
+        </div>
+        ${o.notas ? `<div class="ot-notas"><strong>Nota:</strong> ${o.notas}</div>` : ''}
+      </div>
+    </div>`
+  }).join('')}
+`).join('')}
+
+<!-- Recursos consolidados -->
+${todosRecursos.length > 0 ? `
+<div class="recursos-title">Recursos para la ejecución de los trabajos</div>
+<table>
+  <thead>
+    <tr><th>OT</th><th>Cantidad</th><th>Personal, herramientas y materiales</th><th style="text-align:right">Costo</th></tr>
+  </thead>
+  <tbody>
+    ${todosRecursos.map(r => {
+      const ot = ots.find(o => o.id === r.id_ot_fk)
+      return `<tr>
+        <td style="font-family:monospace;font-size:10px;color:#0D4F80">${ot?.folio ?? '—'}</td>
+        <td>${r.cantidad ?? '—'}</td>
+        <td>${r.descripcion}</td>
+        <td style="text-align:right">${Number(r.costo) > 0 ? '$' + Number(r.costo).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}</td>
+      </tr>`
+    }).join('')}
+    <tr class="total-row">
+      <td colspan="3">Costo total del mantenimiento realizado:</td>
+      <td style="text-align:right">${costoTotal > 0 ? '$' + costoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '$0.00'}</td>
+    </tr>
+  </tbody>
+</table>` : ''}
+
+<!-- Pie de página -->
+<div class="footer">
+  <span>DomusOne — Sistema de Administración Residencial · Balvanera Polo &amp; Country Club</span>
+  <span>Generado: ${new Date().toLocaleString('es-MX')}</span>
+</div>
+
+</body></html>`
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => { document.body.removeChild(iframe); setGenerating(false) }, 2000)
+    }, 400)
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 500 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Reporte Semanal</h2>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Semana y año */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><label className="label">Semana No.</label>
+              <input className="input" type="number" min="1" max="53" value={semana}
+                onChange={e => setSemana(Number(e.target.value))} />
+            </div>
+            <div><label className="label">Año</label>
+              <input className="input" type="number" value={anio}
+                onChange={e => setAnio(Number(e.target.value))} />
+            </div>
+          </div>
+
+          {/* Sección (opcional) */}
+          <div>
+            <label className="label">Sección (opcional — todas si vacío)</label>
+            <select className="select" value={filterSec} onChange={e => setFilterSec(e.target.value)}>
+              <option value="">Todas las secciones</option>
+              {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            </select>
+          </div>
+
+          {/* Encargados */}
+          <div>
+            <label className="label">Encargados de área</label>
+            <input className="input" value={encargados} onChange={e => setEncargados(e.target.value)}
+              placeholder="ej. Cutberto Garita y Armando Morán" />
+          </div>
+
+          {/* Preview count */}
+          {loaded && (
+            <div style={{ padding: '10px 14px', background: ots.length > 0 ? '#eff6ff' : '#f8fafc',
+              border: `1px solid ${ots.length > 0 ? '#bfdbfe' : '#e2e8f0'}`, borderRadius: 8,
+              fontSize: 13, color: ots.length > 0 ? 'var(--blue)' : 'var(--text-muted)' }}>
+              {ots.length > 0
+                ? `✓ ${ots.length} OT${ots.length > 1 ? 's' : ''} encontrada${ots.length > 1 ? 's' : ''} — ${ots.filter(o => o.status === 'Completada').length} completadas`
+                : '⚠ Sin órdenes de trabajo para esta semana / sección'}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={generarPDF} disabled={generating || !loaded || ots.length === 0}>
+            {generating ? <><Loader size={13} className="animate-spin" /> Generando…</> : <><ClipboardList size={13} /> Generar PDF</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
   <div>
     <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>{label}</div>
     <div style={{ fontSize: 13 }}>{value}</div>
