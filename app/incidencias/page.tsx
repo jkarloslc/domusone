@@ -2,7 +2,7 @@
 import { useAuth } from '@/lib/AuthContext'
 import { useDebounce } from '@/lib/useDebounce'
 import { useEffect, useState, useCallback } from 'react'
-import { dbCat, dbCtrl } from '@/lib/supabase'
+import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, AlertTriangle,
   Eye, Edit2, Trash2, X, Save, Loader,
@@ -29,11 +29,6 @@ type Incidencia = {
 }
 
 // ── Catálogos ─────────────────────────────────────────────────
-const TIPOS_INCIDENCIA = [
-  'Daño a Infraestructura', 'Problema de Seguridad', 'Conflicto entre Vecinos',
-  'Incumplimiento Reglamento', 'Servicio Interrumpido', 'Accidente', 'Vandalismo',
-  'Problema Ambiental', 'Queja de Residente', 'Otro',
-]
 const ORIGENES = ['Residente', 'Guardia', 'Administración', 'Inspección', 'Externo']
 const AREAS    = ['Seguridad', 'Mantenimiento', 'Administración', 'Legal', 'Obras', 'Servicios']
 const STATUS_INC = ['Abierta', 'En Proceso', 'En Espera', 'Cerrada', 'Cancelada']
@@ -54,6 +49,7 @@ export default function IncidenciasPage() {
   const { canWrite, canDelete } = useAuth()
   const [incidencias, setIncidencias] = useState<Incidencia[]>([])
   const [total, setTotal]             = useState(0)
+  const [tipos, setTipos]             = useState<string[]>([])
   const [page, setPage]               = useState(0)
   const [search, setSearch]           = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -82,6 +78,11 @@ export default function IncidenciasPage() {
   }, [page, debouncedSearch, filterStatus, filterTipo])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    dbCfg.from('tipos_incidencia').select('nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setTipos((data ?? []).map((t: any) => t.nombre)))
+  }, [])
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar esta incidencia?')) return
@@ -150,7 +151,7 @@ export default function IncidenciasPage() {
         </select>
         <select className="select" style={{ width: 190 }} value={filterTipo} onChange={e => { setFilterTipo(e.target.value); setPage(0) }}>
           <option value="">Todos los tipos</option>
-          {TIPOS_INCIDENCIA.map(t => <option key={t}>{t}</option>)}
+          {tipos.map(t => <option key={t}>{t}</option>)}
         </select>
         <button className="btn-ghost" onClick={fetchData} title="Actualizar">
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
@@ -246,6 +247,7 @@ export default function IncidenciasPage() {
       {modalOpen && (
         <IncidenciaModal
           incidencia={editing}
+          tipos={tipos}
           onClose={() => setModalOpen(false)}
           onSaved={() => { setModalOpen(false); fetchData() }}
         />
@@ -262,7 +264,7 @@ export default function IncidenciasPage() {
 }
 
 // ── Modal CRUD ────────────────────────────────────────────────
-function IncidenciaModal({ incidencia, onClose, onSaved }: { incidencia: Incidencia | null; onClose: () => void; onSaved: () => void }) {
+function IncidenciaModal({ incidencia, tipos, onClose, onSaved }: { incidencia: Incidencia | null; tipos: string[]; onClose: () => void; onSaved: () => void }) {
   const isNew = !incidencia
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
@@ -371,7 +373,7 @@ function IncidenciaModal({ incidencia, onClose, onSaved }: { incidencia: Inciden
               <label className="label">Tipo *</label>
               <select className="select" value={form.tipo} onChange={set('tipo')}>
                 <option value="">— Seleccionar —</option>
-                {TIPOS_INCIDENCIA.map(t => <option key={t}>{t}</option>)}
+                {tipos.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div>
