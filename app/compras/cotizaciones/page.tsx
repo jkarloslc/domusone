@@ -22,6 +22,7 @@ export default function CotizacionesPage() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal]   = useState<any | null | 'new'>(null)
   const [detail, setDetail] = useState<any | null>(null)
+  const [provMap, setProvMap] = useState<Record<number, string>>({})
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -29,8 +30,15 @@ export default function CotizacionesPage() {
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
-    const { data, count } = await q
-    setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
+    const [{ data, count }, { data: provs }] = await Promise.all([
+      q,
+      dbComp.from('proveedores').select('id, nombre'),
+    ])
+    setRows(data ?? []); setTotal(count ?? 0)
+    const pm: Record<number, string> = {}
+    ;(provs ?? []).forEach((p: any) => { pm[p.id] = p.nombre })
+    setProvMap(pm)
+    setLoading(false)
   }, [page, debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
@@ -77,7 +85,7 @@ export default function CotizacionesPage() {
                 <td style={{ fontSize: 12 }}>{fmtFecha(r.fecha_rfq)}</td>
                 <td style={{ fontSize: 12, color: r.fecha_limite ? 'var(--text-secondary)' : 'var(--text-muted)' }}>{fmtFecha(r.fecha_limite)}</td>
                 <td><StatusBadge status={r.status} /></td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.proveedor_ganador ? `#${r.proveedor_ganador}` : '—'}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.proveedor_ganador ? (provMap[r.proveedor_ganador] ?? `#${r.proveedor_ganador}`) : '—'}</td>
                 <td>
                   <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(r)}><Eye size={13} /></button>
                 </td>
