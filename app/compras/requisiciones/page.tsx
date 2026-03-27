@@ -142,6 +142,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
   const [articulos, setArticulos] = useState<Articulo[]>([])
+  const [artSearches, setArtSearches] = useState<string[]>([''])  // search per row
+  const [artOptions, setArtOptions]   = useState<Articulo[][]>([[]])  // options per row
   const [areas, setAreas]       = useState<{id: number; nombre: string}[]>([])
   const [almacenes, setAlmacenes] = useState<{id: number; nombre: string}[]>([])
   const [form, setForm] = useState({
@@ -155,8 +157,6 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [det, setDet] = useState<Det[]>([{ id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', notas: '' }])
 
   useEffect(() => {
-    dbComp.from('articulos').select('id, clave, nombre, unidad').eq('activo', true).order('nombre')
-      .then(({ data }) => setArticulos(data as Articulo[] ?? []))
     dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setAreas(data ?? []))
     dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre')
@@ -175,9 +175,34 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const setDL = (i: number, k: string, v: any) =>
     setDet(d => d.map((x, j) => j === i ? { ...x, [k]: v } : x))
 
-  const aplicarArticulo = (i: number, artId: string) => {
-    const art = articulos.find(a => a.id === Number(artId))
-    setDet(d => d.map((x, j) => j === i ? { ...x, id_articulo_fk: art?.id ?? null, descripcion: art?.nombre ?? x.descripcion, unidad: art?.unidad ?? x.unidad } : x))
+  const buscarArticulos = async (i: number, q: string) => {
+    // Update search text for this row
+    setArtSearches(prev => { const n = [...prev]; n[i] = q; return n })
+    if (q.trim().length < 2) {
+      setArtOptions(prev => { const n = [...prev]; n[i] = []; return n })
+      return
+    }
+    const { data } = await dbComp.from('articulos')
+      .select('id, clave, nombre, unidad')
+      .eq('activo', true)
+      .or(`clave.ilike.%${q}%,nombre.ilike.%${q}%`)
+      .order('nombre').limit(20)
+    setArtOptions(prev => { const n = [...prev]; n[i] = data as Articulo[] ?? []; return n })
+  }
+
+  const seleccionarArticulo = (i: number, art: Articulo) => {
+    setDet(d => d.map((x, j) => j === i
+      ? { ...x, id_articulo_fk: art.id, descripcion: art.nombre, unidad: art.unidad ?? x.unidad }
+      : x
+    ))
+    setArtSearches(prev => { const n = [...prev]; n[i] = `${art.clave} — ${art.nombre}`; return n })
+    setArtOptions(prev => { const n = [...prev]; n[i] = []; return n })
+  }
+
+  const addDetLine = () => {
+    setDet(d => [...d, { id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', notas: '' }])
+    setArtSearches(p => [...p, ''])
+    setArtOptions(p => [...p, []])
   }
 
   const handleSave = async (enviar = false) => {
@@ -257,21 +282,61 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
               ))}
             </div>
             {det.map((d, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 3fr 80px 80px 1fr 28px', gap: 6, marginBottom: 6 }}>
-                <select className="select" value={d.id_articulo_fk?.toString() ?? ''} onChange={e => aplicarArticulo(i, e.target.value)}>
-                  <option value="">— Libre —</option>
-                  {articulos.map(a => <option key={a.id} value={a.id}>{a.clave} — {a.nombre}</option>)}
-                </select>
-                <input className="input" value={d.descripcion} onChange={e => setDL(i,'descripcion',e.target.value)} placeholder="Descripción del producto" />
-                <input className="input" type="number" min="0.001" step="0.001" value={d.cantidad} onChange={e => setDL(i,'cantidad',e.target.value)} style={{ textAlign: 'right' }} />
-                <select className="select" value={d.unidad} onChange={e => setDL(i,'unidad',e.target.value)}>
-                  {UNIDADES.map(u => <option key={u}>{u}</option>)}
-                </select>
-                <input className="input" value={d.notas} onChange={e => setDL(i,'notas',e.target.value)} placeholder="Notas" />
-                <button className="btn-ghost" style={{ padding: '4px' }} onClick={() => setDet(d => d.filter((_, j) => j !== i))}><Trash2 size={12} /></button>
+              <div key={i} style={{ marginBottom: 8, padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 80px', gap: 8, marginBottom: 8 }}>
+                  {/* Buscador de artículo */}
+                  <div style={{ position: 'relative' }}>
+                    <label className="label">Artículo</label>
+                    <input
+                      className="input"
+                      placeholder="Escribe clave o nombre…"
+                      value={artSearches[i] ?? ''}
+                      onChange={e => buscarArticulos(i, e.target.value)}
+                    />
+                    {(artOptions[i]?.length ?? 0) > 0 && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                        background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
+                        {artOptions[i].map(a => (
+                          <button key={a.id}
+                            onMouseDown={e => { e.preventDefault(); seleccionarArticulo(i, a) }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left',
+                              padding: '8px 12px', background: 'none', border: 'none',
+                              cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                            <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
+                            <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>{a.unidad}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="label">Cantidad</label>
+                    <input className="input" type="number" min="0.001" step="0.001" value={d.cantidad}
+                      onChange={e => setDL(i,'cantidad',e.target.value)} style={{ textAlign: 'right' }} />
+                  </div>
+                  <div>
+                    <label className="label">Unidad</label>
+                    <select className="select" value={d.unidad} onChange={e => setDL(i,'unidad',e.target.value)}>
+                      {UNIDADES.map(u => <option key={u}>{u}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 28px', gap: 8 }}>
+                  <input className="input" value={d.descripcion} onChange={e => setDL(i,'descripcion',e.target.value)} placeholder="Descripción / especificaciones adicionales" />
+                  <button className="btn-ghost" style={{ padding: '4px' }}
+                    onClick={() => {
+                      setDet(d => d.filter((_, j) => j !== i))
+                      setArtSearches(p => p.filter((_, j) => j !== i))
+                      setArtOptions(p => p.filter((_, j) => j !== i))
+                    }}><Trash2 size={12} /></button>
+                </div>
               </div>
             ))}
-            <button className="btn-ghost" onClick={() => setDet(d => [...d, { id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', notas: '' }])}>
+            <button className="btn-ghost" onClick={addDetLine}>
               <Plus size={12} /> Agregar producto
             </button>
           </Sec>
