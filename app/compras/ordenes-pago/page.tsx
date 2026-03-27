@@ -574,71 +574,60 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 580 }}>
+
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>{op.folio}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--blue)' }}>{op.folio}</span>
               <StatusBadge status={op.status} />
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtFecha(op.fecha_op)}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {op._provNombre ?? 'Sin proveedor'} · {fmtFecha(op.fecha_op)}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}><Printer size={13} /> Imprimir</button>
-            {op.status === 'Pendiente' && (
-              <>
-                <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}><Edit2 size={13} /> Editar</button>
-                <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setShowPagar(p => !p)}>
-                  <CheckCircle size={13} /> Marcar Pagada
-                </button>
-                <button className="btn-ghost" style={{ color: '#dc2626', fontSize: 12 }} onClick={cancelar}>Cancelar</button>
-              </>
-            )}
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
+          <button className="btn-ghost" style={{ marginTop: 2 }} onClick={onClose}><X size={16} /></button>
         </div>
 
-        <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 80px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Cuerpo */}
+        <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 180px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Panel marcar pagada */}
+          {/* Panel confirmar pago */}
           {showPagar && op.status === 'Pendiente' && (
-            <div style={{ padding: '14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#15803d', marginBottom: 10 }}>Confirmar Pago</div>
-              <div><label className="label">Referencia / Número de transferencia</label>
-                <input className="input" value={refPago} onChange={e => setRefPago(e.target.value)}
-                  placeholder="ej. 202503240001" />
-              </div>
+            <div style={{ padding: '14px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d', marginBottom: 10 }}>Confirmar Pago</div>
+              <label className="label">Referencia / No. de transferencia</label>
+              <input className="input" value={refPago} onChange={e => setRefPago(e.target.value)}
+                placeholder="ej. 202503240001" style={{ fontFamily: 'monospace' }} />
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                 <button className="btn-secondary" onClick={() => setShowPagar(false)}>Cancelar</button>
                 <button className="btn-primary" onClick={marcarPagada} disabled={marcando}>
-                  {marcando ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Confirmar
+                  {marcando ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Confirmar pago
                 </button>
               </div>
             </div>
           )}
 
-          {/* Info principal */}
           <Sec label="Beneficiario">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
-              <DI label="Proveedor"     value={op._provNombre} />
-              <DI label="Banco"         value={op.banco_destino} />
+              <DI label="Proveedor"      value={op._provNombre} />
+              <DI label="Banco"          value={op.banco_destino} />
               <DI label="CLABE / Cuenta" value={op.cuenta_clabe} mono />
-              <DI label="Forma de Pago" value={op.forma_pago} />
+              <DI label="Forma de Pago"  value={op.forma_pago} />
             </div>
           </Sec>
 
           <Sec label="Detalle del Pago">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
-              <DI label="Concepto"         value={op.concepto} />
-              <DI label="Tipo de Gasto"    value={op.tipo_gasto} />
-              <DI label="Centro de Costo"  value={op._almNombre} />
-              <DI label="Vencimiento"      value={fmtFecha(op.fecha_vencimiento)} />
+              <DI label="Concepto"        value={op.concepto} />
+              <DI label="Tipo de Gasto"   value={op.tipo_gasto} />
+              <DI label="Centro de Costo" value={op._almNombre} />
+              <DI label="Vencimiento"     value={fmtFecha(op.fecha_vencimiento)} />
               {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
               {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
             </div>
           </Sec>
 
-          {/* OCs relacionadas */}
           {ocsRel.length > 0 && (
             <Sec label="Órdenes de Compra Relacionadas">
               <div className="card" style={{ overflow: 'hidden' }}>
@@ -660,12 +649,43 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
 
           {/* Total */}
           <div style={{ padding: '14px 18px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-secondary)' }}>TOTAL A PAGAR</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>TOTAL A PAGAR</span>
             <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(op.monto)}</span>
           </div>
 
           {op.notas && <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Notas: {op.notas}</p>}
         </div>
+
+        {/* Footer con acciones */}
+        <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Izquierda: acciones destructivas */}
+          <div>
+            {op.status === 'Pendiente' && (
+              <button onClick={cancelar} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 7,
+                background: 'none', border: '1px solid #fecaca', color: '#dc2626',
+                cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                Cancelar OP
+              </button>
+            )}
+          </div>
+          {/* Derecha: acciones principales */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}>
+              <Printer size={13} /> Imprimir
+            </button>
+            {op.status === 'Pendiente' && (
+              <>
+                <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
+                  <Edit2 size={13} /> Editar
+                </button>
+                <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setShowPagar(p => !p)}>
+                  <CheckCircle size={13} /> {showPagar ? 'Ocultar' : 'Marcar Pagada'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   )
