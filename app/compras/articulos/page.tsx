@@ -9,11 +9,14 @@ import {
 import { useRouter } from 'next/navigation'
 import { type Articulo, fmt, UNIDADES, CATEGORIAS_ART } from '../types'
 
+const PAGE_SIZE = 50
+
 export default function ArticulosPage() {
   const router = useRouter()
   const [rows, setRows]         = useState<Articulo[]>([])
   const [inventario, setInv]    = useState<Record<number, number>>({})  // articuloId → saldo total
   const [total, setTotal]       = useState(0)
+  const [page, setPage]         = useState(0)
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -24,8 +27,9 @@ export default function ArticulosPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbComp.from('articulos').select('*', { count: 'exact' }).order('nombre')
-    if (debouncedSearch)    q = q.or(`clave.ilike.%${debouncedSearch}%,nombre.ilike.%${debouncedSearch}%,descripcion.ilike.%${debouncedSearch}%`)
-    if (filterCat) q = q.eq('categoria', filterCat)
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+    if (debouncedSearch) q = q.or(`clave.ilike.%${debouncedSearch}%,nombre.ilike.%${debouncedSearch}%,descripcion.ilike.%${debouncedSearch}%`)
+    if (filterCat)       q = q.eq('categoria', filterCat)
     const { data, count } = await q
     const arts = (data as Articulo[] ?? [])
     setRows(arts); setTotal(count ?? 0)
@@ -42,9 +46,12 @@ export default function ArticulosPage() {
       setInv(saldos)
     }
     setLoading(false)
-  }, [debouncedSearch, filterCat])
+  }, [page, debouncedSearch, filterCat])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  // Reset page when filters change
+  useEffect(() => { setPage(0) }, [debouncedSearch, filterCat])
 
   const rowsFiltradas = filterAlerta
     ? rows.filter(r => (inventario[r.id] ?? 0) <= (r.stock_minimo ?? 0))
@@ -192,6 +199,24 @@ export default function ArticulosPage() {
             })}
           </tbody>
         </table>
+        {/* Paginación */}
+        {total > PAGE_SIZE && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Pág. {page + 1} de {Math.ceil(total / PAGE_SIZE)} · {total} artículos
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }}
+                disabled={page === 0} onClick={() => setPage(0)}>«</button>
+              <button className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }}
+                disabled={page === 0} onClick={() => setPage(p => p - 1)}>‹ Ant</button>
+              <button className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }}
+                disabled={page >= Math.ceil(total / PAGE_SIZE) - 1} onClick={() => setPage(p => p + 1)}>Sig ›</button>
+              <button className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }}
+                disabled={page >= Math.ceil(total / PAGE_SIZE) - 1} onClick={() => setPage(Math.ceil(total / PAGE_SIZE) - 1)}>»</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {modal !== null && (
