@@ -110,7 +110,7 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
   useEffect(() => {
     dbComp.from('ordenes_compra').select('id, folio, id_proveedor_fk')
-      .in('status', ['Autorizada','Recibida Parcial']).order('folio')
+      .in('status', ['Autorizada', 'Enviada al Prov', 'Recibida Parcial']).order('folio')
       .then(({ data }) => setOcs(data ?? []))
     dbComp.from('almacenes').select('*').eq('activo', true).order('clave')
       .then(({ data }) => setAlmacenes(data ?? []))
