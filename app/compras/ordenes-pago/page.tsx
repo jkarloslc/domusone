@@ -592,22 +592,6 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
         {/* Cuerpo */}
         <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 180px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Panel confirmar pago */}
-          {showPagar && op.status === 'Pendiente' && (
-            <div style={{ padding: '14px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d', marginBottom: 10 }}>Confirmar Pago</div>
-              <label className="label">Referencia / No. de transferencia</label>
-              <input className="input" value={refPago} onChange={e => setRefPago(e.target.value)}
-                placeholder="ej. 202503240001" style={{ fontFamily: 'monospace' }} />
-              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <button className="btn-secondary" onClick={() => setShowPagar(false)}>Cancelar</button>
-                <button className="btn-primary" onClick={marcarPagada} disabled={marcando}>
-                  {marcando ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Confirmar pago
-                </button>
-              </div>
-            </div>
-          )}
-
           <Sec label="Beneficiario">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
               <DI label="Proveedor"      value={op._provNombre} />
@@ -674,14 +658,9 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
               <Printer size={13} /> Imprimir
             </button>
             {op.status === 'Pendiente' && (
-              <>
-                <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
-                  <Edit2 size={13} /> Editar
-                </button>
-                <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setShowPagar(p => !p)}>
-                  <CheckCircle size={13} /> {showPagar ? 'Ocultar' : 'Marcar Pagada'}
-                </button>
-              </>
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
+                <Edit2 size={13} /> Editar
+              </button>
             )}
           </div>
         </div>

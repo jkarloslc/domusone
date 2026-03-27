@@ -454,6 +454,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
     xml_factura:     '',
     comprobante:     '',
   })
+  const [pagoTotal, setPagoTotal] = useState(true)
 
   const pdfFacturaRef  = useRef<HTMLInputElement>(null)
   const xmlFacturaRef  = useRef<HTMLInputElement>(null)
@@ -485,14 +486,16 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   }
 
   const handleSave = async () => {
-    if (!form.monto || Number(form.monto) <= 0) { setError('El monto del abono es obligatorio'); return }
-    if (Number(form.monto) > saldoActual + 0.01) { setError(`El abono no puede exceder el saldo (${fmt(saldoActual)})`); return }
+    if (!form.monto || Number(form.monto) <= 0) { setError('El monto del pago es obligatorio'); return }
+    if (Number(form.monto) > saldoActual + 0.01) { setError(`El pago no puede exceder el saldo (${fmt(saldoActual)})`); return }
     setSaving(true); setError('')
+
+    const montoAbono = Number(form.monto)
 
     const { error: err } = await dbComp.from('cxp_abonos').insert({
       id_op_fk:     op.id,
       fecha_abono:  form.fecha_abono,
-      monto:        Number(form.monto),
+      monto:        montoAbono,
       forma_pago:   form.forma_pago,
       referencia:   form.referencia.trim() || null,
       notas:        form.notas.trim() || null,
@@ -502,12 +505,27 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
       created_by:   authUser?.nombre ?? null,
     })
     if (err) { setError(err.message); setSaving(false); return }
+
+    // Actualizar monto_pagado, saldo y status en ordenes_pago
+    const nuevoMontoPagado = (op.monto_pagado ?? 0) + montoAbono
+    const nuevoSaldo       = (op.monto ?? 0) - nuevoMontoPagado
+    const nuevoStatus      = nuevoSaldo <= 0.01 ? 'Pagada' : 'Abonada'
+
+    await dbComp.from('ordenes_pago').update({
+      monto_pagado: nuevoMontoPagado,
+      saldo:        Math.max(nuevoSaldo, 0),
+      status:       nuevoStatus,
+      ...(nuevoStatus === 'Pagada' ? {
+        fecha_pago:      form.fecha_abono,
+        referencia_pago: form.referencia.trim() || null,
+      } : {}),
+    }).eq('id', op.id)
+
     setSaving(false)
     setShowForm(false)
     setForm(f => ({ ...f, monto: '', referencia: '', notas: '', pdf_factura: '', xml_factura: '', comprobante: '' }))
     fetchAbonos()
-    // Refrescar saldo en la OP (trigger en BD lo actualiza, recargamos la página)
-    setTimeout(onClose, 800)
+    onClose()
   }
 
   const FileBtn = ({ campo, label, accept, refEl }: { campo: 'pdf_factura'|'xml_factura'|'comprobante'; label: string; accept: string; refEl: React.RefObject<HTMLInputElement> }) => (
@@ -578,7 +596,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
               </div>
               {op.status !== 'Pagada' && (
                 <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setShowForm(f => !f)}>
-                  <Plus size={12} /> Registrar Abono
+                  <Plus size={12} /> Registrar Pago
                 </button>
               )}
             </div>
@@ -625,10 +643,21 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
             ))}
           </div>
 
-          {/* Formulario nuevo abono */}
           {showForm && (
             <div style={{ padding: '16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d', marginBottom: 12 }}>Nuevo Abono · Saldo disponible: {fmt(saldoActual)}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d' }}>
+                  Registrar Pago · Saldo: {fmt(saldoActual)}
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer', fontWeight: 600, color: 'var(--blue)' }}>
+                  <input type="checkbox" checked={pagoTotal}
+                    onChange={e => {
+                      setPagoTotal(e.target.checked)
+                      setForm(f => ({ ...f, monto: e.target.checked ? saldoActual.toString() : '' }))
+                    }} />
+                  Pago total
+                </label>
+              </div>
               {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{error}</div>}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -636,8 +665,10 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                   <input className="input" type="date" value={form.fecha_abono} onChange={setF('fecha_abono')} />
                 </div>
                 <div><label className="label">Monto *</label>
-                  <input className="input" type="number" step="0.01" value={form.monto} onChange={setF('monto')}
-                    style={{ textAlign: 'right' }} />
+                  <input className="input" type="number" step="0.01" value={form.monto}
+                    disabled={pagoTotal}
+                    onChange={e => { setPagoTotal(false); setForm(f => ({ ...f, monto: e.target.value })) }}
+                    style={{ textAlign: 'right', background: pagoTotal ? '#f8fafc' : undefined }} />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -652,7 +683,6 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                 </div>
               </div>
 
-              {/* Adjuntos */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <FileBtn campo="pdf_factura" label="PDF Factura" accept=".pdf" refEl={pdfFacturaRef} />
                 <FileBtn campo="xml_factura" label="XML Factura" accept=".xml" refEl={xmlFacturaRef} />
@@ -666,7 +696,8 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
                 <button className="btn-primary" onClick={handleSave} disabled={saving}>
-                  {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Registrar Abono
+                  {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />}
+                  {pagoTotal ? 'Registrar Pago Total' : 'Registrar Pago Parcial'}
                 </button>
               </div>
             </div>

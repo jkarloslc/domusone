@@ -60,6 +60,7 @@ export const STATUS_COMP: Record<string, { bg: string; color: string; border: st
   'Solicitada':       { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
   'Pendiente':        { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
   'Pagada':           { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
+  'Abonada':          { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
   'Recibida':         { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
 }
 
