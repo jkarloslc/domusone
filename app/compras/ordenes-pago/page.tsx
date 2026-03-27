@@ -122,21 +122,19 @@ export default function OrdenesPagoPage() {
               <th>Proveedor</th>
               <th>Concepto / Tipo</th>
               <th>Centro de Costo</th>
-              <th>Fecha</th>
               <th>Vencimiento</th>
               <th style={{ textAlign: 'right' }}>Monto</th>
-              <th>Forma Pago</th>
               <th>Status</th>
-              <th style={{ width: 80 }}></th>
+              <th style={{ width: 60 }}></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={10} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                 Sin órdenes de pago registradas
               </td></tr>
             ) : rows.map(r => (
@@ -150,19 +148,16 @@ export default function OrdenesPagoPage() {
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                   {r.id_almacen_fk ? (almMap[r.id_almacen_fk] ?? `#${r.id_almacen_fk}`) : '—'}
                 </td>
-                <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtFecha(r.fecha_op)}</td>
-                <td style={{ fontSize: 12, color: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? '#dc2626' : 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                <td style={{ fontSize: 12, color: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? '#dc2626' : 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? 600 : 400 }}>
                   {fmtFecha(r.fecha_vencimiento)}
                 </td>
                 <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(r.monto)}</td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.forma_pago}</td>
                 <td><StatusBadge status={r.status} /></td>
                 <td>
-                  <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                    <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail({ ...r, _provNombre: provMap[r.id_proveedor_fk], _almNombre: almMap[r.id_almacen_fk] })} title="Ver">
-                      <Eye size={13} />
-                    </button>
-                  </div>
+                  <button className="btn-ghost" style={{ padding: '4px 6px' }}
+                    onClick={() => setDetail({ ...r, _provNombre: provMap[r.id_proveedor_fk], _almNombre: almMap[r.id_almacen_fk] })}>
+                    <Eye size={13} />
+                  </button>
                 </td>
               </tr>
             ))}
@@ -198,7 +193,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [almacenes, setAlms]      = useState<any[]>([])
   const [ocsDisp, setOcsDisp]     = useState<any[]>([])
   const [ocsSelected, setOcsSel]  = useState<{ id: number; folio: string; total: number; monto: string }[]>([])
-  const [conOC, setConOC]         = useState<boolean | null>(null)  // null=sin elegir
+  const [conOC, setConOC] = useState<boolean | null>(
+    opEdit ? (opEdit.id_oc_fk != null) : null
+  )
 
   const [form, setForm] = useState({
     id_proveedor_fk:   opEdit?.id_proveedor_fk?.toString() ?? '',
