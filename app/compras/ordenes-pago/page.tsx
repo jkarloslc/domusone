@@ -5,7 +5,7 @@ import { dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
-  ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight
+  ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight, Edit2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP } from '../types'
@@ -33,6 +33,7 @@ export default function OrdenesPagoPage() {
   const [filterStatus, setFilter] = useState('')
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState(false)
+  const [editOp, setEditOp]     = useState<any | null>(null)
   const [detail, setDetail]     = useState<any | null>(null)
 
   const fetchData = useCallback(async () => {
@@ -178,8 +179,9 @@ export default function OrdenesPagoPage() {
         )}
       </div>
 
-      {modal  && <OPModal   onClose={() => setModal(false)} onSaved={() => { setModal(false); fetchData() }} />}
-      {detail && <OPDetail  op={detail}  onClose={() => { setDetail(null); fetchData() }} onCanceled={() => { setDetail(null); fetchData() }} />}
+      {modal  && <OPModal   op={editOp} onClose={() => { setModal(false); setEditOp(null) }} onSaved={() => { setModal(false); setEditOp(null); fetchData() }} />}
+      {detail && <OPDetail  op={detail} onClose={() => { setDetail(null); fetchData() }} onCanceled={() => { setDetail(null); fetchData() }}
+        onEdit={() => { setEditOp(detail); setDetail(null); setModal(true) }} />}
     </div>
   )
 }
@@ -187,8 +189,9 @@ export default function OrdenesPagoPage() {
 // ════════════════════════════════════════════════════════════
 // Modal nueva Orden de Pago
 // ════════════════════════════════════════════════════════════
-function OPModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => void; onSaved: () => void }) {
   const { authUser } = useAuth()
+  const isEdit = !!opEdit
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
   const [proveedores, setProvs]   = useState<any[]>([])
@@ -198,16 +201,16 @@ function OPModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
   const [conOC, setConOC]         = useState<boolean | null>(null)  // null=sin elegir
 
   const [form, setForm] = useState({
-    id_proveedor_fk:   '',
-    id_almacen_fk:     '',
-    forma_pago:        'Transferencia',
-    fecha_vencimiento: '',
-    concepto:          '',
-    tipo_gasto:        '',
-    banco_destino:     '',
-    cuenta_clabe:      '',
-    notas:             '',
-    monto_manual:      '',  // para OPs sin OC
+    id_proveedor_fk:   opEdit?.id_proveedor_fk?.toString() ?? '',
+    id_almacen_fk:     opEdit?.id_almacen_fk?.toString()   ?? '',
+    forma_pago:        opEdit?.forma_pago        ?? 'Transferencia',
+    fecha_vencimiento: opEdit?.fecha_vencimiento ?? '',
+    concepto:          opEdit?.concepto          ?? '',
+    tipo_gasto:        opEdit?.tipo_gasto        ?? '',
+    banco_destino:     opEdit?.banco_destino     ?? '',
+    cuenta_clabe:      opEdit?.cuenta_clabe      ?? '',
+    notas:             opEdit?.notas             ?? '',
+    monto_manual:      opEdit?.monto?.toString() ?? '',
   })
 
   useEffect(() => {
@@ -270,10 +273,9 @@ function OPModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
     const folio = folioGen('OP', (count ?? 0) + 1)
 
     const payload: any = {
-      folio,
       id_proveedor_fk:   form.id_proveedor_fk ? Number(form.id_proveedor_fk) : null,
       id_almacen_fk:     form.id_almacen_fk   ? Number(form.id_almacen_fk)   : null,
-      id_oc_fk:          (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,  // OC principal
+      id_oc_fk:          (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
       forma_pago:        form.forma_pago,
       fecha_vencimiento: form.fecha_vencimiento || null,
       concepto:          form.concepto.trim() || null,
@@ -282,9 +284,20 @@ function OPModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
       cuenta_clabe:      form.cuenta_clabe.trim() || null,
       notas:             form.notas.trim() || null,
       monto:             montoTotal,
-      status:            'Pendiente',
-      created_by:        authUser?.nombre ?? null,
     }
+
+    // EDITAR
+    if (isEdit) {
+      const { error: err } = await dbComp.from('ordenes_pago').update(payload).eq('id', opEdit.id)
+      if (err) { setError(err.message); setSaving(false); return }
+      setSaving(false); onSaved()
+      return
+    }
+
+    // NUEVO
+    payload.folio      = folioGen('OP', (await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })).count ?? 0 + 1)
+    payload.status     = 'Pendiente'
+    payload.created_by = authUser?.nombre ?? null
 
     const { data: op, error: err } = await dbComp.from('ordenes_pago').insert(payload).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
@@ -303,8 +316,8 @@ function OPModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
     setSaving(false); onSaved()
   }
 
-  // Paso 1: elegir si tiene OC o no
-  if (conOC === null) {
+  // Paso 1: elegir si tiene OC o no — solo en nuevo
+  if (conOC === null && !isEdit) {
     return (
       <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
         <div className="modal" style={{ maxWidth: 440 }}>
@@ -482,7 +495,7 @@ function OPModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => voi
 // ════════════════════════════════════════════════════════════
 // Detalle + impresión + marcar pagada / cancelar
 // ════════════════════════════════════════════════════════════
-function OPDetail({ op, onClose, onCanceled }: { op: any; onClose: () => void; onCanceled: () => void }) {
+function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void }) {
   const [ocsRel, setOcsRel]       = useState<any[]>([])
   const [marcando, setMarcando]   = useState(false)
   const [refPago, setRefPago]     = useState('')
@@ -497,11 +510,10 @@ function OPDetail({ op, onClose, onCanceled }: { op: any; onClose: () => void; o
   const marcarPagada = async () => {
     setMarcando(true)
     await dbComp.from('ordenes_pago').update({
-      status:         'Pagada',
+      status:          'Pagada',
       referencia_pago: refPago.trim() || null,
       fecha_pago:      new Date().toISOString().slice(0, 10),
     }).eq('id', op.id)
-    // Cerrar OCs relacionadas
     for (const rel of ocsRel) {
       await dbComp.from('ordenes_compra').update({ status: 'Cerrada' }).eq('id', rel.id_oc_fk)
     }
@@ -516,9 +528,7 @@ function OPDetail({ op, onClose, onCanceled }: { op: any; onClose: () => void; o
   }
 
   const imprimir = () => {
-    const win = window.open('', '_blank')
-    win?.document.write(`
-      <html><head><title>Orden de Pago ${op.folio}</title>
+    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${op.folio}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
         h1 { color: #0D4F80; font-size: 22px; margin: 0 0 4px; }
@@ -529,7 +539,7 @@ function OPDetail({ op, onClose, onCanceled }: { op: any; onClose: () => void; o
         .total { background: #eff6ff; font-size: 16px; font-weight: 700; color: #0D4F80; }
         .firmas { display: flex; gap: 60px; margin-top: 60px; }
         .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
-        @media print { body { padding: 20px; } }
+        @page { margin: 1.2cm; }
       </style></head><body>
       <h1>Orden de Pago</h1>
       <div class="sub">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(op.fecha_op)}</div>
@@ -542,15 +552,26 @@ function OPDetail({ op, onClose, onCanceled }: { op: any; onClose: () => void; o
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(op.monto)}</td></tr>
       </table>
-      ${op.notas ? `<p style="font-size:12px;color:#64748b;margin-top:8px"><em>Notas: ${op.notas}</em></p>` : ''}
+      ${op.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${op.notas}</em></p>` : ''}
       <div class="firmas">
         <div class="firma">Elaboró</div>
         <div class="firma">Autorizó</div>
         <div class="firma">Recibió / Banco</div>
       </div>
-      </body></html>
-    `)
-    win?.print()
+      </body></html>`
+
+    // Usar iframe para evitar bloqueo de popups en Safari
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
   }
 
   return (
@@ -569,6 +590,7 @@ function OPDetail({ op, onClose, onCanceled }: { op: any; onClose: () => void; o
             <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}><Printer size={13} /> Imprimir</button>
             {op.status === 'Pendiente' && (
               <>
+                <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}><Edit2 size={13} /> Editar</button>
                 <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setShowPagar(p => !p)}>
                   <CheckCircle size={13} /> Marcar Pagada
                 </button>
