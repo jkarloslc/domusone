@@ -6,7 +6,8 @@ import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, AlertTriangle,
   Eye, Edit2, Trash2, X, Save, Loader,
-  ChevronLeft, ChevronRight, CheckCircle, Clock
+  ChevronLeft, ChevronRight, CheckCircle, Clock,
+  Wrench, ExternalLink
 } from 'lucide-react'
 import MultiImageUpload from '@/components/MultiImageUpload'
 
@@ -23,6 +24,7 @@ type Incidencia = {
   fecha_cierre: string | null
   responsable: string | null
   notas: string | null
+  id_ot_fk: number | null
   created_at: string
   updated_at: string
   lotes?: { cve_lote: string | null; lote: number | null }
@@ -257,6 +259,7 @@ export default function IncidenciasPage() {
           incidencia={detail}
           onClose={() => setDetail(null)}
           onEdit={() => { setEditing(detail); setDetail(null); setModalOpen(true) }}
+          onRefresh={fetchData}
         />
       )}
     </div>
@@ -465,10 +468,63 @@ function IncidenciaModal({ incidencia, tipos, onClose, onSaved }: { incidencia: 
 }
 
 // ── Panel de detalle ──────────────────────────────────────────
-function IncidenciaDetail({ incidencia: inc, onClose, onEdit }: { incidencia: Incidencia; onClose: () => void; onEdit: () => void }) {
+function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
+  incidencia: Incidencia; onClose: () => void; onEdit: () => void; onRefresh: () => void
+}) {
+  const { authUser } = useAuth()
+  const [generandoOT, setGenerandoOT] = useState(false)
+  const [otFolio,     setOtFolio]     = useState<string | null>(null)
+  const [localOtFk,   setLocalOtFk]   = useState<number | null>(inc.id_ot_fk)
+
+  // Cargar folio de la OT si existe
+  useEffect(() => {
+    if (!localOtFk) return
+    dbCtrl.from('ordenes_trabajo').select('folio').eq('id', localOtFk).single()
+      .then(({ data }) => { if (data) setOtFolio(data.folio) })
+  }, [localOtFk])
+
+  const generarOT = async () => {
+    setGenerandoOT(true)
+    // Contar OTs para folio
+    const { count } = await dbCtrl.from('ordenes_trabajo').select('id', { count: 'exact', head: true })
+    const anio  = new Date().getFullYear()
+    const folio = `OT-${anio}-${String((count ?? 0) + 1).padStart(4, '0')}`
+
+    const { data: ot, error } = await dbCtrl.from('ordenes_trabajo').insert({
+      folio,
+      titulo:      `Atención: ${inc.tipo ?? 'Incidencia'} — ${(inc as any).lotes?.cve_lote ?? 'Lote sin clave'}`,
+      tipo_trabajo: inc.area_responsable ?? null,
+      prioridad:   'Media',
+      status:      'Pendiente',
+      descripcion: inc.descripcion ?? null,
+      asignado_a:  inc.responsable ?? null,
+      anio,
+      semana_no:   Math.ceil(((Date.now() - new Date(anio + '-01-01').getTime()) / 86400000 + new Date(anio + '-01-01').getDay() + 1) / 7),
+      created_by:  authUser?.nombre ?? null,
+    }).select('id, folio').single()
+
+    if (!error && ot) {
+      // Vincular OT con la incidencia
+      await dbCtrl.from('incidencias').update({ id_ot_fk: ot.id }).eq('id', inc.id)
+      setLocalOtFk(ot.id)
+      setOtFolio(ot.folio)
+      onRefresh()
+    }
+    setGenerandoOT(false)
+  }
+
+  const desvincularOT = async () => {
+    if (!confirm('¿Desvincular la OT de esta incidencia?')) return
+    await dbCtrl.from('incidencias').update({ id_ot_fk: null }).eq('id', inc.id)
+    setLocalOtFk(null)
+    setOtFolio(null)
+    onRefresh()
+  }
+
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 520 }}>
+        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -488,7 +544,7 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit }: { incidencia: In
           </div>
         </div>
 
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>
 
           {/* Descripción */}
           <div>
@@ -527,6 +583,55 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit }: { incidencia: In
               <span style={{ fontSize: 12, color: '#4ade80' }}>Cerrada el {fmtFecha(inc.fecha_cierre)}</span>
             </div>
           )}
+
+          {/* ── Orden de Trabajo ── */}
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
+              Orden de Trabajo
+            </div>
+
+            {localOtFk && otFolio ? (
+              /* Ya tiene OT vinculada */
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Wrench size={15} style={{ color: 'var(--blue)' }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', fontFamily: 'monospace' }}>{otFolio}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Orden de trabajo vinculada</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <a href="/servicios" target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '5px 10px', background: 'var(--blue)', color: '#fff',
+                      borderRadius: 6, textDecoration: 'none', fontFamily: 'var(--font-body)' }}>
+                    <ExternalLink size={11} /> Ver OT
+                  </a>
+                  <button onClick={desvincularOT}
+                    style={{ fontSize: 11, padding: '5px 10px', borderRadius: 6, background: 'none',
+                      border: '1px solid #fecaca', color: '#dc2626', cursor: 'pointer',
+                      fontFamily: 'var(--font-body)' }}>
+                    Desvincular
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Sin OT — ofrecer generar */
+              <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
+                  Esta incidencia no tiene una Orden de Trabajo asociada. Si requiere intervención operativa, genera una OT pre-llenada con los datos de esta incidencia.
+                </p>
+                <button className="btn-primary" style={{ fontSize: 12 }}
+                  onClick={generarOT} disabled={generandoOT}>
+                  {generandoOT
+                    ? <><Loader size={13} className="animate-spin" /> Generando…</>
+                    : <><Wrench size={13} /> Generar Orden de Trabajo</>}
+                </button>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>
