@@ -34,6 +34,16 @@ export default function ReporteKardex() {
     if (filtroA)   q = q.lte('created_at', filtroA + 'T23:59:59')
     const { data } = await q
     setRows(data ?? [])
+
+    // Cargar nombres de artículos que aparecen en los movimientos
+    const artIds = [...new Set((data ?? []).map((m: any) => m.id_articulo_fk).filter(Boolean))]
+    if (artIds.length) {
+      const { data: arts } = await dbComp.from('articulos')
+        .select('id, clave, nombre, unidad').in('id', artIds)
+      const am: Record<number, any> = {}
+      ;(arts ?? []).forEach((a: any) => { am[a.id] = a })
+      setArtMap(am)
+    }
     setLoading(false)
   }, [filtroArt, filtroAlm, filtroDe, filtroA])
 
