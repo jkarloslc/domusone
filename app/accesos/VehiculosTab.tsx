@@ -50,7 +50,7 @@ export default function VehiculosTab() {
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
           {canWrite('accesos') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
             <Plus size={14} /> Nuevo Vehículo
-          </button>
+          </button>}
         </div>
       </div>
 
