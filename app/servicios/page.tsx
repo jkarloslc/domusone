@@ -64,6 +64,7 @@ export default function OrdenesTrabajoPage() {
   const [filterTipo,   setFilterTipo]   = useState('')
   const [filterSec,    setFilterSec]    = useState('')
   const [modal, setModal]       = useState(false)
+  const [editingOT, setEditingOT] = useState<any | null>(null)
   const [detail, setDetail]     = useState<any | null>(null)
 
   const fetchData = useCallback(async () => {
@@ -211,8 +212,8 @@ export default function OrdenesTrabajoPage() {
         </table>
       </div>
 
-      {modal  && <OTModal secciones={secciones} onClose={() => setModal(false)} onSaved={() => { setModal(false); fetchData() }} />}
-      {detail && <OTDetail ot={detail} secMap={secMap} onClose={() => { setDetail(null); fetchData() }} onEdit={ot => { setDetail(null); setModal(true) }} />}
+      {modal  && <OTModal secciones={secciones} ot={editingOT} onClose={() => { setModal(false); setEditingOT(null) }} onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
+      {detail && <OTDetail ot={detail} secMap={secMap} onClose={() => { setDetail(null); fetchData() }} onEdit={ot => { setDetail(null); setEditingOT(ot); setModal(true) }} />}
     </div>
   )
 }
@@ -244,6 +245,23 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
   const [recursos, setRecursos] = useState<any[]>(
     ot ? [] : [{ cantidad: '', descripcion: '', costo: '0' }]
   )
+
+  // Cargar recursos existentes al editar
+  useEffect(() => {
+    if (ot?.id) {
+      dbCtrl.from('ot_recursos').select('*').eq('id_ot_fk', ot.id).order('id')
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setRecursos(data.map((r: any) => ({
+              id:          r.id,
+              cantidad:    r.cantidad ?? '',
+              descripcion: r.descripcion ?? '',
+              costo:       r.costo?.toString() ?? '0',
+            })))
+          }
+        })
+    }
+  }, [ot?.id])
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -306,17 +324,27 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
       }).eq('id', ot.id)
     }
 
-    // Recursos: insertar nuevos
+    // Recursos: upsert (actualizar existentes, insertar nuevos)
     const recursosValidos = recursos.filter(r => r.descripcion.trim())
-    if (recursosValidos.length && otId) {
-      await dbCtrl.from('ot_recursos').insert(
-        recursosValidos.map(r => ({
-          id_ot_fk:    otId,
-          cantidad:    r.cantidad.trim() || null,
-          descripcion: r.descripcion.trim(),
-          costo:       Number(r.costo || 0),
-        }))
-      )
+    if (otId) {
+      if (!isNew) {
+        // Eliminar los que ya no están
+        const idsExistentes = recursosValidos.filter(r => r.id).map(r => r.id)
+        const { data: recActuales } = await dbCtrl.from('ot_recursos').select('id').eq('id_ot_fk', otId)
+        const idsAEliminar = (recActuales ?? []).filter((r: any) => !idsExistentes.includes(r.id)).map((r: any) => r.id)
+        if (idsAEliminar.length) await dbCtrl.from('ot_recursos').delete().in('id', idsAEliminar)
+        // Actualizar existentes
+        for (const r of recursosValidos.filter(r => r.id)) {
+          await dbCtrl.from('ot_recursos').update({ cantidad: r.cantidad || null, descripcion: r.descripcion, costo: Number(r.costo || 0) }).eq('id', r.id)
+        }
+      }
+      // Insertar nuevos
+      const nuevos = recursosValidos.filter(r => !r.id)
+      if (nuevos.length) {
+        await dbCtrl.from('ot_recursos').insert(
+          nuevos.map(r => ({ id_ot_fk: otId, cantidad: r.cantidad || null, descripcion: r.descripcion, costo: Number(r.costo || 0) }))
+        )
+      }
     }
 
     setSaving(false); onSaved()
@@ -496,13 +524,17 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
     const ext  = file.name.split('.').pop()
     const path = `ot-${ot.id}/${Date.now()}.${ext}`
     const { error: upErr } = await supabase.storage.from('ot-evidencias').upload(path, file, { upsert: true })
-    if (upErr) { alert('Error al subir: ' + upErr.message); setUploading(false); return }
+    if (upErr) {
+      alert(`Error al subir foto: ${upErr.message}\n\nVerifica que el bucket "ot-evidencias" exista en Supabase Storage y sea público.`)
+      setUploading(false)
+      return
+    }
     const { data: { publicUrl } } = supabase.storage.from('ot-evidencias').getPublicUrl(path)
     await dbCtrl.from('ot_evidencias').insert({
-      id_ot_fk:    ot.id,
-      url:         publicUrl,
-      nombre:      file.name,
-      created_by:  authUser?.nombre ?? null,
+      id_ot_fk:   ot.id,
+      url:        publicUrl,
+      nombre:     file.name,
+      created_by: authUser?.nombre ?? null,
     })
     setUploading(false)
     fetchDetalle()
