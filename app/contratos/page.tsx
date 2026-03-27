@@ -1,4 +1,5 @@
 'use client'
+import { useAuth } from '@/lib/AuthContext'
 import { useDebounce } from '@/lib/useDebounce'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
