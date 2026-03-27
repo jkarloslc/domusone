@@ -138,6 +138,8 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     notas:             row?.notas ?? '',
   })
   const [det, setDet] = useState<any[]>([{ id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
+  const [artSearches, setArtSearches] = useState<string[]>([''])
+  const [artOptions,  setArtOptions]  = useState<any[][]>([[]])
 
   useEffect(() => {
     dbComp.from('proveedores').select('*').eq('activo', true).order('nombre')
@@ -167,6 +169,37 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 
   const setD = (i: number, k: string, v: string) =>
     setDet(d => d.map((x, j) => j === i ? { ...x, [k]: v } : x))
+
+  const buscarArticulos = async (i: number, q: string) => {
+    setArtSearches(p => { const n = [...p]; n[i] = q; return n })
+    if (q.trim().length < 2) {
+      setArtOptions(p => { const n = [...p]; n[i] = []; return n })
+      return
+    }
+    const { data } = await dbComp.from('articulos')
+      .select('id, clave, nombre, unidad, precio_ref').eq('activo', true)
+      .or(`clave.ilike.%${q}%,nombre.ilike.%${q}%`)
+      .order('nombre').limit(20)
+    setArtOptions(p => { const n = [...p]; n[i] = data ?? []; return n })
+  }
+
+  const seleccionarArticulo = (i: number, art: any) => {
+    setDet(d => d.map((x, j) => j === i ? {
+      ...x,
+      id_articulo_fk: art.id,
+      descripcion:    art.nombre,
+      unidad:         art.unidad ?? x.unidad,
+      precio_unitario: art.precio_ref ? art.precio_ref.toString() : x.precio_unitario,
+    } : x))
+    setArtSearches(p => { const n = [...p]; n[i] = `${art.clave} — ${art.nombre}`; return n })
+    setArtOptions(p => { const n = [...p]; n[i] = []; return n })
+  }
+
+  const addDetLine = () => {
+    setDet(d => [...d, { id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
+    setArtSearches(p => [...p, ''])
+    setArtOptions(p => [...p, []])
+  }
 
   const subtotal = det.reduce((a, d) => a + Number(d.cantidad||0) * Number(d.precio_unitario||0), 0)
   const iva      = det.reduce((a, d) => a + Number(d.cantidad||0) * Number(d.precio_unitario||0) * Number(d.tasa_iva||0), 0)
@@ -257,30 +290,85 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
           </Sec>
 
           <Sec label="Productos">
-            <div style={{ display: 'grid', gridTemplateColumns: '3fr 70px 70px 90px 80px 28px', gap: 6, marginBottom: 4 }}>
-              {['Descripción','Cant.','Unidad','P. Unit.','IVA %',''].map(h => (
-                <div key={h} style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>{h}</div>
-              ))}
-            </div>
             {det.map((d, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '3fr 70px 70px 90px 80px 28px', gap: 6, marginBottom: 6 }}>
-                <input className="input" value={d.descripcion} onChange={e => setD(i,'descripcion',e.target.value)} placeholder="Descripción" />
-                <input className="input" type="number" value={d.cantidad} onChange={e => setD(i,'cantidad',e.target.value)} style={{ textAlign: 'right' }} />
-                <select className="select" value={d.unidad} onChange={e => setD(i,'unidad',e.target.value)}>
-                  {UNIDADES.map(u => <option key={u}>{u}</option>)}
-                </select>
-                <input className="input" type="number" step="0.01" value={d.precio_unitario} onChange={e => setD(i,'precio_unitario',e.target.value)} style={{ textAlign: 'right' }} />
-                <select className="select" value={d.tasa_iva} onChange={e => setD(i,'tasa_iva',e.target.value)}>
-                  <option value="0">Exento</option>
-                  <option value="0.16">16%</option>
-                  <option value="0.08">8%</option>
-                </select>
-                <button className="btn-ghost" style={{ padding: '4px' }} onClick={() => setDet(d => d.filter((_,j)=>j!==i))}><Trash2 size={12} /></button>
+              <div key={i} style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: 8 }}>
+                {/* Fila 1: Buscador artículo */}
+                <div style={{ position: 'relative', marginBottom: 8 }}>
+                  <label className="label">Artículo</label>
+                  <input className="input"
+                    placeholder="Escribe clave o nombre…"
+                    value={artSearches[i] ?? ''}
+                    onChange={e => buscarArticulos(i, e.target.value)}
+                  />
+                  {(artOptions[i]?.length ?? 0) > 0 && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                      background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
+                      {artOptions[i].map((a: any) => (
+                        <button key={a.id}
+                          onMouseDown={e => { e.preventDefault(); seleccionarArticulo(i, a) }}
+                          style={{ display: 'block', width: '100%', textAlign: 'left',
+                            padding: '8px 12px', background: 'none', border: 'none',
+                            cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                          <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
+                          <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>{a.unidad}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Fila 2: Descripción libre (editable tras selección) */}
+                <div style={{ marginBottom: 8 }}>
+                  <label className="label">Descripción / Especificaciones</label>
+                  <input className="input" value={d.descripcion}
+                    onChange={e => setD(i, 'descripcion', e.target.value)}
+                    placeholder="Descripción detallada del producto" />
+                </div>
+                {/* Fila 3: Cant / Unidad / P.Unit / IVA / Eliminar */}
+                <div style={{ display: 'grid', gridTemplateColumns: '80px 80px 100px 90px 28px', gap: 8, alignItems: 'end' }}>
+                  <div><label className="label">Cantidad</label>
+                    <input className="input" type="number" value={d.cantidad}
+                      onChange={e => setD(i, 'cantidad', e.target.value)} style={{ textAlign: 'right' }} />
+                  </div>
+                  <div><label className="label">Unidad</label>
+                    <select className="select" value={d.unidad} onChange={e => setD(i, 'unidad', e.target.value)}>
+                      {UNIDADES.map(u => <option key={u}>{u}</option>)}
+                    </select>
+                  </div>
+                  <div><label className="label">Precio Unit.</label>
+                    <input className="input" type="number" step="0.01" value={d.precio_unitario}
+                      onChange={e => setD(i, 'precio_unitario', e.target.value)} style={{ textAlign: 'right' }} />
+                  </div>
+                  <div><label className="label">IVA</label>
+                    <select className="select" value={d.tasa_iva} onChange={e => setD(i, 'tasa_iva', e.target.value)}>
+                      <option value="0">Exento</option>
+                      <option value="0.16">16%</option>
+                      <option value="0.08">8%</option>
+                    </select>
+                  </div>
+                  <button className="btn-ghost" style={{ padding: '6px 4px' }}
+                    onClick={() => {
+                      setDet(d => d.filter((_, j) => j !== i))
+                      setArtSearches(p => p.filter((_, j) => j !== i))
+                      setArtOptions(p => p.filter((_, j) => j !== i))
+                    }}><Trash2 size={12} /></button>
+                </div>
+                {/* Subtotal fila */}
+                {d.cantidad && d.precio_unitario && (
+                  <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                    Subtotal: <strong style={{ color: 'var(--blue)' }}>
+                      {fmt(Number(d.cantidad) * Number(d.precio_unitario) * (1 + Number(d.tasa_iva || 0)))}
+                    </strong>
+                  </div>
+                )}
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-              <button className="btn-ghost" onClick={() => setDet(d => [...d, { id_articulo_fk:null, descripcion:'', cantidad:'1', unidad:'PZA', precio_unitario:'', tasa_iva:'0' }])}>
-                <Plus size={12} /> Agregar
+              <button className="btn-ghost" onClick={addDetLine}>
+                <Plus size={12} /> Agregar producto
               </button>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>
                 Total: {fmt(subtotal + iva)}
