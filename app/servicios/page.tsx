@@ -753,17 +753,31 @@ function ReporteSemanal({ secciones, secMap, onClose }: {
       .eq('semana_no', semana).eq('anio', anio).order('id_seccion_fk')
     if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
     const { data } = await q
-    // Cargar recursos para cada OT
     const ids = (data ?? []).map((o: any) => o.id)
-    const { data: recursos } = ids.length
-      ? await dbCtrl.from('ot_recursos').select('*').in('id_ot_fk', ids)
-      : { data: [] }
+
+    const [{ data: recursos }, { data: evidencias }] = ids.length
+      ? await Promise.all([
+          dbCtrl.from('ot_recursos').select('*').in('id_ot_fk', ids),
+          dbCtrl.from('ot_evidencias').select('*').in('id_ot_fk', ids).order('created_at'),
+        ])
+      : [{ data: [] }, { data: [] }]
+
     const recMap: Record<number, any[]> = {}
     ;(recursos ?? []).forEach((r: any) => {
       if (!recMap[r.id_ot_fk]) recMap[r.id_ot_fk] = []
       recMap[r.id_ot_fk].push(r)
     })
-    setOts((data ?? []).map((o: any) => ({ ...o, recursos: recMap[o.id] ?? [] })))
+    const evMap: Record<number, any[]> = {}
+    ;(evidencias ?? []).forEach((e: any) => {
+      if (!evMap[e.id_ot_fk]) evMap[e.id_ot_fk] = []
+      evMap[e.id_ot_fk].push(e)
+    })
+
+    setOts((data ?? []).map((o: any) => ({
+      ...o,
+      recursos:   recMap[o.id] ?? [],
+      evidencias: evMap[o.id]  ?? [],
+    })))
     setLoaded(true)
   }, [semana, anio, filterSec])
 
@@ -817,6 +831,11 @@ function ReporteSemanal({ secciones, secMap, onClose }: {
   .ot-desc { color: #475569; line-height: 1.6; margin-bottom: 8px; }
   .ot-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 11px; color: #64748b; }
   .ot-notas { margin-top: 8px; padding: 8px; background: #fffbeb; border-left: 3px solid #fbbf24; font-size: 11px; color: #92400e; }
+  .evidencias { margin-top: 10px; }
+  .evidencias-title { font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .evidencias-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .evidencia-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; display: block; }
+  .evidencia-cap { font-size: 9px; color: #64748b; text-align: center; margin-top: 2px; }
   .recursos-title { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 8px; }
   table { width: 100%; border-collapse: collapse; }
   th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 10px; text-align: left; border: 1px solid #e2e8f0; }
@@ -871,6 +890,18 @@ ${Object.entries(porSeccion).map(([secNombre, otsSeccion]) => `
           ${o.ubicacion_detalle ? `<span>📍 ${o.ubicacion_detalle}</span>` : ''}
         </div>
         ${o.notas ? `<div class="ot-notas"><strong>Nota:</strong> ${o.notas}</div>` : ''}
+        ${(o.evidencias ?? []).length > 0 ? `
+          <div class="evidencias">
+            <div class="evidencias-title">Evidencias fotográficas (${o.evidencias.length})</div>
+            <div class="evidencias-grid">
+              ${o.evidencias.map((ev: any) => `
+                <div>
+                  <img src="${ev.url}" class="evidencia-img" alt="${ev.nombre ?? 'Evidencia'}" />
+                  ${ev.descripcion ? `<div class="evidencia-cap">${ev.descripcion}</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>` : ''}
       </div>
     </div>`
   }).join('')}
