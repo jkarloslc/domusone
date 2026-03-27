@@ -1,5 +1,6 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
+import { useAuth } from '@/lib/AuthContext'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Edit2, Trash2, X, Save, Loader, UserCheck } from 'lucide-react'
@@ -7,6 +8,7 @@ import FileUpload from '@/components/FileUpload'
 import { type Visitante, type VisitanteAutorizado, TIPOS_VISITANTE, TIPOS_PASE } from './types'
 
 export default function VisitantesTab() {
+  const { canWrite, canDelete } = useAuth()
   const [visitantes, setVisitantes] = useState<Visitante[]>([])
   const [total, setTotal]           = useState(0)
   const [search, setSearch]         = useState('')
@@ -43,7 +45,7 @@ export default function VisitantesTab() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
-          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+          {canWrite('accesos') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
             <Plus size={14} /> Nuevo Visitante
           </button>
         </div>
@@ -81,12 +83,12 @@ export default function VisitantesTab() {
                       <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setAutModal(v)} title="Asignar a lote">
                         <UserCheck size={13} />
                       </button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(v); setModalOpen(true) }} title="Editar">
+                      {canWrite('accesos') && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(v); setModalOpen(true) }} title="Editar">
                         <Edit2 size={13} />
-                      </button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(v.id)} title="Eliminar">
+                      </button>}
+                      {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(v.id)} title="Eliminar">
                         <Trash2 size={13} />
-                      </button>
+                      </button>}
                     </div>
                   </td>
                 </tr>

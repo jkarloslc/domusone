@@ -1,5 +1,6 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
+import { useAuth } from '@/lib/AuthContext'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
 import {
@@ -12,6 +13,7 @@ import ReciboModal from './ReciboModal'
 const PAGE_SIZE = 30
 
 export default function CargosTab() {
+  const { canWrite, canDelete } = useAuth()
   const [cargos, setCargos]         = useState<Cargo[]>([])
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
@@ -78,9 +80,9 @@ export default function CargosTab() {
           </select>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
-        <button className="btn-primary" onClick={() => setNuevoModal(true)}>
+        {canWrite('cobranza') && <button className="btn-primary" onClick={() => setNuevoModal(true)}>
           <Plus size={14} /> Nuevo Cargo
-        </button>
+        </button>}
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>

@@ -1,4 +1,5 @@
 'use client'
+import { useAuth } from '@/lib/AuthContext'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
 import {
@@ -10,6 +11,7 @@ import { useRouter } from 'next/navigation'
 type Area = { id: number; nombre: string; responsable: string | null; activo: boolean }
 
 export default function AreasPage() {
+  const { canWrite, canDelete } = useAuth()
   const router = useRouter()
   const [rows, setRows]       = useState<Area[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,7 +49,7 @@ export default function AreasPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
-          <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva Área</button>
+          {canWrite('areas') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva Área</button>}
         </div>
       </div>
 
@@ -87,7 +89,7 @@ export default function AreasPage() {
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                     <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal(r)}><Edit2 size={13} /></button>
-                    <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }} onClick={() => handleDelete(r.id)}><Trash2 size={13} /></button>
+                    {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }} onClick={() => handleDelete(r.id)}><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>

@@ -1,4 +1,5 @@
 'use client'
+import { useAuth } from '@/lib/AuthContext'
 import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
@@ -12,6 +13,7 @@ import { type Articulo, fmt, UNIDADES, CATEGORIAS_ART } from '../types'
 const PAGE_SIZE = 50
 
 export default function ArticulosPage() {
+  const { canWrite, canDelete } = useAuth()
   const router = useRouter()
   const [rows, setRows]         = useState<Articulo[]>([])
   const [inventario, setInv]    = useState<Record<number, number>>({})  // articuloId → saldo total
@@ -70,7 +72,7 @@ export default function ArticulosPage() {
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Catálogo maestro · {total} registros</p>
           </div>
         </div>
-        <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Artículo</button>
+        {canWrite('articulos') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Artículo</button>}
       </div>
 
       {/* Stats rápidas */}

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useAuth } from '@/lib/AuthContext'
 import { dbCat, dbCtrl } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, X, ChevronLeft, ChevronRight, LogIn, LogOut } from 'lucide-react'
 import { type Acceso, type Visitante, TURNOS } from './types'
@@ -7,6 +8,7 @@ import { type Acceso, type Visitante, TURNOS } from './types'
 const PAGE_SIZE = 30
 
 export default function BitacoraTab() {
+  const { canWrite, canDelete } = useAuth()
   const [accesos, setAccesos]   = useState<Acceso[]>([])
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
@@ -49,9 +51,9 @@ export default function BitacoraTab() {
             </div>
           ))}
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(true)}>
+        {canWrite('accesos') && <button className="btn-primary" onClick={() => setShowForm(true)}>
           <Plus size={14} /> Registrar Acceso
-        </button>
+        </button>}
       </div>
 
       {/* Filtros */}

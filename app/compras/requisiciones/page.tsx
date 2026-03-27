@@ -15,6 +15,7 @@ const PAGE_SIZE = 20
 type Det = { id?: number; id_articulo_fk: number | null; descripcion: string; cantidad: string; unidad: string; notas: string }
 
 export default function RequisicionesPage() {
+  const { canWrite, canDelete } = useAuth()
   const router  = useRouter()
   const { authUser } = useAuth()
   const [rows, setRows]       = useState<any[]>([])
@@ -77,7 +78,7 @@ export default function RequisicionesPage() {
           </select>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
-        <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva Requisición</button>
+        {canWrite('requisiciones') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva Requisición</button>}
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>

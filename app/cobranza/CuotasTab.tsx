@@ -1,10 +1,12 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useAuth } from '@/lib/AuthContext'
 import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, X, Save, Loader, Trash2, Settings } from 'lucide-react'
 import { type CuotaLote, PERIODICIDADES, fmt } from './types'
 
 export default function CuotasTab() {
+  const { canWrite, canDelete } = useAuth()
   const [cuotas, setCuotas]         = useState<CuotaLote[]>([])
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
@@ -49,9 +51,9 @@ export default function CuotasTab() {
           </div>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
-        <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+        {canWrite('cobranza') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
           <Plus size={14} /> Asignar Cuota
-        </button>
+        </button>}
       </div>
 
       {/* Stats */}
@@ -100,7 +102,7 @@ export default function CuotasTab() {
                 <td>
                   <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                     <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(c); setModalOpen(true) }} title="Editar"><Settings size={13} /></button>
-                    <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(c.id)} title="Desactivar"><Trash2 size={13} /></button>
+                    {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(c.id)} title="Desactivar"><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>

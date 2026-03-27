@@ -21,6 +21,7 @@ const TIPOS_GASTO = [
 ]
 
 export default function OrdenesPagoPage() {
+  const { canWrite, canDelete } = useAuth()
   const router = useRouter()
   const { authUser } = useAuth()
   const [rows, setRows]         = useState<any[]>([])
@@ -80,7 +81,7 @@ export default function OrdenesPagoPage() {
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Con o sin OC relacionada · {total} registros</p>
           </div>
         </div>
-        <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>
+        {canWrite('ordenes-pago') && <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>}
       </div>
 
       {/* Stats */}

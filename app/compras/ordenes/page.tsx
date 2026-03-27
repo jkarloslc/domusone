@@ -13,6 +13,7 @@ import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_
 const PAGE_SIZE = 20
 
 export default function OrdenesPage() {
+  const { canWrite, canDelete } = useAuth()
   const router = useRouter()
   const { authUser } = useAuth()
   const [rows, setRows]       = useState<any[]>([])
@@ -81,7 +82,7 @@ export default function OrdenesPage() {
           </select>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
-        <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva OC</button>
+        {canWrite('ordenes') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva OC</button>}
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>

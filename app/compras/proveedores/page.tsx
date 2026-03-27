@@ -1,4 +1,5 @@
 'use client'
+import { useAuth } from '@/lib/AuthContext'
 import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { dbComp, supabase } from '@/lib/supabase'
@@ -19,6 +20,7 @@ const DOCS = [
 ]
 
 export default function ProveedoresPage() {
+  const { canWrite, canDelete } = useAuth()
   const router = useRouter()
   const [rows, setRows]       = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,7 +59,7 @@ export default function ProveedoresPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} /></button>
-          <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Proveedor</button>
+          {canWrite('proveedores') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Proveedor</button>}
         </div>
       </div>
 

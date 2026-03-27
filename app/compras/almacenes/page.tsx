@@ -1,4 +1,5 @@
 'use client'
+import { useAuth } from '@/lib/AuthContext'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
 import {
@@ -15,6 +16,7 @@ type Almacen = {
 const TIPOS = ['General', 'Particular']
 
 export default function AlmacenesPage() {
+  const { canWrite, canDelete } = useAuth()
   const router = useRouter()
   const [rows, setRows]       = useState<Almacen[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,7 +60,7 @@ export default function AlmacenesPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
-          <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Almacén</button>
+          {canWrite('almacenes') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Almacén</button>}
         </div>
       </div>
 

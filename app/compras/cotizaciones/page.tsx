@@ -13,6 +13,7 @@ import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, FORMAS_PAGO_COMP 
 const PAGE_SIZE = 20
 
 export default function CotizacionesPage() {
+  const { canWrite, canDelete } = useAuth()
   const router = useRouter()
   const [rows, setRows]     = useState<any[]>([])
   const [total, setTotal]   = useState(0)
@@ -61,7 +62,7 @@ export default function CotizacionesPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
-          <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva RFQ</button>
+          {canWrite('cotizaciones') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva RFQ</button>}
         </div>
       </div>
 

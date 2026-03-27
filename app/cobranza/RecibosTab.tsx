@@ -1,5 +1,6 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
+import { useAuth } from '@/lib/AuthContext'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCtrl } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Eye, X, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
@@ -11,6 +12,7 @@ import FacturaModal from '../facturas/FacturaModal'
 const PAGE_SIZE = 25
 
 export default function RecibosTab() {
+  const { canWrite, canDelete } = useAuth()
   const [recibos, setRecibos]       = useState<any[]>([])
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
@@ -59,9 +61,9 @@ export default function RecibosTab() {
           <button className="btn-secondary" onClick={() => setEdoCuenta(true)}>
             <Eye size={14} /> Estado de Cuenta
           </button>
-          <button className="btn-primary" onClick={() => setModalOpen(true)}>
+          {canWrite('cobranza') && <button className="btn-primary" onClick={() => setModalOpen(true)}>
             <Plus size={14} /> Nuevo Recibo
-          </button>
+          </button>}
         </div>
       </div>
 

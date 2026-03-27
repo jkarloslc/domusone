@@ -1,5 +1,6 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
+import { useAuth } from '@/lib/AuthContext'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
 import {
@@ -32,6 +33,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function ProyectosTab() {
+  const { canWrite, canDelete } = useAuth()
   const [proyectos, setProyectos]   = useState<Proyecto[]>([])
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
@@ -90,7 +92,7 @@ export default function ProyectosTab() {
           </div>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
-        <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={14} /> Nuevo Proyecto</button>
+        {canWrite('proyectos') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={14} /> Nuevo Proyecto</button>}
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -118,8 +120,8 @@ export default function ProyectosTab() {
                 <td>
                   <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                     <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setPagosModal(p)} title="Pagos"><DollarSign size={13} /></button>
-                    <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(p); setModalOpen(true) }}><Edit2 size={13} /></button>
-                    <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(p.id)}><Trash2 size={13} /></button>
+                    {canWrite('proyectos') && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(p); setModalOpen(true) }}><Edit2 size={13} /></button>}
+                    {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(p.id)}><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>
