@@ -39,6 +39,7 @@ const fmt = (v: number | null) =>
   v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 
 export default function ContratosPage() {
+  const { canWrite, canDelete } = useAuth()
   const [contratos, setContratos] = useState<Contrato[]>([])
   const [total, setTotal]         = useState(0)
   const [page, setPage]           = useState(0)
@@ -86,9 +87,9 @@ export default function ContratosPage() {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em' }}>Contratos</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>{total} contratos registrados</p>
         </div>
-        <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+        {canWrite('contratos') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
           <Plus size={14} /> Nuevo Contrato
-        </button>
+        </button>}
       </div>
 
       {/* Filtros */}
@@ -138,8 +139,8 @@ export default function ContratosPage() {
                   <td>
                     <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                       <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(c)}><Eye size={13} /></button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(c); setModalOpen(true) }}><Edit2 size={13} /></button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(c.id)}><Trash2 size={13} /></button>
+                      {canWrite('contratos') && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(c); setModalOpen(true) }}><Edit2 size={13} /></button>}
+                      {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(c.id)}><Trash2 size={13} /></button>}
                     </div>
                   </td>
                 </tr>

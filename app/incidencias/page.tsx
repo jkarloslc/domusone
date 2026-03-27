@@ -50,6 +50,7 @@ const fmtFecha = (d: string | null) =>
   d ? new Date(d.includes('T') ? d : d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
 export default function IncidenciasPage() {
+  const { canWrite, canDelete } = useAuth()
   const [incidencias, setIncidencias] = useState<Incidencia[]>([])
   const [total, setTotal]             = useState(0)
   const [page, setPage]               = useState(0)
@@ -112,9 +113,9 @@ export default function IncidenciasPage() {
             {total} incidencias registradas
           </p>
         </div>
-        <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+        {canWrite('incidencias') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
           <Plus size={14} /> Nueva Incidencia
-        </button>
+        </button>}
       </div>
 
       {/* Stats clickeables */}
@@ -220,8 +221,8 @@ export default function IncidenciasPage() {
                   <td>
                     <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                       <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(inc)} title="Ver detalle"><Eye size={13} /></button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(inc); setModalOpen(true) }} title="Editar"><Edit2 size={13} /></button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(inc.id)} title="Eliminar"><Trash2 size={13} /></button>
+                      {canWrite('incidencias') && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(inc); setModalOpen(true) }} title="Editar"><Edit2 size={13} /></button>}
+                      {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(inc.id)} title="Eliminar"><Trash2 size={13} /></button>}
                     </div>
                   </td>
                 </tr>

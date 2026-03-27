@@ -12,6 +12,7 @@ import PropietarioDetail from './PropietarioDetail'
 const PAGE_SIZE = 20
 
 export default function PropietariosPage() {
+  const { canWrite, canDelete } = useAuth()
   const [propietarios, setPropietarios] = useState<Propietario[]>([])
   const [total, setTotal]   = useState(0)
   const [page, setPage]     = useState(0)
@@ -69,9 +70,9 @@ export default function PropietariosPage() {
             {total} propietarios registrados
           </p>
         </div>
-        <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+        {canWrite('propietarios') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
           <Plus size={14} /> Nuevo Propietario
-        </button>
+        </button>}
       </div>
 
       {/* Filtros */}
@@ -152,12 +153,12 @@ export default function PropietariosPage() {
                       <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(p)} title="Ver detalle">
                         <Eye size={13} />
                       </button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(p); setModalOpen(true) }} title="Editar">
+                      {canWrite('propietarios') && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(p); setModalOpen(true) }} title="Editar">
                         <Edit2 size={13} />
-                      </button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(p.id)} disabled={deleting === p.id} title="Eliminar">
+                      </button>}
+                      {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(p.id)} disabled={deleting === p.id} title="Eliminar">
                         <Trash2 size={13} />
-                      </button>
+                      </button>}
                     </div>
                   </td>
                 </tr>

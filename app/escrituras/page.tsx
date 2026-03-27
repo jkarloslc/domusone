@@ -32,6 +32,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function EscriturasPage() {
+  const { canWrite, canDelete } = useAuth()
   const [escrituras, setEscrituras] = useState<Escritura[]>([])
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
@@ -83,9 +84,9 @@ export default function EscriturasPage() {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em' }}>Escrituras</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>{total} escrituras registradas</p>
         </div>
-        <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+        {canWrite('escrituras') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
           <Plus size={14} /> Nueva Escritura
-        </button>
+        </button>}
       </div>
 
       {/* Stats por status */}
@@ -145,8 +146,8 @@ export default function EscriturasPage() {
                   <td><span className={`badge ${STATUS_COLOR[e.status ?? ''] ?? 'badge-default'}`}>{e.status ?? 'Sin status'}</span></td>
                   <td>
                     <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(e); setModalOpen(true) }}><Edit2 size={13} /></button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(e.id)}><Trash2 size={13} /></button>
+                      {canWrite('escrituras') && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(e); setModalOpen(true) }}><Edit2 size={13} /></button>}
+                      {canDelete() && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(e.id)}><Trash2 size={13} /></button>}
                     </div>
                   </td>
                 </tr>

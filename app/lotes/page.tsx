@@ -9,6 +9,7 @@ import {
 import LoteModal from './LoteModal'
 import LoteDetail from './LoteDetail'
 import HistorialPropietarios from './HistorialPropietarios'
+import { useAuth } from '@/lib/AuthContext'
 
 const STATUS_COLORS: Record<string, string> = {
   'Vendido':   'badge-vendido',
@@ -19,6 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
 const PAGE_SIZE = 20
 
 export default function LotesPage() {
+  const { canWrite, canDelete } = useAuth()
   const [lotes, setLotes]             = useState<Lote[]>([])
   const [secciones, setSecciones]     = useState<Record<number, string>>({})
   const [tiposLote, setTiposLote]     = useState<Record<number, string>>({})
@@ -98,9 +100,9 @@ export default function LotesPage() {
             {total} lotes registrados
           </p>
         </div>
-        <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+        {canWrite('lotes') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
           <Plus size={14} /> Nuevo Lote
-        </button>
+        </button>}
       </div>
 
       {/* Stats rápidas */}
@@ -197,10 +199,10 @@ export default function LotesPage() {
                       <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setHistorial(l)} title="Historial de propietarios">
                         <Users size={13} />
                       </button>
-                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(l); setModalOpen(true) }} title="Editar">
+                      {canWrite('lotes') && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(l); setModalOpen(true) }} title="Editar">
                         <Edit2 size={13} />
-                      </button>
-                      <button
+                      </button>}
+                      {canDelete() && <button
                         className="btn-ghost"
                         style={{ padding: '4px 6px', color: deleting === l.id ? 'var(--text-muted)' : undefined }}
                         onClick={() => handleDelete(l.id)}
@@ -208,7 +210,7 @@ export default function LotesPage() {
                         disabled={deleting === l.id}
                       >
                         <Trash2 size={13} />
-                      </button>
+                      </button>}
                     </div>
                   </td>
                 </tr>
