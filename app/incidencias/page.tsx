@@ -31,7 +31,6 @@ type Incidencia = {
 }
 
 // ── Catálogos ─────────────────────────────────────────────────
-const ORIGENES = ['Residente', 'Guardia', 'Administración', 'Inspección', 'Externo']
 const AREAS    = ['Seguridad', 'Mantenimiento', 'Administración', 'Legal', 'Obras', 'Servicios']
 const STATUS_INC = ['Abierta', 'En Proceso', 'En Espera', 'Cerrada', 'Cancelada']
 
@@ -51,7 +50,8 @@ export default function IncidenciasPage() {
   const { canWrite, canDelete } = useAuth()
   const [incidencias, setIncidencias] = useState<Incidencia[]>([])
   const [total, setTotal]             = useState(0)
-  const [tipos, setTipos]             = useState<string[]>([])
+  const [tipos,    setTipos]    = useState<string[]>([])
+  const [origenes, setOrigenes] = useState<string[]>([])
   const [page, setPage]               = useState(0)
   const [search, setSearch]           = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -84,6 +84,8 @@ export default function IncidenciasPage() {
   useEffect(() => {
     dbCfg.from('tipos_incidencia').select('nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setTipos((data ?? []).map((t: any) => t.nombre)))
+    dbCfg.from('origenes_incidencia').select('nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setOrigenes((data ?? []).map((o: any) => o.nombre)))
   }, [])
 
   const handleDelete = async (id: number) => {
@@ -250,6 +252,7 @@ export default function IncidenciasPage() {
         <IncidenciaModal
           incidencia={editing}
           tipos={tipos}
+          origenes={origenes}
           onClose={() => setModalOpen(false)}
           onSaved={() => { setModalOpen(false); fetchData() }}
         />
@@ -267,7 +270,7 @@ export default function IncidenciasPage() {
 }
 
 // ── Modal CRUD ────────────────────────────────────────────────
-function IncidenciaModal({ incidencia, tipos, onClose, onSaved }: { incidencia: Incidencia | null; tipos: string[]; onClose: () => void; onSaved: () => void }) {
+function IncidenciaModal({ incidencia, tipos, origenes, onClose, onSaved }: { incidencia: Incidencia | null; tipos: string[]; origenes: string[]; onClose: () => void; onSaved: () => void }) {
   const isNew = !incidencia
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
@@ -383,7 +386,7 @@ function IncidenciaModal({ incidencia, tipos, onClose, onSaved }: { incidencia: 
               <label className="label">Origen</label>
               <select className="select" value={form.origen} onChange={set('origen')}>
                 <option value="">—</option>
-                {ORIGENES.map(o => <option key={o}>{o}</option>)}
+                {origenes.map(o => <option key={o}>{o}</option>)}
               </select>
             </div>
           </div>
