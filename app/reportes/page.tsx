@@ -6,6 +6,7 @@ import ReporteLotesPropietarios from './ReporteLotesPropietarios'
 import ReportePropietarios from './ReportePropietarios'
 import ReporteIncidencias from './ReporteIncidencias'
 import ReporteIncidenciasAsignado from './ReporteIncidenciasAsignado'
+import ReporteIncidenciasSeccion from './ReporteIncidenciasSeccion'
 import ReporteVisitantes from './ReporteVisitantes'
 import ReporteVehiculos from './ReporteVehiculos'
 import ReporteConsumoCentroCosto from './ReporteConsumoCentroCosto'
@@ -24,6 +25,7 @@ const GRUPOS = [
       { id: 'propietarios',         label: 'Directorio de Propietarios', icon: Users,         desc: 'Datos completos de todos los propietarios' },
       { id: 'incidencias',          label: 'Incidencias por Lote',       icon: AlertTriangle, desc: 'Historial de incidencias filtrado por lote' },
       { id: 'incidencias-asignado', label: 'Incidencias por Asignado',   icon: AlertTriangle, desc: 'Incidencias agrupadas por responsable' },
+      { id: 'incidencias-seccion',  label: 'Incidencias por Sección',    icon: AlertTriangle, desc: 'Incidencias agrupadas por sección residencial con conteo y status' },
       { id: 'visitantes',           label: 'Visitantes por Lote',        icon: Eye,           desc: 'Visitantes autorizados por lote' },
       { id: 'vehiculos',            label: 'Vehículos por Lote',         icon: Car,           desc: 'Vehículos autorizados por lote' },
     ],
@@ -99,6 +101,7 @@ export default function ReportesPage() {
       {active === 'propietarios'         && <ReportePropietarios />}
       {active === 'incidencias'          && <ReporteIncidencias />}
       {active === 'incidencias-asignado' && <ReporteIncidenciasAsignado />}
+      {active === 'incidencias-seccion'  && <ReporteIncidenciasSeccion />}
       {active === 'visitantes'           && <ReporteVisitantes />}
       {active === 'vehiculos'            && <ReporteVehiculos />}
 
