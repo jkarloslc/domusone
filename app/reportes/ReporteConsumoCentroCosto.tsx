@@ -14,9 +14,8 @@ export default function ReporteConsumoCentroCosto() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: alms }, { data: arts }, { data: movs }] = await Promise.all([
+    const [{ data: alms }, { data: movs }] = await Promise.all([
       dbComp.from('almacenes').select('id, nombre, area').order('nombre'),
-      dbComp.from('articulos').select('id, clave, nombre, unidad, categoria, precio_ref'),
       dbComp.from('movimientos_inv')
         .select('id_articulo_fk, id_almacen_fk, tipo_mov, cantidad, precio_unitario, created_at')
         .eq('tipo_mov', 'TRANSFERENCIA_IN')
@@ -24,6 +23,13 @@ export default function ReporteConsumoCentroCosto() {
     ])
 
     setAlms(alms ?? [])
+
+    // Cargar solo los artículos que aparecen en los movimientos
+    const artIds = [...new Set((movs ?? []).map((m: any) => m.id_articulo_fk).filter(Boolean))]
+    const { data: arts } = artIds.length
+      ? await dbComp.from('articulos').select('id, clave, nombre, unidad, categoria, precio_ref').in('id', artIds)
+      : { data: [] }
+
     const am: Record<number, any> = {}
     ;(arts ?? []).forEach((a: any) => { am[a.id] = a })
     setArts(am)
