@@ -66,16 +66,32 @@ export default function IncidenciasPage() {
     setLoading(true)
     let q = dbCtrl
       .from('incidencias')
-      .select('*, lotes(cve_lote, lote)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .order('fecha', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (debouncedSearch)       q = q.or(`descripcion.ilike.%${debouncedSearch}%,responsable.ilike.%${debouncedSearch}%`)
-    if (filterStatus) q = q.eq('status', filterStatus)
-    if (filterTipo)   q = q.eq('tipo', filterTipo)
+    if (debouncedSearch) q = q.or(`descripcion.ilike.%${debouncedSearch}%,responsable.ilike.%${debouncedSearch}%`)
+    if (filterStatus)    q = q.eq('status', filterStatus)
+    if (filterTipo)      q = q.eq('tipo', filterTipo)
 
     const { data, count, error } = await q
-    if (!error) { setIncidencias(data as Incidencia[]); setTotal(count ?? 0) }
+    if (error) { setLoading(false); return }
+
+    // Cargar cve_lote por separado (cat schema)
+    const loteIds = [...new Set((data ?? []).filter(i => i.id_lote_fk).map(i => i.id_lote_fk))]
+    const loteMap: Record<number, any> = {}
+    if (loteIds.length) {
+      const { data: lotes } = await dbCat.from('lotes').select('id, cve_lote, lote').in('id', loteIds)
+      ;(lotes ?? []).forEach((l: any) => { loteMap[l.id] = l })
+    }
+
+    const enriched = (data ?? []).map(i => ({
+      ...i,
+      lotes: i.id_lote_fk ? loteMap[i.id_lote_fk] ?? null : null,
+    }))
+
+    setIncidencias(enriched as Incidencia[])
+    setTotal(count ?? 0)
     setLoading(false)
   }, [page, debouncedSearch, filterStatus, filterTipo])
 
