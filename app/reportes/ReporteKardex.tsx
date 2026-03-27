@@ -18,11 +18,8 @@ export default function ReporteKardex() {
 
   useEffect(() => {
     Promise.all([
-      dbComp.from('articulos').select('id, clave, nombre, unidad').order('nombre'),
       dbComp.from('almacenes').select('id, nombre').order('nombre'),
-    ]).then(([{ data: arts }, { data: alms }]) => {
-      setArts(arts ?? [])
-      const am: Record<number, any> = {}; (arts ?? []).forEach((a: any) => { am[a.id] = a }); setArtMap(am)
+    ]).then(([{ data: alms }]) => {
       const lm: Record<number, string> = {}; (alms ?? []).forEach((a: any) => { lm[a.id] = a.nombre }); setAlmMap(lm)
       setAlms(alms ?? [])
     })
@@ -56,15 +53,57 @@ export default function ReporteKardex() {
     t === 'TRANSFERENCIA_IN' ? 'Entrada xfer' :
     t === 'TRANSFERENCIA_OUT'? 'Salida xfer' : t
 
+  const [artSearch,  setArtSearch]  = useState('')
+  const [artOptions, setArtOptions] = useState<any[]>([])
+  const [artNombre,  setArtNombre]  = useState('')
+
+  const buscarArt = useCallback(async (q: string) => {
+    setArtSearch(q)
+    if (!q.trim()) { setArtOptions([]); setFiltroArt(''); setArtNombre(''); return }
+    if (q.length < 2) { setArtOptions([]); return }
+    const { data } = await dbComp.from('articulos')
+      .select('id, clave, nombre, unidad').eq('activo', true)
+      .or(`clave.ilike.%${q}%,nombre.ilike.%${q}%`)
+      .order('nombre').limit(20)
+    setArtOptions(data ?? [])
+  }, [])
+
+  const seleccionarArt = (art: any) => {
+    setFiltroArt(String(art.id))
+    setArtNombre(`${art.clave} — ${art.nombre}`)
+    setArtSearch(`${art.clave} — ${art.nombre}`)
+    setArtOptions([])
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 280 }}>
-          <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <select className="select" style={{ paddingLeft: 28 }} value={filtroArt} onChange={e => setFiltroArt(e.target.value)}>
-            <option value="">Todos los artículos</option>
-            {articulos.map(a => <option key={a.id} value={a.id}>{a.clave} — {a.nombre}</option>)}
-          </select>
+        {/* Buscador artículo */}
+        <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 340 }}>
+          <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', zIndex: 1 }} />
+          <input className="input" style={{ paddingLeft: 28 }}
+            placeholder="Buscar artículo por clave o nombre…"
+            value={artSearch}
+            onChange={e => buscarArt(e.target.value)}
+          />
+          {artOptions.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+              background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
+              {artOptions.map(a => (
+                <button key={a.id}
+                  onMouseDown={e => { e.preventDefault(); seleccionarArt(a) }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left',
+                    padding: '8px 12px', background: 'none', border: 'none',
+                    cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                  <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
+                  <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <select className="select" style={{ minWidth: 180 }} value={filtroAlm} onChange={e => setFiltroAlm(e.target.value)}>
           <option value="">Todos los almacenes</option>

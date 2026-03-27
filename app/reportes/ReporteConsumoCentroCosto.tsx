@@ -16,7 +16,7 @@ export default function ReporteConsumoCentroCosto() {
     setLoading(true)
     const [{ data: alms }, { data: arts }, { data: movs }] = await Promise.all([
       dbComp.from('almacenes').select('id, nombre, area').order('nombre'),
-      dbComp.from('articulos').select('id, clave, nombre, unidad, categoria'),
+      dbComp.from('articulos').select('id, clave, nombre, unidad, categoria, precio_ref'),
       dbComp.from('movimientos_inv')
         .select('id_articulo_fk, id_almacen_fk, tipo_mov, cantidad, precio_unitario, created_at')
         .eq('tipo_mov', 'TRANSFERENCIA_IN')
@@ -39,8 +39,12 @@ export default function ReporteConsumoCentroCosto() {
       const key = `${m.id_almacen_fk}_${m.id_articulo_fk}`
       if (!grouped[key]) grouped[key] = { id_almacen_fk: m.id_almacen_fk, id_articulo_fk: m.id_articulo_fk, cantidad: 0, valor: 0, movs: 0 }
       grouped[key].cantidad += Number(m.cantidad)
-      grouped[key].valor    += Number(m.cantidad) * Number(m.precio_unitario || 0)
       grouped[key].movs     += 1
+      // Usar precio_unitario si existe, si no usar precio_ref del artículo
+      const precio = Number(m.precio_unitario) > 0
+        ? Number(m.precio_unitario)
+        : Number(am[m.id_articulo_fk]?.precio_ref || 0)
+      grouped[key].valor += Number(m.cantidad) * precio
     }
 
     const result = Object.values(grouped).map((r: any) => ({
