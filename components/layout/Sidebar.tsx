@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Home, MapPin, Users, FileText, Building2, Wrench,
-  LayoutGrid, Shield, AlertTriangle, Receipt, ShoppingCart, ClipboardList,
+  LayoutGrid, Shield, AlertTriangle, Receipt, ShoppingCart, ClipboardList, Calendar,
   BarChart3, BookOpen, Settings, LogOut, User, X
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
