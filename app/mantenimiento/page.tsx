@@ -304,9 +304,7 @@ export default function ProgramaMantenimientoPage() {
             )
           })}
         </div>
-      )}
-
-      )}
+      </>)}
 
       {modal  && <ProgramaModal secciones={secciones} prog={editing} onClose={() => setModal(false)}
                    onSaved={() => { setModal(false); fetchData() }} />}
