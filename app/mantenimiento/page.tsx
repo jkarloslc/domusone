@@ -5,8 +5,9 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Eye, X, Save, Loader,
   Calendar, CheckCircle, Clock, AlertTriangle,
-  Wrench, ChevronDown, ChevronRight, Filter
+  Wrench, ChevronDown, ChevronRight, Filter, ClipboardList
 } from 'lucide-react'
+import OrdenesTrabajoTab from './OrdenesTrabajoTab'
 
 // ── Catálogos ─────────────────────────────────────────────────────
 const FRECUENCIAS = ['Semanal','Quincenal','Mensual','Bimestral','Trimestral','Semestral','Anual']
@@ -136,10 +137,12 @@ export default function ProgramaMantenimientoPage() {
     fetchData()
   }
 
+  const [tab, setTab] = useState<'programa' | 'ordenes'>('programa')
+
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--blue-pale)',
             display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -147,20 +150,43 @@ export default function ProgramaMantenimientoPage() {
           </div>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, letterSpacing: '-0.01em' }}>
-              Programa de Mantenimiento
+              Mantenimiento
             </h1>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-              Plan anual por sección · {filterAnio}
+              Programa anual · Órdenes de trabajo · {filterAnio}
             </p>
           </div>
         </div>
-        {canWrite('mantenimiento') && (
+        {tab === 'programa' && canWrite('mantenimiento') && (
           <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
             <Plus size={14} /> Nuevo Programa
           </button>
         )}
       </div>
 
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+        {([
+          { key: 'programa', label: 'Programa Anual',     icon: Calendar },
+          { key: 'ordenes',  label: 'Órdenes de Trabajo', icon: ClipboardList },
+        ] as const).map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 18px', background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: tab === t.key ? 600 : 400,
+              color: tab === t.key ? 'var(--blue)' : 'var(--text-muted)',
+              borderBottom: tab === t.key ? '2px solid var(--blue)' : '2px solid transparent',
+              marginBottom: -1 }}>
+            <t.icon size={13} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab: Órdenes de Trabajo */}
+      {tab === 'ordenes' && <OrdenesTrabajoTab />}
+
+      {tab === 'programa' && (<>
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 20 }}>
         {[
@@ -279,6 +305,8 @@ export default function ProgramaMantenimientoPage() {
             )
           })}
         </div>
+      )}
+
       )}
 
       {modal  && <ProgramaModal secciones={secciones} prog={editing} onClose={() => setModal(false)}
