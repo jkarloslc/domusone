@@ -81,6 +81,7 @@ export default function ProgramaMantenimientoPage() {
   const [editing,    setEditing]    = useState<any | null>(null)
   const [detail,     setDetail]     = useState<any | null>(null)
   const [expandidos, setExpandidos] = useState<Record<number, boolean>>({})
+  const [tab,        setTab]        = useState<'programa' | 'ordenes'>('programa')
 
   useEffect(() => {
     dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
@@ -136,8 +137,6 @@ export default function ProgramaMantenimientoPage() {
     await dbCtrl.from('programas_mantenimiento').update({ activo: false }).eq('id', id)
     fetchData()
   }
-
-  const [tab, setTab] = useState<'programa' | 'ordenes'>('programa')
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
