@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Home, MapPin, Users, FileText, Building2, Wrench,
-  LayoutGrid, Shield, AlertTriangle, Receipt, ShoppingCart, ClipboardList, Calendar,
+  LayoutGrid, Shield, AlertTriangle, Receipt, ShoppingCart, Calendar,
   BarChart3, BookOpen, Settings, LogOut, User, X
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
@@ -19,7 +19,6 @@ const NAV_POR_ROL: Record<Rol, NavItem[]> = {
     { label: 'Contratos',    href: '/contratos',      icon: FileText },
     { label: 'Escrituras',   href: '/escrituras',     icon: Building2 },
     { label: 'Proyectos',    href: '/proyectos',      icon: Wrench },
-    { label: 'Órdenes de Trabajo', href: '/servicios', icon: ClipboardList },
     { label: 'Prog. Mantenimiento', href: '/mantenimiento', icon: Calendar },
     { label: 'Accesos',      href: '/accesos',        icon: Shield },
     { label: 'Incidencias',  href: '/incidencias',    icon: AlertTriangle },
@@ -37,7 +36,6 @@ const NAV_POR_ROL: Record<Rol, NavItem[]> = {
     { label: 'Propietarios', href: '/propietarios',   icon: Users },
     { label: 'Contratos',    href: '/contratos',      icon: FileText },
     { label: 'Escrituras',   href: '/escrituras',     icon: Building2 },
-    { label: 'Órdenes de Trabajo', href: '/servicios', icon: ClipboardList },
     { label: 'Prog. Mantenimiento', href: '/mantenimiento', icon: Calendar },
     { label: 'Incidencias',  href: '/incidencias',    icon: AlertTriangle },
     { label: 'Reportes',     href: '/reportes',       icon: BarChart3 },
