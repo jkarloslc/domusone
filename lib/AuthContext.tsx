@@ -14,14 +14,10 @@ type Rol =
   | 'mantenimiento'
   | 'fraccionamiento'
 
-type Accion = 'read' | 'write'
-
-type Permiso = { read: boolean; write: boolean }
-
 type AuthUser = {
-  user: User
+  user:   User
   nombre: string
-  rol: Rol
+  rol:    Rol
 }
 
 type AuthCtx = {
@@ -29,34 +25,21 @@ type AuthCtx = {
   loading:  boolean
   signIn:   (email: string, password: string) => Promise<string | null>
   signOut:  () => Promise<void>
-  /** Verifica si el rol tiene acceso a un módulo. accion='read' por defecto. */
-  can:      (modulo: string, accion?: Accion) => boolean
+  /** Verifica acceso de LECTURA a un módulo (sidebar + AuthGuard) */
+  can:      (modulo: string) => boolean
+  /** Verifica acceso de ESCRITURA a un módulo (botones Nuevo/Editar) */
+  canWrite: (modulo: string) => boolean
 }
 
-// ── Helpers de permiso ────────────────────────────────────────────────────────
-const F: Permiso = { read: true, write: true  }   // Full — lectura + escritura
-const R: Permiso = { read: true, write: false }    // Read only — solo lectura
+// ── Estructura de permisos ────────────────────────────────────────────────────
+type P = { r: boolean; w: boolean }
+const F: P = { r: true,  w: true  }   // Full
+const R: P = { r: true,  w: false }   // Read-only
 
 // ── Matriz de permisos ────────────────────────────────────────────────────────
-// admin usa '*' (acceso total)
-// Cada módulo tiene { read, write } independiente
-//
-// Módulos disponibles:
-//   Residencial : lotes, propietarios, cobranza, facturas, accesos,
-//                 incidencias, contratos, escrituras, proyectos
-//   Operaciones : mantenimiento
-//   Compras     : compras  ← sección completa
-//                 (internamente el módulo /compras filtra por rol:
-//                  compras  → Requisiciones, Cotizaciones, OC, OP, CXP, Proveedores
-//                  almacen  → Recepciones, Transferencias, Artículos, Almacenes)
-//   Sistema     : reportes, catalogos, configuracion  ← solo admin vía '*'
+const PERMISOS: Record<Rol, Record<string, P> | null> = {
+  admin: null,   // null = acceso total
 
-const PERMISOS: Record<Rol, Record<string, Permiso> | '*'> = {
-
-  // ── Admin ─── acceso total, no se toca ────────────────────────────────────
-  admin: '*',
-
-  // ── Atención a Residentes ─────────────────────────────────────────────────
   atencion_residentes: {
     lotes:         F,
     propietarios:  F,
@@ -68,7 +51,6 @@ const PERMISOS: Record<Rol, Record<string, Permiso> | '*'> = {
     reportes:      R,
   },
 
-  // ── Cobranza ──────────────────────────────────────────────────────────────
   cobranza: {
     lotes:        R,
     propietarios: R,
@@ -77,7 +59,6 @@ const PERMISOS: Record<Rol, Record<string, Permiso> | '*'> = {
     reportes:     F,
   },
 
-  // ── Vigilancia ────────────────────────────────────────────────────────────
   vigilancia: {
     lotes:        R,
     propietarios: R,
@@ -85,26 +66,22 @@ const PERMISOS: Record<Rol, Record<string, Permiso> | '*'> = {
     incidencias:  F,
   },
 
-  // ── Compras ── Requisiciones + Cotizaciones + OC + OP + CXP + Proveedores ─
   compras: {
     compras:  F,
     reportes: F,
   },
 
-  // ── Almacén ── Recepciones + Transferencias + Artículos + Almacenes ────────
   almacen: {
     compras:  F,
     reportes: F,
   },
 
-  // ── Mantenimiento ─────────────────────────────────────────────────────────
   mantenimiento: {
     lotes:         R,
     propietarios:  R,
     mantenimiento: F,
   },
 
-  // ── Fraccionamiento ── acceso amplio a todo ────────────────────────────────
   fraccionamiento: {
     lotes:         F,
     propietarios:  F,
@@ -128,11 +105,13 @@ const AuthContext = createContext<AuthCtx>({
   signIn:   async () => null,
   signOut:  async () => {},
   can:      () => false,
+  canWrite: () => false,
 })
 
+// ── Provider ──────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
-  const [loading, setLoading]   = useState(true)
+  const [loading,  setLoading]  = useState(true)
 
   const loadUsuario = async (user: User) => {
     const { data } = await supabase
@@ -145,7 +124,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data) {
       setAuthUser({ user, nombre: data.nombre, rol: data.rol as Rol })
     } else {
-      // Sin registro en cfg.usuarios → acceso denegado
       await supabase.auth.signOut()
       setAuthUser(null)
     }
@@ -165,22 +143,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  /**
-   * can('lotes')           → ¿puede ver el módulo? (lectura)
-   * can('lotes', 'write')  → ¿puede crear/editar en el módulo?
-   *
-   * Uso en JSX:
-   *   can('lotes')          → para mostrar/ocultar en el sidebar
-   *   can('lotes', 'write') → para mostrar/ocultar botón "Nuevo"
-   */
-  const can = (modulo: string, accion: Accion = 'read'): boolean => {
-    if (!authUser) return false
-    const perms = PERMISOS[authUser.rol]
-    if (perms === '*') return true          // admin — acceso total
-    const p = perms[modulo]
-    if (!p) return false
-    return accion === 'write' ? p.write : p.read
+  const getP = (modulo: string): P | null => {
+    if (!authUser) return null
+    const mapa = PERMISOS[authUser.rol]
+    if (mapa === null) return F        // admin → acceso total
+    return mapa[modulo] ?? null
   }
+
+  const can      = (modulo: string): boolean => { const p = getP(modulo); return p !== null && p.r }
+  const canWrite = (modulo: string): boolean => { const p = getP(modulo); return p !== null && p.w }
 
   const signIn = async (email: string, password: string): Promise<string | null> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -193,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can }}>
+    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can, canWrite }}>
       {children}
     </AuthContext.Provider>
   )
