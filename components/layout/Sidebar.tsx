@@ -2,176 +2,199 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Home, MapPin, Users, FileText, Building2, Wrench,
-  LayoutGrid, Shield, AlertTriangle, Receipt, ShoppingCart, Calendar,
-  BarChart3, BookOpen, Settings, LogOut, User, X
+  Home, MapPin, Users, FileText, Receipt, ShoppingCart,
+  Shield, AlertTriangle, Building2, Wrench, BarChart3,
+  BookOpen, Settings, LogOut, User, Calendar,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
-import type { Rol } from '@/lib/AuthContext'
 
-type NavItem = { label: string; href: string; icon: any }
+// ── Estructura del sidebar ────────────────────────────────────────────────────
+// modulo: clave que se verifica en can(modulo)
+// Los ítems sin modulo (label de sección) son siempre visibles si la sección tiene ítems.
 
-const NAV_POR_ROL: Record<Rol, NavItem[]> = {
-  admin: [
-    { label: 'Inicio',       href: '/inicio',        icon: Home },
-    { label: 'Lotes',        href: '/lotes',          icon: MapPin },
-    { label: 'Propietarios', href: '/propietarios',   icon: Users },
-    { label: 'Contratos',    href: '/contratos',      icon: FileText },
-    { label: 'Escrituras',   href: '/escrituras',     icon: Building2 },
-    { label: 'Proyectos',    href: '/proyectos',      icon: Wrench },
-    { label: 'Prog. Mantenimiento', href: '/mantenimiento', icon: Calendar },
-    { label: 'Accesos',      href: '/accesos',        icon: Shield },
-    { label: 'Incidencias',  href: '/incidencias',    icon: AlertTriangle },
-    { label: 'Cobranza',     href: '/cobranza',       icon: FileText },
-    { label: 'Facturas',     href: '/facturas',       icon: Receipt },
-    { label: 'Compras',      href: '/compras',        icon: ShoppingCart },
-    { label: 'Reportes',     href: '/reportes',       icon: BarChart3 },
-    { label: 'Catálogos',    href: '/catalogos',      icon: BookOpen },
-    { label: 'Usuarios',     href: '/usuarios',       icon: Users },
-    { label: 'Config.',      href: '/configuracion',  icon: Settings },
-  ],
-  atencion: [
-    { label: 'Inicio',       href: '/inicio',        icon: Home },
-    { label: 'Lotes',        href: '/lotes',          icon: MapPin },
-    { label: 'Propietarios', href: '/propietarios',   icon: Users },
-    { label: 'Contratos',    href: '/contratos',      icon: FileText },
-    { label: 'Escrituras',   href: '/escrituras',     icon: Building2 },
-    { label: 'Prog. Mantenimiento', href: '/mantenimiento', icon: Calendar },
-    { label: 'Incidencias',  href: '/incidencias',    icon: AlertTriangle },
-    { label: 'Reportes',     href: '/reportes',       icon: BarChart3 },
-  ],
-  cobranza: [
-    { label: 'Inicio',       href: '/inicio',        icon: Home },
-    { label: 'Lotes',        href: '/lotes',          icon: MapPin },
-    { label: 'Propietarios', href: '/propietarios',   icon: Users },
-    { label: 'Cobranza',     href: '/cobranza',       icon: FileText },
-    { label: 'Facturas',     href: '/facturas',       icon: Receipt },
-    { label: 'Reportes',     href: '/reportes',       icon: BarChart3 },
-  ],
-  vigilancia: [
-    { label: 'Inicio',       href: '/inicio',        icon: Home },
-    { label: 'Lotes',        href: '/lotes',          icon: MapPin },
-    { label: 'Propietarios', href: '/propietarios',   icon: Users },
-    { label: 'Accesos',      href: '/accesos',        icon: Shield },
-    { label: 'Incidencias',  href: '/incidencias',    icon: AlertTriangle },
-  ],
-  compras: [
-    { label: 'Compras',      href: '/compras',        icon: ShoppingCart },
-  ],
-  almacenista: [
-    { label: 'Compras',      href: '/compras',        icon: ShoppingCart },
-  ],
-  compras_supervisor: [
-    { label: 'Compras',      href: '/compras',        icon: ShoppingCart },
-  ],
+type NavItem = {
+  label:   string
+  href:    string
+  icon:    any
+  modulo:  string
 }
 
-const ROL_LABEL: Record<Rol, string> = {
-  admin:             'Administrador',
-  atencion:          'Atención a Residentes',
-  cobranza:          'Cobranza',
-  vigilancia:        'Vigilancia',
-  compras:           'Compras',
-  almacenista:       'Almacenista',
-  compras_supervisor:'Compras Supervisor',
+type NavSection = {
+  section: string
+  items:   NavItem[]
 }
 
+const NAV: NavSection[] = [
+  {
+    section: 'Residencial',
+    items: [
+      { label: 'Lotes',        href: '/lotes',        icon: MapPin,        modulo: 'lotes'        },
+      { label: 'Propietarios', href: '/propietarios',  icon: Users,         modulo: 'propietarios' },
+      { label: 'Cobranza',     href: '/cobranza',      icon: FileText,      modulo: 'cobranza'     },
+      { label: 'Facturas',     href: '/facturas',      icon: Receipt,       modulo: 'facturas'     },
+      { label: 'Accesos',      href: '/accesos',       icon: Shield,        modulo: 'accesos'      },
+      { label: 'Incidencias',  href: '/incidencias',   icon: AlertTriangle, modulo: 'incidencias'  },
+      { label: 'Contratos',    href: '/contratos',     icon: FileText,      modulo: 'contratos'    },
+      { label: 'Escrituras',   href: '/escrituras',    icon: Building2,     modulo: 'escrituras'   },
+      { label: 'Proyectos',    href: '/proyectos',     icon: Wrench,        modulo: 'proyectos'    },
+    ],
+  },
+  {
+    section: 'Operaciones',
+    items: [
+      { label: 'Prog. Mantenimiento', href: '/mantenimiento', icon: Calendar, modulo: 'mantenimiento' },
+    ],
+  },
+  {
+    section: 'Compras',
+    items: [
+      { label: 'Compras', href: '/compras', icon: ShoppingCart, modulo: 'compras' },
+    ],
+  },
+  {
+    section: 'Sistema',
+    items: [
+      { label: 'Reportes',   href: '/reportes',      icon: BarChart3, modulo: 'reportes'      },
+      { label: 'Catálogos',  href: '/catalogos',     icon: BookOpen,  modulo: 'catalogos'     },
+      { label: 'Config.',    href: '/configuracion',  icon: Settings,  modulo: 'configuracion' },
+    ],
+  },
+]
+
+// ── Componente ────────────────────────────────────────────────────────────────
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const pathname = usePathname()
-  const { authUser, signOut } = useAuth()
-  const rol = (authUser?.rol ?? 'vigilancia') as Rol
-  const nav = NAV_POR_ROL[rol] ?? []
+  const pathname   = usePathname()
+  const { authUser, signOut, can } = useAuth()
 
   return (
-    <aside className={`sidebar ${open ? 'open' : ''}`} style={{
-      width: 220, flexShrink: 0,
-      background: 'var(--surface-900)',
-      borderRight: '1px solid var(--surface-800)',
-      display: 'flex', flexDirection: 'column',
-      height: '100vh', position: 'sticky', top: 0,
-      overflowY: 'auto',
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: '20px 16px 12px',
-        borderBottom: '1px solid var(--surface-800)',
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between'
-      }}>
-        <div>
-          <div style={{
-            fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700,
-            color: 'var(--blue)', lineHeight: 1.2
-          }}>
-            {authUser ? 'DomusOne' : 'DomusOne'}
+    <>
+      {/* Sidebar */}
+      <aside
+        className={`sidebar ${open ? 'open' : ''}`}
+        style={{
+          width: 220, flexShrink: 0, background: 'var(--surface-900)',
+          borderRight: '1px solid var(--border)', display: 'flex',
+          flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, overflowY: 'auto',
+        }}
+      >
+        {/* Logo */}
+        <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>
+            DomusOne
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-            Administración Residencial
+            Balvanera Polo & CC
           </div>
         </div>
-        {/* Botón X solo en móvil */}
-        <button onClick={onClose} style={{
-          display: 'none',
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--text-muted)', padding: 4, borderRadius: 6
-        }} className="sidebar-close-btn">
-          <X size={16} />
-        </button>
-      </div>
 
-      {/* Nav */}
-      <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
-        {nav.map(item => {
-          const Icon = item.icon
-          const active = pathname === item.href ||
-            (item.href !== '/inicio' && pathname.startsWith(item.href))
-          return (
-            <Link key={item.href} href={item.href} onClick={onClose}
-              className={`nav-item ${active ? 'active' : ''}`}>
-              <Icon size={15} />
-              <span>{item.label}</span>
-            </Link>
-          )
-        })}
-      </nav>
+        {/* Navegación */}
+        <nav style={{ flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Inicio — siempre visible para usuarios autenticados */}
+          <NavLink
+            href="/inicio"
+            icon={Home}
+            label="Inicio"
+            active={pathname === '/inicio'}
+            onClick={onClose}
+          />
 
-      {/* Footer usuario */}
-      <div style={{
-        padding: '10px 12px 16px',
-        borderTop: '1px solid var(--surface-800)',
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
-          padding: '8px 10px', background: '#f8fafc', borderRadius: 8
-        }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: '50%', background: 'var(--blue)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-          }}>
-            <User size={14} style={{ color: '#fff' }} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: 12, fontWeight: 600, color: 'var(--text-primary)',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-            }}>
-              {authUser?.nombre ?? '—'}
+          {/* Secciones filtradas por rol */}
+          {NAV.map(sec => {
+            const visibles = sec.items.filter(item => can(item.modulo))
+            if (visibles.length === 0) return null
+            return (
+              <div key={sec.section}>
+                {/* Label de sección */}
+                <div style={{
+                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  textTransform: 'uppercase', color: 'var(--text-muted)',
+                  padding: '10px 8px 4px',
+                }}>
+                  {sec.section}
+                </div>
+                {visibles.map(item => (
+                  <NavLink
+                    key={item.href}
+                    href={item.href}
+                    icon={item.icon}
+                    label={item.label}
+                    active={pathname.startsWith(item.href)}
+                    onClick={onClose}
+                  />
+                ))}
+              </div>
+            )
+          })}
+        </nav>
+
+        {/* Footer — usuario + cerrar sesión */}
+        <div style={{ padding: '10px 8px', borderTop: '1px solid var(--border)' }}>
+          {authUser && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', marginBottom: 4 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'var(--blue-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <User size={13} style={{ color: 'var(--blue)' }} />
+              </div>
+              <div style={{ overflow: 'hidden', flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {authUser.nombre}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'capitalize' }}>
+                  {authUser.rol.replace('_', ' ')}
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 500 }}>
-              {authUser?.rol ? ROL_LABEL[authUser.rol] : '—'}
-            </div>
-          </div>
+          )}
+          <button
+            onClick={() => signOut()}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+              padding: '8px 8px', borderRadius: 6, background: 'none',
+              border: 'none', cursor: 'pointer', color: 'var(--text-muted)',
+              fontSize: 12, transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = '#fef2f2'
+              e.currentTarget.style.color = '#dc2626'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'none'
+              e.currentTarget.style.color = 'var(--text-muted)'
+            }}
+          >
+            <LogOut size={13} />
+            Cerrar sesión
+          </button>
         </div>
-        <button onClick={signOut} style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-          padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--text-muted)', fontSize: 12, borderRadius: 6, transition: 'all 0.15s'
-        }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}>
-          <LogOut size={13} />
-          Cerrar sesión
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
+  )
+}
+
+// ── NavLink helper ────────────────────────────────────────────────────────────
+function NavLink({
+  href, icon: Icon, label, active, onClick,
+}: {
+  href: string; icon: any; label: string; active: boolean; onClick?: () => void
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 9, padding: '7px 8px',
+        borderRadius: 7, textDecoration: 'none', fontSize: 13, fontWeight: active ? 600 : 400,
+        color:      active ? 'var(--blue)' : 'var(--text-secondary)',
+        background: active ? 'var(--blue-pale)' : 'transparent',
+        transition: 'all 0.12s',
+      }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--surface-800)' }}
+      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
+    >
+      <Icon size={14} />
+      {label}
+    </Link>
   )
 }
