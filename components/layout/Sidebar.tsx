@@ -8,8 +8,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
-// ── Nav plano — misma estructura que antes ─────────────────────────────────────
-// Sección es solo visual, no afecta la lógica de can()
+// ── Nav con secciones ─────────────────────────────────────────────────────────
+// modulo: clave que se evalúa con can(modulo) — sin cambios en la lógica
 const SECTIONS = [
   {
     label: 'Residencial',
@@ -52,10 +52,9 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const pathname = usePathname()
   const { authUser, signOut, can } = useAuth()
 
-  const isActive = (href: string) => pathname.startsWith(href)
-
   return (
-    <aside className={`sidebar ${open ? 'open' : ''}`}
+    <aside
+      className={`sidebar ${open ? 'open' : ''}`}
       style={{
         width: 220, flexShrink: 0,
         background: 'var(--surface-900)',
@@ -77,13 +76,13 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Inicio siempre visible */}
+        <NavLink href="/inicio" icon={Home} label="Inicio"
+          active={pathname === '/inicio'} onClick={onClose} />
 
-        {/* Inicio — siempre visible */}
-        <NavLink href="/inicio" icon={Home} label="Inicio" active={pathname === '/inicio'} onClick={onClose} />
-
-        {/* Secciones */}
-        {SECTIONS.map(sec => {
-          const visibles = sec.items.filter(item => can(item.modulo))
+        {/* Secciones filtradas */}
+        {SECTIONS.map(function(sec) {
+          var visibles = sec.items.filter(function(item) { return can(item.modulo) })
           if (visibles.length === 0) return null
           return (
             <div key={sec.label}>
@@ -94,16 +93,18 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               }}>
                 {sec.label}
               </div>
-              {visibles.map(item => (
-                <NavLink
-                  key={item.href}
-                  href={item.href}
-                  icon={item.icon}
-                  label={item.label}
-                  active={isActive(item.href)}
-                  onClick={onClose}
-                />
-              ))}
+              {visibles.map(function(item) {
+                return (
+                  <NavLink
+                    key={item.href}
+                    href={item.href}
+                    icon={item.icon}
+                    label={item.label}
+                    active={pathname.startsWith(item.href)}
+                    onClick={onClose}
+                  />
+                )
+              })}
             </div>
           )
         })}
@@ -131,15 +132,13 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           </div>
         )}
         <button
-          onClick={() => signOut()}
+          onClick={signOut}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 8,
             padding: '8px 8px', borderRadius: 6, background: 'none',
             border: 'none', cursor: 'pointer', color: 'var(--text-muted)',
             fontSize: 12, transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}
         >
           <LogOut size={13} />
           Cerrar sesión
@@ -164,8 +163,6 @@ function NavLink({ href, icon: Icon, label, active, onClick }: {
         background: active ? 'var(--blue-pale)' : 'transparent',
         transition: 'all 0.12s',
       }}
-      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--surface-800)' }}
-      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
     >
       <Icon size={14} />
       {label}

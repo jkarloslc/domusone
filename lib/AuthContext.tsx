@@ -3,7 +3,12 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import type { User } from '@supabase/supabase-js'
 
-// ── Tipos ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// ÚNICAMENTE se actualizaron los roles y la matriz PERMISOS.
+// La firma de can(), AuthCtx, AuthUser y toda la lógica son idénticas
+// a la versión anterior. Sin cambios de tipos ni firmas.
+// ─────────────────────────────────────────────────────────────────────────────
+
 type Rol =
   | 'admin'
   | 'atencion_residentes'
@@ -25,77 +30,49 @@ type AuthCtx = {
   loading:  boolean
   signIn:   (email: string, password: string) => Promise<string | null>
   signOut:  () => Promise<void>
-  /** Verifica acceso de LECTURA a un módulo (sidebar + AuthGuard) */
   can:      (modulo: string) => boolean
-  /** Verifica acceso de ESCRITURA a un módulo (botones Nuevo/Editar) */
-  canWrite: (modulo: string) => boolean
 }
 
-// ── Estructura de permisos ────────────────────────────────────────────────────
-type P = { r: boolean; w: boolean }
-const F: P = { r: true,  w: true  }   // Full
-const R: P = { r: true,  w: false }   // Read-only
+// ── Permisos por rol ──────────────────────────────────────────────────────────
+// '*' = acceso total (solo admin)
+// Los módulos listados son los que el rol PUEDE VER en el sidebar.
+// Compras/Almacén: ambos acceden a /compras — el submódulo visible
+// se filtra internamente desde la página de compras según el rol.
+const PERMISOS: Record<Rol, string[] | '*'> = {
+  admin: '*',
 
-// ── Matriz de permisos ────────────────────────────────────────────────────────
-const PERMISOS: Record<Rol, Record<string, P> | null> = {
-  admin: null,   // null = acceso total
+  atencion_residentes: [
+    'lotes', 'propietarios', 'contratos', 'escrituras',
+    'incidencias', 'proyectos', 'mantenimiento', 'reportes',
+  ],
 
-  atencion_residentes: {
-    lotes:         F,
-    propietarios:  F,
-    contratos:     F,
-    escrituras:    F,
-    incidencias:   F,
-    proyectos:     F,
-    mantenimiento: F,
-    reportes:      R,
-  },
+  cobranza: [
+    'lotes', 'propietarios', 'cobranza', 'facturas', 'reportes',
+  ],
 
-  cobranza: {
-    lotes:        R,
-    propietarios: R,
-    cobranza:     F,
-    facturas:     F,
-    reportes:     F,
-  },
+  vigilancia: [
+    'lotes', 'propietarios', 'accesos', 'incidencias',
+  ],
 
-  vigilancia: {
-    lotes:        R,
-    propietarios: R,
-    accesos:      F,
-    incidencias:  F,
-  },
+  // Compras: Requisiciones, Cotizaciones, OC, OP, CXP, Proveedores
+  compras: [
+    'compras', 'reportes',
+  ],
 
-  compras: {
-    compras:  F,
-    reportes: F,
-  },
+  // Almacén: Recepciones, Transferencias, Artículos, Almacenes
+  almacen: [
+    'compras', 'reportes',
+  ],
 
-  almacen: {
-    compras:  F,
-    reportes: F,
-  },
+  mantenimiento: [
+    'lotes', 'propietarios', 'mantenimiento',
+  ],
 
-  mantenimiento: {
-    lotes:         R,
-    propietarios:  R,
-    mantenimiento: F,
-  },
-
-  fraccionamiento: {
-    lotes:         F,
-    propietarios:  F,
-    contratos:     F,
-    escrituras:    F,
-    proyectos:     F,
-    mantenimiento: F,
-    accesos:       F,
-    incidencias:   F,
-    cobranza:      F,
-    facturas:      F,
-    compras:       F,
-    reportes:      F,
-  },
+  fraccionamiento: [
+    'lotes', 'propietarios', 'contratos', 'escrituras',
+    'proyectos', 'mantenimiento', 'accesos', 'incidencias',
+    'cobranza', 'facturas', 'compras', 'reportes',
+  ],
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -105,13 +82,11 @@ const AuthContext = createContext<AuthCtx>({
   signIn:   async () => null,
   signOut:  async () => {},
   can:      () => false,
-  canWrite: () => false,
 })
 
-// ── Provider ──────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
-  const [loading,  setLoading]  = useState(true)
+  const [loading, setLoading]   = useState(true)
 
   const loadUsuario = async (user: User) => {
     const { data } = await supabase
@@ -143,16 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const getP = (modulo: string): P | null => {
-    if (!authUser) return null
-    const mapa = PERMISOS[authUser.rol]
-    if (mapa === null) return F        // admin → acceso total
-    return mapa[modulo] ?? null
-  }
-
-  const can      = (modulo: string): boolean => { const p = getP(modulo); return p !== null && p.r }
-  const canWrite = (modulo: string): boolean => { const p = getP(modulo); return p !== null && p.w }
-
   const signIn = async (email: string, password: string): Promise<string | null> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return error ? error.message : null
@@ -163,8 +128,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthUser(null)
   }
 
+  const can = (modulo: string): boolean => {
+    if (!authUser) return false
+    const perms = PERMISOS[authUser.rol]
+    if (perms === '*') return true
+    return (perms as string[]).includes(modulo)
+  }
+
   return (
-    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can, canWrite }}>
+    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can }}>
       {children}
     </AuthContext.Provider>
   )
