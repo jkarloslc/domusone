@@ -191,6 +191,18 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
     const nuevoStatus = (tipoRecepcion === 'completa' || cierraOC === true) ? 'Cerrada' : 'Recibida Parcial'
     await dbComp.from('ordenes_compra').update({ status: nuevoStatus }).eq('id', Number(form.id_oc_fk))
+
+    // Al cerrar la OC, cerrar también la requisición origen
+    if (nuevoStatus === 'Cerrada') {
+      const { data: oc } = await dbComp.from('ordenes_compra')
+        .select('id_requisicion_fk').eq('id', Number(form.id_oc_fk)).single()
+      if (oc?.id_requisicion_fk) {
+        await dbComp.from('requisiciones')
+          .update({ status: 'Completada' })
+          .eq('id', oc.id_requisicion_fk)
+      }
+    }
+
     setSaving(false); onSaved()
   }
 
