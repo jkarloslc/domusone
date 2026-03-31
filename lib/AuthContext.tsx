@@ -143,3 +143,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useAuth = () => useContext(AuthContext)
+// cache bust lunes, 30 de marzo de 2026, 18:03:30 CST
