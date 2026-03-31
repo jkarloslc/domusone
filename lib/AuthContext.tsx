@@ -3,12 +3,6 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import type { User } from '@supabase/supabase-js'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ÚNICAMENTE se actualizaron los roles y la matriz PERMISOS.
-// La firma de can(), AuthCtx, AuthUser y toda la lógica son idénticas
-// a la versión anterior. Sin cambios de tipos ni firmas.
-// ─────────────────────────────────────────────────────────────────────────────
-
 type Rol =
   | 'admin'
   | 'atencion_residentes'
@@ -26,62 +20,57 @@ type AuthUser = {
 }
 
 type AuthCtx = {
-  authUser: AuthUser | null
-  loading:  boolean
-  signIn:   (email: string, password: string) => Promise<string | null>
-  signOut:  () => Promise<void>
-  can:      (modulo: string) => boolean
+  authUser:  AuthUser | null
+  loading:   boolean
+  signIn:    (email: string, password: string) => Promise<string | null>
+  signOut:   () => Promise<void>
+  can:       (modulo: string) => boolean
+  canWrite:  (modulo: string) => boolean
+  canDelete: () => boolean
 }
 
-// ── Permisos por rol ──────────────────────────────────────────────────────────
-// '*' = acceso total (solo admin)
-// Los módulos listados son los que el rol PUEDE VER en el sidebar.
-// Compras/Almacén: ambos acceden a /compras — el submódulo visible
-// se filtra internamente desde la página de compras según el rol.
-const PERMISOS: Record<Rol, string[] | '*'> = {
-  admin: '*',
-
-  atencion_residentes: [
-    'lotes', 'propietarios', 'contratos', 'escrituras',
-    'incidencias', 'proyectos', 'mantenimiento', 'reportes',
-  ],
-
-  cobranza: [
-    'lotes', 'propietarios', 'cobranza', 'facturas', 'reportes',
-  ],
-
-  vigilancia: [
-    'lotes', 'propietarios', 'accesos', 'incidencias',
-  ],
-
-  // Compras: Requisiciones, Cotizaciones, OC, OP, CXP, Proveedores
-  compras: [
-    'compras', 'reportes',
-  ],
-
-  // Almacén: Recepciones, Transferencias, Artículos, Almacenes
-  almacen: [
-    'compras', 'reportes',
-  ],
-
-  mantenimiento: [
-    'lotes', 'propietarios', 'mantenimiento',
-  ],
-
-  fraccionamiento: [
-    'lotes', 'propietarios', 'contratos', 'escrituras',
-    'proyectos', 'mantenimiento', 'accesos', 'incidencias',
-    'cobranza', 'facturas', 'compras', 'reportes',
-  ],
+// ── Permisos de lectura (qué aparece en el sidebar) ───────────────────────────
+const LEER: Record<Rol, string[] | '*'> = {
+  admin:               '*',
+  atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
+                        'incidencias', 'proyectos', 'mantenimiento', 'reportes'],
+  cobranza:            ['lotes', 'propietarios', 'cobranza', 'facturas', 'reportes'],
+  vigilancia:          ['lotes', 'propietarios', 'accesos', 'incidencias'],
+  compras:             ['compras', 'reportes'],
+  almacen:             ['compras', 'reportes'],
+  mantenimiento:       ['lotes', 'propietarios', 'mantenimiento'],
+  fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
+                        'proyectos', 'mantenimiento', 'accesos', 'incidencias',
+                        'cobranza', 'facturas', 'compras', 'reportes'],
 }
+
+// ── Permisos de escritura (botones Nuevo / Editar) ────────────────────────────
+const ESCRIBIR: Record<Rol, string[] | '*'> = {
+  admin:               '*',
+  atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
+                        'incidencias', 'proyectos', 'mantenimiento'],
+  cobranza:            ['cobranza', 'facturas', 'reportes'],
+  vigilancia:          ['accesos', 'incidencias'],
+  compras:             ['compras', 'reportes'],
+  almacen:             ['compras', 'reportes'],
+  mantenimiento:       ['mantenimiento'],
+  fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
+                        'proyectos', 'mantenimiento', 'accesos', 'incidencias',
+                        'cobranza', 'facturas', 'compras', 'reportes'],
+}
+
+// ── Solo admin puede eliminar ─────────────────────────────────────────────────
+const ROLES_DELETE: Rol[] = ['admin']
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthCtx>({
-  authUser: null,
-  loading:  true,
-  signIn:   async () => null,
-  signOut:  async () => {},
-  can:      () => false,
+  authUser:  null,
+  loading:   true,
+  signIn:    async () => null,
+  signOut:   async () => {},
+  can:       () => false,
+  canWrite:  () => false,
+  canDelete: () => false,
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -128,19 +117,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthUser(null)
   }
 
+  /** ¿Puede VER el módulo? — controla visibilidad en sidebar */
   const can = (modulo: string): boolean => {
     if (!authUser) return false
-    const perms = PERMISOS[authUser.rol]
+    const perms = LEER[authUser.rol]
     if (perms === '*') return true
     return (perms as string[]).includes(modulo)
   }
 
+  /** ¿Puede CREAR / EDITAR en el módulo? — controla botones Nuevo/Editar */
+  const canWrite = (modulo: string): boolean => {
+    if (!authUser) return false
+    const perms = ESCRIBIR[authUser.rol]
+    if (perms === '*') return true
+    return (perms as string[]).includes(modulo)
+  }
+
+  /** ¿Puede ELIMINAR? — solo admin */
+  const canDelete = (): boolean => {
+    if (!authUser) return false
+    return ROLES_DELETE.includes(authUser.rol)
+  }
+
   return (
-    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can }}>
+    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can, canWrite, canDelete }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
 export const useAuth = () => useContext(AuthContext)
-// cache bust lunes, 30 de marzo de 2026, 18:03:30 CST
