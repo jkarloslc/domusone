@@ -1,18 +1,18 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
-import { useState, useCallback, useEffect } from 'react'
-import { dbComp } from '@/lib/supabase'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { dbComp, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
-  ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight, Edit2
+  ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight,
+  Edit2, Upload, ExternalLink, FileText
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP } from '../types'
 
 const PAGE_SIZE = 25
 
-// ── Tipos de gasto para OPs sin OC ────────────────────────────
 const TIPOS_GASTO = [
   'Servicios Profesionales', 'Mantenimiento', 'Reparación',
   'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
@@ -21,7 +21,7 @@ const TIPOS_GASTO = [
 ]
 
 export default function OrdenesPagoPage() {
-  const { canWrite, canDelete } = useAuth()
+  const { canWrite } = useAuth()
   const router = useRouter()
   const { authUser } = useAuth()
   const [rows, setRows]         = useState<any[]>([])
@@ -48,7 +48,6 @@ export default function OrdenesPagoPage() {
     setRows(data ?? [])
     setTotal(count ?? 0)
 
-    // Catálogos para display
     const [{ data: provs }, { data: alms }] = await Promise.all([
       dbComp.from('proveedores').select('id, nombre'),
       dbComp.from('almacenes').select('id, nombre'),
@@ -65,8 +64,6 @@ export default function OrdenesPagoPage() {
   useEffect(() => { fetchData() }, [fetchData])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
-
-  // Stats
   const pendientes = rows.filter(r => r.status === 'Pendiente').reduce((a, r) => a + (r.monto ?? 0), 0)
   const pagadas    = rows.filter(r => r.status === 'Pagada').length
 
@@ -81,7 +78,9 @@ export default function OrdenesPagoPage() {
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Con o sin OC relacionada · {total} registros</p>
           </div>
         </div>
-        {canWrite('ordenes-pago') && <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>}
+        {canWrite('ordenes-pago') && (
+          <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>
+        )}
       </div>
 
       {/* Stats */}
@@ -125,17 +124,18 @@ export default function OrdenesPagoPage() {
               <th>Centro de Costo</th>
               <th>Vencimiento</th>
               <th style={{ textAlign: 'right' }}>Monto</th>
+              <th>Docs</th>
               <th>Status</th>
               <th style={{ width: 60 }}></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                 Sin órdenes de pago registradas
               </td></tr>
             ) : rows.map(r => (
@@ -149,10 +149,23 @@ export default function OrdenesPagoPage() {
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                   {r.id_almacen_fk ? (almMap[r.id_almacen_fk] ?? `#${r.id_almacen_fk}`) : '—'}
                 </td>
-                <td style={{ fontSize: 12, color: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? '#dc2626' : 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? 600 : 400 }}>
+                <td style={{ fontSize: 12, whiteSpace: 'nowrap',
+                  color: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? '#dc2626' : 'var(--text-secondary)',
+                  fontWeight: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? 600 : 400 }}>
                   {fmtFecha(r.fecha_vencimiento)}
                 </td>
                 <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(r.monto)}</td>
+                {/* Indicadores de documentos */}
+                <td>
+                  <div style={{ display: 'flex', gap: 3 }}>
+                    {r.pdf_factura && (
+                      <span title="PDF Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 4, fontWeight: 600 }}>PDF</span>
+                    )}
+                    {r.xml_factura && (
+                      <span title="XML Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 4, fontWeight: 600 }}>XML</span>
+                    )}
+                  </div>
+                </td>
                 <td><StatusBadge status={r.status} /></td>
                 <td>
                   <button className="btn-ghost" style={{ padding: '4px 6px' }}
@@ -183,13 +196,14 @@ export default function OrdenesPagoPage() {
 }
 
 // ════════════════════════════════════════════════════════════
-// Modal nueva Orden de Pago
+// Modal Orden de Pago — incluye PDF Factura + XML Factura
 // ════════════════════════════════════════════════════════════
 function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => void; onSaved: () => void }) {
   const { authUser } = useAuth()
   const isEdit = !!opEdit
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
+  const [uploading, setUploading] = useState<string | null>(null)
   const [proveedores, setProvs]   = useState<any[]>([])
   const [almacenes, setAlms]      = useState<any[]>([])
   const [ocsDisp, setOcsDisp]     = useState<any[]>([])
@@ -197,6 +211,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [conOC, setConOC] = useState<boolean | null>(
     opEdit ? (opEdit.id_oc_fk != null) : null
   )
+
+  const pdfRef = useRef<HTMLInputElement>(null)
+  const xmlRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     id_proveedor_fk:   opEdit?.id_proveedor_fk?.toString() ?? '',
@@ -209,6 +226,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     cuenta_clabe:      opEdit?.cuenta_clabe      ?? '',
     notas:             opEdit?.notas             ?? '',
     monto_manual:      opEdit?.monto?.toString() ?? '',
+    pdf_factura:       opEdit?.pdf_factura       ?? '',
+    xml_factura:       opEdit?.xml_factura       ?? '',
   })
 
   useEffect(() => {
@@ -226,7 +245,6 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  // Auto-llenar datos bancarios del proveedor
   const aplicarProveedor = (provId: string) => {
     const prov = proveedores.find(p => p.id === Number(provId))
     setForm(f => ({
@@ -235,7 +253,6 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       banco_destino:   prov?.banco ?? f.banco_destino,
       cuenta_clabe:    prov?.cuenta_clabe ?? f.cuenta_clabe,
     }))
-    // Filtrar OCs del proveedor seleccionado
     setOcsSel([])
   }
 
@@ -250,7 +267,6 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const setOCMonto = (id: number, v: string) =>
     setOcsSel(prev => prev.map(o => o.id === id ? { ...o, monto: v } : o))
 
-  // Monto total calculado
   const montoTotal = conOC
     ? ocsSelected.reduce((a, o) => a + (Number(o.monto) || 0), 0)
     : Number(form.monto_manual) || 0
@@ -259,6 +275,52 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     ? ocsDisp.filter(o => o.id_proveedor_fk === Number(form.id_proveedor_fk) && !ocsSelected.some(s => s.id === o.id))
     : ocsDisp.filter(o => !ocsSelected.some(s => s.id === o.id))
 
+  // Upload archivo a Supabase Storage
+  const uploadFile = async (file: File, campo: 'pdf_factura' | 'xml_factura') => {
+    setUploading(campo)
+    const ext  = file.name.split('.').pop()
+    const opId = opEdit?.id ?? 'new'
+    const path = `op-${opId}/${campo}-${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('cxp-docs').upload(path, file, { upsert: true })
+    if (upErr) { alert('Error al subir archivo: ' + upErr.message); setUploading(null); return }
+    const { data: { publicUrl } } = supabase.storage.from('cxp-docs').getPublicUrl(path)
+    setForm(f => ({ ...f, [campo]: publicUrl }))
+    setUploading(null)
+  }
+
+  const FileDoc = ({ campo, label, accept, refEl }: {
+    campo: 'pdf_factura' | 'xml_factura'
+    label: string
+    accept: string
+    refEl: React.RefObject<HTMLInputElement>
+  }) => (
+    <div>
+      <label className="label">{label}</label>
+      <input ref={refEl} type="file" accept={accept} style={{ display: 'none' }}
+        onChange={e => { if (e.target.files?.[0]) uploadFile(e.target.files[0], campo) }} />
+      {form[campo] ? (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <a href={form[campo]} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4,
+              padding: '5px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+            <ExternalLink size={11} /> Ver archivo
+          </a>
+          <button className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+            onClick={() => setForm(f => ({ ...f, [campo]: '' }))}>
+            <Trash2 size={12} />
+          </button>
+        </div>
+      ) : (
+        <button className="btn-secondary" style={{ fontSize: 11, width: '100%' }}
+          onClick={() => refEl.current?.click()}
+          disabled={uploading === campo}>
+          {uploading === campo ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+          {uploading === campo ? 'Subiendo…' : 'Adjuntar'}
+        </button>
+      )}
+    </div>
+  )
+
   const handleSave = async () => {
     if (!form.id_proveedor_fk && !form.concepto.trim()) {
       setError('Ingresa proveedor o concepto'); return
@@ -266,9 +328,6 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (montoTotal <= 0) { setError('El monto debe ser mayor a cero'); return }
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
     setSaving(true); setError('')
-
-    const { count } = await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })
-    const folio = folioGen('OP', (count ?? 0) + 1)
 
     const payload: any = {
       id_proveedor_fk:   form.id_proveedor_fk ? Number(form.id_proveedor_fk) : null,
@@ -282,6 +341,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       cuenta_clabe:      form.cuenta_clabe.trim() || null,
       notas:             form.notas.trim() || null,
       monto:             montoTotal,
+      pdf_factura:       form.pdf_factura || null,
+      xml_factura:       form.xml_factura || null,
     }
 
     // EDITAR
@@ -300,12 +361,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     const { data: op, error: err } = await dbComp.from('ordenes_pago').insert(payload).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
 
-    // Registrar relación con múltiples OCs
     if (conOC && ocsSelected.length > 0) {
       await dbComp.from('ordenes_pago_oc').insert(
         ocsSelected.map(o => ({ id_op_fk: op.id, id_oc_fk: o.id, monto: Number(o.monto) }))
       )
-      // Actualizar status de las OCs a En Proceso de Pago
       for (const o of ocsSelected) {
         await dbComp.from('ordenes_compra').update({ status: 'Enviada al Prov' }).eq('id', o.id)
       }
@@ -350,11 +409,15 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       <div className="modal" style={{ maxWidth: 640 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Nueva Orden de Pago</h2>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              {conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo'}
-              <button onClick={() => setConOC(null)} style={{ marginLeft: 8, fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>cambiar</button>
-            </div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
+              {isEdit ? 'Editar Orden de Pago' : 'Nueva Orden de Pago'}
+            </h2>
+            {!isEdit && (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                {conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo'}
+                <button onClick={() => setConOC(null)} style={{ marginLeft: 8, fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>cambiar</button>
+              </div>
+            )}
           </div>
           <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
         </div>
@@ -415,7 +478,6 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               </div>
             </div>
 
-            {/* Tipo de gasto solo en OPs sin OC */}
             {!conOC && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
@@ -470,6 +532,17 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
             <textarea className="input" rows={2} value={form.notas} onChange={setF('notas')} style={{ resize: 'vertical' }} />
           </div>
 
+          {/* ── Documentos de la Operación ── */}
+          <Sec label="Documentos de la Operación">
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
+              Adjunta la factura del proveedor. Pueden subirse ahora o editando la OP después.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <FileDoc campo="pdf_factura" label="PDF Factura" accept=".pdf" refEl={pdfRef} />
+              <FileDoc campo="xml_factura" label="XML Factura (CFDI)" accept=".xml" refEl={xmlRef} />
+            </div>
+          </Sec>
+
           {/* Resumen monto */}
           <div style={{ padding: '12px 16px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -481,8 +554,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Generar Orden de Pago
+          <button className="btn-primary" onClick={handleSave} disabled={saving || !!uploading}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {isEdit ? 'Guardar Cambios' : 'Generar Orden de Pago'}
           </button>
         </div>
       </div>
@@ -491,33 +565,16 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 }
 
 // ════════════════════════════════════════════════════════════
-// Detalle + impresión + marcar pagada / cancelar
+// Detalle OP
 // ════════════════════════════════════════════════════════════
 function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void }) {
-  const [ocsRel, setOcsRel]       = useState<any[]>([])
-  const [marcando, setMarcando]   = useState(false)
-  const [refPago, setRefPago]     = useState('')
-  const [showPagar, setShowPagar] = useState(false)
+  const [ocsRel, setOcsRel] = useState<any[]>([])
 
   useEffect(() => {
     dbComp.from('ordenes_pago_oc').select('*, ordenes_compra(folio, total)')
       .eq('id_op_fk', op.id)
       .then(({ data }) => setOcsRel(data ?? []))
   }, [op.id])
-
-  const marcarPagada = async () => {
-    setMarcando(true)
-    await dbComp.from('ordenes_pago').update({
-      status:          'Pagada',
-      referencia_pago: refPago.trim() || null,
-      fecha_pago:      new Date().toISOString().slice(0, 10),
-    }).eq('id', op.id)
-    for (const rel of ocsRel) {
-      await dbComp.from('ordenes_compra').update({ status: 'Cerrada' }).eq('id', rel.id_oc_fk)
-    }
-    setMarcando(false)
-    onCanceled()
-  }
 
   const cancelar = async () => {
     if (!confirm('¿Cancelar esta orden de pago?')) return
@@ -557,8 +614,6 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
         <div class="firma">Recibió / Banco</div>
       </div>
       </body></html>`
-
-    // Usar iframe para evitar bloqueo de popups en Safari
     const iframe = document.createElement('iframe')
     iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
     document.body.appendChild(iframe)
@@ -613,6 +668,28 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
             </div>
           </Sec>
 
+          {/* Documentos de la OP */}
+          {(op.pdf_factura || op.xml_factura) && (
+            <Sec label="Documentos de la Operación">
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {op.pdf_factura && (
+                  <a href={op.pdf_factura} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                      background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 7, textDecoration: 'none' }}>
+                    <FileText size={13} /> PDF Factura
+                  </a>
+                )}
+                {op.xml_factura && (
+                  <a href={op.xml_factura} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                      background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 7, textDecoration: 'none' }}>
+                    <FileText size={13} /> XML Factura
+                  </a>
+                )}
+              </div>
+            </Sec>
+          )}
+
           {ocsRel.length > 0 && (
             <Sec label="Órdenes de Compra Relacionadas">
               <div className="card" style={{ overflow: 'hidden' }}>
@@ -632,7 +709,6 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
             </Sec>
           )}
 
-          {/* Total */}
           <div style={{ padding: '14px 18px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>TOTAL A PAGAR</span>
             <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(op.monto)}</span>
@@ -641,19 +717,16 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
           {op.notas && <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Notas: {op.notas}</p>}
         </div>
 
-        {/* Footer con acciones */}
+        {/* Footer */}
         <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Izquierda: acciones destructivas */}
           <div>
             {op.status === 'Pendiente' && (
               <button onClick={cancelar} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 7,
-                background: 'none', border: '1px solid #fecaca', color: '#dc2626',
-                cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                background: 'none', border: '1px solid #fecaca', color: '#dc2626', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                 Cancelar OP
               </button>
             )}
           </div>
-          {/* Derecha: acciones principales */}
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}>
               <Printer size={13} /> Imprimir
@@ -665,7 +738,6 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
             )}
           </div>
         </div>
-
       </div>
     </div>
   )

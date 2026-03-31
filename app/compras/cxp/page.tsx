@@ -3,9 +3,9 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { dbComp, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  ArrowLeft, RefreshCw, Search, Eye, X, Save, Loader,
+  ArrowLeft, RefreshCw, Search, Eye, X, Loader,
   Plus, Printer, FileText, Upload, Trash2, ExternalLink,
-  AlertTriangle, CheckCircle, Clock, ChevronDown, ChevronUp
+  AlertTriangle, CheckCircle, Clock
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, FORMAS_PAGO_COMP, StatusBadge } from '../types'
@@ -29,7 +29,7 @@ const bandaAntigüedad = (dias: number) => {
 // ════════════════════════════════════════════════════════════
 export default function CXPPage() {
   const router = useRouter()
-  const [tab, setTab]               = useState<'resumen'|'antigüedad'|'detalle'>('resumen')
+  const [tab, setTab]               = useState<'resumen'|'antigüedad'>('resumen')
   const [proveedores, setProvs]     = useState<any[]>([])
   const [almMap, setAlmMap]         = useState<Record<number,string>>({})
   const [ops, setOps]               = useState<any[]>([])
@@ -55,7 +55,6 @@ export default function CXPPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // ── Calcular métricas ────────────────────────────────────
   const opsPendientes  = ops.filter(o => o.status !== 'Pagada')
   const totalPorPagar  = opsPendientes.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
   const totalVencido   = opsPendientes.filter(o => diasVencido(o.fecha_vencimiento) > 0)
@@ -63,7 +62,6 @@ export default function CXPPage() {
   const totalPorVencer = opsPendientes.filter(o => diasVencido(o.fecha_vencimiento) <= 0)
                           .reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
 
-  // Agrupar por proveedor
   const porProveedor = proveedores.map(prov => {
     const misOps = opsPendientes.filter(o => o.id_proveedor_fk === prov.id)
     const saldo  = misOps.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
@@ -76,13 +74,12 @@ export default function CXPPage() {
     ? porProveedor.filter(p => p.nombre.toLowerCase().includes(search.toLowerCase()))
     : porProveedor
 
-  // Antigüedad consolidada
   const bandas = [
-    { key: 'por_vencer', label: 'Por vencer',  dias: [null, 0] },
-    { key: '1_30',       label: '1-30 días',   dias: [1, 30]   },
-    { key: '31_60',      label: '31-60 días',  dias: [31, 60]  },
-    { key: '61_90',      label: '61-90 días',  dias: [61, 90]  },
-    { key: '+90',        label: '+90 días',    dias: [91, null] },
+    { key: 'por_vencer', label: 'Por vencer',  dias: [null, 0]  },
+    { key: '1_30',       label: '1-30 días',   dias: [1, 30]    },
+    { key: '31_60',      label: '31-60 días',  dias: [31, 60]   },
+    { key: '61_90',      label: '61-90 días',  dias: [61, 90]   },
+    { key: '+90',        label: '+90 días',    dias: [91, null]  },
   ]
   const antiguedad = bandas.map(b => {
     const [min, max] = b.dias
@@ -108,7 +105,7 @@ export default function CXPPage() {
           <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Cuentas por Pagar</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>CXP — Saldos, antigüedad y abonos con comprobantes</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>CXP — Saldos, antigüedad y registro de pagos</p>
           </div>
         </div>
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
@@ -210,7 +207,6 @@ export default function CXPPage() {
       {/* ── TAB: Antigüedad ── */}
       {tab === 'antigüedad' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Gráfico de barras horizontal simple */}
           <div className="card" style={{ padding: '20px 24px' }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>Distribución de Saldos</div>
             {antiguedad.map(b => {
@@ -233,7 +229,6 @@ export default function CXPPage() {
             })}
           </div>
 
-          {/* Tabla detallada por banda */}
           {antiguedad.filter(b => b.count > 0).map(b => {
             const banda = bandaAntigüedad(b.key === 'por_vencer' ? -1 : b.key === '1_30' ? 15 : b.key === '31_60' ? 45 : b.key === '61_90' ? 75 : 100)
             return (
@@ -302,7 +297,7 @@ export default function CXPPage() {
 // Vista de OPs por proveedor + estado de cuenta imprimible
 // ════════════════════════════════════════════════════════════
 function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: Record<number,string>; onClose: () => void; onOpenOP: (op: any) => void }) {
-  const [ops, setOps]       = useState<any[]>([])
+  const [ops, setOps]         = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -313,12 +308,11 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
       .then(({ data }) => { setOps(data ?? []); setLoading(false) })
   }, [prov.id])
 
-  const saldoTotal    = ops.filter(o => o.status !== 'Pagada').reduce((a,o) => a + (o.saldo ?? o.monto ?? 0), 0)
-  const pagadoTotal   = ops.filter(o => o.status === 'Pagada').reduce((a,o) => a + (o.monto ?? 0), 0)
+  const saldoTotal  = ops.filter(o => o.status !== 'Pagada').reduce((a,o) => a + (o.saldo ?? o.monto ?? 0), 0)
+  const pagadoTotal = ops.filter(o => o.status === 'Pagada').reduce((a,o) => a + (o.monto ?? 0), 0)
 
   const imprimirEC = () => {
     const win = window.open('', '_blank')
-    const pendientes = ops.filter(o => o.status !== 'Pagada')
     win?.document.write(`
       <html><head><title>Estado de Cuenta — ${prov.nombre}</title>
       <style>body{font-family:Arial,sans-serif;padding:40px;font-size:12px}h1{color:#0D4F80;font-size:20px;margin:0}
@@ -369,11 +363,10 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
           </div>
         </div>
 
-        {/* Resumen del proveedor */}
         <div style={{ display: 'flex', gap: 10, padding: '14px 24px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
           {[
-            { label: 'Saldo Pendiente', value: fmt(saldoTotal), color: 'var(--blue)' },
-            { label: 'Pagado',          value: fmt(pagadoTotal), color: '#15803d' },
+            { label: 'Saldo Pendiente', value: fmt(saldoTotal),    color: 'var(--blue)' },
+            { label: 'Pagado',          value: fmt(pagadoTotal),   color: '#15803d' },
             { label: 'Documentos',      value: String(ops.length), color: 'var(--text-secondary)' },
           ].map(s => (
             <div key={s.label} style={{ textAlign: 'center', flex: 1, minWidth: 100 }}>
@@ -391,12 +384,12 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
                 <th>Vencimiento</th><th style={{ textAlign: 'right' }}>Monto</th>
                 <th style={{ textAlign: 'right' }}>Pagado</th>
                 <th style={{ textAlign: 'right' }}>Saldo</th>
-                <th>Status</th><th style={{ width: 50 }}></th>
+                <th>Docs</th><th>Status</th><th style={{ width: 50 }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
+                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
               ) : ops.map(op => {
                 const dias = diasVencido(op.fecha_vencimiento)
                 const vencido = dias > 0 && op.status !== 'Pagada'
@@ -413,6 +406,13 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#15803d' }}>{fmt(op.monto_pagado ?? 0)}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: op.status === 'Pagada' ? '#15803d' : 'var(--blue)' }}>
                       {fmt(op.saldo ?? op.monto)}
+                    </td>
+                    {/* Indicadores PDF/XML de la OP */}
+                    <td>
+                      <div style={{ display: 'flex', gap: 3 }}>
+                        {op.pdf_factura && <span style={{ fontSize: 9, padding: '1px 4px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 3, fontWeight: 600 }}>PDF</span>}
+                        {op.xml_factura && <span style={{ fontSize: 9, padding: '1px 4px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 3, fontWeight: 600 }}>XML</span>}
+                      </div>
                     </td>
                     <td><StatusBadge status={op.status} /></td>
                     <td>
@@ -433,7 +433,7 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
 }
 
 // ════════════════════════════════════════════════════════════
-// Detalle de OP con abonos parciales y adjuntos
+// Detalle de OP — abonos + comprobante + complemento de pago
 // ════════════════════════════════════════════════════════════
 function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   const { authUser } = useAuth()
@@ -443,22 +443,20 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
   const [uploading, setUploading] = useState<string | null>(null)
-
-  const [form, setForm] = useState({
-    fecha_abono:     new Date().toISOString().slice(0, 10),
-    monto:           (op.saldo ?? op.monto)?.toString() ?? '',
-    forma_pago:      'Transferencia',
-    referencia:      '',
-    notas:           '',
-    pdf_factura:     '',
-    xml_factura:     '',
-    comprobante:     '',
-  })
   const [pagoTotal, setPagoTotal] = useState(true)
 
-  const pdfFacturaRef  = useRef<HTMLInputElement>(null)
-  const xmlFacturaRef  = useRef<HTMLInputElement>(null)
-  const comprobanteRef = useRef<HTMLInputElement>(null)
+  const [form, setForm] = useState({
+    fecha_abono:      new Date().toISOString().slice(0, 10),
+    monto:            (op.saldo ?? op.monto)?.toString() ?? '',
+    forma_pago:       'Transferencia',
+    referencia:       '',
+    notas:            '',
+    comprobante:      '',     // comprobante de pago (transferencia/depósito)
+    complemento_pago: '',     // complemento de pago SAT (XML)
+  })
+
+  const comprobanteRef     = useRef<HTMLInputElement>(null)
+  const complementoPagoRef = useRef<HTMLInputElement>(null)
 
   const fetchAbonos = useCallback(() => {
     setLoading(true)
@@ -473,13 +471,12 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  // Upload archivo a Supabase Storage
-  const uploadFile = async (file: File, campo: 'pdf_factura' | 'xml_factura' | 'comprobante') => {
+  const uploadFile = async (file: File, campo: 'comprobante' | 'complemento_pago') => {
     setUploading(campo)
     const ext  = file.name.split('.').pop()
     const path = `op-${op.id}/${campo}-${Date.now()}.${ext}`
-    const { data, error } = await supabase.storage.from('cxp-docs').upload(path, file, { upsert: true })
-    if (error) { alert('Error al subir archivo: ' + error.message); setUploading(null); return }
+    const { error: upErr } = await supabase.storage.from('cxp-docs').upload(path, file, { upsert: true })
+    if (upErr) { alert('Error al subir archivo: ' + upErr.message); setUploading(null); return }
     const { data: { publicUrl } } = supabase.storage.from('cxp-docs').getPublicUrl(path)
     setForm(f => ({ ...f, [campo]: publicUrl }))
     setUploading(null)
@@ -493,16 +490,15 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
     const montoAbono = Number(form.monto)
 
     const { error: err } = await dbComp.from('cxp_abonos').insert({
-      id_op_fk:     op.id,
-      fecha_abono:  form.fecha_abono,
-      monto:        montoAbono,
-      forma_pago:   form.forma_pago,
-      referencia:   form.referencia.trim() || null,
-      notas:        form.notas.trim() || null,
-      pdf_factura:  form.pdf_factura || null,
-      xml_factura:  form.xml_factura || null,
-      comprobante:  form.comprobante || null,
-      created_by:   authUser?.nombre ?? null,
+      id_op_fk:         op.id,
+      fecha_abono:      form.fecha_abono,
+      monto:            montoAbono,
+      forma_pago:       form.forma_pago,
+      referencia:       form.referencia.trim() || null,
+      notas:            form.notas.trim() || null,
+      comprobante:      form.comprobante || null,
+      complemento_pago: form.complemento_pago || null,
+      created_by:       authUser?.nombre ?? null,
     })
     if (err) { setError(err.message); setSaving(false); return }
 
@@ -523,12 +519,18 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
 
     setSaving(false)
     setShowForm(false)
-    setForm(f => ({ ...f, monto: '', referencia: '', notas: '', pdf_factura: '', xml_factura: '', comprobante: '' }))
+    setForm(f => ({ ...f, monto: '', referencia: '', notas: '', comprobante: '', complemento_pago: '' }))
     fetchAbonos()
     onClose()
   }
 
-  const FileBtn = ({ campo, label, accept, refEl }: { campo: 'pdf_factura'|'xml_factura'|'comprobante'; label: string; accept: string; refEl: React.RefObject<HTMLInputElement> }) => (
+  // Botón de adjunto genérico
+  const FileBtn = ({ campo, label, accept, refEl }: {
+    campo: 'comprobante' | 'complemento_pago'
+    label: string
+    accept: string
+    refEl: React.RefObject<HTMLInputElement>
+  }) => (
     <div>
       <label className="label">{label}</label>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -559,7 +561,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 620 }}>
+      <div className="modal" style={{ maxWidth: 640 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
@@ -575,9 +577,9 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
         {/* Saldo */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0, borderBottom: '1px solid #f1f5f9' }}>
           {[
-            { label: 'Total OP',  value: fmt(op.monto),           color: 'var(--text-primary)' },
+            { label: 'Total OP',  value: fmt(op.monto),             color: 'var(--text-primary)' },
             { label: 'Pagado',    value: fmt(op.monto_pagado ?? 0), color: '#15803d' },
-            { label: 'Saldo',     value: fmt(saldoActual),        color: 'var(--blue)' },
+            { label: 'Saldo',     value: fmt(saldoActual),          color: 'var(--blue)' },
           ].map((s, i) => (
             <div key={s.label} style={{ padding: '12px 20px', textAlign: 'center', borderRight: i < 2 ? '1px solid #f1f5f9' : 'none' }}>
               <div style={{ fontSize: 18, fontWeight: 700, color: s.color, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
@@ -586,13 +588,37 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
           ))}
         </div>
 
-        <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 200px)', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Documentos de la OP (PDF + XML vienen de la Orden de Pago) */}
+        {(op.pdf_factura || op.xml_factura) && (
+          <div style={{ padding: '10px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8, background: '#fafafa' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Factura:</span>
+            {op.pdf_factura && (
+              <a href={op.pdf_factura} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
+                  background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 6, textDecoration: 'none' }}>
+                <FileText size={11} /> PDF Factura
+              </a>
+            )}
+            {op.xml_factura && (
+              <a href={op.xml_factura} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px',
+                  background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 6, textDecoration: 'none' }}>
+                <FileText size={11} /> XML Factura
+              </a>
+            )}
+            {!op.pdf_factura && !op.xml_factura && (
+              <span style={{ fontSize: 11, color: '#d97706' }}>Sin documentos adjuntos — edita la OP para subirlos</span>
+            )}
+          </div>
+        )}
+
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 220px)', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Historial de abonos */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                Historial de Abonos ({abonos.length})
+                Historial de Pagos ({abonos.length})
               </div>
               {op.status !== 'Pagada' && (
                 <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setShowForm(f => !f)}>
@@ -604,7 +630,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
             {loading ? (
               <div style={{ textAlign: 'center', padding: 24 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></div>
             ) : abonos.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>Sin abonos registrados</div>
+              <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>Sin pagos registrados</div>
             ) : abonos.map(a => (
               <div key={a.id} className="card" style={{ padding: '12px 14px', marginBottom: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
@@ -615,8 +641,9 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                       {a.referencia && <span style={{ marginLeft: 6, fontFamily: 'monospace' }}>Ref: {a.referencia}</span>}
                     </div>
                   </div>
-                  {/* Archivos adjuntos */}
+                  {/* Archivos del abono */}
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    {/* Compat. con registros anteriores que tenían pdf/xml en el abono */}
                     {a.pdf_factura && (
                       <a href={a.pdf_factura} target="_blank" rel="noopener noreferrer"
                         style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 6, textDecoration: 'none' }}>
@@ -635,6 +662,12 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                         <CheckCircle size={10} /> Comprobante
                       </a>
                     )}
+                    {a.complemento_pago && (
+                      <a href={a.complemento_pago} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', background: '#fdf4ff', color: '#7c3aed', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none' }}>
+                        <FileText size={10} /> Complemento SAT
+                      </a>
+                    )}
                   </div>
                 </div>
                 {a.notas && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>{a.notas}</div>}
@@ -643,6 +676,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
             ))}
           </div>
 
+          {/* Formulario nuevo pago */}
           {showForm && (
             <div style={{ padding: '16px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -671,6 +705,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                     style={{ textAlign: 'right', background: pagoTotal ? '#f8fafc' : undefined }} />
                 </div>
               </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div><label className="label">Forma de Pago</label>
                   <select className="select" value={form.forma_pago} onChange={setF('forma_pago')}>
@@ -683,10 +718,20 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
-                <FileBtn campo="pdf_factura" label="PDF Factura" accept=".pdf" refEl={pdfFacturaRef} />
-                <FileBtn campo="xml_factura" label="XML Factura" accept=".xml" refEl={xmlFacturaRef} />
-                <FileBtn campo="comprobante" label="Comprobante Pago" accept=".pdf,.jpg,.jpeg,.png" refEl={comprobanteRef} />
+              {/* ── Documentos del pago ── */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                <FileBtn
+                  campo="comprobante"
+                  label="Comprobante de Pago"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  refEl={comprobanteRef}
+                />
+                <FileBtn
+                  campo="complemento_pago"
+                  label="Complemento de Pago (SAT)"
+                  accept=".xml,.pdf"
+                  refEl={complementoPagoRef}
+                />
               </div>
 
               <div style={{ marginBottom: 12 }}><label className="label">Notas</label>
@@ -695,7 +740,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
 
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
-                <button className="btn-primary" onClick={handleSave} disabled={saving}>
+                <button className="btn-primary" onClick={handleSave} disabled={saving || !!uploading}>
                   {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />}
                   {pagoTotal ? 'Registrar Pago Total' : 'Registrar Pago Parcial'}
                 </button>
