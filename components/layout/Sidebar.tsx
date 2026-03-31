@@ -8,6 +8,18 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
+// ── Etiquetas de rol para el sidebar ─────────────────────────────────────────
+const ROL_LABEL: Record<string, string> = {
+  admin:               'Administrador',
+  atencion_residentes: 'Atención a Residentes',
+  cobranza:            'Cobranza',
+  vigilancia:          'Vigilancia',
+  compras:             'Compras',
+  almacen:             'Almacén',
+  mantenimiento:       'Mantenimiento',
+  fraccionamiento:     'Fraccionamiento',
+}
+
 // ── Nav con secciones ─────────────────────────────────────────────────────────
 // modulo: clave que se evalúa con can(modulo) — sin cambios en la lógica
 const SECTIONS = [
@@ -126,7 +138,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 {authUser.nombre}
               </div>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'capitalize' }}>
-                {authUser.rol.replace(/_/g, ' ')}
+                {ROL_LABEL[authUser.rol] ?? authUser.rol}
               </div>
             </div>
           </div>
