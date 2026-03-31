@@ -20,16 +20,24 @@ type AuthUser = {
 }
 
 type AuthCtx = {
-  authUser:  AuthUser | null
-  loading:   boolean
-  signIn:    (email: string, password: string) => Promise<string | null>
-  signOut:   () => Promise<void>
-  can:       (modulo: string) => boolean
-  canWrite:  (modulo: string) => boolean
-  canDelete: () => boolean
+  authUser:   AuthUser | null
+  loading:    boolean
+  signIn:     (email: string, password: string) => Promise<string | null>
+  signOut:    () => Promise<void>
+  /** ¿Puede VER el módulo? — sidebar */
+  can:        (modulo: string) => boolean
+  /** ¿Puede CREAR / EDITAR? — botones Nuevo/Editar */
+  canWrite:   (modulo: string) => boolean
+  /** ¿Puede ELIMINAR? — solo admin */
+  canDelete:  () => boolean
+  /** ¿Puede ver secciones de Compras?
+   *  Retorna 'all' (admin/fraccionamiento) | 'compras' | 'almacen' | false */
+  canCompras: () => 'all' | 'compras' | 'almacen' | false
+  /** ¿Puede AUTORIZAR documentos (Req, OC, Transferencias)? */
+  canAuth:    (modulo?: string) => boolean
 }
 
-// ── Permisos de lectura (qué aparece en el sidebar) ───────────────────────────
+// ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
 const LEER: Record<Rol, string[] | '*'> = {
   admin:               '*',
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -44,7 +52,7 @@ const LEER: Record<Rol, string[] | '*'> = {
                         'cobranza', 'facturas', 'compras', 'reportes'],
 }
 
-// ── Permisos de escritura (botones Nuevo / Editar) ────────────────────────────
+// ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
 const ESCRIBIR: Record<Rol, string[] | '*'> = {
   admin:               '*',
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -59,18 +67,23 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
                         'cobranza', 'facturas', 'compras', 'reportes'],
 }
 
-// ── Solo admin puede eliminar ─────────────────────────────────────────────────
+// ── Solo admin puede eliminar ──────────────────────────────────────────────────
 const ROLES_DELETE: Rol[] = ['admin']
+
+// ── Roles que pueden autorizar documentos ─────────────────────────────────────
+const ROLES_AUTH: Rol[] = ['admin', 'compras', 'fraccionamiento']
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthCtx>({
-  authUser:  null,
-  loading:   true,
-  signIn:    async () => null,
-  signOut:   async () => {},
-  can:       () => false,
-  canWrite:  () => false,
-  canDelete: () => false,
+  authUser:   null,
+  loading:    true,
+  signIn:     async () => null,
+  signOut:    async () => {},
+  can:        () => false,
+  canWrite:   () => false,
+  canDelete:  () => false,
+  canCompras: () => false,
+  canAuth:    () => false,
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -117,7 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthUser(null)
   }
 
-  /** ¿Puede VER el módulo? — controla visibilidad en sidebar */
   const can = (modulo: string): boolean => {
     if (!authUser) return false
     const perms = LEER[authUser.rol]
@@ -125,7 +137,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return (perms as string[]).includes(modulo)
   }
 
-  /** ¿Puede CREAR / EDITAR en el módulo? — controla botones Nuevo/Editar */
   const canWrite = (modulo: string): boolean => {
     if (!authUser) return false
     const perms = ESCRIBIR[authUser.rol]
@@ -133,14 +144,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return (perms as string[]).includes(modulo)
   }
 
-  /** ¿Puede ELIMINAR? — solo admin */
   const canDelete = (): boolean => {
     if (!authUser) return false
     return ROLES_DELETE.includes(authUser.rol)
   }
 
+  /**
+   * Retorna qué sección del hub de Compras puede ver el usuario:
+   *   'all'     → admin / fraccionamiento — ve todo
+   *   'compras' → rol compras — Req, Cot, OC, OP, CXP, Proveedores
+   *   'almacen' → rol almacen — Recepciones, Transferencias, Artículos, Almacenes
+   *   false     → sin acceso a compras
+   *
+   * Uso en /compras/page.tsx:
+   *   const vista = canCompras()
+   *   {(vista === 'all' || vista === 'compras') && <CardRequisiciones />}
+   *   {(vista === 'all' || vista === 'almacen') && <CardRecepciones />}
+   */
+  const canCompras = (): 'all' | 'compras' | 'almacen' | false => {
+    if (!authUser) return false
+    const r = authUser.rol
+    if (r === 'admin' || r === 'fraccionamiento') return 'all'
+    if (r === 'compras') return 'compras'
+    if (r === 'almacen') return 'almacen'
+    return false
+  }
+
+  /** ¿Puede autorizar documentos? (Requisiciones, OC, Transferencias) */
+  const canAuth = (_modulo?: string): boolean => {
+    if (!authUser) return false
+    return ROLES_AUTH.includes(authUser.rol)
+  }
+
   return (
-    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can, canWrite, canDelete }}>
+    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can, canWrite, canDelete, canCompras, canAuth }}>
       {children}
     </AuthContext.Provider>
   )
