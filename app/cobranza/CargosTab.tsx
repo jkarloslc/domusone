@@ -172,12 +172,13 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
 
   const ANIOS = Array.from({ length: 4 }, (_, i) => new Date().getFullYear() - 1 + i)
 
-  // Cargar catálogo de cuotas con su clasificación
+  // Cargar catálogo de cuotas con clasificación y sección
   useEffect(() => {
     dbCfg.from('cuotas_estandar')
-      .select('id, nombre, monto, periodicidad, id_clasificacion_fk, clasificacion(nombre)')
+      .select('id, nombre, monto, periodicidad, id_clasificacion_fk, id_seccion_fk, clasificacion(nombre), secciones(nombre)')
       .eq('activo', true)
       .not('id_clasificacion_fk', 'is', null)
+      .not('id_seccion_fk', 'is', null)
       .order('nombre')
       .then(({ data }) => setCuotas(data ?? []))
   }, [])
@@ -194,9 +195,10 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
     if (!cuotaSel || !periodoMes || !periodoAnio) return
     setLoadingPreview(true)
 
-    // 1. Lotes con la clasificación de la cuota
+    // 1. Lotes que cumplen AMBAS condiciones: sección Y clasificación
     const { data: lotesData } = await dbCat.from('lotes')
       .select('id, cve_lote, lote')
+      .eq('id_seccion_fk',       cuotaSel.id_seccion_fk)
       .eq('id_clasificacion_fk', cuotaSel.id_clasificacion_fk)
 
     const lotes = lotesData ?? []
@@ -264,7 +266,7 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
                 <option value="">— Selecciona una cuota —</option>
                 {cuotas.map(c => (
                   <option key={c.id} value={c.id}>
-                    {c.nombre} · {fmt(c.monto)} · {(c as any).clasificacion?.nombre}
+                    {c.nombre} · {fmt(c.monto)} · {(c as any).secciones?.nombre} / {(c as any).clasificacion?.nombre}
                   </option>
                 ))}
               </select>
@@ -273,6 +275,7 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
             {/* Info de la cuota seleccionada */}
             {cuotaSel && (
               <div style={{ display: 'flex', gap: 16, padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+                <InfoChip label="Sección"       value={(cuotaSel as any).secciones?.nombre    ?? '—'} />
                 <InfoChip label="Clasificación" value={(cuotaSel as any).clasificacion?.nombre ?? '—'} />
                 <InfoChip label="Monto"        value={fmt(cuotaSel.monto)} />
                 <InfoChip label="Periodicidad" value={cuotaSel.periodicidad ?? '—'} />

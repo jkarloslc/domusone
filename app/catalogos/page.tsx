@@ -92,7 +92,8 @@ const CATALOGOS: CatConfig[] = [
     desc:  'Plantillas de cuotas de mantenimiento aplicables a lotes',
     campos: [
       { key: 'nombre',              label: 'Nombre *',        type: 'text',    required: true },
-      { key: 'id_clasificacion_fk', label: 'Clasificación *', type: 'select',  selectTabla: 'clasificacion', required: true },
+      { key: 'id_seccion_fk',       label: 'Sección *',       type: 'select',  selectTabla: 'secciones',      required: true },
+      { key: 'id_clasificacion_fk', label: 'Clasificación *', type: 'select',  selectTabla: 'clasificacion',  required: true },
       { key: 'monto',               label: 'Monto',           type: 'number' },
       { key: 'periodicidad',        label: 'Periodicidad',    type: 'text' },
       { key: 'descripcion',         label: 'Descripción',     type: 'textarea' },
