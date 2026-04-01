@@ -91,10 +91,11 @@ const CATALOGOS: CatConfig[] = [
     color: '#059669',
     desc:  'Plantillas de cuotas de mantenimiento aplicables a lotes',
     campos: [
-      { key: 'nombre',       label: 'Nombre *',     type: 'text',     required: true },
-      { key: 'monto',        label: 'Monto',        type: 'number' },
-      { key: 'periodicidad', label: 'Periodicidad', type: 'text' },
-      { key: 'descripcion',  label: 'Descripción',  type: 'textarea' },
+      { key: 'nombre',            label: 'Nombre *',      type: 'text',     required: true },
+      { key: 'id_tipo_lote_fk',   label: 'Tipo de Lote *', type: 'select',  selectTabla: 'tipos_lote', required: true },
+      { key: 'monto',             label: 'Monto',         type: 'number' },
+      { key: 'periodicidad',      label: 'Periodicidad',  type: 'text' },
+      { key: 'descripcion',       label: 'Descripción',   type: 'textarea' },
     ],
   },
   {
