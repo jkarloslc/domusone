@@ -28,7 +28,7 @@ type Pago = {
 
 type Propietario = {
   id: number
-  nombre: string
+  nombre: string           // nombre completo construido
   rfc: string | null
   telefono: string | null
   correo: string | null
@@ -36,7 +36,7 @@ type Propietario = {
 
 type Lote = {
   id: number
-  clave: string
+  clave: string            // display: cve_lote o fallback
   manzana: string | null
   lote: string | null
 }
@@ -111,27 +111,32 @@ export default function CXCPage() {
 
   // ─── Carga de datos ────────────────────────────────────────────────────────
   const cargarCatalogos = useCallback(async () => {
-    // Usamos select('*') para no depender de nombres exactos de columnas
     const [{ data: propsData }, { data: lotesData }] = await Promise.all([
-      dbCat.from('propietarios').select('*').order('nombre'),
-      dbCat.from('lotes').select('*').order('clave'),
+      dbCat.from('propietarios')
+        .select('id, nombre, apellido_paterno, apellido_materno, rfc, activo')
+        .eq('activo', true)
+        .order('nombre'),
+      dbCat.from('lotes')
+        .select('id, cve_lote, lote, id_seccion_fk, status_lote')
+        .order('cve_lote'),
     ])
 
-    // Normalizar propietarios — soporta variantes de nombre de columna
-    const props: Propietario[] = (propsData ?? []).map((p: Record<string, unknown>) => ({
-      id:       p.id as number,
-      nombre:   (p.nombre ?? p.nombre_completo ?? p.name ?? `Propietario ${p.id}`) as string,
-      rfc:      (p.rfc ?? null) as string | null,
-      telefono: (p.telefono ?? p.tel ?? null) as string | null,
-      correo:   (p.correo ?? p.email ?? null) as string | null,
+    // Construir nombre completo desde partes separadas
+    const props: Propietario[] = (propsData ?? []).map((p: any) => ({
+      id:       p.id,
+      nombre:   [p.nombre, p.apellido_paterno, p.apellido_materno]
+                  .filter(Boolean).join(' ') || `Propietario ${p.id}`,
+      rfc:      p.rfc ?? null,
+      telefono: null,
+      correo:   null,
     }))
 
-    // Normalizar lotes — soporta variantes de nombre de columna
-    const lts: Lote[] = (lotesData ?? []).map((l: Record<string, unknown>) => ({
-      id:       l.id as number,
-      clave:    (l.clave ?? l.numero ?? l.folio ?? `Lote ${l.id}`) as string,
-      manzana:  (l.manzana ?? l.mza ?? null) as string | null,
-      lote:     (l.lote ?? l.numero_lote ?? null) as string | null,
+    // cve_lote como clave de display
+    const lts: Lote[] = (lotesData ?? []).map((l: any) => ({
+      id:      l.id,
+      clave:   l.cve_lote ?? `Lote ${l.id}`,
+      manzana: null,
+      lote:    l.lote?.toString() ?? null,
     }))
 
     setPropietarios(props)
@@ -472,7 +477,9 @@ export default function CXCPage() {
               >
                 <option value="">Sin lote específico</option>
                 {lotes.map(l => (
-                  <option key={l.id} value={l.id}>{l.clave}</option>
+                  <option key={l.id} value={l.id}>
+                    {l.clave}{l.lote ? ` — Lote ${l.lote}` : ''}
+                  </option>
                 ))}
               </select>
             </div>
