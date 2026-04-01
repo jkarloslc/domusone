@@ -64,6 +64,17 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
+    key:   'frentes',
+    tabla: 'frentes',
+    label: 'Frentes',
+    icon:  MapPin,
+    color: '#0891b2',
+    desc:  'Frentes de obra o sección para clasificación de requisiciones',
+    campos: [
+      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+    ],
+  },
+  {
     key:   'tipos_lote',
     tabla: 'tipos_lote',
     label: 'Tipos de Lote',

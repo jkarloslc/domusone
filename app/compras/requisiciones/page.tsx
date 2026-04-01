@@ -1,7 +1,7 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect } from 'react'
-import { dbComp } from '@/lib/supabase'
+import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Edit2, Eye, X, Save, Loader,
@@ -147,11 +147,13 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [artOptions, setArtOptions]   = useState<Articulo[][]>([[]])  // options per row
   const [areas, setAreas]       = useState<{id: number; nombre: string}[]>([])
   const [almacenes, setAlmacenes] = useState<{id: number; nombre: string}[]>([])
+  const [frentes, setFrentes]   = useState<{id: number; nombre: string}[]>([])
   const [form, setForm] = useState({
     area_solicitante: row?.area_solicitante ?? '',
     solicitante:      row?.solicitante ?? (authUser?.nombre ?? ''),
     fecha_requerida:  row?.fecha_requerida ?? '',
     centro_costo:     row?.centro_costo ?? '',
+    frente:           row?.frente ?? '',
     prioridad:        row?.prioridad ?? 'Normal',
     justificacion:    row?.justificacion ?? '',
   })
@@ -162,6 +164,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
       .then(({ data }) => setAreas(data ?? []))
     dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setAlmacenes(data ?? []))
+    dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setFrentes(data ?? []))
     if (!isNew && row?.id) {
       dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', row.id)
         .then(({ data }) => {
@@ -258,13 +262,20 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
               </div>
               <div><label className="label">Solicitante *</label><input className="input" value={form.solicitante} onChange={setF('solicitante')} /></div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
               <div><label className="label">Fecha Requerida</label><input className="input" type="date" value={form.fecha_requerida} onChange={setF('fecha_requerida')} /></div>
               <div>
                 <label className="label">Centro de Costo</label>
                 <select className="select" value={form.centro_costo} onChange={setF('centro_costo')}>
                   <option value="">— Sin asignar —</option>
                   {almacenes.map(a => <option key={a.id} value={a.nombre}>{a.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Frente</label>
+                <select className="select" value={form.frente} onChange={setF('frente')}>
+                  <option value="">— Sin asignar —</option>
+                  {frentes.map(f => <option key={f.id} value={f.nombre}>{f.nombre}</option>)}
                 </select>
               </div>
               <div><label className="label">Prioridad</label>
@@ -387,6 +398,7 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
             <DI label="Fecha Requerida"  value={fmtFecha(req.fecha_requerida)} />
             <DI label="Centro de Costo"  value={req.centro_costo} />
+            <DI label="Frente"           value={req.frente} />
             {req.justificacion && <DI label="Justificación" value={req.justificacion} />}
             {req.autorizado_por && <DI label="Autorizado por" value={`${req.autorizado_por} — ${fmtFecha(req.fecha_autorizacion)}`} />}
             {req.comentario_auth && <DI label="Comentario" value={req.comentario_auth} />}
