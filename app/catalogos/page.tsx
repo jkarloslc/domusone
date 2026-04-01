@@ -71,7 +71,8 @@ const CATALOGOS: CatConfig[] = [
     color: '#0891b2',
     desc:  'Frentes de obra o sección para clasificación de requisiciones',
     campos: [
-      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+      { key: 'nombre',        label: 'Nombre *',  type: 'text',   required: true },
+      { key: 'id_seccion_fk', label: 'Sección *', type: 'select', selectTabla: 'secciones', required: true },
     ],
   },
   {
