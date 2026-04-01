@@ -2,10 +2,10 @@
 import { useDebounce } from '@/lib/useDebounce'
 import { useAuth } from '@/lib/AuthContext'
 import { useEffect, useState, useCallback } from 'react'
-import { dbCat, dbCtrl } from '@/lib/supabase'
+import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, X, Save, Loader,
-  ChevronLeft, ChevronRight, AlertCircle, CheckCircle, Clock, Ban
+  ChevronLeft, ChevronRight, CheckCircle, ChevronDown, Edit3
 } from 'lucide-react'
 import { type Cargo, fmt, STATUS_CARGO_COLOR, MESES } from './types'
 import ReciboModal from './ReciboModal'
@@ -41,11 +41,10 @@ export default function CargosTab() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
-
-  const totalMonto   = cargos.reduce((a, c) => a + (c.monto ?? 0), 0)
-  const totalPagado  = cargos.reduce((a, c) => a + (c.monto_pagado ?? 0), 0)
-  const totalSaldo   = cargos.reduce((a, c) => a + (c.saldo ?? 0), 0)
+  const totalPages  = Math.ceil(total / PAGE_SIZE)
+  const totalMonto  = cargos.reduce((a, c) => a + (c.monto ?? 0), 0)
+  const totalPagado = cargos.reduce((a, c) => a + (c.monto_pagado ?? 0), 0)
+  const totalSaldo  = cargos.reduce((a, c) => a + (c.saldo ?? 0), 0)
 
   return (
     <div>
@@ -80,9 +79,11 @@ export default function CargosTab() {
           </select>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
-        {canWrite('cobranza') && <button className="btn-primary" onClick={() => setNuevoModal(true)}>
-          <Plus size={14} /> Nuevo Cargo
-        </button>}
+        {canWrite('cobranza') && (
+          <button className="btn-primary" onClick={() => setNuevoModal(true)}>
+            <Plus size={14} /> Nuevo Cargo
+          </button>
+        )}
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -165,12 +166,15 @@ export default function CargosTab() {
   )
 }
 
-// ── Modal nuevo cargo manual ──────────────────────────────────
+// ── Modal nuevo cargo ─────────────────────────────────────────────────────────
 function NuevoCargoModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [saving, setSaving]         = useState(false)
-  const [lotes, setLotes]           = useState<any[]>([])
-  const [loteSearch, setLoteSearch] = useState('')
-  const [cuotas, setCuotas]         = useState<any[]>([])
+  const [saving, setSaving]               = useState(false)
+  const [lotes, setLotes]                 = useState<any[]>([])
+  const [loteSearch, setLoteSearch]       = useState('')
+  const [cuotasLote, setCuotasLote]       = useState<any[]>([])   // cuotas asignadas al lote
+  const [catalogoCuotas, setCatalogoCuotas] = useState<any[]>([]) // catálogo general cfg.cuotas_estandar
+  const [showCatalogo, setShowCatalogo]   = useState(false)
+  const [conceptoManual, setConceptoManual] = useState(false)
 
   const [form, setForm] = useState({
     id_lote_fk:       '',
@@ -183,6 +187,16 @@ function NuevoCargoModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
     notas:            '',
   })
 
+  // Cargar catálogo general al montar
+  useEffect(() => {
+    dbCfg.from('cuotas_estandar')
+      .select('id, nombre, monto')
+      .eq('activo', true)
+      .order('nombre')
+      .then(({ data }) => setCatalogoCuotas(data ?? []))
+  }, [])
+
+  // Buscar lote
   useEffect(() => {
     if (loteSearch.length < 2) { setLotes([]); return }
     dbCat.from('lotes').select('id, cve_lote, lote').ilike('cve_lote', `%${loteSearch}%`).limit(8)
@@ -190,19 +204,42 @@ function NuevoCargoModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
   }, [loteSearch])
 
   const selectLote = async (l: any) => {
-    setForm(f => ({ ...f, id_lote_fk: String(l.id) }))
-    setLoteSearch(l.cve_lote ?? `#${l.lote}`); setLotes([])
-    // Cargar cuotas del lote
+    setForm(f => ({ ...f, id_lote_fk: String(l.id), id_cuota_lote_fk: '' }))
+    setLoteSearch(l.cve_lote ?? `#${l.lote}`)
+    setLotes([])
+    // Cargar cuotas asignadas a este lote
     const { data } = await dbCtrl.from('cuotas_lotes')
       .select('*, cuotas_estandar(nombre)')
       .eq('id_lote_fk', l.id).eq('activo', true)
-    setCuotas(data ?? [])
+    setCuotasLote(data ?? [])
   }
 
-  const aplicarCuota = (id: string) => {
-    const c = cuotas.find((x: any) => x.id === Number(id))
-    if (c) setForm(f => ({ ...f, id_cuota_lote_fk: id, concepto: c.cuotas_estandar?.nombre ?? f.concepto, monto: c.monto?.toString() ?? f.monto }))
-    else setForm(f => ({ ...f, id_cuota_lote_fk: id }))
+  // Aplicar cuota del lote (ya asignada)
+  const aplicarCuotaLote = (id: string) => {
+    const c = cuotasLote.find((x: any) => x.id === Number(id))
+    if (c) {
+      setForm(f => ({
+        ...f,
+        id_cuota_lote_fk: id,
+        concepto: c.cuotas_estandar?.nombre ?? f.concepto,
+        monto:    c.monto?.toString() ?? f.monto,
+      }))
+      setConceptoManual(false)
+    } else {
+      setForm(f => ({ ...f, id_cuota_lote_fk: '' }))
+    }
+  }
+
+  // Aplicar cuota del catálogo general
+  const aplicarCuotaCatalogo = (cuota: any) => {
+    setForm(f => ({
+      ...f,
+      concepto:         cuota.nombre,
+      monto:            cuota.monto?.toString() ?? f.monto,
+      id_cuota_lote_fk: '',
+    }))
+    setShowCatalogo(false)
+    setConceptoManual(false)
   }
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -222,7 +259,8 @@ function NuevoCargoModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
       notas:            form.notas.trim() || null,
       monto_pagado:     0,
     })
-    setSaving(false); onSaved()
+    setSaving(false)
+    onSaved()
   }
 
   const ANIOS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 + i)
@@ -234,13 +272,14 @@ function NuevoCargoModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Nuevo Cargo</h2>
           <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
         </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-          {/* Lote */}
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+          {/* ── Lote ── */}
           <div>
             <label className="label">Lote *</label>
             <input className="input" placeholder="Busca clave de lote…" value={loteSearch}
-              onChange={e => { setLoteSearch(e.target.value); setForm(f => ({ ...f, id_lote_fk: '' })) }} />
+              onChange={e => { setLoteSearch(e.target.value); setForm(f => ({ ...f, id_lote_fk: '', id_cuota_lote_fk: '' })); setCuotasLote([]) }} />
             {lotes.length > 0 && (
               <div className="card" style={{ marginTop: 4, padding: '4px 0' }}>
                 {lotes.map((l: any) => (
@@ -255,13 +294,13 @@ function NuevoCargoModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
             )}
           </div>
 
-          {/* Cuota del lote (si tiene asignadas) */}
-          {cuotas.length > 0 && (
+          {/* ── Cuotas asignadas al lote (si existen) ── */}
+          {cuotasLote.length > 0 && (
             <div>
-              <label className="label">Aplicar desde cuota asignada (opcional)</label>
-              <select className="select" value={form.id_cuota_lote_fk} onChange={e => aplicarCuota(e.target.value)}>
-                <option value="">— Cargo manual —</option>
-                {cuotas.map((c: any) => (
+              <label className="label">Cuota asignada al lote</label>
+              <select className="select" value={form.id_cuota_lote_fk} onChange={e => aplicarCuotaLote(e.target.value)}>
+                <option value="">— Selecciona una cuota del lote —</option>
+                {cuotasLote.map((c: any) => (
                   <option key={c.id} value={c.id}>
                     {c.cuotas_estandar?.nombre ?? 'Cuota'} — {fmt(c.monto)} / {c.periodicidad}
                   </option>
@@ -270,11 +309,66 @@ function NuevoCargoModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
             </div>
           )}
 
+          {/* ── Concepto ── */}
           <div>
-            <label className="label">Concepto *</label>
-            <input className="input" value={form.concepto} onChange={set('concepto')} placeholder="Ej: Cuota de Mantenimiento" />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <label className="label" style={{ marginBottom: 0 }}>Concepto *</label>
+              <button
+                className="btn-ghost"
+                style={{ fontSize: 11, padding: '2px 8px', color: 'var(--blue)' }}
+                onClick={() => setConceptoManual(m => !m)}
+              >
+                <Edit3 size={11} /> {conceptoManual ? 'Elegir del catálogo' : 'Editar manual'}
+              </button>
+            </div>
+
+            {/* Picker del catálogo */}
+            {!conceptoManual ? (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowCatalogo(s => !s)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    width: '100%', padding: '8px 12px',
+                    background: form.concepto ? '#eff6ff' : 'var(--surface-600)',
+                    border: `1px solid ${form.concepto ? '#bfdbfe' : 'var(--border)'}`,
+                    borderRadius: 8, cursor: 'pointer', fontSize: 13,
+                    color: form.concepto ? 'var(--blue)' : 'var(--text-muted)',
+                    fontWeight: form.concepto ? 600 : 400,
+                  }}
+                >
+                  <span>{form.concepto || 'Selecciona del catálogo de cuotas…'}</span>
+                  <ChevronDown size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                </button>
+
+                {showCatalogo && (
+                  <div className="card" style={{ position: 'absolute', left: 0, right: 0, zIndex: 50, marginTop: 4, padding: '4px 0', maxHeight: 220, overflowY: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
+                    {catalogoCuotas.length === 0 ? (
+                      <div style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>Sin cuotas en el catálogo</div>
+                    ) : catalogoCuotas.map((c: any) => (
+                      <button key={c.id} onClick={() => aplicarCuotaCatalogo(c)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {form.concepto === c.nombre && <CheckCircle size={12} style={{ color: '#15803d' }} />}
+                          <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: form.concepto === c.nombre ? 600 : 400 }}>{c.nombre}</span>
+                        </div>
+                        {c.monto && (
+                          <span style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(c.monto)}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Campo libre */
+              <input className="input" value={form.concepto} onChange={set('concepto')} placeholder="Escribe el concepto…" autoFocus />
+            )}
           </div>
 
+          {/* ── Monto y fecha ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <label className="label">Monto *</label>
@@ -286,6 +380,7 @@ function NuevoCargoModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
             </div>
           </div>
 
+          {/* ── Período ── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
               <label className="label">Mes</label>
@@ -303,11 +398,13 @@ function NuevoCargoModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
             </div>
           </div>
 
+          {/* ── Notas ── */}
           <div>
             <label className="label">Notas</label>
             <textarea className="input" rows={2} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} />
           </div>
         </div>
+
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" onClick={handleSave} disabled={saving || !form.id_lote_fk || !form.concepto || !form.monto}>
