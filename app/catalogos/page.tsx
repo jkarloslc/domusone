@@ -27,8 +27,10 @@ type Campo = {
   type:      'text' | 'number' | 'textarea' | 'date' | 'select' | 'file'
   required?: boolean
   // Para type='select': tabla cfg de donde cargar las opciones
-  selectTabla?:  string
-  selectSchema?: 'cfg' | 'comp'
+  selectTabla?:   string
+  selectSchema?:  'cfg' | 'comp'
+  // Para type='select': opciones estáticas (alternativa a selectTabla)
+  staticOptions?: string[]
   // Para type='file': bucket de storage
   bucket?: string
 }
@@ -95,7 +97,7 @@ const CATALOGOS: CatConfig[] = [
       { key: 'id_seccion_fk',       label: 'Sección *',       type: 'select',  selectTabla: 'secciones',      required: true },
       { key: 'id_clasificacion_fk', label: 'Clasificación *', type: 'select',  selectTabla: 'clasificacion',  required: true },
       { key: 'monto',               label: 'Monto',           type: 'number' },
-      { key: 'periodicidad',        label: 'Periodicidad',    type: 'text' },
+      { key: 'periodicidad', label: 'Periodicidad', type: 'select', staticOptions: ['Mensual', 'Anual', 'Única'] },
       { key: 'descripcion',         label: 'Descripción',     type: 'textarea' },
     ],
   },
@@ -487,9 +489,10 @@ function CatalogoModal({ config, row, onClose, onSaved }:
               {c.type === 'select' && (
                 <select className="select" value={form[c.key] ?? ''} onChange={set(c.key)}>
                   <option value="">— Seleccionar —</option>
-                  {(selectOpts[c.key] ?? []).map(o => (
-                    <option key={o.id} value={o.id}>{o.nombre}</option>
-                  ))}
+                  {c.staticOptions
+                    ? c.staticOptions.map(o => <option key={o} value={o}>{o}</option>)
+                    : (selectOpts[c.key] ?? []).map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)
+                  }
                 </select>
               )}
 
