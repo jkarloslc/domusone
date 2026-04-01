@@ -64,6 +64,17 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
+    key:   'centros_costo',
+    tabla: 'centros_costo',
+    label: 'Centros de Costo',
+    icon:  DollarSign,
+    color: '#059669',
+    desc:  'Centros de costo para clasificación de requisiciones y pagos',
+    campos: [
+      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+    ],
+  },
+  {
     key:   'frentes',
     tabla: 'frentes',
     label: 'Frentes',

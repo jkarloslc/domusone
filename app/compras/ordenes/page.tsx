@@ -13,7 +13,7 @@ import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_
 const PAGE_SIZE = 20
 
 export default function OrdenesPage() {
-  const { canWrite, canDelete } = useAuth()
+  const { canWrite } = useAuth()
   const router = useRouter()
   const { authUser } = useAuth()
   const [rows, setRows]       = useState<any[]>([])
@@ -36,8 +36,6 @@ export default function OrdenesPage() {
     if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
-
-    // Cargar proveedores para mostrar nombre
     const { data: provs } = await dbComp.from('proveedores').select('id, nombre')
     const m: Record<number, string> = {}
     ;(provs ?? []).forEach((p: any) => { m[p.id] = p.nombre })
@@ -47,7 +45,7 @@ export default function OrdenesPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const canAuth = authUser?.rol === 'admin' || authUser?.rol === 'cobranza'
+  const canAuth = authUser?.rol === 'admin' || authUser?.rol === 'fraccionamiento'
 
   const handleAuth = async (id: number, aprobar: boolean, comentario = '') => {
     await dbComp.from('ordenes_compra').update({
@@ -122,21 +120,21 @@ export default function OrdenesPage() {
   )
 }
 
-// ── Modal nueva OC ──────────────────────────────────────────
 function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => void; onSaved: () => void }) {
   const { authUser } = useAuth()
   const isNew = !row
-  const [saving, setSaving] = useState(false)
-  const [error, setError]   = useState('')
+  const [saving, setSaving]     = useState(false)
+  const [error, setError]       = useState('')
   const [proveedores, setProvs] = useState<Proveedor[]>([])
+  const [almacenes, setAlms]    = useState<any[]>([])
   const [rfqs, setRFQs]         = useState<any[]>([])
   const [form, setForm] = useState({
-    id_proveedor_fk:  row?.id_proveedor_fk?.toString() ?? '',
-    id_rfq_fk:        row?.id_rfq_fk?.toString() ?? '',
-    fecha_entrega_est: row?.fecha_entrega_est ?? '',
-    condiciones_pago:  row?.condiciones_pago ?? '',
-    lugar_entrega:     row?.lugar_entrega ?? 'Almacén General',
-    notas:             row?.notas ?? '',
+    id_proveedor_fk:       row?.id_proveedor_fk?.toString() ?? '',
+    id_rfq_fk:             row?.id_rfq_fk?.toString() ?? '',
+    fecha_entrega_est:     row?.fecha_entrega_est ?? '',
+    condiciones_pago:      row?.condiciones_pago ?? '',
+    id_almacen_entrega_fk: row?.id_almacen_entrega_fk?.toString() ?? '',
+    notas:                 row?.notas ?? '',
   })
   const [det, setDet] = useState<any[]>([{ id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
   const [artSearches, setArtSearches] = useState<string[]>([''])
@@ -145,17 +143,16 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   useEffect(() => {
     dbComp.from('proveedores').select('*').eq('activo', true).order('nombre')
       .then(({ data }) => setProvs(data as Proveedor[] ?? []))
-    // Solo RFQs cerradas que aún NO tienen OC generada
+    dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setAlms(data ?? []))
     ;(async () => {
-      const { data: rfqsConOC } = await dbComp.from('ordenes_compra')
-        .select('id_rfq_fk').not('id_rfq_fk', 'is', null)
+      const { data: rfqsConOC } = await dbComp.from('ordenes_compra').select('id_rfq_fk').not('id_rfq_fk', 'is', null)
       const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk))
       const { data } = await dbComp.from('rfq').select('id, folio, proveedor_ganador').eq('status', 'Cerrada')
       setRFQs((data ?? []).filter((r: any) => !rfqsUsadas.has(r.id)))
     })()
   }, [])
 
-  // Auto-llenar desde RFQ seleccionada
   const aplicarRFQ = async (rfqId: string) => {
     setForm(f => ({ ...f, id_rfq_fk: rfqId }))
     if (!rfqId) return
@@ -179,23 +176,17 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 
   const buscarArticulos = async (i: number, q: string) => {
     setArtSearches(p => { const n = [...p]; n[i] = q; return n })
-    if (q.trim().length < 2) {
-      setArtOptions(p => { const n = [...p]; n[i] = []; return n })
-      return
-    }
+    if (q.trim().length < 2) { setArtOptions(p => { const n = [...p]; n[i] = []; return n }); return }
     const { data } = await dbComp.from('articulos')
       .select('id, clave, nombre, unidad, precio_ref').eq('activo', true)
-      .or(`clave.ilike.%${q}%,nombre.ilike.%${q}%`)
-      .order('nombre').limit(20)
+      .or(`clave.ilike.%${q}%,nombre.ilike.%${q}%`).order('nombre').limit(20)
     setArtOptions(p => { const n = [...p]; n[i] = data ?? []; return n })
   }
 
   const seleccionarArticulo = (i: number, art: any) => {
     setDet(d => d.map((x, j) => j === i ? {
-      ...x,
-      id_articulo_fk: art.id,
-      descripcion:    art.nombre,
-      unidad:         art.unidad ?? x.unidad,
+      ...x, id_articulo_fk: art.id, descripcion: art.nombre,
+      unidad: art.unidad ?? x.unidad,
       precio_unitario: art.precio_ref ? art.precio_ref.toString() : x.precio_unitario,
     } : x))
     setArtSearches(p => { const n = [...p]; n[i] = `${art.clave} — ${art.nombre}`; return n })
@@ -204,8 +195,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 
   const addDetLine = () => {
     setDet(d => [...d, { id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
-    setArtSearches(p => [...p, ''])
-    setArtOptions(p => [...p, []])
+    setArtSearches(p => [...p, '']); setArtOptions(p => [...p, []])
   }
 
   const subtotal = det.reduce((a, d) => a + Number(d.cantidad||0) * Number(d.precio_unitario||0), 0)
@@ -216,31 +206,26 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     const detValidos = det.filter(d => d.descripcion && Number(d.precio_unitario) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto con precio'); return }
     setSaving(true); setError('')
-
     const { count } = await dbComp.from('ordenes_compra').select('id', { count: 'exact', head: true })
     const folio = folioGen('OC', (count ?? 0) + 1)
     const { data: oc, error: err } = await dbComp.from('ordenes_compra').insert({
       folio,
-      id_proveedor_fk:   Number(form.id_proveedor_fk),
-      id_rfq_fk:         form.id_rfq_fk ? Number(form.id_rfq_fk) : null,
-      fecha_entrega_est: form.fecha_entrega_est || null,
-      condiciones_pago:  form.condiciones_pago || null,
-      lugar_entrega:     form.lugar_entrega || null,
-      notas:             form.notas.trim() || null,
+      id_proveedor_fk:       Number(form.id_proveedor_fk),
+      id_rfq_fk:             form.id_rfq_fk ? Number(form.id_rfq_fk) : null,
+      fecha_entrega_est:     form.fecha_entrega_est || null,
+      condiciones_pago:      form.condiciones_pago || null,
+      id_almacen_entrega_fk: form.id_almacen_entrega_fk ? Number(form.id_almacen_entrega_fk) : null,
+      notas:                 form.notas.trim() || null,
       subtotal, iva, total: subtotal + iva,
-      status:            enviar ? 'Pendiente Auth' : 'Borrador',
-      created_by:        authUser?.nombre ?? null,
+      status:     enviar ? 'Pendiente Auth' : 'Borrador',
+      created_by: authUser?.nombre ?? null,
     }).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
-
     await dbComp.from('ordenes_compra_det').insert(
       detValidos.map(d => ({
-        id_oc_fk:        oc.id,
-        descripcion:     d.descripcion.trim(),
-        cantidad:        Number(d.cantidad),
-        unidad:          d.unidad,
-        precio_unitario: Number(d.precio_unitario),
-        tasa_iva:        Number(d.tasa_iva),
+        id_oc_fk: oc.id, descripcion: d.descripcion.trim(),
+        cantidad: Number(d.cantidad), unidad: d.unidad,
+        precio_unitario: Number(d.precio_unitario), tasa_iva: Number(d.tasa_iva),
       }))
     )
     setSaving(false); onSaved()
@@ -289,9 +274,12 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                 </select>
               </div>
               <div>
-                <label className="label">Lugar de Entrega</label>
-                <input className="input" value={form.lugar_entrega}
-                  onChange={e => setForm(f => ({ ...f, lugar_entrega: e.target.value }))} />
+                <label className="label">Almacén de Entrega</label>
+                <select className="select" value={form.id_almacen_entrega_fk}
+                  onChange={e => setForm(f => ({ ...f, id_almacen_entrega_fk: e.target.value }))}>
+                  <option value="">— Sin asignar —</option>
+                  {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                </select>
               </div>
             </div>
           </Sec>
@@ -299,24 +287,17 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
           <Sec label="Productos">
             {det.map((d, i) => (
               <div key={i} style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: 8 }}>
-                {/* Fila 1: Buscador artículo */}
                 <div style={{ position: 'relative', marginBottom: 8 }}>
                   <label className="label">Artículo</label>
-                  <input className="input"
-                    placeholder="Escribe clave o nombre…"
-                    value={artSearches[i] ?? ''}
-                    onChange={e => buscarArticulos(i, e.target.value)}
-                  />
+                  <input className="input" placeholder="Escribe clave o nombre…"
+                    value={artSearches[i] ?? ''} onChange={e => buscarArticulos(i, e.target.value)} />
                   {(artOptions[i]?.length ?? 0) > 0 && (
                     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
                       background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
                       boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
                       {artOptions[i].map((a: any) => (
-                        <button key={a.id}
-                          onMouseDown={e => { e.preventDefault(); seleccionarArticulo(i, a) }}
-                          style={{ display: 'block', width: '100%', textAlign: 'left',
-                            padding: '8px 12px', background: 'none', border: 'none',
-                            cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
+                        <button key={a.id} onMouseDown={e => { e.preventDefault(); seleccionarArticulo(i, a) }}
+                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
                           onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                           <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{a.clave}</span>
@@ -327,18 +308,13 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                     </div>
                   )}
                 </div>
-                {/* Fila 2: Descripción libre (editable tras selección) */}
                 <div style={{ marginBottom: 8 }}>
                   <label className="label">Descripción / Especificaciones</label>
-                  <input className="input" value={d.descripcion}
-                    onChange={e => setD(i, 'descripcion', e.target.value)}
-                    placeholder="Descripción detallada del producto" />
+                  <input className="input" value={d.descripcion} onChange={e => setD(i, 'descripcion', e.target.value)} />
                 </div>
-                {/* Fila 3: Cant / Unidad / P.Unit / IVA / Eliminar */}
                 <div style={{ display: 'grid', gridTemplateColumns: '80px 80px 100px 90px 28px', gap: 8, alignItems: 'end' }}>
                   <div><label className="label">Cantidad</label>
-                    <input className="input" type="number" value={d.cantidad}
-                      onChange={e => setD(i, 'cantidad', e.target.value)} style={{ textAlign: 'right' }} />
+                    <input className="input" type="number" value={d.cantidad} onChange={e => setD(i, 'cantidad', e.target.value)} style={{ textAlign: 'right' }} />
                   </div>
                   <div><label className="label">Unidad</label>
                     <select className="select" value={d.unidad} onChange={e => setD(i, 'unidad', e.target.value)}>
@@ -346,40 +322,28 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                     </select>
                   </div>
                   <div><label className="label">Precio Unit.</label>
-                    <input className="input" type="number" step="0.01" value={d.precio_unitario}
-                      onChange={e => setD(i, 'precio_unitario', e.target.value)} style={{ textAlign: 'right' }} />
+                    <input className="input" type="number" step="0.01" value={d.precio_unitario} onChange={e => setD(i, 'precio_unitario', e.target.value)} style={{ textAlign: 'right' }} />
                   </div>
                   <div><label className="label">IVA</label>
                     <select className="select" value={d.tasa_iva} onChange={e => setD(i, 'tasa_iva', e.target.value)}>
-                      <option value="0">Exento</option>
-                      <option value="0.16">16%</option>
-                      <option value="0.08">8%</option>
+                      <option value="0">Exento</option><option value="0.16">16%</option><option value="0.08">8%</option>
                     </select>
                   </div>
                   <button className="btn-ghost" style={{ padding: '6px 4px' }}
-                    onClick={() => {
-                      setDet(d => d.filter((_, j) => j !== i))
-                      setArtSearches(p => p.filter((_, j) => j !== i))
-                      setArtOptions(p => p.filter((_, j) => j !== i))
-                    }}><Trash2 size={12} /></button>
+                    onClick={() => { setDet(d => d.filter((_, j) => j !== i)); setArtSearches(p => p.filter((_, j) => j !== i)); setArtOptions(p => p.filter((_, j) => j !== i)) }}>
+                    <Trash2 size={12} />
+                  </button>
                 </div>
-                {/* Subtotal fila */}
                 {d.cantidad && d.precio_unitario && (
                   <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-                    Subtotal: <strong style={{ color: 'var(--blue)' }}>
-                      {fmt(Number(d.cantidad) * Number(d.precio_unitario) * (1 + Number(d.tasa_iva || 0)))}
-                    </strong>
+                    Subtotal: <strong style={{ color: 'var(--blue)' }}>{fmt(Number(d.cantidad) * Number(d.precio_unitario) * (1 + Number(d.tasa_iva || 0)))}</strong>
                   </div>
                 )}
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-              <button className="btn-ghost" onClick={addDetLine}>
-                <Plus size={12} /> Agregar producto
-              </button>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>
-                Total: {fmt(subtotal + iva)}
-              </div>
+              <button className="btn-ghost" onClick={addDetLine}><Plus size={12} /> Agregar producto</button>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>Total: {fmt(subtotal + iva)}</div>
             </div>
           </Sec>
 
@@ -401,22 +365,23 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   )
 }
 
-// ── Detalle OC con autorización y orden de pago ─────────────
 function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean; onClose: () => void; onAuth: (id: number, ap: boolean, c: string) => void }) {
-  const [det, setDet]     = useState<any[]>([])
-  const [op, setOP]       = useState<any | null>(null)
-  const [comentario, setCom] = useState('')
+  const [det, setDet]       = useState<any[]>([])
+  const [op, setOP]         = useState<any | null>(null)
+  const [almMap, setAlmMap] = useState<Record<number, string>>({})
+  const [comentario, setCom]    = useState('')
   const [creandoOP, setCreandoOP] = useState(false)
   const [savingOP, setSavingOP]   = useState(false)
-  const [opForm, setOpForm] = useState({
-    forma_pago: 'Transferencia', fecha_vencimiento: '', concepto: `OC ${oc.folio}`, notas: ''
-  })
+  const [opForm, setOpForm] = useState({ forma_pago: 'Transferencia', fecha_vencimiento: '', concepto: `OC ${oc.folio}`, notas: '' })
 
   useEffect(() => {
-    dbComp.from('ordenes_compra_det').select('*').eq('id_oc_fk', oc.id)
-      .then(({ data }) => setDet(data ?? []))
-    dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle()
-      .then(({ data }) => setOP(data))
+    dbComp.from('ordenes_compra_det').select('*').eq('id_oc_fk', oc.id).then(({ data }) => setDet(data ?? []))
+    dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle().then(({ data }) => setOP(data))
+    dbComp.from('almacenes').select('id, nombre').then(({ data }) => {
+      const m: Record<number, string> = {}
+      ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
+      setAlmMap(m)
+    })
   }, [oc.id])
 
   const crearOrdenPago = async () => {
@@ -425,36 +390,31 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
     const folio = folioGen('OP', (count ?? 0) + 1)
     await dbComp.from('ordenes_pago').insert({
       folio, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
+      id_almacen_fk: oc.id_almacen_entrega_fk ?? null,
       monto: oc.total, forma_pago: opForm.forma_pago,
       fecha_vencimiento: opForm.fecha_vencimiento || null,
       concepto: opForm.concepto, notas: opForm.notas || null, status: 'Pendiente',
     })
     setSavingOP(false); setCreandoOP(false)
-    dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle()
-      .then(({ data }) => setOP(data))
+    dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle().then(({ data }) => setOP(data))
   }
 
   const imprimirOP = () => {
     if (!op) return
     const win = window.open('', '_blank')
-    win?.document.write(`
-      <html><head><title>Orden de Pago ${op.folio}</title>
+    win?.document.write(`<html><head><title>Orden de Pago ${op.folio}</title>
       <style>body{font-family:Arial,sans-serif;padding:40px;font-size:13px}h1{color:#0D4F80;font-size:22px}table{width:100%;border-collapse:collapse;margin:20px 0}td,th{border:1px solid #e2e8f0;padding:8px 12px}th{background:#f1f5f9;font-size:11px;text-transform:uppercase}</style>
-      </head><body>
-      <h1>Orden de Pago</h1>
-      <table><tr><td><b>Folio</b></td><td>${op.folio}</td><td><b>Fecha</b></td><td>${fmtFecha(op.fecha_op)}</td></tr>
-      <tr><td><b>OC Referencia</b></td><td>${oc.folio}</td><td><b>Proveedor</b></td><td>${oc._provNombre ?? ''}</td></tr>
+      </head><body><h1>Orden de Pago</h1>
+      <table><tr><td><b>Folio</b></td><td>${op.folio}</td><td><b>OC Ref.</b></td><td>${oc.folio}</td></tr>
+      <tr><td><b>Proveedor</b></td><td colspan="3">${oc._provNombre ?? ''}</td></tr>
       <tr><td><b>Monto</b></td><td><b>${fmt(op.monto)}</b></td><td><b>Forma de Pago</b></td><td>${op.forma_pago}</td></tr>
-      <tr><td><b>Vencimiento</b></td><td>${fmtFecha(op.fecha_vencimiento)}</td><td><b>CLABE</b></td><td>${oc.cuenta_clabe ?? '—'}</td></tr>
+      <tr><td><b>Vencimiento</b></td><td>${fmtFecha(op.fecha_vencimiento)}</td><td><b>Almacén</b></td><td>${almMap[oc.id_almacen_entrega_fk] ?? '—'}</td></tr>
       <tr><td colspan="4"><b>Concepto:</b> ${op.concepto ?? '—'}</td></tr></table>
-      <br><br>
       <div style="display:flex;gap:80px;margin-top:40px">
         <div style="text-align:center;border-top:1px solid #000;padding-top:8px;width:200px">Elaboró</div>
         <div style="text-align:center;border-top:1px solid #000;padding-top:8px;width:200px">Autorizó</div>
         <div style="text-align:center;border-top:1px solid #000;padding-top:8px;width:200px">Recibió</div>
-      </div>
-      </body></html>
-    `)
+      </div></body></html>`)
     win?.print()
   }
 
@@ -471,9 +431,7 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
           </div>
           <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
         </div>
-
         <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 120px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Detalle productos */}
           <Sec label="Productos">
             <div className="card" style={{ overflow: 'hidden' }}>
               <table>
@@ -489,42 +447,28 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
                       <td style={{ textAlign: 'right', fontSize: 12, color: d.cant_recibida > 0 ? '#15803d' : 'var(--text-muted)' }}>{d.cant_recibida ?? 0}</td>
                     </tr>
                   ))}
-                  <tr style={{ background: '#f8fafc' }}>
-                    <td colSpan={3}></td>
-                    <td style={{ fontWeight: 600, textAlign: 'right' }}>Subtotal</td>
-                    <td style={{ fontWeight: 600, textAlign: 'right' }}>{fmt(oc.subtotal)}</td>
-                    <td></td>
-                  </tr>
-                  <tr style={{ background: 'var(--blue-pale)' }}>
-                    <td colSpan={3}></td>
-                    <td style={{ fontWeight: 700, color: 'var(--blue)', textAlign: 'right' }}>TOTAL</td>
-                    <td style={{ fontWeight: 700, color: 'var(--blue)', textAlign: 'right', fontSize: 15 }}>{fmt(oc.total)}</td>
-                    <td></td>
-                  </tr>
+                  <tr style={{ background: '#f8fafc' }}><td colSpan={3}></td><td style={{ fontWeight: 600, textAlign: 'right' }}>Subtotal</td><td style={{ fontWeight: 600, textAlign: 'right' }}>{fmt(oc.subtotal)}</td><td></td></tr>
+                  <tr style={{ background: 'var(--blue-pale)' }}><td colSpan={3}></td><td style={{ fontWeight: 700, color: 'var(--blue)', textAlign: 'right' }}>TOTAL</td><td style={{ fontWeight: 700, color: 'var(--blue)', textAlign: 'right', fontSize: 15 }}>{fmt(oc.total)}</td><td></td></tr>
                 </tbody>
               </table>
             </div>
           </Sec>
 
-          {/* Info entrega */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
-            <DI label="Condiciones de Pago"   value={oc.condiciones_pago} />
-            <DI label="Entrega Estimada"       value={fmtFecha(oc.fecha_entrega_est)} />
-            <DI label="Lugar de Entrega"       value={oc.lugar_entrega} />
-            {oc.autorizado_por && <DI label="Autorizado por" value={`${oc.autorizado_por} — ${fmtFecha(oc.fecha_autorizacion)}`} />}
-            {oc.comentario_auth && <DI label="Comentario" value={oc.comentario_auth} />}
+            <DI label="Condiciones de Pago" value={oc.condiciones_pago} />
+            <DI label="Entrega Estimada"    value={fmtFecha(oc.fecha_entrega_est)} />
+            <DI label="Almacén de Entrega"  value={oc.id_almacen_entrega_fk ? (almMap[oc.id_almacen_entrega_fk] ?? `#${oc.id_almacen_entrega_fk}`) : null} />
+            {oc.autorizado_por    && <DI label="Autorizado por" value={`${oc.autorizado_por} — ${fmtFecha(oc.fecha_autorizacion)}`} />}
+            {oc.comentario_auth   && <DI label="Comentario"     value={oc.comentario_auth} />}
           </div>
 
-          {/* Autorización */}
           {canAuth && oc.status === 'Pendiente Auth' && (
             <div style={{ padding: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10 }}>Autorización de Orden de Compra</div>
               <textarea className="input" rows={2} value={comentario} onChange={e => setCom(e.target.value)}
                 placeholder="Comentario (opcional)" style={{ resize: 'vertical', marginBottom: 10 }} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn-primary" onClick={() => onAuth(oc.id, true, comentario)} style={{ flex: 1 }}>
-                  <CheckCircle size={13} /> Autorizar OC
-                </button>
+                <button className="btn-primary" onClick={() => onAuth(oc.id, true, comentario)} style={{ flex: 1 }}><CheckCircle size={13} /> Autorizar OC</button>
                 <button onClick={() => onAuth(oc.id, false, comentario)}
                   style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px', borderRadius: 7, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-body)' }}>
                   <XCircle size={13} /> Rechazar
@@ -533,12 +477,9 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
             </div>
           )}
 
-          {/* Orden de Pago */}
           {oc.status === 'Autorizada' && !op && !creandoOP && (
             <div style={{ textAlign: 'center' }}>
-              <button className="btn-primary" onClick={() => setCreandoOP(true)}>
-                <Plus size={13} /> Generar Orden de Pago
-              </button>
+              <button className="btn-primary" onClick={() => setCreandoOP(true)}><Plus size={13} /> Generar Orden de Pago</button>
             </div>
           )}
 
@@ -577,10 +518,10 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
-                <DI label="Monto"          value={fmt(op.monto)} />
-                <DI label="Forma de Pago"  value={op.forma_pago} />
-                <DI label="Vencimiento"    value={fmtFecha(op.fecha_vencimiento)} />
-                <DI label="Concepto"       value={op.concepto} />
+                <DI label="Monto"         value={fmt(op.monto)} />
+                <DI label="Forma de Pago" value={op.forma_pago} />
+                <DI label="Vencimiento"   value={fmtFecha(op.fecha_vencimiento)} />
+                <DI label="Concepto"      value={op.concepto} />
               </div>
             </div>
           )}

@@ -145,27 +145,27 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [articulos, setArticulos] = useState<Articulo[]>([])
   const [artSearches, setArtSearches] = useState<string[]>([''])  // search per row
   const [artOptions, setArtOptions]   = useState<Articulo[][]>([[]])  // options per row
-  const [areas, setAreas]         = useState<{id: number; nombre: string}[]>([])
-  const [almacenes, setAlmacenes] = useState<{id: number; nombre: string}[]>([])
-  const [secciones, setSecciones] = useState<{id: number; nombre: string}[]>([])
-  const [frentes, setFrentes]     = useState<{id: number; nombre: string; id_seccion_fk: number}[]>([])
-  const [seccionId, setSeccionId] = useState<string>(row?.id_seccion_fk?.toString() ?? '')
+  const [areas, setAreas]           = useState<{id: number; nombre: string}[]>([])
+  const [centrosCosto, setCentros]  = useState<{id: number; nombre: string}[]>([])
+  const [secciones, setSecciones]   = useState<{id: number; nombre: string}[]>([])
+  const [frentes, setFrentes]       = useState<{id: number; nombre: string; id_seccion_fk: number}[]>([])
+  const [seccionId, setSeccionId]   = useState<string>(row?.id_seccion_fk?.toString() ?? '')
   const [form, setForm] = useState({
-    area_solicitante: row?.area_solicitante ?? '',
-    solicitante:      row?.solicitante ?? (authUser?.nombre ?? ''),
-    fecha_requerida:  row?.fecha_requerida ?? '',
-    centro_costo:     row?.centro_costo ?? '',
-    frente:           row?.frente ?? '',
-    prioridad:        row?.prioridad ?? 'Normal',
-    justificacion:    row?.justificacion ?? '',
+    area_solicitante:   row?.area_solicitante ?? '',
+    solicitante:        row?.solicitante ?? (authUser?.nombre ?? ''),
+    fecha_requerida:    row?.fecha_requerida ?? '',
+    id_centro_costo_fk: row?.id_centro_costo_fk?.toString() ?? '',
+    frente:             row?.frente ?? '',
+    prioridad:          row?.prioridad ?? 'Normal',
+    justificacion:      row?.justificacion ?? '',
   })
   const [det, setDet] = useState<Det[]>([{ id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', notas: '' }])
 
   useEffect(() => {
     dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setAreas(data ?? []))
-    dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setAlmacenes(data ?? []))
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCentros(data ?? []))
     dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setSecciones(data ?? []))
     dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
@@ -225,7 +225,9 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
       const { count } = await dbComp.from('requisiciones').select('id', { count: 'exact', head: true })
       const folio = folioGen('REQ', (count ?? 0) + 1)
       const { data, error: err } = await dbComp.from('requisiciones').insert({
-        folio, ...form, status: enviar ? 'Enviada' : 'Borrador',
+        folio, ...form,
+        id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+        status: enviar ? 'Enviada' : 'Borrador',
         created_by: authUser?.nombre ?? null,
       }).select('id').single()
       if (err) { setError(err.message); setSaving(false); return }
@@ -270,9 +272,9 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
               <div><label className="label">Fecha Requerida</label><input className="input" type="date" value={form.fecha_requerida} onChange={setF('fecha_requerida')} /></div>
               <div>
                 <label className="label">Centro de Costo</label>
-                <select className="select" value={form.centro_costo} onChange={setF('centro_costo')}>
+                <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
                   <option value="">— Sin asignar —</option>
-                  {almacenes.map(a => <option key={a.id} value={a.nombre}>{a.nombre}</option>)}
+                  {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
               <div>

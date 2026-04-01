@@ -204,10 +204,14 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
   const [uploading, setUploading] = useState<string | null>(null)
-  const [proveedores, setProvs]   = useState<any[]>([])
-  const [almacenes, setAlms]      = useState<any[]>([])
-  const [ocsDisp, setOcsDisp]     = useState<any[]>([])
-  const [ocsSelected, setOcsSel]  = useState<{ id: number; folio: string; total: number; monto: string }[]>([])
+  const [proveedores, setProvs]     = useState<any[]>([])
+  const [almacenes, setAlms]        = useState<any[]>([])
+  const [centrosCosto, setCentros]  = useState<any[]>([])
+  const [secciones, setSecciones]   = useState<any[]>([])
+  const [frentes, setFrentes]       = useState<any[]>([])
+  const [seccionId, setSeccionId]   = useState<string>(opEdit?.id_seccion_fk?.toString() ?? '')
+  const [ocsDisp, setOcsDisp]       = useState<any[]>([])
+  const [ocsSelected, setOcsSel]    = useState<{ id: number; folio: string; total: number; monto: string }[]>([])
   const [conOC, setConOC] = useState<boolean | null>(
     opEdit ? (opEdit.id_oc_fk != null) : null
   )
@@ -216,8 +220,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const xmlRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
-    id_proveedor_fk:   opEdit?.id_proveedor_fk?.toString() ?? '',
-    id_almacen_fk:     opEdit?.id_almacen_fk?.toString()   ?? '',
+    id_proveedor_fk:    opEdit?.id_proveedor_fk?.toString() ?? '',
+    id_almacen_fk:      opEdit?.id_almacen_fk?.toString()   ?? '',
+    id_centro_costo_fk: opEdit?.id_centro_costo_fk?.toString() ?? '',
+    id_seccion_fk:      opEdit?.id_seccion_fk?.toString()   ?? '',
+    id_frente_fk:       opEdit?.id_frente_fk?.toString()    ?? '',
     forma_pago:        opEdit?.forma_pago        ?? 'Transferencia',
     fecha_vencimiento: opEdit?.fecha_vencimiento ?? '',
     concepto:          opEdit?.concepto          ?? '',
@@ -239,6 +246,15 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       setProvs(provs ?? [])
       setAlms(alms ?? [])
       setOcsDisp(ocs ?? [])
+    })
+    // Catálogos cfg para opción sin OC
+    import('@/lib/supabase').then(({ dbCfg }) => {
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+        .then(({ data }) => setCentros(data ?? []))
+      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+        .then(({ data }) => setSecciones(data ?? []))
+      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+        .then(({ data }) => setFrentes(data ?? []))
     })
   }, [])
 
@@ -330,9 +346,12 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     setSaving(true); setError('')
 
     const payload: any = {
-      id_proveedor_fk:   form.id_proveedor_fk ? Number(form.id_proveedor_fk) : null,
-      id_almacen_fk:     form.id_almacen_fk   ? Number(form.id_almacen_fk)   : null,
-      id_oc_fk:          (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
+      id_proveedor_fk:    form.id_proveedor_fk ? Number(form.id_proveedor_fk) : null,
+      id_almacen_fk:      conOC && form.id_almacen_fk ? Number(form.id_almacen_fk) : null,
+      id_centro_costo_fk: !conOC && form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+      id_seccion_fk:      !conOC && form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+      id_frente_fk:       !conOC && form.id_frente_fk ? Number(form.id_frente_fk) : null,
+      id_oc_fk:           (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
       forma_pago:        form.forma_pago,
       fecha_vencimiento: form.fecha_vencimiento || null,
       concepto:          form.concepto.trim() || null,
@@ -469,14 +488,46 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                   {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="label">Centro de Costo (Almacén)</label>
-                <select className="select" value={form.id_almacen_fk} onChange={setF('id_almacen_fk')}>
-                  <option value="">— Sin asignar —</option>
-                  {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre} {a.tipo !== 'General' ? `(${a.tipo})` : ''}</option>)}
-                </select>
-              </div>
+              {/* Con OC → Almacén (viene de la OC) */}
+              {conOC && (
+                <div>
+                  <label className="label">Almacén</label>
+                  <select className="select" value={form.id_almacen_fk} onChange={setF('id_almacen_fk')}>
+                    <option value="">— Sin asignar —</option>
+                    {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
+
+            {/* Sin OC → Centro de Costo + Sección + Frente */}
+            {!conOC && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div>
+                  <label className="label">Centro de Costo</label>
+                  <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
+                    <option value="">— Sin asignar —</option>
+                    {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Sección</label>
+                  <select className="select" value={seccionId}
+                    onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_frente_fk: '' })) }}>
+                    <option value="">— Todas —</option>
+                    {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Frente</label>
+                  <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!seccionId}>
+                    <option value="">— {seccionId ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                    {frentes.filter(f => !seccionId || f.id_seccion_fk === Number(seccionId))
+                      .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
 
             {!conOC && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
