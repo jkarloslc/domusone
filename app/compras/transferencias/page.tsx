@@ -399,7 +399,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
               </select>
             </div>
             <div>
-              <label className="label">Centro de Costo Destino *</label>
+              <label className="label">Almacén Destino *</label>
               <select className="select" value={form.id_almacen_destino}
                 onChange={e => setForm(f => ({ ...f, id_almacen_destino: e.target.value }))}>
                 <option value="">— Seleccionar —</option>

@@ -52,7 +52,7 @@ export default function AlmacenesPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Almacenes / Centros de Costo</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Almacenes</h1>
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
               {generales.length} general · {particular.length} particulares
             </p>

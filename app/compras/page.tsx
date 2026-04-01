@@ -22,7 +22,7 @@ const MODULOS = [
   { key: 'inventario',    label: 'Inventario',        icon: Warehouse,     color: '#dc2626', desc: 'Saldos y kardex por almacén' },
   { key: 'articulos',     label: 'Artículos',              icon: Package,       color: '#475569', desc: 'Catálogo de productos e insumos' },
   { key: 'proveedores',   label: 'Proveedores',             icon: Users,         color: '#92400e', desc: 'Catálogo de proveedores' },
-  { key: 'almacenes',     label: 'Almacenes / C. Costo',    icon: Warehouse,     color: '#0891b2', desc: 'Almacenes y centros de costo' },
+  { key: 'almacenes',     label: 'Almacenes',    icon: Warehouse,     color: '#0891b2', desc: 'Almacenes y centros de costo' },
   { key: 'areas',         label: 'Áreas Solicitantes',      icon: Layers,        color: '#7c3aed', desc: 'Áreas para requisiciones' },
 ]
 
