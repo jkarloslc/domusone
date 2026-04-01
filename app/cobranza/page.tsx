@@ -111,13 +111,32 @@ export default function CXCPage() {
 
   // ─── Carga de datos ────────────────────────────────────────────────────────
   const cargarCatalogos = useCallback(async () => {
+    // Usamos select('*') para no depender de nombres exactos de columnas
     const [{ data: propsData }, { data: lotesData }] = await Promise.all([
-      dbCat.from('propietarios').select('id, nombre, rfc, telefono, correo').order('nombre'),
-      dbCat.from('lotes').select('id, clave, manzana, lote').order('clave'),
+      dbCat.from('propietarios').select('*').order('nombre'),
+      dbCat.from('lotes').select('*').order('clave'),
     ])
-    setPropietarios(propsData ?? [])
-    setLotes(lotesData ?? [])
-    return { props: propsData ?? [], lotes: lotesData ?? [] }
+
+    // Normalizar propietarios — soporta variantes de nombre de columna
+    const props: Propietario[] = (propsData ?? []).map((p: Record<string, unknown>) => ({
+      id:       p.id as number,
+      nombre:   (p.nombre ?? p.nombre_completo ?? p.name ?? `Propietario ${p.id}`) as string,
+      rfc:      (p.rfc ?? null) as string | null,
+      telefono: (p.telefono ?? p.tel ?? null) as string | null,
+      correo:   (p.correo ?? p.email ?? null) as string | null,
+    }))
+
+    // Normalizar lotes — soporta variantes de nombre de columna
+    const lts: Lote[] = (lotesData ?? []).map((l: Record<string, unknown>) => ({
+      id:       l.id as number,
+      clave:    (l.clave ?? l.numero ?? l.folio ?? `Lote ${l.id}`) as string,
+      manzana:  (l.manzana ?? l.mza ?? null) as string | null,
+      lote:     (l.lote ?? l.numero_lote ?? null) as string | null,
+    }))
+
+    setPropietarios(props)
+    setLotes(lts)
+    return { props, lotes: lts }
   }, [])
 
   const cargarCargos = useCallback(async (
