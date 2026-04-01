@@ -145,9 +145,11 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [articulos, setArticulos] = useState<Articulo[]>([])
   const [artSearches, setArtSearches] = useState<string[]>([''])  // search per row
   const [artOptions, setArtOptions]   = useState<Articulo[][]>([[]])  // options per row
-  const [areas, setAreas]       = useState<{id: number; nombre: string}[]>([])
+  const [areas, setAreas]         = useState<{id: number; nombre: string}[]>([])
   const [almacenes, setAlmacenes] = useState<{id: number; nombre: string}[]>([])
-  const [frentes, setFrentes]   = useState<{id: number; nombre: string}[]>([])
+  const [secciones, setSecciones] = useState<{id: number; nombre: string}[]>([])
+  const [frentes, setFrentes]     = useState<{id: number; nombre: string; id_seccion_fk: number}[]>([])
+  const [seccionId, setSeccionId] = useState<string>(row?.id_seccion_fk?.toString() ?? '')
   const [form, setForm] = useState({
     area_solicitante: row?.area_solicitante ?? '',
     solicitante:      row?.solicitante ?? (authUser?.nombre ?? ''),
@@ -164,7 +166,9 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
       .then(({ data }) => setAreas(data ?? []))
     dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setAlmacenes(data ?? []))
-    dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre')
+    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setSecciones(data ?? []))
+    dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
     if (!isNew && row?.id) {
       dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', row.id)
@@ -262,7 +266,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
               </div>
               <div><label className="label">Solicitante *</label><input className="input" value={form.solicitante} onChange={setF('solicitante')} /></div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 10 }}>
               <div><label className="label">Fecha Requerida</label><input className="input" type="date" value={form.fecha_requerida} onChange={setF('fecha_requerida')} /></div>
               <div>
                 <label className="label">Centro de Costo</label>
@@ -272,10 +276,25 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
                 </select>
               </div>
               <div>
+                <label className="label">Sección</label>
+                <select className="select" value={seccionId}
+                  onChange={e => {
+                    setSeccionId(e.target.value)
+                    setForm(f => ({ ...f, frente: '' })) // resetea frente al cambiar sección
+                  }}>
+                  <option value="">— Todas —</option>
+                  {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select>
+              </div>
+              <div>
                 <label className="label">Frente</label>
-                <select className="select" value={form.frente} onChange={setF('frente')}>
-                  <option value="">— Sin asignar —</option>
-                  {frentes.map(f => <option key={f.id} value={f.nombre}>{f.nombre}</option>)}
+                <select className="select" value={form.frente} onChange={setF('frente')}
+                  disabled={!seccionId}>
+                  <option value="">— {seccionId ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                  {frentes
+                    .filter(f => !seccionId || f.id_seccion_fk === Number(seccionId))
+                    .map(f => <option key={f.id} value={f.nombre}>{f.nombre}</option>)
+                  }
                 </select>
               </div>
               <div><label className="label">Prioridad</label>
