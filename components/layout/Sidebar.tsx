@@ -124,6 +124,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
     ]},
+    { section: 'Sistema', items: [
+      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+    ]},
   ],
 
   fraccionamiento: [
