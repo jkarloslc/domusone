@@ -121,7 +121,7 @@ export default function OrdenesPagoPage() {
               <th>Folio</th>
               <th>Proveedor</th>
               <th>Concepto / Tipo</th>
-              <th>Almacén de Entrega>
+              <th>Almacén de Entrega</th>
               <th>Vencimiento</th>
               <th style={{ textAlign: 'right' }}>Monto</th>
               <th>Docs</th>
