@@ -16,6 +16,7 @@ import ReporteInventario from './ReporteInventario'
 import ReporteOrdenesCompra from './ReporteOrdenesCompra'
 import ReporteCXP from './ReporteCXP'
 import ReporteKardex from './ReporteKardex'
+import ReporteTransferencias from './ReporteTransferencias'
 
 const GRUPOS = [
   {
@@ -42,7 +43,8 @@ const GRUPOS = [
       { id: 'inventario',      label: 'Inventario Actual',           icon: Package,      desc: 'Existencias por almacén con alertas de stock mínimo' },
       { id: 'ordenes-compra', label: 'Órdenes de Compra',          icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
       { id: 'cxp',            label: 'Antigüedad de Saldos CXP',   icon: FileText,     desc: 'Cuentas por pagar con bandas de vencimiento' },
-      { id: 'kardex',         label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
+      { id: 'kardex',          label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
+      { id: 'transferencias',  label: 'Transferencias',             icon: Package,      desc: 'Movimientos entre almacenes con filtros por origen, destino y fecha' },
     ],
   },
 ]
@@ -116,7 +118,8 @@ export default function ReportesPage() {
       {active === 'inventario'      && <ReporteInventario />}
       {active === 'ordenes-compra' && <ReporteOrdenesCompra />}
       {active === 'cxp'            && <ReporteCXP />}
-      {active === 'kardex'         && <ReporteKardex />}
+      {active === 'kardex'          && <ReporteKardex />}
+      {active === 'transferencias'  && <ReporteTransferencias />}
     </div>
   )
 }
