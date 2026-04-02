@@ -15,6 +15,8 @@ export default function ReporteIncidenciasAsignado() {
   const [loading, setLoading]         = useState(true)
   const [filterAsignado, setFilter]   = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [filtroDe, setFiltroDe]       = useState('')
+  const [filtroA,  setFiltroA]        = useState('')
   const [asignados, setAsignados]     = useState<string[]>([])
 
   useEffect(() => {
@@ -31,8 +33,10 @@ export default function ReporteIncidenciasAsignado() {
 
   const filtered = incidencias.filter(i => {
     const matchA = !filterAsignado || i.responsable === filterAsignado
-    const matchS = !filterStatus  || i.status === filterStatus
-    return matchA && matchS
+    const matchS = !filterStatus   || i.status === filterStatus
+    const matchD = !filtroDe || (i.fecha && i.fecha >= filtroDe)
+    const matchF = !filtroA  || (i.fecha && i.fecha <= filtroA)
+    return matchA && matchS && matchD && matchF
   })
 
   // Agrupar por asignado para la vista
@@ -54,6 +58,11 @@ export default function ReporteIncidenciasAsignado() {
           <option value="">Todos los status</option>
           {['Abierta','En Proceso','En Espera','Cerrada','Cancelada'].map(s => <option key={s}>{s}</option>)}
         </select>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 145 }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>–</span>
+          <input className="input" type="date" value={filtroA} onChange={e => setFiltroA(e.target.value)} style={{ width: 145 }} />
+        </div>
         {loading && <RefreshCw size={14} className="animate-spin" style={{ color: 'var(--text-muted)' }} />}
       </div>
 

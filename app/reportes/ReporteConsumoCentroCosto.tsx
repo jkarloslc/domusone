@@ -10,16 +10,21 @@ export default function ReporteConsumoCentroCosto() {
   const [articulos, setArts]  = useState<Record<number, any>>({})
   const [loading, setLoading] = useState(true)
   const [filtroAlm, setFiltroAlm] = useState('')
-  const [filtroPer, setFiltroPer] = useState('') // YYYY-MM
+  const [filtroDe, setFiltroDe]   = useState('')
+  const [filtroA,  setFiltroA]    = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    let movsQ = dbComp.from('movimientos_inv')
+      .select('id_articulo_fk, id_almacen_fk, tipo_mov, cantidad, precio_unitario, created_at')
+      .eq('tipo_mov', 'TRANSFERENCIA_IN')
+      .order('created_at', { ascending: false })
+    if (filtroDe) movsQ = movsQ.gte('created_at', filtroDe + 'T00:00:00')
+    if (filtroA)  movsQ = movsQ.lte('created_at', filtroA  + 'T23:59:59')
+
     const [{ data: alms }, { data: movs }] = await Promise.all([
       dbComp.from('almacenes').select('id, nombre, area').order('nombre'),
-      dbComp.from('movimientos_inv')
-        .select('id_articulo_fk, id_almacen_fk, tipo_mov, cantidad, precio_unitario, created_at')
-        .eq('tipo_mov', 'TRANSFERENCIA_IN')
-        .order('created_at', { ascending: false }),
+      movsQ,
     ])
 
     setAlms(alms ?? [])
@@ -38,10 +43,6 @@ export default function ReporteConsumoCentroCosto() {
     const grouped: Record<string, any> = {}
     for (const m of movs ?? []) {
       if (filtroAlm && m.id_almacen_fk !== Number(filtroAlm)) continue
-      if (filtroPer) {
-        const mes = m.created_at?.slice(0, 7)
-        if (mes !== filtroPer) continue
-      }
       const key = `${m.id_almacen_fk}_${m.id_articulo_fk}`
       if (!grouped[key]) grouped[key] = { id_almacen_fk: m.id_almacen_fk, id_articulo_fk: m.id_articulo_fk, cantidad: 0, valor: 0, movs: 0 }
       grouped[key].cantidad += Number(m.cantidad)
@@ -61,7 +62,7 @@ export default function ReporteConsumoCentroCosto() {
 
     setRows(result)
     setLoading(false)
-  }, [filtroAlm, filtroPer])
+  }, [filtroAlm, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -79,8 +80,11 @@ export default function ReporteConsumoCentroCosto() {
             {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
           </select>
         </div>
-        <input className="input" type="month" value={filtroPer} onChange={e => setFiltroPer(e.target.value)}
-          style={{ width: 160 }} />
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 145 }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>–</span>
+          <input className="input" type="date" value={filtroA} onChange={e => setFiltroA(e.target.value)} style={{ width: 145 }} />
+        </div>
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
       </div>
 

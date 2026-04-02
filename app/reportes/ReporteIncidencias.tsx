@@ -14,9 +14,10 @@ export default function ReporteIncidencias() {
   const [loteNombre, setLoteNombre]   = useState('Todos los lotes')
   const [loading, setLoading]         = useState(false)
   const [filterStatus, setFilter]     = useState('')
+  const [filtroDe, setFiltroDe]       = useState('')
+  const [filtroA,  setFiltroA]        = useState('')
 
   useEffect(() => {
-    // Carga inicial con todos los registros
     fetchIncidencias(null)
   }, [])
 
@@ -49,7 +50,12 @@ export default function ReporteIncidencias() {
     'Abierta': '#dc2626', 'En Proceso': '#1d4ed8', 'En Espera': '#94a3b8', 'Cerrada': '#15803d', 'Cancelada': '#94a3b8',
   }
 
-  const filtered = filterStatus ? incidencias.filter(i => i.status === filterStatus) : incidencias
+  const filtered = incidencias.filter(i => {
+    const matchS = !filterStatus || i.status === filterStatus
+    const matchD = !filtroDe || (i.fecha && i.fecha >= filtroDe)
+    const matchA = !filtroA  || (i.fecha && i.fecha <= filtroA)
+    return matchS && matchD && matchA
+  })
 
   return (
     <div>
@@ -80,6 +86,11 @@ export default function ReporteIncidencias() {
           <option value="">Todos los status</option>
           {['Abierta','En Proceso','En Espera','Cerrada','Cancelada'].map(s => <option key={s}>{s}</option>)}
         </select>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 145 }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>–</span>
+          <input className="input" type="date" value={filtroA} onChange={e => setFiltroA(e.target.value)} style={{ width: 145 }} />
+        </div>
         {loading && <RefreshCw size={14} className="animate-spin" style={{ color: 'var(--text-muted)', marginTop: 10 }} />}
       </div>
 
