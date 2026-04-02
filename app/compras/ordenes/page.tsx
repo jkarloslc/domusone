@@ -1,7 +1,7 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect } from 'react'
-import { dbComp } from '@/lib/supabase'
+import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
@@ -127,6 +127,10 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const [error, setError]       = useState('')
   const [proveedores, setProvs] = useState<Proveedor[]>([])
   const [almacenes, setAlms]    = useState<any[]>([])
+  const [centrosCosto, setCentros] = useState<any[]>([])
+  const [secciones, setSecciones]  = useState<any[]>([])
+  const [frentes, setFrentes]      = useState<any[]>([])
+  const [seccionId, setSeccionId]  = useState<string>(row?.id_seccion_fk?.toString() ?? '')
   const [rfqs, setRFQs]         = useState<any[]>([])
   const [form, setForm] = useState({
     id_proveedor_fk:       row?.id_proveedor_fk?.toString() ?? '',
@@ -134,6 +138,9 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     fecha_entrega_est:     row?.fecha_entrega_est ?? '',
     condiciones_pago:      row?.condiciones_pago ?? '',
     id_almacen_entrega_fk: row?.id_almacen_entrega_fk?.toString() ?? '',
+    id_centro_costo_fk:    row?.id_centro_costo_fk?.toString() ?? '',
+    id_seccion_fk:         row?.id_seccion_fk?.toString() ?? '',
+    id_frente_fk:          row?.id_frente_fk?.toString() ?? '',
     notas:                 row?.notas ?? '',
   })
   const [det, setDet] = useState<any[]>([{ id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
@@ -145,6 +152,12 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       .then(({ data }) => setProvs(data as Proveedor[] ?? []))
     dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setAlms(data ?? []))
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCentros(data ?? []))
+    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setSecciones(data ?? []))
+    dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setFrentes(data ?? []))
     ;(async () => {
       const { data: rfqsConOC } = await dbComp.from('ordenes_compra').select('id_rfq_fk').not('id_rfq_fk', 'is', null)
       const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk))
@@ -168,6 +181,22 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
         precio_unitario: d.precio_unitario?.toString(), tasa_iva: d.tasa_iva?.toString() ?? '0',
       })))
       setForm(f => ({ ...f, condiciones_pago: cot.condiciones_pago ?? f.condiciones_pago }))
+    }
+    // Precargar CC / Sección / Frente desde la requisición vinculada al RFQ
+    const { data: rfqData } = await dbComp.from('rfq').select('id_requisicion_fk').eq('id', Number(rfqId)).single()
+    if (rfqData?.id_requisicion_fk) {
+      const { data: req } = await dbComp.from('requisiciones')
+        .select('id_centro_costo_fk, id_seccion_fk, id_frente_fk')
+        .eq('id', rfqData.id_requisicion_fk).single()
+      if (req) {
+        setSeccionId(req.id_seccion_fk?.toString() ?? '')
+        setForm(f => ({
+          ...f,
+          id_centro_costo_fk: req.id_centro_costo_fk?.toString() ?? f.id_centro_costo_fk,
+          id_seccion_fk:      req.id_seccion_fk?.toString()      ?? f.id_seccion_fk,
+          id_frente_fk:       req.id_frente_fk?.toString()       ?? f.id_frente_fk,
+        }))
+      }
     }
   }
 
@@ -215,6 +244,9 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       fecha_entrega_est:     form.fecha_entrega_est || null,
       condiciones_pago:      form.condiciones_pago || null,
       id_almacen_entrega_fk: form.id_almacen_entrega_fk ? Number(form.id_almacen_entrega_fk) : null,
+      id_centro_costo_fk:    form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+      id_seccion_fk:         form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+      id_frente_fk:          form.id_frente_fk ? Number(form.id_frente_fk) : null,
       notas:                 form.notas.trim() || null,
       subtotal, iva, total: subtotal + iva,
       status:     enviar ? 'Pendiente Auth' : 'Borrador',
@@ -279,6 +311,34 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                   onChange={e => setForm(f => ({ ...f, id_almacen_entrega_fk: e.target.value }))}>
                   <option value="">— Sin asignar —</option>
                   {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              <div>
+                <label className="label">Centro de Costo</label>
+                <select className="select" value={form.id_centro_costo_fk}
+                  onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value }))}>
+                  <option value="">— Sin asignar —</option>
+                  {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Sección</label>
+                <select className="select" value={seccionId}
+                  onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' })) }}>
+                  <option value="">— Sin asignar —</option>
+                  {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Frente</label>
+                <select className="select" value={form.id_frente_fk}
+                  onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
+                  disabled={!seccionId}>
+                  <option value="">— {seccionId ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                  {frentes.filter(f => !seccionId || f.id_seccion_fk === Number(seccionId))
+                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                 </select>
               </div>
             </div>

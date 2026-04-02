@@ -345,12 +345,21 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
     setSaving(true); setError('')
 
+    // Obtener CC/Sección/Frente de la OC cuando aplica
+    let ocCampos = { id_centro_costo_fk: null as number|null, id_seccion_fk: null as number|null, id_frente_fk: null as number|null }
+    if (conOC && ocsSelected.length > 0) {
+      const { data: ocData } = await dbComp.from('ordenes_compra')
+        .select('id_centro_costo_fk, id_seccion_fk, id_frente_fk')
+        .eq('id', ocsSelected[0].id).single()
+      if (ocData) ocCampos = ocData
+    }
+
     const payload: any = {
       id_proveedor_fk:    form.id_proveedor_fk ? Number(form.id_proveedor_fk) : null,
       id_almacen_fk:      conOC && form.id_almacen_fk ? Number(form.id_almacen_fk) : null,
-      id_centro_costo_fk: !conOC && form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
-      id_seccion_fk:      !conOC && form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
-      id_frente_fk:       !conOC && form.id_frente_fk ? Number(form.id_frente_fk) : null,
+      id_centro_costo_fk: conOC ? ocCampos.id_centro_costo_fk : (form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null),
+      id_seccion_fk:      conOC ? ocCampos.id_seccion_fk      : (form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null),
+      id_frente_fk:       conOC ? ocCampos.id_frente_fk       : (form.id_frente_fk       ? Number(form.id_frente_fk)       : null),
       id_oc_fk:           (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
       forma_pago:        form.forma_pago,
       fecha_vencimiento: form.fecha_vencimiento || null,
