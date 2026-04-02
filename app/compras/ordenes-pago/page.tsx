@@ -121,7 +121,7 @@ export default function OrdenesPagoPage() {
               <th>Folio</th>
               <th>Proveedor</th>
               <th>Concepto / Tipo</th>
-              <th>Centro de Costo</th>
+              <th>Almacén de Entrega>
               <th>Vencimiento</th>
               <th style={{ textAlign: 'right' }}>Monto</th>
               <th>Docs</th>
@@ -721,7 +721,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
               <DI label="Concepto"        value={op.concepto} />
               <DI label="Tipo de Gasto"   value={op.tipo_gasto} />
-              <DI label="Centro de Costo" value={op._almNombre} />
+              <DI label="Almacén" value={op._almNombre} />
               <DI label="Vencimiento"     value={fmtFecha(op.fecha_vencimiento)} />
               {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
               {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
