@@ -662,7 +662,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
         <tr><th>Beneficiario</th><td>${op._provNombre ?? '—'}</td><th>Banco</th><td>${op.banco_destino ?? '—'}</td></tr>
         <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${op.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>
         <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
-        <tr><th>Centro de Costo</th><td>${op._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td></tr>
+        <tr><th>Almacén</th><td>${op._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td></tr>
         ${op.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${op.tipo_gasto}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(op.monto)}</td></tr>
