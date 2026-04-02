@@ -10,6 +10,8 @@ import ReporteIncidenciasSeccion from './ReporteIncidenciasSeccion'
 import ReporteVisitantes from './ReporteVisitantes'
 import ReporteVehiculos from './ReporteVehiculos'
 import ReporteConsumoCentroCosto from './ReporteConsumoCentroCosto'
+import ReporteConsumoSeccion from './ReporteConsumoSeccion'
+import ReporteConsumoFrente from './ReporteConsumoFrente'
 import ReporteInventario from './ReporteInventario'
 import ReporteOrdenesCompra from './ReporteOrdenesCompra'
 import ReporteCXP from './ReporteCXP'
@@ -34,8 +36,10 @@ const GRUPOS = [
     label: 'Compras e Inventarios',
     color: '#059669',
     reportes: [
-      { id: 'consumo-cc',     label: 'Consumo por Centro de Costo', icon: TrendingDown, desc: 'Materiales transferidos a cada centro de costo' },
-      { id: 'inventario',     label: 'Inventario Actual',           icon: Package,      desc: 'Existencias por almacén con alertas de stock mínimo' },
+      { id: 'consumo-cc',      label: 'Consumo por Centro de Costo', icon: TrendingDown, desc: 'Materiales transferidos a cada centro de costo' },
+      { id: 'consumo-seccion', label: 'Consumo por Sección',         icon: MapPin,       desc: 'Órdenes de pago agrupadas por sección del residencial' },
+      { id: 'consumo-frente',  label: 'Consumo por Frente',          icon: MapPin,       desc: 'Órdenes de pago agrupadas por frente de obra' },
+      { id: 'inventario',      label: 'Inventario Actual',           icon: Package,      desc: 'Existencias por almacén con alertas de stock mínimo' },
       { id: 'ordenes-compra', label: 'Órdenes de Compra',          icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
       { id: 'cxp',            label: 'Antigüedad de Saldos CXP',   icon: FileText,     desc: 'Cuentas por pagar con bandas de vencimiento' },
       { id: 'kardex',         label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
@@ -106,8 +110,10 @@ export default function ReportesPage() {
       {active === 'vehiculos'            && <ReporteVehiculos />}
 
       {/* Reportes compras */}
-      {active === 'consumo-cc'     && <ReporteConsumoCentroCosto />}
-      {active === 'inventario'     && <ReporteInventario />}
+      {active === 'consumo-cc'      && <ReporteConsumoCentroCosto />}
+      {active === 'consumo-seccion' && <ReporteConsumoSeccion />}
+      {active === 'consumo-frente'  && <ReporteConsumoFrente />}
+      {active === 'inventario'      && <ReporteInventario />}
       {active === 'ordenes-compra' && <ReporteOrdenesCompra />}
       {active === 'cxp'            && <ReporteCXP />}
       {active === 'kardex'         && <ReporteKardex />}
