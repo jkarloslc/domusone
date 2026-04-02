@@ -1,101 +1,126 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbComp } from '@/lib/supabase'
+import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter } from 'lucide-react'
 
 export default function ReporteConsumoCentroCosto() {
-  const [rows, setRows]       = useState<any[]>([])
-  const [almacenes, setAlms]  = useState<any[]>([])
-  const [articulos, setArts]  = useState<Record<number, any>>({})
-  const [loading, setLoading] = useState(true)
-  const [filtroAlm, setFiltroAlm] = useState('')
-  const [filtroDe, setFiltroDe]   = useState('')
-  const [filtroA,  setFiltroA]    = useState('')
+  const [rows, setRows]             = useState<any[]>([])
+  const [centrosCosto, setCentros]  = useState<any[]>([])
+  const [provMap, setProvMap]       = useState<Record<number, string>>({})
+  const [loading, setLoading]       = useState(true)
+  const [filtroCC, setFiltroCC]     = useState('')
+  const [filtroTipo, setFiltroTipo] = useState('')
+  const [filtroDe, setFiltroDe]     = useState('')
+  const [filtroA,  setFiltroA]      = useState('')
+  const [expanded, setExpanded]     = useState<Set<number>>(new Set())
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    let movsQ = dbComp.from('movimientos_inv')
-      .select('id_articulo_fk, id_almacen_fk, tipo_mov, cantidad, precio_unitario, created_at')
-      .eq('tipo_mov', 'TRANSFERENCIA_IN')
-      .order('created_at', { ascending: false })
-    if (filtroDe) movsQ = movsQ.gte('created_at', filtroDe + 'T00:00:00')
-    if (filtroA)  movsQ = movsQ.lte('created_at', filtroA  + 'T23:59:59')
 
-    const [{ data: alms }, { data: movs }] = await Promise.all([
-      dbComp.from('almacenes').select('id, nombre, area').order('nombre'),
-      movsQ,
+    const [{ data: ccs }, { data: provs }, { data: ops }] = await Promise.all([
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbComp.from('proveedores').select('id, nombre').order('nombre'),
+      dbComp.from('ordenes_pago')
+        .select('id, folio, id_centro_costo_fk, id_proveedor_fk, concepto, tipo_gasto, monto, saldo, fecha_op, status')
+        .not('id_centro_costo_fk', 'is', null)
+        .neq('status', 'Cancelada')
+        .order('fecha_op', { ascending: false }),
     ])
 
-    setAlms(alms ?? [])
+    setCentros(ccs ?? [])
 
-    // Cargar solo los artículos que aparecen en los movimientos
-    const artIds = [...new Set((movs ?? []).map((m: any) => m.id_articulo_fk).filter(Boolean))]
-    const { data: arts } = artIds.length
-      ? await dbComp.from('articulos').select('id, clave, nombre, unidad, categoria, precio_ref').in('id', artIds)
-      : { data: [] }
+    const pm: Record<number, string> = {}
+    ;(provs ?? []).forEach((p: any) => { pm[p.id] = p.nombre })
+    setProvMap(pm)
 
-    const am: Record<number, any> = {}
-    ;(arts ?? []).forEach((a: any) => { am[a.id] = a })
-    setArts(am)
+    const ccMap: Record<number, string> = {}
+    ;(ccs ?? []).forEach((c: any) => { ccMap[c.id] = c.nombre })
 
-    // Agrupar movimientos por almacén + artículo
-    const grouped: Record<string, any> = {}
-    for (const m of movs ?? []) {
-      if (filtroAlm && m.id_almacen_fk !== Number(filtroAlm)) continue
-      const key = `${m.id_almacen_fk}_${m.id_articulo_fk}`
-      if (!grouped[key]) grouped[key] = { id_almacen_fk: m.id_almacen_fk, id_articulo_fk: m.id_articulo_fk, cantidad: 0, valor: 0, movs: 0 }
-      grouped[key].cantidad += Number(m.cantidad)
-      grouped[key].movs     += 1
-      // Usar precio_unitario si existe, si no usar precio_ref del artículo
-      const precio = Number(m.precio_unitario) > 0
-        ? Number(m.precio_unitario)
-        : Number(am[m.id_articulo_fk]?.precio_ref || 0)
-      grouped[key].valor += Number(m.cantidad) * precio
+    // Filtrar
+    let opsFiltradas = ops ?? []
+    if (filtroCC)   opsFiltradas = opsFiltradas.filter((r: any) => r.id_centro_costo_fk === Number(filtroCC))
+    if (filtroTipo) opsFiltradas = opsFiltradas.filter((r: any) => r.tipo_gasto === filtroTipo)
+    if (filtroDe)   opsFiltradas = opsFiltradas.filter((r: any) => r.fecha_op >= filtroDe)
+    if (filtroA)    opsFiltradas = opsFiltradas.filter((r: any) => r.fecha_op <= filtroA)
+
+    // Agrupar por centro de costo
+    const grouped: Record<number, any> = {}
+    for (const op of opsFiltradas) {
+      const cid = op.id_centro_costo_fk
+      if (!grouped[cid]) {
+        grouped[cid] = {
+          id:     cid,
+          nombre: ccMap[cid] ?? `Centro #${cid}`,
+          total:  0,
+          pagado: 0,
+          saldo:  0,
+          docs:   0,
+          ops:    [],
+        }
+      }
+      const monto = Number(op.monto ?? 0)
+      const saldo = Number(op.saldo ?? op.monto ?? 0)
+      grouped[cid].total  += monto
+      grouped[cid].saldo  += saldo
+      grouped[cid].pagado += monto - saldo
+      grouped[cid].docs   += 1
+      grouped[cid].ops.push(op)
     }
 
-    const result = Object.values(grouped).map((r: any) => ({
-      ...r,
-      almacen:  (alms ?? []).find((a: any) => a.id === r.id_almacen_fk),
-      articulo: am[r.id_articulo_fk],
-    })).sort((a, b) => b.valor - a.valor)
-
-    setRows(result)
+    setRows(Object.values(grouped).sort((a: any, b: any) => b.total - a.total))
     setLoading(false)
-  }, [filtroAlm, filtroDe, filtroA])
+  }, [filtroCC, filtroTipo, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
-  const total = rows.reduce((a, r) => a + r.valor, 0)
+  const fmtF = (s: string | null) => s ? new Date(s + 'T00:00:00').toLocaleDateString('es-MX') : '—'
+
+  const totalGeneral = rows.reduce((a, r) => a + r.total, 0)
+  const docsTotal    = rows.reduce((a, r) => a + r.docs, 0)
+
+  const toggle = (id: number) => setExpanded(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n
+  })
+
+  const TIPOS_GASTO = [
+    'Servicios Profesionales','Mantenimiento','Reparación','Arrendamiento',
+    'Seguros','Publicidad','Combustible','Electricidad','Agua',
+    'Telefonía / Internet','Honorarios','Asesoría','Capacitación','Otro',
+  ]
 
   return (
     <div>
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-          <select className="select" style={{ minWidth: 200 }} value={filtroAlm} onChange={e => setFiltroAlm(e.target.value)}>
-            <option value="">Todos los centros de costo</option>
-            {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-          </select>
-        </div>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Filter size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+        <select className="select" style={{ minWidth: 200 }} value={filtroCC} onChange={e => setFiltroCC(e.target.value)}>
+          <option value="">Todos los centros de costo</option>
+          {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
+        <select className="select" style={{ minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+          <option value="">Todos los tipos de gasto</option>
+          {TIPOS_GASTO.map(t => <option key={t}>{t}</option>)}
+        </select>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 145 }} />
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>–</span>
           <input className="input" type="date" value={filtroA} onChange={e => setFiltroA(e.target.value)} style={{ width: 145 }} />
         </div>
-        <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
+        <button className="btn-ghost" onClick={fetchData}>
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+        </button>
       </div>
 
-      <PrintBar title="Consumo-por-Centro-de-Costo" count={rows.length} reportTitle="Consumo por Centro de Costo" />
+      <PrintBar title="Consumo-por-Centro-de-Costo" count={docsTotal} reportTitle="Consumo por Centro de Costo" />
 
-      {/* Resumen KPI */}
+      {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
-          { label: 'Total Consumo', value: fmt(total), color: 'var(--blue)' },
-          { label: 'Artículos distintos', value: String(new Set(rows.map(r => r.id_articulo_fk)).size), color: '#7c3aed' },
-          { label: 'Centros de Costo', value: String(new Set(rows.map(r => r.id_almacen_fk)).size), color: '#059669' },
+          { label: 'Total Consumo',          value: fmt(totalGeneral), color: 'var(--blue)' },
+          { label: 'Centros de Costo',        value: String(rows.length), color: '#7c3aed' },
+          { label: 'Órdenes de Pago',         value: String(docsTotal),   color: '#059669' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '12px 16px' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
@@ -104,54 +129,105 @@ export default function ReporteConsumoCentroCosto() {
         ))}
       </div>
 
-      <div className="card" style={{ overflow: 'hidden' }}>
-        <table id="reporte-table">
-          <thead>
-            <tr>
-              <th>Centro de Costo</th>
-              <th>Área</th>
-              <th>Artículo</th>
-              <th>Categoría</th>
-              <th style={{ textAlign: 'right' }}>Cantidad</th>
-              <th>Unidad</th>
-              <th style={{ textAlign: 'right' }}>Valor Estimado</th>
-              <th style={{ textAlign: 'right' }}>Movimientos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
-                <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
-              </td></tr>
-            ) : rows.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin datos para los filtros seleccionados</td></tr>
-            ) : rows.map((r, i) => (
-              <tr key={i}>
-                <td style={{ fontWeight: 500 }}>{r.almacen?.nombre ?? `#${r.id_almacen_fk}`}</td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.almacen?.area ?? '—'}</td>
-                <td>
-                  <div style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--blue)' }}>{r.articulo?.clave}</div>
-                  <div style={{ fontSize: 13 }}>{r.articulo?.nombre ?? `#${r.id_articulo_fk}`}</div>
-                </td>
-                <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.articulo?.categoria ?? '—'}</td>
-                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                  {r.cantidad.toLocaleString('es-MX', { maximumFractionDigits: 3 })}
-                </td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.articulo?.unidad ?? '—'}</td>
-                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>{fmt(r.valor)}</td>
-                <td style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{r.movs}</td>
-              </tr>
-            ))}
-            {rows.length > 0 && (
-              <tr style={{ background: 'var(--blue-pale)', fontWeight: 700 }}>
-                <td colSpan={6} style={{ color: 'var(--blue)' }}>TOTAL</td>
-                <td style={{ textAlign: 'right', color: 'var(--blue)', fontVariantNumeric: 'tabular-nums', fontSize: 15 }}>{fmt(total)}</td>
-                <td></td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Tabla agrupada */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--text-muted)' }}>
+          Sin datos para los filtros seleccionados
+        </div>
+      ) : rows.map(cc => (
+        <div key={cc.id} className="card" style={{ overflow: 'hidden', marginBottom: 12 }}>
+          {/* Header centro de costo */}
+          <div
+            onClick={() => toggle(cc.id)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 16px', background: '#eff6ff', cursor: 'pointer',
+              borderBottom: expanded.has(cc.id) ? '1px solid #bfdbfe' : 'none' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--blue)' }}>{cc.nombre}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', background: '#dbeafe',
+                padding: '2px 8px', borderRadius: 20 }}>
+                {cc.docs} OP{cc.docs !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.total)}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pagado</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.pagado)}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Por pagar</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: cc.saldo > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.saldo)}</div>
+              </div>
+              <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>{expanded.has(cc.id) ? '▲' : '▼'}</span>
+            </div>
+          </div>
+
+          {/* Detalle OPs */}
+          {expanded.has(cc.id) && (
+            <table>
+              <thead>
+                <tr>
+                  <th>Folio</th>
+                  <th>Proveedor</th>
+                  <th>Concepto</th>
+                  <th>Tipo Gasto</th>
+                  <th>Fecha</th>
+                  <th style={{ textAlign: 'right' }}>Monto</th>
+                  <th style={{ textAlign: 'right' }}>Pagado</th>
+                  <th style={{ textAlign: 'right' }}>Saldo</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cc.ops.map((op: any, i: number) => {
+                  const monto  = Number(op.monto ?? 0)
+                  const saldo  = Number(op.saldo ?? op.monto ?? 0)
+                  const pagado = monto - saldo
+                  return (
+                    <tr key={i}>
+                      <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
+                      <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '—') : '—'}</td>
+                      <td style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
+                      <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{op.tipo_gasto ?? '—'}</td>
+                      <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtF(op.fecha_op)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(monto)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#15803d' }}>{fmt(pagado)}</td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt(saldo)}</td>
+                      <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{op.status}</td>
+                    </tr>
+                  )
+                })}
+                <tr style={{ background: '#f0f9ff', fontWeight: 700 }}>
+                  <td colSpan={5} style={{ color: 'var(--blue)', fontSize: 12 }}>Subtotal {cc.nombre}</td>
+                  <td style={{ textAlign: 'right', color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.total)}</td>
+                  <td style={{ textAlign: 'right', color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.pagado)}</td>
+                  <td style={{ textAlign: 'right', color: cc.saldo > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(cc.saldo)}</td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+        </div>
+      ))}
+
+      {/* Total general */}
+      {rows.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+          <div className="card" style={{ padding: '12px 20px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>TOTAL GENERAL</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGeneral)}</div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
