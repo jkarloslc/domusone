@@ -380,7 +380,7 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
           <table>
             <thead>
               <tr>
-                <th>Folio</th><th>Concepto</th><th>Centro Costo</th>
+                <th>Folio</th><th>Concepto</th><th>Almacén</th>
                 <th>Vencimiento</th><th style={{ textAlign: 'right' }}>Monto</th>
                 <th style={{ textAlign: 'right' }}>Pagado</th>
                 <th style={{ textAlign: 'right' }}>Saldo</th>
