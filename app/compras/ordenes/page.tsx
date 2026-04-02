@@ -168,35 +168,55 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 
   const aplicarRFQ = async (rfqId: string) => {
     setForm(f => ({ ...f, id_rfq_fk: rfqId }))
-    if (!rfqId) return
+    if (!rfqId) {
+      // Limpiar precarga si el usuario deselecciona el RFQ
+      setDet([{ id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
+      setArtSearches(['']); setArtOptions([[]])
+      return
+    }
+
+    // 1. Proveedor ganador desde el state local (ya cargado)
     const rfq = rfqs.find(r => r.id === Number(rfqId))
     if (rfq?.proveedor_ganador) setForm(f => ({ ...f, id_proveedor_fk: rfq.proveedor_ganador.toString() }))
+
+    // 2. Cotización seleccionada + detalle de artículos
+    // Usamos hint explícito de FK para evitar que Supabase falle en la inferencia automática
     const { data: cot } = await dbComp.from('rfq_cotizaciones')
-      .select('*, rfq_cotizaciones_det(*)')
-      .eq('id_rfq_fk', Number(rfqId)).eq('seleccionada', true).single()
+      .select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)')
+      .eq('id_rfq_fk', Number(rfqId)).eq('seleccionada', true).maybeSingle()
+
     if (cot?.rfq_cotizaciones_det?.length) {
-      setDet(cot.rfq_cotizaciones_det.map((d: any) => ({
-        id_articulo_fk: null, descripcion: d.descripcion,
-        cantidad: d.cantidad?.toString(), unidad: d.unidad,
-        precio_unitario: d.precio_unitario?.toString(), tasa_iva: d.tasa_iva?.toString() ?? '0',
-      })))
+      const items = cot.rfq_cotizaciones_det.map((d: any) => ({
+        id_articulo_fk: null,
+        descripcion:    d.descripcion   ?? '',
+        cantidad:       d.cantidad?.toString()       ?? '1',
+        unidad:         d.unidad        ?? 'PZA',
+        precio_unitario: d.precio_unitario?.toString() ?? '',
+        tasa_iva:       d.tasa_iva?.toString()        ?? '0',
+      }))
+      setDet(items)
+      // Bug 1 fix: sincronizar artSearches/artOptions con la cantidad de productos precargados
+      setArtSearches(new Array(items.length).fill(''))
+      setArtOptions(new Array(items.length).fill([]))
       setForm(f => ({ ...f, condiciones_pago: cot.condiciones_pago ?? f.condiciones_pago }))
     }
-    // Precargar CC / Sección / Frente desde la requisición vinculada al RFQ
-    const { data: rfqData } = await dbComp.from('rfq').select('id_requisicion_fk').eq('id', Number(rfqId)).single()
-    if (rfqData?.id_requisicion_fk) {
-      const { data: req } = await dbComp.from('requisiciones')
-        .select('id_centro_costo_fk, id_seccion_fk, id_frente_fk')
-        .eq('id', rfqData.id_requisicion_fk).single()
-      if (req) {
-        setSeccionId(req.id_seccion_fk?.toString() ?? '')
-        setForm(f => ({
-          ...f,
-          id_centro_costo_fk: req.id_centro_costo_fk?.toString() ?? f.id_centro_costo_fk,
-          id_seccion_fk:      req.id_seccion_fk?.toString()      ?? f.id_seccion_fk,
-          id_frente_fk:       req.id_frente_fk?.toString()       ?? f.id_frente_fk,
-        }))
-      }
+
+    // 3. CC / Sección / Frente desde la requisición vinculada al RFQ
+    // Consolidamos en un solo query trayendo rfq + requisición en una sola consulta
+    const { data: rfqData } = await dbComp.from('rfq')
+      .select('id_requisicion_fk, requisiciones(id_centro_costo_fk, id_seccion_fk, id_frente_fk)')
+      .eq('id', Number(rfqId)).maybeSingle()
+
+    const req = (rfqData as any)?.requisiciones
+    if (req) {
+      const secId = req.id_seccion_fk?.toString() ?? ''
+      setSeccionId(secId)
+      setForm(f => ({
+        ...f,
+        id_centro_costo_fk: req.id_centro_costo_fk?.toString() ?? f.id_centro_costo_fk,
+        id_seccion_fk:      secId                              || f.id_seccion_fk,
+        id_frente_fk:       req.id_frente_fk?.toString()       ?? f.id_frente_fk,
+      }))
     }
   }
 
