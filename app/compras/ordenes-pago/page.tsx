@@ -671,7 +671,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
       <div class="firmas">
         <div class="firma">Elaboró</div>
         <div class="firma">Autorizó</div>
-        <div class="firma">Recibió / Banco</div>
+        <div class="firma">Recibió</div>
       </div>
       </body></html>`
     const iframe = document.createElement('iframe')
