@@ -209,20 +209,24 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
+  const [centrosCosto, setCentros] = useState<any[]>([])
+  const [frentes, setFrentes]      = useState<any[]>([])
   const [form, setForm] = useState({
-    titulo:            ot?.titulo            ?? '',
-    tipo_trabajo:      ot?.tipo_trabajo      ?? '',
-    prioridad:         ot?.prioridad         ?? 'Media',
-    status:            ot?.status            ?? 'Pendiente',
-    id_seccion_fk:     ot?.id_seccion_fk?.toString() ?? '',
-    ubicacion_detalle: ot?.ubicacion_detalle ?? '',
-    descripcion:       ot?.descripcion       ?? '',
-    notas:             ot?.notas             ?? '',
-    asignado_a:        ot?.asignado_a        ?? '',
-    supervisor:        ot?.supervisor        ?? '',
-    fecha_inicio:      ot?.fecha_inicio      ?? '',
-    fecha_limite:      ot?.fecha_limite      ?? '',
-    semana_no:         ot?.semana_no?.toString() ?? semanaActual().toString(),
+    titulo:             ot?.titulo            ?? '',
+    tipo_trabajo:       ot?.tipo_trabajo      ?? '',
+    prioridad:          ot?.prioridad         ?? 'Media',
+    status:             ot?.status            ?? 'Pendiente',
+    id_seccion_fk:      ot?.id_seccion_fk?.toString()      ?? '',
+    id_centro_costo_fk: ot?.id_centro_costo_fk?.toString() ?? '',
+    id_frente_fk:       ot?.id_frente_fk?.toString()       ?? '',
+    ubicacion_detalle:  ot?.ubicacion_detalle ?? '',
+    descripcion:        ot?.descripcion       ?? '',
+    notas:              ot?.notas             ?? '',
+    asignado_a:         ot?.asignado_a        ?? '',
+    supervisor:         ot?.supervisor        ?? '',
+    fecha_inicio:       ot?.fecha_inicio      ?? '',
+    fecha_limite:       ot?.fecha_limite      ?? '',
+    semana_no:          ot?.semana_no?.toString() ?? semanaActual().toString(),
   })
   const [recursos, setRecursos] = useState<any[]>(
     ot ? [] : [{ cantidad: '', descripcion: '', costo: '0' }]
@@ -242,6 +246,13 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
+
+  useEffect(() => {
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCentros(data ?? []))
+    dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setFrentes(data ?? []))
+  }, [])
   const setR = (i: number, k: string, v: string) =>
     setRecursos(r => r.map((x, j) => j === i ? { ...x, [k]: v } : x))
   const costoTotal = recursos.reduce((a, r) => a + Number(r.costo || 0), 0)
@@ -258,7 +269,9 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
       const { data: newOT, error: err } = await dbCtrl.from('ordenes_trabajo').insert({
         folio, titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
         prioridad: form.prioridad, status: form.status,
-        id_seccion_fk: form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+        id_seccion_fk:      form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null,
+        id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+        id_frente_fk:       form.id_frente_fk        ? Number(form.id_frente_fk)       : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
         descripcion: form.descripcion.trim() || null, notas: form.notas.trim() || null,
         asignado_a: form.asignado_a.trim() || null, supervisor: form.supervisor.trim() || null,
@@ -272,7 +285,9 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
       await dbCtrl.from('ordenes_trabajo').update({
         titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
         prioridad: form.prioridad, status: form.status,
-        id_seccion_fk: form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+        id_seccion_fk:      form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null,
+        id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+        id_frente_fk:       form.id_frente_fk        ? Number(form.id_frente_fk)       : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
         descripcion: form.descripcion.trim() || null, notas: form.notas.trim() || null,
         asignado_a: form.asignado_a.trim() || null, supervisor: form.supervisor.trim() || null,
@@ -337,6 +352,20 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
               </select></div>
             <div><label className="label">Ubicación detalle</label>
               <input className="input" value={form.ubicacion_detalle} onChange={setF('ubicacion_detalle')} /></div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><label className="label">Centro de Costo</label>
+              <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
+                <option value="">— Sin asignar —</option>
+                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select></div>
+            <div><label className="label">Frente</label>
+              <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
+                <option value="">— Sin asignar —</option>
+                {frentes
+                  .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
+                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+              </select></div>
           </div>
           <div><label className="label">Descripción</label>
             <textarea className="input" rows={2} value={form.descripcion} onChange={setF('descripcion')} style={{ resize: 'vertical' }} /></div>

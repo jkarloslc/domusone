@@ -348,10 +348,15 @@ function MiniCalendario({ tareas, onRefresh, prog, secMap }: {
     const folio = `OT-${anio}-${String((count ?? 0) + 1).padStart(4, '0')}`
     const { data: ot } = await dbCtrl.from('ordenes_trabajo').insert({
       folio, titulo: `${prog.nombre} — ${fmtDate(tarea.fecha_prog)}`,
-      tipo_trabajo: prog.tipo_trabajo ?? null, prioridad: 'Media', status: 'Pendiente',
-      id_seccion_fk: prog.id_seccion_fk ?? null, descripcion: prog.descripcion ?? null,
-      asignado_a: prog.responsable ?? null, fecha_limite: tarea.fecha_prog,
-      semana_no: tarea.semana_no, anio, created_by: authUser?.nombre ?? null,
+      tipo_trabajo:       prog.tipo_trabajo       ?? null,
+      prioridad:          'Media', status: 'Pendiente',
+      id_seccion_fk:      prog.id_seccion_fk      ?? null,
+      id_centro_costo_fk: prog.id_centro_costo_fk ?? null,
+      id_frente_fk:       prog.id_frente_fk       ?? null,
+      descripcion:        prog.descripcion        ?? null,
+      asignado_a:         prog.responsable        ?? null,
+      fecha_limite:       tarea.fecha_prog,
+      semana_no:          tarea.semana_no, anio, created_by: authUser?.nombre ?? null,
     }).select('id, folio').single()
     if (ot) {
       await dbCtrl.from('programa_tareas').update({
@@ -437,20 +442,31 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
+  const [centrosCosto, setCentros] = useState<any[]>([])
+  const [frentes, setFrentes]      = useState<any[]>([])
   const [form, setForm] = useState({
-    nombre:          prog?.nombre             ?? '',
-    anio:            prog?.anio?.toString()   ?? new Date().getFullYear().toString(),
-    id_seccion_fk:   prog?.id_seccion_fk?.toString() ?? '',
-    tipo_trabajo:    prog?.tipo_trabajo       ?? '',
-    frecuencia:      prog?.frecuencia         ?? 'Mensual',
-    mes_inicio:      prog?.mes_inicio?.toString() ?? '1',
-    responsable:     prog?.responsable        ?? '',
-    descripcion:     prog?.descripcion        ?? '',
-    presupuesto_est: prog?.presupuesto_est?.toString() ?? '0',
+    nombre:             prog?.nombre             ?? '',
+    anio:               prog?.anio?.toString()   ?? new Date().getFullYear().toString(),
+    id_seccion_fk:      prog?.id_seccion_fk?.toString() ?? '',
+    id_centro_costo_fk: prog?.id_centro_costo_fk?.toString() ?? '',
+    id_frente_fk:       prog?.id_frente_fk?.toString() ?? '',
+    tipo_trabajo:       prog?.tipo_trabajo       ?? '',
+    frecuencia:         prog?.frecuencia         ?? 'Mensual',
+    mes_inicio:         prog?.mes_inicio?.toString() ?? '1',
+    responsable:        prog?.responsable        ?? '',
+    descripcion:        prog?.descripcion        ?? '',
+    presupuesto_est:    prog?.presupuesto_est?.toString() ?? '0',
   })
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
+
+  useEffect(() => {
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCentros(data ?? []))
+    dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setFrentes(data ?? []))
+  }, [])
 
   const totalFechas = generarFechas(Number(form.anio), form.frecuencia, Number(form.mes_inicio)).length
 
@@ -458,16 +474,18 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
     setSaving(true); setError('')
     const payload = {
-      nombre:          form.nombre.trim(),
-      anio:            Number(form.anio),
-      id_seccion_fk:   form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
-      tipo_trabajo:    form.tipo_trabajo || null,
-      frecuencia:      form.frecuencia,
-      mes_inicio:      Number(form.mes_inicio),
-      responsable:     form.responsable.trim() || null,
-      descripcion:     form.descripcion.trim() || null,
-      presupuesto_est: Number(form.presupuesto_est || 0),
-      updated_at:      new Date().toISOString(),
+      nombre:             form.nombre.trim(),
+      anio:               Number(form.anio),
+      id_seccion_fk:      form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null,
+      id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+      id_frente_fk:       form.id_frente_fk        ? Number(form.id_frente_fk)       : null,
+      tipo_trabajo:       form.tipo_trabajo || null,
+      frecuencia:         form.frecuencia,
+      mes_inicio:         Number(form.mes_inicio),
+      responsable:        form.responsable.trim() || null,
+      descripcion:        form.descripcion.trim() || null,
+      presupuesto_est:    Number(form.presupuesto_est || 0),
+      updated_at:         new Date().toISOString(),
     }
     let progId = prog?.id
     if (prog) {
@@ -523,6 +541,22 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
               <select className="select" value={form.tipo_trabajo} onChange={setF('tipo_trabajo')}>
                 <option value="">— Seleccionar —</option>
                 {TIPOS.map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><label className="label">Centro de Costo</label>
+              <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
+                <option value="">— Sin asignar —</option>
+                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <div><label className="label">Frente</label>
+              <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
+                <option value="">— Sin asignar —</option>
+                {frentes
+                  .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
+                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
               </select>
             </div>
           </div>
@@ -613,10 +647,15 @@ function ProgramaDetail({ prog, secMap, onClose }: {
     const folio = `OT-${anio}-${String((count ?? 0) + 1).padStart(4, '0')}`
     const { data: ot } = await dbCtrl.from('ordenes_trabajo').insert({
       folio, titulo: `${prog.nombre} — ${fmtDate(tarea.fecha_prog)}`,
-      tipo_trabajo: prog.tipo_trabajo ?? null, prioridad: 'Media', status: 'Pendiente',
-      id_seccion_fk: prog.id_seccion_fk ?? null, descripcion: prog.descripcion ?? null,
-      asignado_a: prog.responsable ?? null, fecha_limite: tarea.fecha_prog,
-      semana_no: tarea.semana_no, anio, created_by: authUser?.nombre ?? null,
+      tipo_trabajo:       prog.tipo_trabajo       ?? null,
+      prioridad:          'Media', status: 'Pendiente',
+      id_seccion_fk:      prog.id_seccion_fk      ?? null,
+      id_centro_costo_fk: prog.id_centro_costo_fk ?? null,
+      id_frente_fk:       prog.id_frente_fk       ?? null,
+      descripcion:        prog.descripcion        ?? null,
+      asignado_a:         prog.responsable        ?? null,
+      fecha_limite:       tarea.fecha_prog,
+      semana_no:          tarea.semana_no, anio, created_by: authUser?.nombre ?? null,
     }).select('id, folio').single()
     if (ot) {
       await dbCtrl.from('programa_tareas').update({
