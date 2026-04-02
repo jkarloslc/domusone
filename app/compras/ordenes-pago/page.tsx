@@ -656,8 +656,8 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
         .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
         @page { margin: 1.2cm; }
       </style></head><body>
-      <h1>Orden de Pago</h1>
-      <div class="sub">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(op.fecha_op)}</div>
+      <h1>Balvanera Polo & Country Club</h1>
+      <div class="sub">Orden de Pago Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(op.fecha_op)}</div>
       <table>
         <tr><th>Beneficiario</th><td>${op._provNombre ?? '—'}</td><th>Banco</th><td>${op.banco_destino ?? '—'}</td></tr>
         <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${op.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>
