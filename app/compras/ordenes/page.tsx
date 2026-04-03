@@ -479,23 +479,78 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
     dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle().then(({ data }) => setOP(data))
   }
 
-  const imprimirOP = () => {
+  const imprimirOP = async () => {
     if (!op) return
-    const win = window.open('', '_blank')
-    win?.document.write(`<html><head><title>Orden de Pago ${op.folio}</title>
-      <style>body{font-family:Arial,sans-serif;padding:40px;font-size:13px}h1{color:#0D4F80;font-size:22px}table{width:100%;border-collapse:collapse;margin:20px 0}td,th{border:1px solid #e2e8f0;padding:8px 12px}th{background:#f1f5f9;font-size:11px;text-transform:uppercase}</style>
-      </head><body><h1>Orden de Pago</h1>
-      <table><tr><td><b>Folio</b></td><td>${op.folio}</td><td><b>OC Ref.</b></td><td>${oc.folio}</td></tr>
-      <tr><td><b>Proveedor</b></td><td colspan="3">${oc._provNombre ?? ''}</td></tr>
-      <tr><td><b>Monto</b></td><td><b>${fmt(op.monto)}</b></td><td><b>Forma de Pago</b></td><td>${op.forma_pago}</td></tr>
-      <tr><td><b>Vencimiento</b></td><td>${fmtFecha(op.fecha_vencimiento)}</td><td><b>Almacén</b></td><td>${almMap[oc.id_almacen_entrega_fk] ?? '—'}</td></tr>
-      <tr><td colspan="4"><b>Concepto:</b> ${op.concepto ?? '—'}</td></tr></table>
-      <div style="display:flex;gap:80px;margin-top:40px">
-        <div style="text-align:center;border-top:1px solid #000;padding-top:8px;width:200px">Elaboró</div>
-        <div style="text-align:center;border-top:1px solid #000;padding-top:8px;width:200px">Autorizó</div>
-        <div style="text-align:center;border-top:1px solid #000;padding-top:8px;width:200px">Recibió</div>
-      </div></body></html>`)
-    win?.print()
+    // Cargar config de organización
+    let orgNombre = 'Organización'
+    let orgSubtitulo = ''
+    let orgLogo = ''
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const sb = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${op.folio}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #64748b; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        td, th { border: 1px solid #e2e8f0; padding: 8px 12px; }
+        th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; }
+        .firmas { display: flex; gap: 60px; margin-top: 60px; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
+        @page { margin: 1.2cm; }
+      </style></head><body>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="doc-title">Orden de Pago</div>
+          <div style="font-size:12px;color:#64748b">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; OC: ${oc.folio}</div>
+        </div>
+      </div>
+      <table>
+        <tr><th>Proveedor</th><td colspan="3">${oc._provNombre ?? '—'}</td></tr>
+        <tr><th>Folio OP</th><td>${op.folio}</td><th>OC Ref.</th><td>${oc.folio}</td></tr>
+        <tr><th>Monto</th><td><strong>${fmt(op.monto)}</strong></td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>
+        <tr><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td><th>Almacén</th><td>${almMap[oc.id_almacen_entrega_fk] ?? '—'}</td></tr>
+        <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
+      </table>
+      <div class="firmas">
+        <div class="firma">Elaboró</div>
+        <div class="firma">Autorizó</div>
+        <div class="firma">Recibió</div>
+      </div>
+      </body></html>`
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
   }
 
   return (

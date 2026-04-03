@@ -34,10 +34,10 @@ export default function ReporteIncidenciasSeccion() {
     setLoading(true)
 
     // 1. Incidencias con filtros básicos
-    let q = dbCtrl.from('incidencias').select('*').order('fecha_reporte', { ascending: false })
+    let q = dbCtrl.from('incidencias').select('*').order('fecha', { ascending: false })
     if (filterStatus) q = q.eq('status', filterStatus)
-    if (filterDe)     q = q.gte('fecha_reporte', filterDe)
-    if (filterA)      q = q.lte('fecha_reporte', filterA)
+    if (filterDe)     q = q.gte('fecha', filterDe)
+    if (filterA)      q = q.lte('fecha', filterA)
     const { data: incs } = await q
 
     if (!incs?.length) { setRows([]); setLoading(false); return }
@@ -200,8 +200,8 @@ export default function ReporteIncidenciasSeccion() {
                             <td style={{ fontSize: 13, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {inc.descripcion ?? '—'}
                             </td>
-                            <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtFecha(inc.fecha_reporte)}</td>
-                            <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{inc.asignado_a ?? '—'}</td>
+                            <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtFecha(inc.fecha)}</td>
+                            <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{inc.responsable ?? '—'}</td>
                             <td>
                               <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
                                 color, background: color + '15', border: `1px solid ${color}40` }}>

@@ -125,6 +125,7 @@ export default function ReporteTransferencias() {
       </div>
 
       {/* Tabla */}
+      <div id="reporte-print-area">
       <div className="card" style={{ overflow: 'hidden' }}>
         <table id="reporte-table">
           <thead>
@@ -228,6 +229,7 @@ export default function ReporteTransferencias() {
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   )

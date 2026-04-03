@@ -82,6 +82,7 @@ export default function ReporteOrdenesCompra() {
         })}
       </div>
 
+      <div id="reporte-print-area">
       <div className="card" style={{ overflow: 'hidden' }}>
         <table id="reporte-table">
           <thead>
@@ -134,6 +135,7 @@ export default function ReporteOrdenesCompra() {
             )}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   )
