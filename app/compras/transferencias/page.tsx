@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
   ArrowLeft, CheckCircle, XCircle, ArrowLeftRight,
-  Truck, PackageCheck, ClipboardList
+  Truck, PackageCheck, ClipboardList, Printer
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge } from '../types'
@@ -557,6 +557,125 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
   const updateEnviado = (id: number, v: string) =>
     setDet(d => d.map(x => x.id === id ? { ...x, cantidad_enviada_input: v } : x))
 
+  // ── Vale de Transferencia imprimible ──────────────────────
+  const imprimirVale = async () => {
+    let orgNombre = 'Organización'
+    let orgSubtitulo = ''
+    let orgLogo = ''
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const sb = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+    const filasDet = det.map(d => {
+      const art = artsMap[d.id_articulo_fk] ?? `Art #${d.id_articulo_fk}`
+      const enviado = d.cantidad_enviada ?? d.cantidad_enviada_input ?? '—'
+      return `<tr>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13px">${art}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:13px">${d.cantidad_solicitada}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:13px;font-weight:600;color:#0D4F80">${enviado}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px;color:#64748b">${d.unidad ?? ''}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#94a3b8">${d.notas ?? ''}</td>
+      </tr>`
+    }).join('')
+    const html = `<!DOCTYPE html><html><head><title>Vale de Transferencia ${trans.folio}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #64748b; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 18px; }
+        .info-item label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
+        .info-item span { font-size: 13px; color: #1e293b; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        thead th { background: #f1f5f9; padding: 8px 10px; font-size: 10px; text-transform: uppercase;
+          letter-spacing: 0.05em; text-align: left; border: 1px solid #e2e8f0; color: #64748b; }
+        thead th.right { text-align: right; }
+        .firmas { display: flex; gap: 40px; margin-top: 64px; justify-content: space-around; }
+        .firma { text-align: center; min-width: 160px; }
+        .firma-linea { border-top: 1px solid #1e293b; padding-top: 8px; margin-top: 48px; font-size: 11px; color: #64748b; }
+        .firma-nombre { font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+        .nota { font-size: 11px; color: #94a3b8; font-style: italic; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+        @page { margin: 1.2cm; }
+      </style></head><body>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="doc-title">Vale de Transferencia</div>
+          <div style="font-size:16px;font-weight:700;color:#0D4F80;font-family:monospace">${trans.folio}</div>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item"><label>Almacén Origen</label><span>${almMap[trans.id_almacen_origen] ?? `#${trans.id_almacen_origen}`}</span></div>
+        <div class="info-item"><label>Almacén Destino</label><span style="font-weight:600;color:#0D4F80">${almMap[trans.id_almacen_destino] ?? `#${trans.id_almacen_destino}`}</span></div>
+        <div class="info-item"><label>Área Solicitante</label><span>${trans.area_solicitante ?? '—'}</span></div>
+        <div class="info-item"><label>Solicitante</label><span>${trans.solicitante ?? '—'}</span></div>
+        <div class="info-item"><label>Fecha Solicitud</label><span>${fmtFecha(trans.fecha_solicitud)}</span></div>
+        <div class="info-item"><label>Fecha Despacho</label><span>${trans.fecha_transferencia ? fmtFecha(trans.fecha_transferencia) : '______________________'}</span></div>
+        ${trans.autorizado_por ? `<div class="info-item"><label>Autorizado por</label><span>${trans.autorizado_por}</span></div>` : ''}
+        ${trans.justificacion ? `<div class="info-item" style="grid-column:span 2"><label>Justificación</label><span>${trans.justificacion}</span></div>` : ''}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Artículo</th>
+            <th class="right">Cant. Solicitada</th>
+            <th class="right">Cant. Despachada</th>
+            <th>Unidad</th>
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody>${filasDet}</tbody>
+      </table>
+
+      <div class="firmas">
+        <div class="firma">
+          <div class="firma-nombre">${trans.autorizado_por ?? ''}</div>
+          <div class="firma-linea">Autorizó</div>
+        </div>
+        <div class="firma">
+          <div class="firma-nombre">${trans.enviado_por ?? ''}</div>
+          <div class="firma-linea">Despachó</div>
+        </div>
+        <div class="firma">
+          <div class="firma-nombre">${trans.solicitante ?? ''}</div>
+          <div class="firma-linea">Recibió conforme</div>
+        </div>
+      </div>
+      <div class="nota">Este documento es un vale de control interno. La firma de "Recibió conforme" acredita la recepción física de los artículos descritos.</div>
+      </body></html>`
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
+  }
+
   // El solicitante puede confirmar recepción cuando sea "Enviada"
   const esSolicitante = trans.solicitante === solicitante || true // por ahora cualquier usuario puede confirmar
 
@@ -575,7 +694,14 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
               {almMap[trans.id_almacen_destino] ?? `#${trans.id_almacen_destino}`}
             </div>
           </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {trans.status !== 'Solicitada' && trans.status !== 'Rechazada' && (
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirVale}>
+                <Printer size={13} /> Imprimir Vale
+              </button>
+            )}
+            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          </div>
         </div>
 
         <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 80px)', padding: '0 24px 20px' }}>
@@ -691,10 +817,15 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
                 Ajusta las cantidades enviadas si difieren de lo solicitado, luego confirma el despacho.
                 El inventario se moverá cuando el solicitante confirme la recepción.
               </p>
-              <button className="btn-primary" style={{ width: '100%' }}
-                onClick={() => onEnviar(trans, det)}>
-                <Truck size={13} /> Confirmar Despacho
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirVale}>
+                  <Printer size={13} /> Imprimir Vale
+                </button>
+                <button className="btn-primary" style={{ flex: 1 }}
+                  onClick={() => onEnviar(trans, det)}>
+                  <Truck size={13} /> Confirmar Despacho
+                </button>
+              </div>
             </div>
           )}
 
