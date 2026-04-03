@@ -215,9 +215,9 @@ export default function InicioPage() {
     if (search.length < 2) { setResults([]); return }
     const timer = setTimeout(() => {
       setSearching(true)
-      dbCat.from('lotes').select('id, cve_lote, lote, tipo_lote, status_lote, id_seccion_fk')
+      dbCat.from('lotes').select('*')
         .ilike('cve_lote', `%${search}%`).limit(10)
-        .then(({ data }) => { setResults(data ?? []); setSearching(false) })
+        .then(({ data, error }) => { if (!error) setResults(data ?? []); setSearching(false) })
     }, 300)
     return () => clearTimeout(timer)
   }, [search])
