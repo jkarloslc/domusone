@@ -132,8 +132,7 @@ const CATALOGOS: CatConfig[] = [
     color: '#d97706',
     desc:  'Métodos de pago disponibles en recibos y cobranza',
     campos: [
-      { key: 'nombre',      label: 'Nombre *',    type: 'text',    required: true },
-      { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
     ],
   },
   {
