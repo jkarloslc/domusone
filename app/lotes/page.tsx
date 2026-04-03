@@ -60,7 +60,7 @@ export default function LotesPage() {
       .order('cve_lote', { ascending: true })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (debouncedSearch)       q = q.or(`cve_lote.ilike.%${debouncedSearch}%,tipo_lote.ilike.%${debouncedSearch}%`)
+    if (debouncedSearch)       q = q.ilike('cve_lote', `%${debouncedSearch}%`)
     if (filterStatus) q = q.eq('status_lote', filterStatus)
 
     const { data, count, error } = await q

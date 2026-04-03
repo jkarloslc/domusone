@@ -243,9 +243,9 @@ export default function InicioPage() {
       dbCtrl.from('accesos').select('*').eq('id_lote_fk', id).order('fecha_entrada', { ascending: false }).limit(20),
       dbCat.from('visitantes').select('*').eq('id_lote_fk', id).eq('activo', true).order('created_at', { ascending: false }),
       dbCat.from('vehiculos').select('*').eq('id_lote_fk', id).eq('activo', true).order('created_at', { ascending: false }),
-      dbCtrl.from('contratos').select('*').eq('id_lote_fk', id).order('fecha_contrato', { ascending: false }),
+      dbCtrl.from('contratos').select('*').eq('id_lote_fk', id).order('fecha', { ascending: false }),
       dbCtrl.from('escrituras').select('*').eq('id_lote_fk', id).order('fecha', { ascending: false }),
-      dbCtrl.from('incidencias').select('*').eq('id_lote_fk', id).order('fecha_incidencia', { ascending: false }),
+      dbCtrl.from('incidencias').select('*').eq('id_lote_fk', id).order('fecha', { ascending: false }),
       dbCtrl.from('proyectos').select('*').eq('id_lote_fk', id).order('created_at', { ascending: false }),
       dbCtrl.from('cargos').select('*').eq('id_lote_fk', id).in('status', ['Pendiente', 'Parcial']).order('fecha_cargo', { ascending: false }),
       dbCtrl.from('servicios_cfe').select('*').eq('id_lote_fk', id),
@@ -516,8 +516,8 @@ export default function InicioPage() {
                     </div>
                     {inc.descripcion && <div style={{ fontSize: 12, color: '#64748b', marginBottom: 2 }}>{inc.descripcion}</div>}
                     <div style={{ display: 'flex', gap: 10 }}>
-                      {inc.fecha_incidencia && <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtFecha(inc.fecha_incidencia)}</span>}
-                      {inc.asignado_a && <span style={{ fontSize: 11, color: '#94a3b8' }}>Asignado: {inc.asignado_a}</span>}
+                      {inc.fecha && <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtFecha(inc.fecha)}</span>}
+                      {inc.responsable && <span style={{ fontSize: 11, color: '#94a3b8' }}>Responsable: {inc.responsable}</span>}
                     </div>
                   </div>
                 ))

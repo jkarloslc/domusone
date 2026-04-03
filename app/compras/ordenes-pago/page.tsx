@@ -642,11 +642,35 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
     onCanceled()
   }
 
-  const imprimir = () => {
+  const imprimir = async () => {
+    // Cargar config de organización
+    let orgNombre = 'Organización'
+    let orgSubtitulo = ''
+    let orgLogo = ''
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const sb = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')     orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo')  orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')   orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
     const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${op.folio}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
-        h1 { color: #0D4F80; font-size: 22px; margin: 0 0 4px; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #64748b; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
         .sub { color: #64748b; font-size: 12px; margin-bottom: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
         td, th { border: 1px solid #e2e8f0; padding: 8px 12px; }
@@ -656,8 +680,17 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
         .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
         @page { margin: 1.2cm; }
       </style></head><body>
-      <h1>Balvanera Polo & Country Club</h1>
-      <div class="sub">Orden de Pago Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(op.fecha_op)}</div>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="doc-title">Orden de Pago</div>
+          <div class="sub" style="margin:0">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(op.fecha_op)}</div>
+        </div>
+      </div>
       <table>
         <tr><th>Beneficiario</th><td>${op._provNombre ?? '—'}</td><th>Banco</th><td>${op.banco_destino ?? '—'}</td></tr>
         <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${op.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>

@@ -4,7 +4,7 @@ import { Printer, Download } from 'lucide-react'
 // Lee configuración desde Supabase una sola vez por sesión
 let cachedConfig: { org_nombre?: string; org_subtitulo?: string; org_logo_url?: string } = {}
 
-async function getConfig() {
+export async function getConfig() {
   if (cachedConfig.org_nombre) return cachedConfig
   try {
     const { createClient } = await import('@supabase/supabase-js')
@@ -50,13 +50,17 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
       @media print {
         body * { visibility: hidden !important; }
         #reporte-print-area, #reporte-print-area * { visibility: visible !important; }
-        #print-header { visibility: visible !important; }
+        #print-header-injected, #print-header-injected * { visibility: visible !important; }
         #reporte-print-area {
           position: fixed !important;
           top: 0 !important; left: 0 !important;
           width: 100% !important;
           background: white !important;
           padding: 16px !important;
+          overflow: visible !important;
+          border: none !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
         }
         #reporte-print-area table {
           font-size: 11px !important;
@@ -81,18 +85,28 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
     `
     document.head.appendChild(style)
 
-    // Marcar la card como zona imprimible e inyectar encabezado
-    const table = document.getElementById('reporte-table')
-    if (table) {
-      const card = table.closest('.card') as HTMLElement | null
-      if (card) {
-        card.id = 'reporte-print-area'
-        // Insertar encabezado al inicio
-        const headerDiv = document.createElement('div')
-        headerDiv.id   = 'print-header-injected'
-        headerDiv.innerHTML = headerHtml
-        card.insertBefore(headerDiv, card.firstChild)
+    // 1. Buscar área de impresión pre-definida en el JSX (reportes con acordeón)
+    let printArea = document.getElementById('reporte-print-area') as HTMLElement | null
+    let dynamicId = false
+
+    // 2. Fallback: buscar vía #reporte-table → .card (reportes de tabla simple)
+    if (!printArea) {
+      const table = document.getElementById('reporte-table')
+      if (table) {
+        const card = table.closest('.card') as HTMLElement | null
+        if (card) {
+          card.id = 'reporte-print-area'
+          printArea = card
+          dynamicId = true
+        }
       }
+    }
+
+    if (printArea) {
+      const headerDiv = document.createElement('div')
+      headerDiv.id = 'print-header-injected'
+      headerDiv.innerHTML = headerHtml
+      printArea.insertBefore(headerDiv, printArea.firstChild)
     }
 
     window.print()
@@ -100,8 +114,10 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
     setTimeout(() => {
       document.getElementById('print-override')?.remove()
       document.getElementById('print-header-injected')?.remove()
-      const area = document.getElementById('reporte-print-area')
-      if (area) area.removeAttribute('id')
+      // Solo quitar el id si fue asignado dinámicamente (no si viene del JSX)
+      if (dynamicId) {
+        document.getElementById('reporte-print-area')?.removeAttribute('id')
+      }
     }, 1500)
   }
 

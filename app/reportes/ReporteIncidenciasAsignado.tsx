@@ -69,6 +69,7 @@ export default function ReporteIncidenciasAsignado() {
       <PrintBar title="Incidencias_por_Asignado" count={filtered.length} reportTitle="Incidencias por Asignado" />
 
       {/* Vista agrupada */}
+      <div id="reporte-print-area">
       {Object.entries(grupos).map(([asignado, items]) => (
         <div key={asignado} style={{ marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -81,7 +82,7 @@ export default function ReporteIncidenciasAsignado() {
             </span>
           </div>
           <div className="card" style={{ overflow: 'hidden', marginBottom: 4 }}>
-            <table id="reporte-table">
+            <table>
               <thead>
                 <tr>
                   <th>#</th>
@@ -114,6 +115,7 @@ export default function ReporteIncidenciasAsignado() {
       {filtered.length === 0 && !loading && (
         <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin incidencias</div>
       )}
+      </div>
     </div>
   )
 }

@@ -130,6 +130,7 @@ export default function ReporteConsumoCentroCosto() {
       </div>
 
       {/* Tabla agrupada */}
+      <div id="reporte-print-area">
       {loading ? (
         <div style={{ textAlign: 'center', padding: 48 }}>
           <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
@@ -228,6 +229,7 @@ export default function ReporteConsumoCentroCosto() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

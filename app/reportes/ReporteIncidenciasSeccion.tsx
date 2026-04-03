@@ -143,7 +143,7 @@ export default function ReporteIncidenciasSeccion() {
           Sin incidencias para los filtros seleccionados
         </div>
       ) : (
-        <div id="reporte-table" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div id="reporte-print-area" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {seccionesOrdenadas.map(sec => {
             const incs       = porSeccion[sec]
             const expanded   = expandidas[sec] !== false  // expandido por default
