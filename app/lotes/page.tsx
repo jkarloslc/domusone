@@ -167,7 +167,7 @@ export default function LotesPage() {
                   No se encontraron lotes
                 </td></tr>
               ) : lotes.map(l => {
-                const dir = [(l as any).calle, (l as any).numero, (l as any).manzana].filter(Boolean).join(' ') || '—'
+                const dir = [l.calle, l.numero, l.Diferenciador, l.manzana].filter(Boolean).join(' ') || '—'
                 return (
                 <tr key={l.id}>
                   <td>
