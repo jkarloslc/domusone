@@ -59,8 +59,10 @@ export default function OrdenesTrabajoTab() {
   const debouncedSearch           = useDebounce(search, 300)
   const [filterStatus, setFilterStatus] = useState('')
   const [filterTipo,   setFilterTipo]   = useState('')
-  const [filterSec,    setFilterSec]    = useState('')
   const [filterCC,     setFilterCC]     = useState('')
+  const [filterSec,    setFilterSec]    = useState('')
+  const [filterFr,     setFilterFr]     = useState('')
+  const [frentes,      setFrentesOT]    = useState<any[]>([])
   const [modal,    setModal]    = useState(false)
   const [editingOT, setEditingOT] = useState<any | null>(null)
   const [detail,   setDetail]   = useState<any | null>(null)
@@ -72,21 +74,23 @@ export default function OrdenesTrabajoTab() {
     if (debouncedSearch)  q = q.or(`folio.ilike.%${debouncedSearch}%,titulo.ilike.%${debouncedSearch}%,asignado_a.ilike.%${debouncedSearch}%`)
     if (filterStatus)     q = q.eq('status', filterStatus)
     if (filterTipo)       q = q.eq('tipo_trabajo', filterTipo)
-    if (filterSec)        q = q.eq('id_seccion_fk', Number(filterSec))
     if (filterCC)         q = q.eq('id_centro_costo_fk', Number(filterCC))
+    if (filterSec)        q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterFr)         q = q.eq('id_frente_fk', Number(filterFr))
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [debouncedSearch, filterStatus, filterTipo, filterSec, filterCC])
+  }, [debouncedSearch, filterStatus, filterTipo, filterCC, filterSec, filterFr])
 
   useEffect(() => {
     Promise.all([
       dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
     ]).then(([{ data: secs }, { data: ccs }, { data: frs }]) => {
       setSecciones(secs ?? [])
       setCentros(ccs ?? [])
+      setFrentesOT(frs ?? [])
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
       const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
@@ -135,13 +139,19 @@ export default function OrdenesTrabajoTab() {
           <option value="">Todos los tipos</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterSec('') }}>
+        <select className="select" style={{ minWidth: 180 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filterSec} onChange={e => setFilterSec(e.target.value)}>
+        <select className="select" style={{ minWidth: 160 }} value={filterSec} onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
           <option value="">Todas las secciones</option>
           {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+        </select>
+        <select className="select" style={{ minWidth: 150 }} value={filterFr} onChange={e => setFilterFr(e.target.value)}>
+          <option value="">Todos los frentes</option>
+          {frentes
+            .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
+            .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
         <button className="btn-ghost" onClick={fetchData}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
