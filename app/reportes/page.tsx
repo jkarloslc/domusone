@@ -48,7 +48,8 @@ const GRUPOS = [
     label: 'Tesorería',
     color: '#0f766e',
     reportes: [
-      { id: 'estado-cuenta', label: 'Estado de Cuenta', icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
+      { id: 'estado-cuenta', label: 'Estado de Cuenta',           icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
+      { id: 'cxp',           label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
     ],
   },
   {
@@ -59,8 +60,7 @@ const GRUPOS = [
       { id: 'consumo-seccion', label: 'Consumo por Sección',         icon: MapPin,       desc: 'Órdenes de pago agrupadas por sección del residencial' },
       { id: 'consumo-frente',  label: 'Consumo por Frente',          icon: MapPin,       desc: 'Órdenes de pago agrupadas por frente de obra' },
       { id: 'inventario',      label: 'Inventario Actual',           icon: Package,      desc: 'Existencias por almacén con alertas de stock mínimo' },
-      { id: 'ordenes-compra', label: 'Órdenes de Compra',          icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
-      { id: 'cxp',            label: 'Antigüedad de Saldos CXP',   icon: FileText,     desc: 'Cuentas por pagar con bandas de vencimiento' },
+      { id: 'ordenes-compra',  label: 'Órdenes de Compra',          icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
       { id: 'kardex',          label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
       { id: 'transferencias',  label: 'Transferencias',             icon: Package,      desc: 'Movimientos entre almacenes con filtros por origen, destino y fecha' },
     ],
