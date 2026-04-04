@@ -537,12 +537,6 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
             <div><label className="label">Año</label>
               <input className="input" type="number" value={form.anio} onChange={setF('anio')} />
             </div>
-            <div><label className="label">Sección</label>
-              <select className="select" value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
-                <option value="">— Sin sección —</option>
-                {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-              </select>
-            </div>
             <div><label className="label">Tipo de Trabajo</label>
               <select className="select" value={form.tipo_trabajo} onChange={setF('tipo_trabajo')}>
                 <option value="">— Seleccionar —</option>
@@ -550,11 +544,17 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
               </select>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             <div><label className="label">Centro de Costo</label>
               <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
                 <option value="">— Sin asignar —</option>
                 {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <div><label className="label">Sección</label>
+              <select className="select" value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
+                <option value="">— Sin sección —</option>
+                {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </div>
             <div><label className="label">Frente</label>

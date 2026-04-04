@@ -346,19 +346,15 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
                 {STATUSES.map(s => <option key={s}>{s}</option>)}
               </select></div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label className="label">Sección</label>
-              <select className="select" value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
-                <option value="">—</option>{secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-              </select></div>
-            <div><label className="label">Ubicación detalle</label>
-              <input className="input" value={form.ubicacion_detalle} onChange={setF('ubicacion_detalle')} /></div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
             <div><label className="label">Centro de Costo</label>
               <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
                 <option value="">— Sin asignar —</option>
                 {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select></div>
+            <div><label className="label">Sección</label>
+              <select className="select" value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
+                <option value="">—</option>{secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select></div>
             <div><label className="label">Frente</label>
               <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
@@ -368,6 +364,8 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
                   .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
               </select></div>
           </div>
+          <div><label className="label">Ubicación detalle</label>
+            <input className="input" value={form.ubicacion_detalle} onChange={setF('ubicacion_detalle')} /></div>
           <div><label className="label">Descripción</label>
             <textarea className="input" rows={2} value={form.descripcion} onChange={setF('descripcion')} style={{ resize: 'vertical' }} /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
