@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, MapPin, Users, FileText, Building2, Wrench,
   Shield, AlertTriangle, Receipt, ShoppingCart,
-  BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark
+  BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -57,6 +57,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Tesorería', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
     ]},
+    { section: 'Comunicación', items: [
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+    ]},
     { section: 'Sistema', items: [
       { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
       { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
@@ -76,6 +79,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
     ]},
     { section: 'Sistema', items: [
       { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
@@ -154,6 +160,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Tesorería', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
     ]},
     { section: 'Sistema', items: [
       { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },

@@ -10,6 +10,7 @@ const GRUPOS: Record<string, string> = {
   organizacion: 'Organización',
   apariencia:   'Apariencia',
   sistema:      'Sistema',
+  correo:       'Servidor de Correo (SMTP)',
 }
 
 export default function ConfiguracionPage() {
@@ -159,6 +160,10 @@ export default function ConfiguracionPage() {
                           onChange={e => setValues(v => ({ ...v, [row.clave]: e.target.value }))}
                           style={{ fontFamily: 'monospace', maxWidth: 120 }} />
                       </div>
+                    ) : row.tipo === 'password' ? (
+                      <input className="input" type="password" value={values[row.clave] ?? ''}
+                        onChange={e => setValues(v => ({ ...v, [row.clave]: e.target.value }))}
+                        placeholder="••••••••" autoComplete="new-password" />
                     ) : (
                       <input className="input" value={values[row.clave] ?? ''}
                         onChange={e => setValues(v => ({ ...v, [row.clave]: e.target.value }))}

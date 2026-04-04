@@ -42,7 +42,7 @@ type AuthCtx = {
 const LEER: Record<Rol, string[] | '*'> = {
   admin:               '*',
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
-                        'incidencias', 'proyectos', 'mantenimiento', 'reportes'],
+                        'incidencias', 'proyectos', 'mantenimiento', 'comunicados', 'reportes'],
   cobranza:            ['lotes', 'propietarios', 'cobranza', 'facturas', 'reportes'],
   vigilancia:          ['lotes', 'propietarios', 'accesos', 'incidencias'],
   compras:             ['compras', 'reportes'],
@@ -50,7 +50,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   mantenimiento:       ['lotes', 'propietarios', 'mantenimiento', 'reportes'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
-                        'cobranza', 'facturas', 'compras', 'tesoreria', 'reportes'],
+                        'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
   tesoreria:           ['tesoreria', 'reportes'],
 }
 
@@ -58,7 +58,7 @@ const LEER: Record<Rol, string[] | '*'> = {
 const ESCRIBIR: Record<Rol, string[] | '*'> = {
   admin:               '*',
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
-                        'incidencias', 'proyectos', 'mantenimiento'],
+                        'incidencias', 'proyectos', 'mantenimiento', 'comunicados'],
   cobranza:            ['cobranza', 'facturas'],
   vigilancia:          ['accesos', 'incidencias'],
   compras:             ['compras', 'reportes'],
@@ -66,7 +66,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   mantenimiento:       ['mantenimiento'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
-                        'cobranza', 'facturas', 'compras', 'tesoreria', 'reportes'],
+                        'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
   tesoreria:           ['tesoreria', 'reportes'],
 }
 

@@ -1,11 +1,12 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
+const fmtFechaCorta = (d: string) => new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 import {
   Search, Home, Users, Shield, FileText, Building2,
   AlertTriangle, Wrench, Zap, ChevronDown, ChevronRight,
   X, Clock, CheckCircle, MapPin, Phone, Mail, Car,
-  User, Calendar, DollarSign, Loader, RefreshCw
+  User, Calendar, DollarSign, Loader, RefreshCw, MessageSquare
 } from 'lucide-react'
 
 // ── tipos ──────────────────────────────────────────────────────
@@ -209,6 +210,7 @@ export default function InicioPage() {
   const [cargos, setCargos]             = useState<any[]>([])
   const [cfe, setCfe]                   = useState<any[]>([])
   const [agua, setAgua]                 = useState<any[]>([])
+  const [comunicados, setComunicados]   = useState<any[]>([])
 
   // Buscar lotes con debounce
   useEffect(() => {
@@ -229,6 +231,7 @@ export default function InicioPage() {
     setPropietarios([]); setAccesos([]); setVisitantes([]); setVehiculos([])
     setContratos([]); setEscrituras([]); setIncidencias([])
     setProyectos([]); setCargos([]); setCfe([]); setAgua([])
+    setComunicados([])
 
     // Todo en paralelo — lote + clasificacion + todas las relaciones
     const [
@@ -287,6 +290,25 @@ export default function InicioPage() {
     setCargos(cars ?? [])
     setCfe(cfes ?? [])
     setAgua(aguas ?? [])
+
+    // Comunicados enviados a los propietarios de este lote
+    const allPropIds = [...new Set((plRows ?? []).map((r: any) => r.id_propietario_fk).filter(Boolean))]
+    if (allPropIds.length > 0) {
+      const { data: envios } = await dbCtrl.from('comunicados_envios')
+        .select('id, id_comunicado_fk, correo_destino, fecha_envio, nombre_destino, status')
+        .in('id_propietario_fk', allPropIds)
+        .order('fecha_envio', { ascending: false })
+        .limit(30)
+      if (envios && envios.length > 0) {
+        const comIds = [...new Set(envios.map((e: any) => e.id_comunicado_fk).filter(Boolean))]
+        const { data: coms } = await dbCtrl.from('comunicados')
+          .select('id, titulo, tipo, created_at').in('id', comIds)
+        const comMap: Record<number, any> = {}
+        ;(coms ?? []).forEach((c: any) => { comMap[c.id] = c })
+        setComunicados(envios.map((e: any) => ({ ...e, comunicado: comMap[e.id_comunicado_fk] ?? null })))
+      }
+    }
+
     setLoading(false)
   }, [])
 
@@ -574,6 +596,33 @@ export default function InicioPage() {
                 ))
               }
             </Section>
+
+            {/* Comunicados y Avisos */}
+            {comunicados.length > 0 && (
+              <Section icon={MessageSquare} title="Comunicados y Avisos" count={comunicados.length} color="#7c3aed">
+                {comunicados.map(e => {
+                  const c = e.comunicado
+                  const tipoColor: Record<string, string> = { Urgente: '#dc2626', Comunicado: '#15803d', Aviso: '#2563eb' }
+                  const col = tipoColor[c?.tipo ?? ''] ?? '#64748b'
+                  return (
+                    <div key={e.id} style={{ padding: '8px 12px', background: '#faf5ff', borderRadius: 7, marginBottom: 6, border: '1px solid #e9d5ff' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c?.titulo ?? '—'}</span>
+                        {c?.tipo && (
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: col + '18', color: col, border: `1px solid ${col}40` }}>
+                            {c.tipo}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>📧 {e.correo_destino}</span>
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtFechaCorta(e.fecha_envio)}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </Section>
+            )}
 
             {/* Servicios */}
             {(cfe.length > 0 || agua.length > 0) && (
