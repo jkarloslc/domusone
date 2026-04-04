@@ -17,39 +17,45 @@ const prioColor = (p: string) =>
   p === 'Media' ? '#d97706' : '#64748b'
 
 export default function ReporteOrdenesTrabajo() {
-  const [rows,    setRows]    = useState<any[]>([])
-  const [secMap,  setSecMap]  = useState<Record<number, string>>({})
-  const [secciones, setSecs]  = useState<any[]>([])
+  const [rows,         setRows]    = useState<any[]>([])
+  const [secMap,       setSecMap]  = useState<Record<number, string>>({})
+  const [ccMap,        setCcMap]   = useState<Record<number, string>>({})
+  const [secciones,    setSecs]    = useState<any[]>([])
+  const [centrosCosto, setCentros] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroStatus, setFiltroStatus] = useState('')
   const [filtroTipo,   setFiltroTipo]   = useState('')
   const [filtroSec,    setFiltroSec]    = useState('')
+  const [filtroCc,     setFiltroCc]     = useState('')
   const [filtroPrio,   setFiltroPrio]   = useState('')
   const [filtroDe,     setFiltroDe]     = useState('')
   const [filtroA,      setFiltroA]      = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: ots }, { data: secs }] = await Promise.all([
+    const [{ data: ots }, { data: secs }, { data: ccs }] = await Promise.all([
       dbCtrl.from('ordenes_trabajo').select('*').order('created_at', { ascending: false }),
       dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
     ])
     setSecs(secs ?? [])
-    const sm: Record<number, string> = {}
-    ;(secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
-    setSecMap(sm)
+    setCentros(ccs ?? [])
+    const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
+    const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
+    setSecMap(sm); setCcMap(cm)
 
     let result = ots ?? []
-    if (filtroStatus) result = result.filter((r: any) => r.status       === filtroStatus)
-    if (filtroTipo)   result = result.filter((r: any) => r.tipo_trabajo  === filtroTipo)
-    if (filtroSec)    result = result.filter((r: any) => r.id_seccion_fk === Number(filtroSec))
-    if (filtroPrio)   result = result.filter((r: any) => r.prioridad     === filtroPrio)
-    if (filtroDe)     result = result.filter((r: any) => r.fecha_inicio  >= filtroDe)
-    if (filtroA)      result = result.filter((r: any) => r.fecha_inicio  <= filtroA)
+    if (filtroStatus) result = result.filter((r: any) => r.status             === filtroStatus)
+    if (filtroTipo)   result = result.filter((r: any) => r.tipo_trabajo        === filtroTipo)
+    if (filtroSec)    result = result.filter((r: any) => r.id_seccion_fk       === Number(filtroSec))
+    if (filtroCc)     result = result.filter((r: any) => r.id_centro_costo_fk  === Number(filtroCc))
+    if (filtroPrio)   result = result.filter((r: any) => r.prioridad           === filtroPrio)
+    if (filtroDe)     result = result.filter((r: any) => r.fecha_inicio        >= filtroDe)
+    if (filtroA)      result = result.filter((r: any) => r.fecha_inicio        <= filtroA)
 
     setRows(result)
     setLoading(false)
-  }, [filtroStatus, filtroTipo, filtroSec, filtroPrio, filtroDe, filtroA])
+  }, [filtroStatus, filtroTipo, filtroSec, filtroCc, filtroPrio, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -70,6 +76,10 @@ export default function ReporteOrdenesTrabajo() {
         <select className="select" style={{ minWidth: 160 }} value={filtroSec} onChange={e => setFiltroSec(e.target.value)}>
           <option value="">Todas las secciones</option>
           {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+        </select>
+        <select className="select" style={{ minWidth: 180 }} value={filtroCc} onChange={e => setFiltroCc(e.target.value)}>
+          <option value="">Todos los centros de costo</option>
+          {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select className="select" style={{ minWidth: 130 }} value={filtroPrio} onChange={e => setFiltroPrio(e.target.value)}>
           <option value="">Todas las prioridades</option>
@@ -106,6 +116,7 @@ export default function ReporteOrdenesTrabajo() {
               <tr>
                 <th>Folio</th>
                 <th>Título</th>
+                <th>Centro de Costo</th>
                 <th>Sección</th>
                 <th>Tipo</th>
                 <th>Prioridad</th>
@@ -118,15 +129,16 @@ export default function ReporteOrdenesTrabajo() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40 }}>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40 }}>
                   <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
                 </td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
               ) : rows.map((r, i) => (
                 <tr key={i}>
                   <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.folio}</td>
-                  <td style={{ fontSize: 13, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.titulo}</td>
+                  <td style={{ fontSize: 13, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.titulo}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_centro_costo_fk ? (ccMap[r.id_centro_costo_fk] ?? `#${r.id_centro_costo_fk}`) : '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_seccion_fk ? (secMap[r.id_seccion_fk] ?? `#${r.id_seccion_fk}`) : '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.tipo_trabajo ?? '—'}</td>
                   <td>

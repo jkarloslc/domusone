@@ -47,19 +47,23 @@ const fmtFecha = (d: string | null) =>
 
 export default function OrdenesTrabajoTab() {
   const { canWrite, canDelete } = useAuth()
-  const [rows, setRows]       = useState<any[]>([])
-  const [total, setTotal]     = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [rows, setRows]           = useState<any[]>([])
+  const [total, setTotal]         = useState(0)
+  const [loading, setLoading]     = useState(true)
   const [secciones, setSecciones] = useState<any[]>([])
-  const [secMap, setSecMap]   = useState<Record<number, string>>({})
-  const [search, setSearch]   = useState('')
-  const debouncedSearch       = useDebounce(search, 300)
+  const [secMap, setSecMap]       = useState<Record<number, string>>({})
+  const [centrosCosto, setCentros] = useState<any[]>([])
+  const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
+  const [frMap,  setFrMap]        = useState<Record<number, string>>({})
+  const [search, setSearch]       = useState('')
+  const debouncedSearch           = useDebounce(search, 300)
   const [filterStatus, setFilterStatus] = useState('')
   const [filterTipo,   setFilterTipo]   = useState('')
   const [filterSec,    setFilterSec]    = useState('')
-  const [modal,  setModal]    = useState(false)
+  const [filterCC,     setFilterCC]     = useState('')
+  const [modal,    setModal]    = useState(false)
   const [editingOT, setEditingOT] = useState<any | null>(null)
-  const [detail, setDetail]   = useState<any | null>(null)
+  const [detail,   setDetail]   = useState<any | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -69,19 +73,25 @@ export default function OrdenesTrabajoTab() {
     if (filterStatus)     q = q.eq('status', filterStatus)
     if (filterTipo)       q = q.eq('tipo_trabajo', filterTipo)
     if (filterSec)        q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterCC)         q = q.eq('id_centro_costo_fk', Number(filterCC))
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [debouncedSearch, filterStatus, filterTipo, filterSec])
+  }, [debouncedSearch, filterStatus, filterTipo, filterSec, filterCC])
 
   useEffect(() => {
-    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => {
-        setSecciones(data ?? [])
-        const m: Record<number, string> = {}
-        ;(data ?? []).forEach((s: any) => { m[s.id] = s.nombre })
-        setSecMap(m)
-      })
+    Promise.all([
+      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
+    ]).then(([{ data: secs }, { data: ccs }, { data: frs }]) => {
+      setSecciones(secs ?? [])
+      setCentros(ccs ?? [])
+      const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
+      const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
+      const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
+      setSecMap(sm); setCcMap(cm); setFrMap(fm)
+    })
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
@@ -128,6 +138,10 @@ export default function OrdenesTrabajoTab() {
         <select className="select" style={{ minWidth: 160 }} value={filterSec} onChange={e => setFilterSec(e.target.value)}>
           <option value="">Todas las secciones</option>
           {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+        </select>
+        <select className="select" style={{ minWidth: 180 }} value={filterCC} onChange={e => setFilterCC(e.target.value)}>
+          <option value="">Todos los centros de costo</option>
+          {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <button className="btn-ghost" onClick={fetchData}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
@@ -195,7 +209,7 @@ export default function OrdenesTrabajoTab() {
       {modal  && <OTModal secciones={secciones} ot={editingOT}
         onClose={() => { setModal(false); setEditingOT(null) }}
         onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
-      {detail && <OTDetail ot={detail} secMap={secMap}
+      {detail && <OTDetail ot={detail} secMap={secMap} ccMap={ccMap} frMap={frMap}
         onClose={() => { setDetail(null); fetchData() }}
         onEdit={ot => { setDetail(null); setEditingOT(ot); setModal(true) }} />}
     </div>
@@ -412,8 +426,13 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
 }
 
 // ── OTDetail ───────────────────────────────────────────────────
-function OTDetail({ ot, secMap, onClose, onEdit }: {
-  ot: any; secMap: Record<number, string>; onClose: () => void; onEdit: (ot: any) => void
+function OTDetail({ ot, secMap, ccMap, frMap, onClose, onEdit }: {
+  ot: any
+  secMap: Record<number, string>
+  ccMap: Record<number, string>
+  frMap: Record<number, string>
+  onClose: () => void
+  onEdit: (ot: any) => void
 }) {
   const { authUser } = useAuth()
   const [recursos,   setRecursos]   = useState<any[]>([])
@@ -558,6 +577,8 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
         <div><div class="lbl">Sección</div><div class="val">${seccion}</div></div>
         ${ot.ubicacion_detalle ? `<div><div class="lbl">Ubicación Detalle</div><div class="val">${ot.ubicacion_detalle}</div></div>` : ''}
         ${ot.tipo_trabajo ? `<div><div class="lbl">Tipo de Trabajo</div><div class="val">${ot.tipo_trabajo}</div></div>` : ''}
+        ${ot.id_centro_costo_fk ? `<div><div class="lbl">Centro de Costo</div><div class="val">${ccMap[ot.id_centro_costo_fk] ?? '—'}</div></div>` : ''}
+        ${ot.id_frente_fk ? `<div><div class="lbl">Frente</div><div class="val">${frMap[ot.id_frente_fk] ?? '—'}</div></div>` : ''}
         ${ot.asignado_a ? `<div><div class="lbl">Asignado a</div><div class="val">${ot.asignado_a}</div></div>` : ''}
         ${ot.supervisor ? `<div><div class="lbl">Supervisor</div><div class="val">${ot.supervisor}</div></div>` : ''}
         ${ot.semana_no ? `<div><div class="lbl">Semana</div><div class="val">Semana ${ot.semana_no} — ${ot.anio}</div></div>` : ''}
@@ -645,6 +666,10 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
             {ot.semana_no    && <DI label="Semana" value={`Semana ${ot.semana_no} — ${ot.anio}`} />}
             {ot.fecha_inicio && <DI label="Fecha Inicio" value={fmtFecha(ot.fecha_inicio)} />}
             {ot.fecha_limite && <DI label="Fecha Límite" value={fmtFecha(ot.fecha_limite)} />}
+            {ot.fecha_cierre && <DI label="Fecha Cierre" value={fmtFecha(ot.fecha_cierre)} />}
+            {ot.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[ot.id_centro_costo_fk] ?? `#${ot.id_centro_costo_fk}`} />}
+            {ot.id_seccion_fk      && <DI label="Sección"          value={secMap[ot.id_seccion_fk]      ?? `#${ot.id_seccion_fk}`} />}
+            {ot.id_frente_fk       && <DI label="Frente"           value={frMap[ot.id_frente_fk]        ?? `#${ot.id_frente_fk}`} />}
           </div>
 
           {ot.descripcion && (
