@@ -11,14 +11,15 @@ import { useAuth } from '@/lib/AuthContext'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type CatConfig = {
-  key:     string
-  tabla:   string
-  schema?: 'cfg' | 'comp'
-  label:   string
-  icon:    any
-  color:   string
-  campos:  Campo[]
-  desc:    string
+  key:      string
+  tabla:    string
+  schema?:  'cfg' | 'comp'
+  label:    string
+  icon:     any
+  color:    string
+  campos:   Campo[]
+  desc:     string
+  sortBy?:  string   // columna de ordenamiento; default 'nombre'
 }
 
 type Campo = {
@@ -136,17 +137,18 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
-    key:   'cuentas_bancarias',
-    tabla: 'cuentas_bancarias',
-    label: 'Cuentas Bancarias',
-    icon:  Building2,
-    color: '#0f766e',
-    desc:  'Cuentas bancarias de la organización (origen de pagos)',
+    key:    'cuentas_bancarias',
+    tabla:  'cuentas_bancarias',
+    label:  'Cuentas Bancarias',
+    icon:   Building2,
+    color:  '#0f766e',
+    desc:   'Cuentas bancarias de la organización (origen de pagos)',
+    sortBy: 'banco',
     campos: [
       { key: 'banco',         label: 'Banco *',       type: 'text',    required: true },
       { key: 'numero_cuenta', label: 'No. de Cuenta', type: 'text' },
       { key: 'clabe',         label: 'CLABE',         type: 'text' },
-      { key: 'saldo',         label: 'Saldo Inicial', type: 'number' },
+      { key: 'saldo',         label: 'Saldo',         type: 'number' },
       { key: 'descripcion',   label: 'Descripción',   type: 'textarea' },
     ],
   },
@@ -260,7 +262,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { data } = await db.from(config.tabla).select('*').order('nombre')
+    const { data } = await db.from(config.tabla).select('*').order(config.sortBy ?? 'nombre')
     setRows(data ?? [])
     // Cargar opciones de campos select
     const maps: Record<string, Record<number, string>> = {}
@@ -361,7 +363,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
                     {c.type === 'select'
                       ? (selectMaps[c.key]?.[row[c.key]] ?? '—')
                       : c.type === 'number' && row[c.key] != null
-                        ? (c.key === 'monto' ? '$' + Number(row[c.key]).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : row[c.key])
+                        ? (['monto', 'saldo'].includes(c.key) ? '$' + Number(row[c.key]).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : row[c.key])
                         : (row[c.key] ?? '—')}
                   </td>
                 ))}
