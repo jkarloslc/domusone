@@ -3,7 +3,7 @@ import { useDebounce } from '@/lib/useDebounce'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCfg, type Lote } from '@/lib/supabase'
 import {
-  Plus, Search, Filter, RefreshCw, MapPin,
+  Plus, Search, RefreshCw, MapPin,
   ChevronLeft, ChevronRight, X, Edit2, Trash2, Eye, Users
 } from 'lucide-react'
 import LoteModal from './LoteModal'
@@ -21,10 +21,10 @@ const PAGE_SIZE = 20
 
 export default function LotesPage() {
   const { canWrite, canDelete } = useAuth()
-  const [lotes, setLotes]             = useState<Lote[]>([])
-  const [secciones, setSecciones]     = useState<Record<number, string>>({})
-  const [tiposLote, setTiposLote]     = useState<Record<number, string>>({})
-  const [total, setTotal]             = useState(0)
+  const [lotes, setLotes]               = useState<Lote[]>([])
+  const [secciones, setSecciones]       = useState<Record<number, string>>({})
+  const [clasificaciones, setClasifs]   = useState<Record<number, string>>({})
+  const [total, setTotal]               = useState(0)
   const [page, setPage]               = useState(0)
   const [search, setSearch]           = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -44,11 +44,11 @@ export default function LotesPage() {
         ;(data ?? []).forEach((s: any) => { map[s.id] = s.nombre })
         setSecciones(map)
       })
-    dbCfg.from('tipos_lote').select('id, nombre').eq('activo', true)
+    dbCfg.from('clasificacion').select('id, nombre').eq('activo', true)
       .then(({ data }) => {
         const map: Record<number, string> = {}
-        ;(data ?? []).forEach((t: any) => { map[t.id] = t.nombre })
-        setTiposLote(map)
+        ;(data ?? []).forEach((c: any) => { map[c.id] = c.nombre })
+        setClasifs(map)
       })
   }, [])
 
@@ -150,25 +150,25 @@ export default function LotesPage() {
             <thead>
               <tr>
                 <th>Clave Lote</th>
-                <th>Tipo</th>
+                <th>Clasificación</th>
                 <th>Sección</th>
-                <th style={{ textAlign: 'right' }}>Superficie m²</th>
+                <th>Dirección</th>
                 <th>Status</th>
-                <th>Cobranza</th>
-                <th>Vendedor</th>
                 <th style={{ width: 100 }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                   <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} />
                 </td></tr>
               ) : lotes.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                   No se encontraron lotes
                 </td></tr>
-              ) : lotes.map(l => (
+              ) : lotes.map(l => {
+                const dir = [(l as any).calle, (l as any).numero, (l as any).manzana].filter(Boolean).join(' ') || '—'
+                return (
                 <tr key={l.id}>
                   <td>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>
@@ -176,21 +176,17 @@ export default function LotesPage() {
                     </span>
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
-                    {(l as any).id_tipo_lote_fk ? (tiposLote[(l as any).id_tipo_lote_fk] ?? l.tipo_lote ?? '—') : (l.tipo_lote ?? '—')}
+                    {(l as any).id_clasificacion_fk ? (clasificaciones[(l as any).id_clasificacion_fk] ?? '—') : '—'}
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
                     {l.id_seccion_fk ? (secciones[l.id_seccion_fk] ?? '—') : '—'}
                   </td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {l.superficie ? l.superficie.toLocaleString('es-MX') : '—'}
-                  </td>
+                  <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{dir}</td>
                   <td>
                     <span className={`badge ${STATUS_COLORS[l.status_lote ?? ''] ?? 'badge-default'}`}>
                       {l.status_lote ?? 'Sin status'}
                     </span>
                   </td>
-                  <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{l.clasificacion_cobranza ?? '—'}</td>
-                  <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{l.vendedor ?? '—'}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                       <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(l)} title="Ver detalle">
@@ -214,7 +210,8 @@ export default function LotesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </div>
