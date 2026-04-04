@@ -392,6 +392,7 @@ export default function InicioPage() {
               <DataRow label="Clasificación"   value={lote.clasificacion?.nombre} />
               <DataRow label="Calle"           value={lote.calle} />
               <DataRow label="Número"          value={lote.numero} />
+              <DataRow label="Diferenciador"   value={lote.Diferenciador} />
               <DataRow label="Manzana"         value={lote.manzana} />
               <DataRow label="Superficie"      value={lote.superficie ? `${lote.superficie} m²` : null} />
               <DataRow label="Sup. Constr."    value={lote.sup_construccion ? `${lote.sup_construccion} m²` : null} />

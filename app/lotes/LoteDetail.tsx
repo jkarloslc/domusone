@@ -80,7 +80,15 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
         {/* Tab: Datos */}
         {tab === 'datos' && (
           <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 150px)' }}>
-            <Group icon={<MapPin size={14} />} label="Status y Clasificación">
+            <Group icon={<MapPin size={14} />} label="Identificación">
+              <Row2 label="Calle"             value={lote.calle} />
+              <Row2 label="Número"            value={lote.numero} />
+              <Row2 label="Diferenciador"     value={lote.Diferenciador} />
+              <Row2 label="Manzana"           value={lote.manzana} />
+              <Row2 label="Superficie"        value={lote.superficie ? `${lote.superficie.toLocaleString('es-MX')} m²` : null} />
+              <Row2 label="Sup. Constr."      value={lote.sup_construccion ? `${lote.sup_construccion.toLocaleString('es-MX')} m²` : null} />
+            </Group>
+            <Group icon={<FileText size={14} />} label="Status y Cobranza">
               <Row2 label="Status Lote"       value={lote.status_lote} badge />
               <Row2 label="Status Jurídico"   value={lote.status_juridico} />
               <Row2 label="Cobranza"          value={lote.clasificacion_cobranza} />
@@ -91,7 +99,6 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
             <Group icon={<FileText size={14} />} label="Datos Catastrales">
               <Row2 label="Clave Catastral"   value={lote.clave_catastral} />
               <Row2 label="Valor Catastral"   value={fmt(lote.valor_catastral)} />
-              <Row2 label="Diferenciador"     value={lote.Diferenciador} />
             </Group>
             {lote.observaciones && (
               <div>

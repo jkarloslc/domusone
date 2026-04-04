@@ -26,6 +26,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
     calle:               lote?.calle ?? '',
     numero:              lote?.numero ?? '',
     manzana:             lote?.manzana ?? '',
+    Diferenciador:       lote?.Diferenciador ?? '',
     superficie:          lote?.superficie?.toString() ?? '',
     sup_construccion:    lote?.sup_construccion?.toString() ?? '',
     status_lote:         lote?.status_lote ?? 'Libre',
@@ -126,6 +127,9 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
             </Row>
             <Row>
               <Field label="Número"><input className="input" value={form.numero} onChange={set('numero')} placeholder="Número exterior" /></Field>
+              <Field label="Diferenciador"><input className="input" value={form.Diferenciador} onChange={set('Diferenciador')} placeholder="Ej. A, B, Int…" /></Field>
+            </Row>
+            <Row>
               <Field label="Clasificación">
                 <select className="select" value={form.id_clasificacion_fk} onChange={set('id_clasificacion_fk')}>
                   <option value="">— Seleccionar —</option>
