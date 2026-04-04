@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown } from 'lucide-react'
+import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList } from 'lucide-react'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
 import ReportePropietarios from './ReportePropietarios'
@@ -17,6 +17,8 @@ import ReporteOrdenesCompra from './ReporteOrdenesCompra'
 import ReporteCXP from './ReporteCXP'
 import ReporteKardex from './ReporteKardex'
 import ReporteTransferencias from './ReporteTransferencias'
+import ReporteOrdenesTrabajo from './ReporteOrdenesTrabajo'
+import ReporteProgramasMantenimiento from './ReporteProgramasMantenimiento'
 
 const GRUPOS = [
   {
@@ -31,6 +33,14 @@ const GRUPOS = [
       { id: 'incidencias-seccion',  label: 'Incidencias por Sección',    icon: AlertTriangle, desc: 'Incidencias agrupadas por sección residencial con conteo y status' },
       { id: 'visitantes',           label: 'Visitantes por Lote',        icon: Eye,           desc: 'Visitantes autorizados por lote' },
       { id: 'vehiculos',            label: 'Vehículos por Lote',         icon: Car,           desc: 'Vehículos autorizados por lote' },
+    ],
+  },
+  {
+    label: 'Mantenimiento',
+    color: '#7c3aed',
+    reportes: [
+      { id: 'ordenes-trabajo',        label: 'Órdenes de Trabajo',          icon: Wrench,        desc: 'OT filtrable por status, tipo, sección, prioridad y fecha' },
+      { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Programas con sus tareas, responsable y semanas asignadas' },
     ],
   },
   {
@@ -110,6 +120,10 @@ export default function ReportesPage() {
       {active === 'incidencias-seccion'  && <ReporteIncidenciasSeccion />}
       {active === 'visitantes'           && <ReporteVisitantes />}
       {active === 'vehiculos'            && <ReporteVehiculos />}
+
+      {/* Reportes mantenimiento */}
+      {active === 'ordenes-trabajo'         && <ReporteOrdenesTrabajo />}
+      {active === 'programas-mantenimiento' && <ReporteProgramasMantenimiento />}
 
       {/* Reportes compras */}
       {active === 'consumo-cc'      && <ReporteConsumoCentroCosto />}

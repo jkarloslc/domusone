@@ -5,7 +5,7 @@ import { dbCtrl, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
-  Camera, Trash2, ExternalLink, CheckCircle, Wrench, ChevronDown
+  Camera, Trash2, ExternalLink, CheckCircle, Wrench, ChevronDown, Printer
 } from 'lucide-react'
 
 const TIPOS      = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Otro']
@@ -471,6 +471,136 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
     fetchDetalle()
   }
 
+  const imprimirOT = async () => {
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;">🔧</div>`
+
+    const seccion = ot.id_seccion_fk ? secMap[ot.id_seccion_fk] ?? '—' : '—'
+
+    const priCol: Record<string, string> = {
+      'Urgente': '#dc2626', 'Alta': '#ea580c', 'Media': '#d97706', 'Baja': '#64748b'
+    }
+    const staCol: Record<string, string> = {
+      'Pendiente': '#d97706', 'En Proceso': '#2563eb', 'En Pausa': '#7c3aed',
+      'Completada': '#15803d', 'Cancelada': '#94a3b8'
+    }
+
+    const recursoRows = recursos.map(r =>
+      `<tr>
+        <td>${r.cantidad ?? '—'}</td>
+        <td>${r.descripcion ?? ''}</td>
+        <td style="text-align:right">${Number(r.costo) > 0 ? '$' + Number(r.costo).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}</td>
+      </tr>`
+    ).join('')
+
+    const costoHtml = costoTotal > 0
+      ? `<tr style="background:#eff6ff;font-weight:700">
+          <td colspan="2" style="color:#0D4F80">TOTAL</td>
+          <td style="text-align:right;color:#0D4F80">$${costoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+        </tr>`
+      : ''
+
+    const html = `<!DOCTYPE html><html><head><title>OT ${ot.folio}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 36px; font-size: 13px; color: #1e293b; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 20px; }
+        .org-nombre { font-size: 17px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #64748b; }
+        .doc-title { font-size: 14px; font-weight: 700; color: #0D4F80; margin-bottom: 2px; }
+        h2 { font-size: 15px; font-weight: 700; color: #0D4F80; margin: 20px 0 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 30px; margin-bottom: 14px; }
+        .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; margin-bottom: 2px; }
+        .val { font-size: 13px; color: #1e293b; }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        td, th { border: 1px solid #e2e8f0; padding: 7px 11px; }
+        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
+        .desc { background: #f8fafc; border-left: 3px solid #0D4F80; padding: 10px 14px; border-radius: 4px; font-size: 13px; line-height: 1.6; margin-bottom: 10px; }
+        .notas { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 10px; }
+        .firmas { display: flex; gap: 50px; margin-top: 50px; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 160px; font-size: 11px; color: #64748b; }
+        @page { margin: 1.2cm; }
+      </style></head><body>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+          <div style="font-size:12px;font-weight:600;color:#0D4F80;margin-top:3px;">Orden de Trabajo</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;font-size:11px;color:#94a3b8;">
+          Folio: <strong style="color:#0D4F80;font-size:16px;">${ot.folio}</strong><br/>
+          ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <span style="font-size:18px;font-weight:700;">${ot.titulo}</span>
+        <span class="badge" style="color:${priCol[ot.prioridad ?? 'Media'] ?? '#64748b'};background:${priCol[ot.prioridad ?? 'Media'] ? priCol[ot.prioridad ?? 'Media'] + '18' : '#f8fafc'};border:1px solid ${priCol[ot.prioridad ?? 'Media'] ?? '#e2e8f0'}44;">${ot.prioridad ?? 'Media'}</span>
+        <span class="badge" style="color:${staCol[currentStatus] ?? '#64748b'};background:${staCol[currentStatus] ? staCol[currentStatus] + '18' : '#f8fafc'};border:1px solid ${staCol[currentStatus] ?? '#e2e8f0'}44;">${currentStatus}</span>
+      </div>
+
+      <div class="grid">
+        <div><div class="lbl">Sección</div><div class="val">${seccion}</div></div>
+        ${ot.ubicacion_detalle ? `<div><div class="lbl">Ubicación Detalle</div><div class="val">${ot.ubicacion_detalle}</div></div>` : ''}
+        ${ot.tipo_trabajo ? `<div><div class="lbl">Tipo de Trabajo</div><div class="val">${ot.tipo_trabajo}</div></div>` : ''}
+        ${ot.asignado_a ? `<div><div class="lbl">Asignado a</div><div class="val">${ot.asignado_a}</div></div>` : ''}
+        ${ot.supervisor ? `<div><div class="lbl">Supervisor</div><div class="val">${ot.supervisor}</div></div>` : ''}
+        ${ot.semana_no ? `<div><div class="lbl">Semana</div><div class="val">Semana ${ot.semana_no} — ${ot.anio}</div></div>` : ''}
+        ${ot.fecha_inicio ? `<div><div class="lbl">Fecha Inicio</div><div class="val">${fmtFecha(ot.fecha_inicio)}</div></div>` : ''}
+        ${ot.fecha_limite ? `<div><div class="lbl">Fecha Límite</div><div class="val">${fmtFecha(ot.fecha_limite)}</div></div>` : ''}
+        ${ot.fecha_cierre ? `<div><div class="lbl">Fecha Cierre</div><div class="val">${fmtFecha(ot.fecha_cierre)}</div></div>` : ''}
+      </div>
+
+      ${ot.descripcion ? `<h2>Descripción</h2><div class="desc">${ot.descripcion}</div>` : ''}
+      ${ot.notas ? `<h2>Notas</h2><div class="notas">${ot.notas}</div>` : ''}
+
+      ${recursos.length > 0 ? `
+      <h2>Recursos</h2>
+      <table>
+        <thead><tr><th>Cantidad</th><th>Descripción</th><th style="text-align:right">Costo</th></tr></thead>
+        <tbody>
+          ${recursoRows}
+          ${costoHtml}
+        </tbody>
+      </table>` : ''}
+
+      ${evidencias.length > 0 ? `<p style="font-size:12px;color:#64748b;">${evidencias.length} evidencia(s) fotográfica(s) adjuntas en el sistema.</p>` : ''}
+
+      <div class="firmas">
+        <div class="firma">Elaboró</div>
+        <div class="firma">Supervisó</div>
+        <div class="firma">Conforme</div>
+      </div>
+      </body></html>`
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
+  }
+
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 640 }}>
@@ -488,6 +618,7 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirOT}><Printer size={13} /> Imprimir</button>
               <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => onEdit(ot)}>Editar</button>
               <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
             </div>

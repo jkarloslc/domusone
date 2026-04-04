@@ -215,6 +215,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [conOC, setConOC] = useState<boolean | null>(
     opEdit ? (opEdit.id_oc_fk != null) : null
   )
+  const [ocCCPreview, setOcCCPreview] = useState<{ cc: string; sec: string; frente: string } | null>(null)
 
   const pdfRef = useRef<HTMLInputElement>(null)
   const xmlRef = useRef<HTMLInputElement>(null)
@@ -272,13 +273,42 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     setOcsSel([])
   }
 
-  const addOC = (ocId: string) => {
+  const addOC = async (ocId: string) => {
     const oc = ocsDisp.find(o => o.id === Number(ocId))
     if (!oc || ocsSelected.some(o => o.id === oc.id)) return
-    setOcsSel(prev => [...prev, { id: oc.id, folio: oc.folio, total: oc.total, monto: oc.total?.toString() ?? '' }])
+    setOcsSel(prev => {
+      const next = [...prev, { id: oc.id, folio: oc.folio, total: oc.total, monto: oc.total?.toString() ?? '' }]
+      // Cargar preview de CC/Sección/Frente de la primera OC
+      if (next.length === 1) {
+        dbComp.from('ordenes_compra')
+          .select('id_centro_costo_fk, id_seccion_fk, id_frente_fk')
+          .eq('id', oc.id).single()
+          .then(async ({ data: ocData }) => {
+            if (!ocData) return
+            const { dbCfg: cfg } = await import('@/lib/supabase')
+            const [{ data: ccData }, { data: secData }, { data: frData }] = await Promise.all([
+              ocData.id_centro_costo_fk ? cfg.from('centros_costo').select('nombre').eq('id', ocData.id_centro_costo_fk).single() : Promise.resolve({ data: null }),
+              ocData.id_seccion_fk      ? cfg.from('secciones').select('nombre').eq('id', ocData.id_seccion_fk).single()      : Promise.resolve({ data: null }),
+              ocData.id_frente_fk       ? cfg.from('frentes').select('nombre').eq('id', ocData.id_frente_fk).single()        : Promise.resolve({ data: null }),
+            ])
+            setOcCCPreview({
+              cc:     (ccData as any)?.nombre  ?? '—',
+              sec:    (secData as any)?.nombre ?? '—',
+              frente: (frData as any)?.nombre  ?? '—',
+            })
+          })
+      }
+      return next
+    })
   }
 
-  const removeOC = (id: number) => setOcsSel(prev => prev.filter(o => o.id !== id))
+  const removeOC = (id: number) => {
+    setOcsSel(prev => {
+      const next = prev.filter(o => o.id !== id)
+      if (next.length === 0) setOcCCPreview(null)
+      return next
+    })
+  }
 
   const setOCMonto = (id: number, v: string) =>
     setOcsSel(prev => prev.map(o => o.id === id ? { ...o, monto: v } : o))
@@ -484,6 +514,13 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                   <button className="btn-ghost" style={{ padding: '4px', marginTop: 18 }} onClick={() => removeOC(o.id)}><Trash2 size={12} /></button>
                 </div>
               ))}
+              {ocCCPreview && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, padding: '8px 12px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, marginTop: 4 }}>
+                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Centro de Costo</div><div style={{ fontSize: 12 }}>{ocCCPreview.cc}</div></div>
+                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Sección</div><div style={{ fontSize: 12 }}>{ocCCPreview.sec}</div></div>
+                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Frente</div><div style={{ fontSize: 12 }}>{ocCCPreview.frente}</div></div>
+                </div>
+              )}
             </Sec>
           )}
 
@@ -629,11 +666,27 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 // ════════════════════════════════════════════════════════════
 function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void }) {
   const [ocsRel, setOcsRel] = useState<any[]>([])
+  const [ccMap,  setCcMap]  = useState<Record<number, string>>({})
+  const [secMap, setSecMap] = useState<Record<number, string>>({})
+  const [frMap,  setFrMap]  = useState<Record<number, string>>({})
 
   useEffect(() => {
     dbComp.from('ordenes_pago_oc').select('*, ordenes_compra(folio, total)')
       .eq('id_op_fk', op.id)
       .then(({ data }) => setOcsRel(data ?? []))
+    // Cargar catálogos para CC/Sección/Frente
+    import('@/lib/supabase').then(({ dbCfg }) => {
+      Promise.all([
+        dbCfg.from('centros_costo').select('id, nombre'),
+        dbCfg.from('secciones').select('id, nombre'),
+        dbCfg.from('frentes').select('id, nombre'),
+      ]).then(([{ data: cc }, { data: sec }, { data: fr }]) => {
+        const cm: Record<number, string> = {}; (cc ?? []).forEach((r: any) => { cm[r.id] = r.nombre })
+        const sm: Record<number, string> = {}; (sec ?? []).forEach((r: any) => { sm[r.id] = r.nombre })
+        const fm: Record<number, string> = {}; (fr ?? []).forEach((r: any) => { fm[r.id] = r.nombre })
+        setCcMap(cm); setSecMap(sm); setFrMap(fm)
+      })
+    })
   }, [op.id])
 
   const cancelar = async () => {
@@ -697,6 +750,8 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
         <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
         <tr><th>Almacén</th><td>${op._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td></tr>
         ${op.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${op.tipo_gasto}</td></tr>` : ''}
+        ${op.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`}</td><th>Sección</th><td>${op.id_seccion_fk ? (secMap[op.id_seccion_fk] ?? `#${op.id_seccion_fk}`) : '—'}</td></tr>` : ''}
+        ${op.id_frente_fk ? `<tr><th>Frente</th><td colspan="3">${frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(op.monto)}</td></tr>
       </table>
@@ -754,8 +809,11 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
               <DI label="Concepto"        value={op.concepto} />
               <DI label="Tipo de Gasto"   value={op.tipo_gasto} />
-              <DI label="Almacén" value={op._almNombre} />
+              <DI label="Almacén"         value={op._almNombre} />
               <DI label="Vencimiento"     value={fmtFecha(op.fecha_vencimiento)} />
+              {op.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`} />}
+              {op.id_seccion_fk     && <DI label="Sección"          value={secMap[op.id_seccion_fk] ?? `#${op.id_seccion_fk}`} />}
+              {op.id_frente_fk      && <DI label="Frente"           value={frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`} />}
               {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
               {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
             </div>
