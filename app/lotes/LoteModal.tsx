@@ -89,7 +89,6 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
       incluye_membresia:  form.incluye_membresia || null,
       tipo_membresia:     form.tipo_membresia || null,
       vendedor:           form.vendedor || null,
-      medio_captacion:    form.medio_captacion || null,
       clave_catastral:    form.clave_catastral || null,
       valor_catastral:    form.valor_catastral ? Number(form.valor_catastral) : null,
       rfc_para_factura:          form.rfc_para_factura || null,
@@ -97,7 +96,6 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
       urbanizacion_disponible:   form.urbanizacion_disponible || null,
       observaciones:      form.observaciones || null,
       notas:              form.notas || null,
-      imagen_lote:        (form as any).imagen_lote || null,
     }
 
     const { error: err } = isNew
