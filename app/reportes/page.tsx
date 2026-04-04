@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList } from 'lucide-react'
+import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2 } from 'lucide-react'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
 import ReportePropietarios from './ReportePropietarios'
@@ -19,6 +19,7 @@ import ReporteKardex from './ReporteKardex'
 import ReporteTransferencias from './ReporteTransferencias'
 import ReporteOrdenesTrabajo from './ReporteOrdenesTrabajo'
 import ReporteProgramasMantenimiento from './ReporteProgramasMantenimiento'
+import ReporteEstadoCuenta from './ReporteEstadoCuenta'
 
 const GRUPOS = [
   {
@@ -41,6 +42,13 @@ const GRUPOS = [
     reportes: [
       { id: 'ordenes-trabajo',        label: 'Órdenes de Trabajo',          icon: Wrench,        desc: 'OT filtrable por status, tipo, sección, prioridad y fecha' },
       { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Programas con sus tareas, responsable y semanas asignadas' },
+    ],
+  },
+  {
+    label: 'Tesorería',
+    color: '#0f766e',
+    reportes: [
+      { id: 'estado-cuenta', label: 'Estado de Cuenta', icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
     ],
   },
   {
@@ -124,6 +132,9 @@ export default function ReportesPage() {
       {/* Reportes mantenimiento */}
       {active === 'ordenes-trabajo'         && <ReporteOrdenesTrabajo />}
       {active === 'programas-mantenimiento' && <ReporteProgramasMantenimiento />}
+
+      {/* Reportes tesorería */}
+      {active === 'estado-cuenta' && <ReporteEstadoCuenta />}
 
       {/* Reportes compras */}
       {active === 'consumo-cc'      && <ReporteConsumoCentroCosto />}
