@@ -346,7 +346,7 @@ function MiniCalendario({ tareas, onRefresh, prog, secMap }: {
     const { count } = await dbCtrl.from('ordenes_trabajo').select('id', { count: 'exact', head: true })
     const anio  = new Date().getFullYear()
     const folio = `OT-${anio}-${String((count ?? 0) + 1).padStart(4, '0')}`
-    const { data: ot } = await dbCtrl.from('ordenes_trabajo').insert({
+    const { data: ot, error: otErr } = await dbCtrl.from('ordenes_trabajo').insert({
       folio, titulo: `${prog.nombre} — ${fmtDate(tarea.fecha_prog)}`,
       tipo_trabajo:       prog.tipo_trabajo       ?? null,
       prioridad:          'Media', status: 'Pendiente',
@@ -358,6 +358,7 @@ function MiniCalendario({ tareas, onRefresh, prog, secMap }: {
       fecha_limite:       tarea.fecha_prog,
       semana_no:          tarea.semana_no, anio, created_by: authUser?.nombre ?? null,
     }).select('id, folio').single()
+    if (otErr) { alert(`Error al crear OT: ${otErr.message}`); setGenerando(null); return }
     if (ot) {
       await dbCtrl.from('programa_tareas').update({
         id_ot_fk: ot.id, status: 'En Proceso', updated_at: new Date().toISOString()
@@ -489,10 +490,12 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
     }
     let progId = prog?.id
     if (prog) {
-      await dbCtrl.from('programas_mantenimiento').update(payload).eq('id', prog.id)
+      const { error: err } = await dbCtrl.from('programas_mantenimiento').update(payload).eq('id', prog.id)
+      if (err) { setError(err.message); setSaving(false); return }
     } else {
-      const { data: newProg } = await dbCtrl.from('programas_mantenimiento')
+      const { data: newProg, error: err } = await dbCtrl.from('programas_mantenimiento')
         .insert({ ...payload, created_by: authUser?.nombre ?? null }).select('id').single()
+      if (err) { setError(err.message); setSaving(false); return }
       progId = newProg?.id
       if (progId) {
         const fechas = generarFechas(Number(form.anio), form.frecuencia, Number(form.mes_inicio))
@@ -503,7 +506,10 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
           semana_no:      getSemana(d),
           status:         'Pendiente',
         }))
-        if (tareas.length) await dbCtrl.from('programa_tareas').insert(tareas)
+        if (tareas.length) {
+          const { error: errT } = await dbCtrl.from('programa_tareas').insert(tareas)
+          if (errT) { setError(errT.message); setSaving(false); return }
+        }
       }
     }
     setSaving(false); onSaved()

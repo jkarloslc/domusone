@@ -132,7 +132,7 @@ export default function OrdenesTrabajoTab() {
         <button className="btn-ghost" onClick={fetchData}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
         </button>
-        {canWrite('servicios') && (
+        {canWrite('mantenimiento') && (
           <button className="btn-primary" onClick={() => { setEditingOT(null); setModal(true) }}>
             <Plus size={14} /> Nueva OT
           </button>
@@ -282,7 +282,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
       if (err) { setError(err.message); setSaving(false); return }
       otId = newOT.id
     } else {
-      await dbCtrl.from('ordenes_trabajo').update({
+      const { error: err } = await dbCtrl.from('ordenes_trabajo').update({
         titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
         prioridad: form.prioridad, status: form.status,
         id_seccion_fk:      form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null,
@@ -296,6 +296,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
         fecha_cierre: form.status === 'Completada' ? new Date().toISOString().slice(0,10) : null,
         updated_at: new Date().toISOString(),
       }).eq('id', ot.id)
+      if (err) { setError(err.message); setSaving(false); return }
     }
     const recursosValidos = recursos.filter(r => r.descripcion.trim())
     if (otId) {
@@ -442,9 +443,10 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
 
   const cambiarStatus = async (nuevoStatus: string) => {
     setUpdatingStatus(true)
-    const extra: any = {}
+    const extra: any = { updated_at: new Date().toISOString() }
     if (nuevoStatus === 'Completada') extra.fecha_cierre = new Date().toISOString().slice(0,10)
-    await dbCtrl.from('ordenes_trabajo').update({ status: nuevoStatus, ...extra }).eq('id', ot.id)
+    const { error: err } = await dbCtrl.from('ordenes_trabajo').update({ status: nuevoStatus, ...extra }).eq('id', ot.id)
+    if (err) { alert(`Error: ${err.message}`); setUpdatingStatus(false); return }
     setCurrentStatus(nuevoStatus)
     setUpdatingStatus(false)
   }
