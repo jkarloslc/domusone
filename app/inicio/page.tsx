@@ -390,10 +390,7 @@ export default function InicioPage() {
             <div className="card" style={{ padding: '14px 16px', marginBottom: 12 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Datos del Lote</div>
               <DataRow label="Clasificación"   value={lote.clasificacion?.nombre} />
-              <DataRow label="Calle"           value={lote.calle} />
-              <DataRow label="Número"          value={lote.numero} />
-              <DataRow label="Diferenciador"   value={lote.Diferenciador} />
-              <DataRow label="Manzana"         value={lote.manzana} />
+              <DataRow label="Dirección"       value={[lote.calle, lote.numero, lote.Diferenciador, lote.manzana].filter(Boolean).join(' ') || null} />
               <DataRow label="Superficie"      value={lote.superficie ? `${lote.superficie} m²` : null} />
               <DataRow label="Sup. Constr."    value={lote.sup_construccion ? `${lote.sup_construccion} m²` : null} />
               <DataRow label="Paga cuotas"     value={lote.paga_cuotas} />
