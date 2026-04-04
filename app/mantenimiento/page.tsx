@@ -63,33 +63,47 @@ const fmtDate = (d: string | Date) => {
 // ═══════════════════════════════════════════════════════════════
 export default function MantenimientoPage() {
   const { canWrite, canDelete } = useAuth()
-  const [tab,        setTab]        = useState<'programa' | 'ordenes'>('programa')
-  const [programas,  setProgramas]  = useState<any[]>([])
-  const [secciones,  setSecciones]  = useState<any[]>([])
-  const [secMap,     setSecMap]     = useState<Record<number, string>>({})
-  const [loading,    setLoading]    = useState(true)
-  const [filterAnio, setFilterAnio] = useState(new Date().getFullYear())
-  const [filterSec,  setFilterSec]  = useState('')
-  const [modal,      setModal]      = useState(false)
-  const [editing,    setEditing]    = useState<any | null>(null)
-  const [detail,     setDetail]     = useState<any | null>(null)
-  const [expandidos, setExpandidos] = useState<Record<number, boolean>>({})
+  const [tab,          setTab]        = useState<'programa' | 'ordenes'>('programa')
+  const [programas,    setProgramas]  = useState<any[]>([])
+  const [secciones,    setSecciones]  = useState<any[]>([])
+  const [secMap,       setSecMap]     = useState<Record<number, string>>({})
+  const [centrosCosto, setCentros]    = useState<any[]>([])
+  const [ccMap,        setCcMap]      = useState<Record<number, string>>({})
+  const [frentes,      setFrentes]    = useState<any[]>([])
+  const [frMap,        setFrMap]      = useState<Record<number, string>>({})
+  const [loading,      setLoading]    = useState(true)
+  const [filterAnio,   setFilterAnio] = useState(new Date().getFullYear())
+  const [filterCC,     setFilterCC]   = useState('')
+  const [filterSec,    setFilterSec]  = useState('')
+  const [filterFr,     setFilterFr]   = useState('')
+  const [modal,        setModal]      = useState(false)
+  const [editing,      setEditing]    = useState<any | null>(null)
+  const [detail,       setDetail]     = useState<any | null>(null)
+  const [expandidos,   setExpandidos] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
-    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => {
-        setSecciones(data ?? [])
-        const m: Record<number, string> = {}
-        ;(data ?? []).forEach((s: any) => { m[s.id] = s.nombre })
-        setSecMap(m)
-      })
+    Promise.all([
+      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
+    ]).then(([{ data: secs }, { data: ccs }, { data: frs }]) => {
+      setSecciones(secs ?? [])
+      setCentros(ccs ?? [])
+      setFrentes(frs ?? [])
+      const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
+      const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
+      const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
+      setSecMap(sm); setCcMap(cm); setFrMap(fm)
+    })
   }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('programas_mantenimiento').select('*')
       .eq('anio', filterAnio).eq('activo', true).order('nombre')
+    if (filterCC)  q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterFr)  q = q.eq('id_frente_fk', Number(filterFr))
     const { data: progs } = await q
 
     if (!progs?.length) { setProgramas([]); setLoading(false); return }
@@ -106,7 +120,7 @@ export default function MantenimientoPage() {
 
     setProgramas(progs.map((p: any) => ({ ...p, tareas: tMap[p.id] ?? [] })))
     setLoading(false)
-  }, [filterAnio, filterSec])
+  }, [filterAnio, filterCC, filterSec, filterFr])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -208,16 +222,28 @@ export default function MantenimientoPage() {
           </div>
 
           {/* Filtros */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
             <Filter size={13} style={{ color: 'var(--text-muted)' }} />
             <select className="select" style={{ width: 100 }} value={filterAnio}
               onChange={e => setFilterAnio(Number(e.target.value))}>
               {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
             </select>
-            <select className="select" style={{ minWidth: 200 }} value={filterSec}
-              onChange={e => setFilterSec(e.target.value)}>
+            <select className="select" style={{ minWidth: 180 }} value={filterCC}
+              onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
+              <option value="">Todos los centros de costo</option>
+              {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+            <select className="select" style={{ minWidth: 170 }} value={filterSec}
+              onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
               <option value="">Todas las secciones</option>
               {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            </select>
+            <select className="select" style={{ minWidth: 160 }} value={filterFr}
+              onChange={e => setFilterFr(e.target.value)}>
+              <option value="">Todos los frentes</option>
+              {frentes
+                .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
+                .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
             </select>
             <button className="btn-ghost" onClick={fetchData}>
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
@@ -312,7 +338,7 @@ export default function MantenimientoPage() {
       {modal  && <ProgramaModal secciones={secciones} prog={editing}
         onClose={() => setModal(false)}
         onSaved={() => { setModal(false); fetchData() }} />}
-      {detail && <ProgramaDetail prog={detail} secMap={secMap}
+      {detail && <ProgramaDetail prog={detail} secMap={secMap} ccMap={ccMap} frMap={frMap}
         onClose={() => { setDetail(null); fetchData() }} />}
     </div>
   )
@@ -613,8 +639,12 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
 // ═══════════════════════════════════════════════════════════════
 // Detalle del Programa
 // ═══════════════════════════════════════════════════════════════
-function ProgramaDetail({ prog, secMap, onClose }: {
-  prog: any; secMap: Record<number, string>; onClose: () => void
+function ProgramaDetail({ prog, secMap, ccMap, frMap, onClose }: {
+  prog: any
+  secMap: Record<number, string>
+  ccMap: Record<number, string>
+  frMap: Record<number, string>
+  onClose: () => void
 }) {
   const { authUser } = useAuth()
   const [tareas,    setTareas]    = useState<any[]>([])
@@ -682,7 +712,27 @@ function ProgramaDetail({ prog, secMap, onClose }: {
           <div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{prog.nombre}</h2>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-              {prog.id_seccion_fk ? secMap[prog.id_seccion_fk] : 'Sin sección'} · {prog.tipo_trabajo ?? '—'} · {prog.frecuencia} · {prog.anio}
+              {prog.tipo_trabajo ?? '—'} · {prog.frecuencia} · {prog.anio}
+            </div>
+            <div style={{ display: 'flex', gap: 16, marginTop: 6, flexWrap: 'wrap' }}>
+              {prog.id_centro_costo_fk && (
+                <span style={{ fontSize: 11 }}>
+                  <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>CC </span>
+                  <span style={{ fontWeight: 600 }}>{ccMap[prog.id_centro_costo_fk] ?? `#${prog.id_centro_costo_fk}`}</span>
+                </span>
+              )}
+              {prog.id_seccion_fk && (
+                <span style={{ fontSize: 11 }}>
+                  <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Sección </span>
+                  <span style={{ fontWeight: 600 }}>{secMap[prog.id_seccion_fk] ?? `#${prog.id_seccion_fk}`}</span>
+                </span>
+              )}
+              {prog.id_frente_fk && (
+                <span style={{ fontSize: 11 }}>
+                  <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Frente </span>
+                  <span style={{ fontWeight: 600 }}>{frMap[prog.id_frente_fk] ?? `#${prog.id_frente_fk}`}</span>
+                </span>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

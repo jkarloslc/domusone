@@ -135,13 +135,13 @@ export default function OrdenesTrabajoTab() {
           <option value="">Todos los tipos</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
+        <select className="select" style={{ minWidth: 180 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterSec('') }}>
+          <option value="">Todos los centros de costo</option>
+          {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
         <select className="select" style={{ minWidth: 160 }} value={filterSec} onChange={e => setFilterSec(e.target.value)}>
           <option value="">Todas las secciones</option>
           {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-        </select>
-        <select className="select" style={{ minWidth: 180 }} value={filterCC} onChange={e => setFilterCC(e.target.value)}>
-          <option value="">Todos los centros de costo</option>
-          {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <button className="btn-ghost" onClick={fetchData}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
