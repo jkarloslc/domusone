@@ -13,9 +13,21 @@ export default function LoginPage() {
   const [error, setError]       = useState('')
   const [signing, setSigning]   = useState(false)
 
-  // Si ya está autenticado, redirigir
+  // Ruta de inicio según el rol del usuario
+  const homeRoute = (rol?: string) => {
+    switch (rol) {
+      case 'compras':
+      case 'almacen':       return '/compras'
+      case 'mantenimiento': return '/mantenimiento'
+      case 'cobranza':      return '/cobranza'
+      case 'vigilancia':    return '/accesos'
+      default:              return '/lotes'
+    }
+  }
+
+  // Si ya está autenticado, redirigir a la ruta correcta según rol
   useEffect(() => {
-    if (!loading && authUser) router.replace('/lotes')
+    if (!loading && authUser) router.replace(homeRoute(authUser.rol))
   }, [authUser, loading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,9 +38,8 @@ export default function LoginPage() {
     if (err) {
       setError(err.includes('Invalid') ? 'Correo o contraseña incorrectos' : err)
       setSigning(false)
-    } else {
-      router.replace('/lotes')
     }
+    // La redirección la maneja el useEffect cuando authUser se actualiza
   }
 
   if (loading) return (
