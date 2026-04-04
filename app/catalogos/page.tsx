@@ -5,7 +5,8 @@ import {
   BookOpen, Plus, Edit2, Trash2, X, Save,
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
-  Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle, Building2
+  Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle, Building2,
+  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -19,7 +20,8 @@ type CatConfig = {
   color:    string
   campos:   Campo[]
   desc:     string
-  sortBy?:  string   // columna de ordenamiento; default 'nombre'
+  sortBy?:    string   // columna de ordenamiento; default 'nombre'
+  hasDetail?: boolean  // muestra botón "Ver detalle" en la fila
 }
 
 type Campo = {
@@ -137,13 +139,14 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
-    key:    'cuentas_bancarias',
-    tabla:  'cuentas_bancarias',
-    label:  'Cuentas Bancarias',
-    icon:   Building2,
-    color:  '#0f766e',
-    desc:   'Cuentas bancarias de la organización (origen de pagos)',
-    sortBy: 'banco',
+    key:       'cuentas_bancarias',
+    tabla:     'cuentas_bancarias',
+    label:     'Cuentas Bancarias',
+    icon:      Building2,
+    color:     '#0f766e',
+    desc:      'Cuentas bancarias de la organización (origen de pagos)',
+    sortBy:    'banco',
+    hasDetail: true,
     campos: [
       { key: 'banco',         label: 'Banco *',       type: 'text',    required: true },
       { key: 'numero_cuenta', label: 'No. de Cuenta', type: 'text' },
@@ -254,9 +257,10 @@ export default function CatalogosPage() {
 // ══════════════════════════════════════════════════════════════
 function CatalogoTable({ config }: { config: CatConfig }) {
   const db = config.schema === 'comp' ? dbComp : dbCfg
-  const [rows, setRows]   = useState<any[]>([])
+  const [rows, setRows]       = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState<any | null | 'new'>(null)
+  const [modal, setModal]     = useState<any | null | 'new'>(null)
+  const [detailRow, setDetailRow] = useState<any | null>(null)
   // Mapa de selects: { campo_key: { id: nombre } }
   const [selectMaps, setSelectMaps] = useState<Record<string, Record<number, string>>>({})
 
@@ -387,6 +391,11 @@ function CatalogoTable({ config }: { config: CatConfig }) {
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                    {config.hasDetail && (
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#0f766e' }} onClick={() => setDetailRow(row)}>
+                        <Eye size={13} />
+                      </button>
+                    )}
                     <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal(row)}>
                       <Edit2 size={13} />
                     </button>
@@ -409,6 +418,175 @@ function CatalogoTable({ config }: { config: CatConfig }) {
           onSaved={() => { setModal(null); fetchData() }}
         />
       )}
+      {detailRow !== null && config.key === 'cuentas_bancarias' && (
+        <CuentaBancariaDetail
+          cuenta={detailRow}
+          onClose={() => { setDetailRow(null); fetchData() }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// Detalle de Cuenta Bancaria — historial de movimientos
+// ══════════════════════════════════════════════════════════════
+const fmtMXN = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const fmtDate = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+
+function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () => void }) {
+  const [movs, setMovs]         = useState<any[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [filtroDe, setFiltroDe] = useState('')
+  const [filtroA, setFiltroA]   = useState('')
+  const [saldoActual, setSaldo]  = useState<number>(cuenta.saldo ?? 0)
+
+  const fetchMovs = useCallback(async () => {
+    setLoading(true)
+    // Refrescar saldo actual desde DB
+    const { data: cb } = await dbCfg.from('cuentas_bancarias').select('saldo').eq('id', cuenta.id).single()
+    if (cb) setSaldo((cb as any).saldo ?? 0)
+
+    let q = dbComp.from('movimientos_bancarios')
+      .select('*')
+      .eq('id_cuenta_fk', cuenta.id)
+      .order('fecha_movimiento', { ascending: false })
+      .order('created_at', { ascending: false })
+    if (filtroDe) q = q.gte('fecha_movimiento', filtroDe)
+    if (filtroA)  q = q.lte('fecha_movimiento', filtroA)
+    const { data } = await q
+    setMovs(data ?? [])
+    setLoading(false)
+  }, [cuenta.id, filtroDe, filtroA])
+
+  useEffect(() => { fetchMovs() }, [fetchMovs])
+
+  const totalCargos = movs.filter(m => m.tipo === 'Cargo').reduce((a, m) => a + (m.monto ?? 0), 0)
+  const totalAbonos = movs.filter(m => m.tipo === 'Abono').reduce((a, m) => a + (m.monto ?? 0), 0)
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 780 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#0f766e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Building2 size={15} style={{ color: '#0f766e' }} />
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{cuenta.banco}</h2>
+            </div>
+            <div style={{ display: 'flex', gap: 16, marginLeft: 42, flexWrap: 'wrap' }}>
+              {cuenta.numero_cuenta && (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>No. {cuenta.numero_cuenta}</span>
+              )}
+              {cuenta.clabe && (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>CLABE: {cuenta.clabe}</span>
+              )}
+            </div>
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        {/* Saldo + stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #f1f5f9' }}>
+          {[
+            { label: 'Saldo Actual',   value: fmtMXN(saldoActual), color: '#0f766e', icon: TrendingUp },
+            { label: 'Cargos período', value: fmtMXN(totalCargos), color: '#dc2626', icon: ArrowDownCircle },
+            { label: 'Abonos período', value: fmtMXN(totalAbonos), color: '#15803d', icon: ArrowUpCircle },
+          ].map((s, i) => {
+            const SIcon = s.icon
+            return (
+              <div key={s.label} style={{ padding: '14px 20px', textAlign: 'center', borderRight: i < 2 ? '1px solid #f1f5f9' : 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 2 }}>
+                  <SIcon size={14} style={{ color: s.color }} />
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</span>
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: s.color, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Filtros */}
+        <div style={{ display: 'flex', gap: 10, padding: '12px 24px', borderBottom: '1px solid #f1f5f9', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>Período:</span>
+          <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)}
+            style={{ width: 140 }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>a</span>
+          <input className="input" type="date" value={filtroA} onChange={e => setFiltroA(e.target.value)}
+            style={{ width: 140 }} />
+          {(filtroDe || filtroA) && (
+            <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setFiltroDe(''); setFiltroA('') }}>
+              Limpiar
+            </button>
+          )}
+          <button className="btn-ghost" style={{ marginLeft: 'auto', padding: '6px 10px' }} onClick={fetchMovs}>
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
+
+        {/* Tabla de movimientos */}
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 320px)' }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 40 }}>
+              <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+            </div>
+          ) : movs.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)', fontSize: 13 }}>
+              Sin movimientos registrados{(filtroDe || filtroA) ? ' en el período seleccionado' : ''}
+            </div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Concepto</th>
+                  <th>Referencia</th>
+                  <th style={{ textAlign: 'center' }}>Tipo</th>
+                  <th style={{ textAlign: 'right' }}>Monto</th>
+                  <th style={{ textAlign: 'right' }}>Saldo Anterior</th>
+                  <th style={{ textAlign: 'right' }}>Saldo Posterior</th>
+                  <th>Registrado por</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movs.map(m => (
+                  <tr key={m.id}>
+                    <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtDate(m.fecha_movimiento)}</td>
+                    <td style={{ fontSize: 12, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.concepto ?? '—'}</td>
+                    <td style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)' }}>{m.referencia ?? '—'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span style={{
+                        fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600,
+                        background: m.tipo === 'Cargo' ? '#fef2f2' : '#f0fdf4',
+                        color:      m.tipo === 'Cargo' ? '#dc2626'  : '#15803d',
+                        border:     `1px solid ${m.tipo === 'Cargo' ? '#fecaca' : '#bbf7d0'}`,
+                      }}>{m.tipo}</span>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                      color: m.tipo === 'Cargo' ? '#dc2626' : '#15803d', fontSize: 13 }}>
+                      {m.tipo === 'Cargo' ? '−' : '+'}{fmtMXN(m.monto ?? 0)}
+                    </td>
+                    <td style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                      {m.saldo_antes != null ? fmtMXN(m.saldo_antes) : '—'}
+                    </td>
+                    <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                      {m.saldo_despues != null ? fmtMXN(m.saldo_despues) : '—'}
+                    </td>
+                    <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{m.created_by ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{movs.length} movimiento{movs.length !== 1 ? 's' : ''}</span>
+          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -492,7 +670,7 @@ function CatalogoModal({ config, row, onClose, onSaved }:
               <Icon size={14} style={{ color: config.color }} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600 }}>
-              {isNew ? `Nuevo — ${config.label}` : `Editar — ${row?.nombre}`}
+              {isNew ? `Nuevo — ${config.label}` : `Editar — ${row?.[config.sortBy ?? 'nombre'] ?? config.label}`}
             </h2>
           </div>
           <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
