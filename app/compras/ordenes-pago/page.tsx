@@ -209,6 +209,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [centrosCosto, setCentros]  = useState<any[]>([])
   const [secciones, setSecciones]   = useState<any[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
+  const [formasPago, setFormasPago] = useState<any[]>([])
   const [seccionId, setSeccionId]   = useState<string>(opEdit?.id_seccion_fk?.toString() ?? '')
   const [ocsDisp, setOcsDisp]       = useState<any[]>([])
   const [ocsSelected, setOcsSel]    = useState<{ id: number; folio: string; total: number; monto: string }[]>([])
@@ -256,6 +257,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
         .then(({ data }) => setSecciones(data ?? []))
       dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
         .then(({ data }) => setFrentes(data ?? []))
+      dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
+        .then(({ data }) => setFormasPago(data ?? []))
     })
   }, [])
 
@@ -602,7 +605,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               <div>
                 <label className="label">Forma de Pago</label>
                 <select className="select" value={form.forma_pago} onChange={setF('forma_pago')}>
-                  {FORMAS_PAGO_COMP.map(p => <option key={p}>{p}</option>)}
+                  <option value="">— Seleccionar —</option>
+                  {formasPago.length > 0
+                    ? formasPago.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)
+                    : FORMAS_PAGO_COMP.map(p => <option key={p}>{p}</option>)
+                  }
                 </select>
               </div>
               <div>

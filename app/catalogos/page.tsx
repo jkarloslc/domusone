@@ -5,7 +5,7 @@ import {
   BookOpen, Plus, Edit2, Trash2, X, Save,
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
-  Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle
+  Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle, Building2
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -130,9 +130,24 @@ const CATALOGOS: CatConfig[] = [
     label: 'Formas de Pago',
     icon:  CreditCard,
     color: '#d97706',
-    desc:  'Métodos de pago disponibles en recibos y cobranza',
+    desc:  'Métodos de pago disponibles en recibos, cobranza y compras',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+    ],
+  },
+  {
+    key:   'cuentas_bancarias',
+    tabla: 'cuentas_bancarias',
+    label: 'Cuentas Bancarias',
+    icon:  Building2,
+    color: '#0f766e',
+    desc:  'Cuentas bancarias de la organización (origen de pagos)',
+    campos: [
+      { key: 'banco',         label: 'Banco *',       type: 'text',    required: true },
+      { key: 'numero_cuenta', label: 'No. de Cuenta', type: 'text' },
+      { key: 'clabe',         label: 'CLABE',         type: 'text' },
+      { key: 'saldo',         label: 'Saldo Inicial', type: 'number' },
+      { key: 'descripcion',   label: 'Descripción',   type: 'textarea' },
     ],
   },
   {

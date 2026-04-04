@@ -437,22 +437,25 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
 // ════════════════════════════════════════════════════════════
 function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   const { authUser } = useAuth()
-  const [abonos, setAbonos]       = useState<any[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [showForm, setShowForm]   = useState(false)
-  const [saving, setSaving]       = useState(false)
-  const [error, setError]         = useState('')
-  const [uploading, setUploading] = useState<string | null>(null)
-  const [pagoTotal, setPagoTotal] = useState(true)
+  const [abonos, setAbonos]             = useState<any[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [showForm, setShowForm]         = useState(false)
+  const [saving, setSaving]             = useState(false)
+  const [error, setError]               = useState('')
+  const [uploading, setUploading]       = useState<string | null>(null)
+  const [pagoTotal, setPagoTotal]       = useState(true)
+  const [formasPago, setFormasPago]     = useState<any[]>([])
+  const [cuentasBanc, setCuentasBanc]   = useState<any[]>([])
 
   const [form, setForm] = useState({
-    fecha_abono:      new Date().toISOString().slice(0, 10),
-    monto:            (op.saldo ?? op.monto)?.toString() ?? '',
-    forma_pago:       'Transferencia',
-    referencia:       '',
-    notas:            '',
-    comprobante:      '',     // comprobante de pago (transferencia/depósito)
-    complemento_pago: '',     // complemento de pago SAT (XML)
+    fecha_abono:          new Date().toISOString().slice(0, 10),
+    monto:                (op.saldo ?? op.monto)?.toString() ?? '',
+    forma_pago:           'Transferencia',
+    id_cuenta_bancaria_fk: '',
+    referencia:           '',
+    notas:                '',
+    comprobante:          '',     // comprobante de pago (transferencia/depósito)
+    complemento_pago:     '',     // complemento de pago SAT (XML)
   })
 
   const comprobanteRef     = useRef<HTMLInputElement>(null)
@@ -466,6 +469,20 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   }, [op.id])
 
   useEffect(() => { fetchAbonos() }, [fetchAbonos])
+
+  useEffect(() => {
+    import('@/lib/supabase').then(({ dbCfg }) => {
+      Promise.all([
+        dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
+        dbCfg.from('cuentas_bancarias').select('id, banco, numero_cuenta, clabe, saldo').eq('activo', true).order('banco'),
+      ]).then(([{ data: fps }, { data: cbs }]) => {
+        setFormasPago(fps ?? [])
+        setCuentasBanc(cbs ?? [])
+        // Preseleccionar primera forma de pago disponible
+        if (fps && fps.length > 0) setForm(f => ({ ...f, forma_pago: f.forma_pago || fps[0].nombre }))
+      })
+    })
+  }, [])
 
   const saldoActual = op.saldo ?? op.monto ?? 0
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -487,19 +504,21 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
     if (Number(form.monto) > saldoActual + 0.01) { setError(`El pago no puede exceder el saldo (${fmt(saldoActual)})`); return }
     setSaving(true); setError('')
 
-    const montoAbono = Number(form.monto)
+    const montoAbono     = Number(form.monto)
+    const cuentaId       = form.id_cuenta_bancaria_fk ? Number(form.id_cuenta_bancaria_fk) : null
 
-    const { error: err } = await dbComp.from('cxp_abonos').insert({
-      id_op_fk:         op.id,
-      fecha_abono:      form.fecha_abono,
-      monto:            montoAbono,
-      forma_pago:       form.forma_pago,
-      referencia:       form.referencia.trim() || null,
-      notas:            form.notas.trim() || null,
-      comprobante:      form.comprobante || null,
-      complemento_pago: form.complemento_pago || null,
-      created_by:       authUser?.nombre ?? null,
-    })
+    const { data: abonoData, error: err } = await dbComp.from('cxp_abonos').insert({
+      id_op_fk:              op.id,
+      fecha_abono:           form.fecha_abono,
+      monto:                 montoAbono,
+      forma_pago:            form.forma_pago,
+      id_cuenta_bancaria_fk: cuentaId,
+      referencia:            form.referencia.trim() || null,
+      notas:                 form.notas.trim() || null,
+      comprobante:           form.comprobante || null,
+      complemento_pago:      form.complemento_pago || null,
+      created_by:            authUser?.nombre ?? null,
+    }).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
 
     // Actualizar monto_pagado, saldo y status en ordenes_pago
@@ -517,9 +536,39 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
       } : {}),
     }).eq('id', op.id)
 
+    // Movimiento bancario: actualizar saldo de cuenta origen
+    if (cuentaId) {
+      try {
+        const { dbCfg } = await import('@/lib/supabase')
+        const { data: cuentaRow } = await dbCfg.from('cuentas_bancarias')
+          .select('saldo').eq('id', cuentaId).single()
+        const saldoAntes   = (cuentaRow as any)?.saldo ?? 0
+        const saldoDespues = Math.max(0, saldoAntes - montoAbono)
+        await Promise.all([
+          dbComp.from('movimientos_bancarios').insert({
+            id_cuenta_fk:     cuentaId,
+            id_op_fk:         op.id,
+            id_abono_fk:      abonoData?.id ?? null,
+            tipo:             'Cargo',
+            monto:            montoAbono,
+            saldo_antes:      saldoAntes,
+            saldo_despues:    saldoDespues,
+            concepto:         `Pago OP ${op.folio}`,
+            referencia:       form.referencia.trim() || null,
+            fecha_movimiento: form.fecha_abono,
+            created_by:       authUser?.nombre ?? null,
+          }),
+          dbCfg.from('cuentas_bancarias').update({
+            saldo:      saldoDespues,
+            updated_at: new Date().toISOString(),
+          }).eq('id', cuentaId),
+        ])
+      } catch (_) { /* no bloquear si falla el movimiento */ }
+    }
+
     setSaving(false)
     setShowForm(false)
-    setForm(f => ({ ...f, monto: '', referencia: '', notas: '', comprobante: '', complemento_pago: '' }))
+    setForm(f => ({ ...f, monto: '', referencia: '', notas: '', comprobante: '', complemento_pago: '', id_cuenta_bancaria_fk: '' }))
     fetchAbonos()
     onClose()
   }
@@ -639,6 +688,10 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       {fmtFecha(a.fecha_abono)} · {a.forma_pago}
                       {a.referencia && <span style={{ marginLeft: 6, fontFamily: 'monospace' }}>Ref: {a.referencia}</span>}
+                      {a.id_cuenta_bancaria_fk && cuentasBanc.length > 0 && (() => {
+                        const cb = cuentasBanc.find(c => c.id === a.id_cuenta_bancaria_fk)
+                        return cb ? <span style={{ marginLeft: 6, color: '#0f766e' }}>🏦 {cb.banco}{cb.numero_cuenta ? ` ···${cb.numero_cuenta.slice(-4)}` : ''}</span> : null
+                      })()}
                     </div>
                   </div>
                   {/* Archivos del abono */}
@@ -709,12 +762,42 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div><label className="label">Forma de Pago</label>
                   <select className="select" value={form.forma_pago} onChange={setF('forma_pago')}>
-                    {FORMAS_PAGO_COMP.map(p => <option key={p}>{p}</option>)}
+                    <option value="">— Seleccionar —</option>
+                    {formasPago.length > 0
+                      ? formasPago.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)
+                      : FORMAS_PAGO_COMP.map(p => <option key={p}>{p}</option>)
+                    }
                   </select>
                 </div>
                 <div><label className="label">No. Referencia / Transferencia</label>
                   <input className="input" value={form.referencia} onChange={setF('referencia')}
                     style={{ fontFamily: 'monospace' }} placeholder="ej. 202503240001" />
+                </div>
+              </div>
+
+              {/* Cuenta bancaria origen */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginBottom: 10 }}>
+                <div>
+                  <label className="label">Cuenta Bancaria Origen</label>
+                  <select className="select" value={form.id_cuenta_bancaria_fk} onChange={setF('id_cuenta_bancaria_fk')}>
+                    <option value="">— Sin especificar —</option>
+                    {cuentasBanc.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.banco}{c.numero_cuenta ? ` · ${c.numero_cuenta}` : ''}{c.clabe ? ` · CLABE: ${c.clabe.slice(-4)}` : ''} · Saldo: {fmt(c.saldo ?? 0)}
+                      </option>
+                    ))}
+                  </select>
+                  {form.id_cuenta_bancaria_fk && (() => {
+                    const cb = cuentasBanc.find(c => c.id === Number(form.id_cuenta_bancaria_fk))
+                    return cb ? (
+                      <div style={{ marginTop: 6, padding: '6px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#15803d' }}>Saldo disponible: <strong>{fmt(cb.saldo ?? 0)}</strong></span>
+                        {Number(form.monto) > (cb.saldo ?? 0) && (
+                          <span style={{ color: '#dc2626', fontWeight: 600 }}>⚠ Saldo insuficiente</span>
+                        )}
+                      </div>
+                    ) : null
+                  })()}
                 </div>
               </div>
 
