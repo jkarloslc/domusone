@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCfg, dbCtrl, type Lote } from '@/lib/supabase'
-import { X, Edit2, MapPin, DollarSign, FileText, User, Zap, Droplets, Plus, Trash2, Save, Loader } from 'lucide-react'
+import { X, Edit2, MapPin, FileText, Zap, Droplets, Plus, Trash2, Save, Loader } from 'lucide-react'
 
 type Props = { lote: Lote; onClose: () => void; onEdit: () => void }
 
@@ -85,27 +85,13 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
               <Row2 label="Status Jurídico"   value={lote.status_juridico} />
               <Row2 label="Cobranza"          value={lote.clasificacion_cobranza} />
               <Row2 label="Paga Cuotas"       value={lote.paga_cuotas} />
-              <Row2 label="Urbanización"      value={lote.urbanizacion_disponible} />
+              <Row2 label="Habitada/Rentada"  value={lote.status_habitada_rentada} />
+              <Row2 label="Escriturable"      value={lote.status_escriturable} />
             </Group>
-            <Group icon={<DollarSign size={14} />} label="Información Comercial">
-              <Row2 label="Valor Operación"   value={fmt(lote.valor_operacion)} />
-              <Row2 label="Precio Lista"      value={fmt(lote.precio_de_lista)} />
-              <Row2 label="Forma de Venta"    value={lote.forma_venta} />
-              <Row2 label="Incluye Membresía" value={lote.incluye_membresia} />
-              <Row2 label="Tipo Membresía"    value={lote.tipo_membresia} />
-              <Row2 label="Vendedor"          value={lote.vendedor} />
-              <Row2 label="Medio Captación"   value={lote.medio_captacion} />
-            </Group>
-            <Group icon={<FileText size={14} />} label="Datos Catastrales y Fiscales">
+            <Group icon={<FileText size={14} />} label="Datos Catastrales">
               <Row2 label="Clave Catastral"   value={lote.clave_catastral} />
               <Row2 label="Valor Catastral"   value={fmt(lote.valor_catastral)} />
-              <Row2 label="RFC Factura"       value={lote.rfc_para_factura} />
-              <Row2 label="Razón Social"      value={lote.razon_social_para_factura} />
-            </Group>
-            <Group icon={<User size={14} />} label="Contacto Rápido">
-              <Row2 label="Persona"   value={lote.persona_contacto} />
-              <Row2 label="Teléfono"  value={lote.telefono_persona_contacto} />
-              <Row2 label="Correo"    value={lote.correo_persona_contacto} />
+              <Row2 label="Diferenciador"     value={lote.Diferenciador} />
             </Group>
             {lote.observaciones && (
               <div>

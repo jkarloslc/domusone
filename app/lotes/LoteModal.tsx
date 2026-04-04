@@ -6,10 +6,8 @@ import FileUpload from '@/components/FileUpload'
 
 type Props = { lote: Lote | null; onClose: () => void; onSaved: () => void }
 
-const STATUS_LOTE  = ['Libre', 'Vendido', 'Bloqueado']
-const STATUS_JUR   = ['Limpio', 'Litigio', 'Pendiente', 'Escriturado']
-const FORMAS_VENTA = ['Contado', 'Financiado', 'Intercambio']
-const TIPOS_PER    = ['Física', 'Moral']
+const STATUS_LOTE = ['Libre', 'Vendido', 'Bloqueado']
+const STATUS_JUR  = ['Limpio', 'Litigio', 'Pendiente', 'Escriturado']
 
 export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const isNew = !lote
@@ -20,36 +18,26 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const [error, setError]         = useState('')
 
   const [form, setForm] = useState({
-    cve_lote:           lote?.cve_lote ?? '',
-    id_clasificacion_fk: (lote as any)?.id_clasificacion_fk?.toString() ?? '',
-    calle:              (lote as any)?.calle ?? '',
-    numero:             (lote as any)?.numero ?? '',
-    manzana:            (lote as any)?.manzana ?? '',
-    lote:               lote?.lote?.toString() ?? '',
-    id_seccion_fk:      lote?.id_seccion_fk?.toString() ?? '',
-    id_tipo_lote_fk:    (lote as any)?.id_tipo_lote_fk?.toString() ?? '',
-    tipo_lote:          lote?.tipo_lote ?? '',
-    superficie:         lote?.superficie?.toString() ?? '',
-    sup_construccion:   lote?.sup_construccion?.toString() ?? '',
-    status_lote:        lote?.status_lote ?? 'Libre',
-    status_juridico:    lote?.status_juridico ?? '',
-    status_cobranza:    lote?.status_cobranza ?? '',
+    cve_lote:            lote?.cve_lote ?? '',
+    lote:                lote?.lote?.toString() ?? '',
+    id_seccion_fk:       lote?.id_seccion_fk?.toString() ?? '',
+    id_clasificacion_fk: lote?.id_clasificacion_fk?.toString() ?? '',
+    id_tipo_lote_fk:     lote?.id_tipo_lote_fk?.toString() ?? '',
+    calle:               lote?.calle ?? '',
+    numero:              lote?.numero ?? '',
+    manzana:             lote?.manzana ?? '',
+    superficie:          lote?.superficie?.toString() ?? '',
+    sup_construccion:    lote?.sup_construccion?.toString() ?? '',
+    status_lote:         lote?.status_lote ?? 'Libre',
+    status_juridico:     lote?.status_juridico ?? '',
+    status_cobranza:     lote?.status_cobranza ?? '',
     clasificacion_cobranza: lote?.clasificacion_cobranza ?? '',
-    paga_cuotas:        lote?.paga_cuotas ?? '',
-    valor_operacion:    lote?.valor_operacion?.toString() ?? '',
-    precio_de_lista:    lote?.precio_de_lista?.toString() ?? '',
-    forma_venta:        lote?.forma_venta ?? '',
-    incluye_membresia:  lote?.incluye_membresia ?? '',
-    tipo_membresia:     lote?.tipo_membresia ?? '',
-    vendedor:           lote?.vendedor ?? '',
-    medio_captacion:    lote?.medio_captacion ?? '',
-    clave_catastral:    lote?.clave_catastral ?? '',
-    valor_catastral:    lote?.valor_catastral?.toString() ?? '',
-    rfc_para_factura:          lote?.rfc_para_factura ?? '',
-    razon_social_para_factura: lote?.razon_social_para_factura ?? '',
-    urbanizacion_disponible:   lote?.urbanizacion_disponible ?? '',
-    observaciones:      lote?.observaciones ?? '',
-    notas:              lote?.notas ?? '',
+    paga_cuotas:         lote?.paga_cuotas ?? '',
+    clave_catastral:     lote?.clave_catastral ?? '',
+    valor_catastral:     lote?.valor_catastral?.toString() ?? '',
+    observaciones:       lote?.observaciones ?? '',
+    notas:               lote?.notas ?? '',
+    imagen_lote:         lote?.imagen_lote ?? '',
   })
 
   useEffect(() => {
@@ -67,35 +55,26 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const handleSubmit = async () => {
     setSaving(true); setError('')
     const payload: Record<string, unknown> = {
-      cve_lote:           form.cve_lote || null,
-      id_clasificacion_fk: (form as any).id_clasificacion_fk ? Number((form as any).id_clasificacion_fk) : null,
-      calle:              (form as any).calle.trim() || null,
-      numero:             (form as any).numero.trim() || null,
-      manzana:            (form as any).manzana.trim() || null,
-      lote:               form.lote ? Number(form.lote) : null,
-      id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
-      id_tipo_lote_fk:    (form as any).id_tipo_lote_fk ? Number((form as any).id_tipo_lote_fk) : null,
-      tipo_lote:          form.tipo_lote || null,
-      superficie:         form.superficie ? Number(form.superficie) : null,
-      sup_construccion:   form.sup_construccion ? Number(form.sup_construccion) : null,
-      status_lote:        form.status_lote || null,
-      status_juridico:    form.status_juridico || null,
-      status_cobranza:    form.status_cobranza || null,
+      cve_lote:            form.cve_lote || null,
+      lote:                form.lote ? Number(form.lote) : null,
+      id_seccion_fk:       form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+      id_clasificacion_fk: form.id_clasificacion_fk ? Number(form.id_clasificacion_fk) : null,
+      id_tipo_lote_fk:     form.id_tipo_lote_fk ? Number(form.id_tipo_lote_fk) : null,
+      calle:               form.calle.trim() || null,
+      numero:              form.numero.trim() || null,
+      manzana:             form.manzana.trim() || null,
+      superficie:          form.superficie ? Number(form.superficie) : null,
+      sup_construccion:    form.sup_construccion ? Number(form.sup_construccion) : null,
+      status_lote:         form.status_lote || null,
+      status_juridico:     form.status_juridico || null,
+      status_cobranza:     form.status_cobranza || null,
       clasificacion_cobranza: form.clasificacion_cobranza || null,
-      paga_cuotas:        form.paga_cuotas || null,
-      valor_operacion:    form.valor_operacion ? Number(form.valor_operacion) : null,
-      precio_de_lista:    form.precio_de_lista ? Number(form.precio_de_lista) : null,
-      forma_venta:        form.forma_venta || null,
-      incluye_membresia:  form.incluye_membresia || null,
-      tipo_membresia:     form.tipo_membresia || null,
-      vendedor:           form.vendedor || null,
-      clave_catastral:    form.clave_catastral || null,
-      valor_catastral:    form.valor_catastral ? Number(form.valor_catastral) : null,
-      rfc_para_factura:          form.rfc_para_factura || null,
-      razon_social_para_factura: form.razon_social_para_factura || null,
-      urbanizacion_disponible:   form.urbanizacion_disponible || null,
-      observaciones:      form.observaciones || null,
-      notas:              form.notas || null,
+      paga_cuotas:         form.paga_cuotas || null,
+      clave_catastral:     form.clave_catastral || null,
+      valor_catastral:     form.valor_catastral ? Number(form.valor_catastral) : null,
+      observaciones:       form.observaciones || null,
+      notas:               form.notas || null,
+      imagen_lote:         form.imagen_lote || null,
     }
 
     const { error: err } = isNew
@@ -135,20 +114,20 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
                 </select>
               </Field>
               <Field label="Tipo de Lote">
-                <select className="select" value={(form as any).id_tipo_lote_fk} onChange={set('id_tipo_lote_fk')}>
+                <select className="select" value={form.id_tipo_lote_fk} onChange={set('id_tipo_lote_fk')}>
                   <option value="">— Seleccionar —</option>
                   {tiposLote.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                 </select>
               </Field>
             </Row>
             <Row>
-              <Field label="Calle"><input className="input" value={(form as any).calle} onChange={set('calle')} placeholder="Nombre de la calle" /></Field>
-              <Field label="Manzana"><input className="input" value={(form as any).manzana} onChange={set('manzana')} placeholder="Manzana" /></Field>
+              <Field label="Calle"><input className="input" value={form.calle} onChange={set('calle')} placeholder="Nombre de la calle" /></Field>
+              <Field label="Manzana"><input className="input" value={form.manzana} onChange={set('manzana')} placeholder="Manzana" /></Field>
             </Row>
             <Row>
-              <Field label="Número"><input className="input" value={(form as any).numero} onChange={set('numero')} placeholder="Número exterior" /></Field>
+              <Field label="Número"><input className="input" value={form.numero} onChange={set('numero')} placeholder="Número exterior" /></Field>
               <Field label="Clasificación">
-                <select className="select" value={(form as any).id_clasificacion_fk} onChange={set('id_clasificacion_fk')}>
+                <select className="select" value={form.id_clasificacion_fk} onChange={set('id_clasificacion_fk')}>
                   <option value="">— Seleccionar —</option>
                   {clasificaciones.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
@@ -189,38 +168,6 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
             </Row>
           </Section>
 
-          <Section label="Comercial">
-            <Row>
-              <Field label="Valor Operación"><input className="input" type="number" step="0.01" value={form.valor_operacion} onChange={set('valor_operacion')} /></Field>
-              <Field label="Precio Lista"><input className="input" type="number" step="0.01" value={form.precio_de_lista} onChange={set('precio_de_lista')} /></Field>
-            </Row>
-            <Row>
-              <Field label="Forma de Venta">
-                <select className="select" value={form.forma_venta} onChange={set('forma_venta')}>
-                  <option value="">—</option>
-                  {FORMAS_VENTA.map(f => <option key={f}>{f}</option>)}
-                </select>
-              </Field>
-              <Field label="Vendedor"><input className="input" value={form.vendedor} onChange={set('vendedor')} /></Field>
-            </Row>
-            <Row>
-              <Field label="Incluye Membresía">
-                <select className="select" value={form.incluye_membresia} onChange={set('incluye_membresia')}>
-                  <option value="">—</option>
-                  <option>Sí</option><option>No</option>
-                </select>
-              </Field>
-              <Field label="Tipo Membresía"><input className="input" value={form.tipo_membresia} onChange={set('tipo_membresia')} /></Field>
-            </Row>
-          </Section>
-
-          <Section label="Datos Fiscales / Facturación">
-            <Row>
-              <Field label="RFC"><input className="input" value={form.rfc_para_factura} onChange={set('rfc_para_factura')} placeholder="XAXX010101000" /></Field>
-              <Field label="Razón Social"><input className="input" value={form.razon_social_para_factura} onChange={set('razon_social_para_factura')} /></Field>
-            </Row>
-          </Section>
-
           <Section label="Catastral">
             <Row>
               <Field label="Clave Catastral"><input className="input" value={form.clave_catastral} onChange={set('clave_catastral')} /></Field>
@@ -230,8 +177,8 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
 
           <Section label="Imagen del Lote">
             <FileUpload
-              value={(form as any).imagen_lote}
-              onChange={url => setForm((f: any) => ({ ...f, imagen_lote: url }))}
+              value={form.imagen_lote}
+              onChange={url => setForm(f => ({ ...f, imagen_lote: url ?? '' }))}
               accept="image"
               folder="lotes"
               label="Foto o plano del lote"

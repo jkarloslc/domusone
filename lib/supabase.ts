@@ -26,34 +26,33 @@ export type Lote = {
   cve_lote: string | null
   lote: number | null
   id_seccion_fk: number | null
-  tipo_lote: string | null
+  id_seccion_alfa: string | null
+  id_clasificacion_fk: number | null
+  id_tipo_lote_fk: number | null
+  calle: string | null
+  numero: string | null
+  manzana: string | null
   superficie: number | null
   sup_construccion: number | null
   status_lote: string | null
   status_juridico: string | null
   status_cobranza: string | null
+  status_habitada_rentada: string | null
+  status_lote_proyectos: string | null
+  status_escriturable: string | null
   clasificacion_cobranza: string | null
   paga_cuotas: string | null
-  valor_operacion: number | null
-  precio_de_lista: number | null
-  forma_venta: string | null
-  incluye_membresia: string | null
-  tipo_membresia: string | null
-  vendedor: string | null
-  medio_captacion: string | null
   clave_catastral: string | null
   valor_catastral: number | null
-  persona_contacto: string | null
-  telefono_persona_contacto: string | null
-  correo_persona_contacto: string | null
-  rfc_para_factura: string | null
-  razon_social_para_factura: string | null
+  Diferenciador: string | null
   observaciones: string | null
   notas: string | null
-  urbanizacion_disponible: string | null
+  imagen_lote: string | null
+  ultima_mod: string | null
+  usuario_ult_mod: string | null
   created_at: string
   updated_at: string
-  // join
+  // joins
   secciones?: Seccion
 }
 

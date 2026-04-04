@@ -326,7 +326,7 @@ export default function InicioPage() {
                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                 <MapPin size={13} style={{ color: 'var(--blue)', flexShrink: 0 }} />
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: 'var(--blue)' }}>{r.cve_lote ?? `#${r.lote}`}</span>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.tipo_lote}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.status_lote}</span>
                 {statusBadge(r.status_lote)}
               </button>
             ))}
@@ -363,7 +363,7 @@ export default function InicioPage() {
                 {lote.cve_lote ?? `#${lote.lote}`}
               </div>
               <div style={{ fontSize: 13, color: '#bfdbfe', marginBottom: 12 }}>
-                {lote.secciones?.nombre ?? '—'} · {lote.tipo_lote ?? '—'}
+                {lote.secciones?.nombre ?? '—'}
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {lote.status_lote && (
@@ -395,34 +395,11 @@ export default function InicioPage() {
               <DataRow label="Manzana"         value={lote.manzana} />
               <DataRow label="Superficie"      value={lote.superficie ? `${lote.superficie} m²` : null} />
               <DataRow label="Sup. Constr."    value={lote.sup_construccion ? `${lote.sup_construccion} m²` : null} />
-              <DataRow label="Urbanización"    value={lote.urbanizacion_disponible} />
               <DataRow label="Paga cuotas"     value={lote.paga_cuotas} />
               <DataRow label="Clave catastral" value={lote.clave_catastral} mono />
               <DataRow label="Valor catastral" value={lote.valor_catastral ? fmt(lote.valor_catastral) : null} />
             </div>
 
-            {/* Datos comerciales */}
-            <div className="card" style={{ padding: '14px 16px', marginBottom: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Comercial</div>
-              <DataRow label="Precio de lista" value={lote.precio_de_lista ? fmt(lote.precio_de_lista) : null} />
-              <DataRow label="Valor operación" value={lote.valor_operacion ? fmt(lote.valor_operacion) : null} />
-              <DataRow label="Forma de venta"  value={lote.forma_venta} />
-              <DataRow label="Vendedor"        value={lote.vendedor} />
-              <DataRow label="Membresía"       value={lote.incluye_membresia} />
-              <DataRow label="Tipo membresía"  value={lote.tipo_membresia} />
-            </div>
-
-            {/* Contacto del lote */}
-            {(lote.persona_contacto || lote.telefono_persona_contacto) && (
-              <div className="card" style={{ padding: '14px 16px' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Contacto del Lote</div>
-                <DataRow label="Persona"   value={lote.persona_contacto} />
-                <DataRow label="Teléfono"  value={lote.telefono_persona_contacto} />
-                <DataRow label="Correo"    value={lote.correo_persona_contacto} />
-                <DataRow label="RFC"       value={lote.rfc_para_factura} mono />
-                <DataRow label="Razón Soc" value={lote.razon_social_para_factura} />
-              </div>
-            )}
           </div>
 
           {/* ── COLUMNA DERECHA: secciones relacionadas ── */}
