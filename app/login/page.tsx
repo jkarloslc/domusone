@@ -21,6 +21,7 @@ export default function LoginPage() {
       case 'mantenimiento': return '/mantenimiento'
       case 'cobranza':      return '/cobranza'
       case 'vigilancia':    return '/accesos'
+      case 'tesoreria':     return '/tesoreria'
       default:              return '/lotes'
     }
   }

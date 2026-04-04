@@ -12,6 +12,7 @@ type Rol =
   | 'almacen'
   | 'mantenimiento'
   | 'fraccionamiento'
+  | 'tesoreria'
 
 type AuthUser = {
   user:   User
@@ -49,7 +50,8 @@ const LEER: Record<Rol, string[] | '*'> = {
   mantenimiento:       ['lotes', 'propietarios', 'mantenimiento', 'reportes'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
-                        'cobranza', 'facturas', 'compras', 'reportes'],
+                        'cobranza', 'facturas', 'compras', 'tesoreria', 'reportes'],
+  tesoreria:           ['tesoreria', 'reportes'],
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -64,14 +66,15 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   mantenimiento:       ['mantenimiento'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
-                        'cobranza', 'facturas', 'compras', 'reportes'],
+                        'cobranza', 'facturas', 'compras', 'tesoreria', 'reportes'],
+  tesoreria:           ['tesoreria', 'reportes'],
 }
 
 // ── Solo admin puede eliminar ──────────────────────────────────────────────────
 const ROLES_DELETE: Rol[] = ['admin']
 
 // ── Roles que pueden autorizar documentos ─────────────────────────────────────
-const ROLES_AUTH: Rol[] = ['admin', 'compras', 'fraccionamiento']
+const ROLES_AUTH: Rol[] = ['admin', 'compras', 'fraccionamiento', 'tesoreria']
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthCtx>({
@@ -164,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const canCompras = (): 'all' | 'compras' | 'almacen' | false => {
     if (!authUser) return false
     const r = authUser.rol
-    if (r === 'admin' || r === 'fraccionamiento') return 'all'
+    if (r === 'admin' || r === 'fraccionamiento' || r === 'tesoreria') return 'all'
     if (r === 'compras') return 'compras'
     if (r === 'almacen') return 'almacen'
     return false

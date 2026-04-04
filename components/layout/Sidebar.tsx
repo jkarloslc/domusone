@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, MapPin, Users, FileText, Building2, Wrench,
   Shield, AlertTriangle, Receipt, ShoppingCart,
-  BarChart3, BookOpen, Settings, LogOut, User, X, Calendar
+  BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -17,6 +17,7 @@ type Rol =
   | 'almacen'
   | 'mantenimiento'
   | 'fraccionamiento'
+  | 'tesoreria'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -30,6 +31,7 @@ const ROL_LABEL: Record<Rol, string> = {
   almacen:             'Almacén',
   mantenimiento:       'Mantenimiento',
   fraccionamiento:     'Fraccionamiento',
+  tesoreria:           'Tesorería',
 }
 
 const NAV_POR_ROL: Record<Rol, NavSection[]> = {
@@ -51,6 +53,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Tesorería', items: [
+      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
     ]},
     { section: 'Sistema', items: [
       { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
@@ -146,6 +151,18 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Tesorería', items: [
+      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+    ]},
+    { section: 'Sistema', items: [
+      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+    ]},
+  ],
+
+  tesoreria: [
+    { section: 'Tesorería', items: [
+      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
     ]},
     { section: 'Sistema', items: [
       { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },

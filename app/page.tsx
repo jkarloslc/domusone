@@ -17,6 +17,7 @@ export default function Home() {
       case 'mantenimiento': router.replace('/mantenimiento'); break
       case 'cobranza':      router.replace('/cobranza');      break
       case 'vigilancia':    router.replace('/accesos');       break
+      case 'tesoreria':     router.replace('/tesoreria');    break
       default:              router.replace('/lotes');         break
     }
   }, [authUser, loading, router])

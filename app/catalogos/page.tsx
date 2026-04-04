@@ -139,23 +139,6 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
-    key:       'cuentas_bancarias',
-    tabla:     'cuentas_bancarias',
-    label:     'Cuentas Bancarias',
-    icon:      Building2,
-    color:     '#0f766e',
-    desc:      'Cuentas bancarias de la organización (origen de pagos)',
-    sortBy:    'banco',
-    hasDetail: true,
-    campos: [
-      { key: 'banco',         label: 'Banco *',       type: 'text',    required: true },
-      { key: 'numero_cuenta', label: 'No. de Cuenta', type: 'text' },
-      { key: 'clabe',         label: 'CLABE',         type: 'text' },
-      { key: 'saldo',         label: 'Saldo',         type: 'number' },
-      { key: 'descripcion',   label: 'Descripción',   type: 'textarea' },
-    ],
-  },
-  {
     key:   'marcas_vehiculos',
     tabla: 'marcas_vehiculos',
     label: 'Marcas de Vehículos',
