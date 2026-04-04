@@ -435,11 +435,65 @@ const fmtMXN = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionD
 const fmtDate = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
 function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () => void }) {
-  const [movs, setMovs]         = useState<any[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [filtroDe, setFiltroDe] = useState('')
-  const [filtroA, setFiltroA]   = useState('')
-  const [saldoActual, setSaldo]  = useState<number>(cuenta.saldo ?? 0)
+  const { authUser } = useAuth()
+  const [movs, setMovs]           = useState<any[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [filtroDe, setFiltroDe]   = useState('')
+  const [filtroA, setFiltroA]     = useState('')
+  const [saldoActual, setSaldo]   = useState<number>(cuenta.saldo ?? 0)
+  const [showAbono, setShowAbono] = useState(false)
+  const [savingAbono, setSavingAbono] = useState(false)
+  const [errorAbono, setErrorAbono]   = useState('')
+  const [formAbono, setFormAbono] = useState({
+    fecha:     new Date().toISOString().slice(0, 10),
+    monto:     '',
+    concepto:  '',
+    referencia: '',
+  })
+
+  const setFA = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setFormAbono(f => ({ ...f, [k]: e.target.value }))
+
+  const handleAbono = async () => {
+    if (!formAbono.monto || Number(formAbono.monto) <= 0) {
+      setErrorAbono('El monto debe ser mayor a cero'); return
+    }
+    if (!formAbono.concepto.trim()) {
+      setErrorAbono('El concepto es obligatorio'); return
+    }
+    setSavingAbono(true); setErrorAbono('')
+
+    const montoAbono = Number(formAbono.monto)
+
+    // Obtener saldo actual desde DB para garantizar consistencia
+    const { data: cuentaRow } = await dbCfg.from('cuentas_bancarias')
+      .select('saldo').eq('id', cuenta.id).single()
+    const saldoAntes   = (cuentaRow as any)?.saldo ?? 0
+    const saldoDespues = saldoAntes + montoAbono
+
+    const { error: err } = await dbComp.from('movimientos_bancarios').insert({
+      id_cuenta_fk:     cuenta.id,
+      tipo:             'Abono',
+      monto:            montoAbono,
+      saldo_antes:      saldoAntes,
+      saldo_despues:    saldoDespues,
+      concepto:         formAbono.concepto.trim(),
+      referencia:       formAbono.referencia.trim() || null,
+      fecha_movimiento: formAbono.fecha,
+      created_by:       authUser?.nombre ?? null,
+    })
+    if (err) { setErrorAbono(err.message); setSavingAbono(false); return }
+
+    await dbCfg.from('cuentas_bancarias').update({
+      saldo:      saldoDespues,
+      updated_at: new Date().toISOString(),
+    }).eq('id', cuenta.id)
+
+    setSavingAbono(false)
+    setShowAbono(false)
+    setFormAbono({ fecha: new Date().toISOString().slice(0, 10), monto: '', concepto: '', referencia: '' })
+    fetchMovs()
+  }
 
   const fetchMovs = useCallback(async () => {
     setLoading(true)
@@ -508,7 +562,7 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
           })}
         </div>
 
-        {/* Filtros */}
+        {/* Filtros + botón Abono */}
         <div style={{ display: 'flex', gap: 10, padding: '12px 24px', borderBottom: '1px solid #f1f5f9', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em' }}>Período:</span>
           <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)}
@@ -521,10 +575,63 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
               Limpiar
             </button>
           )}
-          <button className="btn-ghost" style={{ marginLeft: 'auto', padding: '6px 10px' }} onClick={fetchMovs}>
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          </button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={fetchMovs}>
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <button
+              onClick={() => { setShowAbono(s => !s); setErrorAbono('') }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+                background: showAbono ? '#f0fdf4' : '#15803d', color: showAbono ? '#15803d' : '#fff',
+                border: '1px solid #15803d', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
+              <ArrowUpCircle size={13} />
+              {showAbono ? 'Cancelar' : 'Registrar Abono'}
+            </button>
+          </div>
         </div>
+
+        {/* Formulario de abono */}
+        {showAbono && (
+          <div style={{ padding: '16px 24px', background: '#f0fdf4', borderBottom: '1px solid #bbf7d0' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#15803d', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ArrowUpCircle size={13} /> Registrar Abono — Los cargos solo se generan desde una Orden de Pago
+            </div>
+            {errorAbono && (
+              <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
+                {errorAbono}
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 140px 1fr 1fr', gap: 10, alignItems: 'end' }}>
+              <div>
+                <label className="label">Fecha *</label>
+                <input className="input" type="date" value={formAbono.fecha} onChange={setFA('fecha')} />
+              </div>
+              <div>
+                <label className="label">Monto *</label>
+                <input className="input" type="number" step="0.01" min="0.01" placeholder="0.00"
+                  value={formAbono.monto} onChange={setFA('monto')} style={{ textAlign: 'right' }} />
+              </div>
+              <div>
+                <label className="label">Concepto *</label>
+                <input className="input" placeholder="ej. Depósito inicial, Transferencia recibida…"
+                  value={formAbono.concepto} onChange={setFA('concepto')} />
+              </div>
+              <div>
+                <label className="label">Referencia</label>
+                <input className="input" placeholder="No. de transferencia, cheque…" style={{ fontFamily: 'monospace' }}
+                  value={formAbono.referencia} onChange={setFA('referencia')} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+              <button onClick={handleAbono} disabled={savingAbono}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600,
+                  background: '#15803d', color: '#fff', border: 'none', borderRadius: 8, cursor: savingAbono ? 'not-allowed' : 'pointer', opacity: savingAbono ? 0.7 : 1 }}>
+                {savingAbono ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+                {savingAbono ? 'Guardando…' : 'Confirmar Abono'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Tabla de movimientos */}
         <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 320px)' }}>
