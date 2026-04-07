@@ -290,7 +290,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 10 }}>
               <div><label className="label">Fecha Requerida</label><input className="input" type="date" value={form.fecha_requerida} onChange={setF('fecha_requerida')} /></div>
               <div>
-                <label className="label">Centro Costo *</label>
+                <label className="label">Centro Costo*</label>
                 <select className="select" value={form.id_centro_costo_fk}
                   onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' }))}>
                   <option value="">— Seleccionar —</option>
