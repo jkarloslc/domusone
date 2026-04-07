@@ -149,13 +149,13 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [centrosCosto, setCentros]  = useState<{id: number; nombre: string}[]>([])
   const [secciones, setSecciones]   = useState<{id: number; nombre: string}[]>([])
   const [frentes, setFrentes]       = useState<{id: number; nombre: string; id_seccion_fk: number}[]>([])
-  const [seccionId, setSeccionId]   = useState<string>(row?.id_seccion_fk?.toString() ?? '')
   const [form, setForm] = useState({
     area_solicitante:   row?.area_solicitante ?? '',
     solicitante:        row?.solicitante ?? (authUser?.nombre ?? ''),
     fecha_requerida:    row?.fecha_requerida ?? '',
     id_centro_costo_fk: row?.id_centro_costo_fk?.toString() ?? '',
-    frente:             row?.frente ?? '',
+    id_seccion_fk:      row?.id_seccion_fk?.toString() ?? '',
+    id_frente_fk:       row?.id_frente_fk?.toString() ?? '',
     prioridad:          row?.prioridad ?? 'Normal',
     justificacion:      row?.justificacion ?? '',
   })
@@ -166,7 +166,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
       .then(({ data }) => setAreas(data ?? []))
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCentros(data ?? []))
-    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setSecciones(data ?? []))
     dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
@@ -216,6 +216,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
 
   const handleSave = async (enviar = false) => {
     if (!form.area_solicitante.trim() || !form.solicitante.trim()) { setError('Área y Solicitante son obligatorios'); return }
+    if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
+    if (!form.id_seccion_fk) { setError('Sección es obligatoria'); return }
     const detValidos = det.filter(d => d.descripcion.trim() && Number(d.cantidad) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto'); return }
     setSaving(true); setError('')
@@ -225,15 +227,32 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
       const { count } = await dbComp.from('requisiciones').select('id', { count: 'exact', head: true })
       const folio = folioGen('REQ', (count ?? 0) + 1)
       const { data, error: err } = await dbComp.from('requisiciones').insert({
-        folio, ...form,
-        id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+        folio,
+        area_solicitante:   form.area_solicitante.trim(),
+        solicitante:        form.solicitante.trim(),
+        fecha_requerida:    form.fecha_requerida || null,
+        id_centro_costo_fk: Number(form.id_centro_costo_fk),
+        id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+        id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
+        prioridad:          form.prioridad,
+        justificacion:      form.justificacion.trim() || null,
         status: enviar ? 'Enviada' : 'Borrador',
         created_by: authUser?.nombre ?? null,
       }).select('id').single()
       if (err) { setError(err.message); setSaving(false); return }
       reqId = data.id
     } else {
-      await dbComp.from('requisiciones').update({ ...form, status: enviar ? 'Enviada' : row.status }).eq('id', reqId)
+      await dbComp.from('requisiciones').update({
+        area_solicitante:   form.area_solicitante.trim(),
+        solicitante:        form.solicitante.trim(),
+        fecha_requerida:    form.fecha_requerida || null,
+        id_centro_costo_fk: Number(form.id_centro_costo_fk),
+        id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+        id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
+        prioridad:          form.prioridad,
+        justificacion:      form.justificacion.trim() || null,
+        status: enviar ? 'Enviada' : row.status,
+      }).eq('id', reqId)
       await dbComp.from('requisiciones_det').delete().eq('id_requisicion_fk', reqId)
     }
 
@@ -271,31 +290,32 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 10 }}>
               <div><label className="label">Fecha Requerida</label><input className="input" type="date" value={form.fecha_requerida} onChange={setF('fecha_requerida')} /></div>
               <div>
-                <label className="label">Centro de Costo</label>
-                <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
-                  <option value="">— Sin asignar —</option>
+                <label className="label">Centro de Costo *</label>
+                <select className="select" value={form.id_centro_costo_fk}
+                  onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' }))}>
+                  <option value="">— Seleccionar —</option>
                   {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
               <div>
-                <label className="label">Sección</label>
-                <select className="select" value={seccionId}
-                  onChange={e => {
-                    setSeccionId(e.target.value)
-                    setForm(f => ({ ...f, frente: '' })) // resetea frente al cambiar sección
-                  }}>
-                  <option value="">— Todas —</option>
-                  {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                <label className="label">Sección *</label>
+                <select className="select" value={form.id_seccion_fk}
+                  onChange={e => setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' }))}
+                  disabled={!form.id_centro_costo_fk}>
+                  <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
+                  {secciones
+                    .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                    .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
               </div>
               <div>
                 <label className="label">Frente</label>
-                <select className="select" value={form.frente} onChange={setF('frente')}
-                  disabled={!seccionId}>
-                  <option value="">— {seccionId ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')}
+                  disabled={!form.id_seccion_fk}>
+                  <option value="">— {form.id_seccion_fk ? 'Seleccionar' : 'Elige sección primero'} —</option>
                   {frentes
-                    .filter(f => !seccionId || f.id_seccion_fk === Number(seccionId))
-                    .map(f => <option key={f.id} value={f.nombre}>{f.nombre}</option>)
+                    .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
+                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
                   }
                 </select>
               </div>

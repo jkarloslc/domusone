@@ -49,6 +49,7 @@ const CATALOGOS: CatConfig[] = [
     campos: [
       { key: 'nombre',              label: 'Nombre *',             type: 'text',   required: true },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
+      { key: 'id_centro_costo_fk',  label: 'Centro de Costo',      type: 'select', selectTabla: 'centros_costo', required: true },
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
       { key: 'fecha_autorizacion',  label: 'Fecha de Autorización',type: 'date' },
       { key: 'cantidad_lotes',      label: 'Cantidad de Lotes',    type: 'number' },

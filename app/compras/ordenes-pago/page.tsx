@@ -253,7 +253,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     import('@/lib/supabase').then(({ dbCfg }) => {
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
         .then(({ data }) => setCentros(data ?? []))
-      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+      dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
         .then(({ data }) => setSecciones(data ?? []))
       dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
         .then(({ data }) => setFrentes(data ?? []))
@@ -376,6 +376,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
     if (montoTotal <= 0) { setError('El monto debe ser mayor a cero'); return }
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
+    if (!conOC && !form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
+    if (!conOC && !form.id_seccion_fk) { setError('Sección es obligatoria'); return }
     setSaving(true); setError('')
 
     // Obtener CC/Sección/Frente de la OC cuando aplica
@@ -553,18 +555,22 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
             {!conOC && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                 <div>
-                  <label className="label">Centro de Costo</label>
-                  <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
-                    <option value="">— Sin asignar —</option>
+                  <label className="label">Centro de Costo *</label>
+                  <select className="select" value={form.id_centro_costo_fk}
+                    onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' }))}>
+                    <option value="">— Seleccionar —</option>
                     {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label">Sección</label>
+                  <label className="label">Sección *</label>
                   <select className="select" value={seccionId}
-                    onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_frente_fk: '' })) }}>
-                    <option value="">— Todas —</option>
-                    {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                    onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' })) }}
+                    disabled={!form.id_centro_costo_fk}>
+                    <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
+                    {secciones
+                      .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                      .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
                 </div>
                 <div>

@@ -154,7 +154,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       .then(({ data }) => setAlms(data ?? []))
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCentros(data ?? []))
-    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setSecciones(data ?? []))
     dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
@@ -252,6 +252,8 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 
   const handleSave = async (enviar = false) => {
     if (!form.id_proveedor_fk) { setError('Selecciona un proveedor'); return }
+    if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
+    if (!form.id_seccion_fk) { setError('Sección es obligatoria'); return }
     const detValidos = det.filter(d => d.descripcion && Number(d.precio_unitario) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto con precio'); return }
     setSaving(true); setError('')
@@ -336,19 +338,22 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
-                <label className="label">Centro de Costo</label>
+                <label className="label">Centro de Costo *</label>
                 <select className="select" value={form.id_centro_costo_fk}
-                  onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value }))}>
-                  <option value="">— Sin asignar —</option>
+                  onChange={e => { setSeccionId(''); setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' })) }}>
+                  <option value="">— Seleccionar —</option>
                   {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
               <div>
-                <label className="label">Sección</label>
+                <label className="label">Sección *</label>
                 <select className="select" value={seccionId}
-                  onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' })) }}>
-                  <option value="">— Sin asignar —</option>
-                  {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' })) }}
+                  disabled={!form.id_centro_costo_fk}>
+                  <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
+                  {secciones
+                    .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                    .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
               </div>
               <div>

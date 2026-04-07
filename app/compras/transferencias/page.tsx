@@ -1,7 +1,7 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect } from 'react'
-import { dbComp } from '@/lib/supabase'
+import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
@@ -270,6 +270,9 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const [artOptions,  setArtOptions]  = useState<any[][]>([[]])
   const [areas, setAreas]     = useState<any[]>([])
   const [invMap, setInvMap]   = useState<Record<string, number>>({})  // artId_almId → saldo
+  const [centrosCosto, setCentros] = useState<any[]>([])
+  const [secciones, setSecciones]   = useState<any[]>([])
+  const [frentes, setFrentes]       = useState<any[]>([])
 
   const [form, setForm] = useState({
     id_almacen_origen:  '',
@@ -277,6 +280,9 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     area_solicitante:   '',
     solicitante:        authUser?.nombre ?? '',
     justificacion:      '',
+    id_centro_costo_fk: '',
+    id_seccion_fk:      '',
+    id_frente_fk:       '',
   })
   const [det, setDet] = useState([
     { id_articulo_fk: '', cantidad_solicitada: '1', unidad: 'PZA', notas: '' }
@@ -286,9 +292,15 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     Promise.all([
       dbComp.from('almacenes').select('*').eq('activo', true).order('nombre'),
       dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre'),
-    ]).then(([{ data: alms }, { data: areas }]) => {
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
+    ]).then(([{ data: alms }, { data: areas }, { data: cc }, { data: sec }, { data: fr }]) => {
       setAlms(alms ?? [])
       setAreas(areas ?? [])
+      setCentros(cc ?? [])
+      setSecciones(sec ?? [])
+      setFrentes(fr ?? [])
     })
   }, [])
 
@@ -343,6 +355,8 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
       setError('Origen y destino deben ser diferentes'); return
     }
     if (!form.area_solicitante) { setError('Selecciona el área solicitante'); return }
+    if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
+    if (!form.id_seccion_fk) { setError('Sección es obligatoria'); return }
     const detValidos = det.filter(d => d.id_articulo_fk && Number(d.cantidad_solicitada) > 0)
     if (!detValidos.length) { setError('Agrega al menos un artículo'); return }
     setSaving(true); setError('')
@@ -357,6 +371,9 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
       area_solicitante:   form.area_solicitante.trim(),
       solicitante:        form.solicitante.trim(),
       justificacion:      form.justificacion.trim() || null,
+      id_centro_costo_fk: Number(form.id_centro_costo_fk),
+      id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+      id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
       status:             'Solicitada',
     }).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
@@ -431,6 +448,40 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
             <textarea className="input" rows={2} value={form.justificacion}
               onChange={e => setForm(f => ({ ...f, justificacion: e.target.value }))}
               style={{ resize: 'vertical' }} />
+          </div>
+
+          {/* Clasificación */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, paddingTop: 8, borderTop: '1px solid #e2e8f0' }}>
+            <div>
+              <label className="label">Centro de Costo *</label>
+              <select className="select" value={form.id_centro_costo_fk}
+                onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' }))}>
+                <option value="">— Seleccionar —</option>
+                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Sección *</label>
+              <select className="select" value={form.id_seccion_fk}
+                onChange={e => setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' }))}
+                disabled={!form.id_centro_costo_fk}>
+                <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
+                {secciones
+                  .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                  .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Frente</label>
+              <select className="select" value={form.id_frente_fk}
+                onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
+                disabled={!form.id_seccion_fk}>
+                <option value="">— {form.id_seccion_fk ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                {frentes
+                  .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
+                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+              </select>
+            </div>
           </div>
 
           {/* Artículos */}
