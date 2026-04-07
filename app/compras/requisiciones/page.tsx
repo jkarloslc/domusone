@@ -53,7 +53,7 @@ export default function RequisicionesPage() {
     setDetail(null); fetchData()
   }
 
-  const canAuth = authUser?.rol === 'admin' || authUser?.rol === 'compras' || authUser?.rol === 'fraccionamiento'
+  const canAuth = authUser?.rol === 'admin' || authUser?.rol === 'compras' || authUser?.rol === 'compras_supervisor' || authUser?.rol === 'fraccionamiento'
 
   return (
     <div style={{ padding: '32px 36px' }}>

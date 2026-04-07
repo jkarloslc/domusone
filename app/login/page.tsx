@@ -17,10 +17,12 @@ export default function LoginPage() {
   const homeRoute = (rol?: string) => {
     switch (rol) {
       case 'compras':
+      case 'compras_supervisor':
       case 'almacen':       return '/compras'
       case 'mantenimiento': return '/mantenimiento'
       case 'cobranza':      return '/cobranza'
       case 'vigilancia':    return '/accesos'
+      case 'seguridad':     return '/accesos'
       case 'tesoreria':     return '/tesoreria'
       default:              return '/lotes'
     }

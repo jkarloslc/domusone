@@ -9,10 +9,12 @@ type Rol =
   | 'cobranza'
   | 'vigilancia'
   | 'compras'
+  | 'compras_supervisor'
   | 'almacen'
   | 'mantenimiento'
   | 'fraccionamiento'
   | 'tesoreria'
+  | 'seguridad'
 
 type AuthUser = {
   user:   User
@@ -32,8 +34,9 @@ type AuthCtx = {
   /** ¿Puede ELIMINAR? — solo admin */
   canDelete:  () => boolean
   /** ¿Puede ver secciones de Compras?
-   *  Retorna 'all' (admin/fraccionamiento) | 'compras' | 'almacen' | false */
-  canCompras: () => 'all' | 'compras' | 'almacen' | false
+   *  Retorna 'all' | 'compras' | 'almacen' | 'seguridad' | false
+   *  Acepta clave opcional del módulo para filtrar tarjetas del hub */
+  canCompras: (key?: string) => 'all' | 'compras' | 'almacen' | 'seguridad' | false
   /** ¿Puede AUTORIZAR documentos (Req, OC, Transferencias)? */
   canAuth:    (modulo?: string) => boolean
 }
@@ -46,12 +49,14 @@ const LEER: Record<Rol, string[] | '*'> = {
   cobranza:            ['lotes', 'propietarios', 'cobranza', 'facturas', 'reportes'],
   vigilancia:          ['lotes', 'propietarios', 'accesos', 'incidencias'],
   compras:             ['compras', 'reportes'],
+  compras_supervisor:  ['compras', 'reportes'],
   almacen:             ['compras', 'reportes'],
   mantenimiento:       ['lotes', 'propietarios', 'mantenimiento', 'reportes'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
   tesoreria:           ['tesoreria', 'reportes'],
+  seguridad:           ['lotes', 'propietarios', 'accesos', 'incidencias', 'compras'],
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -62,19 +67,21 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   cobranza:            ['cobranza', 'facturas'],
   vigilancia:          ['accesos', 'incidencias'],
   compras:             ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores'],
+  compras_supervisor:  ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores'],
   almacen:             ['compras', 'articulos', 'almacenes', 'areas'],
   mantenimiento:       ['mantenimiento'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
   tesoreria:           ['tesoreria'],
+  seguridad:           ['accesos', 'incidencias', 'requisiciones'],
 }
 
 // ── Solo admin puede eliminar ──────────────────────────────────────────────────
 const ROLES_DELETE: Rol[] = ['admin']
 
 // ── Roles que pueden autorizar documentos ─────────────────────────────────────
-const ROLES_AUTH: Rol[] = ['admin', 'compras', 'fraccionamiento', 'tesoreria']
+const ROLES_AUTH: Rol[] = ['admin', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria']
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthCtx>({
@@ -85,7 +92,7 @@ const AuthContext = createContext<AuthCtx>({
   can:        () => false,
   canWrite:   () => false,
   canDelete:  () => false,
-  canCompras: () => false,
+  canCompras: (_key?: string) => false,
   canAuth:    () => false,
 })
 
@@ -160,16 +167,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    *   false     → sin acceso a compras
    *
    * Uso en /compras/page.tsx:
-   *   const vista = canCompras()
-   *   {(vista === 'all' || vista === 'compras') && <CardRequisiciones />}
-   *   {(vista === 'all' || vista === 'almacen') && <CardRecepciones />}
+   *   {MODULOS.filter(m => canCompras(m.key)).map(...)}
    */
-  const canCompras = (): 'all' | 'compras' | 'almacen' | false => {
+  const canCompras = (key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | false => {
     if (!authUser) return false
     const r = authUser.rol
-    if (r === 'admin' || r === 'fraccionamiento' || r === 'tesoreria') return 'all'
-    if (r === 'compras') return 'compras'
+    if (r === 'admin' || r === 'fraccionamiento') return 'all'
+    if (r === 'compras' || r === 'compras_supervisor') return 'compras'
     if (r === 'almacen') return 'almacen'
+    if (r === 'seguridad') {
+      const MODS_SEGURIDAD = ['requisiciones', 'transferencias']
+      if (!key) return 'seguridad'
+      return MODS_SEGURIDAD.includes(key) ? 'seguridad' : false
+    }
     return false
   }
 

@@ -45,7 +45,7 @@ export default function OrdenesPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const canAuth = authUser?.rol === 'admin' || authUser?.rol === 'compras' || authUser?.rol === 'fraccionamiento'
+  const canAuth = authUser?.rol === 'admin' || authUser?.rol === 'compras' || authUser?.rol === 'compras_supervisor' || authUser?.rol === 'fraccionamiento'
 
   const handleAuth = async (id: number, aprobar: boolean, comentario = '') => {
     await dbComp.from('ordenes_compra').update({

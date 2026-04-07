@@ -14,10 +14,12 @@ type Rol =
   | 'cobranza'
   | 'vigilancia'
   | 'compras'
+  | 'compras_supervisor'
   | 'almacen'
   | 'mantenimiento'
   | 'fraccionamiento'
   | 'tesoreria'
+  | 'seguridad'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -28,10 +30,12 @@ const ROL_LABEL: Record<Rol, string> = {
   cobranza:            'Cobranza',
   vigilancia:          'Vigilancia',
   compras:             'Compras',
+  compras_supervisor:  'Supervisor de Compras',
   almacen:             'Almacén',
   mantenimiento:       'Mantenimiento',
   fraccionamiento:     'Fraccionamiento',
   tesoreria:           'Tesorería',
+  seguridad:           'Seguridad',
 }
 
 const NAV_POR_ROL: Record<Rol, NavSection[]> = {
@@ -175,6 +179,27 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Sistema', items: [
       { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+    ]},
+  ],
+
+  compras_supervisor: [
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Sistema', items: [
+      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+    ]},
+  ],
+
+  seguridad: [
+    { section: 'Residencial', items: [
+      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
+      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
+      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
+      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
     ]},
   ],
 }
