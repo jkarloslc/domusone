@@ -61,13 +61,13 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
                         'incidencias', 'proyectos', 'mantenimiento', 'comunicados'],
   cobranza:            ['cobranza', 'facturas'],
   vigilancia:          ['accesos', 'incidencias'],
-  compras:             ['compras', 'reportes'],
-  almacen:             ['compras', 'reportes'],
+  compras:             ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores'],
+  almacen:             ['compras', 'articulos', 'almacenes', 'areas'],
   mantenimiento:       ['mantenimiento'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
-  tesoreria:           ['tesoreria', 'reportes'],
+  tesoreria:           ['tesoreria'],
 }
 
 // ── Solo admin puede eliminar ──────────────────────────────────────────────────
