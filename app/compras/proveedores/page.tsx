@@ -13,10 +13,12 @@ import { type Proveedor, FORMAS_PAGO_COMP } from '../types'
 
 // ── Documentos requeridos ─────────────────────────────────
 const DOCS = [
-  { key: 'csf_url',         label: 'CSF',                      desc: 'Constancia de Situación Fiscal',  color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  { key: 'opinion_sat_url', label: 'Opinión SAT',               desc: 'Opinión de Cumplimiento del SAT', color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
-  { key: 'id_oficial_url',  label: 'ID Oficial',                desc: 'Identificación Oficial vigente',  color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  { key: 'edo_cuenta_url',  label: 'Carátula Edo. Cuenta',      desc: 'Carátula Estado de Cuenta Bancario', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  { key: 'csf_url',          label: 'CSF',                      desc: 'Constancia de Situación Fiscal',     color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+  { key: 'opinion_sat_url',  label: 'Opinión SAT',               desc: 'Opinión de Cumplimiento del SAT',    color: '#059669', bg: '#f0fdf4', border: '#bbf7d0' },
+  { key: 'id_oficial_url',   label: 'ID Oficial',                desc: 'Identificación Oficial vigente',     color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+  { key: 'edo_cuenta_url',   label: 'Carátula Edo. Cuenta',      desc: 'Carátula Estado de Cuenta Bancario', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  { key: 'acta_const_url',   label: 'Acta Constitutiva',         desc: 'Acta Constitutiva de la empresa',    color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+  { key: 'comp_dom_url',     label: 'Comprobante de Domicilio',  desc: 'Comprobante de domicilio fiscal',    color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
 ]
 
 export default function ProveedoresPage() {
@@ -102,10 +104,10 @@ export default function ProveedoresPage() {
                       <span className={`badge ${r.activo ? 'badge-vendido' : 'badge-default'}`}>{r.activo ? 'Activo' : 'Inactivo'}</span>
                       {ndocs > 0 && (
                         <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 10,
-                          background: ndocs === 4 ? '#f0fdf4' : '#fffbeb',
-                          color:      ndocs === 4 ? '#15803d' : '#d97706',
-                          border:     `1px solid ${ndocs === 4 ? '#bbf7d0' : '#fde68a'}` }}>
-                          {ndocs}/4 docs
+                          background: ndocs === DOCS.length ? '#f0fdf4' : '#fffbeb',
+                          color:      ndocs === DOCS.length ? '#15803d' : '#d97706',
+                          border:     `1px solid ${ndocs === DOCS.length ? '#bbf7d0' : '#fde68a'}` }}>
+                          {ndocs}/{DOCS.length} docs
                         </span>
                       )}
                     </div>
@@ -163,6 +165,8 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
     opinion_sat_url:  row?.opinion_sat_url  ?? '',
     id_oficial_url:   row?.id_oficial_url   ?? '',
     edo_cuenta_url:   row?.edo_cuenta_url   ?? '',
+    acta_const_url:   row?.acta_const_url   ?? '',
+    comp_dom_url:     row?.comp_dom_url     ?? '',
   })
 
   // Refs para inputs de archivo
@@ -171,6 +175,8 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
     opinion_sat_url:  useRef<HTMLInputElement>(null),
     id_oficial_url:   useRef<HTMLInputElement>(null),
     edo_cuenta_url:   useRef<HTMLInputElement>(null),
+    acta_const_url:   useRef<HTMLInputElement>(null),
+    comp_dom_url:     useRef<HTMLInputElement>(null),
   }
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -220,8 +226,10 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
       activo:           form.activo,
       csf_url:          form.csf_url         || null,
       opinion_sat_url:  form.opinion_sat_url  || null,
-      id_oficial_url:   form.id_oficial_url  || null,
-      edo_cuenta_url:   form.edo_cuenta_url  || null,
+      id_oficial_url:   form.id_oficial_url   || null,
+      edo_cuenta_url:   form.edo_cuenta_url   || null,
+      acta_const_url:   form.acta_const_url   || null,
+      comp_dom_url:     form.comp_dom_url     || null,
     }
 
     const { error: err } = isNew
@@ -264,9 +272,9 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
               {t.label}
               {t.key === 'documentos' && (
                 <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10,
-                  background: DOCS.filter(d => form[d.key as keyof typeof form]).length === 4 ? '#f0fdf4' : '#fffbeb',
-                  color:      DOCS.filter(d => form[d.key as keyof typeof form]).length === 4 ? '#15803d' : '#d97706' }}>
-                  {DOCS.filter(d => form[d.key as keyof typeof form]).length}/4
+                  background: DOCS.filter(d => form[d.key as keyof typeof form]).length === DOCS.length ? '#f0fdf4' : '#fffbeb',
+                  color:      DOCS.filter(d => form[d.key as keyof typeof form]).length === DOCS.length ? '#15803d' : '#d97706' }}>
+                  {DOCS.filter(d => form[d.key as keyof typeof form]).length}/{DOCS.length}
                 </span>
               )}
             </button>
