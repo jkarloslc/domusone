@@ -42,7 +42,11 @@ export default function CXPPage() {
     setLoading(true)
     const [{ data: provs }, { data: allOps }, { data: alms }] = await Promise.all([
       dbComp.from('proveedores').select('id, nombre, rfc, condiciones_pago').eq('activo', true).order('nombre'),
-      dbComp.from('ordenes_pago').select('*').neq('status', 'Cancelada').order('fecha_vencimiento'),
+      dbComp.from('ordenes_pago').select('*')
+        .neq('status', 'Cancelada')
+        .neq('status', 'Pendiente Auth')
+        .neq('status', 'Rechazada')
+        .order('fecha_vencimiento'),
       dbComp.from('almacenes').select('id, nombre'),
     ])
     setProvs(provs ?? [])
@@ -55,7 +59,7 @@ export default function CXPPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const opsPendientes  = ops.filter(o => o.status !== 'Pagada')
+  const opsPendientes  = ops.filter(o => o.status !== 'Pagada' && o.status !== 'Pendiente Auth' && o.status !== 'Rechazada')
   const totalPorPagar  = opsPendientes.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
   const totalVencido   = opsPendientes.filter(o => diasVencido(o.fecha_vencimiento) > 0)
                           .reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)

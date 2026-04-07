@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
   ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight,
-  Edit2, Upload, ExternalLink, FileText
+  Edit2, Upload, ExternalLink, FileText, AlertTriangle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP } from '../types'
@@ -64,8 +64,9 @@ export default function OrdenesPagoPage() {
   useEffect(() => { fetchData() }, [fetchData])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
-  const pendientes = rows.filter(r => r.status === 'Pendiente').reduce((a, r) => a + (r.monto ?? 0), 0)
-  const pagadas    = rows.filter(r => r.status === 'Pagada').length
+  const pendientes     = rows.filter(r => r.status === 'Pendiente').reduce((a, r) => a + (r.monto ?? 0), 0)
+  const pendientesAuth = rows.filter(r => r.status === 'Pendiente Auth').length
+  const pagadas        = rows.filter(r => r.status === 'Pagada').length
 
   return (
     <div style={{ padding: '32px 36px' }}>
@@ -86,10 +87,11 @@ export default function OrdenesPagoPage() {
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Por pagar',  value: fmt(pendientes),  color: '#d97706', bg: '#fffbeb' },
-          { label: 'Pagadas',    value: String(pagadas),  color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Total reg.', value: String(total),    color: 'var(--blue)', bg: 'var(--blue-pale)' },
-        ].map(s => (
+          { label: 'Por pagar',       value: fmt(pendientes),        color: '#d97706', bg: '#fffbeb' },
+          { label: 'Pend. Auth',      value: String(pendientesAuth), color: '#92400e', bg: '#fffbeb', hidden: pendientesAuth === 0 },
+          { label: 'Pagadas',         value: String(pagadas),        color: '#15803d', bg: '#f0fdf4' },
+          { label: 'Total reg.',      value: String(total),          color: 'var(--blue)', bg: 'var(--blue-pale)' },
+        ].filter(s => !s.hidden).map(s => (
           <div key={s.label} className="card" style={{ padding: '12px 18px', background: s.bg, minWidth: 140 }}>
             <div style={{ fontSize: 18, fontFamily: 'var(--font-display)', fontWeight: 700, color: s.color }}>{s.value}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
@@ -104,10 +106,13 @@ export default function OrdenesPagoPage() {
           <input className="input" style={{ paddingLeft: 30 }} placeholder="Folio, concepto…"
             value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} />
         </div>
-        <select className="select" style={{ width: 150 }} value={filterStatus} onChange={e => { setFilter(e.target.value); setPage(0) }}>
+        <select className="select" style={{ width: 175 }} value={filterStatus} onChange={e => { setFilter(e.target.value); setPage(0) }}>
           <option value="">Todas</option>
-          <option value="Pendiente">Pendientes</option>
+          <option value="Pendiente Auth">Pend. Autorización</option>
+          <option value="Pendiente">Pendientes (CXP)</option>
+          <option value="Abonada">Abonadas</option>
           <option value="Pagada">Pagadas</option>
+          <option value="Rechazada">Rechazadas</option>
           <option value="Cancelada">Canceladas</option>
         </select>
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
@@ -190,7 +195,8 @@ export default function OrdenesPagoPage() {
 
       {modal  && <OPModal   op={editOp} onClose={() => { setModal(false); setEditOp(null) }} onSaved={() => { setModal(false); setEditOp(null); fetchData() }} />}
       {detail && <OPDetail  op={detail} onClose={() => { setDetail(null); fetchData() }} onCanceled={() => { setDetail(null); fetchData() }}
-        onEdit={() => { setEditOp(detail); setDetail(null); setModal(true) }} />}
+        onEdit={() => { setEditOp(detail); setDetail(null); setModal(true) }}
+        onAuthorized={() => { setDetail(null); fetchData() }} />}
     </div>
   )
 }
@@ -418,7 +424,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
     // NUEVO
     payload.folio      = folioGen('OP', (await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })).count ?? 0 + 1)
-    payload.status     = 'Pendiente'
+    // OP con OC: ya viene autorizada por la cadena REQ→COT→OC → entra directo a CXP
+    // OP sin OC: gasto directo sin cadena de aprobación → requiere autorización previa
+    payload.status     = conOC ? 'Pendiente' : 'Pendiente Auth'
     payload.created_by = authUser?.nombre ?? null
 
     const { data: op, error: err } = await dbComp.from('ordenes_pago').insert(payload).select('id').single()
@@ -677,11 +685,20 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 // ════════════════════════════════════════════════════════════
 // Detalle OP
 // ════════════════════════════════════════════════════════════
-function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void }) {
-  const [ocsRel, setOcsRel] = useState<any[]>([])
-  const [ccMap,  setCcMap]  = useState<Record<number, string>>({})
-  const [secMap, setSecMap] = useState<Record<number, string>>({})
-  const [frMap,  setFrMap]  = useState<Record<number, string>>({})
+const ROLES_AUTH_OP = ['admin', 'compras_supervisor', 'fraccionamiento']
+
+function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
+  op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
+}) {
+  const { authUser } = useAuth()
+  const [ocsRel, setOcsRel]       = useState<any[]>([])
+  const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
+  const [secMap, setSecMap]       = useState<Record<number, string>>({})
+  const [frMap,  setFrMap]        = useState<Record<number, string>>({})
+  const [authComment, setAuthCom] = useState('')
+  const [authLoading, setAuthLd]  = useState(false)
+
+  const puedeAutorizar = ROLES_AUTH_OP.includes(authUser?.rol ?? '')
 
   useEffect(() => {
     dbComp.from('ordenes_pago_oc').select('*, ordenes_compra(folio, total)')
@@ -706,6 +723,19 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
     if (!confirm('¿Cancelar esta orden de pago?')) return
     await dbComp.from('ordenes_pago').update({ status: 'Cancelada' }).eq('id', op.id)
     onCanceled()
+  }
+
+  const handleAuth = async (aprobado: boolean) => {
+    if (!aprobado && !confirm('¿Rechazar esta Orden de Pago? Esta acción no entrará a CXP.')) return
+    setAuthLd(true)
+    await dbComp.from('ordenes_pago').update({
+      status:          aprobado ? 'Pendiente' : 'Rechazada',
+      notas:           authComment.trim()
+        ? `[${aprobado ? 'Autorizado' : 'Rechazado'} por ${authUser?.nombre ?? ''}]: ${authComment.trim()}${op.notas ? '\n' + op.notas : ''}`
+        : op.notas ?? null,
+    }).eq('id', op.id)
+    setAuthLd(false)
+    onAuthorized()
   }
 
   const imprimir = async () => {
@@ -879,6 +909,61 @@ function OPDetail({ op, onClose, onCanceled, onEdit }: { op: any; onClose: () =>
           </div>
 
           {op.notas && <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Notas: {op.notas}</p>}
+
+          {/* ── Bloque de Autorización ── solo cuando status = Pendiente Auth ── */}
+          {op.status === 'Pendiente Auth' && (
+            <div style={{ padding: '16px 18px', background: '#fffbeb', border: '2px solid #fde68a', borderRadius: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <AlertTriangle size={15} style={{ color: '#d97706', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>
+                  Pendiente de Autorización
+                </span>
+                <span style={{ fontSize: 11, color: '#a16207', marginLeft: 'auto' }}>
+                  Gasto directo sin OC — requiere aprobación
+                </span>
+              </div>
+              {puedeAutorizar ? (
+                <>
+                  <textarea
+                    className="input" rows={2}
+                    placeholder="Comentario u observación (opcional)…"
+                    value={authComment} onChange={e => setAuthCom(e.target.value)}
+                    style={{ marginBottom: 10, resize: 'vertical', fontSize: 12 }}
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => handleAuth(true)} disabled={authLoading}
+                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #bbf7d0',
+                        background: '#f0fdf4', color: '#15803d', fontWeight: 700, cursor: 'pointer',
+                        fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      {authLoading ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={14} />}
+                      Autorizar — enviar a CXP
+                    </button>
+                    <button
+                      onClick={() => handleAuth(false)} disabled={authLoading}
+                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #fecaca',
+                        background: '#fef2f2', color: '#dc2626', fontWeight: 700, cursor: 'pointer',
+                        fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <Trash2 size={14} /> Rechazar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p style={{ fontSize: 12, color: '#a16207', margin: 0 }}>
+                  En espera de aprobación por Administración, Supervisor de Compras o Fraccionamiento.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Confirmación de rechazo */}
+          {op.status === 'Rechazada' && (
+            <div style={{ padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
+              fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+              Esta Orden de Pago fue rechazada y no ingresará a Cuentas por Pagar.
+            </div>
+          )}
         </div>
 
         {/* Footer */}
