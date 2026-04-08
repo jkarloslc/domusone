@@ -15,7 +15,7 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
       .then(({ data }) => setTelefonos(data ?? []))
     dbCat.from('propietarios_correos').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
       .then(({ data }) => setCorreos(data ?? []))
-    dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
+    dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', p.id)
       .then(async ({ data }) => {
         const rows = data ?? []
         if (!rows.length) { setLotes([]); return }
