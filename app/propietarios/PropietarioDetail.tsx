@@ -16,15 +16,12 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
     dbCat.from('propietarios_correos').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
       .then(({ data }) => setCorreos(data ?? []))
     dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', Number(p.id))
-      .then(async ({ data, error }) => {
-        console.log('[PropietarioDetail] propietario id:', p.id, typeof p.id)
-        console.log('[PropietarioDetail] propietarios_lotes data:', data, 'error:', error)
+      .then(async ({ data }) => {
         const rows = data ?? []
         if (!rows.length) { setLotes([]); return }
         const loteIds = rows.map((r: any) => r.id_lote_fk).filter(Boolean)
-        const { data: lotesData, error: lotesError } = await dbCat.from('lotes')
-          .select('id, cve_lote, tipo_lote, status_lote').in('id', loteIds)
-        console.log('[PropietarioDetail] lotes data:', lotesData, 'error:', lotesError)
+        const { data: lotesData } = await dbCat.from('lotes')
+          .select('id, cve_lote, lote, status_lote').in('id', loteIds)
         const lotesMap: Record<number, any> = {}
         ;(lotesData ?? []).forEach((l: any) => { lotesMap[l.id] = l })
         setLotes(rows.map((r: any) => ({ ...r, lotes: lotesMap[r.id_lote_fk] ?? null })))
@@ -90,7 +87,7 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>
                     {l.lotes?.cve_lote ?? '—'}
                   </span>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.lotes?.tipo_lote}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.lotes?.status_lote}</span>
                   {l.es_principal && <span className="badge badge-vendido" style={{ marginLeft: 'auto', fontSize: 10 }}>Principal</span>}
                   {l.porcentaje && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.porcentaje}%</span>}
                 </div>

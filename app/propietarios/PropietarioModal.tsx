@@ -63,7 +63,7 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
           })))
         })
     }
-    dbCat.from('lotes').select('id, cve_lote, lote, tipo_lote').order('cve_lote')
+    dbCat.from('lotes').select('id, cve_lote, lote, status_lote').order('cve_lote')
       .then(({ data }) => setLotesDisp(data as Lote[] ?? []))
   }, [isNew, propietario])
 
@@ -334,7 +334,7 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
                     <select className="select" value={l.id_lote_fk || ''} onChange={e => setLotes(ls => ls.map((x, j) => j === i ? { ...x, id_lote_fk: Number(e.target.value) } : x))}>
                       <option value="">— Seleccionar —</option>
                       {lotesDisp.map(ld => (
-                        <option key={ld.id} value={ld.id}>{ld.cve_lote ?? `#${ld.lote}`} {ld.tipo_lote ? `· ${ld.tipo_lote}` : ''}</option>
+                        <option key={ld.id} value={ld.id}>{ld.cve_lote ?? `#${ld.lote}`} {(ld as any).status_lote ? `· ${(ld as any).status_lote}` : ''}</option>
                       ))}
                     </select>
                   </div>
