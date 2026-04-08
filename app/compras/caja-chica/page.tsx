@@ -38,15 +38,16 @@ export default function CajaChicaPage() {
   const [misFondos, setMisFondos] = useState<any[]>([])
 
   const fetchData = useCallback(async () => {
+    const uid = authUser?.user?.id ?? ''
     const [remQ, fondosQ] = await Promise.all([
       isAdmin
         ? dbComp.from('reembolsos').select('*').eq('activo', true).order('created_at', { ascending: false })
-        : dbComp.from('reembolsos').select('*').eq('id_usuario_fk', authUser?.email ?? '').eq('activo', true).order('created_at', { ascending: false }),
+        : dbComp.from('reembolsos').select('*').eq('id_usuario_fk', uid).eq('activo', true).order('created_at', { ascending: false }),
       dbComp.from('fondos_caja_chica').select('*').eq('activo', true).order('created_at', { ascending: false }),
     ])
     setReembolsos(remQ.data ?? [])
     setFondos(fondosQ.data ?? [])
-    setMisFondos((fondosQ.data ?? []).filter((f: any) => f.id_usuario_fk === authUser?.email && f.status === 'Activo'))
+    setMisFondos((fondosQ.data ?? []).filter((f: any) => f.id_usuario_fk === uid && f.status === 'Activo'))
   }, [authUser, isAdmin])
 
   useEffect(() => { fetchData() }, [fetchData])
@@ -79,7 +80,7 @@ export default function CajaChicaPage() {
             </button>
           )}
           {isAdmin && (
-            <button className="btn-secondary" onClick={() => setFondoModal({ open: true })}>
+            <button className="btn-primary" onClick={() => setFondoModal({ open: true })}>
               <Plus size={13} /> Asignar Fondo
             </button>
           )}
@@ -195,7 +196,7 @@ export default function CajaChicaPage() {
                         <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setDetail(r)}>
                           <Eye size={13} />
                         </button>
-                        {(r.status === 'Borrador') && (r.id_usuario_fk === authUser?.email || isAdmin) && (
+                        {(r.status === 'Borrador') && (r.id_usuario_fk === authUser?.user?.id || isAdmin) && (
                           <button className="btn-ghost" style={{ padding: '4px 8px' }}
                             onClick={() => setRemModal({ open: true, rem: r })}>
                             <Edit2 size={13} />

@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
-import { X, Save, Loader, Plus, Trash2, Upload } from 'lucide-react'
+import { X, Save, Loader, Plus, Trash2 } from 'lucide-react'
+import { folioGen } from '../types'
 
 type Detalle = {
   id?: number
@@ -105,26 +106,24 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
     if (total <= 0)                   { setError('El total debe ser mayor a 0'); return }
     setSaving(true); setError('')
 
-    const folioBase = `REM-${new Date().getFullYear()}-`
-
     if (isNew) {
       // Insertar cabecera
       const { data: remData, error: remErr } = await dbComp.from('reembolsos').insert({
         id_fondo_fk:    fondo?.id ?? null,
-        id_usuario_fk:  authUser?.email ?? '',
-        usuario_nombre: authUser?.nombre ?? authUser?.email ?? '',
+        id_usuario_fk:  authUser?.user?.id ?? '',
+        usuario_nombre: authUser?.nombre ?? authUser?.user?.email ?? '',
         fecha:          form.fecha,
         total,
         status:         statusFinal,
         observaciones:  form.observaciones.trim() || null,
-        created_by:     authUser?.nombre ?? authUser?.email ?? null,
+        created_by:     authUser?.nombre ?? null,
       }).select('id').single()
 
       if (remErr) { setError(remErr.message); setSaving(false); return }
 
       // Folio
       await dbComp.from('reembolsos').update({
-        folio: `${folioBase}${String(remData.id).padStart(4, '0')}`
+        folio: folioGen('REM', remData.id)
       }).eq('id', remData.id)
 
       // Insertar detalles

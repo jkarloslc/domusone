@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { X, CheckCircle, XCircle, ExternalLink, DollarSign } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
+import { folioGen } from '../types'
 
 type Props = {
   reembolso: any
@@ -53,8 +54,8 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
       }).eq('id', r.id)
 
       // 2. Generar OP automática al usuario como beneficiario
-      const folioCount = (await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })).count ?? 0
-      const folio = `OP-${new Date().getFullYear()}-${String(Number(folioCount) + 1).padStart(4, '0')}`
+      const { count: folioCount } = await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })
+      const folio = folioGen('OP', Number(folioCount ?? 0) + 1)
 
       const { data: opData } = await dbComp.from('ordenes_pago').insert({
         folio,
@@ -69,7 +70,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
         id_centro_costo_fk: null,
         id_seccion_fk:      null,
         id_frente_fk:       null,
-        created_by:       authUser?.nombre ?? authUser?.email ?? null,
+        created_by:       authUser?.nombre ?? null,
       }).select('id').single()
 
       // 3. Enlazar OP al reembolso

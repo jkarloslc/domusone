@@ -28,19 +28,19 @@ export default function FondoModal({ fondo, onClose, onSaved }: Props) {
   })
 
   useEffect(() => {
-    dbCfg.from('usuarios').select('email, nombre_completo, nombre').order('nombre')
+    dbCfg.from('usuarios').select('id, nombre, rol').eq('activo', true).order('nombre')
       .then(({ data }) => setUsuarios(data ?? []))
   }, [])
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  const handleSelectUsuario = (email: string) => {
-    const u = usuarios.find(u => u.email === email)
+  const handleSelectUsuario = (id: string) => {
+    const u = usuarios.find(u => u.id === id)
     setForm(f => ({
       ...f,
-      id_usuario_fk:  email,
-      usuario_nombre: u ? (u.nombre_completo ?? u.nombre ?? email) : '',
+      id_usuario_fk:  id,
+      usuario_nombre: u?.nombre ?? id,
     }))
   }
 
@@ -62,7 +62,7 @@ export default function FondoModal({ fondo, onClose, onSaved }: Props) {
     }
 
     if (isNew) {
-      payload.created_by = authUser?.nombre ?? authUser?.email ?? null
+      payload.created_by = authUser?.nombre ?? null
       const { error: err } = await dbComp.from('fondos_caja_chica').insert(payload)
       if (err) { setError(err.message); setSaving(false); return }
     } else {
@@ -91,7 +91,7 @@ export default function FondoModal({ fondo, onClose, onSaved }: Props) {
             <select className="select" value={form.id_usuario_fk} onChange={e => handleSelectUsuario(e.target.value)}>
               <option value="">— Seleccionar —</option>
               {usuarios.map(u => (
-                <option key={u.email} value={u.email}>{u.nombre_completo ?? u.nombre ?? u.email}</option>
+                <option key={u.id} value={u.id}>{u.nombre} ({u.rol})</option>
               ))}
             </select>
           </div>
