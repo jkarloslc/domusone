@@ -68,8 +68,7 @@ export default function UsuariosPage() {
       </div>
 
       {/* Guía de roles */}
-   
-   <!--<div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+   <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
         {ROLES.map(r => (
           <div key={r.value} className="card" style={{ padding: '10px 14px', minWidth: 140 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', marginBottom: 2 }}>{r.label}</div>
@@ -77,7 +76,6 @@ export default function UsuariosPage() {
           </div>
         ))}
       </div>
-
       <div className="card" style={{ overflow: 'hidden' }}>
         <table>
           <thead>
@@ -88,8 +86,7 @@ export default function UsuariosPage() {
               <th>Desde</th>
               <th style={{ width: 80 }}></th>
             </tr>
-          </thead><!--
-
+          </thead>
           <tbody>
             {loading ? (
               <tr><td colSpan={5} style={{ textAlign: 'center', padding: 40 }}><Loader size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--blue)' }} /></td></tr>
