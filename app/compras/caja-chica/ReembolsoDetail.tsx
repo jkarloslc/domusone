@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
-import { X, CheckCircle, XCircle, ExternalLink, DollarSign } from 'lucide-react'
+import { X, CheckCircle, XCircle, ExternalLink, DollarSign, Printer } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
-import { folioGen } from '../types'
+import { folioGen, fmt } from '../types'
 
 type Props = {
   reembolso: any
@@ -89,6 +89,171 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
   }
 
   const canAuthorize = canAuth && r.status === 'Pendiente Auth'
+
+  const imprimir = async () => {
+    // Cargar configuración de organización
+    let orgNombre    = 'Organización'
+    let orgSubtitulo = ''
+    let orgLogo      = ''
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((row: any) => {
+        if (row.clave === 'org_nombre')    orgNombre    = row.valor ?? orgNombre
+        if (row.clave === 'org_subtitulo') orgSubtitulo = row.valor ?? ''
+        if (row.clave === 'org_logo_url')  orgLogo      = row.valor ?? ''
+      })
+    } catch {}
+
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:48px;height:48px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;">🏢</div>`
+
+    const statusLabel: Record<string, string> = {
+      'Borrador': 'BORRADOR', 'Pendiente Auth': 'PENDIENTE AUTORIZACIÓN',
+      'Autorizado': 'AUTORIZADO', 'Pagado': 'PAGADO', 'Rechazado': 'RECHAZADO',
+    }
+    const statusColor: Record<string, string> = {
+      'Borrador': '#64748b', 'Pendiente Auth': '#d97706',
+      'Autorizado': '#059669', 'Pagado': '#2563eb', 'Rechazado': '#dc2626',
+    }
+
+    const filasDetalle = detalles.map((d, i) => `
+      <tr>
+        <td style="text-align:center;color:#64748b">${i + 1}</td>
+        <td><strong>${d.concepto}</strong></td>
+        <td style="text-align:center">${d.categoria}</td>
+        <td style="text-align:center">${d.tipo_comprobante}${d.num_comprobante ? `<br/><span style="font-family:monospace;font-size:10px;color:#64748b">${d.num_comprobante}</span>` : ''}</td>
+        <td style="font-size:11px;color:#475569">
+          ${d.id_centro_costo_fk ? `<span class="chip">${ccMap[d.id_centro_costo_fk] ?? '—'}</span>` : ''}
+          ${d.id_seccion_fk      ? `<span class="chip">${secMap[d.id_seccion_fk] ?? '—'}</span>`      : ''}
+          ${d.id_frente_fk       ? `<span class="chip">${frtMap[d.id_frente_fk] ?? '—'}</span>`       : ''}
+        </td>
+        <td style="text-align:right;font-weight:600">${fmt(d.monto)}</td>
+      </tr>`).join('')
+
+    const html = `<!DOCTYPE html>
+<html lang="es"><head>
+  <meta charset="UTF-8"/>
+  <title>Reembolso ${r.folio ?? '#' + r.id}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 36px 40px; }
+    .header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 20px; }
+    .org-nombre { font-size: 17px; font-weight: 700; color: #0D4F80; }
+    .org-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .doc-block { margin-left: auto; text-align: right; }
+    .doc-title { font-size: 15px; font-weight: 700; color: #0D4F80; }
+    .doc-folio { font-size: 12px; color: #64748b; margin-top: 3px; }
+    .meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 20px; }
+    .meta-item { padding: 10px 14px; border-right: 1px solid #e2e8f0; }
+    .meta-item:last-child { border-right: none; }
+    .meta-label { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px; }
+    .meta-value { font-size: 13px; font-weight: 600; color: #1e293b; }
+    .status-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+      color: ${statusColor[r.status] ?? '#64748b'}; background: ${(statusColor[r.status] ?? '#64748b') + '18'};
+      border: 1px solid ${(statusColor[r.status] ?? '#64748b') + '40'}; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+    thead th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+      padding: 8px 10px; border: 1px solid #e2e8f0; text-align: left; color: #475569; }
+    tbody td { border: 1px solid #e2e8f0; padding: 9px 10px; vertical-align: top; font-size: 12px; }
+    tbody tr:nth-child(even) td { background: #f8fafc; }
+    .chip { display: inline-block; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+      border-radius: 10px; padding: 1px 7px; font-size: 10px; margin: 1px 2px 1px 0; }
+    .total-row td { border: 1px solid #e2e8f0; padding: 10px 12px; }
+    .total-label { background: #eff6ff; font-size: 11px; font-weight: 700; color: #0D4F80; text-transform: uppercase; letter-spacing: .06em; text-align: right; }
+    .total-value { background: #eff6ff; font-size: 18px; font-weight: 700; color: #0D4F80; text-align: right; }
+    .obs { margin: 14px 0; padding: 10px 14px; background: #f8fafc; border-left: 3px solid #cbd5e1; font-size: 12px; color: #475569; border-radius: 0 4px 4px 0; }
+    .notas-auth { margin: 10px 0; padding: 10px 14px; background: #fefce8; border-left: 3px solid #fbbf24; font-size: 12px; color: #78350f; border-radius: 0 4px 4px 0; }
+    .firmas { display: flex; gap: 50px; margin-top: 56px; justify-content: center; }
+    .firma { text-align: center; width: 160px; }
+    .firma-linea { border-top: 1px solid #1e293b; padding-top: 8px; font-size: 10px; color: #64748b; }
+    @page { margin: 1.2cm; }
+    @media print { body { padding: 0; } }
+  </style>
+</head><body>
+
+  <!-- Encabezado organización -->
+  <div class="header">
+    ${logoHtml}
+    <div>
+      <div class="org-nombre">${orgNombre}</div>
+      ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+    </div>
+    <div class="doc-block">
+      <div class="doc-title">Comprobante de Reembolso</div>
+      <div class="doc-title" style="font-size:12px;color:#475569;font-weight:400;">Caja Chica</div>
+      <div class="doc-folio">Folio: <strong>${r.folio ?? '#' + r.id}</strong></div>
+    </div>
+  </div>
+
+  <!-- Metadatos -->
+  <div class="meta">
+    <div class="meta-item">
+      <div class="meta-label">Solicitante</div>
+      <div class="meta-value">${r.usuario_nombre ?? r.id_usuario_fk}</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Fecha</div>
+      <div class="meta-value">${r.fecha}</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Status</div>
+      <div class="meta-value"><span class="status-badge">${statusLabel[r.status] ?? r.status}</span></div>
+    </div>
+  </div>
+
+  ${r.observaciones ? `<div class="obs"><strong>Concepto general:</strong> ${r.observaciones}</div>` : ''}
+
+  <!-- Tabla de detalle -->
+  <table>
+    <thead>
+      <tr>
+        <th style="width:32px">#</th>
+        <th>Concepto</th>
+        <th style="width:90px;text-align:center">Categoría</th>
+        <th style="width:120px;text-align:center">Comprobante</th>
+        <th>CC / Sección / Frente</th>
+        <th style="width:90px;text-align:right">Monto</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${filasDetalle}
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="5" class="total-label">Total Reembolso</td>
+        <td class="total-value">${fmt(r.total)}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  ${r.notas_auth ? `<div class="notas-auth"><strong>Notas del autorizador:</strong> ${r.notas_auth}</div>` : ''}
+  ${r.id_op_fk   ? `<p style="font-size:11px;color:#059669;margin-top:8px;">✓ Orden de Pago generada: #${r.id_op_fk}</p>` : ''}
+
+  <!-- Firmas -->
+  <div class="firmas">
+    <div class="firma"><div class="firma-linea">Elaboró</div></div>
+    <div class="firma"><div class="firma-linea">Autorizó</div></div>
+    <div class="firma"><div class="firma-linea">Recibió / Conforme</div></div>
+  </div>
+
+</body></html>`
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
+  }
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -211,7 +376,10 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
           )}
         </div>
 
-        <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+        <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <button className="btn-secondary" onClick={imprimir} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Printer size={13} /> Imprimir
+          </button>
           <button className="btn-secondary" onClick={onClose}>Cerrar</button>
         </div>
       </div>
