@@ -6,6 +6,8 @@ import type { User } from '@supabase/supabase-js'
 type Rol =
   | 'superadmin'
   | 'admin'
+  | 'usuarioadmin'
+  | 'usuariomantto'
   | 'atencion_residentes'
   | 'cobranza'
   | 'vigilancia'
@@ -49,11 +51,17 @@ const ADMIN_MODULOS = [
   'proyectos', 'mantenimiento', 'comunicados',
   'compras', 'tesoreria', 'reportes', 'catalogos',
 ]
+// usuarioadmin: igual que admin pero sin mantenimiento
+const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
+// usuariomantto: igual que admin pero sin tesoreria
+const USUARIOMANTTO_MODULOS = ADMIN_MODULOS.filter(m => m !== 'tesoreria')
 
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
 const LEER: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
   admin:               ADMIN_MODULOS,
+  usuarioadmin:        USUARIOADMIN_MODULOS,
+  usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'incidencias', 'proyectos', 'mantenimiento', 'comunicados', 'reportes'],
   cobranza:            ['lotes', 'propietarios', 'cobranza', 'facturas', 'reportes'],
@@ -73,6 +81,8 @@ const LEER: Record<Rol, string[] | '*'> = {
 const ESCRIBIR: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
   admin:               ADMIN_MODULOS,
+  usuarioadmin:        USUARIOADMIN_MODULOS,
+  usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'incidencias', 'proyectos', 'mantenimiento', 'comunicados'],
   cobranza:            ['cobranza', 'facturas'],
@@ -92,7 +102,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
 const ROLES_DELETE: Rol[] = ['superadmin']
 
 // ── Roles que pueden autorizar documentos ─────────────────────────────────────
-const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria']
+const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'usuarioadmin', 'usuariomantto', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria']
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthCtx>({
@@ -184,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!authUser) return false
     const r = authUser.rol
     // superadmin / admin / fraccionamiento: acceso total
-    if (r === 'superadmin' || r === 'admin' || r === 'fraccionamiento') return 'all'
+    if (r === 'superadmin' || r === 'admin' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento') return 'all'
     if (r === 'compras' || r === 'compras_supervisor') return 'compras'
     if (r === 'almacen') {
       // almacen ve sus módulos + caja chica

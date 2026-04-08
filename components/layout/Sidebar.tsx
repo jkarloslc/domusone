@@ -11,6 +11,8 @@ import { useAuth } from '@/lib/AuthContext'
 type Rol =
   | 'superadmin'
   | 'admin'
+  | 'usuarioadmin'
+  | 'usuariomantto'
   | 'atencion_residentes'
   | 'cobranza'
   | 'vigilancia'
@@ -28,6 +30,8 @@ type NavSection = { section: string; items: NavItem[] }
 const ROL_LABEL: Record<Rol, string> = {
   superadmin:          'Super Administrador',
   admin:               'Administrador',
+  usuarioadmin:        'Administrador (Op.)',
+  usuariomantto:       'Administrador (Mant.)',
   atencion_residentes: 'Atención a Residentes',
   cobranza:            'Cobranza',
   vigilancia:          'Vigilancia',
@@ -39,6 +43,13 @@ const ROL_LABEL: Record<Rol, string> = {
   tesoreria:           'Tesorería',
   seguridad:           'Seguridad',
 }
+
+// Ítem de reportes con estilo diferenciado (pie de sección)
+const RPT = (grupo: string): NavItem => ({
+  label: 'Reportes',
+  href:  `/reportes?grupo=${grupo}`,
+  icon:  BarChart3,
+})
 
 const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
@@ -53,21 +64,24 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Contratos',      href: '/contratos',      icon: FileText      },
       { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
       { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+      RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+      RPT('compras'),
     ]},
     { section: 'Tesorería', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      RPT('tesoreria'),
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
     ]},
     { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
       { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
       { label: 'Usuarios',       href: '/usuarios',       icon: Users         },
       { label: 'Config.',        href: '/configuracion',  icon: Settings      },
@@ -85,21 +99,84 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Contratos',      href: '/contratos',      icon: FileText      },
       { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
       { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+      RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+      RPT('compras'),
     ]},
     { section: 'Tesorería', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      RPT('tesoreria'),
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
     ]},
     { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+      { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
+    ]},
+  ],
+
+  // Admin sin Mantenimiento
+  usuarioadmin: [
+    { section: 'Residencial', items: [
+      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
+      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
+      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
+      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
+      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
+      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
+      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
+      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      RPT('residencial'),
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+      RPT('compras'),
+    ]},
+    { section: 'Tesorería', items: [
+      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      RPT('tesoreria'),
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+    ]},
+    { section: 'Sistema', items: [
+      { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
+    ]},
+  ],
+
+  // Admin sin Tesorería
+  usuariomantto: [
+    { section: 'Residencial', items: [
+      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
+      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
+      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
+      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
+      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
+      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
+      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
+      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      RPT('residencial'),
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+      RPT('mantenimiento'),
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+      RPT('compras'),
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+    ]},
+    { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
     ]},
   ],
@@ -112,15 +189,14 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
       { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
       { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+      RPT('mantenimiento'),
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
-    ]},
-    { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
     ]},
   ],
 
@@ -130,9 +206,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
       { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
       { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
-    ]},
-    { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+      RPT('residencial'),
     ]},
   ],
 
@@ -148,18 +222,14 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   compras: [
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
-    ]},
-    { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+      RPT('compras'),
     ]},
   ],
 
   almacen: [
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
-    ]},
-    { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+      RPT('compras'),
     ]},
   ],
 
@@ -170,9 +240,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-    ]},
-    { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+      RPT('mantenimiento'),
     ]},
   ],
 
@@ -187,39 +255,36 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
       { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
       { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+      RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+      RPT('compras'),
     ]},
     { section: 'Tesorería', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      RPT('tesoreria'),
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
-    ]},
-    { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
     ]},
   ],
 
   tesoreria: [
     { section: 'Tesorería', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
-    ]},
-    { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+      RPT('tesoreria'),
     ]},
   ],
 
   compras_supervisor: [
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
-    ]},
-    { section: 'Sistema', items: [
-      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+      RPT('compras'),
     ]},
   ],
 
@@ -300,16 +365,26 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               {sec.section}
             </div>
             {sec.items.map(item => {
-              const Icon   = item.icon
-              const active = pathname.startsWith(item.href)
+              const Icon    = item.icon
+              const isRpt   = item.label === 'Reportes'
+              const active  = isRpt
+                ? pathname.startsWith('/reportes')
+                : pathname.startsWith(item.href)
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
                   className={`nav-item ${active ? 'active' : ''}`}
+                  style={isRpt ? {
+                    marginTop: 4,
+                    opacity: 0.7,
+                    fontSize: 11,
+                    borderTop: '1px dashed var(--surface-700)',
+                    paddingTop: 6,
+                  } : undefined}
                 >
-                  <Icon size={15} />
+                  <Icon size={isRpt ? 13 : 15} />
                   <span>{item.label}</span>
                 </Link>
               )

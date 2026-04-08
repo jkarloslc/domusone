@@ -17,7 +17,9 @@ export default function LoginPage() {
   const homeRoute = (rol?: string) => {
     switch (rol) {
       case 'superadmin':
-      case 'admin':         return '/lotes'
+      case 'admin':
+      case 'usuarioadmin':
+      case 'usuariomantto': return '/lotes'
       case 'compras':
       case 'compras_supervisor':
       case 'almacen':       return '/compras'

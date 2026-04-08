@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2 } from 'lucide-react'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
@@ -23,6 +24,7 @@ import ReporteEstadoCuenta from './ReporteEstadoCuenta'
 
 const GRUPOS = [
   {
+    slug:  'residencial',
     label: 'Residencial',
     color: 'var(--blue)',
     reportes: [
@@ -37,6 +39,7 @@ const GRUPOS = [
     ],
   },
   {
+    slug:  'mantenimiento',
     label: 'Mantenimiento',
     color: '#7c3aed',
     reportes: [
@@ -45,6 +48,7 @@ const GRUPOS = [
     ],
   },
   {
+    slug:  'tesoreria',
     label: 'Tesorería',
     color: '#0f766e',
     reportes: [
@@ -53,6 +57,7 @@ const GRUPOS = [
     ],
   },
   {
+    slug:  'compras',
     label: 'Compras e Inventarios',
     color: '#059669',
     reportes: [
@@ -69,22 +74,37 @@ const GRUPOS = [
 
 const ALL = GRUPOS.flatMap(g => g.reportes)
 
-export default function ReportesPage() {
+function ReportesContent() {
+  const searchParams  = useSearchParams()
+  const grupoParam    = searchParams.get('grupo')
   const [active, setActive] = useState<string | null>(null)
-  const current = ALL.find(r => r.id === active)
+  const current  = ALL.find(r => r.id === active)
+
+  // Si viene ?grupo= filtramos; si no, mostramos todos
+  const gruposVisibles = grupoParam
+    ? GRUPOS.filter(g => g.slug === grupoParam)
+    : GRUPOS
+  const grupoActivo = gruposVisibles[0]
+
+  const handleBack = () => setActive(null)
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <BarChart3 size={16} style={{ color: 'var(--blue)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+          <BarChart3 size={16} style={{ color: grupoActivo?.color ?? 'var(--blue)' }} />
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            {grupoParam ? grupoActivo?.label : 'Módulo'}
+          </span>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, letterSpacing: '-0.01em' }}>Reportes</h1>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, letterSpacing: '-0.01em' }}>
+          Reportes
+        </h1>
+        {/* Breadcrumb cuando hay reporte activo */}
         {active && current && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 13, color: 'var(--text-secondary)' }}>
-            <button onClick={() => setActive(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontSize: 13, padding: 0 }}>
-              Todos los reportes
+            <button onClick={handleBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontSize: 13, padding: 0 }}>
+              {grupoParam ? (grupoActivo?.label ?? 'Reportes') : 'Todos los reportes'}
             </button>
             <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />
             <span>{current.label}</span>
@@ -93,7 +113,7 @@ export default function ReportesPage() {
       </div>
 
       {/* Grid agrupado */}
-      {!active && GRUPOS.map(grupo => (
+      {!active && gruposVisibles.map(grupo => (
         <div key={grupo.label} style={{ marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <div style={{ width: 4, height: 16, borderRadius: 2, background: grupo.color }} />
@@ -146,5 +166,13 @@ export default function ReportesPage() {
       {active === 'kardex'          && <ReporteKardex />}
       {active === 'transferencias'  && <ReporteTransferencias />}
     </div>
+  )
+}
+
+export default function ReportesPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, color: 'var(--text-muted)' }}>Cargando reportes…</div>}>
+      <ReportesContent />
+    </Suspense>
   )
 }
