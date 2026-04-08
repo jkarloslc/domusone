@@ -183,14 +183,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const canCompras = (key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | false => {
     if (!authUser) return false
     const r = authUser.rol
+    // superadmin / admin / fraccionamiento: acceso total
     if (r === 'superadmin' || r === 'admin' || r === 'fraccionamiento') return 'all'
     if (r === 'compras' || r === 'compras_supervisor') return 'compras'
-    if (r === 'almacen') return 'almacen'
+    if (r === 'almacen') {
+      // almacen ve sus módulos + caja chica
+      const MODS_ALMACEN = ['recepciones', 'transferencias', 'inventario', 'articulos', 'almacenes', 'caja-chica']
+      if (!key) return 'almacen'
+      return MODS_ALMACEN.includes(key) ? 'almacen' : false
+    }
     if (r === 'seguridad') {
-      const MODS_SEGURIDAD = ['requisiciones', 'transferencias']
+      const MODS_SEGURIDAD = ['requisiciones', 'transferencias', 'caja-chica']
       if (!key) return 'seguridad'
       return MODS_SEGURIDAD.includes(key) ? 'seguridad' : false
     }
+    // Cualquier rol autenticado puede ver caja-chica (para registrar reembolsos propios)
+    const MODS_GENERAL = ['caja-chica']
+    if (key && MODS_GENERAL.includes(key)) return 'compras'
     return false
   }
 

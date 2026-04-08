@@ -4,7 +4,7 @@ import { dbComp } from '@/lib/supabase'
 import {
   ShoppingCart, Package, Users, Warehouse, ClipboardList,
   FileText, Truck, ArrowLeftRight, ChevronRight,
-  AlertTriangle, CheckCircle, Clock, Layers
+  AlertTriangle, CheckCircle, Clock, Layers, Wallet
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
@@ -23,6 +23,7 @@ const MODULOS = [
   { key: 'proveedores',   label: 'Proveedores',             icon: Users,         color: '#92400e', desc: 'Catálogo de proveedores' },
   { key: 'almacenes',     label: 'Almacenes',    icon: Warehouse,     color: '#0891b2', desc: 'Almacenes y centros de costo' },
   { key: 'areas',         label: 'Áreas Solicitantes',      icon: Layers,        color: '#7c3aed', desc: 'Áreas para requisiciones' },
+  { key: 'caja-chica',   label: 'Caja Chica',              icon: Wallet,        color: '#d97706', desc: 'Fondos y reembolsos de gastos menores' },
 ]
 
 export default function ComprasPage() {
