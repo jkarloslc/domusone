@@ -7,16 +7,18 @@ import { useAuth } from '@/lib/AuthContext'
 type Usuario = { id: string; nombre: string; rol: string; activo: boolean; created_at: string; email?: string }
 
 const ROLES = [
-  { value: 'admin',             label: 'Administrador',         desc: 'Acceso total — único que puede eliminar registros' },
-  { value: 'atencion',          label: 'Atención a Residentes',  desc: 'Lotes, propietarios, contratos, escrituras, servicios, incidencias, reportes' },
+  { value: 'superadmin',        label: 'Super Administrador',   desc: 'Acceso total incluyendo Usuarios, Config y eliminación de registros' },
+  { value: 'admin',             label: 'Administrador',         desc: 'Acceso completo a todos los módulos operativos. Sin acceso a Usuarios ni Config.' },
+  { value: 'fraccionamiento',   label: 'Fraccionamiento',       desc: 'Acceso amplio operativo: residencial, compras, tesorería, reportes' },
+  { value: 'atencion_residentes', label: 'Atención a Residentes', desc: 'Lotes, propietarios, contratos, escrituras, incidencias, reportes' },
   { value: 'cobranza',          label: 'Cobranza',               desc: 'Lotes y propietarios en consulta, cobranza, facturas, reportes' },
-  { value: 'vigilancia',        label: 'Vigilancia',             desc: 'Accesos, incidencias, lotes y propietarios en consulta' },
+  { value: 'tesoreria',         label: 'Tesorería',              desc: 'Módulo de tesorería y CXP, reportes' },
   { value: 'compras',           label: 'Compras',                desc: 'Requisiciones, cotizaciones, OC, OP, artículos, proveedores, CXP' },
-  { value: 'almacenista',       label: 'Almacenista',            desc: 'Requisiciones, transferencias, artículos, inventario en consulta' },
-  { value: 'compras_supervisor',label: 'Compras Supervisor',     desc: 'Todo compras + autorización de cotizaciones, OC y requisiciones' },
-  { value: 'accesos',   label: 'Accesos',        desc: 'Control de accesos y lotes' },
-  { value: 'seguridad', label: 'Seguridad',      desc: 'Accesos e incidencias' },
-  { value: 'residente', label: 'Residente',      desc: 'Solo su lote' },
+  { value: 'compras_supervisor',label: 'Supervisor de Compras',  desc: 'Todo compras + autorización de cotizaciones, OC y requisiciones' },
+  { value: 'almacen',           label: 'Almacén',                desc: 'Recepciones, transferencias, artículos, inventario' },
+  { value: 'mantenimiento',     label: 'Mantenimiento',          desc: 'Órdenes de trabajo y proyectos de mantenimiento' },
+  { value: 'vigilancia',        label: 'Vigilancia',             desc: 'Accesos, incidencias, lotes y propietarios en consulta' },
+  { value: 'seguridad',         label: 'Seguridad',              desc: 'Accesos, incidencias y requisiciones en consulta' },
 ]
 
 export default function UsuariosPage() {
@@ -37,14 +39,15 @@ export default function UsuariosPage() {
 
   useEffect(() => { fetchData() }, [])
 
-  // Solo admin puede ver esta página
-  if (authUser?.rol !== 'admin') {
+  // Solo superadmin puede ver esta página
+  if (authUser?.rol !== 'superadmin') {
     return (
       <div style={{ padding: '32px 36px' }}>
-        <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>🔒 Acceso solo para administradores</div>
+        <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>🔒 Acceso exclusivo para Super Administrador</div>
       </div>
     )
   }
+
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>

@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 import type { User } from '@supabase/supabase-js'
 
 type Rol =
+  | 'superadmin'
   | 'admin'
   | 'atencion_residentes'
   | 'cobranza'
@@ -41,9 +42,18 @@ type AuthCtx = {
   canAuth:    (modulo?: string) => boolean
 }
 
+// Módulos que admin puede ver/escribir (todo excepto usuarios y configuracion)
+const ADMIN_MODULOS = [
+  'lotes', 'propietarios', 'contratos', 'escrituras',
+  'cobranza', 'facturas', 'accesos', 'incidencias',
+  'proyectos', 'mantenimiento', 'comunicados',
+  'compras', 'tesoreria', 'reportes', 'catalogos',
+]
+
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
 const LEER: Record<Rol, string[] | '*'> = {
-  admin:               '*',
+  superadmin:          '*',
+  admin:               ADMIN_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'incidencias', 'proyectos', 'mantenimiento', 'comunicados', 'reportes'],
   cobranza:            ['lotes', 'propietarios', 'cobranza', 'facturas', 'reportes'],
@@ -61,7 +71,8 @@ const LEER: Record<Rol, string[] | '*'> = {
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
 const ESCRIBIR: Record<Rol, string[] | '*'> = {
-  admin:               '*',
+  superadmin:          '*',
+  admin:               ADMIN_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'incidencias', 'proyectos', 'mantenimiento', 'comunicados'],
   cobranza:            ['cobranza', 'facturas'],
@@ -77,11 +88,11 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   seguridad:           ['accesos', 'incidencias', 'requisiciones'],
 }
 
-// ── Solo admin puede eliminar ──────────────────────────────────────────────────
-const ROLES_DELETE: Rol[] = ['admin']
+// ── Solo superadmin puede eliminar ────────────────────────────────────────────
+const ROLES_DELETE: Rol[] = ['superadmin']
 
 // ── Roles que pueden autorizar documentos ─────────────────────────────────────
-const ROLES_AUTH: Rol[] = ['admin', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria']
+const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria']
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthCtx>({
@@ -172,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const canCompras = (key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | false => {
     if (!authUser) return false
     const r = authUser.rol
-    if (r === 'admin' || r === 'fraccionamiento') return 'all'
+    if (r === 'superadmin' || r === 'admin' || r === 'fraccionamiento') return 'all'
     if (r === 'compras' || r === 'compras_supervisor') return 'compras'
     if (r === 'almacen') return 'almacen'
     if (r === 'seguridad') {

@@ -16,6 +16,8 @@ export default function LoginPage() {
   // Ruta de inicio según el rol del usuario
   const homeRoute = (rol?: string) => {
     switch (rol) {
+      case 'superadmin':
+      case 'admin':         return '/lotes'
       case 'compras':
       case 'compras_supervisor':
       case 'almacen':       return '/compras'

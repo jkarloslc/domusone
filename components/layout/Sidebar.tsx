@@ -9,6 +9,7 @@ import {
 import { useAuth } from '@/lib/AuthContext'
 
 type Rol =
+  | 'superadmin'
   | 'admin'
   | 'atencion_residentes'
   | 'cobranza'
@@ -25,6 +26,7 @@ type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
 
 const ROL_LABEL: Record<Rol, string> = {
+  superadmin:          'Super Administrador',
   admin:               'Administrador',
   atencion_residentes: 'Atención a Residentes',
   cobranza:            'Cobranza',
@@ -40,7 +42,7 @@ const ROL_LABEL: Record<Rol, string> = {
 
 const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
-  admin: [
+  superadmin: [
     { section: 'Residencial', items: [
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
@@ -69,6 +71,36 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
       { label: 'Usuarios',       href: '/usuarios',       icon: Users         },
       { label: 'Config.',        href: '/configuracion',  icon: Settings      },
+    ]},
+  ],
+
+  admin: [
+    { section: 'Residencial', items: [
+      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
+      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
+      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
+      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
+      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
+      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
+      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
+      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Tesorería', items: [
+      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+    ]},
+    { section: 'Sistema', items: [
+      { label: 'Reportes',       href: '/reportes',       icon: BarChart3     },
+      { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
     ]},
   ],
 
