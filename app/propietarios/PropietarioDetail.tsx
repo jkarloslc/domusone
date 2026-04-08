@@ -15,13 +15,16 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
       .then(({ data }) => setTelefonos(data ?? []))
     dbCat.from('propietarios_correos').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
       .then(({ data }) => setCorreos(data ?? []))
-    dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', p.id)
-      .then(async ({ data }) => {
+    dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', Number(p.id))
+      .then(async ({ data, error }) => {
+        console.log('[PropietarioDetail] propietario id:', p.id, typeof p.id)
+        console.log('[PropietarioDetail] propietarios_lotes data:', data, 'error:', error)
         const rows = data ?? []
         if (!rows.length) { setLotes([]); return }
         const loteIds = rows.map((r: any) => r.id_lote_fk).filter(Boolean)
-        const { data: lotesData } = await dbCat.from('lotes')
+        const { data: lotesData, error: lotesError } = await dbCat.from('lotes')
           .select('id, cve_lote, tipo_lote, status_lote').in('id', loteIds)
+        console.log('[PropietarioDetail] lotes data:', lotesData, 'error:', lotesError)
         const lotesMap: Record<number, any> = {}
         ;(lotesData ?? []).forEach((l: any) => { lotesMap[l.id] = l })
         setLotes(rows.map((r: any) => ({ ...r, lotes: lotesMap[r.id_lote_fk] ?? null })))
