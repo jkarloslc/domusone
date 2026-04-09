@@ -13,7 +13,7 @@ import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_
 const PAGE_SIZE = 20
 
 export default function OrdenesPage() {
-  const { canWrite } = useAuth()
+  const { canWrite, canAuth: canAuthFn } = useAuth()
   const router = useRouter()
   const { authUser } = useAuth()
   const [rows, setRows]       = useState<any[]>([])
@@ -45,7 +45,7 @@ export default function OrdenesPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const canAuth = authUser?.rol === 'admin' || authUser?.rol === 'compras' || authUser?.rol === 'compras_supervisor' || authUser?.rol === 'fraccionamiento'
+  const canAuth = canAuthFn('ordenes')
 
   const handleAuth = async (id: number, aprobar: boolean, comentario = '') => {
     await dbComp.from('ordenes_compra').update({
