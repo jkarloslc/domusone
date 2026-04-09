@@ -80,9 +80,9 @@ const LEER: Record<Rol, string[] | '*'> = {
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
 const ESCRIBIR: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
-  admin:               '*', // --<!--ADMIN_MODULOS,-->-------------
-  usuarioadmin:        '*', // ---- USUARIOADMIN_MODULOS,-----
-  usuariomantto:        '*', // ------USUARIOMANTTO_MODULOS,-----
+  admin:               ADMIN_MODULOS,
+  usuarioadmin:        USUARIOADMIN_MODULOS,
+  usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'incidencias', 'proyectos', 'mantenimiento', 'comunicados'],
   cobranza:            ['cobranza', 'facturas'],
@@ -98,8 +98,8 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   seguridad:           ['accesos', 'incidencias', 'requisiciones'],
 }
 
-// ── Solo superadmin puede eliminar ────────────────────────────────────────────
-const ROLES_DELETE: Rol[] = ['superadmin']
+// ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
+const ROLES_DELETE: Rol[] = ['superadmin', 'admin']
 
 // ── Roles que pueden autorizar documentos ─────────────────────────────────────
 const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'usuarioadmin', 'usuariomantto', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria']
@@ -213,8 +213,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false
   }
 
-  /** ¿Puede autorizar documentos? (Requisiciones, OC, Transferencias) */
-  const canAuth = (_modulo?: string): boolean => {
+  /**
+   * ¿Puede autorizar documentos? (Requisiciones, OC, Transferencias)
+   * El parámetro `modulo` se reserva para futuras restricciones por módulo.
+   * Actualmente verifica solo si el rol está en ROLES_AUTH.
+   */
+  const canAuth = (modulo?: string): boolean => {
     if (!authUser) return false
     return ROLES_AUTH.includes(authUser.rol)
   }
