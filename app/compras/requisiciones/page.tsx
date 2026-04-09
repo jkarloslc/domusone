@@ -15,7 +15,7 @@ const PAGE_SIZE = 20
 type Det = { id?: number; id_articulo_fk: number | null; descripcion: string; cantidad: string; unidad: string; notas: string }
 
 export default function RequisicionesPage() {
-  const { canWrite, canDelete } = useAuth()
+  const { canWrite, canDelete, canAuth: canAuthFn } = useAuth()
   const router  = useRouter()
   const { authUser } = useAuth()
   const [rows, setRows]       = useState<any[]>([])
@@ -53,7 +53,7 @@ export default function RequisicionesPage() {
     setDetail(null); fetchData()
   }
 
-  const canAuth = authUser?.rol === 'superadmin' ||authUser?.rol === 'usuarioadmin' || authUser?.rol === 'admin' || authUser?.rol === 'compras_supervisor' || authUser?.rol === 'usuariomantto'
+  const canAuth = canAuthFn('requisiciones')
 
   return (
     <div style={{ padding: '32px 36px' }}>
