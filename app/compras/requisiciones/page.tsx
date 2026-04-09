@@ -15,9 +15,8 @@ const PAGE_SIZE = 20
 type Det = { id?: number; id_articulo_fk: number | null; descripcion: string; cantidad: string; unidad: string; notas: string }
 
 export default function RequisicionesPage() {
-  const { canWrite, canDelete, canAuth: canAuthFn } = useAuth()
+  const { authUser, canWrite, canDelete, canAuth: canAuthFn } = useAuth()
   const router  = useRouter()
-  const { authUser } = useAuth()
   const [rows, setRows]       = useState<any[]>([])
   const [total, setTotal]     = useState(0)
   const [page, setPage]       = useState(0)
