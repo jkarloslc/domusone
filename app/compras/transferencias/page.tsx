@@ -138,8 +138,8 @@ export default function TransferenciasPage() {
     setDetail(null); fetchData()
   }
 
-  const isAlmacenista = authUser?.rol === 'admin' || authUser?.rol === 'almacenista' || authUser?.rol === 'compras_supervisor'
-  const puedeAutorizar = canAuth('transferencias') || authUser?.rol === 'admin'
+  const isAlmacenista = authUser?.rol === 'admin' || authUser?.rol === 'almacen' || authUser?.rol === 'compras_supervisor'
+  const puedeAutorizar = canAuth('transferencias')
 
   const statusColor = (s: string) =>
     s === 'Solicitada'  ? '#d97706' :
