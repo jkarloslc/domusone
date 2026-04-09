@@ -80,9 +80,9 @@ const LEER: Record<Rol, string[] | '*'> = {
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
 const ESCRIBIR: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
-  admin:               ADMIN_MODULOS,
-  usuarioadmin:        USUARIOADMIN_MODULOS,
-  usuariomantto:       USUARIOMANTTO_MODULOS,
+  admin:               '*', // --<!--ADMIN_MODULOS,-->-------------
+  usuarioadmin:        '*', // ---- USUARIOADMIN_MODULOS,-----
+  usuariomantto:        '*', // ------USUARIOMANTTO_MODULOS,-----
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'incidencias', 'proyectos', 'mantenimiento', 'comunicados'],
   cobranza:            ['cobranza', 'facturas'],
