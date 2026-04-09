@@ -180,7 +180,7 @@ export default function CatalogosPage() {
   const [activeKey, setActiveKey] = useState(CATALOGOS[0].key)
   const active = CATALOGOS.find(c => c.key === activeKey)!
 
-  if (authUser?.rol !== 'admin') {
+  if (authUser?.rol !== 'superadmin' && authUser?.rol !== 'admin') {
     return (
       <div style={{ padding: '32px 36px' }}>
         <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
