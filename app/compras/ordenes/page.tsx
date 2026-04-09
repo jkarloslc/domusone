@@ -13,9 +13,8 @@ import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_
 const PAGE_SIZE = 20
 
 export default function OrdenesPage() {
-  const { canWrite, canAuth: canAuthFn } = useAuth()
+  const { authUser, canWrite, canAuth: canAuthFn } = useAuth()
   const router = useRouter()
-  const { authUser } = useAuth()
   const [rows, setRows]       = useState<any[]>([])
   const [provMap, setProvMap] = useState<Record<number, string>>({})
   const [total, setTotal]     = useState(0)
