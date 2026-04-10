@@ -126,7 +126,6 @@ export default function OrdenesPagoPage() {
               <th>Folio</th>
               <th>Proveedor</th>
               <th>Concepto / Tipo</th>
-              <th>Almacén de Entrega</th>
               <th>Vencimiento</th>
               <th style={{ textAlign: 'right' }}>Monto</th>
               <th>Docs</th>
@@ -136,23 +135,20 @@ export default function OrdenesPagoPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                 Sin órdenes de pago registradas
               </td></tr>
             ) : rows.map(r => (
               <tr key={r.id} style={{ opacity: r.status === 'Cancelada' ? 0.45 : 1 }}>
                 <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                 <td style={{ fontSize: 13 }}>{r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? `#${r.id_proveedor_fk}`) : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-                <td style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {r.concepto ?? '—'}
                   {r.tipo_gasto && <span style={{ fontSize: 10, marginLeft: 6, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span>}
-                </td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  {r.id_almacen_fk ? (almMap[r.id_almacen_fk] ?? `#${r.id_almacen_fk}`) : '—'}
                 </td>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap',
                   color: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? '#dc2626' : 'var(--text-secondary)',
@@ -690,15 +686,53 @@ const ROLES_AUTH_OP = ['admin', 'compras_supervisor', 'fraccionamiento']
 function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
-  const { authUser } = useAuth()
+  const { authUser, canWrite } = useAuth()
+  const puedeSubirFacturaPagada = op.status === 'Pagada' && canWrite('ordenes-pago')
+  const [localOp, setLocalOp]   = useState(op)
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null)
+  const pdfDetailRef = useRef<HTMLInputElement>(null)
+  const xmlDetailRef = useRef<HTMLInputElement>(null)
+
   const [ocsRel, setOcsRel]       = useState<any[]>([])
   const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
   const [secMap, setSecMap]       = useState<Record<number, string>>({})
   const [frMap,  setFrMap]        = useState<Record<number, string>>({})
+  const [abonos, setAbonos]       = useState<any[]>([])
+  const [loadingAbonos, setLoadingAbonos] = useState(true)
   const [authComment, setAuthCom] = useState('')
   const [authLoading, setAuthLd]  = useState(false)
 
   const puedeAutorizar = ROLES_AUTH_OP.includes(authUser?.rol ?? '')
+
+  useEffect(() => { setLocalOp(op) }, [op])
+
+  const uploadFacturaPagada = async (file: File, campo: 'pdf_factura' | 'xml_factura') => {
+    setUploadingDoc(campo)
+    const ext = file.name.split('.').pop()
+    const path = `op-${op.id}/${campo}-${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('cxp-docs').upload(path, file, { upsert: true })
+    if (upErr) {
+      alert('Error al subir archivo: ' + upErr.message)
+      setUploadingDoc(null)
+      return
+    }
+    const { data: { publicUrl } } = supabase.storage.from('cxp-docs').getPublicUrl(path)
+    const { error: dbErr } = await dbComp.from('ordenes_pago').update({ [campo]: publicUrl }).eq('id', op.id)
+    if (dbErr) {
+      alert(dbErr.message)
+      setUploadingDoc(null)
+      return
+    }
+    setLocalOp((p: any) => ({ ...p, [campo]: publicUrl }))
+    setUploadingDoc(null)
+  }
+
+  const clearFacturaPagada = async (campo: 'pdf_factura' | 'xml_factura') => {
+    if (!confirm('¿Quitar este archivo de la orden de pago?')) return
+    const { error: dbErr } = await dbComp.from('ordenes_pago').update({ [campo]: null }).eq('id', op.id)
+    if (dbErr) { alert(dbErr.message); return }
+    setLocalOp((p: any) => ({ ...p, [campo]: null }))
+  }
 
   useEffect(() => {
     dbComp.from('ordenes_pago_oc').select('*, ordenes_compra(folio, total)')
@@ -717,6 +751,11 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         setCcMap(cm); setSecMap(sm); setFrMap(fm)
       })
     })
+
+    setLoadingAbonos(true)
+    dbComp.from('cxp_abonos').select('*').eq('id_op_fk', op.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { setAbonos(data ?? []); setLoadingAbonos(false) })
   }, [op.id])
 
   const cancelar = async () => {
@@ -862,8 +901,64 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
             </div>
           </Sec>
 
-          {/* Documentos de la OP */}
-          {(op.pdf_factura || op.xml_factura) && (
+          {/* Documentos: solo OP Pagada + permiso → carga PDF/XML; Pendiente u otros → solo lectura si ya hay archivos */}
+          {puedeSubirFacturaPagada ? (
+            <Sec label="Documentos de la Operación">
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+                Orden pagada: adjunta el PDF y el XML (CFDI) de la factura. Puedes reemplazar o quitar archivos cuando lo necesites.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label className="label">PDF Factura</label>
+                  <input ref={pdfDetailRef} type="file" accept=".pdf,application/pdf" style={{ display: 'none' }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadFacturaPagada(f, 'pdf_factura'); e.target.value = '' }} />
+                  {localOp.pdf_factura ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <a href={localOp.pdf_factura} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '5px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                        <ExternalLink size={11} /> Ver PDF
+                      </a>
+                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                        onClick={() => clearFacturaPagada('pdf_factura')} disabled={!!uploadingDoc}>
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className="btn-secondary" style={{ fontSize: 11, width: '100%' }}
+                      onClick={() => pdfDetailRef.current?.click()} disabled={uploadingDoc === 'pdf_factura'}>
+                      {uploadingDoc === 'pdf_factura' ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+                      {uploadingDoc === 'pdf_factura' ? 'Subiendo…' : 'Adjuntar PDF'}
+                    </button>
+                  )}
+                </div>
+                <div>
+                  <label className="label">XML Factura (CFDI)</label>
+                  <input ref={xmlDetailRef} type="file" accept=".xml,text/xml,application/xml" style={{ display: 'none' }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadFacturaPagada(f, 'xml_factura'); e.target.value = '' }} />
+                  {localOp.xml_factura ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <a href={localOp.xml_factura} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '5px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                        <ExternalLink size={11} /> Ver XML
+                      </a>
+                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                        onClick={() => clearFacturaPagada('xml_factura')} disabled={!!uploadingDoc}>
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className="btn-secondary" style={{ fontSize: 11, width: '100%' }}
+                      onClick={() => xmlDetailRef.current?.click()} disabled={uploadingDoc === 'xml_factura'}>
+                      {uploadingDoc === 'xml_factura' ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+                      {uploadingDoc === 'xml_factura' ? 'Subiendo…' : 'Adjuntar XML'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </Sec>
+          ) : (op.pdf_factura || op.xml_factura) ? (
             <Sec label="Documentos de la Operación">
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {op.pdf_factura && (
@@ -882,7 +977,13 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                 )}
               </div>
             </Sec>
-          )}
+          ) : op.status === 'Pagada' ? (
+            <Sec label="Documentos de la Operación">
+              <div style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+                Sin factura PDF ni XML registrada para esta orden pagada.
+              </div>
+            </Sec>
+          ) : null}
 
           {ocsRel.length > 0 && (
             <Sec label="Órdenes de Compra Relacionadas">
@@ -899,6 +1000,44 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </Sec>
+          )}
+
+          {abonos.length > 0 && (
+            <Sec label="Pagos Asociados">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {loadingAbonos ? (
+                  <div style={{ padding: 10, fontSize: 12, color: 'var(--text-muted)' }}>Cargando pagos...</div>
+                ) : abonos.map(a => (
+                  <div key={a.id} style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums', marginBottom: 2 }}>
+                        {fmt(a.monto)}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {fmtFecha(a.fecha_abono)} · {a.forma_pago}
+                        {a.referencia && <span style={{ marginLeft: 6, fontFamily: 'monospace' }}>Ref: {a.referencia}</span>}
+                      </div>
+                      {a.notas && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 4 }}>{a.notas}</div>}
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      {a.comprobante && (
+                        <a href={a.comprobante} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none' }}>
+                          <CheckCircle size={11} /> Comprobante de Pago
+                        </a>
+                      )}
+                      {a.complemento_pago && (
+                        <a href={a.complemento_pago} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', background: '#fdf4ff', color: '#7c3aed', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none' }}>
+                          <FileText size={11} /> Complemento SAT
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </Sec>
           )}
