@@ -126,7 +126,7 @@ export default function OrdenesPagoPage() {
               <th>Folio</th>
               <th>Proveedor</th>
               <th>Concepto / Tipo</th>
-              <th>Almacén de Entrega</th>
+             <!-- <th>Almacén de Entrega</th>-->
               <th>Vencimiento</th>
               <th style={{ textAlign: 'right' }}>Monto</th>
               <th>Docs</th>
@@ -151,9 +151,9 @@ export default function OrdenesPagoPage() {
                   {r.concepto ?? '—'}
                   {r.tipo_gasto && <span style={{ fontSize: 10, marginLeft: 6, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span>}
                 </td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                <!--<td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                   {r.id_almacen_fk ? (almMap[r.id_almacen_fk] ?? `#${r.id_almacen_fk}`) : '—'}
-                </td>
+                </td>-->
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap',
                   color: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? '#dc2626' : 'var(--text-secondary)',
                   fontWeight: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? 600 : 400 }}>
