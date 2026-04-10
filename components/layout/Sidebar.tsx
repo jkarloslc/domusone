@@ -4,7 +4,8 @@ import { usePathname } from 'next/navigation'
 import {
   Home, MapPin, Users, FileText, Building2, Wrench,
   Shield, AlertTriangle, Receipt, ShoppingCart,
-  BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare
+  BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
+  LayoutDashboard,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -352,6 +353,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         >
           <Home size={15} />
           <span>Inicio</span>
+        </Link>
+        <Link
+          href="/tablero"
+          onClick={onClose}
+          className={`nav-item ${pathname.startsWith('/tablero') ? 'active' : ''}`}
+        >
+          <LayoutDashboard size={15} />
+          <span>Mi Tablero</span>
         </Link>
 
         {/* Secciones por rol */}
