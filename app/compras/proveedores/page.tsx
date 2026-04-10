@@ -32,7 +32,7 @@ export default function ProveedoresPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    let q = dbComp.from('proveedores').select('*').order('clave')
+    let q = dbComp.from('proveedores').select('*').order('nombre')
     if (debouncedSearch) q = q.or(`nombre.ilike.%${debouncedSearch}%,rfc.ilike.%${debouncedSearch}%,clave.ilike.%${debouncedSearch}%`)
     const { data } = await q
     setRows(data ?? []); setLoading(false)
@@ -240,13 +240,6 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
   }
 
   const TABS = [{ key: 'datos', label: 'Datos Generales' }, { key: 'documentos', label: 'Documentos Fiscales' }]
-  const G = ({ children }: { children: React.ReactNode }) => <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>{children}</div>
-  const F = ({ label, k, mono }: { label: string; k: string; mono?: boolean }) => (
-    <div><label className="label">{label}</label>
-      <input className="input" value={(form as any)[k]} onChange={set(k)}
-        style={{ fontFamily: mono ? 'monospace' : undefined, textTransform: mono ? 'uppercase' : undefined }} />
-    </div>
-  )
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -288,20 +281,20 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
           {tab === 'datos' && (
             <>
               <Sec label="Datos Fiscales">
-                <G><F label="Clave *" k="clave" mono /><F label="Nombre *" k="nombre" /></G>
-                <G><F label="Razón Social" k="razon_social" /><F label="RFC" k="rfc" mono /></G>
+                <G><F label="Clave *" value={form.clave} onChange={set('clave')} mono /><F label="Nombre *" value={form.nombre} onChange={set('nombre')} /></G>
+                <G><F label="Razón Social" value={form.razon_social} onChange={set('razon_social')} /><F label="RFC" value={form.rfc} onChange={set('rfc')} mono /></G>
               </Sec>
               <Sec label="Contacto">
-                <G><F label="Contacto" k="contacto" /><F label="Teléfono" k="telefono" /></G>
-                <F label="Correo" k="correo" />
+                <G><F label="Contacto" value={form.contacto} onChange={set('contacto')} /><F label="Teléfono" value={form.telefono} onChange={set('telefono')} /></G>
+                <F label="Correo" value={form.correo} onChange={set('correo')} />
               </Sec>
               <Sec label="Domicilio">
-                <F label="Calle y Número" k="calle" />
-                <G><F label="Colonia" k="colonia" /><F label="C.P." k="cp" /></G>
-                <G><F label="Ciudad" k="ciudad" /><F label="Estado" k="estado" /></G>
+                <F label="Calle y Número" value={form.calle} onChange={set('calle')} />
+                <G><F label="Colonia" value={form.colonia} onChange={set('colonia')} /><F label="C.P." value={form.cp} onChange={set('cp')} /></G>
+                <G><F label="Ciudad" value={form.ciudad} onChange={set('ciudad')} /><F label="Estado" value={form.estado} onChange={set('estado')} /></G>
               </Sec>
               <Sec label="Datos Bancarios">
-                <G><F label="Banco" k="banco" /><F label="CLABE (18 dígitos)" k="cuenta_clabe" mono /></G>
+                <G><F label="Banco" value={form.banco} onChange={set('banco')} /><F label="CLABE (18 dígitos)" value={form.cuenta_clabe} onChange={set('cuenta_clabe')} mono /></G>
                 <div><label className="label">Condiciones de Pago</label>
                   <select className="select" value={form.condiciones_pago} onChange={set('condiciones_pago')}>
                     <option value="">—</option>
@@ -441,5 +434,17 @@ const Sec = ({ label, children }: { label: string; children: React.ReactNode }) 
       {label}
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div>
+  </div>
+)
+
+const G = ({ children }: { children: React.ReactNode }) => (
+  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>{children}</div>
+)
+
+const F = ({ label, value, onChange, mono }: { label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; mono?: boolean }) => (
+  <div>
+    <label className="label">{label}</label>
+    <input className="input" value={value} onChange={onChange}
+      style={{ fontFamily: mono ? 'monospace' : undefined, textTransform: mono ? 'uppercase' : undefined }} />
   </div>
 )
