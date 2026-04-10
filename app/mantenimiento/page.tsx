@@ -631,7 +631,7 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
           padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
           <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
           <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11 />} />}
+            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
             {prog ? 'Guardar' : 'Crear'}
           </button>
         </div>
