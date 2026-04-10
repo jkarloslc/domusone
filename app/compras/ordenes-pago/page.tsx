@@ -126,7 +126,6 @@ export default function OrdenesPagoPage() {
               <th>Folio</th>
               <th>Proveedor</th>
               <th>Concepto / Tipo</th>
-              <th>Almacén de Entrega</th>
               <th>Vencimiento</th>
               <th style={{ textAlign: 'right' }}>Monto</th>
               <th>Docs</th>
@@ -136,23 +135,20 @@ export default function OrdenesPagoPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                 Sin órdenes de pago registradas
               </td></tr>
             ) : rows.map(r => (
               <tr key={r.id} style={{ opacity: r.status === 'Cancelada' ? 0.45 : 1 }}>
                 <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                 <td style={{ fontSize: 13 }}>{r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? `#${r.id_proveedor_fk}`) : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-                <td style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {r.concepto ?? '—'}
                   {r.tipo_gasto && <span style={{ fontSize: 10, marginLeft: 6, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span>}
-                </td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  {r.id_almacen_fk ? (almMap[r.id_almacen_fk] ?? `#${r.id_almacen_fk}`) : '—'}
                 </td>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap',
                   color: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? '#dc2626' : 'var(--text-secondary)',
