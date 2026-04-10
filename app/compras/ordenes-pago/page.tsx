@@ -686,7 +686,13 @@ const ROLES_AUTH_OP = ['admin', 'compras_supervisor', 'fraccionamiento']
 function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
-  const { authUser } = useAuth()
+  const { authUser, canWrite } = useAuth()
+  const puedeSubirFacturaPagada = op.status === 'Pagada' && canWrite('ordenes-pago')
+  const [localOp, setLocalOp]   = useState(op)
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null)
+  const pdfDetailRef = useRef<HTMLInputElement>(null)
+  const xmlDetailRef = useRef<HTMLInputElement>(null)
+
   const [ocsRel, setOcsRel]       = useState<any[]>([])
   const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
   const [secMap, setSecMap]       = useState<Record<number, string>>({})
@@ -697,6 +703,36 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [authLoading, setAuthLd]  = useState(false)
 
   const puedeAutorizar = ROLES_AUTH_OP.includes(authUser?.rol ?? '')
+
+  useEffect(() => { setLocalOp(op) }, [op])
+
+  const uploadFacturaPagada = async (file: File, campo: 'pdf_factura' | 'xml_factura') => {
+    setUploadingDoc(campo)
+    const ext = file.name.split('.').pop()
+    const path = `op-${op.id}/${campo}-${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('cxp-docs').upload(path, file, { upsert: true })
+    if (upErr) {
+      alert('Error al subir archivo: ' + upErr.message)
+      setUploadingDoc(null)
+      return
+    }
+    const { data: { publicUrl } } = supabase.storage.from('cxp-docs').getPublicUrl(path)
+    const { error: dbErr } = await dbComp.from('ordenes_pago').update({ [campo]: publicUrl }).eq('id', op.id)
+    if (dbErr) {
+      alert(dbErr.message)
+      setUploadingDoc(null)
+      return
+    }
+    setLocalOp((p: any) => ({ ...p, [campo]: publicUrl }))
+    setUploadingDoc(null)
+  }
+
+  const clearFacturaPagada = async (campo: 'pdf_factura' | 'xml_factura') => {
+    if (!confirm('¿Quitar este archivo de la orden de pago?')) return
+    const { error: dbErr } = await dbComp.from('ordenes_pago').update({ [campo]: null }).eq('id', op.id)
+    if (dbErr) { alert(dbErr.message); return }
+    setLocalOp((p: any) => ({ ...p, [campo]: null }))
+  }
 
   useEffect(() => {
     dbComp.from('ordenes_pago_oc').select('*, ordenes_compra(folio, total)')
@@ -865,8 +901,64 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
             </div>
           </Sec>
 
-          {/* Documentos de la OP */}
-          {(op.pdf_factura || op.xml_factura) && (
+          {/* Documentos: solo OP Pagada + permiso → carga PDF/XML; Pendiente u otros → solo lectura si ya hay archivos */}
+          {puedeSubirFacturaPagada ? (
+            <Sec label="Documentos de la Operación">
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+                Orden pagada: adjunta el PDF y el XML (CFDI) de la factura. Puedes reemplazar o quitar archivos cuando lo necesites.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label className="label">PDF Factura</label>
+                  <input ref={pdfDetailRef} type="file" accept=".pdf,application/pdf" style={{ display: 'none' }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadFacturaPagada(f, 'pdf_factura'); e.target.value = '' }} />
+                  {localOp.pdf_factura ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <a href={localOp.pdf_factura} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '5px 10px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                        <ExternalLink size={11} /> Ver PDF
+                      </a>
+                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                        onClick={() => clearFacturaPagada('pdf_factura')} disabled={!!uploadingDoc}>
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className="btn-secondary" style={{ fontSize: 11, width: '100%' }}
+                      onClick={() => pdfDetailRef.current?.click()} disabled={uploadingDoc === 'pdf_factura'}>
+                      {uploadingDoc === 'pdf_factura' ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+                      {uploadingDoc === 'pdf_factura' ? 'Subiendo…' : 'Adjuntar PDF'}
+                    </button>
+                  )}
+                </div>
+                <div>
+                  <label className="label">XML Factura (CFDI)</label>
+                  <input ref={xmlDetailRef} type="file" accept=".xml,text/xml,application/xml" style={{ display: 'none' }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) uploadFacturaPagada(f, 'xml_factura'); e.target.value = '' }} />
+                  {localOp.xml_factura ? (
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <a href={localOp.xml_factura} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '5px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                        <ExternalLink size={11} /> Ver XML
+                      </a>
+                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                        onClick={() => clearFacturaPagada('xml_factura')} disabled={!!uploadingDoc}>
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className="btn-secondary" style={{ fontSize: 11, width: '100%' }}
+                      onClick={() => xmlDetailRef.current?.click()} disabled={uploadingDoc === 'xml_factura'}>
+                      {uploadingDoc === 'xml_factura' ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+                      {uploadingDoc === 'xml_factura' ? 'Subiendo…' : 'Adjuntar XML'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </Sec>
+          ) : (op.pdf_factura || op.xml_factura) ? (
             <Sec label="Documentos de la Operación">
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {op.pdf_factura && (
@@ -885,7 +977,13 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                 )}
               </div>
             </Sec>
-          )}
+          ) : op.status === 'Pagada' ? (
+            <Sec label="Documentos de la Operación">
+              <div style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+                Sin factura PDF ni XML registrada para esta orden pagada.
+              </div>
+            </Sec>
+          ) : null}
 
           {ocsRel.length > 0 && (
             <Sec label="Órdenes de Compra Relacionadas">
