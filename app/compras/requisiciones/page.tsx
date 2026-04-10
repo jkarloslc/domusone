@@ -23,6 +23,10 @@ export default function RequisicionesPage() {
   const [search, setSearch]   = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
+  const [filterCC, setFilterCC] = useState('')
+  const [filterSec, setFilterSec] = useState('')
+  const [ccFiltros, setCcFiltros] = useState<{ id: number; nombre: string }[]>([])
+  const [secFiltros, setSecFiltros] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
   const [detail, setDetail]   = useState<any | null>(null)
@@ -33,12 +37,20 @@ export default function RequisicionesPage() {
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
+    if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
+    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,area_solicitante.ilike.%${debouncedSearch}%,solicitante.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
-  }, [page, debouncedSearch, filterStatus])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterSec])
 
   useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCcFiltros((data ?? []) as { id: number; nombre: string }[]))
+    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setSecFiltros((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
+  }, [])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
@@ -74,6 +86,18 @@ export default function RequisicionesPage() {
           <select className="select" style={{ width: 160 }} value={filterStatus} onChange={e => { setFilter(e.target.value); setPage(0) }}>
             <option value="">Todos los status</option>
             {['Borrador','Enviada','Aprobada','Rechazada','En Proceso','Cerrada'].map(s => <option key={s}>{s}</option>)}
+          </select>
+          <select className="select" style={{ width: 220 }} value={filterCC}
+            onChange={e => { setFilterCC(e.target.value); setFilterSec(''); setPage(0) }}>
+            <option value="">Todos los centros de costo</option>
+            {ccFiltros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+          <select className="select" style={{ width: 200 }} value={filterSec}
+            onChange={e => { setFilterSec(e.target.value); setPage(0) }}>
+            <option value="">Todas las secciones</option>
+            {secFiltros
+              .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+              .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
           </select>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
