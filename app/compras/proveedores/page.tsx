@@ -6,7 +6,7 @@ import { dbComp, supabase } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, Edit2, X, Save, Loader,
   ArrowLeft, Phone, Mail, Upload, ExternalLink, Trash2,
-  FileText, CheckCircle
+  FileText, CheckCircle, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Proveedor, FORMAS_PAGO_COMP } from '../types'
@@ -29,6 +29,8 @@ export default function ProveedoresPage() {
   const [search, setSearch]   = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
+  const [page, setPage]       = useState(1)
+  const ROWS_PER_PAGE = 20
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -36,12 +38,16 @@ export default function ProveedoresPage() {
     if (debouncedSearch) q = q.or(`nombre.ilike.%${debouncedSearch}%,rfc.ilike.%${debouncedSearch}%,clave.ilike.%${debouncedSearch}%`)
     const { data } = await q
     setRows(data ?? []); setLoading(false)
+    setPage(1)
   }, [debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   // Contar documentos cargados de un proveedor
   const docsCount = (r: any) => DOCS.filter(d => r[d.key]).length
+
+  const totalPages = Math.ceil(rows.length / ROWS_PER_PAGE)
+  const paginatedRows = rows.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE)
 
   return (
     <div style={{ padding: '32px 36px' }}>
@@ -82,7 +88,7 @@ export default function ProveedoresPage() {
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40 }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
             ) : rows.length === 0 ? (
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin proveedores registrados</td></tr>
-            ) : rows.map(r => {
+            ) : paginatedRows.map(r => {
               const ndocs = docsCount(r)
               return (
                 <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.45 }}>
@@ -120,6 +126,32 @@ export default function ProveedoresPage() {
             })}
           </tbody>
         </table>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderTop: '1px solid #e2e8f0', background: '#fafafa' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              Mostrando {(page - 1) * ROWS_PER_PAGE + 1} - {Math.min(page * ROWS_PER_PAGE, rows.length)} de {rows.length}
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button 
+                className="btn-ghost" 
+                style={{ padding: '6px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
+                disabled={page === 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                <ChevronLeft size={14} /> Anterior
+              </button>
+              <button 
+                className="btn-ghost" 
+                style={{ padding: '6px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
+                disabled={page === totalPages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              >
+                Siguiente <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {modal !== null && (
