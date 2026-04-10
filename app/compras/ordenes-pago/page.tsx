@@ -1,7 +1,7 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { dbComp, supabase } from '@/lib/supabase'
+import { dbComp, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
@@ -32,6 +32,10 @@ export default function OrdenesPagoPage() {
   const [search, setSearch]     = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
+  const [filterCC, setFilterCC] = useState('')
+  const [filterSec, setFilterSec] = useState('')
+  const [centrosCosto, setCentros] = useState<{ id: number; nombre: string }[]>([])
+  const [secciones, setSecciones] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState(false)
   const [editOp, setEditOp]     = useState<any | null>(null)
@@ -43,6 +47,8 @@ export default function OrdenesPagoPage() {
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
+    if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
+    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,concepto.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? [])
@@ -59,9 +65,15 @@ export default function OrdenesPagoPage() {
     setProvMap(pm)
     setAlmMap(am)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterSec])
 
   useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCentros((data ?? []) as { id: number; nombre: string }[]))
+    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setSecciones((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
+  }, [])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
   const pendientes     = rows.filter(r => r.status === 'Pendiente').reduce((a, r) => a + (r.monto ?? 0), 0)
@@ -114,6 +126,18 @@ export default function OrdenesPagoPage() {
           <option value="Pagada">Pagadas</option>
           <option value="Rechazada">Rechazadas</option>
           <option value="Cancelada">Canceladas</option>
+        </select>
+        <select className="select" style={{ width: 220 }} value={filterCC}
+          onChange={e => { setFilterCC(e.target.value); setFilterSec(''); setPage(0) }}>
+          <option value="">Todos los centros de costo</option>
+          {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
+        <select className="select" style={{ width: 200 }} value={filterSec}
+          onChange={e => { setFilterSec(e.target.value); setPage(0) }}>
+          <option value="">Todas las secciones</option>
+          {secciones
+            .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+            .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
       </div>
