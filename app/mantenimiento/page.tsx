@@ -137,50 +137,50 @@ export default function MantenimientoPage() {
   }
 
   return (
-    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
+    <div style={{ padding: '20px 24px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--blue-pale)',
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--blue-pale)',
             display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Calendar size={18} style={{ color: 'var(--blue)' }} />
+            <Calendar size={16} style={{ color: 'var(--blue)' }} />
           </div>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, letterSpacing: '-0.01em' }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em' }}>
               Mantenimiento
             </h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               Programa anual · Órdenes de trabajo · {filterAnio}
             </p>
           </div>
         </div>
         {tab === 'programa' && canWrite('mantenimiento') && (
-          <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
-            <Plus size={14} /> Nuevo Programa
+          <button className="btn-primary" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => { setEditing(null); setModal(true) }}>
+            <Plus size={12} /> Nuevo Programa
           </button>
         )}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 14 }}>
         <button onClick={() => setTab('programa')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
-            background: 'none', border: 'none', cursor: 'pointer', fontSize: 13,
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
+            background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
             fontWeight: tab === 'programa' ? 600 : 400,
             color: tab === 'programa' ? 'var(--blue)' : 'var(--text-muted)',
             borderBottom: tab === 'programa' ? '2px solid var(--blue)' : '2px solid transparent',
             marginBottom: -1 }}>
-          <Calendar size={13} /> Programa Anual
+          <Calendar size={12} /> Programa Anual
         </button>
         <button onClick={() => setTab('ordenes')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px',
-            background: 'none', border: 'none', cursor: 'pointer', fontSize: 13,
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
+            background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
             fontWeight: tab === 'ordenes' ? 600 : 400,
             color: tab === 'ordenes' ? 'var(--blue)' : 'var(--text-muted)',
             borderBottom: tab === 'ordenes' ? '2px solid var(--blue)' : '2px solid transparent',
             marginBottom: -1 }}>
-          <ClipboardList size={13} /> Órdenes de Trabajo
+          <ClipboardList size={12} /> Órdenes de Trabajo
         </button>
       </div>
 
@@ -191,76 +191,80 @@ export default function MantenimientoPage() {
       {tab === 'programa' && (
         <div>
           {/* KPIs */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 20 }}>
-            <div className="card" style={{ padding: '12px 16px' }}>
-              <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--blue)' }}>{programas.length}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Programas</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 }}>
+            <div className="card" style={{ padding: '10px 12px' }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>{programas.length}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Programas</div>
             </div>
-            <div className="card" style={{ padding: '12px 16px' }}>
-              <div style={{ fontSize: 24, fontWeight: 700, color: '#d97706' }}>
+            <div className="card" style={{ padding: '10px 12px' }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#d97706' }}>
                 {todasTareas.filter((t: any) => t.status === 'Pendiente').length}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pendientes</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pendientes</div>
             </div>
-            <div className="card" style={{ padding: '12px 16px' }}>
-              <div style={{ fontSize: 24, fontWeight: 700, color: '#15803d' }}>{completadas}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Completadas</div>
+            <div className="card" style={{ padding: '10px 12px' }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#15803d' }}>{completadas}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completadas</div>
             </div>
-            <div className="card" style={{ padding: '12px 16px' }}>
-              <div style={{ fontSize: 24, fontWeight: 700, color: '#94a3b8' }}>
+            <div className="card" style={{ padding: '10px 12px' }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#94a3b8' }}>
                 {todasTareas.filter((t: any) => t.status === 'Omitida').length}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Omitidas</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Omitidas</div>
             </div>
-            <div className="card" style={{ padding: '12px 16px' }}>
-              <div style={{ fontSize: 24, fontWeight: 700,
+            <div className="card" style={{ padding: '10px 12px' }}>
+              <div style={{ fontSize: 20, fontWeight: 700,
                 color: cumplimiento >= 80 ? '#15803d' : cumplimiento >= 50 ? '#d97706' : '#dc2626' }}>
                 {cumplimiento}%
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Cumplimiento</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cumplimiento</div>
             </div>
           </div>
 
           {/* Filtros */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-            <select className="select" style={{ width: 100 }} value={filterAnio}
-              onChange={e => setFilterAnio(Number(e.target.value))}>
-              {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
-            </select>
-            <select className="select" style={{ minWidth: 180 }} value={filterCC}
-              onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
-              <option value="">Todos los centros de costo</option>
-              {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
-            <select className="select" style={{ minWidth: 170 }} value={filterSec}
-              onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
-              <option value="">Todas las secciones</option>
-              {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-            </select>
-            <select className="select" style={{ minWidth: 160 }} value={filterFr}
-              onChange={e => setFilterFr(e.target.value)}>
-              <option value="">Todos los frentes</option>
-              {frentes
-                .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
-                .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-            </select>
-            <button className="btn-ghost" onClick={fetchData}>
-              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            </button>
+          <div className="card" style={{ padding: '10px 14px', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Filtros:</span>
+              <select className="select" style={{ width: 75, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterAnio}
+                onChange={e => setFilterAnio(Number(e.target.value))}>
+                {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
+              </select>
+              <select className="select" style={{ minWidth: 150, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterCC}
+                onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
+                <option value="">Centro de costo</option>
+                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+              <select className="select" style={{ minWidth: 140, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterSec}
+                onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
+                <option value="">Sección</option>
+                {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              </select>
+              <select className="select" style={{ minWidth: 130, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterFr}
+                onChange={e => setFilterFr(e.target.value)}>
+                <option value="">Frente</option>
+                {frentes
+                  .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
+                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+              </select>
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button className="btn-ghost" style={{ padding: '5px 8px', height: 30 }} onClick={fetchData}>
+                <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+              </button>
+            </div>
           </div>
 
           {/* Lista programas */}
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 60 }}>
-              <RefreshCw size={20} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+            <div style={{ textAlign: 'center', padding: 40 }}>
+              <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
             </div>
           ) : programas.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
               Sin programas de mantenimiento para {filterAnio}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {programas.map((prog: any) => {
                 const tareas      = prog.tareas ?? []
                 const comp        = tareas.filter((t: any) => t.status === 'Completada').length
@@ -269,61 +273,61 @@ export default function MantenimientoPage() {
                 const proxima     = tareas.find((t: any) => t.status === 'Pendiente')
 
                 return (
-                  <div key={prog.id} className="card" style={{ overflow: 'hidden' }}>
+                  <div key={prog.id} className="card" style={{ overflow: 'hidden', padding: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '14px 18px', borderBottom: expanded ? '1px solid #e2e8f0' : 'none',
+                      padding: '10px 14px', borderBottom: expanded ? '1px solid #e2e8f0' : 'none',
                       background: 'var(--blue-pale)', cursor: 'pointer' }}
                       onClick={() => toggleExpand(prog.id)}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {expanded
-                          ? <ChevronDown size={14} style={{ color: 'var(--blue)' }} />
-                          : <ChevronRight size={14} style={{ color: 'var(--blue)' }} />}
+                          ? <ChevronDown size={12} style={{ color: 'var(--blue)' }} />
+                          : <ChevronRight size={12} style={{ color: 'var(--blue)' }} />}
                         <div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>{prog.nombre}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--blue)' }}>{prog.nombre}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
                             {prog.id_seccion_fk ? secMap[prog.id_seccion_fk] : 'Sin sección'} ·{' '}
                             {prog.tipo_trabajo ?? '—'} · {prog.frecuencia}
                             {prog.responsable ? ` · ${prog.responsable}` : ''}
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>
                             {comp}/{tareas.length} · {pct}%
                           </div>
-                          <div style={{ width: 120, height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3,
+                          <div style={{ width: 100, height: 5, background: '#e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2,
                               background: pct >= 80 ? '#15803d' : pct >= 50 ? '#d97706' : '#2563eb' }} />
                           </div>
                         </div>
                         {proxima && (
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap', marginLeft: 8 }}>
                             Próxima: <span style={{ fontWeight: 600, color: 'var(--blue)' }}>{fmtDate(proxima.fecha_prog)}</span>
                           </div>
                         )}
-                        <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                          <button className="btn-secondary" style={{ fontSize: 12 }}
+                        <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                          <button className="btn-secondary" style={{ fontSize: 11, padding: '4px 8px' }}
                             onClick={() => setDetail(prog)}>
-                            <Eye size={12} /> Ver
+                            <Eye size={10} /> Ver
                           </button>
                           {canWrite('mantenimiento') && (
-                            <button className="btn-secondary" style={{ fontSize: 12 }}
+                            <button className="btn-secondary" style={{ fontSize: 11, padding: '4px 8px' }}
                               onClick={() => { setEditing(prog); setModal(true) }}>
                               Editar
                             </button>
                           )}
                           {canDelete() && (
-                            <button className="btn-ghost" style={{ fontSize: 12, color: '#dc2626' }}
+                            <button className="btn-ghost" style={{ fontSize: 11, color: '#dc2626', padding: '4px 6px' }}
                               onClick={() => handleDelete(prog.id)}>
-                              <X size={12} />
+                              <X size={11} />
                             </button>
                           )}
                         </div>
                       </div>
                     </div>
                     {expanded && (
-                      <div style={{ padding: '12px 18px' }}>
+                      <div style={{ padding: '10px 14px' }}>
                         <MiniCalendario tareas={tareas} onRefresh={fetchData} prog={prog} secMap={secMap} />
                       </div>
                     )}
@@ -543,92 +547,92 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 580 }}>
+      <div className="modal" style={{ maxWidth: 540 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
+          padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
             {prog ? 'Editar Programa' : 'Nuevo Programa de Mantenimiento'}
           </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
         </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12,
-          overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>
-          {error && <div style={{ padding: 10, background: '#fef2f2', border: '1px solid #fecaca',
-            borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10,
+          overflowY: 'auto', maxHeight: 'calc(90vh - 110px)' }}>
+          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
+            borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
           <div>
-            <label className="label">Nombre *</label>
-            <input className="input" value={form.nombre} onChange={setF('nombre')} placeholder="ej. Jardinería Semanal Palermo" />
+            <label className="label" style={{ fontSize: 11 }}>Nombre *</label>
+            <input className="input" style={{ fontSize: 13 }} value={form.nombre} onChange={setF('nombre')} placeholder="ej. Jardinería Semanal Palermo" />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 10 }}>
-            <div><label className="label">Año</label>
-              <input className="input" type="number" value={form.anio} onChange={setF('anio')} />
+          <div style={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr', gap: 8 }}>
+            <div><label className="label" style={{ fontSize: 11 }}>Año</label>
+              <input className="input" style={{ fontSize: 13 }} type="number" value={form.anio} onChange={setF('anio')} />
             </div>
-            <div><label className="label">Tipo de Trabajo</label>
-              <select className="select" value={form.tipo_trabajo} onChange={setF('tipo_trabajo')}>
-                <option value="">— Seleccionar —</option>
+            <div><label className="label" style={{ fontSize: 11 }}>Tipo de Trabajo</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.tipo_trabajo} onChange={setF('tipo_trabajo')}>
+                <option value="">—</option>
                 {TIPOS.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-            <div><label className="label">Centro de Costo</label>
-              <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
-                <option value="">— Sin asignar —</option>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div><label className="label" style={{ fontSize: 11 }}>Centro de Costo</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
+                <option value="">—</option>
                 {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
-            <div><label className="label">Sección</label>
-              <select className="select" value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
-                <option value="">— Sin sección —</option>
+            <div><label className="label" style={{ fontSize: 11 }}>Sección</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
+                <option value="">—</option>
                 {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </div>
-            <div><label className="label">Frente</label>
-              <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
-                <option value="">— Sin asignar —</option>
+            <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
+                <option value="">—</option>
                 {frentes
                   .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
                   .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
               </select>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label className="label">Frecuencia *</label>
-              <select className="select" value={form.frecuencia} onChange={setF('frecuencia')}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div><label className="label" style={{ fontSize: 11 }}>Frecuencia *</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.frecuencia} onChange={setF('frecuencia')}>
                 {FRECUENCIAS.map(f => <option key={f}>{f}</option>)}
               </select>
             </div>
-            <div><label className="label">Mes de inicio</label>
-              <select className="select" value={form.mes_inicio} onChange={setF('mes_inicio')}>
+            <div><label className="label" style={{ fontSize: 11 }}>Mes de inicio</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.mes_inicio} onChange={setF('mes_inicio')}>
                 {MESES.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
               </select>
             </div>
           </div>
           {!prog && (
-            <div style={{ padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe',
-              borderRadius: 8, fontSize: 13, color: 'var(--blue)' }}>
-              Se generarán <strong>{totalFechas} tareas</strong> automáticamente para {form.anio}
+            <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe',
+              borderRadius: 6, fontSize: 12, color: 'var(--blue)' }}>
+              Se generarán <strong>{totalFechas} tareas</strong> para {form.anio}
             </div>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label className="label">Responsable</label>
-              <input className="input" value={form.responsable} onChange={setF('responsable')} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div><label className="label" style={{ fontSize: 11 }}>Responsable</label>
+              <input className="input" style={{ fontSize: 13 }} value={form.responsable} onChange={setF('responsable')} />
             </div>
-            <div><label className="label">Presupuesto estimado anual</label>
-              <input className="input" type="number" value={form.presupuesto_est} onChange={setF('presupuesto_est')} />
+            <div><label className="label" style={{ fontSize: 11 }}>Presupuesto estimado</label>
+              <input className="input" style={{ fontSize: 13 }} type="number" value={form.presupuesto_est} onChange={setF('presupuesto_est')} />
             </div>
           </div>
-          <div><label className="label">Descripción / Alcance</label>
-            <textarea className="input" rows={3} value={form.descripcion} onChange={setF('descripcion')}
+          <div><label className="label" style={{ fontSize: 11 }}>Descripción / Alcance</label>
+            <textarea className="input" style={{ fontSize: 13 }} rows={3} value={form.descripcion} onChange={setF('descripcion')}
               style={{ resize: 'vertical' }} />
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end',
-          padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {prog ? 'Guardar cambios' : 'Crear programa'}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end',
+          padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11 />} />}
+            {prog ? 'Guardar' : 'Crear'}
           </button>
         </div>
       </div>

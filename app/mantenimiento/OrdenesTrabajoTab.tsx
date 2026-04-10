@@ -110,55 +110,55 @@ export default function OrdenesTrabajoTab() {
   return (
     <div>
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
         {[
           { label: 'Pendientes',  value: kpis.pendientes,  color: '#d97706', bg: '#fffbeb' },
           { label: 'En Proceso',  value: kpis.enProceso,   color: '#2563eb', bg: '#eff6ff' },
           { label: 'Completadas', value: kpis.completadas, color: '#15803d', bg: '#f0fdf4' },
           { label: 'Urgentes',    value: kpis.urgentes,    color: '#dc2626', bg: '#fef2f2' },
         ].map(k => (
-          <div key={k.label} className="card" style={{ padding: '12px 16px', background: k.bg }}>
-            <div style={{ fontSize: 26, fontWeight: 700, color: k.color }}>{k.value}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{k.label}</div>
+          <div key={k.label} className="card" style={{ padding: '10px 12px', background: k.bg }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: k.color }}>{k.value}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k.label}</div>
           </div>
         ))}
       </div>
 
       {/* Filtros + Nueva OT */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 300 }}>
-          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input className="input" style={{ paddingLeft: 30 }} placeholder="Folio, título, asignado…"
+      <div className="card" style={{ padding: '10px 14px', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+        <div style={{ position: 'relative', minWidth: 180 }}>
+          <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input className="input" style={{ paddingLeft: 26, fontSize: 12, padding: '5px 8px 5px 26px', height: 30 }} placeholder="Folio, título, asignado…"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select className="select" style={{ minWidth: 130 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="">Todos los status</option>
+        <select className="select" style={{ minWidth: 120, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="">Status</option>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 130 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
-          <option value="">Todos los tipos</option>
+        <select className="select" style={{ minWidth: 120, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+          <option value="">Tipo</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
-          <option value="">Todos los centros de costo</option>
+        <select className="select" style={{ minWidth: 150, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
+          <option value="">Centro de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filterSec} onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
-          <option value="">Todas las secciones</option>
+        <select className="select" style={{ minWidth: 130, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterSec} onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
+          <option value="">Sección</option>
           {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filterFr} onChange={e => setFilterFr(e.target.value)}>
-          <option value="">Todos los frentes</option>
+        <select className="select" style={{ minWidth: 120, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterFr} onChange={e => setFilterFr(e.target.value)}>
+          <option value="">Frente</option>
           {frentes
             .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
             .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
-        <button className="btn-ghost" onClick={fetchData}>
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+        <button className="btn-ghost" style={{ padding: '5px 8px', height: 30 }} onClick={fetchData}>
+          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
         </button>
         {canWrite('mantenimiento') && (
-          <button className="btn-primary" onClick={() => { setEditingOT(null); setModal(true) }}>
-            <Plus size={14} /> Nueva OT
+          <button className="btn-primary" style={{ fontSize: 12, padding: '5px 10px', height: 30 }} onClick={() => { setEditingOT(null); setModal(true) }}>
+            <Plus size={12} /> Nueva OT
           </button>
         )}
       </div>
@@ -168,46 +168,46 @@ export default function OrdenesTrabajoTab() {
         <table>
           <thead>
             <tr>
-              <th>Folio</th>
-              <th>Título</th>
-              <th>Tipo</th>
-              <th>Sección</th>
-              <th>Asignado</th>
-              <th>F. Límite</th>
-              <th>Prioridad</th>
-              <th>Status</th>
-              <th style={{ width: 50 }}></th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Folio</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Título</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Tipo</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Sección</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Asignado</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>F. Límite</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Prioridad</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Status</th>
+              <th style={{ width: 40 }}></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40 }}>
-                <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 32 }}>
+                <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
                 Sin órdenes de trabajo registradas
               </td></tr>
             ) : rows.map(r => (
               <tr key={r.id} style={{ opacity: r.status === 'Cancelada' ? 0.5 : 1 }}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
-                <td>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{r.titulo}</div>
-                  {r.ubicacion_detalle && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.ubicacion_detalle}</div>}
+                <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600, padding: '8px 10px' }}>{r.folio}</td>
+                <td style={{ padding: '8px 10px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 500 }}>{r.titulo}</div>
+                  {r.ubicacion_detalle && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.ubicacion_detalle}</div>}
                 </td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.tipo_trabajo ?? '—'}</td>
-                <td style={{ fontSize: 12 }}>{r.id_seccion_fk ? (secMap[r.id_seccion_fk] ?? '—') : '—'}</td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.asignado_a ?? '—'}</td>
-                <td style={{ fontSize: 12,
+                <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{r.tipo_trabajo ?? '—'}</td>
+                <td style={{ fontSize: 11, padding: '8px 10px' }}>{r.id_seccion_fk ? (secMap[r.id_seccion_fk] ?? '—') : '—'}</td>
+                <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{r.asignado_a ?? '—'}</td>
+                <td style={{ fontSize: 11, padding: '8px 10px',
                   color: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? '#dc2626' : 'var(--text-secondary)',
                   fontWeight: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? 600 : 400 }}>
                   {fmtFecha(r.fecha_limite)}
                 </td>
-                <td><Badge text={r.prioridad ?? 'Media'} map={PRIORIDAD_STYLE} /></td>
-                <td><Badge text={r.status} map={STATUS_STYLE} /></td>
-                <td>
-                  <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(r)}>
-                    <Eye size={13} />
+                <td style={{ padding: '8px 10px' }}><Badge text={r.prioridad ?? 'Media'} map={PRIORIDAD_STYLE} /></td>
+                <td style={{ padding: '8px 10px' }}><Badge text={r.status} map={STATUS_STYLE} /></td>
+                <td style={{ padding: '4px 6px' }}>
+                  <button className="btn-ghost" style={{ padding: '3px 5px' }} onClick={() => setDetail(r)}>
+                    <Eye size={12} />
                   </button>
                 </td>
               </tr>
@@ -345,89 +345,89 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 660 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
+      <div className="modal" style={{ maxWidth: 620 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
             {ot ? 'Editar OT' : 'Nueva Orden de Trabajo'}
           </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
         </div>
-        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
-          <div><label className="label">Título *</label>
-            <input className="input" value={form.titulo} onChange={setF('titulo')} /></div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-            <div><label className="label">Tipo</label>
-              <select className="select" value={form.tipo_trabajo} onChange={setF('tipo_trabajo')}>
+        <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+          <div><label className="label" style={{ fontSize: 11 }}>Título *</label>
+            <input className="input" style={{ fontSize: 13 }} value={form.titulo} onChange={setF('titulo')} /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div><label className="label" style={{ fontSize: 11 }}>Tipo</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.tipo_trabajo} onChange={setF('tipo_trabajo')}>
                 <option value="">—</option>{TIPOS.map(t => <option key={t}>{t}</option>)}
               </select></div>
-            <div><label className="label">Prioridad</label>
-              <select className="select" value={form.prioridad} onChange={setF('prioridad')}>
+            <div><label className="label" style={{ fontSize: 11 }}>Prioridad</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.prioridad} onChange={setF('prioridad')}>
                 {PRIORIDADES.map(p => <option key={p}>{p}</option>)}
               </select></div>
-            <div><label className="label">Status</label>
-              <select className="select" value={form.status} onChange={setF('status')}>
+            <div><label className="label" style={{ fontSize: 11 }}>Status</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.status} onChange={setF('status')}>
                 {STATUSES.map(s => <option key={s}>{s}</option>)}
               </select></div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-            <div><label className="label">Centro de Costo</label>
-              <select className="select" value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
-                <option value="">— Sin asignar —</option>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div><label className="label" style={{ fontSize: 11 }}>Centro de Costo</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
+                <option value="">—</option>
                 {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select></div>
-            <div><label className="label">Sección</label>
-              <select className="select" value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
+            <div><label className="label" style={{ fontSize: 11 }}>Sección</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
                 <option value="">—</option>{secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select></div>
-            <div><label className="label">Frente</label>
-              <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
-                <option value="">— Sin asignar —</option>
+            <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
+                <option value="">—</option>
                 {frentes
                   .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
                   .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
               </select></div>
           </div>
-          <div><label className="label">Ubicación detalle</label>
-            <input className="input" value={form.ubicacion_detalle} onChange={setF('ubicacion_detalle')} /></div>
-          <div><label className="label">Descripción</label>
-            <textarea className="input" rows={2} value={form.descripcion} onChange={setF('descripcion')} style={{ resize: 'vertical' }} /></div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label className="label">Asignado a</label><input className="input" value={form.asignado_a} onChange={setF('asignado_a')} /></div>
-            <div><label className="label">Supervisor</label><input className="input" value={form.supervisor} onChange={setF('supervisor')} /></div>
+          <div><label className="label" style={{ fontSize: 11 }}>Ubicación detalle</label>
+            <input className="input" style={{ fontSize: 13 }} value={form.ubicacion_detalle} onChange={setF('ubicacion_detalle')} /></div>
+          <div><label className="label" style={{ fontSize: 11 }}>Descripción</label>
+            <textarea className="input" style={{ fontSize: 13 }} rows={2} value={form.descripcion} onChange={setF('descripcion')} style={{ resize: 'vertical' }} /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div><label className="label" style={{ fontSize: 11 }}>Asignado a</label><input className="input" style={{ fontSize: 13 }} value={form.asignado_a} onChange={setF('asignado_a')} /></div>
+            <div><label className="label" style={{ fontSize: 11 }}>Supervisor</label><input className="input" style={{ fontSize: 13 }} value={form.supervisor} onChange={setF('supervisor')} /></div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: 10 }}>
-            <div><label className="label">Fecha Inicio</label><input className="input" type="date" value={form.fecha_inicio} onChange={setF('fecha_inicio')} /></div>
-            <div><label className="label">Fecha Límite</label><input className="input" type="date" value={form.fecha_limite} onChange={setF('fecha_limite')} /></div>
-            <div><label className="label">Semana</label><input className="input" type="number" value={form.semana_no} onChange={setF('semana_no')} /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 70px', gap: 8 }}>
+            <div><label className="label" style={{ fontSize: 11 }}>F. Inicio</label><input className="input" style={{ fontSize: 13 }} type="date" value={form.fecha_inicio} onChange={setF('fecha_inicio')} /></div>
+            <div><label className="label" style={{ fontSize: 11 }}>F. Límite</label><input className="input" style={{ fontSize: 13 }} type="date" value={form.fecha_limite} onChange={setF('fecha_limite')} /></div>
+            <div><label className="label" style={{ fontSize: 11 }}>Semana</label><input className="input" style={{ fontSize: 13 }} type="number" value={form.semana_no} onChange={setF('semana_no')} /></div>
           </div>
-          <div><label className="label">Notas</label>
-            <textarea className="input" rows={2} value={form.notas} onChange={setF('notas')} style={{ resize: 'vertical' }} /></div>
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Recursos</div>
+          <div><label className="label" style={{ fontSize: 11 }}>Notas</label>
+            <textarea className="input" style={{ fontSize: 13 }} rows={2} value={form.notas} onChange={setF('notas')} style={{ resize: 'vertical' }} /></div>
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Recursos</div>
             {recursos.map((r, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 1fr 90px 28px', gap: 8, marginBottom: 8 }}>
-                <input className="input" value={r.cantidad} onChange={e => setR(i,'cantidad',e.target.value)} placeholder="Cantidad" style={{ fontSize: 12 }} />
-                <input className="input" value={r.descripcion} onChange={e => setR(i,'descripcion',e.target.value)} placeholder="Descripción…" style={{ fontSize: 12 }} />
-                <input className="input" type="number" step="0.01" value={r.costo} onChange={e => setR(i,'costo',e.target.value)} style={{ textAlign: 'right', fontSize: 12 }} />
-                <button className="btn-ghost" style={{ padding: '4px' }} onClick={() => setRecursos(r => r.filter((_,j) => j !== i))}><X size={12} /></button>
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px 24px', gap: 6, marginBottom: 6 }}>
+                <input className="input" style={{ fontSize: 11 }} value={r.cantidad} onChange={e => setR(i,'cantidad',e.target.value)} placeholder="Cant." />
+                <input className="input" style={{ fontSize: 11 }} value={r.descripcion} onChange={e => setR(i,'descripcion',e.target.value)} placeholder="Descripción…" />
+                <input className="input" type="number" step="0.01" value={r.costo} onChange={e => setR(i,'costo',e.target.value)} style={{ textAlign: 'right', fontSize: 11 }} />
+                <button className="btn-ghost" style={{ padding: '3px' }} onClick={() => setRecursos(r => r.filter((_,j) => j !== i))}><X size={10} /></button>
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button className="btn-ghost" style={{ fontSize: 12 }}
+              <button className="btn-ghost" style={{ fontSize: 11 }}
                 onClick={() => setRecursos(r => [...r, { cantidad: '', descripcion: '', costo: '0' }])}>
-                <Plus size={12} /> Agregar
+                <Plus size={10} /> Agregar
               </button>
-              {costoTotal > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
+              {costoTotal > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)' }}>
                 ${costoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
               </div>}
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
           </button>
         </div>
       </div>
