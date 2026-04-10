@@ -49,9 +49,7 @@ const ADMIN_MODULOS = [
   'lotes', 'propietarios', 'contratos', 'escrituras',
   'cobranza', 'facturas', 'accesos', 'incidencias',
   'proyectos', 'mantenimiento', 'comunicados',
-  'compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago',
-  'proveedores', 'articulos', 'almacenes', 'areas',
-  'tesoreria', 'reportes', 'catalogos',
+  'compras', 'tesoreria', 'reportes', 'catalogos',
 ]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')

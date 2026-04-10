@@ -6,7 +6,7 @@ import { dbComp, supabase } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, Edit2, X, Save, Loader,
   ArrowLeft, Phone, Mail, Upload, ExternalLink, Trash2,
-  FileText, CheckCircle, ChevronLeft, ChevronRight
+  FileText, CheckCircle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Proveedor, FORMAS_PAGO_COMP } from '../types'
@@ -29,25 +29,19 @@ export default function ProveedoresPage() {
   const [search, setSearch]   = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
-  const [page, setPage]       = useState(1)
-  const ROWS_PER_PAGE = 20
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    let q = dbComp.from('proveedores').select('*').order('nombre')
+    let q = dbComp.from('proveedores').select('*').order('Clave')
     if (debouncedSearch) q = q.or(`nombre.ilike.%${debouncedSearch}%,rfc.ilike.%${debouncedSearch}%,clave.ilike.%${debouncedSearch}%`)
     const { data } = await q
     setRows(data ?? []); setLoading(false)
-    setPage(1)
   }, [debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   // Contar documentos cargados de un proveedor
   const docsCount = (r: any) => DOCS.filter(d => r[d.key]).length
-
-  const totalPages = Math.ceil(rows.length / ROWS_PER_PAGE)
-  const paginatedRows = rows.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE)
 
   return (
     <div style={{ padding: '32px 36px' }}>
@@ -88,7 +82,7 @@ export default function ProveedoresPage() {
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40 }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
             ) : rows.length === 0 ? (
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin proveedores registrados</td></tr>
-            ) : paginatedRows.map(r => {
+            ) : rows.map(r => {
               const ndocs = docsCount(r)
               return (
                 <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.45 }}>
@@ -126,32 +120,6 @@ export default function ProveedoresPage() {
             })}
           </tbody>
         </table>
-
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderTop: '1px solid #e2e8f0', background: '#fafafa' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-              Mostrando {(page - 1) * ROWS_PER_PAGE + 1} - {Math.min(page * ROWS_PER_PAGE, rows.length)} de {rows.length}
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button 
-                className="btn-ghost" 
-                style={{ padding: '6px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
-                disabled={page === 1}
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-              >
-                <ChevronLeft size={14} /> Anterior
-              </button>
-              <button 
-                className="btn-ghost" 
-                style={{ padding: '6px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
-                disabled={page === totalPages}
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              >
-                Siguiente <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {modal !== null && (
@@ -272,6 +240,13 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
   }
 
   const TABS = [{ key: 'datos', label: 'Datos Generales' }, { key: 'documentos', label: 'Documentos Fiscales' }]
+  const G = ({ children }: { children: React.ReactNode }) => <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>{children}</div>
+  const F = ({ label, k, mono }: { label: string; k: string; mono?: boolean }) => (
+    <div><label className="label">{label}</label>
+      <input className="input" value={(form as any)[k]} onChange={set(k)}
+        style={{ fontFamily: mono ? 'monospace' : undefined, textTransform: mono ? 'uppercase' : undefined }} />
+    </div>
+  )
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -313,20 +288,20 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
           {tab === 'datos' && (
             <>
               <Sec label="Datos Fiscales">
-                <G><F label="Clave *" value={form.clave} onChange={set('clave')} mono /><F label="Nombre *" value={form.nombre} onChange={set('nombre')} /></G>
-                <G><F label="Razón Social" value={form.razon_social} onChange={set('razon_social')} /><F label="RFC" value={form.rfc} onChange={set('rfc')} mono /></G>
+                <G><F label="Clave *" k="clave" mono /><F label="Nombre *" k="nombre" /></G>
+                <G><F label="Razón Social" k="razon_social" /><F label="RFC" k="rfc" mono /></G>
               </Sec>
               <Sec label="Contacto">
-                <G><F label="Contacto" value={form.contacto} onChange={set('contacto')} /><F label="Teléfono" value={form.telefono} onChange={set('telefono')} /></G>
-                <F label="Correo" value={form.correo} onChange={set('correo')} />
+                <G><F label="Contacto" k="contacto" /><F label="Teléfono" k="telefono" /></G>
+                <F label="Correo" k="correo" />
               </Sec>
               <Sec label="Domicilio">
-                <F label="Calle y Número" value={form.calle} onChange={set('calle')} />
-                <G><F label="Colonia" value={form.colonia} onChange={set('colonia')} /><F label="C.P." value={form.cp} onChange={set('cp')} /></G>
-                <G><F label="Ciudad" value={form.ciudad} onChange={set('ciudad')} /><F label="Estado" value={form.estado} onChange={set('estado')} /></G>
+                <F label="Calle y Número" k="calle" />
+                <G><F label="Colonia" k="colonia" /><F label="C.P." k="cp" /></G>
+                <G><F label="Ciudad" k="ciudad" /><F label="Estado" k="estado" /></G>
               </Sec>
               <Sec label="Datos Bancarios">
-                <G><F label="Banco" value={form.banco} onChange={set('banco')} /><F label="CLABE (18 dígitos)" value={form.cuenta_clabe} onChange={set('cuenta_clabe')} mono /></G>
+                <G><F label="Banco" k="banco" /><F label="CLABE (18 dígitos)" k="cuenta_clabe" mono /></G>
                 <div><label className="label">Condiciones de Pago</label>
                   <select className="select" value={form.condiciones_pago} onChange={set('condiciones_pago')}>
                     <option value="">—</option>
@@ -466,17 +441,5 @@ const Sec = ({ label, children }: { label: string; children: React.ReactNode }) 
       {label}
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{children}</div>
-  </div>
-)
-
-const G = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>{children}</div>
-)
-
-const F = ({ label, value, onChange, mono }: { label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; mono?: boolean }) => (
-  <div>
-    <label className="label">{label}</label>
-    <input className="input" value={value} onChange={onChange}
-      style={{ fontFamily: mono ? 'monospace' : undefined, textTransform: mono ? 'uppercase' : undefined }} />
   </div>
 )

@@ -13,12 +13,10 @@ export default function Home() {
     if (!authUser) { router.replace('/login'); return }
     switch (authUser.rol) {
       case 'compras':
-      case 'compras_supervisor':
       case 'almacen':       router.replace('/compras');       break
       case 'mantenimiento': router.replace('/mantenimiento'); break
       case 'cobranza':      router.replace('/cobranza');      break
-      case 'vigilancia':
-      case 'seguridad':     router.replace('/accesos');       break
+      case 'vigilancia':    router.replace('/accesos');       break
       case 'tesoreria':     router.replace('/tesoreria');    break
       default:              router.replace('/lotes');         break
     }

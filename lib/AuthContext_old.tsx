@@ -49,9 +49,7 @@ const ADMIN_MODULOS = [
   'lotes', 'propietarios', 'contratos', 'escrituras',
   'cobranza', 'facturas', 'accesos', 'incidencias',
   'proyectos', 'mantenimiento', 'comunicados',
-  'compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago',
-  'proveedores', 'articulos', 'almacenes', 'areas',
-  'tesoreria', 'reportes', 'catalogos',
+  'compras', 'tesoreria', 'reportes', 'catalogos',
 ]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
@@ -100,8 +98,8 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   seguridad:           ['accesos', 'incidencias', 'requisiciones'],
 }
 
-// ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
-const ROLES_DELETE: Rol[] = ['superadmin', 'admin']
+// ── Solo superadmin puede eliminar ────────────────────────────────────────────
+const ROLES_DELETE: Rol[] = ['superadmin']
 
 // ── Roles que pueden autorizar documentos ─────────────────────────────────────
 const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'usuarioadmin', 'usuariomantto', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria']
@@ -215,12 +213,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false
   }
 
-  /**
-   * ¿Puede autorizar documentos? (Requisiciones, OC, Transferencias)
-   * El parámetro `modulo` se reserva para futuras restricciones por módulo.
-   * Actualmente verifica solo si el rol está en ROLES_AUTH.
-   */
-  const canAuth = (modulo?: string): boolean => {
+  /** ¿Puede autorizar documentos? (Requisiciones, OC, Transferencias) */
+  const canAuth = (_modulo?: string): boolean => {
     if (!authUser) return false
     return ROLES_AUTH.includes(authUser.rol)
   }
