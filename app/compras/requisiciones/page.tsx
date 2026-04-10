@@ -5,7 +5,7 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Edit2, Eye, X, Save, Loader,
-  ArrowLeft, CheckCircle, XCircle, Trash2, ChevronLeft, ChevronRight
+  ArrowLeft, CheckCircle, XCircle, Trash2, ChevronLeft, ChevronRight, Printer
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Articulo, fmt, fmtFecha, folioGen, StatusBadge, UNIDADES } from '../types'
@@ -15,9 +15,8 @@ const PAGE_SIZE = 20
 type Det = { id?: number; id_articulo_fk: number | null; descripcion: string; cantidad: string; unidad: string; notas: string }
 
 export default function RequisicionesPage() {
-  const { canWrite, canDelete } = useAuth()
+  const { authUser, canWrite, canDelete, canAuth: canAuthFn } = useAuth()
   const router  = useRouter()
-  const { authUser } = useAuth()
   const [rows, setRows]       = useState<any[]>([])
   const [total, setTotal]     = useState(0)
   const [page, setPage]       = useState(0)
@@ -53,7 +52,7 @@ export default function RequisicionesPage() {
     setDetail(null); fetchData()
   }
 
-  const canAuth = authUser?.rol === 'admin' || authUser?.rol === 'compras' || authUser?.rol === 'compras_supervisor' || authUser?.rol === 'fraccionamiento'
+  const canAuth = canAuthFn('requisiciones')
 
   return (
     <div style={{ padding: '32px 36px' }}>
@@ -131,9 +130,150 @@ export default function RequisicionesPage() {
       </div>
 
       {modal !== null && <RequisicionModal row={modal==='new'?null:modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}
-      {detail && <RequisicionDetail req={detail} canAuth={canAuth} onClose={() => setDetail(null)} onAuth={handleAuth} />}
+      {detail && <RequisicionDetail key={detail.id} req={detail} canAuth={canAuth} onClose={() => setDetail(null)} onAuth={handleAuth} />}
     </div>
   )
+}
+
+// ── Centro de costo / sección / frente (texto o catálogo por FK) ─
+async function resolveRequisicionUbicacion(req: any): Promise<{ centroCosto: string; seccion: string; frente: string }> {
+  let centroCosto = String(req.centro_costo ?? '').trim()
+  let seccion = String(req.seccion ?? '').trim()
+  let frente = String(req.frente ?? '').trim()
+  if (!centroCosto && req.id_centro_costo_fk) {
+    const { data } = await dbCfg.from('centros_costo').select('nombre').eq('id', req.id_centro_costo_fk).maybeSingle()
+    centroCosto = (data as { nombre?: string } | null)?.nombre ?? ''
+  }
+  if (!seccion && req.id_seccion_fk) {
+    const { data } = await dbCfg.from('secciones').select('nombre').eq('id', req.id_seccion_fk).maybeSingle()
+    seccion = (data as { nombre?: string } | null)?.nombre ?? ''
+  }
+  if (!frente && req.id_frente_fk) {
+    const { data } = await dbCfg.from('frentes').select('nombre').eq('id', req.id_frente_fk).maybeSingle()
+    frente = (data as { nombre?: string } | null)?.nombre ?? ''
+  }
+  return { centroCosto, seccion, frente }
+}
+
+// ── Imprimir requisición (compartido por ambos modales) ─────
+async function imprimirRequisicion(req: any, det: any[]) {
+  const { centroCosto, seccion, frente } = await resolveRequisicionUbicacion(req)
+
+  let orgNombre = 'Organización'
+  let orgSubtitulo = ''
+  let orgLogo = ''
+  try {
+    const { createClient } = await import('@supabase/supabase-js')
+    const sb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+      .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+    ;(cfgRows ?? []).forEach((r: any) => {
+      if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+      if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+      if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+    })
+  } catch {}
+  const logoHtml = orgLogo
+    ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+    : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+
+  const prioridadColor = req.prioridad === 'Crítica' ? '#dc2626' : req.prioridad === 'Urgente' ? '#d97706' : '#64748b'
+  const filasDet = det.map(d =>
+    `<tr>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13px">${d.descripcion ?? '—'}</td>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:13px;font-weight:600">${d.cantidad ?? ''}</td>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px;color:#64748b">${d.unidad ?? ''}</td>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#94a3b8">${d.notas ?? ''}</td>
+    </tr>`
+  ).join('')
+
+  const html = `<!DOCTYPE html><html><head><title>Requisición ${req.folio ?? 'Nueva'}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
+      .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
+      .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+      .org-sub { font-size: 11px; color: #64748b; }
+      .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 18px; }
+      .info-item label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
+      .info-item span { font-size: 13px; color: #1e293b; }
+      table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+      thead th { background: #f1f5f9; padding: 8px 10px; font-size: 10px; text-transform: uppercase;
+        letter-spacing: 0.05em; text-align: left; border: 1px solid #e2e8f0; color: #64748b; }
+      thead th.right { text-align: right; }
+      .firmas { display: flex; gap: 40px; margin-top: 64px; justify-content: space-around; }
+      .firma { text-align: center; min-width: 160px; }
+      .firma-linea { border-top: 1px solid #1e293b; padding-top: 8px; margin-top: 48px; font-size: 11px; color: #64748b; }
+      .firma-nombre { font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+      .nota { font-size: 11px; color: #94a3b8; font-style: italic; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+      @page { margin: 1.2cm; }
+    </style></head><body>
+    <div class="org-header">
+      ${logoHtml}
+      <div>
+        <div class="org-nombre">${orgNombre}</div>
+        ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div class="doc-title">Requisición de Compra</div>
+        <div style="font-size:16px;font-weight:700;color:#0D4F80;font-family:monospace">${req.folio ?? 'Borrador'}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px">Status: <strong>${req.status ?? 'Borrador'}</strong>
+          &nbsp;·&nbsp; Prioridad: <span style="color:${prioridadColor};font-weight:600">${req.prioridad ?? 'Normal'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item"><label>Área Solicitante</label><span>${req.area_solicitante ?? '—'}</span></div>
+      <div class="info-item"><label>Solicitante</label><span>${req.solicitante ?? '—'}</span></div>
+      <div class="info-item"><label>Fecha Solicitud</label><span>${req.fecha_solicitud ? fmtFecha(req.fecha_solicitud) : fmtFecha(new Date().toISOString())}</span></div>
+      <div class="info-item"><label>Fecha Requerida</label><span>${req.fecha_requerida ? fmtFecha(req.fecha_requerida) : '—'}</span></div>
+      <div class="info-item"><label>Centro de Costo</label><span>${centroCosto || '—'}</span></div>
+      <div class="info-item"><label>Sección</label><span>${seccion || '—'}</span></div>
+      <div class="info-item"><label>Frente</label><span>${frente || '—'}</span></div>
+      ${req.justificacion ? `<div class="info-item" style="grid-column:span 2"><label>Justificación</label><span>${req.justificacion}</span></div>` : ''}
+      ${req.autorizado_por ? `<div class="info-item"><label>Autorizado por</label><span>${req.autorizado_por} — ${fmtFecha(req.fecha_autorizacion)}</span></div>` : ''}
+      ${req.comentario_auth ? `<div class="info-item"><label>Comentario Autorización</label><span>${req.comentario_auth}</span></div>` : ''}
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Descripción</th><th class="right">Cantidad</th><th>Unidad</th><th>Notas</th></tr>
+      </thead>
+      <tbody>${filasDet}</tbody>
+    </table>
+
+    <div class="firmas">
+      <div class="firma">
+        <div class="firma-nombre">${req.solicitante ?? ''}</div>
+        <div class="firma-linea">Solicitó</div>
+      </div>
+      <div class="firma">
+        <div class="firma-nombre">${req.autorizado_por ?? ''}</div>
+        <div class="firma-linea">Autorizó</div>
+      </div>
+      <div class="firma">
+        <div class="firma-nombre"></div>
+        <div class="firma-linea">Recibió</div>
+      </div>
+    </div>
+    <div class="nota">Este documento es un formato de control interno de requisición de compra.</div>
+    </body></html>`
+
+  const iframe = document.createElement('iframe')
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+  document.body.appendChild(iframe)
+  iframe.contentDocument!.open()
+  iframe.contentDocument!.write(html)
+  iframe.contentDocument!.close()
+  setTimeout(() => {
+    iframe.contentWindow!.focus()
+    iframe.contentWindow!.print()
+    setTimeout(() => document.body.removeChild(iframe), 2000)
+  }, 300)
 }
 
 // ── Modal crear/editar requisición ──────────────────────────
@@ -394,14 +534,31 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
             </button>
           </Sec>
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-secondary" onClick={() => handleSave(false)} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar Borrador
-          </button>
-          <button className="btn-primary" onClick={() => handleSave(true)} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Enviar para Autorización
-          </button>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <div>
+            {row && (
+              <button className="btn-secondary" onClick={() => imprimirRequisicion({
+                ...row,
+                id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+                id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+                id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
+                centro_costo: null,
+                seccion: null,
+                frente: null,
+              }, det.filter(d => d.descripcion.trim() && Number(d.cantidad) > 0))}>
+                <Printer size={13} /> Imprimir
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+            <button className="btn-secondary" onClick={() => handleSave(false)} disabled={saving}>
+              {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar Borrador
+            </button>
+            <button className="btn-primary" onClick={() => handleSave(true)} disabled={saving}>
+              {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Enviar para Autorización
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -413,11 +570,29 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
   const [det, setDet]           = useState<any[]>([])
   const [comentario, setComent] = useState('')
   const [showAuth, setShowAuth] = useState(false)
+  const [ubic, setUbic] = useState(() => ({
+    cc: String(req.centro_costo ?? '').trim() || '—',
+    seccion: String(req.seccion ?? '').trim() || '—',
+    frente: String(req.frente ?? '').trim() || '—',
+  }))
 
   useEffect(() => {
     dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', req.id)
       .then(({ data }) => setDet(data ?? []))
   }, [req.id])
+
+  useEffect(() => {
+    let cancelled = false
+    resolveRequisicionUbicacion(req).then(u => {
+      if (cancelled) return
+      setUbic({
+        cc: u.centroCosto || '—',
+        seccion: u.seccion || '—',
+        frente: u.frente || '—',
+      })
+    })
+    return () => { cancelled = true }
+  }, [req.id, req.centro_costo, req.seccion, req.frente, req.id_centro_costo_fk, req.id_seccion_fk, req.id_frente_fk])
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -431,15 +606,21 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{req.area_solicitante} · {req.solicitante} · {fmtFecha(req.fecha_solicitud)}</div>
           </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => imprimirRequisicion(req, det)}>
+              <Printer size={13} /> Imprimir
+            </button>
+            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          </div>
         </div>
 
         <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 120px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Info */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
             <DI label="Fecha Requerida"  value={fmtFecha(req.fecha_requerida)} />
-            <DI label="Centro de Costo"  value={req.centro_costo} />
-            <DI label="Frente"           value={req.frente} />
+            <DI label="Centro de Costo"  value={ubic.cc} />
+            <DI label="Sección"         value={ubic.seccion} />
+            <DI label="Frente"           value={ubic.frente} />
             {req.justificacion && <DI label="Justificación" value={req.justificacion} />}
             {req.autorizado_por && <DI label="Autorizado por" value={`${req.autorizado_por} — ${fmtFecha(req.fecha_autorizacion)}`} />}
             {req.comentario_auth && <DI label="Comentario" value={req.comentario_auth} />}
