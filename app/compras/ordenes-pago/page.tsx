@@ -695,6 +695,8 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
   const [secMap, setSecMap]       = useState<Record<number, string>>({})
   const [frMap,  setFrMap]        = useState<Record<number, string>>({})
+  const [abonos, setAbonos]       = useState<any[]>([])
+  const [loadingAbonos, setLoadingAbonos] = useState(true)
   const [authComment, setAuthCom] = useState('')
   const [authLoading, setAuthLd]  = useState(false)
 
@@ -717,6 +719,11 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         setCcMap(cm); setSecMap(sm); setFrMap(fm)
       })
     })
+
+    setLoadingAbonos(true)
+    dbComp.from('cxp_abonos').select('*').eq('id_op_fk', op.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { setAbonos(data ?? []); setLoadingAbonos(false) })
   }, [op.id])
 
   const cancelar = async () => {
@@ -899,6 +906,44 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </Sec>
+          )}
+
+          {abonos.length > 0 && (
+            <Sec label="Pagos Asociados">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {loadingAbonos ? (
+                  <div style={{ padding: 10, fontSize: 12, color: 'var(--text-muted)' }}>Cargando pagos...</div>
+                ) : abonos.map(a => (
+                  <div key={a.id} style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums', marginBottom: 2 }}>
+                        {fmt(a.monto)}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {fmtFecha(a.fecha_abono)} · {a.forma_pago}
+                        {a.referencia && <span style={{ marginLeft: 6, fontFamily: 'monospace' }}>Ref: {a.referencia}</span>}
+                      </div>
+                      {a.notas && <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 4 }}>{a.notas}</div>}
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      {a.comprobante && (
+                        <a href={a.comprobante} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none' }}>
+                          <CheckCircle size={11} /> Comprobante de Pago
+                        </a>
+                      )}
+                      {a.complemento_pago && (
+                        <a href={a.complemento_pago} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, padding: '4px 8px', background: '#fdf4ff', color: '#7c3aed', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none' }}>
+                          <FileText size={11} /> Complemento SAT
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </Sec>
           )}
