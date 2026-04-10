@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
   ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight,
-  Edit2, Upload, ExternalLink, FileText, AlertTriangle
+  Edit2, Upload, ExternalLink, FileText, AlertTriangle, MessageSquare, Send
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP } from '../types'
@@ -711,6 +711,9 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
   const { authUser, canWrite } = useAuth()
+  const puedePublicarInstruccion = Boolean(
+    authUser && (canWrite('ordenes-pago') || authUser.rol === 'tesoreria')
+  )
   const puedeSubirFacturaPagada = op.status === 'Pagada' && canWrite('ordenes-pago')
   const [localOp, setLocalOp]   = useState(op)
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null)
@@ -725,6 +728,11 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [loadingAbonos, setLoadingAbonos] = useState(true)
   const [authComment, setAuthCom] = useState('')
   const [authLoading, setAuthLd]  = useState(false)
+  const [instrMsgs, setInstrMsgs] = useState<any[]>([])
+  const [loadingInstr, setLoadingInstr] = useState(true)
+  const [instrText, setInstrText] = useState('')
+  const [sendingInstr, setSendingInstr] = useState(false)
+  const [instrErr, setInstrErr] = useState('')
 
   const puedeAutorizar = ROLES_AUTH_OP.includes(authUser?.rol ?? '')
 
@@ -757,6 +765,41 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     if (dbErr) { alert(dbErr.message); return }
     setLocalOp((p: any) => ({ ...p, [campo]: null }))
   }
+
+  const enviarInstruccion = async () => {
+    const t = instrText.trim()
+    if (!t || !authUser || !puedePublicarInstruccion) return
+    setSendingInstr(true)
+    setInstrErr('')
+    const { data, error } = await dbComp.from('ordenes_pago_instrucciones').insert({
+      id_op_fk: op.id,
+      autor_nombre: authUser.nombre,
+      autor_rol: authUser.rol,
+      cuerpo: t,
+    }).select('id, autor_nombre, autor_rol, cuerpo, created_at').single()
+    if (error) {
+      setInstrErr(error.message)
+      setSendingInstr(false)
+      return
+    }
+    if (data) setInstrMsgs(m => [...m, data])
+    setInstrText('')
+    setSendingInstr(false)
+  }
+
+  useEffect(() => {
+    setLoadingInstr(true)
+    setInstrErr('')
+    dbComp.from('ordenes_pago_instrucciones')
+      .select('id, autor_nombre, autor_rol, cuerpo, created_at')
+      .eq('id_op_fk', op.id)
+      .order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) setInstrErr(error.message)
+        setInstrMsgs(data ?? [])
+        setLoadingInstr(false)
+      })
+  }, [op.id])
 
   useEffect(() => {
     dbComp.from('ordenes_pago_oc').select('*, ordenes_compra(folio, total)')
@@ -923,6 +966,78 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
               {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
             </div>
+          </Sec>
+
+          <Sec label="Instrucciones y respuestas (CXP)">
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+              Conversación asociada a esta orden de pago (p. ej. pago anticipado, aclaraciones). Queda registrada por usuario y fecha.
+            </p>
+            {instrErr && (
+              <div style={{ padding: '8px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>
+                {instrErr}
+              </div>
+            )}
+            <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+              {loadingInstr ? (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: 8 }}><Loader size={14} className="animate-spin" style={{ display: 'inline', marginRight: 6 }} /> Cargando…</div>
+              ) : instrMsgs.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  {puedePublicarInstruccion ? 'Aún no hay mensajes. Escribe una instrucción o respuesta.' : 'Sin mensajes registrados.'}
+                </div>
+              ) : (
+                instrMsgs.map(m => {
+                  const esTeso = m.autor_rol === 'tesoreria'
+                  return (
+                    <div key={m.id}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #e2e8f0',
+                        borderLeft: `3px solid ${esTeso ? '#0891b2' : '#2563eb'}`,
+                        background: esTeso ? '#f0fdfa' : '#f8fafc',
+                      }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{m.autor_nombre ?? '—'}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                          {m.created_at
+                            ? new Date(m.created_at).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
+                            : ''}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 10, color: '#64748b', marginBottom: 6, textTransform: 'capitalize' }}>{m.autor_rol ?? ''}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{m.cuerpo}</div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+            {puedePublicarInstruccion ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <textarea
+                  className="input"
+                  rows={2}
+                  placeholder="Escribe una instrucción o respuesta…"
+                  value={instrText}
+                  onChange={e => setInstrText(e.target.value)}
+                  style={{ resize: 'vertical', fontSize: 13 }}
+                  disabled={sendingInstr}
+                />
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ alignSelf: 'flex-end', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  disabled={sendingInstr || !instrText.trim()}
+                  onClick={enviarInstruccion}
+                >
+                  {sendingInstr ? <Loader size={13} className="animate-spin" /> : <Send size={13} />}
+                  Enviar
+                </button>
+              </div>
+            ) : (
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <MessageSquare size={14} /> Solo lectura: tu rol no puede agregar mensajes en este hilo.
+              </div>
+            )}
           </Sec>
 
           {/* Documentos: solo OP Pagada + permiso → carga PDF/XML; Pendiente u otros → solo lectura si ya hay archivos */}
