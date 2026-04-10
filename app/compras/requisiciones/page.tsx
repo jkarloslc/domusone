@@ -130,13 +130,35 @@ export default function RequisicionesPage() {
       </div>
 
       {modal !== null && <RequisicionModal row={modal==='new'?null:modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}
-      {detail && <RequisicionDetail req={detail} canAuth={canAuth} onClose={() => setDetail(null)} onAuth={handleAuth} />}
+      {detail && <RequisicionDetail key={detail.id} req={detail} canAuth={canAuth} onClose={() => setDetail(null)} onAuth={handleAuth} />}
     </div>
   )
 }
 
+// ── Centro de costo / sección / frente (texto o catálogo por FK) ─
+async function resolveRequisicionUbicacion(req: any): Promise<{ centroCosto: string; seccion: string; frente: string }> {
+  let centroCosto = String(req.centro_costo ?? '').trim()
+  let seccion = String(req.seccion ?? '').trim()
+  let frente = String(req.frente ?? '').trim()
+  if (!centroCosto && req.id_centro_costo_fk) {
+    const { data } = await dbCfg.from('centros_costo').select('nombre').eq('id', req.id_centro_costo_fk).maybeSingle()
+    centroCosto = (data as { nombre?: string } | null)?.nombre ?? ''
+  }
+  if (!seccion && req.id_seccion_fk) {
+    const { data } = await dbCfg.from('secciones').select('nombre').eq('id', req.id_seccion_fk).maybeSingle()
+    seccion = (data as { nombre?: string } | null)?.nombre ?? ''
+  }
+  if (!frente && req.id_frente_fk) {
+    const { data } = await dbCfg.from('frentes').select('nombre').eq('id', req.id_frente_fk).maybeSingle()
+    frente = (data as { nombre?: string } | null)?.nombre ?? ''
+  }
+  return { centroCosto, seccion, frente }
+}
+
 // ── Imprimir requisición (compartido por ambos modales) ─────
 async function imprimirRequisicion(req: any, det: any[]) {
+  const { centroCosto, seccion, frente } = await resolveRequisicionUbicacion(req)
+
   let orgNombre = 'Organización'
   let orgSubtitulo = ''
   let orgLogo = ''
@@ -209,8 +231,9 @@ async function imprimirRequisicion(req: any, det: any[]) {
       <div class="info-item"><label>Solicitante</label><span>${req.solicitante ?? '—'}</span></div>
       <div class="info-item"><label>Fecha Solicitud</label><span>${req.fecha_solicitud ? fmtFecha(req.fecha_solicitud) : fmtFecha(new Date().toISOString())}</span></div>
       <div class="info-item"><label>Fecha Requerida</label><span>${req.fecha_requerida ? fmtFecha(req.fecha_requerida) : '—'}</span></div>
-      ${req.centro_costo ? `<div class="info-item"><label>Centro de Costo</label><span>${req.centro_costo}</span></div>` : ''}
-      ${req.frente ? `<div class="info-item"><label>Frente</label><span>${req.frente}</span></div>` : ''}
+      <div class="info-item"><label>Centro de Costo</label><span>${centroCosto || '—'}</span></div>
+      <div class="info-item"><label>Sección</label><span>${seccion || '—'}</span></div>
+      <div class="info-item"><label>Frente</label><span>${frente || '—'}</span></div>
       ${req.justificacion ? `<div class="info-item" style="grid-column:span 2"><label>Justificación</label><span>${req.justificacion}</span></div>` : ''}
       ${req.autorizado_por ? `<div class="info-item"><label>Autorizado por</label><span>${req.autorizado_por} — ${fmtFecha(req.fecha_autorizacion)}</span></div>` : ''}
       ${req.comentario_auth ? `<div class="info-item"><label>Comentario Autorización</label><span>${req.comentario_auth}</span></div>` : ''}
@@ -514,7 +537,15 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
         <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
           <div>
             {row && (
-              <button className="btn-secondary" onClick={() => imprimirRequisicion(row, det.filter(d => d.descripcion.trim() && Number(d.cantidad) > 0))}>
+              <button className="btn-secondary" onClick={() => imprimirRequisicion({
+                ...row,
+                id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+                id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+                id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
+                centro_costo: null,
+                seccion: null,
+                frente: null,
+              }, det.filter(d => d.descripcion.trim() && Number(d.cantidad) > 0))}>
                 <Printer size={13} /> Imprimir
               </button>
             )}
@@ -539,11 +570,29 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
   const [det, setDet]           = useState<any[]>([])
   const [comentario, setComent] = useState('')
   const [showAuth, setShowAuth] = useState(false)
+  const [ubic, setUbic] = useState(() => ({
+    cc: String(req.centro_costo ?? '').trim() || '—',
+    seccion: String(req.seccion ?? '').trim() || '—',
+    frente: String(req.frente ?? '').trim() || '—',
+  }))
 
   useEffect(() => {
     dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', req.id)
       .then(({ data }) => setDet(data ?? []))
   }, [req.id])
+
+  useEffect(() => {
+    let cancelled = false
+    resolveRequisicionUbicacion(req).then(u => {
+      if (cancelled) return
+      setUbic({
+        cc: u.centroCosto || '—',
+        seccion: u.seccion || '—',
+        frente: u.frente || '—',
+      })
+    })
+    return () => { cancelled = true }
+  }, [req.id, req.centro_costo, req.seccion, req.frente, req.id_centro_costo_fk, req.id_seccion_fk, req.id_frente_fk])
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -569,8 +618,9 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
           {/* Info */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
             <DI label="Fecha Requerida"  value={fmtFecha(req.fecha_requerida)} />
-            <DI label="Centro de Costo"  value={req.centro_costo} />
-            <DI label="Frente"           value={req.frente} />
+            <DI label="Centro de Costo"  value={ubic.cc} />
+            <DI label="Sección"         value={ubic.seccion} />
+            <DI label="Frente"           value={ubic.frente} />
             {req.justificacion && <DI label="Justificación" value={req.justificacion} />}
             {req.autorizado_por && <DI label="Autorizado por" value={`${req.autorizado_por} — ${fmtFecha(req.fecha_autorizacion)}`} />}
             {req.comentario_auth && <DI label="Comentario" value={req.comentario_auth} />}
