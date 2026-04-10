@@ -34,7 +34,7 @@ export default function ProveedoresPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    let q = dbComp.from('proveedores').select('*').order('nombre')
+    let q = dbComp.from('proveedores').select('*').order('clave')
     if (debouncedSearch) q = q.or(`nombre.ilike.%${debouncedSearch}%,rfc.ilike.%${debouncedSearch}%,clave.ilike.%${debouncedSearch}%`)
     const { data } = await q
     setRows(data ?? []); setLoading(false)
