@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS cfg.equipos (
   id                  SERIAL PRIMARY KEY,
   nombre              TEXT    NOT NULL,
   tipo                TEXT    NOT NULL DEFAULT 'Vehículo',  -- Vehículo | Maquinaria | Herramienta
-  marca               TEXT,
+  id_marca_fk         INTEGER REFERENCES cfg.marcas_vehiculos(id),
   modelo              TEXT,
   anio                INTEGER,
   no_serie            TEXT,
@@ -66,6 +66,37 @@ CREATE TABLE IF NOT EXISTS ctrl.bitacora_equipo_evidencias (
 );
 
 -- Índices útiles
-CREATE INDEX IF NOT EXISTS idx_bitacora_equipo    ON ctrl.bitacora_equipos(id_equipo_fk);
-CREATE INDEX IF NOT EXISTS idx_bitacora_ops       ON ctrl.bitacora_equipo_ops(id_bitacora_fk);
+CREATE INDEX IF NOT EXISTS idx_bitacora_equipo     ON ctrl.bitacora_equipos(id_equipo_fk);
+CREATE INDEX IF NOT EXISTS idx_bitacora_ops        ON ctrl.bitacora_equipo_ops(id_bitacora_fk);
 CREATE INDEX IF NOT EXISTS idx_bitacora_evidencias ON ctrl.bitacora_equipo_evidencias(id_bitacora_fk);
+
+-- ══════════════════════════════════════════════════════════════
+-- RLS — Políticas de acceso
+-- ══════════════════════════════════════════════════════════════
+ALTER TABLE cfg.equipos                   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ctrl.bitacora_equipos         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ctrl.bitacora_equipo_ops      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ctrl.bitacora_equipo_evidencias ENABLE ROW LEVEL SECURITY;
+
+-- Authenticated users can read/write (ajusta según tus políticas existentes)
+CREATE POLICY "equipo_select"   ON cfg.equipos                    FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "equipo_insert"   ON cfg.equipos                    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "equipo_update"   ON cfg.equipos                    FOR UPDATE USING (auth.role() = 'authenticated');
+
+CREATE POLICY "bit_select"      ON ctrl.bitacora_equipos          FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "bit_insert"      ON ctrl.bitacora_equipos          FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "bit_update"      ON ctrl.bitacora_equipos          FOR UPDATE USING (auth.role() = 'authenticated');
+
+CREATE POLICY "bit_ops_select"  ON ctrl.bitacora_equipo_ops       FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "bit_ops_insert"  ON ctrl.bitacora_equipo_ops       FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "bit_ops_delete"  ON ctrl.bitacora_equipo_ops       FOR DELETE USING (auth.role() = 'authenticated');
+
+CREATE POLICY "bit_ev_select"   ON ctrl.bitacora_equipo_evidencias FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "bit_ev_insert"   ON ctrl.bitacora_equipo_evidencias FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "bit_ev_delete"   ON ctrl.bitacora_equipo_evidencias FOR DELETE USING (auth.role() = 'authenticated');
+
+-- ══════════════════════════════════════════════════════════════
+-- Si ya creaste la tabla con la columna "marca TEXT", ejecuta esto:
+-- ══════════════════════════════════════════════════════════════
+-- ALTER TABLE cfg.equipos DROP COLUMN IF EXISTS marca;
+-- ALTER TABLE cfg.equipos ADD COLUMN IF NOT EXISTS id_marca_fk INTEGER REFERENCES cfg.marcas_vehiculos(id);

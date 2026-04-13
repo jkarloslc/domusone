@@ -73,7 +73,7 @@ export default function EquipoFlotaTab() {
   const fetchEquipos = useCallback(async () => {
     setLoadingEq(true)
     const [{ data: eqs }, { data: areas }] = await Promise.all([
-      dbCfg.from('equipos').select('*').eq('activo', true).order('nombre'),
+      dbCfg.from('equipos').select('*, marcas_vehiculos(id, nombre)').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre').eq('activo', true),
     ])
     setEquipos(eqs ?? [])
@@ -110,7 +110,7 @@ export default function EquipoFlotaTab() {
       return (e.nombre ?? '').toLowerCase().includes(q)
         || (e.placa ?? '').toLowerCase().includes(q)
         || (e.no_serie ?? '').toLowerCase().includes(q)
-        || (e.marca ?? '').toLowerCase().includes(q)
+        || (e.marcas_vehiculos?.nombre ?? '').toLowerCase().includes(q)
     }
     return true
   })
@@ -246,7 +246,7 @@ export default function EquipoFlotaTab() {
                     </td>
                     <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{eq.tipo}</td>
                     <td style={{ padding: '8px 10px' }}>
-                      <div style={{ fontSize: 12 }}>{eq.marca ?? '—'}</div>
+                      <div style={{ fontSize: 12 }}>{eq.marcas_vehiculos?.nombre ?? '—'}</div>
                       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{eq.modelo ?? ''} {eq.anio ? `· ${eq.anio}` : ''}</div>
                     </td>
                     <td style={{ padding: '8px 10px' }}>
@@ -442,12 +442,13 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
   const [error,     setError]     = useState('')
   const [uploading, setUploading] = useState(false)
   const [areas,     setAreas]     = useState<any[]>([])
+  const [marcas,    setMarcas]    = useState<any[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     nombre:             eq?.nombre             ?? '',
     tipo:               eq?.tipo               ?? 'Vehículo',
-    marca:              eq?.marca              ?? '',
+    id_marca_fk:        eq?.id_marca_fk?.toString() ?? '',
     modelo:             eq?.modelo             ?? '',
     anio:               eq?.anio?.toString()   ?? '',
     no_serie:           eq?.no_serie           ?? '',
@@ -466,8 +467,13 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
     setForm(f => ({ ...f, [k]: e.target.value }))
 
   useEffect(() => {
-    dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setAreas(data ?? []))
+    Promise.all([
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('marcas_vehiculos').select('id, nombre').eq('activo', true).order('nombre'),
+    ]).then(([{ data: a }, { data: m }]) => {
+      setAreas(a ?? [])
+      setMarcas(m ?? [])
+    })
   }, [])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -488,7 +494,7 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
     const payload = {
       nombre:            form.nombre.trim(),
       tipo:              form.tipo,
-      marca:             form.marca.trim() || null,
+      id_marca_fk:       form.id_marca_fk ? Number(form.id_marca_fk) : null,
       modelo:            form.modelo.trim() || null,
       anio:              form.anio ? Number(form.anio) : null,
       no_serie:          form.no_serie.trim() || null,
@@ -558,7 +564,10 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
             </div>
             <div>
               <label className="label" style={{ fontSize: 11 }}>Marca</label>
-              <input className="input" style={{ fontSize: 13 }} value={form.marca} onChange={setF('marca')} />
+              <select className="select" style={{ fontSize: 12 }} value={form.id_marca_fk} onChange={setF('id_marca_fk')}>
+                <option value="">— Sin marca —</option>
+                {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+              </select>
             </div>
             <div>
               <label className="label" style={{ fontSize: 11 }}>Modelo</label>
@@ -647,7 +656,7 @@ function EquipoDetail({ eq, areaMap, bitacora, onClose, onNewBit }: {
             <span style={{ fontSize: 11, color: 'var(--text-muted)', alignSelf: 'center' }}>{eq.tipo}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <DI label="Marca"   value={eq.marca} />
+            <DI label="Marca"   value={eq.marcas_vehiculos?.nombre ?? null} />
             <DI label="Modelo"  value={`${eq.modelo ?? ''} ${eq.anio ? `(${eq.anio})` : ''}`.trim() || null} />
             <DI label="Placa"   value={eq.placa} />
             <DI label="No. Serie" value={eq.no_serie} />
