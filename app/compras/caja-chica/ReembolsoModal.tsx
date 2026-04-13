@@ -13,7 +13,7 @@ type Detalle = {
   num_comprobante: string
   url_comprobante: string
   id_centro_costo_fk: string
-  id_seccion_fk: string
+  id_area_fk: string
   id_frente_fk: string
 }
 
@@ -24,7 +24,7 @@ const emptyDetalle = (): Detalle => ({
   concepto: '', monto: '', categoria: 'Otro',
   tipo_comprobante: 'Ticket', num_comprobante: '',
   url_comprobante: '', id_centro_costo_fk: '',
-  id_seccion_fk: '', id_frente_fk: '',
+  id_area_fk: '', id_frente_fk: '',
 })
 
 type Props = {
@@ -48,14 +48,14 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
 
   // Catálogos
   const [ccs,       setCCs]       = useState<any[]>([])
-  const [secciones, setSecciones] = useState<any[]>([])
+  const [areas, setAreas] = useState<any[]>([])
   const [frentes,   setFrentes]   = useState<any[]>([])
 
   useEffect(() => {
     Promise.all([
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
     ]).then(([cc, sec, frt]) => {
       setCCs(cc.data ?? [])
       setSecciones(sec.data ?? [])
@@ -76,7 +76,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
               num_comprobante:    d.num_comprobante ?? '',
               url_comprobante:    d.url_comprobante ?? '',
               id_centro_costo_fk: d.id_centro_costo_fk?.toString() ?? '',
-              id_seccion_fk:      d.id_seccion_fk?.toString() ?? '',
+              id_area_fk:         d.id_area_fk?.toString() ?? '',
               id_frente_fk:       d.id_frente_fk?.toString() ?? '',
             })))
           }
@@ -90,8 +90,8 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
   const setDet = (i: number, k: keyof Detalle, v: string) =>
     setDetalles(ds => ds.map((d, j) => j === i ? { ...d, [k]: v,
       // reset frente si cambia seccion, reset seccion/frente si cambia CC
-      ...(k === 'id_centro_costo_fk' ? { id_seccion_fk: '', id_frente_fk: '' } : {}),
-      ...(k === 'id_seccion_fk' ? { id_frente_fk: '' } : {}),
+      ...(k === 'id_centro_costo_fk' ? { id_area_fk: '', id_frente_fk: '' } : {}),
+      ...(k === 'id_area_fk' ? { id_frente_fk: '' } : {}),
     } : d))
 
   const addLinea    = () => setDetalles(ds => [...ds, emptyDetalle()])
@@ -137,7 +137,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
           num_comprobante:    d.num_comprobante.trim() || null,
           url_comprobante:    d.url_comprobante || null,
           id_centro_costo_fk: d.id_centro_costo_fk ? Number(d.id_centro_costo_fk) : null,
-          id_seccion_fk:      d.id_seccion_fk ? Number(d.id_seccion_fk) : null,
+          id_area_fk:         d.id_area_fk ? Number(d.id_area_fk) : null,
           id_frente_fk:       d.id_frente_fk ? Number(d.id_frente_fk) : null,
         }))
       )
@@ -165,7 +165,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
           num_comprobante:    d.num_comprobante.trim() || null,
           url_comprobante:    d.url_comprobante || null,
           id_centro_costo_fk: d.id_centro_costo_fk ? Number(d.id_centro_costo_fk) : null,
-          id_seccion_fk:      d.id_seccion_fk ? Number(d.id_seccion_fk) : null,
+          id_area_fk:         d.id_area_fk ? Number(d.id_area_fk) : null,
           id_frente_fk:       d.id_frente_fk ? Number(d.id_frente_fk) : null,
         }))
       )
@@ -221,10 +221,10 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {detalles.map((d, i) => {
                 const secsFiltradas = d.id_centro_costo_fk
-                  ? secciones.filter(s => s.id_centro_costo_fk === Number(d.id_centro_costo_fk))
-                  : secciones
-                const frtsFiltrados = d.id_seccion_fk
-                  ? frentes.filter(f => f.id_seccion_fk === Number(d.id_seccion_fk))
+                  ? areas.filter(s => s.id_centro_costo_fk === Number(d.id_centro_costo_fk))
+                  : areas
+                const frtsFiltrados = d.id_area_fk
+                  ? frentes.filter(f => f.id_area_fk === Number(d.id_area_fk))
                   : frentes
 
                 return (
@@ -281,7 +281,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
                       </div>
                       <div>
                         <label className="label">Sección</label>
-                        <select className="select" value={d.id_seccion_fk} onChange={e => setDet(i, 'id_seccion_fk', e.target.value)}>
+                        <select className="select" value={d.id_area_fk} onChange={e => setDet(i, 'id_area_fk', e.target.value)}>
                           <option value="">— Sección —</option>
                           {secsFiltradas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                         </select>

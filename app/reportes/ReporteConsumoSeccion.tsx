@@ -6,10 +6,10 @@ import { RefreshCw, Filter } from 'lucide-react'
 
 export default function ReporteConsumoSeccion() {
   const [rows, setRows]           = useState<any[]>([])
-  const [secciones, setSecciones] = useState<any[]>([])
+  const [areas, setAreas] = useState<any[]>([])
   const [provMap, setProvMap]     = useState<Record<number, string>>({})
   const [loading, setLoading]     = useState(true)
-  const [filtroSec, setFiltroSec] = useState('')
+  const [filtroArea, setFiltroArea] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')  // tipo_gasto
   const [filtroDe, setFiltroDe]   = useState('')
   const [filtroA,  setFiltroA]    = useState('')
@@ -18,27 +18,27 @@ export default function ReporteConsumoSeccion() {
     setLoading(true)
 
     const [{ data: secs }, { data: provs }, { data: ops }] = await Promise.all([
-      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, id_seccion_fk, id_proveedor_fk, concepto, tipo_gasto, monto, saldo, fecha_op, status')
-        .not('id_seccion_fk', 'is', null)
+        .select('id, folio, id_area_fk, id_proveedor_fk, concepto, tipo_gasto, monto, saldo, fecha_op, status')
+        .not('id_area_fk', 'is', null)
         .neq('status', 'Cancelada')
         .order('fecha_op', { ascending: false }),
     ])
 
-    setSecciones(secs ?? [])
+    setAreas(secs ?? [])
 
     const pm: Record<number, string> = {}
     ;(provs ?? []).forEach((p: any) => { pm[p.id] = p.nombre })
     setProvMap(pm)
 
-    const secMap: Record<number, string> = {}
-    ;(secs ?? []).forEach((s: any) => { secMap[s.id] = s.nombre })
+    const areaMap: Record<number, string> = {}
+    ;(secs ?? []).forEach((s: any) => { areaMap[s.id] = s.nombre })
 
     // Filtrar
     let opsFiltradas = ops ?? []
-    if (filtroSec)  opsFiltradas = opsFiltradas.filter((r: any) => r.id_seccion_fk === Number(filtroSec))
+    if (filtroArea)  opsFiltradas = opsFiltradas.filter((r: any) => r.id_area_fk === Number(filtroArea))
     if (filtroTipo) opsFiltradas = opsFiltradas.filter((r: any) => r.tipo_gasto === filtroTipo)
     if (filtroDe)   opsFiltradas = opsFiltradas.filter((r: any) => r.fecha_op >= filtroDe)
     if (filtroA)    opsFiltradas = opsFiltradas.filter((r: any) => r.fecha_op <= filtroA)
@@ -46,11 +46,11 @@ export default function ReporteConsumoSeccion() {
     // Agrupar por sección
     const grouped: Record<number, any> = {}
     for (const op of opsFiltradas) {
-      const sid = op.id_seccion_fk
+      const sid = op.id_area_fk
       if (!grouped[sid]) {
         grouped[sid] = {
-          id_seccion_fk: sid,
-          nombre:        secMap[sid] ?? `Sección #${sid}`,
+          id_area_fk: sid,
+          nombre:        areaMap[sid] ?? `Área #${sid}`,
           total:         0,
           pagado:        0,
           saldo:         0,
@@ -68,7 +68,7 @@ export default function ReporteConsumoSeccion() {
     const result = Object.values(grouped).sort((a: any, b: any) => b.total - a.total)
     setRows(result)
     setLoading(false)
-  }, [filtroSec, filtroTipo, filtroDe, filtroA])
+  }, [filtroArea, filtroTipo, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -96,9 +96,9 @@ export default function ReporteConsumoSeccion() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-          <select className="select" style={{ minWidth: 200 }} value={filtroSec} onChange={e => setFiltroSec(e.target.value)}>
-            <option value="">Todas las secciones</option>
-            {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          <select className="select" style={{ minWidth: 200 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)}>
+            <option value="">Todas las áreas</option>
+            {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
           </select>
         </div>
         <select className="select" style={{ minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
@@ -142,13 +142,13 @@ export default function ReporteConsumoSeccion() {
           Sin datos para los filtros seleccionados
         </div>
       ) : rows.map(sec => (
-        <div key={sec.id_seccion_fk} className="card" style={{ overflow: 'hidden', marginBottom: 12 }}>
+        <div key={sec.id_area_fk} className="card" style={{ overflow: 'hidden', marginBottom: 12 }}>
           {/* Header sección */}
           <div
-            onClick={() => toggle(sec.id_seccion_fk)}
+            onClick={() => toggle(sec.id_area_fk)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 16px', background: '#eff6ff', cursor: 'pointer',
-              borderBottom: expanded.has(sec.id_seccion_fk) ? '1px solid #bfdbfe' : 'none' }}
+              borderBottom: expanded.has(sec.id_area_fk) ? '1px solid #bfdbfe' : 'none' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--blue)' }}>{sec.nombre}</span>
@@ -164,12 +164,12 @@ export default function ReporteConsumoSeccion() {
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Por pagar</div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: sec.saldo > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(sec.saldo)}</div>
               </div>
-              <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>{expanded.has(sec.id_seccion_fk) ? '▲' : '▼'}</span>
+              <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>{expanded.has(sec.id_area_fk) ? '▲' : '▼'}</span>
             </div>
           </div>
 
           {/* Detalle OPs */}
-          {expanded.has(sec.id_seccion_fk) && (
+          {expanded.has(sec.id_area_fk) && (
             <table>
               <thead>
                 <tr>

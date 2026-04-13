@@ -23,7 +23,7 @@ export default function OrdenesPage() {
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
-  const [filterSec, setFilterSec] = useState('')
+  const [filterArea, setFilterArea] = useState('')
   const [ccFiltros, setCcFiltros] = useState<{ id: number; nombre: string }[]>([])
   const [secFiltros, setSecFiltros] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,7 +37,7 @@ export default function OrdenesPage() {
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
     if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
@@ -46,13 +46,13 @@ export default function OrdenesPage() {
     ;(provs ?? []).forEach((p: any) => { m[p.id] = p.nombre })
     setProvMap(m)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterSec])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterArea])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCcFiltros((data ?? []) as { id: number; nombre: string }[]))
-    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setSecFiltros((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
   }, [])
 
@@ -90,13 +90,13 @@ export default function OrdenesPage() {
             {['Borrador','Pendiente Auth','Autorizada','Enviada al Prov','Recibida Parcial','Cerrada','Cancelada'].map(s => <option key={s}>{s}</option>)}
           </select>
           <select className="select" style={{ width: 220 }} value={filterCC}
-            onChange={e => { setFilterCC(e.target.value); setFilterSec(''); setPage(0) }}>
+            onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setPage(0) }}>
             <option value="">Todos los centros de costo</option>
             {ccFiltros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
-          <select className="select" style={{ width: 200 }} value={filterSec}
-            onChange={e => { setFilterSec(e.target.value); setPage(0) }}>
-            <option value="">Todas las secciones</option>
+          <select className="select" style={{ width: 200 }} value={filterArea}
+            onChange={e => { setFilterArea(e.target.value); setPage(0) }}>
+            <option value="">Todas las áreas</option>
             {secFiltros
               .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
               .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
@@ -151,9 +151,9 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const [proveedores, setProvs] = useState<Proveedor[]>([])
   const [almacenes, setAlms]    = useState<any[]>([])
   const [centrosCosto, setCentros] = useState<any[]>([])
-  const [secciones, setSecciones]  = useState<any[]>([])
+  const [areas, setAreas]  = useState<any[]>([])
   const [frentes, setFrentes]      = useState<any[]>([])
-  const [seccionId, setSeccionId]  = useState<string>(row?.id_seccion_fk?.toString() ?? '')
+  const [areaId, setAreaId]  = useState<string>(row?.id_area_fk?.toString() ?? '')
   const [rfqs, setRFQs]         = useState<any[]>([])
   const [form, setForm] = useState({
     id_proveedor_fk:       row?.id_proveedor_fk?.toString() ?? '',
@@ -162,7 +162,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     condiciones_pago:      row?.condiciones_pago ?? '',
     id_almacen_entrega_fk: row?.id_almacen_entrega_fk?.toString() ?? '',
     id_centro_costo_fk:    row?.id_centro_costo_fk?.toString() ?? '',
-    id_seccion_fk:         row?.id_seccion_fk?.toString() ?? '',
+    id_area_fk:         row?.id_area_fk?.toString() ?? '',
     id_frente_fk:          row?.id_frente_fk?.toString() ?? '',
     notas:                 row?.notas ?? '',
   })
@@ -177,9 +177,9 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       .then(({ data }) => setAlms(data ?? []))
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCentros(data ?? []))
-    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => setSecciones(data ?? []))
-    dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setAreas(data ?? []))
+    dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
     ;(async () => {
       const { data: rfqsConOC } = await dbComp.from('ordenes_compra').select('id_rfq_fk').not('id_rfq_fk', 'is', null)
@@ -227,17 +227,17 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     // 3. CC / Sección / Frente desde la requisición vinculada al RFQ
     // Consolidamos en un solo query trayendo rfq + requisición en una sola consulta
     const { data: rfqData } = await dbComp.from('rfq')
-      .select('id_requisicion_fk, requisiciones(id_centro_costo_fk, id_seccion_fk, id_frente_fk)')
+      .select('id_requisicion_fk, requisiciones(id_centro_costo_fk, id_area_fk, id_frente_fk)')
       .eq('id', Number(rfqId)).maybeSingle()
 
     const req = (rfqData as any)?.requisiciones
     if (req) {
-      const secId = req.id_seccion_fk?.toString() ?? ''
-      setSeccionId(secId)
+      const secId = req.id_area_fk?.toString() ?? ''
+      setAreaId(secId)
       setForm(f => ({
         ...f,
         id_centro_costo_fk: req.id_centro_costo_fk?.toString() ?? f.id_centro_costo_fk,
-        id_seccion_fk:      secId                              || f.id_seccion_fk,
+        id_area_fk:         secId                              || f.id_area_fk,
         id_frente_fk:       req.id_frente_fk?.toString()       ?? f.id_frente_fk,
       }))
     }
@@ -276,7 +276,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const handleSave = async (enviar = false) => {
     if (!form.id_proveedor_fk) { setError('Selecciona un proveedor'); return }
     if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
-    if (!form.id_seccion_fk) { setError('Sección es obligatoria'); return }
+    if (!form.id_area_fk) { setError('Área es obligatoria'); return }
     const detValidos = det.filter(d => d.descripcion && Number(d.precio_unitario) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto con precio'); return }
     setSaving(true); setError('')
@@ -290,7 +290,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       condiciones_pago:      form.condiciones_pago || null,
       id_almacen_entrega_fk: form.id_almacen_entrega_fk ? Number(form.id_almacen_entrega_fk) : null,
       id_centro_costo_fk:    form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
-      id_seccion_fk:         form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+      id_area_fk:            form.id_area_fk ? Number(form.id_area_fk) : null,
       id_frente_fk:          form.id_frente_fk ? Number(form.id_frente_fk) : null,
       notas:                 form.notas.trim() || null,
       subtotal, iva, total: subtotal + iva,
@@ -363,18 +363,18 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
               <div>
                 <label className="label">Centro de Costo *</label>
                 <select className="select" value={form.id_centro_costo_fk}
-                  onChange={e => { setSeccionId(''); setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' })) }}>
+                  onChange={e => { setAreaId(''); setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' })) }}>
                   <option value="">— Seleccionar —</option>
                   {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
               <div>
                 <label className="label">Sección *</label>
-                <select className="select" value={seccionId}
-                  onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' })) }}
+                <select className="select" value={areaId}
+                  onChange={e => { setAreaId(e.target.value); setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' })) }}
                   disabled={!form.id_centro_costo_fk}>
                   <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                  {secciones
+                  {areas
                     .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
                     .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
@@ -383,9 +383,9 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                 <label className="label">Frente</label>
                 <select className="select" value={form.id_frente_fk}
                   onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
-                  disabled={!seccionId}>
-                  <option value="">— {seccionId ? 'Seleccionar' : 'Elige sección primero'} —</option>
-                  {frentes.filter(f => !seccionId || f.id_seccion_fk === Number(seccionId))
+                  disabled={!areaId}>
+                  <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
+                  {frentes.filter(f => !areaId || f.id_area_fk === Number(areaId))
                     .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                 </select>
               </div>

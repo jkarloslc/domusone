@@ -45,11 +45,10 @@ const CATALOGOS: CatConfig[] = [
     label: 'Secciones',
     icon:  MapPin,
     color: '#2563eb',
-    desc:  'Secciones o zonas del desarrollo residencial',
+    desc:  'Secciones residenciales — se relacionan con lotes y cobranza',
     campos: [
       { key: 'nombre',              label: 'Nombre *',             type: 'text',   required: true },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
-      { key: 'id_centro_costo_fk',  label: 'Centro de Costo',      type: 'select', selectTabla: 'centros_costo', required: true },
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
       { key: 'fecha_autorizacion',  label: 'Fecha de Autorización',type: 'date' },
       { key: 'cantidad_lotes',      label: 'Cantidad de Lotes',    type: 'number' },
@@ -73,9 +72,21 @@ const CATALOGOS: CatConfig[] = [
     label: 'Centros de Costo',
     icon:  DollarSign,
     color: '#059669',
-    desc:  'Centros de costo para clasificación de requisiciones y pagos',
+    desc:  'Centros de costo para clasificación de compras y mantenimiento',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+    ],
+  },
+  {
+    key:   'areas',
+    tabla: 'areas',
+    label: 'Áreas',
+    icon:  Layers,
+    color: '#0891b2',
+    desc:  'Áreas de obra o zona dentro de un Centro de Costo (compras / mantenimiento)',
+    campos: [
+      { key: 'nombre',              label: 'Nombre *',         type: 'text',   required: true },
+      { key: 'id_centro_costo_fk',  label: 'Centro de Costo *',type: 'select', selectTabla: 'centros_costo', required: true },
     ],
   },
   {
@@ -83,11 +94,11 @@ const CATALOGOS: CatConfig[] = [
     tabla: 'frentes',
     label: 'Frentes',
     icon:  MapPin,
-    color: '#0891b2',
-    desc:  'Frentes de obra o sección para clasificación de requisiciones',
+    color: '#7c3aed',
+    desc:  'Frentes de obra dentro de un Área, para clasificación detallada en compras y mantenimiento',
     campos: [
-      { key: 'nombre',        label: 'Nombre *',  type: 'text',   required: true },
-      { key: 'id_seccion_fk', label: 'Sección *', type: 'select', selectTabla: 'secciones', required: true },
+      { key: 'nombre',      label: 'Nombre *', type: 'text',   required: true },
+      { key: 'id_area_fk',  label: 'Área *',   type: 'select', selectTabla: 'areas', required: true },
     ],
   },
   {

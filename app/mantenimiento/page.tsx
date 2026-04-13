@@ -65,8 +65,8 @@ export default function MantenimientoPage() {
   const { canWrite, canDelete } = useAuth()
   const [tab,          setTab]        = useState<'programa' | 'ordenes'>('programa')
   const [programas,    setProgramas]  = useState<any[]>([])
-  const [secciones,    setSecciones]  = useState<any[]>([])
-  const [secMap,       setSecMap]     = useState<Record<number, string>>({})
+  const [areas,       setAreas]  = useState<any[]>([])
+  const [areaMap,     setAreaMap]     = useState<Record<number, string>>({})
   const [centrosCosto, setCentros]    = useState<any[]>([])
   const [ccMap,        setCcMap]      = useState<Record<number, string>>({})
   const [frentes,      setFrentes]    = useState<any[]>([])
@@ -74,7 +74,7 @@ export default function MantenimientoPage() {
   const [loading,      setLoading]    = useState(true)
   const [filterAnio,   setFilterAnio] = useState(new Date().getFullYear())
   const [filterCC,     setFilterCC]   = useState('')
-  const [filterSec,    setFilterSec]  = useState('')
+  const [filterArea,  setFilterArea]  = useState('')
   const [filterFr,     setFilterFr]   = useState('')
   const [modal,        setModal]      = useState(false)
   const [editing,      setEditing]    = useState<any | null>(null)
@@ -83,17 +83,17 @@ export default function MantenimientoPage() {
 
   useEffect(() => {
     Promise.all([
-      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
     ]).then(([{ data: secs }, { data: ccs }, { data: frs }]) => {
-      setSecciones(secs ?? [])
+      setAreas(secs ?? [])
       setCentros(ccs ?? [])
       setFrentes(frs ?? [])
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
       const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
-      setSecMap(sm); setCcMap(cm); setFrMap(fm)
+      setAreaMap(sm); setCcMap(cm); setFrMap(fm)
     })
   }, [])
 
@@ -102,7 +102,7 @@ export default function MantenimientoPage() {
     let q = dbCtrl.from('programas_mantenimiento').select('*')
       .eq('anio', filterAnio).eq('activo', true).order('nombre')
     if (filterCC)  q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
     if (filterFr)  q = q.eq('id_frente_fk', Number(filterFr))
     const { data: progs } = await q
 
@@ -120,7 +120,7 @@ export default function MantenimientoPage() {
 
     setProgramas(progs.map((p: any) => ({ ...p, tareas: tMap[p.id] ?? [] })))
     setLoading(false)
-  }, [filterAnio, filterCC, filterSec, filterFr])
+  }, [filterAnio, filterCC, filterArea, filterFr])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -236,21 +236,21 @@ export default function MantenimientoPage() {
               <option value="">Centro de costo</option>
               {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
-            <select className="select" style={{ flex: '1 1 110px', maxWidth: 190, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterSec}
-              onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
-              <option value="">Sección</option>
-              {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            <select className="select" style={{ flex: '1 1 110px', maxWidth: 190, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea}
+              onChange={e => { setFilterArea(e.target.value); setFilterFr('') }}>
+              <option value="">Área</option>
+              {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
             <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr}
               onChange={e => setFilterFr(e.target.value)}>
               <option value="">Frente</option>
               {frentes
-                .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
+                .filter(f => !filterArea || f.id_area_fk === Number(filterArea))
                 .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
             </select>
-            {(filterCC || filterSec || filterFr) && (
+            {(filterCC || filterArea || filterFr) && (
               <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
-                onClick={() => { setFilterCC(''); setFilterSec(''); setFilterFr('') }}>
+                onClick={() => { setFilterCC(''); setFilterArea(''); setFilterFr('') }}>
                 <X size={11} /> Limpiar
               </button>
             )}
@@ -290,7 +290,7 @@ export default function MantenimientoPage() {
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--blue)' }}>{prog.nombre}</div>
                           <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                            {prog.id_seccion_fk ? secMap[prog.id_seccion_fk] : 'Sin sección'} ·{' '}
+                            {prog.id_area_fk ? areaMap[prog.id_area_fk] : 'Sin área'} ·{' '}
                             {prog.tipo_trabajo ?? '—'} · {prog.frecuencia}
                             {prog.responsable ? ` · ${prog.responsable}` : ''}
                           </div>
@@ -333,7 +333,7 @@ export default function MantenimientoPage() {
                     </div>
                     {expanded && (
                       <div style={{ padding: '10px 14px' }}>
-                        <MiniCalendario tareas={tareas} onRefresh={fetchData} prog={prog} secMap={secMap} />
+                        <MiniCalendario tareas={tareas} onRefresh={fetchData} prog={prog} areaMap={areaMap} />
                       </div>
                     )}
                   </div>
@@ -344,10 +344,10 @@ export default function MantenimientoPage() {
         </div>
       )}
 
-      {modal  && <ProgramaModal secciones={secciones} prog={editing}
+      {modal  && <ProgramaModal areas={areas} prog={editing}
         onClose={() => setModal(false)}
         onSaved={() => { setModal(false); fetchData() }} />}
-      {detail && <ProgramaDetail prog={detail} secMap={secMap} ccMap={ccMap} frMap={frMap}
+      {detail && <ProgramaDetail prog={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap}
         onClose={() => { setDetail(null); fetchData() }} />}
     </div>
   )
@@ -356,8 +356,8 @@ export default function MantenimientoPage() {
 // ═══════════════════════════════════════════════════════════════
 // Mini calendario
 // ═══════════════════════════════════════════════════════════════
-function MiniCalendario({ tareas, onRefresh, prog, secMap }: {
-  tareas: any[]; onRefresh: () => void; prog: any; secMap: Record<number, string>
+function MiniCalendario({ tareas, onRefresh, prog, areaMap }: {
+  tareas: any[]; onRefresh: () => void; prog: any; areaMap: Record<number, string>
 }) {
   const { authUser } = useAuth()
   const [updating,  setUpdating]  = useState<number | null>(null)
@@ -385,7 +385,7 @@ function MiniCalendario({ tareas, onRefresh, prog, secMap }: {
       folio, titulo: `${prog.nombre} — ${fmtDate(tarea.fecha_prog)}`,
       tipo_trabajo:       prog.tipo_trabajo       ?? null,
       prioridad:          'Media', status: 'Pendiente',
-      id_seccion_fk:      prog.id_seccion_fk      ?? null,
+      id_area_fk:         prog.id_area_fk      ?? null,
       id_centro_costo_fk: prog.id_centro_costo_fk ?? null,
       id_frente_fk:       prog.id_frente_fk       ?? null,
       descripcion:        prog.descripcion        ?? null,
@@ -472,8 +472,8 @@ function MiniCalendario({ tareas, onRefresh, prog, secMap }: {
 // ═══════════════════════════════════════════════════════════════
 // Modal Nuevo/Editar Programa
 // ═══════════════════════════════════════════════════════════════
-function ProgramaModal({ secciones, prog, onClose, onSaved }: {
-  secciones: any[]; prog: any; onClose: () => void; onSaved: () => void
+function ProgramaModal({ areas, prog, onClose, onSaved }: {
+  areas: any[]; prog: any; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
@@ -483,7 +483,7 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
   const [form, setForm] = useState({
     nombre:             prog?.nombre             ?? '',
     anio:               prog?.anio?.toString()   ?? new Date().getFullYear().toString(),
-    id_seccion_fk:      prog?.id_seccion_fk?.toString() ?? '',
+    id_area_fk:         prog?.id_area_fk?.toString() ?? '',
     id_centro_costo_fk: prog?.id_centro_costo_fk?.toString() ?? '',
     id_frente_fk:       prog?.id_frente_fk?.toString() ?? '',
     tipo_trabajo:       prog?.tipo_trabajo       ?? '',
@@ -500,7 +500,7 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
   useEffect(() => {
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCentros(data ?? []))
-    dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+    dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
   }, [])
 
@@ -512,7 +512,7 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
     const payload = {
       nombre:             form.nombre.trim(),
       anio:               Number(form.anio),
-      id_seccion_fk:      form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null,
+      id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
       id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
       id_frente_fk:       form.id_frente_fk        ? Number(form.id_frente_fk)       : null,
       tipo_trabajo:       form.tipo_trabajo || null,
@@ -586,17 +586,17 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
                 {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
-            <div><label className="label" style={{ fontSize: 11 }}>Sección</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
+            <div><label className="label" style={{ fontSize: 11 }}>Área</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk} onChange={setF('id_area_fk')}>
                 <option value="">—</option>
-                {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </div>
             <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
                 <option value="">—</option>
                 {frentes
-                  .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
+                  .filter(f => !form.id_area_fk || f.id_area_fk === Number(form.id_area_fk))
                   .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
               </select>
             </div>
@@ -648,9 +648,9 @@ function ProgramaModal({ secciones, prog, onClose, onSaved }: {
 // ═══════════════════════════════════════════════════════════════
 // Detalle del Programa
 // ═══════════════════════════════════════════════════════════════
-function ProgramaDetail({ prog, secMap, ccMap, frMap, onClose }: {
+function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
   prog: any
-  secMap: Record<number, string>
+  areaMap: Record<number, string>
   ccMap: Record<number, string>
   frMap: Record<number, string>
   onClose: () => void
@@ -694,7 +694,7 @@ function ProgramaDetail({ prog, secMap, ccMap, frMap, onClose }: {
       folio, titulo: `${prog.nombre} — ${fmtDate(tarea.fecha_prog)}`,
       tipo_trabajo:       prog.tipo_trabajo       ?? null,
       prioridad:          'Media', status: 'Pendiente',
-      id_seccion_fk:      prog.id_seccion_fk      ?? null,
+      id_area_fk:         prog.id_area_fk      ?? null,
       id_centro_costo_fk: prog.id_centro_costo_fk ?? null,
       id_frente_fk:       prog.id_frente_fk       ?? null,
       descripcion:        prog.descripcion        ?? null,
@@ -730,10 +730,10 @@ function ProgramaDetail({ prog, secMap, ccMap, frMap, onClose }: {
                   <span style={{ fontWeight: 600 }}>{ccMap[prog.id_centro_costo_fk] ?? `#${prog.id_centro_costo_fk}`}</span>
                 </span>
               )}
-              {prog.id_seccion_fk && (
+              {prog.id_area_fk && (
                 <span style={{ fontSize: 11 }}>
                   <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Sección </span>
-                  <span style={{ fontWeight: 600 }}>{secMap[prog.id_seccion_fk] ?? `#${prog.id_seccion_fk}`}</span>
+                  <span style={{ fontWeight: 600 }}>{areaMap[prog.id_area_fk] ?? `#${prog.id_area_fk}`}</span>
                 </span>
               )}
               {prog.id_frente_fk && (

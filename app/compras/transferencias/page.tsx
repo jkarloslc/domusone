@@ -271,7 +271,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const [areas, setAreas]     = useState<any[]>([])
   const [invMap, setInvMap]   = useState<Record<string, number>>({})  // artId_almId → saldo
   const [centrosCosto, setCentros] = useState<any[]>([])
-  const [secciones, setSecciones]   = useState<any[]>([])
+  const [areas, setAreas]   = useState<any[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
 
   const [form, setForm] = useState({
@@ -281,7 +281,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     solicitante:        authUser?.nombre ?? '',
     justificacion:      '',
     id_centro_costo_fk: '',
-    id_seccion_fk:      '',
+    id_area_fk:         '',
     id_frente_fk:       '',
   })
   const [det, setDet] = useState([
@@ -293,8 +293,8 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
       dbComp.from('almacenes').select('*').eq('activo', true).order('nombre'),
       dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
     ]).then(([{ data: alms }, { data: areas }, { data: cc }, { data: sec }, { data: fr }]) => {
       setAlms(alms ?? [])
       setAreas(areas ?? [])
@@ -356,7 +356,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     }
     if (!form.area_solicitante) { setError('Selecciona el área solicitante'); return }
     if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
-    if (!form.id_seccion_fk) { setError('Sección es obligatoria'); return }
+    if (!form.id_area_fk) { setError('Área es obligatoria'); return }
     const detValidos = det.filter(d => d.id_articulo_fk && Number(d.cantidad_solicitada) > 0)
     if (!detValidos.length) { setError('Agrega al menos un artículo'); return }
     setSaving(true); setError('')
@@ -372,7 +372,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
       solicitante:        form.solicitante.trim(),
       justificacion:      form.justificacion.trim() || null,
       id_centro_costo_fk: Number(form.id_centro_costo_fk),
-      id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+      id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
       id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
       status:             'Solicitada',
     }).select('id').single()
@@ -455,18 +455,18 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
             <div>
               <label className="label">Centro de Costo *</label>
               <select className="select" value={form.id_centro_costo_fk}
-                onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' }))}>
+                onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
                 <option value="">— Seleccionar —</option>
                 {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
             <div>
               <label className="label">Sección *</label>
-              <select className="select" value={form.id_seccion_fk}
-                onChange={e => setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' }))}
+              <select className="select" value={form.id_area_fk}
+                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}
                 disabled={!form.id_centro_costo_fk}>
                 <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                {secciones
+                {areas
                   .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
                   .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
@@ -475,10 +475,10 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
               <label className="label">Frente</label>
               <select className="select" value={form.id_frente_fk}
                 onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
-                disabled={!form.id_seccion_fk}>
-                <option value="">— {form.id_seccion_fk ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                disabled={!form.id_area_fk}>
+                <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
                 {frentes
-                  .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
+                  .filter(f => !form.id_area_fk || f.id_area_fk === Number(form.id_area_fk))
                   .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
               </select>
             </div>

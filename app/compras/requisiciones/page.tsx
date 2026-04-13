@@ -24,7 +24,7 @@ export default function RequisicionesPage() {
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
-  const [filterSec, setFilterSec] = useState('')
+  const [filterArea, setFilterArea] = useState('')
   const [ccFiltros, setCcFiltros] = useState<{ id: number; nombre: string }[]>([])
   const [secFiltros, setSecFiltros] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,17 +38,17 @@ export default function RequisicionesPage() {
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,area_solicitante.ilike.%${debouncedSearch}%,solicitante.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterSec])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterArea])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCcFiltros((data ?? []) as { id: number; nombre: string }[]))
-    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setSecFiltros((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
   }, [])
 
@@ -88,13 +88,13 @@ export default function RequisicionesPage() {
             {['Borrador','Enviada','Aprobada','Rechazada','En Proceso','Cerrada'].map(s => <option key={s}>{s}</option>)}
           </select>
           <select className="select" style={{ width: 220 }} value={filterCC}
-            onChange={e => { setFilterCC(e.target.value); setFilterSec(''); setPage(0) }}>
+            onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setPage(0) }}>
             <option value="">Todos los centros de costo</option>
             {ccFiltros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
-          <select className="select" style={{ width: 200 }} value={filterSec}
-            onChange={e => { setFilterSec(e.target.value); setPage(0) }}>
-            <option value="">Todas las secciones</option>
+          <select className="select" style={{ width: 200 }} value={filterArea}
+            onChange={e => { setFilterArea(e.target.value); setPage(0) }}>
+            <option value="">Todas las áreas</option>
             {secFiltros
               .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
               .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
@@ -168,8 +168,8 @@ async function resolveRequisicionUbicacion(req: any): Promise<{ centroCosto: str
     const { data } = await dbCfg.from('centros_costo').select('nombre').eq('id', req.id_centro_costo_fk).maybeSingle()
     centroCosto = (data as { nombre?: string } | null)?.nombre ?? ''
   }
-  if (!seccion && req.id_seccion_fk) {
-    const { data } = await dbCfg.from('secciones').select('nombre').eq('id', req.id_seccion_fk).maybeSingle()
+  if (!seccion && req.id_area_fk) {
+    const { data } = await dbCfg.from('areas').select('nombre').eq('id', req.id_area_fk).maybeSingle()
     seccion = (data as { nombre?: string } | null)?.nombre ?? ''
   }
   if (!frente && req.id_frente_fk) {
@@ -256,7 +256,7 @@ async function imprimirRequisicion(req: any, det: any[]) {
       <div class="info-item"><label>Fecha Solicitud</label><span>${req.fecha_solicitud ? fmtFecha(req.fecha_solicitud) : fmtFecha(new Date().toISOString())}</span></div>
       <div class="info-item"><label>Fecha Requerida</label><span>${req.fecha_requerida ? fmtFecha(req.fecha_requerida) : '—'}</span></div>
       <div class="info-item"><label>Centro de Costo</label><span>${centroCosto || '—'}</span></div>
-      <div class="info-item"><label>Sección</label><span>${seccion || '—'}</span></div>
+      <div class="info-item"><label>Área</label><span>${seccion || '—'}</span></div>
       <div class="info-item"><label>Frente</label><span>${frente || '—'}</span></div>
       ${req.justificacion ? `<div class="info-item" style="grid-column:span 2"><label>Justificación</label><span>${req.justificacion}</span></div>` : ''}
       ${req.autorizado_por ? `<div class="info-item"><label>Autorizado por</label><span>${req.autorizado_por} — ${fmtFecha(req.fecha_autorizacion)}</span></div>` : ''}
@@ -311,14 +311,14 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [artOptions, setArtOptions]   = useState<Articulo[][]>([[]])  // options per row
   const [areas, setAreas]           = useState<{id: number; nombre: string}[]>([])
   const [centrosCosto, setCentros]  = useState<{id: number; nombre: string}[]>([])
-  const [secciones, setSecciones]   = useState<{id: number; nombre: string}[]>([])
-  const [frentes, setFrentes]       = useState<{id: number; nombre: string; id_seccion_fk: number}[]>([])
+  const [areas, setAreas]   = useState<{id: number; nombre: string}[]>([])
+  const [frentes, setFrentes]       = useState<{id: number; nombre: string; id_area_fk: number}[]>([])
   const [form, setForm] = useState({
     area_solicitante:   row?.area_solicitante ?? '',
     solicitante:        row?.solicitante ?? (authUser?.nombre ?? ''),
     fecha_requerida:    row?.fecha_requerida ?? '',
     id_centro_costo_fk: row?.id_centro_costo_fk?.toString() ?? '',
-    id_seccion_fk:      row?.id_seccion_fk?.toString() ?? '',
+    id_area_fk:         row?.id_area_fk?.toString() ?? '',
     id_frente_fk:       row?.id_frente_fk?.toString() ?? '',
     prioridad:          row?.prioridad ?? 'Normal',
     justificacion:      row?.justificacion ?? '',
@@ -330,9 +330,9 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
       .then(({ data }) => setAreas(data ?? []))
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCentros(data ?? []))
-    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => setSecciones(data ?? []))
-    dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setAreas(data ?? []))
+    dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
     if (!isNew && row?.id) {
       dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', row.id)
@@ -381,7 +381,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const handleSave = async (enviar = false) => {
     if (!form.area_solicitante.trim() || !form.solicitante.trim()) { setError('Área y Solicitante son obligatorios'); return }
     if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
-    if (!form.id_seccion_fk) { setError('Sección es obligatoria'); return }
+    if (!form.id_area_fk) { setError('Área es obligatoria'); return }
     const detValidos = det.filter(d => d.descripcion.trim() && Number(d.cantidad) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto'); return }
     setSaving(true); setError('')
@@ -396,7 +396,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
         solicitante:        form.solicitante.trim(),
         fecha_requerida:    form.fecha_requerida || null,
         id_centro_costo_fk: Number(form.id_centro_costo_fk),
-        id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+        id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
         id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
         prioridad:          form.prioridad,
         justificacion:      form.justificacion.trim() || null,
@@ -411,7 +411,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
         solicitante:        form.solicitante.trim(),
         fecha_requerida:    form.fecha_requerida || null,
         id_centro_costo_fk: Number(form.id_centro_costo_fk),
-        id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+        id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
         id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
         prioridad:          form.prioridad,
         justificacion:      form.justificacion.trim() || null,
@@ -456,18 +456,18 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
               <div>
                 <label className="label">Centro Costo*</label>
                 <select className="select" value={form.id_centro_costo_fk}
-                  onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' }))}>
+                  onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
                   <option value="">— Seleccionar —</option>
                   {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
               <div>
                 <label className="label">Sección *</label>
-                <select className="select" value={form.id_seccion_fk}
-                  onChange={e => setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' }))}
+                <select className="select" value={form.id_area_fk}
+                  onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}
                   disabled={!form.id_centro_costo_fk}>
                   <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                  {secciones
+                  {areas
                     .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
                     .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
@@ -475,10 +475,10 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
               <div>
                 <label className="label">Frente</label>
                 <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')}
-                  disabled={!form.id_seccion_fk}>
-                  <option value="">— {form.id_seccion_fk ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                  disabled={!form.id_area_fk}>
+                  <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
                   {frentes
-                    .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
+                    .filter(f => !form.id_area_fk || f.id_area_fk === Number(form.id_area_fk))
                     .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
                   }
                 </select>
@@ -564,7 +564,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
               <button className="btn-secondary" onClick={() => imprimirRequisicion({
                 ...row,
                 id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
-                id_seccion_fk:      form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+                id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
                 id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
                 centro_costo: null,
                 seccion: null,
@@ -616,7 +616,7 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
       })
     })
     return () => { cancelled = true }
-  }, [req.id, req.centro_costo, req.seccion, req.frente, req.id_centro_costo_fk, req.id_seccion_fk, req.id_frente_fk])
+  }, [req.id, req.centro_costo, req.seccion, req.frente, req.id_centro_costo_fk, req.id_area_fk, req.id_frente_fk])
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -643,7 +643,7 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
             <DI label="Fecha Requerida"  value={fmtFecha(req.fecha_requerida)} />
             <DI label="Centro de Costo"  value={ubic.cc} />
-            <DI label="Sección"         value={ubic.seccion} />
+            <DI label="Área"         value={ubic.seccion} />
             <DI label="Frente"           value={ubic.frente} />
             {req.justificacion && <DI label="Justificación" value={req.justificacion} />}
             {req.autorizado_por && <DI label="Autorizado por" value={`${req.autorizado_por} — ${fmtFecha(req.fecha_autorizacion)}`} />}

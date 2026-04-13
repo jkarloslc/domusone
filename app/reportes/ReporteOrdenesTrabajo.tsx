@@ -18,17 +18,17 @@ const prioColor = (p: string) =>
 
 export default function ReporteOrdenesTrabajo() {
   const [rows,         setRows]    = useState<any[]>([])
-  const [secMap,       setSecMap]  = useState<Record<number, string>>({})
+  const [areaMap,     setAreaMap]  = useState<Record<number, string>>({})
   const [ccMap,        setCcMap]   = useState<Record<number, string>>({})
   const [frMap,        setFrMap]   = useState<Record<number, string>>({})
-  const [secciones,    setSecs]    = useState<any[]>([])
+  const [areas,       setSecs]    = useState<any[]>([])
   const [centrosCosto, setCentros] = useState<any[]>([])
   const [frentes,      setFrentes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroStatus, setFiltroStatus] = useState('')
   const [filtroTipo,   setFiltroTipo]   = useState('')
   const [filtroCc,     setFiltroCc]     = useState('')
-  const [filtroSec,    setFiltroSec]    = useState('')
+  const [filtroArea,    setFiltroArea]    = useState('')
   const [filtroFr,     setFiltroFr]     = useState('')
   const [filtroPrio,   setFiltroPrio]   = useState('')
   const [filtroDe,     setFiltroDe]     = useState('')
@@ -38,9 +38,9 @@ export default function ReporteOrdenesTrabajo() {
     setLoading(true)
     const [{ data: ots }, { data: secs }, { data: ccs }, { data: frs }] = await Promise.all([
       dbCtrl.from('ordenes_trabajo').select('*').order('created_at', { ascending: false }),
-      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
     ])
     setSecs(secs ?? [])
     setCentros(ccs ?? [])
@@ -48,13 +48,13 @@ export default function ReporteOrdenesTrabajo() {
     const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
     const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
     const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
-    setSecMap(sm); setCcMap(cm); setFrMap(fm)
+    setAreaMap(sm); setCcMap(cm); setFrMap(fm)
 
     let result = ots ?? []
     if (filtroStatus) result = result.filter((r: any) => r.status            === filtroStatus)
     if (filtroTipo)   result = result.filter((r: any) => r.tipo_trabajo       === filtroTipo)
     if (filtroCc)     result = result.filter((r: any) => r.id_centro_costo_fk === Number(filtroCc))
-    if (filtroSec)    result = result.filter((r: any) => r.id_seccion_fk      === Number(filtroSec))
+    if (filtroArea)    result = result.filter((r: any) => r.id_area_fk      === Number(filtroArea))
     if (filtroFr)     result = result.filter((r: any) => r.id_frente_fk       === Number(filtroFr))
     if (filtroPrio)   result = result.filter((r: any) => r.prioridad          === filtroPrio)
     if (filtroDe)     result = result.filter((r: any) => r.fecha_inicio       >= filtroDe)
@@ -62,7 +62,7 @@ export default function ReporteOrdenesTrabajo() {
 
     setRows(result)
     setLoading(false)
-  }, [filtroStatus, filtroTipo, filtroCc, filtroSec, filtroFr, filtroPrio, filtroDe, filtroA])
+  }, [filtroStatus, filtroTipo, filtroCc, filtroArea, filtroFr, filtroPrio, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -84,14 +84,14 @@ export default function ReporteOrdenesTrabajo() {
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filtroSec} onChange={e => { setFiltroSec(e.target.value); setFiltroFr('') }}>
-          <option value="">Todas las secciones</option>
-          {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+        <select className="select" style={{ minWidth: 160 }} value={filtroArea} onChange={e => { setFiltroArea(e.target.value); setFiltroFr('') }}>
+          <option value="">Todas las áreas</option>
+          {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
         <select className="select" style={{ minWidth: 150 }} value={filtroFr} onChange={e => setFiltroFr(e.target.value)}>
           <option value="">Todos los frentes</option>
           {frentes
-            .filter(f => !filtroSec || f.id_seccion_fk === Number(filtroSec))
+            .filter(f => !filtroArea || f.id_area_fk === Number(filtroArea))
             .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
         <select className="select" style={{ minWidth: 130 }} value={filtroPrio} onChange={e => setFiltroPrio(e.target.value)}>
@@ -130,7 +130,7 @@ export default function ReporteOrdenesTrabajo() {
                 <th>Folio</th>
                 <th>Título</th>
                 <th>Centro de Costo</th>
-                <th>Sección</th>
+                <th>Área</th>
                 <th>Frente</th>
                 <th>Tipo</th>
                 <th>Prioridad</th>
@@ -153,7 +153,7 @@ export default function ReporteOrdenesTrabajo() {
                   <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.folio}</td>
                   <td style={{ fontSize: 13, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.titulo}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_centro_costo_fk ? (ccMap[r.id_centro_costo_fk] ?? `#${r.id_centro_costo_fk}`) : '—'}</td>
-                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_seccion_fk ? (secMap[r.id_seccion_fk] ?? `#${r.id_seccion_fk}`) : '—'}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_area_fk ? (areaMap[r.id_area_fk] ?? `#${r.id_area_fk}`) : '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_frente_fk ? (frMap[r.id_frente_fk] ?? `#${r.id_frente_fk}`) : '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.tipo_trabajo ?? '—'}</td>
                   <td>

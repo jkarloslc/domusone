@@ -50,8 +50,8 @@ export default function OrdenesTrabajoTab() {
   const [rows, setRows]           = useState<any[]>([])
   const [total, setTotal]         = useState(0)
   const [loading, setLoading]     = useState(true)
-  const [secciones, setSecciones] = useState<any[]>([])
-  const [secMap, setSecMap]       = useState<Record<number, string>>({})
+  const [areas, setAreas] = useState<any[]>([])
+  const [areaMap, setAreaMap]       = useState<Record<number, string>>({})
   const [centrosCosto, setCentros] = useState<any[]>([])
   const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
   const [frMap,  setFrMap]        = useState<Record<number, string>>({})
@@ -60,7 +60,7 @@ export default function OrdenesTrabajoTab() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterTipo,   setFilterTipo]   = useState('')
   const [filterCC,     setFilterCC]     = useState('')
-  const [filterSec,    setFilterSec]    = useState('')
+  const [filterArea,  setFilterArea]    = useState('')
   const [filterFr,     setFilterFr]     = useState('')
   const [frentes,      setFrentesOT]    = useState<any[]>([])
   const [modal,    setModal]    = useState(false)
@@ -75,26 +75,26 @@ export default function OrdenesTrabajoTab() {
     if (filterStatus)     q = q.eq('status', filterStatus)
     if (filterTipo)       q = q.eq('tipo_trabajo', filterTipo)
     if (filterCC)         q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterSec)        q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterArea)        q = q.eq('id_area_fk', Number(filterArea))
     if (filterFr)         q = q.eq('id_frente_fk', Number(filterFr))
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [debouncedSearch, filterStatus, filterTipo, filterCC, filterSec, filterFr])
+  }, [debouncedSearch, filterStatus, filterTipo, filterCC, filterArea, filterFr])
 
   useEffect(() => {
     Promise.all([
-      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
     ]).then(([{ data: secs }, { data: ccs }, { data: frs }]) => {
-      setSecciones(secs ?? [])
+      setAreas(secs ?? [])
       setCentros(ccs ?? [])
       setFrentesOT(frs ?? [])
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
       const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
-      setSecMap(sm); setCcMap(cm); setFrMap(fm)
+      setAreaMap(sm); setCcMap(cm); setFrMap(fm)
     })
   }, [])
 
@@ -149,19 +149,19 @@ export default function OrdenesTrabajoTab() {
           <option value="">Centro de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterSec} onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
-          <option value="">Sección</option>
-          {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+        <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterFr('') }}>
+          <option value="">Área</option>
+          {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
         <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr} onChange={e => setFilterFr(e.target.value)}>
           <option value="">Frente</option>
           {frentes
-            .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
+            .filter(f => !filterArea || f.id_area_fk === Number(filterArea))
             .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
-        {(search || filterStatus || filterTipo || filterCC || filterSec || filterFr) && (
+        {(search || filterStatus || filterTipo || filterCC || filterArea || filterFr) && (
           <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
-            onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCC(''); setFilterSec(''); setFilterFr('') }}>
+            onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCC(''); setFilterArea(''); setFilterFr('') }}>
             <X size={11} /> Limpiar
           </button>
         )}
@@ -183,7 +183,7 @@ export default function OrdenesTrabajoTab() {
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Folio</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Título</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Tipo</th>
-              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Sección</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Área</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Asignado</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>F. Límite</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Prioridad</th>
@@ -208,7 +208,7 @@ export default function OrdenesTrabajoTab() {
                   {r.ubicacion_detalle && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.ubicacion_detalle}</div>}
                 </td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{r.tipo_trabajo ?? '—'}</td>
-                <td style={{ fontSize: 11, padding: '8px 10px' }}>{r.id_seccion_fk ? (secMap[r.id_seccion_fk] ?? '—') : '—'}</td>
+                <td style={{ fontSize: 11, padding: '8px 10px' }}>{r.id_area_fk ? (areaMap[r.id_area_fk] ?? '—') : '—'}</td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{r.asignado_a ?? '—'}</td>
                 <td style={{ fontSize: 11, padding: '8px 10px',
                   color: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? '#dc2626' : 'var(--text-secondary)',
@@ -228,10 +228,10 @@ export default function OrdenesTrabajoTab() {
         </table>
       </div>
 
-      {modal  && <OTModal secciones={secciones} ot={editingOT}
+      {modal  && <OTModal areas={areas} ot={editingOT}
         onClose={() => { setModal(false); setEditingOT(null) }}
         onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
-      {detail && <OTDetail ot={detail} secMap={secMap} ccMap={ccMap} frMap={frMap}
+      {detail && <OTDetail ot={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap}
         onClose={() => { setDetail(null); fetchData() }}
         onEdit={ot => { setDetail(null); setEditingOT(ot); setModal(true) }} />}
     </div>
@@ -239,8 +239,8 @@ export default function OrdenesTrabajoTab() {
 }
 
 // ── OTModal ────────────────────────────────────────────────────
-function OTModal({ secciones, ot, onClose, onSaved }: {
-  secciones: any[]; ot?: any; onClose: () => void; onSaved: () => void
+function OTModal({ areas, ot, onClose, onSaved }: {
+  areas: any[]; ot?: any; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
@@ -252,7 +252,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
     tipo_trabajo:       ot?.tipo_trabajo      ?? '',
     prioridad:          ot?.prioridad         ?? 'Media',
     status:             ot?.status            ?? 'Pendiente',
-    id_seccion_fk:      ot?.id_seccion_fk?.toString()      ?? '',
+    id_area_fk:         ot?.id_area_fk?.toString()      ?? '',
     id_centro_costo_fk: ot?.id_centro_costo_fk?.toString() ?? '',
     id_frente_fk:       ot?.id_frente_fk?.toString()       ?? '',
     ubicacion_detalle:  ot?.ubicacion_detalle ?? '',
@@ -286,7 +286,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
   useEffect(() => {
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCentros(data ?? []))
-    dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+    dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
   }, [])
   const setR = (i: number, k: string, v: string) =>
@@ -305,7 +305,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
       const { data: newOT, error: err } = await dbCtrl.from('ordenes_trabajo').insert({
         folio, titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
         prioridad: form.prioridad, status: form.status,
-        id_seccion_fk:      form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null,
+        id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
         id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
         id_frente_fk:       form.id_frente_fk        ? Number(form.id_frente_fk)       : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
@@ -321,7 +321,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
       const { error: err } = await dbCtrl.from('ordenes_trabajo').update({
         titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
         prioridad: form.prioridad, status: form.status,
-        id_seccion_fk:      form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null,
+        id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
         id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
         id_frente_fk:       form.id_frente_fk        ? Number(form.id_frente_fk)       : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
@@ -388,15 +388,15 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
                 <option value="">—</option>
                 {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select></div>
-            <div><label className="label" style={{ fontSize: 11 }}>Sección</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
-                <option value="">—</option>{secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            <div><label className="label" style={{ fontSize: 11 }}>Área</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk} onChange={setF('id_area_fk')}>
+                <option value="">—</option>{areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select></div>
             <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
                 <option value="">—</option>
                 {frentes
-                  .filter(f => !form.id_seccion_fk || f.id_seccion_fk === Number(form.id_seccion_fk))
+                  .filter(f => !form.id_area_fk || f.id_area_fk === Number(form.id_area_fk))
                   .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
               </select></div>
           </div>
@@ -448,9 +448,9 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
 }
 
 // ── OTDetail ───────────────────────────────────────────────────
-function OTDetail({ ot, secMap, ccMap, frMap, onClose, onEdit }: {
+function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
   ot: any
-  secMap: Record<number, string>
+  areaMap: Record<number, string>
   ccMap: Record<number, string>
   frMap: Record<number, string>
   onClose: () => void
@@ -530,7 +530,7 @@ function OTDetail({ ot, secMap, ccMap, frMap, onClose, onEdit }: {
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;">🔧</div>`
 
-    const seccion = ot.id_seccion_fk ? secMap[ot.id_seccion_fk] ?? '—' : '—'
+    const seccion = ot.id_area_fk ? areaMap[ot.id_area_fk] ?? '—' : '—'
 
     const priCol: Record<string, string> = {
       'Urgente': '#dc2626', 'Alta': '#ea580c', 'Media': '#d97706', 'Baja': '#64748b'
@@ -596,7 +596,7 @@ function OTDetail({ ot, secMap, ccMap, frMap, onClose, onEdit }: {
       </div>
 
       <div class="grid">
-        <div><div class="lbl">Sección</div><div class="val">${seccion}</div></div>
+        <div><div class="lbl">Área</div><div class="val">${seccion}</div></div>
         ${ot.ubicacion_detalle ? `<div><div class="lbl">Ubicación Detalle</div><div class="val">${ot.ubicacion_detalle}</div></div>` : ''}
         ${ot.tipo_trabajo ? `<div><div class="lbl">Tipo de Trabajo</div><div class="val">${ot.tipo_trabajo}</div></div>` : ''}
         ${ot.id_centro_costo_fk ? `<div><div class="lbl">Centro de Costo</div><div class="val">${ccMap[ot.id_centro_costo_fk] ?? '—'}</div></div>` : ''}
@@ -656,7 +656,7 @@ function OTDetail({ ot, secMap, ccMap, frMap, onClose, onEdit }: {
               </div>
               <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{ot.titulo}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                {ot.id_seccion_fk ? secMap[ot.id_seccion_fk] : '—'}
+                {ot.id_area_fk ? areaMap[ot.id_area_fk] : '—'}
                 {ot.ubicacion_detalle && ` · ${ot.ubicacion_detalle}`}
               </div>
             </div>
@@ -690,7 +690,7 @@ function OTDetail({ ot, secMap, ccMap, frMap, onClose, onEdit }: {
             {ot.fecha_limite && <DI label="Fecha Límite" value={fmtFecha(ot.fecha_limite)} />}
             {ot.fecha_cierre && <DI label="Fecha Cierre" value={fmtFecha(ot.fecha_cierre)} />}
             {ot.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[ot.id_centro_costo_fk] ?? `#${ot.id_centro_costo_fk}`} />}
-            {ot.id_seccion_fk      && <DI label="Sección"          value={secMap[ot.id_seccion_fk]      ?? `#${ot.id_seccion_fk}`} />}
+            {ot.id_area_fk      && <DI label="Área"          value={areaMap[ot.id_area_fk]      ?? `#${ot.id_area_fk}`} />}
             {ot.id_frente_fk       && <DI label="Frente"           value={frMap[ot.id_frente_fk]        ?? `#${ot.id_frente_fk}`} />}
           </div>
 
