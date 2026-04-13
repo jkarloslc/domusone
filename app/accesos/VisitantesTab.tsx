@@ -2,7 +2,7 @@
 import { useDebounce } from '@/lib/useDebounce'
 import { useAuth } from '@/lib/AuthContext'
 import { useEffect, useState, useCallback } from 'react'
-import { dbCat, dbCtrl } from '@/lib/supabase'
+import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Edit2, Trash2, X, Save, Loader, UserCheck } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import { type Visitante, type VisitanteAutorizado, TIPOS_VISITANTE, TIPOS_PASE } from './types'
@@ -196,6 +196,8 @@ function VisitanteModal({ visitante, onClose, onSaved }: { visitante: Visitante 
 function AutorizarModal({ visitante, onClose }: { visitante: Visitante; onClose: () => void }) {
   const [lotes, setLotes]       = useState<any[]>([])
   const [loteSearch, setLoteSearch] = useState('')
+  const [secciones, setSecciones]   = useState<any[]>([])
+  const [filterSeccion, setFilterSeccion] = useState('')
   const [autorizados, setAutorizados] = useState<VisitanteAutorizado[]>([])
   const [saving, setSaving]     = useState(false)
   const [selectedLote, setSelectedLote] = useState<any>(null)
@@ -210,10 +212,17 @@ function AutorizarModal({ visitante, onClose }: { visitante: Visitante; onClose:
   }, [visitante.id])
 
   useEffect(() => {
-    if (loteSearch.length < 2) { setLotes([]); return }
-    dbCat.from('lotes').select('id, cve_lote, lote').ilike('cve_lote', `%${loteSearch}%`).limit(8)
-      .then(({ data }) => setLotes(data ?? []))
-  }, [loteSearch])
+    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setSecciones(data ?? []))
+  }, [])
+
+  useEffect(() => {
+    if (loteSearch.length < 2 && !filterSeccion) { setLotes([]); return }
+    let q = dbCat.from('lotes').select('id, cve_lote, lote, calle, numero, id_seccion_fk')
+    if (loteSearch.length >= 2) q = q.or(`cve_lote.ilike.%${loteSearch}%,calle.ilike.%${loteSearch}%,numero.ilike.%${loteSearch}%`)
+    if (filterSeccion) q = q.eq('id_seccion_fk', Number(filterSeccion))
+    q.order('cve_lote').limit(10).then(({ data }) => setLotes(data ?? []))
+  }, [loteSearch, filterSeccion])
 
   const handleAutorizar = async () => {
     if (!selectedLote) return
@@ -265,16 +274,27 @@ function AutorizarModal({ visitante, onClose }: { visitante: Visitante; onClose:
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <label className="label">Lote</label>
-              <input className="input" placeholder="Busca clave de lote…" value={loteSearch}
-                onChange={e => { setLoteSearch(e.target.value); setSelectedLote(null) }} />
+              <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                <select className="select" style={{ width: 155, fontSize: 12 }} value={filterSeccion}
+                  onChange={e => { setFilterSeccion(e.target.value); setLoteSearch(''); setSelectedLote(null) }}>
+                  <option value="">Todas las secciones</option>
+                  {secciones.map((s: any) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                  <input className="input" style={{ paddingLeft: 28 }} placeholder="Clave, calle o número…" value={loteSearch}
+                    onChange={e => { setLoteSearch(e.target.value); setSelectedLote(null) }} />
+                </div>
+              </div>
               {lotes.length > 0 && (
-                <div className="card" style={{ marginTop: 4, padding: '4px 0' }}>
+                <div className="card" style={{ marginTop: 2, padding: '4px 0', maxHeight: 220, overflowY: 'auto' }}>
                   {lotes.map((l: any) => (
                     <button key={l.id} onClick={() => { setSelectedLote(l); setLoteSearch(l.cve_lote ?? `#${l.lote}`); setLotes([]) }}
-                      style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold-light)', fontFamily: 'var(--font-display)', fontSize: 15 }}
+                      style={{ display: 'flex', alignItems: 'baseline', gap: 10, width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-700)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                      {l.cve_lote ?? `#${l.lote}`}
+                      <span style={{ color: 'var(--gold-light)', fontFamily: 'var(--font-display)', fontSize: 14 }}>{l.cve_lote ?? `#${l.lote}`}</span>
+                      {(l.calle || l.numero) && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{[l.calle, l.numero].filter(Boolean).join(' ')}</span>}
                     </button>
                   ))}
                 </div>

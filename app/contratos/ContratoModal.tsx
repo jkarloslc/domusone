@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbCat, dbCtrl } from '@/lib/supabase'
-import { X, Save, Loader } from 'lucide-react'
+import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
+import { X, Save, Loader, Search } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import { type Contrato } from './page'
 
@@ -15,6 +15,8 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
   const [error, setError]     = useState('')
   const [lotes, setLotes]     = useState<any[]>([])
   const [loteSearch, setLoteSearch] = useState(contrato ? ((contrato as any).lotes?.cve_lote ?? '') : '')
+  const [secciones, setSecciones]   = useState<any[]>([])
+  const [filterSeccion, setFilterSeccion] = useState('')
 
   const [form, setForm] = useState({
     id_lote_fk:           contrato?.id_lote_fk?.toString() ?? '',
@@ -39,10 +41,17 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
   })
 
   useEffect(() => {
-    if (loteSearch.length < 2) { setLotes([]); return }
-    dbCat.from('lotes').select('id, cve_lote, lote').ilike('cve_lote', `%${loteSearch}%`).limit(8)
-      .then(({ data }) => setLotes(data ?? []))
-  }, [loteSearch])
+    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setSecciones(data ?? []))
+  }, [])
+
+  useEffect(() => {
+    if (loteSearch.length < 2 && !filterSeccion) { setLotes([]); return }
+    let q = dbCat.from('lotes').select('id, cve_lote, lote, calle, numero, id_seccion_fk')
+    if (loteSearch.length >= 2) q = q.or(`cve_lote.ilike.%${loteSearch}%,calle.ilike.%${loteSearch}%,numero.ilike.%${loteSearch}%`)
+    if (filterSeccion) q = q.eq('id_seccion_fk', Number(filterSeccion))
+    q.order('cve_lote').limit(10).then(({ data }) => setLotes(data ?? []))
+  }, [loteSearch, filterSeccion])
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -92,18 +101,29 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
 
           <Section label="Identificación">
             <Grid3>
-              <div>
+              <div style={{ gridColumn: 'span 3' }}>
                 <label className="label">Lote *</label>
-                <input className="input" placeholder="Busca clave de lote…" value={loteSearch}
-                  onChange={e => { setLoteSearch(e.target.value); setForm(f => ({ ...f, id_lote_fk: '' })) }} />
+                <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                  <select className="select" style={{ width: 155, fontSize: 12 }} value={filterSeccion}
+                    onChange={e => { setFilterSeccion(e.target.value); setLoteSearch(''); setForm(f => ({ ...f, id_lote_fk: '' })) }}>
+                    <option value="">Todas las secciones</option>
+                    {secciones.map((s: any) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  </select>
+                  <div style={{ flex: 1, position: 'relative' }}>
+                    <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                    <input className="input" style={{ paddingLeft: 28 }} placeholder="Clave, calle o número…" value={loteSearch}
+                      onChange={e => { setLoteSearch(e.target.value); setForm(f => ({ ...f, id_lote_fk: '' })) }} />
+                  </div>
+                </div>
                 {lotes.length > 0 && (
-                  <div className="card" style={{ marginTop: 4, padding: '4px 0' }}>
+                  <div className="card" style={{ marginTop: 2, padding: '4px 0', maxHeight: 220, overflowY: 'auto' }}>
                     {lotes.map((l: any) => (
                       <button key={l.id} onClick={() => { setForm(f => ({ ...f, id_lote_fk: String(l.id) })); setLoteSearch(l.cve_lote ?? `#${l.lote}`); setLotes([]) }}
-                        style={{ display: 'flex', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold-light)', fontFamily: 'var(--font-display)', fontSize: 15 }}
+                        style={{ display: 'flex', alignItems: 'baseline', gap: 10, width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                         onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-700)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                        {l.cve_lote ?? `#${l.lote}`}
+                        <span style={{ color: 'var(--gold-light)', fontFamily: 'var(--font-display)', fontSize: 14 }}>{l.cve_lote ?? `#${l.lote}`}</span>
+                        {(l.calle || l.numero) && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{[l.calle, l.numero].filter(Boolean).join(' ')}</span>}
                       </button>
                     ))}
                   </div>
