@@ -433,6 +433,11 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           <LogOut size={13} />
           Cerrar sesión
         </button>
+        <div style={{ marginTop: 10, textAlign: 'center' }}>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em', opacity: 0.6 }}>
+            Powered by <strong style={{ color: 'var(--blue)', opacity: 1, letterSpacing: '0.02em' }}>JK</strong>
+          </span>
+        </div>
       </div>
     </aside>
   )
