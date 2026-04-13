@@ -69,7 +69,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      { label: 'Equipo & Flota', href: '/equipo-flota',   icon: Truck         },
+      { label: 'Equipo & Vehículos', href: '/equipo-flota',   icon: Truck         },
       RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
@@ -105,7 +105,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      { label: 'Equipo & Flota', href: '/equipo-flota',   icon: Truck         },
+      { label: 'Equipo & Vehículos', href: '/equipo-flota',   icon: Truck         },
       RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
@@ -170,7 +170,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      { label: 'Equipo & Flota', href: '/equipo-flota',   icon: Truck         },
+      { label: 'Equipo & Vehículos', href: '/equipo-flota',   icon: Truck         },
       RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
@@ -244,7 +244,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      { label: 'Equipo & Flota', href: '/equipo-flota',   icon: Truck         },
+      { label: 'Equipo & Vehículos', href: '/equipo-flota',   icon: Truck         },
       RPT('mantenimiento'),
     ]},
   ],
