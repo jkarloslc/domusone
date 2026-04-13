@@ -169,8 +169,7 @@ export default function TableroPage() {
             Mi Tablero
           </h1>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6, maxWidth: 720, lineHeight: 1.5 }}>
-            Mensajería interna entre usuarios del sistema (similar a la bandeja de mensajes de muchos ERP:
-            conversaciones 1:1, historial persistente y lectura simple). Sin integraciones de pago: solo tu base de datos en Supabase.
+            Mensajería interna entre usuarios del sistema.
           </p>
         </div>
         <button type="button" className="btn-ghost" onClick={() => { fetchMensajes(); fetchUsuarios() }} title="Actualizar">
