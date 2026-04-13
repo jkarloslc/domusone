@@ -5,7 +5,7 @@ import {
   Home, MapPin, Users, FileText, Building2, Wrench,
   Shield, AlertTriangle, Receipt, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  LayoutDashboard,
+  LayoutDashboard, Truck,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -69,6 +69,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+      { label: 'Equipo & Flota', href: '/equipo-flota',   icon: Truck         },
       RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
@@ -104,6 +105,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+      { label: 'Equipo & Flota', href: '/equipo-flota',   icon: Truck         },
       RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
@@ -168,6 +170,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+      { label: 'Equipo & Flota', href: '/equipo-flota',   icon: Truck         },
       RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
@@ -241,6 +244,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
+      { label: 'Equipo & Flota', href: '/equipo-flota',   icon: Truck         },
       RPT('mantenimiento'),
     ]},
   ],
