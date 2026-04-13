@@ -222,36 +222,41 @@ export default function MantenimientoPage() {
           </div>
 
           {/* Filtros */}
-          <div className="card" style={{ padding: '10px 14px', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Filtros:</span>
-              <select className="select" style={{ width: 75, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterAnio}
-                onChange={e => setFilterAnio(Number(e.target.value))}>
-                {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
-              </select>
-              <select className="select" style={{ minWidth: 150, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterCC}
-                onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
-                <option value="">Centro de costo</option>
-                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
-              <select className="select" style={{ minWidth: 140, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterSec}
-                onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
-                <option value="">Sección</option>
-                {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-              </select>
-              <select className="select" style={{ minWidth: 130, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterFr}
-                onChange={e => setFilterFr(e.target.value)}>
-                <option value="">Frente</option>
-                {frentes
-                  .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
-                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-              </select>
-            </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button className="btn-ghost" style={{ padding: '5px 8px', height: 30 }} onClick={fetchData}>
-                <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <Filter size={11} /> Filtros
+            </span>
+            <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+            <select className="select" style={{ width: 72, fontSize: 12, padding: '3px 6px', height: 28 }} value={filterAnio}
+              onChange={e => setFilterAnio(Number(e.target.value))}>
+              {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
+            </select>
+            <select className="select" style={{ flex: '1 1 130px', maxWidth: 210, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC}
+              onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
+              <option value="">Centro de costo</option>
+              {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+            <select className="select" style={{ flex: '1 1 110px', maxWidth: 190, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterSec}
+              onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
+              <option value="">Sección</option>
+              {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            </select>
+            <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr}
+              onChange={e => setFilterFr(e.target.value)}>
+              <option value="">Frente</option>
+              {frentes
+                .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
+                .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+            </select>
+            {(filterCC || filterSec || filterFr) && (
+              <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+                onClick={() => { setFilterCC(''); setFilterSec(''); setFilterFr('') }}>
+                <X size={11} /> Limpiar
               </button>
-            </div>
+            )}
+            <button className="btn-ghost" style={{ padding: '3px 8px', height: 28, marginLeft: 'auto' }} onClick={fetchData}>
+              <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+            </button>
           </div>
 
           {/* Lista programas */}

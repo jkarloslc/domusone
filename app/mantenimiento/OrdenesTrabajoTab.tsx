@@ -5,7 +5,7 @@ import { dbCtrl, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
-  Camera, Trash2, ExternalLink, CheckCircle, Wrench, ChevronDown, Printer
+  Camera, Trash2, ExternalLink, CheckCircle, Wrench, ChevronDown, Printer, Filter
 } from 'lucide-react'
 
 const TIPOS      = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Otro']
@@ -125,39 +125,51 @@ export default function OrdenesTrabajoTab() {
       </div>
 
       {/* Filtros + Nueva OT */}
-      <div className="card" style={{ padding: '10px 14px', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-        <div style={{ position: 'relative', minWidth: 180 }}>
-          <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input className="input" style={{ paddingLeft: 26, fontSize: 12, padding: '5px 8px 5px 26px', height: 30 }} placeholder="Folio, título, asignado…"
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+        {/* Búsqueda */}
+        <div style={{ position: 'relative', flex: '1 1 160px', maxWidth: 220 }}>
+          <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <input className="input" style={{ paddingLeft: 24, fontSize: 12, height: 28 }}
+            placeholder="Folio, título, asignado…"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select className="select" style={{ minWidth: 120, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        {/* Filtros tipo / status */}
+        <select className="select" style={{ flex: '1 1 90px', maxWidth: 130, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
           <option value="">Status</option>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 120, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 90px', maxWidth: 130, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
           <option value="">Tipo</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
+        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        {/* Filtros ubicación */}
+        <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
           <option value="">Centro de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 130, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterSec} onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
+        <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterSec} onChange={e => { setFilterSec(e.target.value); setFilterFr('') }}>
           <option value="">Sección</option>
           {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 120, fontSize: 12, padding: '5px 8px', height: 30 }} value={filterFr} onChange={e => setFilterFr(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr} onChange={e => setFilterFr(e.target.value)}>
           <option value="">Frente</option>
           {frentes
             .filter(f => !filterSec || f.id_seccion_fk === Number(filterSec))
             .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
-        <button className="btn-ghost" style={{ padding: '5px 8px', height: 30 }} onClick={fetchData}>
-          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+        {(search || filterStatus || filterTipo || filterCC || filterSec || filterFr) && (
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+            onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCC(''); setFilterSec(''); setFilterFr('') }}>
+            <X size={11} /> Limpiar
+          </button>
+        )}
+        <button className="btn-ghost" style={{ padding: '3px 8px', height: 28 }} onClick={fetchData}>
+          <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
         </button>
         {canWrite('mantenimiento') && (
-          <button className="btn-primary" style={{ fontSize: 12, padding: '5px 10px', height: 30 }} onClick={() => { setEditingOT(null); setModal(true) }}>
+          <button className="btn-primary" style={{ fontSize: 12, padding: '3px 12px', height: 28 }} onClick={() => { setEditingOT(null); setModal(true) }}>
             <Plus size={12} /> Nueva OT
           </button>
         )}
