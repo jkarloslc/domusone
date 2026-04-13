@@ -5,9 +5,10 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Eye, X, Save, Loader,
   Calendar, CheckCircle, ChevronDown, ChevronRight,
-  Filter, ClipboardList, Wrench
+  Filter, ClipboardList, Wrench, Truck
 } from 'lucide-react'
 import OrdenesTrabajoTab from './OrdenesTrabajoTab'
+import EquipoFlotaTab from './EquipoFlotaTab'
 
 const FRECUENCIAS = ['Semanal','Quincenal','Mensual','Bimestral','Trimestral','Semestral','Anual']
 const TIPOS       = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Otro']
@@ -63,7 +64,7 @@ const fmtDate = (d: string | Date) => {
 // ═══════════════════════════════════════════════════════════════
 export default function MantenimientoPage() {
   const { canWrite, canDelete } = useAuth()
-  const [tab,          setTab]        = useState<'programa' | 'ordenes'>('programa')
+  const [tab,          setTab]        = useState<'programa' | 'ordenes' | 'equipo'>('programa')
   const [programas,    setProgramas]  = useState<any[]>([])
   const [areas,       setAreas]  = useState<any[]>([])
   const [areaMap,     setAreaMap]     = useState<Record<number, string>>({})
@@ -182,10 +183,22 @@ export default function MantenimientoPage() {
             marginBottom: -1 }}>
           <ClipboardList size={12} /> Órdenes de Trabajo
         </button>
+        <button onClick={() => setTab('equipo')}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
+            background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
+            fontWeight: tab === 'equipo' ? 600 : 400,
+            color: tab === 'equipo' ? 'var(--blue)' : 'var(--text-muted)',
+            borderBottom: tab === 'equipo' ? '2px solid var(--blue)' : '2px solid transparent',
+            marginBottom: -1 }}>
+          <Truck size={12} /> Equipo & Flota
+        </button>
       </div>
 
       {/* Tab: Órdenes de Trabajo */}
       {tab === 'ordenes' && <OrdenesTrabajoTab />}
+
+      {/* Tab: Equipo & Flota */}
+      {tab === 'equipo' && <EquipoFlotaTab />}
 
       {/* Tab: Programa Anual */}
       {tab === 'programa' && (
