@@ -74,8 +74,8 @@ export default function CajaChicaPage() {
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>Fondos y reembolsos de gastos menores</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          {misFondos.length > 0 && (
-            <button className="btn-primary" onClick={() => setRemModal({ open: true, fondo: misFondos[0] })}>
+          {(misFondos.length > 0 || isAdmin) && fondos.length > 0 && (
+            <button className="btn-primary" onClick={() => setRemModal({ open: true, fondo: misFondos[0] ?? fondos[0] })}>
               <Plus size={13} /> Nuevo Reembolso
             </button>
           )}

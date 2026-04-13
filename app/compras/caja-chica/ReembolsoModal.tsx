@@ -58,7 +58,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
     ]).then(([cc, sec, frt]) => {
       setCCs(cc.data ?? [])
-      setSecciones(sec.data ?? [])
+      setAreas(sec.data ?? [])
       setFrentes(frt.data ?? [])
     })
 
