@@ -8,7 +8,7 @@ import {
   DollarSign, AlertTriangle, ChevronDown, Upload
 } from 'lucide-react'
 
-const TIPOS_EQUIPO  = ['Vehículo', 'Maquinaria', 'Herramienta']
+const TIPOS_EQUIPO  = ['Vehículo', 'Moto / Cuatrimoto','Maquinaria', 'Herramienta']
 const STATUS_EQUIPO = ['Activo', 'En Mantenimiento', 'Baja']
 const TIPOS_MANT    = ['Preventivo', 'Correctivo', 'Reparación']
 const STATUS_MANT   = ['Abierto', 'En Proceso', 'Cerrado']
