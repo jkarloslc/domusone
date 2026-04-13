@@ -29,6 +29,8 @@ export default function LotesPage() {
   const [search, setSearch]           = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter]     = useState('')
+  const [filterDir, setFilterDir]     = useState('')
+  const debouncedDir = useDebounce(filterDir, 300)
   const [loading, setLoading]         = useState(true)
   const [modalOpen, setModalOpen]     = useState(false)
   const [editing, setEditing]         = useState<Lote | null>(null)
@@ -60,8 +62,9 @@ export default function LotesPage() {
       .order('cve_lote', { ascending: true })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (debouncedSearch)       q = q.ilike('cve_lote', `%${debouncedSearch}%`)
-    if (filterStatus) q = q.eq('status_lote', filterStatus)
+    if (debouncedSearch) q = q.ilike('cve_lote', `%${debouncedSearch}%`)
+    if (filterStatus)    q = q.eq('status_lote', filterStatus)
+    if (debouncedDir)    q = q.or(`calle.ilike.%${debouncedDir}%,numero.ilike.%${debouncedDir}%`)
 
     const { data, count, error } = await q
     if (!error) {
@@ -69,7 +72,7 @@ export default function LotesPage() {
       setTotal(count ?? 0)
     }
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus])
+  }, [page, debouncedSearch, filterStatus, debouncedDir])
 
   useEffect(() => { fetchLotes() }, [fetchLotes])
 
@@ -121,6 +124,22 @@ export default function LotesPage() {
           />
           {search && (
             <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
+        <div style={{ position: 'relative', flex: '1 1 180px', maxWidth: 260 }}>
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            className="input"
+            style={{ paddingLeft: 30 }}
+            placeholder="Calle o número…"
+            value={filterDir}
+            onChange={e => { setFilterDir(e.target.value); setPage(0) }}
+          />
+          {filterDir && (
+            <button onClick={() => setFilterDir('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
               <X size={13} />
             </button>
           )}
