@@ -311,7 +311,6 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [artOptions, setArtOptions]   = useState<Articulo[][]>([[]])  // options per row
   const [areas, setAreas]           = useState<{id: number; nombre: string}[]>([])
   const [centrosCosto, setCentros]  = useState<{id: number; nombre: string}[]>([])
-  const [areas, setAreas]   = useState<{id: number; nombre: string}[]>([])
   const [frentes, setFrentes]       = useState<{id: number; nombre: string; id_area_fk: number}[]>([])
   const [form, setForm] = useState({
     area_solicitante:   row?.area_solicitante ?? '',
