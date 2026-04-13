@@ -2,7 +2,7 @@
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import EquipoFlotaTab from '../mantenimiento/EquipoFlotaTab'
+import EquipoFlotaTab from './EquipoFlotaTab'
 
 const ROLES_PERMITIDOS = ['superadmin', 'admin', 'usuariomantto', 'mantenimiento']
 
