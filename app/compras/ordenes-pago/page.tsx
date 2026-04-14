@@ -72,7 +72,7 @@ export default function OrdenesPagoPage() {
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCentros((data ?? []) as { id: number; nombre: string }[]))
     dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => setSecciones((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
+      .then(({ data }) => setAreas((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
   }, [])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -259,10 +259,12 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     tipo_gasto:        opEdit?.tipo_gasto        ?? '',
     banco_destino:     opEdit?.banco_destino     ?? '',
     cuenta_clabe:      opEdit?.cuenta_clabe      ?? '',
-    notas:             opEdit?.notas             ?? '',
-    monto_manual:      opEdit?.monto?.toString() ?? '',
-    pdf_factura:       opEdit?.pdf_factura       ?? '',
-    xml_factura:       opEdit?.xml_factura       ?? '',
+    notas:                opEdit?.notas                ?? '',
+    instrucciones_pago:   opEdit?.instrucciones_pago   ?? '',
+    referencia_pago:      opEdit?.referencia_pago      ?? '',
+    monto_manual:         opEdit?.monto?.toString()    ?? '',
+    pdf_factura:          opEdit?.pdf_factura          ?? '',
+    xml_factura:          opEdit?.xml_factura          ?? '',
   })
 
   useEffect(() => {
@@ -428,8 +430,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       tipo_gasto:        form.tipo_gasto || null,
       banco_destino:     form.banco_destino.trim() || null,
       cuenta_clabe:      form.cuenta_clabe.trim() || null,
-      notas:             form.notas.trim() || null,
-      monto:             montoTotal,
+      notas:              form.notas.trim() || null,
+      instrucciones_pago: form.instrucciones_pago.trim() || null,
+      referencia_pago:    form.referencia_pago.trim() || null,
+      monto:              montoTotal,
       pdf_factura:       form.pdf_factura || null,
       xml_factura:       form.xml_factura || null,
     }
@@ -670,6 +674,37 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
             <textarea className="input" rows={2} value={form.notas} onChange={setF('notas')} style={{ resize: 'vertical' }} />
           </div>
 
+          {/* ── Autorización ── */}
+          <Sec label="Autorización y Control de Pago">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label className="label">Ref. de Pago / Folio transferencia</label>
+                <input className="input" value={form.referencia_pago} onChange={setF('referencia_pago')}
+                  style={{ fontFamily: 'monospace' }} placeholder="ej. 202604-001 o N° de transferencia" />
+              </div>
+              {isEdit && opEdit?.autorizado_por && (
+                <div>
+                  <label className="label">Autorizado por</label>
+                  <input className="input" value={opEdit.autorizado_por} readOnly
+                    style={{ background: 'var(--bg-muted)', color: 'var(--text-secondary)', cursor: 'default' }} />
+                </div>
+              )}
+              {isEdit && opEdit?.fecha_autorizacion && (
+                <div>
+                  <label className="label">Fecha de autorización</label>
+                  <input className="input" value={new Date(opEdit.fecha_autorizacion).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })} readOnly
+                    style={{ background: 'var(--bg-muted)', color: 'var(--text-secondary)', cursor: 'default' }} />
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="label">Instrucciones de pago <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(para Tesorería)</span></label>
+              <textarea className="input" rows={2} value={form.instrucciones_pago} onChange={setF('instrucciones_pago')}
+                placeholder="ej. Pagar antes del viernes / Retener IVA / Pago parcial 50% …"
+                style={{ resize: 'vertical' }} />
+            </div>
+          </Sec>
+
           {/* ── Documentos de la Operación ── */}
           <Sec label="Documentos de la Operación">
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
@@ -834,12 +869,17 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const handleAuth = async (aprobado: boolean) => {
     if (!aprobado && !confirm('¿Rechazar esta Orden de Pago? Esta acción no entrará a CXP.')) return
     setAuthLd(true)
-    await dbComp.from('ordenes_pago').update({
-      status:          aprobado ? 'Pendiente' : 'Rechazada',
-      notas:           authComment.trim()
+    const updatePayload: any = {
+      status: aprobado ? 'Pendiente' : 'Rechazada',
+      notas:  authComment.trim()
         ? `[${aprobado ? 'Autorizado' : 'Rechazado'} por ${authUser?.nombre ?? ''}]: ${authComment.trim()}${op.notas ? '\n' + op.notas : ''}`
         : op.notas ?? null,
-    }).eq('id', op.id)
+    }
+    if (aprobado) {
+      updatePayload.autorizado_por     = authUser?.nombre ?? null
+      updatePayload.fecha_autorizacion = new Date().toISOString()
+    }
+    await dbComp.from('ordenes_pago').update(updatePayload).eq('id', op.id)
     setAuthLd(false)
     onAuthorized()
   }
@@ -905,9 +945,30 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(op.monto)}</td></tr>
       </table>
       ${op.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${op.notas}</em></p>` : ''}
+
+      ${(op.autorizado_por || op.fecha_autorizacion || op.instrucciones_pago || op.referencia_pago) ? `
+      <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
+        <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
+          Autorización y Control de Pago
+        </div>
+        <table style="margin:0">
+          ${op.autorizado_por     ? `<tr><th>Autorizado por</th><td>${op.autorizado_por}</td></tr>` : ''}
+          ${op.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(op.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
+          ${op.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${op.referencia_pago}</td></tr>` : ''}
+          ${op.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${op.instrucciones_pago}</td></tr>` : ''}
+        </table>
+      </div>` : ''}
+
       <div class="firmas">
-        <div class="firma">Elaboró</div>
-        <div class="firma">Autorizó</div>
+        <div class="firma">
+          ${op.created_by ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${op.created_by}</div>` : ''}
+          Elaboró
+        </div>
+        <div class="firma">
+          ${op.autorizado_por ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${op.autorizado_por}</div>` : ''}
+          Autorizó
+          ${op.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(op.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+        </div>
         <div class="firma">Recibió</div>
       </div>
       </body></html>`
@@ -967,6 +1028,22 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
             </div>
           </Sec>
+
+          {/* Sección de autorización */}
+          {(op.autorizado_por || op.fecha_autorizacion || op.instrucciones_pago) && (
+            <Sec label="Autorización">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
+                <DI label="Autorizado por"      value={op.autorizado_por} />
+                <DI label="Fecha autorización"  value={op.fecha_autorizacion ? new Date(op.fecha_autorizacion).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : null} />
+              </div>
+              {op.instrucciones_pago && (
+                <div style={{ marginTop: 8, padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Instrucciones de pago</div>
+                  <div style={{ fontSize: 13, color: '#78350f', whiteSpace: 'pre-wrap' }}>{op.instrucciones_pago}</div>
+                </div>
+              )}
+            </Sec>
+          )}
 
           <Sec label="Instrucciones y respuestas (CXP)">
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
