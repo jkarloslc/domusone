@@ -737,26 +737,29 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
 
   // Cargar OPs pagadas
   useEffect(() => {
-    dbComp.from('ordenes_pago').select('id, folio, concepto, monto_total, status')
+    dbComp.from('ordenes_pago').select('id, folio, concepto, monto, status')
       .in('status', ['Pagada', 'Pendiente'])
       .order('created_at', { ascending: false })
       .limit(200)
-      .then(({ data }) => setOps(data ?? []))
+      .then(({ data, error }) => {
+        if (error) console.error('[EquipoFlota] OPs error:', error)
+        setOps(data ?? [])
+      })
   }, [])
 
   // Si es edición, cargar OPs y evidencias vinculadas
   useEffect(() => {
     if (!isNew && bit?.id) {
       Promise.all([
-        dbCtrl.from('bitacora_equipo_ops').select('*, ordenes_pago:id_op_fk(id, folio, concepto, monto_total)').eq('id_bitacora_fk', bit.id),
+        dbCtrl.from('bitacora_equipo_ops').select('*, ordenes_pago:id_op_fk(id, folio, concepto, monto)').eq('id_bitacora_fk', bit.id),
         dbCtrl.from('bitacora_equipo_evidencias').select('*').eq('id_bitacora_fk', bit.id).order('created_at'),
       ]).then(([{ data: linkedOps }, { data: evs }]) => {
         setSelectedOps((linkedOps ?? []).map((lo: any) => ({
           id:          lo.id_op_fk,
           folio:       lo.ordenes_pago?.folio ?? '',
           concepto:    lo.ordenes_pago?.concepto ?? '',
-          monto_total: lo.ordenes_pago?.monto_total ?? 0,
-          monto:       lo.monto ?? lo.ordenes_pago?.monto_total ?? 0,
+          monto: lo.ordenes_pago?.monto ?? 0,
+          monto:       lo.monto ?? lo.ordenes_pago?.monto ?? 0,
           linkId:      lo.id,
         })))
         setEvidencias((evs ?? []).map((e: any) => ({ url: e.url, nombre: e.nombre ?? '' })))
@@ -770,7 +773,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
     setSelectedOps(prev => {
       const exists = prev.find(o => o.id === op.id)
       if (exists) return prev.filter(o => o.id !== op.id)
-      return [...prev, { ...op, monto: op.monto_total }]
+      return [...prev, { ...op, monto: op.monto }]
     })
   }
 
@@ -989,7 +992,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
                       </div>
                       <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{op.folio}</span>
                       <span style={{ fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</span>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', flexShrink: 0 }}>{fmt$(op.monto_total)}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', flexShrink: 0 }}>{fmt$(op.monto)}</span>
                     </div>
                   )
                 })}
@@ -1053,7 +1056,7 @@ function BitacoraDetail({ bit, equipoMap, onClose, onEdit }: {
   useEffect(() => {
     Promise.all([
       dbCtrl.from('bitacora_equipo_ops')
-        .select('*, op:id_op_fk(folio, concepto, monto_total)')
+        .select('*, op:id_op_fk(folio, concepto, monto)')
         .eq('id_bitacora_fk', bit.id),
       dbCtrl.from('bitacora_equipo_evidencias')
         .select('*').eq('id_bitacora_fk', bit.id).order('created_at'),
