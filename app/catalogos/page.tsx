@@ -250,17 +250,21 @@ export default function CatalogosPage() {
 // ══════════════════════════════════════════════════════════════
 // Tabla genérica
 // ══════════════════════════════════════════════════════════════
+const PAGE_SIZE = 25
+
 function CatalogoTable({ config }: { config: CatConfig }) {
   const db = config.schema === 'comp' ? dbComp : dbCfg
   const [rows, setRows]       = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
   const [detailRow, setDetailRow] = useState<any | null>(null)
+  const [page, setPage]       = useState(1)
   // Mapa de selects: { campo_key: { id: nombre } }
   const [selectMaps, setSelectMaps] = useState<Record<string, Record<number, string>>>({})
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    setPage(1)
     const { data } = await db.from(config.tabla).select('*').order(config.sortBy ?? 'nombre')
     setRows(data ?? [])
     // Cargar opciones de campos select
@@ -295,8 +299,11 @@ function CatalogoTable({ config }: { config: CatConfig }) {
     c.type !== 'file' && c.type !== 'textarea'
   )
 
-  const activos   = rows.filter(r => r.activo).length
-  const inactivos = rows.filter(r => !r.activo).length
+  const activos     = rows.filter(r => r.activo).length
+  const inactivos   = rows.filter(r => !r.activo).length
+  const totalPages  = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const safePage    = Math.min(page, totalPages)
+  const pagedRows   = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
   const Icon = config.icon
 
   return (
@@ -354,7 +361,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
               <tr><td colSpan={20} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 Sin registros. Haz clic en "Nuevo" para agregar.
               </td></tr>
-            ) : rows.map(row => (
+            ) : pagedRows.map(row => (
               <tr key={row.id} style={{ opacity: row.activo ? 1 : 0.45 }}>
                 <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{row.id}</td>
                 {colsTabla.map(c => (
@@ -404,6 +411,38 @@ function CatalogoTable({ config }: { config: CatConfig }) {
           </tbody>
         </table>
       </div>
+
+      {/* ── Paginación ── */}
+      {rows.length > PAGE_SIZE && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginTop: 12, padding: '8px 12px', background: 'var(--bg-card)',
+          border: '1px solid var(--border)', borderRadius: 10 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            Mostrando {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, rows.length)} de <strong>{rows.length}</strong> registros
+          </span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[
+              { label: '«', title: 'Primera página',   action: () => setPage(1),              disabled: safePage === 1 },
+              { label: '‹', title: 'Página anterior',  action: () => setPage(p => p - 1),     disabled: safePage === 1 },
+              { label: '›', title: 'Página siguiente', action: () => setPage(p => p + 1),     disabled: safePage === totalPages },
+              { label: '»', title: 'Última página',    action: () => setPage(totalPages),     disabled: safePage === totalPages },
+            ].map(btn => (
+              <button key={btn.label} title={btn.title} onClick={btn.action} disabled={btn.disabled}
+                style={{ width: 32, height: 32, borderRadius: 7, border: '1px solid var(--border)',
+                  background: 'var(--bg)', cursor: btn.disabled ? 'default' : 'pointer',
+                  fontSize: 15, fontWeight: 600,
+                  color: btn.disabled ? 'var(--text-muted)' : 'var(--text-primary)',
+                  opacity: btn.disabled ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {btn.label}
+              </button>
+            ))}
+            <span style={{ display: 'flex', alignItems: 'center', padding: '0 8px',
+              fontSize: 12, color: 'var(--text-secondary)', gap: 4 }}>
+              Pág. <strong>{safePage}</strong> / {totalPages}
+            </span>
+          </div>
+        </div>
+      )}
 
       {modal !== null && (
         <CatalogoModal
