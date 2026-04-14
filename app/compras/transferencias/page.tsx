@@ -271,6 +271,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const [areas, setAreas]     = useState<any[]>([])
   const [invMap, setInvMap]   = useState<Record<string, number>>({})  // artId_almId → saldo
   const [centrosCosto, setCentros] = useState<any[]>([])
+  const [secciones, setSecciones]  = useState<any[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
 
   const [form, setForm] = useState({

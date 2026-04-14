@@ -1,8 +1,9 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
-import { Search, RefreshCw, Eye, X, ArrowLeft, Warehouse } from 'lucide-react'
+import { Search, RefreshCw, Eye, X, ArrowLeft, Warehouse, Plus, Save, Loader } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/AuthContext'
 import { fmt, fmtFecha } from '../types'
 
 const TIPO_MOV_COLOR: Record<string, string> = {
@@ -13,8 +14,11 @@ const TIPO_MOV_COLOR: Record<string, string> = {
   'AJUSTE':           '#7c3aed',
 }
 
+const ROLES_ADMIN = ['superadmin', 'admin']
+
 export default function InventarioPage() {
   const router = useRouter()
+  const { authUser } = useAuth()
   const [inventario, setInventario] = useState<any[]>([])
   const [almacenes, setAlmacenes]   = useState<any[]>([])
   const [articulos, setArticulos]   = useState<Record<number, any>>({})
@@ -23,6 +27,9 @@ export default function InventarioPage() {
   const [search, setSearch]         = useState('')
   const [loading, setLoading]       = useState(true)
   const [kardex, setKardex]         = useState<{ art: any; movs: any[] } | null>(null)
+  const [movModal, setMovModal]     = useState(false)
+
+  const puedeAgregarMov = ROLES_ADMIN.includes(authUser?.rol ?? '')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -38,7 +45,7 @@ export default function InventarioPage() {
     setAlmMap(am)
 
     // Cargar artículos
-    const artIds = [...new Set((inv ?? []).map((i: any) => i.id_articulo_fk))]
+    const artIds = Array.from(new Set((inv ?? []).map((i: any) => i.id_articulo_fk)))
     if (artIds.length) {
       const { data: arts } = await dbComp.from('articulos').select('id, clave, nombre, unidad, stock_minimo').in('id', artIds)
       const am2: Record<number, any> = {}
@@ -72,12 +79,19 @@ export default function InventarioPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Inventario</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Saldos por almacén y kardex de movimientos</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
+          <div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Inventario</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Saldos por almacén y kardex de movimientos</p>
+          </div>
         </div>
+        {puedeAgregarMov && (
+          <button className="btn-primary" onClick={() => setMovModal(true)}>
+            <Plus size={14} /> Agregar Movimiento
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -209,6 +223,251 @@ export default function InventarioPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Agregar Movimiento */}
+      {movModal && (
+        <MovimientoModal
+          almacenes={almacenes}
+          usuario={authUser?.nombre ?? 'Admin'}
+          onClose={() => setMovModal(false)}
+          onSaved={() => { setMovModal(false); fetchData() }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// Modal: Agregar Movimiento Manual
+// ══════════════════════════════════════════════════════════════
+type TipoMov = 'ENTRADA' | 'SALIDA' | 'AJUSTE'
+
+function MovimientoModal({
+  almacenes, usuario, onClose, onSaved,
+}: {
+  almacenes: any[]
+  usuario: string
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [saving, setSaving]       = useState(false)
+  const [error, setError]         = useState('')
+  const [articulos, setArticulos] = useState<any[]>([])
+  const [stockActual, setStockActual] = useState<number | null>(null)
+  const [loadingStock, setLoadingStock] = useState(false)
+
+  const [form, setForm] = useState({
+    tipo_mov:      'AJUSTE' as TipoMov,
+    id_almacen_fk: '',
+    id_articulo_fk:'',
+    cantidad:      '',
+    referencia_folio: '',
+    notas:         '',
+  })
+
+  // Cargar catálogo de artículos
+  useEffect(() => {
+    dbComp.from('articulos').select('id, clave, nombre, unidad').eq('activo', true).order('nombre')
+      .then(({ data }) => setArticulos(data ?? []))
+  }, [])
+
+  // Leer stock cuando cambia artículo o almacén
+  useEffect(() => {
+    const artId = Number(form.id_articulo_fk)
+    const almId = Number(form.id_almacen_fk)
+    if (!artId || !almId) { setStockActual(null); return }
+    setLoadingStock(true)
+    dbComp.from('inventario').select('cantidad')
+      .eq('id_articulo_fk', artId).eq('id_almacen_fk', almId).maybeSingle()
+      .then(({ data }) => { setStockActual(data?.cantidad ?? 0); setLoadingStock(false) })
+  }, [form.id_articulo_fk, form.id_almacen_fk])
+
+  const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const artSeleccionado = articulos.find(a => a.id === Number(form.id_articulo_fk))
+
+  const handleSave = async () => {
+    const artId = Number(form.id_articulo_fk)
+    const almId = Number(form.id_almacen_fk)
+    const cant  = Number(form.cantidad)
+
+    if (!artId)     { setError('Selecciona un artículo'); return }
+    if (!almId)     { setError('Selecciona un almacén'); return }
+    if (!cant || cant <= 0) { setError('La cantidad debe ser mayor a cero'); return }
+
+    const cantAntes = stockActual ?? 0
+
+    // SALIDA: validar que haya stock suficiente
+    if (form.tipo_mov === 'SALIDA' && cant > cantAntes) {
+      setError(`Stock insuficiente. Existencia actual: ${cantAntes} ${artSeleccionado?.unidad ?? ''}`); return
+    }
+
+    setSaving(true); setError('')
+
+    // Calcular nuevo stock según tipo
+    let cantDespues: number
+    if (form.tipo_mov === 'ENTRADA')     cantDespues = cantAntes + cant
+    else if (form.tipo_mov === 'SALIDA') cantDespues = cantAntes - cant
+    else                                  cantDespues = cant  // AJUSTE: valor absoluto
+
+    const cantMovimiento = form.tipo_mov === 'AJUSTE'
+      ? Math.abs(cantDespues - cantAntes)   // cantidad del ajuste = diferencia
+      : cant
+
+    // Upsert inventario
+    const { data: stockRow } = await dbComp.from('inventario').select('id')
+      .eq('id_articulo_fk', artId).eq('id_almacen_fk', almId).maybeSingle()
+
+    if (stockRow) {
+      const { error: upErr } = await dbComp.from('inventario')
+        .update({ cantidad: cantDespues }).eq('id', stockRow.id)
+      if (upErr) { setError(upErr.message); setSaving(false); return }
+    } else {
+      const { error: insErr } = await dbComp.from('inventario').insert({
+        id_articulo_fk: artId,
+        id_almacen_fk:  almId,
+        cantidad:        cantDespues,
+      })
+      if (insErr) { setError(insErr.message); setSaving(false); return }
+    }
+
+    // Registrar movimiento
+    const { error: movErr } = await dbComp.from('movimientos_inv').insert({
+      id_articulo_fk:   artId,
+      id_almacen_fk:    almId,
+      tipo_mov:          form.tipo_mov,
+      cantidad:          cantMovimiento,
+      cantidad_antes:    cantAntes,
+      cantidad_despues:  cantDespues,
+      referencia_tipo:   'MANUAL',
+      referencia_folio:  form.referencia_folio.trim() || null,
+      usuario:           usuario,
+    })
+    if (movErr) { setError(movErr.message); setSaving(false); return }
+
+    setSaving(false); onSaved()
+  }
+
+  const tipoConfig: Record<TipoMov, { label: string; color: string; bg: string; desc: string }> = {
+    ENTRADA: { label: 'Entrada',  color: '#15803d', bg: '#f0fdf4', desc: 'Suma al stock existente' },
+    SALIDA:  { label: 'Salida',   color: '#dc2626', bg: '#fef2f2', desc: 'Resta del stock existente (entrega, uso, merma)' },
+    AJUSTE:  { label: 'Ajuste',   color: '#7c3aed', bg: '#faf5ff', desc: 'Corrige el stock a un valor específico (inventario físico)' },
+  }
+  const tc = tipoConfig[form.tipo_mov]
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 520 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Agregar Movimiento de Inventario</h2>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {error && (
+            <div style={{ padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, color: '#dc2626', fontSize: 13 }}>
+              {error}
+            </div>
+          )}
+
+          {/* Tipo de movimiento */}
+          <div>
+            <label className="label">Tipo de movimiento *</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 4 }}>
+              {(Object.keys(tipoConfig) as TipoMov[]).map(tipo => {
+                const cfg = tipoConfig[tipo]
+                const active = form.tipo_mov === tipo
+                return (
+                  <button key={tipo} type="button"
+                    onClick={() => setForm(f => ({ ...f, tipo_mov: tipo }))}
+                    style={{ padding: '10px 8px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+                      border: `2px solid ${active ? cfg.color : '#e2e8f0'}`,
+                      background: active ? cfg.bg : 'var(--bg)',
+                      transition: 'all 0.15s' }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: active ? cfg.color : 'var(--text-primary)', marginBottom: 2 }}>
+                      {cfg.label}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.3 }}>{cfg.desc}</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Almacén y Artículo */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label className="label">Almacén *</label>
+              <select className="select" value={form.id_almacen_fk} onChange={setF('id_almacen_fk')}>
+                <option value="">— Seleccionar —</option>
+                {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Artículo *</label>
+              <select className="select" value={form.id_articulo_fk} onChange={setF('id_articulo_fk')}>
+                <option value="">— Seleccionar —</option>
+                {articulos.map(a => <option key={a.id} value={a.id}>{a.clave} · {a.nombre}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Stock actual */}
+          {form.id_articulo_fk && form.id_almacen_fk && (
+            <div style={{ padding: '10px 14px', background: 'var(--bg-muted)', borderRadius: 8, border: '1px solid var(--border)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                Stock actual — {artSeleccionado?.nombre}
+              </span>
+              <span style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                color: stockActual !== null && stockActual > 0 ? '#15803d' : 'var(--text-muted)' }}>
+                {loadingStock ? '…' : `${stockActual ?? 0} ${artSeleccionado?.unidad ?? ''}`}
+              </span>
+            </div>
+          )}
+
+          {/* Cantidad */}
+          <div>
+            <label className="label">
+              {form.tipo_mov === 'AJUSTE' ? 'Nueva existencia (valor absoluto) *' : 'Cantidad *'}
+            </label>
+            <input className="input" type="number" min="0" step="0.001"
+              value={form.cantidad} onChange={setF('cantidad')}
+              placeholder={form.tipo_mov === 'AJUSTE' ? 'ej. 50 (el stock quedará en este valor)' : 'ej. 10'}
+            />
+            {form.tipo_mov === 'AJUSTE' && form.cantidad && stockActual !== null && (
+              <p style={{ fontSize: 11, color: '#7c3aed', marginTop: 4 }}>
+                Ajuste: {stockActual} → {form.cantidad} {artSeleccionado?.unidad ?? ''}
+                &nbsp;({Number(form.cantidad) >= stockActual ? '+' : ''}{(Number(form.cantidad) - stockActual).toFixed(3)})
+              </p>
+            )}
+          </div>
+
+          {/* Referencia y notas */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label className="label">Folio / Referencia</label>
+              <input className="input" value={form.referencia_folio} onChange={setF('referencia_folio')}
+                placeholder="ej. INV-2026-04" />
+            </div>
+            <div>
+              <label className="label">Notas</label>
+              <input className="input" value={form.notas} onChange={setF('notas')}
+                placeholder="ej. Inventario físico abril" />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}
+            style={{ background: tc.color, borderColor: tc.color }}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            Registrar {tc.label}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
