@@ -195,10 +195,8 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
         const cantAntes   = Number(stockActual?.cantidad ?? 0)
         const cantDespues = cantAntes + cantRec
-        const costoAnt    = Number(stockActual?.costo_promedio ?? 0)
-        const nuevoCosto  = cantAntes > 0
-          ? (costoAnt * cantAntes + precio * cantRec) / cantDespues
-          : precio
+        // Método: costo última compra — se actualiza siempre con el precio de la recepción
+        const nuevoCosto  = precio
 
         // Upsert inventario
         if (stockActual) {

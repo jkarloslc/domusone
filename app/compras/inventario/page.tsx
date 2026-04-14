@@ -257,12 +257,13 @@ function MovimientoModal({
   const [loadingStock, setLoadingStock] = useState(false)
 
   const [form, setForm] = useState({
-    tipo_mov:      'AJUSTE' as TipoMov,
-    id_almacen_fk: '',
-    id_articulo_fk:'',
-    cantidad:      '',
-    referencia_folio: '',
-    notas:         '',
+    tipo_mov:        'AJUSTE' as TipoMov,
+    id_almacen_fk:   '',
+    id_articulo_fk:  '',
+    cantidad:        '',
+    costo_unitario:  '',
+    referencia_folio:'',
+    notas:           '',
   })
 
   // Cargar catálogo de artículos
@@ -316,18 +317,25 @@ function MovimientoModal({
       : cant
 
     // Upsert inventario
+    const costoUnitario = Number(form.costo_unitario) || null
     const { data: stockRow } = await dbComp.from('inventario').select('id')
       .eq('id_articulo_fk', artId).eq('id_almacen_fk', almId).maybeSingle()
 
+    // Payload de costo: solo se actualiza en ENTRADA (costo última compra)
+    const costoPayload = form.tipo_mov === 'ENTRADA' && costoUnitario
+      ? { costo_promedio: costoUnitario }
+      : {}
+
     if (stockRow) {
       const { error: upErr } = await dbComp.from('inventario')
-        .update({ cantidad: cantDespues }).eq('id', stockRow.id)
+        .update({ cantidad: cantDespues, ...costoPayload }).eq('id', stockRow.id)
       if (upErr) { setError(upErr.message); setSaving(false); return }
     } else {
       const { error: insErr } = await dbComp.from('inventario').insert({
-        id_articulo_fk: artId,
-        id_almacen_fk:  almId,
-        cantidad:        cantDespues,
+        id_articulo_fk:  artId,
+        id_almacen_fk:   almId,
+        cantidad:         cantDespues,
+        costo_promedio:   costoUnitario ?? 0,
       })
       if (insErr) { setError(insErr.message); setSaving(false); return }
     }
@@ -443,6 +451,19 @@ function MovimientoModal({
               </p>
             )}
           </div>
+
+          {/* Costo unitario — solo en ENTRADA */}
+          {form.tipo_mov === 'ENTRADA' && (
+            <div>
+              <label className="label">Costo unitario (última compra)</label>
+              <input className="input" type="number" min="0" step="0.01"
+                value={form.costo_unitario} onChange={setF('costo_unitario')}
+                placeholder="ej. 45.50" />
+              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+                Se registra como costo de última compra del artículo en este almacén.
+              </p>
+            </div>
+          )}
 
           {/* Referencia y notas */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
