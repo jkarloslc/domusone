@@ -1258,7 +1258,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
             <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}>
               <Printer size={13} /> Imprimir
             </button>
-            {op.status === 'Pendiente' && (
+            {['Pendiente Auth', 'Pendiente', 'Rechazada'].includes(op.status) && (
               <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
                 <Edit2 size={13} /> Editar
               </button>
