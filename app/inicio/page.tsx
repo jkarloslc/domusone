@@ -255,31 +255,38 @@ export default function InicioPage() {
       dbCtrl.from('servicios_agua').select('*').eq('id_lote_fk', id),
     ])
 
-    // Clasificación y Sección por separado (cross-schema cat→cfg)
-    if (loteData?.id_clasificacion_fk) {
-      const { data: clasif } = await dbCfg.from('clasificacion')
-        .select('nombre').eq('id', loteData.id_clasificacion_fk).single()
-      if (clasif) loteData.clasificacion = clasif
-    }
-    if (loteData?.id_seccion_fk) {
-      const { data: seccion } = await dbCfg.from('secciones')
-        .select('nombre').eq('id', loteData.id_seccion_fk).single()
-      if (seccion) loteData.secciones = seccion
-    }
+    // Clasificación, Sección, Propietarios y Comunicados — todo en paralelo
+    const propIds = [...new Set((plRows ?? []).map((r: any) => r.id_propietario_fk).filter(Boolean))]
+    const allPropIds = propIds
 
+    const [clasifRes, seccionRes, propsRes, enviosRes] = await Promise.all([
+      loteData?.id_clasificacion_fk
+        ? dbCfg.from('clasificacion').select('nombre').eq('id', loteData.id_clasificacion_fk).single()
+        : Promise.resolve({ data: null }),
+      loteData?.id_seccion_fk
+        ? dbCfg.from('secciones').select('nombre').eq('id', loteData.id_seccion_fk).single()
+        : Promise.resolve({ data: null }),
+      propIds.length
+        ? dbCat.from('propietarios')
+            .select('id, nombre, apellido_paterno, apellido_materno, tipo_persona, rfc, curp, fecha_nacimiento, estado_civil, regimen, razon_social, calle, colonia, ciudad, estado, cp, pais, pertenece_asociacion')
+            .in('id', propIds)
+        : Promise.resolve({ data: [] }),
+      allPropIds.length
+        ? dbCtrl.from('comunicados_envios')
+            .select('id, id_comunicado_fk, correo_destino, fecha_envio, nombre_destino, status')
+            .in('id_propietario_fk', allPropIds)
+            .order('fecha_envio', { ascending: false })
+            .limit(30)
+        : Promise.resolve({ data: [] }),
+    ])
+
+    if (clasifRes.data) loteData.clasificacion = clasifRes.data
+    if (seccionRes.data) loteData.secciones    = seccionRes.data
     setLote(loteData)
 
-    // Propietarios por separado (cross-schema ctrl→cat)
-    const propIds = [...new Set((plRows ?? []).map((r: any) => r.id_propietario_fk).filter(Boolean))]
-    let propsMap: Record<number, any> = {}
-    if (propIds.length) {
-      const { data: propsData } = await dbCat.from('propietarios')
-        .select('id, nombre, apellido_paterno, apellido_materno, tipo_persona, rfc, curp, fecha_nacimiento, estado_civil, regimen, razon_social, calle, colonia, ciudad, estado, cp, pais, pertenece_asociacion')
-        .in('id', propIds)
-      ;(propsData ?? []).forEach((p: any) => { propsMap[p.id] = p })
-    }
-    const propsConDatos = (plRows ?? []).map((r: any) => ({ ...r, propietarios: propsMap[r.id_propietario_fk] ?? null }))
-    setPropietarios(propsConDatos)
+    const propsMap: Record<number, any> = {}
+    ;(propsRes.data ?? []).forEach((p: any) => { propsMap[p.id] = p })
+    setPropietarios((plRows ?? []).map((r: any) => ({ ...r, propietarios: propsMap[r.id_propietario_fk] ?? null })))
     setAccesos(acs ?? [])
     setVisitantes(vists ?? [])
     setVehiculos(vehs ?? [])
@@ -291,22 +298,15 @@ export default function InicioPage() {
     setCfe(cfes ?? [])
     setAgua(aguas ?? [])
 
-    // Comunicados enviados a los propietarios de este lote
-    const allPropIds = [...new Set((plRows ?? []).map((r: any) => r.id_propietario_fk).filter(Boolean))]
-    if (allPropIds.length > 0) {
-      const { data: envios } = await dbCtrl.from('comunicados_envios')
-        .select('id, id_comunicado_fk, correo_destino, fecha_envio, nombre_destino, status')
-        .in('id_propietario_fk', allPropIds)
-        .order('fecha_envio', { ascending: false })
-        .limit(30)
-      if (envios && envios.length > 0) {
-        const comIds = [...new Set(envios.map((e: any) => e.id_comunicado_fk).filter(Boolean))]
-        const { data: coms } = await dbCtrl.from('comunicados')
-          .select('id, titulo, tipo, created_at').in('id', comIds)
-        const comMap: Record<number, any> = {}
-        ;(coms ?? []).forEach((c: any) => { comMap[c.id] = c })
-        setComunicados(envios.map((e: any) => ({ ...e, comunicado: comMap[e.id_comunicado_fk] ?? null })))
-      }
+    // Comunicados — un segundo query solo si hay envíos
+    const envios = enviosRes.data ?? []
+    if (envios.length > 0) {
+      const comIds = [...new Set(envios.map((e: any) => e.id_comunicado_fk).filter(Boolean))]
+      const { data: coms } = await dbCtrl.from('comunicados')
+        .select('id, titulo, tipo, created_at').in('id', comIds)
+      const comMap: Record<number, any> = {}
+      ;(coms ?? []).forEach((c: any) => { comMap[c.id] = c })
+      setComunicados(envios.map((e: any) => ({ ...e, comunicado: comMap[e.id_comunicado_fk] ?? null })))
     }
 
     setLoading(false)

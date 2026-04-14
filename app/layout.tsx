@@ -3,8 +3,6 @@ import './globals.css'
 import { ConfigProvider } from '@/lib/ConfigContext'
 import { AuthProvider } from '@/lib/AuthContext'
 
-export const dynamic = 'force-dynamic'
-
 export const metadata: Metadata = {
   title: 'DomusOne',
   description: 'Sistema de administración residencial',
