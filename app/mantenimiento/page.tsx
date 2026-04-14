@@ -63,7 +63,7 @@ const fmtDate = (d: string | Date) => {
 // ═══════════════════════════════════════════════════════════════
 export default function MantenimientoPage() {
   const { canWrite, canDelete } = useAuth()
-  const [tab,          setTab]        = useState<'programa' | 'ordenes'>('programa')
+  const [tab,          setTab]        = useState<'programa' | 'ordenes' | 'ordenes_oitydisa'>('programa')
   const [programas,    setProgramas]  = useState<any[]>([])
   const [areas,       setAreas]  = useState<any[]>([])
   const [areaMap,     setAreaMap]     = useState<Record<number, string>>({})
@@ -180,12 +180,24 @@ export default function MantenimientoPage() {
             color: tab === 'ordenes' ? 'var(--blue)' : 'var(--text-muted)',
             borderBottom: tab === 'ordenes' ? '2px solid var(--blue)' : '2px solid transparent',
             marginBottom: -1 }}>
-          <ClipboardList size={12} /> Órdenes de Trabajo
+          <ClipboardList size={12} /> OT Balvanera
+        </button>
+        <button onClick={() => setTab('ordenes_oitydisa')}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
+            background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
+            fontWeight: tab === 'ordenes_oitydisa' ? 600 : 400,
+            color: tab === 'ordenes_oitydisa' ? '#2563eb' : 'var(--text-muted)',
+            borderBottom: tab === 'ordenes_oitydisa' ? '2px solid #2563eb' : '2px solid transparent',
+            marginBottom: -1 }}>
+          <Wrench size={12} /> OT Oitydisa
         </button>
       </div>
 
-      {/* Tab: Órdenes de Trabajo */}
-      {tab === 'ordenes' && <OrdenesTrabajoTab />}
+      {/* Tab: Órdenes de Trabajo Balvanera */}
+      {tab === 'ordenes' && <OrdenesTrabajoTab empresa="Balvanera" />}
+
+      {/* Tab: Órdenes de Trabajo Oitydisa */}
+      {tab === 'ordenes_oitydisa' && <OrdenesTrabajoTab empresa="Oitydisa" />}
 
       {/* Tab: Programa Anual */}
       {tab === 'programa' && (
@@ -628,8 +640,8 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
             </div>
           </div>
           <div><label className="label" style={{ fontSize: 11 }}>Descripción / Alcance</label>
-            <textarea className="input" style={{ fontSize: 13 }} rows={3} value={form.descripcion} onChange={setF('descripcion')}
-              style={{ resize: 'vertical' }} />
+            <textarea className="input" rows={3} value={form.descripcion} onChange={setF('descripcion')}
+              style={{ fontSize: 13, resize: 'vertical' }} />
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end',
@@ -667,7 +679,7 @@ function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
     const { data } = await dbCtrl.from('programa_tareas').select('*')
       .eq('id_programa_fk', prog.id).order('fecha_prog')
     setTareas(data ?? [])
-    const otIds = [...new Set((data ?? []).filter((t: any) => t.id_ot_fk).map((t: any) => t.id_ot_fk))]
+    const otIds = Array.from(new Set((data ?? []).filter((t: any) => t.id_ot_fk).map((t: any) => t.id_ot_fk)))
     if (otIds.length) {
       const { data: ots } = await dbCtrl.from('ordenes_trabajo').select('id, folio').in('id', otIds)
       const om: Record<number, string> = {}

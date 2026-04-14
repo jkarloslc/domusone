@@ -45,7 +45,7 @@ const semanaActual = () => {
 const fmtFecha = (d: string | null) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-export default function OrdenesTrabajoTab() {
+export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?: 'Balvanera' | 'Oitydisa' }) {
   const { canWrite, canDelete } = useAuth()
   const [rows, setRows]           = useState<any[]>([])
   const [total, setTotal]         = useState(0)
@@ -70,17 +70,18 @@ export default function OrdenesTrabajoTab() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('ordenes_trabajo').select('*', { count: 'exact' })
+      .eq('empresa', empresa)
       .order('created_at', { ascending: false })
     if (debouncedSearch)  q = q.or(`folio.ilike.%${debouncedSearch}%,titulo.ilike.%${debouncedSearch}%,asignado_a.ilike.%${debouncedSearch}%`)
     if (filterStatus)     q = q.eq('status', filterStatus)
     if (filterTipo)       q = q.eq('tipo_trabajo', filterTipo)
     if (filterCC)         q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterArea)        q = q.eq('id_area_fk', Number(filterArea))
+    if (filterArea)       q = q.eq('id_area_fk', Number(filterArea))
     if (filterFr)         q = q.eq('id_frente_fk', Number(filterFr))
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [debouncedSearch, filterStatus, filterTipo, filterCC, filterArea, filterFr])
+  }, [empresa, debouncedSearch, filterStatus, filterTipo, filterCC, filterArea, filterFr])
 
   useEffect(() => {
     Promise.all([
@@ -228,7 +229,7 @@ export default function OrdenesTrabajoTab() {
         </table>
       </div>
 
-      {modal  && <OTModal areas={areas} ot={editingOT}
+      {modal  && <OTModal areas={areas} ot={editingOT} empresa={empresa}
         onClose={() => { setModal(false); setEditingOT(null) }}
         onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
       {detail && <OTDetail ot={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap}
@@ -239,8 +240,8 @@ export default function OrdenesTrabajoTab() {
 }
 
 // ── OTModal ────────────────────────────────────────────────────
-function OTModal({ areas, ot, onClose, onSaved }: {
-  areas: any[]; ot?: any; onClose: () => void; onSaved: () => void
+function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
+  areas: any[]; ot?: any; empresa?: 'Balvanera' | 'Oitydisa'; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
@@ -299,11 +300,13 @@ function OTModal({ areas, ot, onClose, onSaved }: {
     const isNew = !ot
     let otId = ot?.id
     if (isNew) {
-      const { count } = await dbCtrl.from('ordenes_trabajo').select('id', { count: 'exact', head: true })
+      const prefijo = empresa === 'Oitydisa' ? 'OTO' : 'OTB'
+      const { count } = await dbCtrl.from('ordenes_trabajo')
+        .select('id', { count: 'exact', head: true }).eq('empresa', empresa)
       const anio  = new Date().getFullYear()
-      const folio = `OT-${anio}-${String((count ?? 0) + 1).padStart(4, '0')}`
+      const folio = `${prefijo}-${anio}-${String((count ?? 0) + 1).padStart(4, '0')}`
       const { data: newOT, error: err } = await dbCtrl.from('ordenes_trabajo').insert({
-        folio, titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
+        folio, empresa, titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
         prioridad: form.prioridad, status: form.status,
         id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
         id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
@@ -359,9 +362,17 @@ function OTModal({ areas, ot, onClose, onSaved }: {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 620 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
-            {ot ? 'Editar OT' : 'Nueva Orden de Trabajo'}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
+              {ot ? 'Editar OT' : 'Nueva Orden de Trabajo'}
+            </h2>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+              background: empresa === 'Oitydisa' ? '#eff6ff' : '#f0fdf4',
+              color: empresa === 'Oitydisa' ? '#2563eb' : '#15803d',
+              border: `1px solid ${empresa === 'Oitydisa' ? '#bfdbfe' : '#bbf7d0'}` }}>
+              {empresa}
+            </span>
+          </div>
           <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
         </div>
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -403,7 +414,7 @@ function OTModal({ areas, ot, onClose, onSaved }: {
           <div><label className="label" style={{ fontSize: 11 }}>Ubicación detalle</label>
             <input className="input" style={{ fontSize: 13 }} value={form.ubicacion_detalle} onChange={setF('ubicacion_detalle')} /></div>
           <div><label className="label" style={{ fontSize: 11 }}>Descripción</label>
-            <textarea className="input" style={{ fontSize: 13 }} rows={2} value={form.descripcion} onChange={setF('descripcion')} style={{ resize: 'vertical' }} /></div>
+            <textarea className="input" rows={2} value={form.descripcion} onChange={setF('descripcion')} style={{ fontSize: 13, resize: 'vertical' }} /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>Asignado a</label><input className="input" style={{ fontSize: 13 }} value={form.asignado_a} onChange={setF('asignado_a')} /></div>
             <div><label className="label" style={{ fontSize: 11 }}>Supervisor</label><input className="input" style={{ fontSize: 13 }} value={form.supervisor} onChange={setF('supervisor')} /></div>
@@ -414,7 +425,7 @@ function OTModal({ areas, ot, onClose, onSaved }: {
             <div><label className="label" style={{ fontSize: 11 }}>Semana</label><input className="input" style={{ fontSize: 13 }} type="number" value={form.semana_no} onChange={setF('semana_no')} /></div>
           </div>
           <div><label className="label" style={{ fontSize: 11 }}>Notas</label>
-            <textarea className="input" style={{ fontSize: 13 }} rows={2} value={form.notas} onChange={setF('notas')} style={{ resize: 'vertical' }} /></div>
+            <textarea className="input" rows={2} value={form.notas} onChange={setF('notas')} style={{ fontSize: 13, resize: 'vertical' }} /></div>
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Recursos</div>
             {recursos.map((r, i) => (
