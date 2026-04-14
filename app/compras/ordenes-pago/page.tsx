@@ -1024,26 +1024,30 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               {op.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`} />}
               {op.id_area_fk && <DI label="Área"          value={areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`} />}
               {op.id_frente_fk      && <DI label="Frente"           value={frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`} />}
-              {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
-              {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
+              {op.fecha_pago && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
             </div>
           </Sec>
 
-          {/* Sección de autorización */}
-          {(op.autorizado_por || op.fecha_autorizacion || op.instrucciones_pago) && (
-            <Sec label="Autorización">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
-                <DI label="Autorizado por"      value={op.autorizado_por} />
-                <DI label="Fecha autorización"  value={op.fecha_autorizacion ? new Date(op.fecha_autorizacion).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : null} />
+          {/* Sección de autorización — siempre visible */}
+          <Sec label="Autorización y Control de Pago">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
+              <DI label="Ref. de Pago"       value={op.referencia_pago} mono />
+              <DI label="Autorizado por"     value={op.autorizado_por} />
+              <DI label="Fecha autorización" value={op.fecha_autorizacion ? new Date(op.fecha_autorizacion).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : null} />
+            </div>
+            {op.instrucciones_pago ? (
+              <div style={{ marginTop: 8, padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Instrucciones de pago</div>
+                <div style={{ fontSize: 13, color: '#78350f', whiteSpace: 'pre-wrap' }}>{op.instrucciones_pago}</div>
               </div>
-              {op.instrucciones_pago && (
-                <div style={{ marginTop: 8, padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Instrucciones de pago</div>
-                  <div style={{ fontSize: 13, color: '#78350f', whiteSpace: 'pre-wrap' }}>{op.instrucciones_pago}</div>
-                </div>
-              )}
-            </Sec>
-          )}
+            ) : (
+              !op.autorizado_por && !op.referencia_pago && (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  Sin datos de autorización. Edita la OP para agregar referencia o instrucciones.
+                </p>
+              )
+            )}
+          </Sec>
 
           <Sec label="Instrucciones y respuestas (CXP)">
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
