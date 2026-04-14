@@ -738,7 +738,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
   // Cargar OPs pagadas
   useEffect(() => {
     dbComp.from('ordenes_pago').select('id, folio, concepto, monto_total, status')
-      .in('status', ['Pagado', 'Autorizado'])
+      .in('status', ['Pagada', 'Pendiente'])
       .order('created_at', { ascending: false })
       .limit(200)
       .then(({ data }) => setOps(data ?? []))
