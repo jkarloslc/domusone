@@ -250,13 +250,15 @@ function MovimientoModal({
   onClose: () => void
   onSaved: () => void
 }) {
-  const [saving, setSaving]           = useState(false)
-  const [error, setError]             = useState('')
-  const [articulos, setArticulos]     = useState<any[]>([])
-  const [stockActual, setStockActual] = useState<number | null>(null)
+  const [saving, setSaving]             = useState(false)
+  const [error, setError]               = useState('')
+  const [artOpciones, setArtOpciones]   = useState<any[]>([])
+  const [artSeleccionado, setArtSelec]  = useState<any | null>(null)
+  const [stockActual, setStockActual]   = useState<number | null>(null)
   const [loadingStock, setLoadingStock] = useState(false)
-  const [artSearch, setArtSearch]     = useState('')
-  const [artOpen, setArtOpen]         = useState(false)
+  const [loadingArt, setLoadingArt]     = useState(false)
+  const [artSearch, setArtSearch]       = useState('')
+  const [artOpen, setArtOpen]           = useState(false)
 
   const [form, setForm] = useState({
     tipo_mov:        'AJUSTE' as TipoMov,
@@ -268,11 +270,20 @@ function MovimientoModal({
     notas:           '',
   })
 
-  // Cargar catálogo de artículos
+  // Búsqueda server-side de artículos (evita límite de 1000 filas)
   useEffect(() => {
-    dbComp.from('articulos').select('id, clave, nombre, unidad').eq('activo', true).order('nombre')
-      .then(({ data }) => setArticulos(data ?? []))
-  }, [])
+    const q = artSearch.trim()
+    if (q.length < 2) { setArtOpciones([]); return }
+    setLoadingArt(true)
+    const term = `%${q}%`
+    dbComp.from('articulos')
+      .select('id, clave, nombre, unidad')
+      .eq('activo', true)
+      .or(`clave.ilike.${term},nombre.ilike.${term}`)
+      .order('nombre')
+      .limit(40)
+      .then(({ data }) => { setArtOpciones(data ?? []); setLoadingArt(false) })
+  }, [artSearch])
 
   // Leer stock cuando cambia artículo o almacén
   useEffect(() => {
@@ -287,8 +298,6 @@ function MovimientoModal({
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
-
-  const artSeleccionado = articulos.find(a => a.id === Number(form.id_articulo_fk))
 
   const handleSave = async () => {
     const artId = Number(form.id_articulo_fk)
@@ -418,49 +427,54 @@ function MovimientoModal({
               <label className="label">Artículo *</label>
               <input
                 className="input"
-                placeholder="Buscar clave o nombre…"
+                placeholder="Escribe clave o nombre (mín. 2 caracteres)…"
                 value={artSearch}
                 autoComplete="off"
                 onChange={e => {
                   setArtSearch(e.target.value)
                   setArtOpen(true)
-                  if (!e.target.value) setForm(f => ({ ...f, id_articulo_fk: '' }))
+                  if (!e.target.value) {
+                    setForm(f => ({ ...f, id_articulo_fk: '' }))
+                    setArtSelec(null)
+                  }
                 }}
-                onFocus={() => setArtOpen(true)}
+                onFocus={() => { if (artSearch.length >= 2) setArtOpen(true) }}
                 onBlur={() => setArtOpen(false)}
               />
-              {artOpen && (() => {
-                const q = artSearch.toLowerCase()
-                const filtered = articulos.filter(a =>
-                  a.clave?.toLowerCase().includes(q) || a.nombre?.toLowerCase().includes(q)
-                ).slice(0, 40)
-                return filtered.length > 0 ? (
-                  <div style={{
-                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
-                    background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)', maxHeight: 220, overflowY: 'auto',
-                  }}>
-                    {filtered.map(a => (
-                      <button key={a.id}
-                        onMouseDown={e => {
-                          e.preventDefault()
-                          setForm(f => ({ ...f, id_articulo_fk: String(a.id) }))
-                          setArtSearch(`${a.clave} · ${a.nombre}`)
-                          setArtOpen(false)
-                        }}
-                        style={{ display: 'block', width: '100%', textAlign: 'left',
-                          padding: '8px 12px', background: 'none', border: 'none',
-                          borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                      >
-                        <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563eb' }}>{a.clave}</span>
-                        <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : null
-              })()}
+              {artOpen && artSearch.length >= 2 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
+                  background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)', maxHeight: 220, overflowY: 'auto',
+                }}>
+                  {loadingArt && (
+                    <div style={{ padding: '10px 14px', fontSize: 13, color: '#6b7280' }}>Buscando…</div>
+                  )}
+                  {!loadingArt && artOpciones.length === 0 && (
+                    <div style={{ padding: '10px 14px', fontSize: 13, color: '#6b7280' }}>Sin resultados</div>
+                  )}
+                  {artOpciones.map(a => (
+                    <button key={a.id}
+                      onMouseDown={e => {
+                        e.preventDefault()
+                        setForm(f => ({ ...f, id_articulo_fk: String(a.id) }))
+                        setArtSelec(a)
+                        setArtSearch(`${a.clave} · ${a.nombre}`)
+                        setArtOpen(false)
+                      }}
+                      style={{ display: 'block', width: '100%', textAlign: 'left',
+                        padding: '8px 12px', background: 'none', border: 'none',
+                        borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                    >
+                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563eb' }}>{a.clave}</span>
+                      <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
+                      <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 6 }}>{a.unidad}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
