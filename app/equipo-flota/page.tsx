@@ -28,7 +28,7 @@ export default function EquipoFlotaPage() {
         </div>
         <div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>
-            Equipo & Flota
+            Equipo & Vehículos
           </h1>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
             Catálogo de equipos, bitácora de mantenimiento y control de combustible
