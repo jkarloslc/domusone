@@ -5,8 +5,9 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2, Trash2,
   Truck, Wrench, Filter, Search, Camera, ExternalLink, CheckCircle,
-  DollarSign, AlertTriangle, ChevronDown, Upload
+  DollarSign, AlertTriangle, ChevronDown, Upload, Fuel
 } from 'lucide-react'
+import CombustibleTab from './CombustibleTab'
 
 const TIPOS_EQUIPO  = ['Vehículo', 'Moto / Cuatrimoto','Maquinaria', 'Herramienta']
 const STATUS_EQUIPO = ['Activo', 'En Mantenimiento', 'Baja']
@@ -48,7 +49,7 @@ const fmtF = (d: string | null) =>
 // ══════════════════════════════════════════════════════════════
 export default function EquipoFlotaTab() {
   const { canWrite, canDelete, authUser } = useAuth()
-  const [subTab, setSubTab]     = useState<'catalogo' | 'bitacora'>('catalogo')
+  const [subTab, setSubTab]     = useState<'catalogo' | 'bitacora' | 'combustible'>('catalogo')
 
   // ── Catálogo ─────────────────────────────────────────────
   const [equipos,   setEquipos]   = useState<any[]>([])
@@ -142,7 +143,7 @@ export default function EquipoFlotaTab() {
     <div>
       {/* Sub-tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 14 }}>
-        {([['catalogo', 'Catálogo de Equipos', Truck], ['bitacora', 'Bitácora', Wrench]] as const).map(([key, label, Icon]) => (
+        {([['catalogo', 'Catálogo de Equipos', Truck], ['bitacora', 'Bitácora', Wrench], ['combustible', 'Combustible', Fuel]] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setSubTab(key)}
             style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px',
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
@@ -428,6 +429,9 @@ export default function EquipoFlotaTab() {
           onClose={() => setDetailBit(null)}
           onEdit={b => { setDetailBit(null); setModalBit({ open: true, bit: b }) }} />
       )}
+
+      {/* ══════════ TAB: COMBUSTIBLE ══════════ */}
+      {subTab === 'combustible' && <CombustibleTab />}
     </div>
   )
 }
