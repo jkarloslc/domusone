@@ -250,11 +250,13 @@ function MovimientoModal({
   onClose: () => void
   onSaved: () => void
 }) {
-  const [saving, setSaving]       = useState(false)
-  const [error, setError]         = useState('')
-  const [articulos, setArticulos] = useState<any[]>([])
+  const [saving, setSaving]           = useState(false)
+  const [error, setError]             = useState('')
+  const [articulos, setArticulos]     = useState<any[]>([])
   const [stockActual, setStockActual] = useState<number | null>(null)
   const [loadingStock, setLoadingStock] = useState(false)
+  const [artSearch, setArtSearch]     = useState('')
+  const [artOpen, setArtOpen]         = useState(false)
 
   const [form, setForm] = useState({
     tipo_mov:        'AJUSTE' as TipoMov,
@@ -412,12 +414,56 @@ function MovimientoModal({
                 {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
-            <div>
+            <div style={{ position: 'relative' }}>
               <label className="label">Artículo *</label>
-              <select className="select" value={form.id_articulo_fk} onChange={setF('id_articulo_fk')}>
-                <option value="">— Seleccionar —</option>
-                {articulos.map(a => <option key={a.id} value={a.id}>{a.clave} · {a.nombre}</option>)}
-              </select>
+              <input
+                className="input"
+                placeholder="Buscar clave o nombre…"
+                value={artSearch}
+                autoComplete="off"
+                onChange={e => {
+                  setArtSearch(e.target.value)
+                  setArtOpen(true)
+                  // Si el usuario borra el texto, limpia la selección
+                  if (!e.target.value) setForm(f => ({ ...f, id_articulo_fk: '' }))
+                }}
+                onFocus={() => setArtOpen(true)}
+                onBlur={() => setTimeout(() => setArtOpen(false), 150)}
+              />
+              {artOpen && (() => {
+                const q = artSearch.toLowerCase()
+                const filtered = articulos.filter(a =>
+                  a.clave?.toLowerCase().includes(q) || a.nombre?.toLowerCase().includes(q)
+                ).slice(0, 40)
+                return filtered.length > 0 ? (
+                  <ul style={{
+                    position: 'absolute', zIndex: 50, top: '100%', left: 0, right: 0,
+                    background: 'var(--bg-card)', border: '1px solid var(--border)',
+                    borderRadius: 8, maxHeight: 220, overflowY: 'auto',
+                    margin: 0, padding: 0, listStyle: 'none', boxShadow: '0 4px 12px rgba(0,0,0,.12)'
+                  }}>
+                    {filtered.map(a => (
+                      <li key={a.id}
+                        onMouseDown={() => {
+                          setForm(f => ({ ...f, id_articulo_fk: String(a.id) }))
+                          setArtSearch(`${a.clave} · ${a.nombre}`)
+                          setArtOpen(false)
+                        }}
+                        style={{
+                          padding: '7px 12px', cursor: 'pointer', fontSize: 13,
+                          borderBottom: '1px solid var(--border)',
+                          background: form.id_articulo_fk === String(a.id) ? 'var(--bg-muted)' : undefined,
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-muted)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = form.id_articulo_fk === String(a.id) ? 'var(--bg-muted)' : '')}
+                      >
+                        <span style={{ fontWeight: 600 }}>{a.clave}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}> · {a.nombre}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null
+              })()}
             </div>
           </div>
 
