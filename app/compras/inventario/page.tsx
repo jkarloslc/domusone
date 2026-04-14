@@ -424,11 +424,10 @@ function MovimientoModal({
                 onChange={e => {
                   setArtSearch(e.target.value)
                   setArtOpen(true)
-                  // Si el usuario borra el texto, limpia la selección
                   if (!e.target.value) setForm(f => ({ ...f, id_articulo_fk: '' }))
                 }}
                 onFocus={() => setArtOpen(true)}
-                onBlur={() => setTimeout(() => setArtOpen(false), 150)}
+                onBlur={() => setArtOpen(false)}
               />
               {artOpen && (() => {
                 const q = artSearch.toLowerCase()
@@ -436,32 +435,30 @@ function MovimientoModal({
                   a.clave?.toLowerCase().includes(q) || a.nombre?.toLowerCase().includes(q)
                 ).slice(0, 40)
                 return filtered.length > 0 ? (
-                  <ul style={{
-                    position: 'absolute', zIndex: 50, top: '100%', left: 0, right: 0,
-                    background: 'var(--bg-card)', border: '1px solid var(--border)',
-                    borderRadius: 8, maxHeight: 220, overflowY: 'auto',
-                    margin: 0, padding: 0, listStyle: 'none', boxShadow: '0 4px 12px rgba(0,0,0,.12)'
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
+                    background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)', maxHeight: 220, overflowY: 'auto',
                   }}>
                     {filtered.map(a => (
-                      <li key={a.id}
-                        onMouseDown={() => {
+                      <button key={a.id}
+                        onMouseDown={e => {
+                          e.preventDefault()
                           setForm(f => ({ ...f, id_articulo_fk: String(a.id) }))
                           setArtSearch(`${a.clave} · ${a.nombre}`)
                           setArtOpen(false)
                         }}
-                        style={{
-                          padding: '7px 12px', cursor: 'pointer', fontSize: 13,
-                          borderBottom: '1px solid var(--border)',
-                          background: form.id_articulo_fk === String(a.id) ? 'var(--bg-muted)' : undefined,
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-muted)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = form.id_articulo_fk === String(a.id) ? 'var(--bg-muted)' : '')}
+                        style={{ display: 'block', width: '100%', textAlign: 'left',
+                          padding: '8px 12px', background: 'none', border: 'none',
+                          borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                       >
-                        <span style={{ fontWeight: 600 }}>{a.clave}</span>
-                        <span style={{ color: 'var(--text-secondary)' }}> · {a.nombre}</span>
-                      </li>
+                        <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#2563eb' }}>{a.clave}</span>
+                        <span style={{ fontSize: 13, marginLeft: 8 }}>{a.nombre}</span>
+                      </button>
                     ))}
-                  </ul>
+                  </div>
                 ) : null
               })()}
             </div>
