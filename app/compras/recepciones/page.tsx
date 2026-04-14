@@ -180,12 +180,53 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
         }).eq('id', d.id_oc_det_fk)
       }
       if (d.id_articulo_fk) {
-        await dbComp.rpc('fn_entrada_inventario', {
-          p_articulo_id: d.id_articulo_fk, p_almacen_id: Number(form.id_almacen_fk),
-          p_cantidad: Number(d.cantidad_recibida), p_precio: d.precio_unitario,
-          p_ref_tipo: 'RECEPCION', p_ref_id: rec.id, p_ref_folio: folio,
-          p_usuario: authUser?.nombre ?? 'Sistema',
-        } as any)
+        const almId   = Number(form.id_almacen_fk)
+        const artId   = d.id_articulo_fk
+        const cantRec = Number(d.cantidad_recibida)
+        const precio  = Number(d.precio_unitario) || 0
+
+        // Leer stock actual
+        const { data: stockActual } = await dbComp
+          .from('inventario')
+          .select('id, cantidad, costo_promedio')
+          .eq('id_articulo_fk', artId)
+          .eq('id_almacen_fk', almId)
+          .maybeSingle()
+
+        const cantAntes   = Number(stockActual?.cantidad ?? 0)
+        const cantDespues = cantAntes + cantRec
+        const costoAnt    = Number(stockActual?.costo_promedio ?? 0)
+        const nuevoCosto  = cantAntes > 0
+          ? (costoAnt * cantAntes + precio * cantRec) / cantDespues
+          : precio
+
+        // Upsert inventario
+        if (stockActual) {
+          await dbComp.from('inventario').update({
+            cantidad:        cantDespues,
+            costo_promedio:  nuevoCosto,
+          }).eq('id', stockActual.id)
+        } else {
+          await dbComp.from('inventario').insert({
+            id_articulo_fk: artId,
+            id_almacen_fk:  almId,
+            cantidad:        cantDespues,
+            costo_promedio:  nuevoCosto,
+          })
+        }
+
+        // Registrar movimiento en kardex
+        await dbComp.from('movimientos_inv').insert({
+          id_articulo_fk:  artId,
+          id_almacen_fk:   almId,
+          tipo_mov:         'ENTRADA',
+          cantidad:         cantRec,
+          cantidad_antes:   cantAntes,
+          cantidad_despues: cantDespues,
+          referencia_tipo:  'RECEPCION',
+          referencia_folio: folio,
+          usuario:          authUser?.nombre ?? 'Sistema',
+        })
       }
     }
 
