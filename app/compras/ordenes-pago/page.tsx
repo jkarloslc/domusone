@@ -886,6 +886,10 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   }
 
   const imprimir = async () => {
+    // Fresh fetch del OP para asegurar campos actualizados (created_by, autorizado_por, referencia_pago, etc.)
+    const { data: freshOP } = await dbComp.from('ordenes_pago').select('*').eq('id', op.id).single()
+    const opData = freshOP ? { ...op, ...freshOP } : op
+
     // Cargar config de organización
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
@@ -907,7 +911,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
-    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${op.folio}</title>
+    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${opData.folio}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
         .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
@@ -931,44 +935,44 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Orden de Pago</div>
-          <div class="sub" style="margin:0">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(op.fecha_op)}</div>
+          <div class="sub" style="margin:0">Folio: <strong>${opData.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(opData.fecha_op)}</div>
         </div>
       </div>
       <table>
-        <tr><th>Beneficiario</th><td>${op._provNombre ?? '—'}</td><th>Banco</th><td>${op.banco_destino ?? '—'}</td></tr>
-        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${op.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>
-        <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
-        <tr><th>Almacén</th><td>${op._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td></tr>
-        ${op.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${op.tipo_gasto}</td></tr>` : ''}
-        ${op.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`}</td><th>Área</th><td>${op.id_area_fk ? (areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`) : '—'}</td></tr>` : ''}
-        ${op.id_frente_fk ? `<tr><th>Frente</th><td colspan="3">${frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`}</td></tr>` : ''}
+        <tr><th>Beneficiario</th><td>${opData._provNombre ?? '—'}</td><th>Banco</th><td>${opData.banco_destino ?? '—'}</td></tr>
+        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
+        <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
+        <tr><th>Almacén</th><td>${opData._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
+        ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
+        ${opData.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap[opData.id_centro_costo_fk] ?? `#${opData.id_centro_costo_fk}`}</td><th>Área</th><td>${opData.id_area_fk ? (areaMap[opData.id_area_fk] ?? `#${opData.id_area_fk}`) : '—'}</td></tr>` : ''}
+        ${opData.id_frente_fk ? `<tr><th>Frente</th><td colspan="3">${frMap[opData.id_frente_fk] ?? `#${opData.id_frente_fk}`}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
-        <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(op.monto)}</td></tr>
+        <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
-      ${op.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${op.notas}</em></p>` : ''}
+      ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
 
-      ${(op.autorizado_por || op.fecha_autorizacion || op.instrucciones_pago || op.referencia_pago) ? `
+      ${(opData.autorizado_por || opData.fecha_autorizacion || opData.instrucciones_pago || opData.referencia_pago) ? `
       <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
         <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
           Autorización y Control de Pago
         </div>
         <table style="margin:0">
-          ${op.autorizado_por     ? `<tr><th>Autorizado por</th><td>${op.autorizado_por}</td></tr>` : ''}
-          ${op.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(op.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
-          ${op.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${op.referencia_pago}</td></tr>` : ''}
-          ${op.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${op.instrucciones_pago}</td></tr>` : ''}
+          ${opData.autorizado_por     ? `<tr><th>Autorizado por</th><td>${opData.autorizado_por}</td></tr>` : ''}
+          ${opData.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
+          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
+          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
         </table>
       </div>` : ''}
 
       <div class="firmas">
         <div class="firma">
-          ${op.created_by ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${op.created_by}</div>` : ''}
+          ${opData.created_by ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.created_by}</div>` : ''}
           Elaboró
         </div>
         <div class="firma">
-          ${op.autorizado_por ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${op.autorizado_por}</div>` : ''}
+          ${opData.autorizado_por ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.autorizado_por}</div>` : ''}
           Autorizó
-          ${op.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(op.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
         </div>
         <div class="firma">Recibió</div>
       </div>
