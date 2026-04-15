@@ -59,7 +59,7 @@ function Stepper({ status }: { status: string }) {
 // ════════════════════════════════════════════════════════════
 export default function TransferenciasPage() {
   const router = useRouter()
-  const { authUser, canAuth } = useAuth()
+  const { authUser, canAuth, canWrite } = useAuth()
   const [rows, setRows]         = useState<any[]>([])
   const [almMap, setAlmMap]     = useState<Record<number, string>>({})
   const [total, setTotal]       = useState(0)
@@ -161,7 +161,9 @@ export default function TransferenciasPage() {
             </p>
           </div>
         </div>
-        <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Solicitud</button>
+        {canWrite('transferencias') && (
+          <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Solicitud</button>
+        )}
       </div>
 
       {/* Filtros */}
