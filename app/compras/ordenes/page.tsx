@@ -280,8 +280,8 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     const detValidos = det.filter(d => d.descripcion && Number(d.precio_unitario) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto con precio'); return }
     setSaving(true); setError('')
-    const { count } = await dbComp.from('ordenes_compra').select('id', { count: 'exact', head: true })
-    const folio = folioGen('OC', (count ?? 0) + 1)
+    const { data: folioOC } = await dbComp.rpc('fn_next_folio', { prefijo: 'OC' })
+    const folio = folioOC as string
     const { data: oc, error: err } = await dbComp.from('ordenes_compra').insert({
       folio,
       id_proveedor_fk:       Number(form.id_proveedor_fk),
@@ -494,8 +494,8 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
 
   const crearOrdenPago = async () => {
     setSavingOP(true)
-    const { count } = await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })
-    const folio = folioGen('OP', (count ?? 0) + 1)
+    const { data: folioOP } = await dbComp.rpc('fn_next_folio', { prefijo: 'OP' })
+    const folio = folioOP as string
     await dbComp.from('ordenes_pago').insert({
       folio, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
       id_almacen_fk: oc.id_almacen_entrega_fk ?? null,

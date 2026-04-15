@@ -123,8 +123,8 @@ function RFQModal({ row, onClose, onSaved }: { row: any | null; onClose: () => v
 
   const handleSave = async () => {
     setSaving(true); setError('')
-    const { count } = await dbComp.from('rfq').select('id', { count: 'exact', head: true })
-    const folio = folioGen('RFQ', (count ?? 0) + 1)
+    const { data: folioRFQ } = await dbComp.rpc('fn_next_folio', { prefijo: 'RFQ' })
+    const folio = folioRFQ as string
     const { error: err } = await dbComp.from('rfq').insert({
       folio,
       id_requisicion_fk: form.id_requisicion_fk ? Number(form.id_requisicion_fk) : null,

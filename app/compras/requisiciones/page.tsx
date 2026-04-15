@@ -387,8 +387,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
 
     let reqId = row?.id
     if (isNew) {
-      const { count } = await dbComp.from('requisiciones').select('id', { count: 'exact', head: true })
-      const folio = folioGen('REQ', (count ?? 0) + 1)
+      const { data: folioREQ } = await dbComp.rpc('fn_next_folio', { prefijo: 'REQ' })
+      const folio = folioREQ as string
       const { data, error: err } = await dbComp.from('requisiciones').insert({
         folio,
         area_solicitante:   form.area_solicitante.trim(),

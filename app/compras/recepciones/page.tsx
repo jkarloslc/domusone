@@ -155,8 +155,8 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     }
     setSaving(true); setError('')
 
-    const { count } = await dbComp.from('recepciones').select('id', { count: 'exact', head: true })
-    const folio = folioGen('REC', (count ?? 0) + 1)
+    const { data: folioREC } = await dbComp.rpc('fn_next_folio', { prefijo: 'REC' })
+    const folio = folioREC as string
     const condicion = tipoRecepcion === 'completa' ? 'Completa' : 'Parcial'
 
     const { data: rec, error: err } = await dbComp.from('recepciones').insert({

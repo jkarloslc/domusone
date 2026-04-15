@@ -447,7 +447,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
 
     // NUEVO
-    payload.folio      = folioGen('OP', (await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })).count ?? 0 + 1)
+    const { data: folioOP } = await dbComp.rpc('fn_next_folio', { prefijo: 'OP' })
+    payload.folio      = folioOP as string
     // OP con OC: ya viene autorizada por la cadena REQ→COT→OC → entra directo a CXP
     // OP sin OC: gasto directo sin cadena de aprobación → requiere autorización previa
     payload.status     = conOC ? 'Pendiente' : 'Pendiente Auth'

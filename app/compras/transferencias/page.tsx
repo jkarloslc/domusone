@@ -361,8 +361,8 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     if (!detValidos.length) { setError('Agrega al menos un artículo'); return }
     setSaving(true); setError('')
 
-    const { count } = await dbComp.from('transferencias').select('id', { count: 'exact', head: true })
-    const folio = folioGen('TRF', (count ?? 0) + 1)
+    const { data: folioTRF } = await dbComp.rpc('fn_next_folio', { prefijo: 'TRF' })
+    const folio = folioTRF as string
 
     const { data: trf, error: err } = await dbComp.from('transferencias').insert({
       folio,
