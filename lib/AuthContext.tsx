@@ -18,6 +18,7 @@ type Rol =
   | 'fraccionamiento'
   | 'tesoreria'
   | 'seguridad'
+  | 'usuario_solicitante'
 
 type AuthUser = {
   user:   User
@@ -37,9 +38,9 @@ type AuthCtx = {
   /** ¿Puede ELIMINAR? — solo admin */
   canDelete:  () => boolean
   /** ¿Puede ver secciones de Compras?
-   *  Retorna 'all' | 'compras' | 'almacen' | 'seguridad' | false
+   *  Retorna 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | false
    *  Acepta clave opcional del módulo para filtrar tarjetas del hub */
-  canCompras: (key?: string) => 'all' | 'compras' | 'almacen' | 'seguridad' | false
+  canCompras: (key?: string) => 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | false
   /** ¿Puede AUTORIZAR documentos (Req, OC, Transferencias)? */
   canAuth:    (modulo?: string) => boolean
 }
@@ -77,6 +78,7 @@ const LEER: Record<Rol, string[] | '*'> = {
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
   tesoreria:           ['tesoreria', 'reportes'],
   seguridad:           ['lotes', 'propietarios', 'accesos', 'incidencias', 'compras'],
+  usuario_solicitante: ['compras', 'requisiciones', 'transferencias'],
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -98,6 +100,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
   tesoreria:           ['tesoreria'],
   seguridad:           ['accesos', 'incidencias', 'requisiciones'],
+  usuario_solicitante: ['requisiciones', 'transferencias'],
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
@@ -115,7 +118,7 @@ const AuthContext = createContext<AuthCtx>({
   can:        () => false,
   canWrite:   () => false,
   canDelete:  () => false,
-  canCompras: (_key?: string) => false,
+  canCompras: (_key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | false => false,
   canAuth:    () => false,
 })
 
@@ -192,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Uso en /compras/page.tsx:
    *   {MODULOS.filter(m => canCompras(m.key)).map(...)}
    */
-  const canCompras = (key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | false => {
+  const canCompras = (key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | false => {
     if (!authUser) return false
     const r = authUser.rol
     // superadmin / admin / fraccionamiento: acceso total
@@ -208,6 +211,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const MODS_SEGURIDAD = ['requisiciones', 'transferencias', 'caja-chica']
       if (!key) return 'seguridad'
       return MODS_SEGURIDAD.includes(key) ? 'seguridad' : false
+    }
+    if (r === 'usuario_solicitante') {
+      // Solo ve Requisiciones y Transferencias — sin autorización, sin catálogos
+      const MODS_SOLICITANTE = ['requisiciones', 'transferencias']
+      if (!key) return 'solicitante'
+      return MODS_SOLICITANTE.includes(key) ? 'solicitante' : false
     }
     // Cualquier rol autenticado puede ver caja-chica (para registrar reembolsos propios)
     const MODS_GENERAL = ['caja-chica']
