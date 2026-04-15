@@ -509,37 +509,58 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
 
   const imprimirOP = async () => {
     if (!op) return
-    // Cargar config de organización
+    // Fresh fetch del OP para asegurar campos actualizados (created_by, autorizado_por, referencia_pago, etc.)
+    const { data: freshOP } = await dbComp.from('ordenes_pago').select('*').eq('id', op.id).single()
+    const opData = freshOP ? { ...op, ...freshOP } : op
+
+    // Cargar CC/Área/Frente y config org en paralelo
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
     let orgLogo = ''
+    const ccMap2: Record<number, string> = {}
+    const areaMap2: Record<number, string> = {}
+    const frMap2: Record<number, string> = {}
     try {
       const { createClient } = await import('@supabase/supabase-js')
       const sb = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
-      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
-        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
-      ;(cfgRows ?? []).forEach((r: any) => {
+      const sbCfg = sb.schema('cfg' as any)
+      const [cfgRows, ccRows, areaRows, frRows] = await Promise.all([
+        sbCfg.from('configuracion').select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url']),
+        sbCfg.from('centros_costo').select('id, nombre'),
+        sbCfg.from('areas').select('id, nombre'),
+        sbCfg.from('frentes').select('id, nombre'),
+      ])
+      ;(cfgRows.data ?? []).forEach((r: any) => {
         if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
         if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
         if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
       })
+      ;(ccRows.data ?? []).forEach((r: any) => { ccMap2[r.id] = r.nombre })
+      ;(areaRows.data ?? []).forEach((r: any) => { areaMap2[r.id] = r.nombre })
+      ;(frRows.data ?? []).forEach((r: any) => { frMap2[r.id] = r.nombre })
     } catch {}
+
+    const provNombre = opData._provNombre ?? oc._provNombre ?? '—'
+    const almNombre  = opData._almNombre ?? almMap[oc.id_almacen_entrega_fk] ?? '—'
+
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
-    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${op.folio}</title>
+    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${opData.folio}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
         .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
         .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
         .org-sub { font-size: 11px; color: #64748b; }
         .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+        .sub { color: #64748b; font-size: 12px; margin-bottom: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
         td, th { border: 1px solid #e2e8f0; padding: 8px 12px; }
-        th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; }
+        th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
+        .total { background: #eff6ff; font-size: 16px; font-weight: 700; color: #0D4F80; }
         .firmas { display: flex; gap: 60px; margin-top: 60px; }
         .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
         @page { margin: 1.2cm; }
@@ -552,19 +573,45 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Orden de Pago</div>
-          <div style="font-size:12px;color:#64748b">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; OC: ${oc.folio}</div>
+          <div class="sub" style="margin:0">Folio: <strong>${opData.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(opData.fecha_op)}</div>
         </div>
       </div>
       <table>
-        <tr><th>Proveedor</th><td colspan="3">${oc._provNombre ?? '—'}</td></tr>
-        <tr><th>Folio OP</th><td>${op.folio}</td><th>OC Ref.</th><td>${oc.folio}</td></tr>
-        <tr><th>Monto</th><td><strong>${fmt(op.monto)}</strong></td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>
-        <tr><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td><th>Almacén</th><td>${almMap[oc.id_almacen_entrega_fk] ?? '—'}</td></tr>
-        <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
+        <tr><th>Beneficiario</th><td>${provNombre}</td><th>Banco</th><td>${opData.banco_destino ?? '—'}</td></tr>
+        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
+        <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
+        <tr><th>Almacén</th><td>${almNombre}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
+        ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
+        ${opData.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap2[opData.id_centro_costo_fk] ?? `#${opData.id_centro_costo_fk}`}</td><th>Área</th><td>${opData.id_area_fk ? (areaMap2[opData.id_area_fk] ?? `#${opData.id_area_fk}`) : '—'}</td></tr>` : ''}
+        ${opData.id_frente_fk ? `<tr><th>Frente</th><td colspan="3">${frMap2[opData.id_frente_fk] ?? `#${opData.id_frente_fk}`}</td></tr>` : ''}
+        <tr><th>OC Relacionada</th><td colspan="3">${oc.folio}</td></tr>
+        <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
+      ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
+
+      ${(opData.autorizado_por || opData.fecha_autorizacion || opData.instrucciones_pago || opData.referencia_pago) ? `
+      <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
+        <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
+          Autorización y Control de Pago
+        </div>
+        <table style="margin:0">
+          ${opData.autorizado_por     ? `<tr><th>Autorizado por</th><td>${opData.autorizado_por}</td></tr>` : ''}
+          ${opData.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
+          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
+          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
+        </table>
+      </div>` : ''}
+
       <div class="firmas">
-        <div class="firma">Elaboró</div>
-        <div class="firma">Autorizó</div>
+        <div class="firma">
+          ${opData.created_by ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.created_by}</div>` : ''}
+          Elaboró
+        </div>
+        <div class="firma">
+          ${opData.autorizado_por ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.autorizado_por}</div>` : ''}
+          Autorizó
+          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+        </div>
         <div class="firma">Recibió</div>
       </div>
       </body></html>`
