@@ -33,7 +33,7 @@ SELECT setval('comp.seq_folio_op',  GREATEST(1, (SELECT COUNT(*) FROM comp.orden
 SELECT setval('comp.seq_folio_oc',  GREATEST(1, (SELECT COUNT(*) FROM comp.ordenes_compra)));
 SELECT setval('comp.seq_folio_req', GREATEST(1, (SELECT COUNT(*) FROM comp.requisiciones)));
 SELECT setval('comp.seq_folio_trf', GREATEST(1, (SELECT COUNT(*) FROM comp.transferencias)));
-SELECT setval('comp.seq_folio_rfq', GREATEST(1, (SELECT COUNT(*) FROM comp.cotizaciones)));
+SELECT setval('comp.seq_folio_rfq', GREATEST(1, (SELECT COUNT(*) FROM comp.rfq)));
 SELECT setval('comp.seq_folio_rec', GREATEST(1, (SELECT COUNT(*) FROM comp.recepciones)));
 
 CREATE OR REPLACE FUNCTION comp.fn_next_folio(prefijo TEXT)
