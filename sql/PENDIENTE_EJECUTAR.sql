@@ -68,6 +68,6 @@ GRANT USAGE ON SEQUENCE comp.seq_folio_val TO authenticated;
 -- ─────────────────────────────────────────────────────────────
 -- 4. Columna empresa en ordenes_trabajo (OT Balvanera vs Oitydisa)
 -- ─────────────────────────────────────────────────────────────
-ALTER TABLE mant.ordenes_trabajo
+ALTER TABLE ctrl.ordenes_trabajo
   ADD COLUMN IF NOT EXISTS empresa TEXT NOT NULL DEFAULT 'Balvanera'
   CHECK (empresa IN ('Balvanera', 'Oitydisa'));
