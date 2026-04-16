@@ -5,7 +5,7 @@ import {
   Home, MapPin, Users, FileText, Building2, Wrench,
   Shield, AlertTriangle, Receipt, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  LayoutDashboard, Truck, TrendingUp,
+  MessageCircle, LayoutDashboard, Truck, TrendingUp,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -90,6 +90,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
@@ -130,6 +131,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
@@ -160,6 +162,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
@@ -191,6 +194,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
@@ -213,6 +217,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
   ],
 
@@ -224,6 +229,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
       RPT('residencial'),
     ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
   ],
 
   vigilancia: [
@@ -233,6 +241,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Accesos',        href: '/accesos',        icon: Shield        },
       { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
     ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
   ],
 
   compras: [
@@ -240,12 +251,18 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
     ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
   ],
 
   almacen: [
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
   ],
 
@@ -258,6 +275,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
       { label: 'Equipo & Vehículos', href: '/equipo-flota',   icon: Truck         },
       RPT('mantenimiento'),
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
   ],
 
@@ -288,6 +308,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Comunicación', items: [
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
   ],
 
@@ -300,11 +321,17 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       RPT('tesoreria'),
     ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
   ],
 
   ingresos: [
     { section: 'Ingresos', items: [
       { label: 'Ingresos',       href: '/ingresos',       icon: TrendingUp    },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
   ],
 
@@ -313,11 +340,17 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
     ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
   ],
 
   usuario_solicitante: [
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
   ],
 
@@ -330,6 +363,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
   ],
 }
@@ -386,15 +422,6 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           <Home size={15} />
           <span>Inicio</span>
         </Link>
-        <Link
-          href="/tablero"
-          onClick={onClose}
-          className={`nav-item ${pathname.startsWith('/tablero') ? 'active' : ''}`}
-        >
-          <LayoutDashboard size={15} />
-          <span>Mi Tablero</span>
-        </Link>
-
         {/* Secciones por rol */}
         {sections.map(sec => (
           <div key={sec.section}>
