@@ -25,6 +25,7 @@ type Rol =
   | 'tesoreria'
   | 'seguridad'
   | 'ingresos'
+  | 'usuario_solicitante'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -45,6 +46,7 @@ const ROL_LABEL: Record<Rol, string> = {
   tesoreria:           'Tesorería',
   seguridad:           'Seguridad',
   ingresos:            'Captura de Ingresos',
+  usuario_solicitante: 'Solicitante',
 }
 
 // Ítem de reportes con estilo diferenciado (pie de sección)
@@ -310,6 +312,12 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
+    ]},
+  ],
+
+  usuario_solicitante: [
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
     ]},
   ],
 

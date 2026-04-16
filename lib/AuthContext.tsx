@@ -19,6 +19,7 @@ type Rol =
   | 'tesoreria'
   | 'seguridad'
   | 'usuario_solicitante'
+  | 'ingresos'
 
 type AuthUser = {
   user:   User
@@ -52,7 +53,7 @@ const ADMIN_MODULOS = [
   'proyectos', 'mantenimiento', 'comunicados',
   'compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago',
   'proveedores', 'articulos', 'almacenes', 'areas',
-  'tesoreria', 'reportes', 'catalogos',
+  'tesoreria', 'ingresos', 'reportes', 'catalogos',
 ]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
@@ -76,9 +77,10 @@ const LEER: Record<Rol, string[] | '*'> = {
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
-  tesoreria:           ['tesoreria', 'reportes'],
+  tesoreria:           ['tesoreria', 'ingresos', 'reportes'],
   seguridad:           ['lotes', 'propietarios', 'accesos', 'incidencias', 'compras'],
   usuario_solicitante: ['compras', 'requisiciones', 'transferencias'],
+  ingresos:            ['ingresos', 'reportes'],
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -98,9 +100,10 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
-  tesoreria:           ['tesoreria'],
+  tesoreria:           ['tesoreria', 'ingresos'],
   seguridad:           ['accesos', 'incidencias', 'requisiciones'],
   usuario_solicitante: ['requisiciones', 'transferencias'],
+  ingresos:            ['ingresos'],
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────

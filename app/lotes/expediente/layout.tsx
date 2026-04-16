@@ -1,4 +1,4 @@
-import DashLayout from '@/components/layout/DashLayout'
+// El DashLayout lo provee /app/lotes/layout.tsx — este es solo passthrough
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <DashLayout modulo="lotes">{children}</DashLayout>
+  return <>{children}</>
 }

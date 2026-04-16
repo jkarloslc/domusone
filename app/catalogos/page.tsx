@@ -184,6 +184,23 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
+    key:   'centros_ingreso',
+    tabla: 'centros_ingreso',
+    label: 'Centros de Ingreso',
+    icon:  ArrowUpCircle,
+    color: '#059669',
+    desc:  'Centros de ingreso y tipo de captura — Golf, Cuotas, Espacios, Caballerizas',
+    campos: [
+      { key: 'nombre',        label: 'Nombre *',        type: 'text',   required: true },
+      { key: 'codigo',        label: 'Código',          type: 'text' },
+      { key: 'tipo',          label: 'Tipo',            type: 'select',
+        staticOptions: ['golf', 'cuotas', 'rentas_espacios', 'caballerizas', 'otro'] },
+      { key: 'tipo_desglose', label: 'Tipo de Captura', type: 'select',
+        staticOptions: ['unico', 'secciones', 'frentes'] },
+      { key: 'notas',         label: 'Notas',           type: 'textarea' },
+    ],
+  },
+  {
     key:   'frentes_ingreso',
     tabla: 'frentes_ingreso',
     label: 'Frentes de Ingreso',
