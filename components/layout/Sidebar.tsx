@@ -5,7 +5,7 @@ import {
   Home, MapPin, Users, FileText, Building2, Wrench,
   Shield, AlertTriangle, Receipt, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  LayoutDashboard, Truck,
+  LayoutDashboard, Truck, TrendingUp,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -24,6 +24,7 @@ type Rol =
   | 'fraccionamiento'
   | 'tesoreria'
   | 'seguridad'
+  | 'ingresos'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -43,6 +44,7 @@ const ROL_LABEL: Record<Rol, string> = {
   fraccionamiento:     'Fraccionamiento',
   tesoreria:           'Tesorería',
   seguridad:           'Seguridad',
+  ingresos:            'Captura de Ingresos',
 }
 
 // Ítem de reportes con estilo diferenciado (pie de sección)
@@ -75,6 +77,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
+    ]},
+    { section: 'Ingresos', items: [
+      { label: 'Ingresos',       href: '/ingresos',       icon: TrendingUp    },
+      RPT('ingresos'),
     ]},
     { section: 'Tesorería', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
@@ -111,6 +117,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
+    ]},
+    { section: 'Ingresos', items: [
+      { label: 'Ingresos',       href: '/ingresos',       icon: TrendingUp    },
+      RPT('ingresos'),
     ]},
     { section: 'Tesorería', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
@@ -280,9 +290,19 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   tesoreria: [
+    { section: 'Ingresos', items: [
+      { label: 'Ingresos',       href: '/ingresos',       icon: TrendingUp    },
+      RPT('ingresos'),
+    ]},
     { section: 'Tesorería', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       RPT('tesoreria'),
+    ]},
+  ],
+
+  ingresos: [
+    { section: 'Ingresos', items: [
+      { label: 'Ingresos',       href: '/ingresos',       icon: TrendingUp    },
     ]},
   ],
 

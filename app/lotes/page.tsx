@@ -4,12 +4,41 @@ import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCfg, type Lote } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, MapPin,
-  ChevronLeft, ChevronRight, X, Edit2, Trash2, Eye, Users
+  ChevronLeft, ChevronRight, X, Edit2, Trash2, Eye, Users, MapPinned, List
 } from 'lucide-react'
+import Link from 'next/link'
 import LoteModal from './LoteModal'
 import LoteDetail from './LoteDetail'
 import HistorialPropietarios from './HistorialPropietarios'
 import { useAuth } from '@/lib/AuthContext'
+
+// ── Tabs compartidos ─────────────────────────────────────────
+function LotesTabs() {
+  return (
+    <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e2e8f0', marginBottom: 24 }}>
+      {[
+        { href: '/lotes', label: 'Catálogo', icon: List },
+        { href: '/lotes/expediente', label: 'Expediente de Lote', icon: MapPinned },
+      ].map(t => {
+        const Icon = t.icon
+        const active = t.href === '/lotes'
+        return (
+          <Link key={t.href} href={t.href}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7, padding: '10px 20px',
+              fontSize: 13, fontWeight: active ? 700 : 500,
+              color: active ? 'var(--blue)' : 'var(--text-muted)',
+              borderBottom: active ? '2px solid var(--blue)' : '2px solid transparent',
+              marginBottom: -2, textDecoration: 'none', transition: 'all 0.15s',
+            }}>
+            <Icon size={14} />
+            {t.label}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
 
 const STATUS_COLORS: Record<string, string> = {
   'Vendido':   'badge-vendido',
@@ -88,6 +117,9 @@ export default function LotesPage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
+
+      {/* Tabs */}
+      <LotesTabs />
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>

@@ -25,6 +25,14 @@ const MODULOS = [
     color: '#0f766e',
     desc:  'Saldos, movimientos y administración de cuentas bancarias',
   },
+  {
+    key:   'panorama',
+    label: 'Panorama Financiero',
+    icon:  TrendingDown,
+    color: '#2563eb',
+    desc:  'Dashboard de ingresos vs egresos, balance neto y KPIs del período',
+    href:  '/inicio',
+  },
 ]
 
 export default function TesoreriaPage() {
@@ -110,7 +118,7 @@ export default function TesoreriaPage() {
           const Icon = m.icon
           return (
             <button key={m.key}
-              onClick={() => router.push(`/tesoreria/${m.key}`)}
+              onClick={() => router.push((m as any).href ?? `/tesoreria/${m.key}`)}
               className="card card-hover"
               style={{ padding: '22px 24px', textAlign: 'left', background: 'none',
                 border: '1px solid #e2e8f0', cursor: 'pointer',

@@ -14,10 +14,17 @@ import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP } from '../types
 const PAGE_SIZE = 25
 
 const TIPOS_GASTO = [
+  // Operación general
   'Servicios Profesionales', 'Mantenimiento', 'Reparación',
   'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
   'Electricidad', 'Agua', 'Telefonía / Internet',
-  'Honorarios', 'Asesoría', 'Capacitación', 'Otro',
+  'Honorarios', 'Asesoría', 'Capacitación',
+  // Nómina
+  'Nómina Semanal', 'Nómina Quincenal',
+  // Impuestos y contribuciones
+  'ISR', 'IMSS', 'IVA', 'IEPS', '3% SN',
+  // Otros
+  'Otro',
 ]
 
 export default function OrdenesPagoPage() {

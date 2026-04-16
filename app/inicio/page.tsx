@@ -1,657 +1,389 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
-const fmtFechaCorta = (d: string) => new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import {
-  Search, Home, Users, Shield, FileText, Building2,
-  AlertTriangle, Wrench, Zap, ChevronDown, ChevronRight,
-  X, Clock, CheckCircle, MapPin, Phone, Mail, Car,
-  User, Calendar, DollarSign, Loader, RefreshCw, MessageSquare
+  TrendingUp, TrendingDown, DollarSign, Scale,
+  Receipt, FileText, Calendar, RefreshCw, Building2,
+  ChevronRight, AlertTriangle
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
-// ── tipos ──────────────────────────────────────────────────────
-type Lote = Record<string, any>
-type Propietario = Record<string, any>
-
-const fmt = (v: number | null | undefined) =>
-  v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
-const fmtFecha = (d: string | null | undefined) =>
-  d ? new Date(d.includes('T') ? d : d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
-
-// ── colores de status ──────────────────────────────────────────
-const STATUS_COLOR: Record<string, string> = {
-  'Libre': '#15803d', 'Vendido': '#2563eb', 'Bloqueado': '#dc2626',
-  'Abierta': '#dc2626', 'En Proceso': '#d97706', 'Cerrada': '#15803d',
-  'Vigente': '#15803d', 'Vencido': '#dc2626', 'Cancelado': '#94a3b8',
-  'Pendiente': '#dc2626', 'Parcial': '#d97706', 'Pagado': '#15803d',
-  'Activo': '#15803d', 'Inactivo': '#94a3b8',
+// ── Helpers ────────────────────────────────────────────────────
+const fmt = (n: number) =>
+  '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const fmtK = (n: number) => {
+  if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000)     return '$' + (n / 1_000).toFixed(1) + 'K'
+  return fmt(n)
 }
-const statusBadge = (s: string | null | undefined) => {
-  if (!s) return null
-  const color = STATUS_COLOR[s] ?? '#64748b'
-  return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-      background: color + '18', color, border: `1px solid ${color}40` }}>
-      {s}
-    </span>
-  )
-}
+const fmtFecha = (d: string) =>
+  new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
 
-// ── sección colapsable ─────────────────────────────────────────
-function Section({ icon: Icon, title, count, color = '#2563eb', children, defaultOpen = false }:
-  { icon: any; title: string; count?: number; color?: string; children: React.ReactNode; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden', marginBottom: 10 }}>
-      <button onClick={() => setOpen(o => !o)} style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-        padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer',
-        borderBottom: open ? '1px solid #e2e8f0' : 'none',
-      }}>
-        <div style={{ width: 28, height: 28, borderRadius: 7, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Icon size={14} style={{ color }} />
-        </div>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: '#1e293b', flex: 1, textAlign: 'left' }}>{title}</span>
-        {count !== undefined && (
-          <span style={{ fontSize: 11, fontWeight: 700, minWidth: 20, height: 20, borderRadius: 10,
-            background: count > 0 ? color + '18' : '#f1f5f9', color: count > 0 ? color : '#94a3b8',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px' }}>
-            {count}
-          </span>
-        )}
-        {open ? <ChevronDown size={14} style={{ color: '#94a3b8', flexShrink: 0 }} /> : <ChevronRight size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />}
-      </button>
-      {open && <div style={{ padding: '14px 16px' }}>{children}</div>}
-    </div>
-  )
+type Periodo = 'hoy' | 'semana' | 'mes' | 'anio'
+const PERIODOS: { key: Periodo; label: string }[] = [
+  { key: 'hoy',    label: 'Hoy' },
+  { key: 'semana', label: 'Esta semana' },
+  { key: 'mes',    label: 'Este mes' },
+  { key: 'anio',   label: 'Este año' },
+]
+
+function getRango(p: Periodo): { ini: string; fin: string } {
+  const now  = new Date()
+  const hoy  = now.toISOString().slice(0, 10)
+  if (p === 'hoy')    return { ini: hoy, fin: hoy }
+  if (p === 'semana') {
+    const d = new Date(now); d.setDate(d.getDate() - d.getDay())
+    return { ini: d.toISOString().slice(0, 10), fin: hoy }
+  }
+  if (p === 'mes') {
+    const ini = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+    return { ini, fin: hoy }
+  }
+  return { ini: `${now.getFullYear()}-01-01`, fin: hoy }
 }
 
-// ── fila de dato ───────────────────────────────────────────────
-function DataRow({ label, value, mono = false }: { label: string; value?: any; mono?: boolean }) {
-  if (value === null || value === undefined || value === '') return null
-  return (
-    <div style={{ display: 'flex', gap: 8, padding: '4px 0', borderBottom: '1px solid #f8fafc' }}>
-      <span style={{ fontSize: 11, color: '#94a3b8', minWidth: 130, flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 12, color: '#1e293b', fontFamily: mono ? 'monospace' : undefined }}>{value}</span>
-    </div>
-  )
+// Últimos 6 meses para la gráfica
+function getUltimosMeses(): { label: string; key: string; ini: string; fin: string }[] {
+  const result = []
+  const now = new Date()
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const fin = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    result.push({
+      label: d.toLocaleDateString('es-MX', { month: 'short' }),
+      key:   d.toISOString().slice(0, 7),
+      ini:   d.toISOString().slice(0, 10),
+      fin:   fin.toISOString().slice(0, 10),
+    })
+  }
+  return result
 }
 
-// ── tarjeta propietario ────────────────────────────────────────
-function PropietarioCard({ item, onClick }: { item: any; onClick: () => void }) {
-  const p = item.propietarios
-  const nombre = p ? [p.nombre, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ') : '—'
+// ── Mini gráfica de barras ─────────────────────────────────────
+function BarChart({ datos }: { datos: { label: string; ing: number; egr: number }[] }) {
+  const max = Math.max(...datos.map(d => Math.max(d.ing, d.egr)), 1)
   return (
-    <button onClick={onClick} style={{
-      width: '100%', textAlign: 'left', padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
-      background: item.es_principal ? '#eff6ff' : '#f8fafc',
-      border: `1px solid ${item.es_principal ? '#bfdbfe' : '#e2e8f0'}`,
-      marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10,
-    }}
-    onMouseEnter={e => (e.currentTarget.style.background = item.es_principal ? '#dbeafe' : '#f1f5f9')}
-    onMouseLeave={e => (e.currentTarget.style.background = item.es_principal ? '#eff6ff' : '#f8fafc')}>
-      <div style={{ width: 32, height: 32, borderRadius: '50%', background: item.es_principal ? '#dbeafe' : '#e2e8f0',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <User size={14} style={{ color: item.es_principal ? '#2563eb' : '#64748b' }} />
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: item.es_principal ? '#1d4ed8' : '#334155' }}>{nombre}</div>
-        <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
-          {item.fecha_desde && `Desde: ${fmtFecha(item.fecha_desde)}`}
-          {item.fecha_hasta && ` · Hasta: ${fmtFecha(item.fecha_hasta)}`}
-          {item.porcentaje && ` · ${item.porcentaje}%`}
-        </div>
-      </div>
-      {item.es_principal && (
-        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#dbeafe', color: '#1d4ed8' }}>ACTUAL</span>
-      )}
-    </button>
-  )
-}
-
-// ── modal propietario ──────────────────────────────────────────
-function PropietarioModal({ propietario, onClose }: { propietario: any; onClose: () => void }) {
-  const [tels, setTels]     = useState<any[]>([])
-  const [emails, setEmails] = useState<any[]>([])
-  const p = propietario
-
-  useEffect(() => {
-    dbCat.from('propietarios_telefonos').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
-      .then(({ data }) => setTels(data ?? []))
-    dbCat.from('propietarios_correos').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
-      .then(({ data }) => setEmails(data ?? []))
-  }, [p.id])
-
-  const nombre = [p.nombre, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ')
-
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 540 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: '#1e293b' }}>{nombre || p.razon_social}</h2>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{p.tipo_persona ?? 'Persona Física'}</div>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 110, padding: '0 4px' }}>
+      {datos.map((d, i) => (
+        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+          {/* Barras */}
+          <div style={{ width: '100%', display: 'flex', gap: 2, alignItems: 'flex-end', height: 88 }}>
+            <div style={{
+              flex: 1, background: '#059669', borderRadius: '3px 3px 0 0',
+              height: `${(d.ing / max) * 100}%`, minHeight: d.ing > 0 ? 3 : 0,
+              transition: 'height 0.3s ease',
+            }} title={`Ingresos: ${fmt(d.ing)}`} />
+            <div style={{
+              flex: 1, background: '#dc2626', borderRadius: '3px 3px 0 0',
+              height: `${(d.egr / max) * 100}%`, minHeight: d.egr > 0 ? 3 : 0,
+              transition: 'height 0.3s ease',
+            }} title={`Egresos: ${fmt(d.egr)}`} />
           </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          <span style={{ fontSize: 10, color: '#94a3b8', textTransform: 'capitalize' }}>{d.label}</span>
         </div>
-        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(85vh - 80px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Datos personales */}
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Datos Personales</div>
-            <DataRow label="RFC"              value={p.rfc} mono />
-            <DataRow label="CURP"             value={p.curp} mono />
-            <DataRow label="Fecha nacimiento" value={fmtFecha(p.fecha_nacimiento)} />
-            <DataRow label="Estado civil"     value={p.estado_civil} />
-            <DataRow label="Régimen"          value={p.regimen} />
-            <DataRow label="Razón social"     value={p.razon_social} />
-            <DataRow label="Asoc. Condóminos" value={p.pertenece_asociacion ? 'Sí' : 'No'} />
-          </div>
-
-          {/* Domicilio */}
-          {(p.calle || p.ciudad) && (
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Domicilio</div>
-              <DataRow label="Calle"   value={p.calle} />
-              <DataRow label="Colonia" value={p.colonia} />
-              <DataRow label="C.P."   value={p.cp} />
-              <DataRow label="Ciudad"  value={p.ciudad} />
-              <DataRow label="Estado"  value={p.estado} />
-              <DataRow label="País"    value={p.pais} />
-            </div>
-          )}
-
-          {/* Contacto */}
-          {(tels.length > 0 || emails.length > 0) && (
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Contacto</div>
-              {tels.map((t, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-                  <Phone size={12} style={{ color: '#64748b', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: '#1e293b' }}>{t.numero}</span>
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>{t.tipo}</span>
-                </div>
-              ))}
-              {emails.map((e, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-                  <Mail size={12} style={{ color: '#64748b', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: '#2563eb' }}>{e.correo}</span>
-                  <span style={{ fontSize: 11, color: '#94a3b8' }}>{e.tipo}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      ))}
     </div>
   )
 }
 
-// ════════════════════════════════════════════════════════════════
-// PÁGINA PRINCIPAL
-// ════════════════════════════════════════════════════════════════
+// ── Página ─────────────────────────────────────────────────────
 export default function InicioPage() {
-  const [search, setSearch]       = useState('')
-  const [results, setResults]     = useState<any[]>([])
-  const [searching, setSearching] = useState(false)
-  const [lote, setLote]           = useState<Lote | null>(null)
-  const [loading, setLoading]     = useState(false)
-  const [propModal, setPropModal] = useState<any>(null)
+  const router  = useRouter()
+  const [periodo, setPeriodo] = useState<Periodo>('mes')
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    ingresos: 0, egresos: 0, balance: 0,
+    cxp: 0, saldoBancos: 0, cuentas: 0,
+  })
+  const [grafica, setGrafica] = useState<{ label: string; ing: number; egr: number }[]>([])
+  const [ultRecibos, setUltRecibos]   = useState<any[]>([])
+  const [ultOps, setUltOps]           = useState<any[]>([])
+  const [centrosMap, setCentrosMap]   = useState<Record<number, string>>({})
+  const [refreshing, setRefreshing]   = useState(false)
 
-  // Datos relacionados
-  const [propietarios, setPropietarios] = useState<any[]>([])
-  const [accesos, setAccesos]           = useState<any[]>([])
-  const [visitantes, setVisitantes]     = useState<any[]>([])
-  const [vehiculos, setVehiculos]       = useState<any[]>([])
-  const [contratos, setContratos]       = useState<any[]>([])
-  const [escrituras, setEscrituras]     = useState<any[]>([])
-  const [incidencias, setIncidencias]   = useState<any[]>([])
-  const [proyectos, setProyectos]       = useState<any[]>([])
-  const [cargos, setCargos]             = useState<any[]>([])
-  const [cfe, setCfe]                   = useState<any[]>([])
-  const [agua, setAgua]                 = useState<any[]>([])
-  const [comunicados, setComunicados]   = useState<any[]>([])
+  const loadAll = useCallback(async () => {
+    setRefreshing(true)
+    const { ini, fin } = getRango(periodo)
 
-  // Buscar lotes con debounce
-  useEffect(() => {
-    if (search.length < 2) { setResults([]); return }
-    const timer = setTimeout(() => {
-      setSearching(true)
-      dbCat.from('lotes').select('*')
-        .ilike('cve_lote', `%${search}%`).limit(10)
-        .then(({ data, error }) => { if (!error) setResults(data ?? []); setSearching(false) })
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [search])
+    // Centros de ingreso
+    const { data: cs } = await dbCfg.from('centros_ingreso').select('id, nombre')
+    const cmap: Record<number, string> = {}
+    ;((cs as any[]) ?? []).forEach((c: any) => { cmap[c.id] = c.nombre })
+    setCentrosMap(cmap)
 
-  // Cargar todos los datos del lote
-  const cargarLote = useCallback(async (id: number) => {
-    setLoading(true); setResults([]); setSearch('')
-    setLote(null)
-    setPropietarios([]); setAccesos([]); setVisitantes([]); setVehiculos([])
-    setContratos([]); setEscrituras([]); setIncidencias([])
-    setProyectos([]); setCargos([]); setCfe([]); setAgua([])
-    setComunicados([])
+    // Ingresos del período
+    const ingQ = dbCtrl.from('recibos_ingreso')
+      .select('monto_total').eq('status', 'Confirmado')
+      .gte('fecha', ini).lte('fecha', fin)
+    // Egresos del período (OPs pagadas + en proceso)
+    const egrQ = dbComp.from('ordenes_pago')
+      .select('monto').neq('status', 'Cancelada')
+      .gte('created_at', ini + 'T00:00:00').lte('created_at', fin + 'T23:59:59')
+    // CXP pendiente
+    const cxpQ = dbComp.from('ordenes_pago')
+      .select('saldo, monto').neq('status', 'Cancelada').neq('status', 'Pagada')
+    // Saldo bancos
+    const banQ = dbCfg.from('cuentas_bancarias').select('saldo').eq('activo', true)
+    // Últimos recibos
+    const ultIngQ = dbCtrl.from('recibos_ingreso')
+      .select('id, folio, fecha, monto_total, status, id_centro_ingreso_fk')
+      .order('created_at', { ascending: false }).limit(5)
+    // Últimas OPs pendientes
+    const ultOpQ = dbComp.from('ordenes_pago')
+      .select('id, folio, concepto, monto, saldo, status, fecha_vencimiento')
+      .in('status', ['Pendiente', 'Pendiente Auth', 'Autorizada'])
+      .order('created_at', { ascending: false }).limit(5)
 
-    // Todo en paralelo — lote + clasificacion + todas las relaciones
-    const [
-      { data: loteData }, { data: plRows }, { data: acs }, { data: vists }, { data: vehs },
-      { data: conts }, { data: escs }, { data: incs },
-      { data: projs }, { data: cars }, { data: cfes }, { data: aguas }
-    ] = await Promise.all([
-      dbCat.from('lotes').select('*').eq('id', id).single(),
-      dbCtrl.from('propietarios_lotes')
-        .select('*')
-        .eq('id_lote_fk', id).eq('activo', true).order('es_principal', { ascending: false }),
-      dbCtrl.from('accesos').select('*').eq('id_lote_fk', id).order('fecha_entrada', { ascending: false }).limit(20),
-      dbCat.from('visitantes').select('*').eq('id_lote_fk', id).eq('activo', true).order('created_at', { ascending: false }),
-      dbCat.from('vehiculos').select('*').eq('id_lote_fk', id).eq('activo', true).order('created_at', { ascending: false }),
-      dbCtrl.from('contratos').select('*').eq('id_lote_fk', id).order('fecha', { ascending: false }),
-      dbCtrl.from('escrituras').select('*').eq('id_lote_fk', id).order('fecha', { ascending: false }),
-      dbCtrl.from('incidencias').select('*').eq('id_lote_fk', id).order('fecha', { ascending: false }),
-      dbCtrl.from('proyectos').select('*').eq('id_lote_fk', id).order('created_at', { ascending: false }),
-      dbCtrl.from('cargos').select('*').eq('id_lote_fk', id).in('status', ['Pendiente', 'Parcial']).order('fecha_cargo', { ascending: false }),
-      dbCtrl.from('servicios_cfe').select('*').eq('id_lote_fk', id),
-      dbCtrl.from('servicios_agua').select('*').eq('id_lote_fk', id),
+    const [ingR, egrR, cxpR, banR, ultIngR, ultOpR] = await Promise.allSettled([
+      ingQ, egrQ, cxpQ, banQ, ultIngQ, ultOpQ
     ])
 
-    // Clasificación, Sección, Propietarios y Comunicados — todo en paralelo
-    const propIds = [...new Set((plRows ?? []).map((r: any) => r.id_propietario_fk).filter(Boolean))]
-    const allPropIds = propIds
+    const ingresos = (ingR.status === 'fulfilled' ? ingR.value.data ?? [] : [])
+      .reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
+    const egresos  = (egrR.status === 'fulfilled' ? egrR.value.data ?? [] : [])
+      .reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
+    const cxp      = (cxpR.status === 'fulfilled' ? cxpR.value.data ?? [] : [])
+      .reduce((a: number, r: any) => a + (r.saldo ?? r.monto ?? 0), 0)
+    const saldos   = (banR.status === 'fulfilled' ? banR.value.data ?? [] : [])
+    const saldoBancos = saldos.reduce((a: number, c: any) => a + (c.saldo ?? 0), 0)
 
-    const [clasifRes, seccionRes, propsRes, enviosRes] = await Promise.all([
-      loteData?.id_clasificacion_fk
-        ? dbCfg.from('clasificacion').select('nombre').eq('id', loteData.id_clasificacion_fk).single()
-        : Promise.resolve({ data: null }),
-      loteData?.id_seccion_fk
-        ? dbCfg.from('secciones').select('nombre').eq('id', loteData.id_seccion_fk).single()
-        : Promise.resolve({ data: null }),
-      propIds.length
-        ? dbCat.from('propietarios')
-            .select('id, nombre, apellido_paterno, apellido_materno, tipo_persona, rfc, curp, fecha_nacimiento, estado_civil, regimen, razon_social, calle, colonia, ciudad, estado, cp, pais, pertenece_asociacion')
-            .in('id', propIds)
-        : Promise.resolve({ data: [] }),
-      allPropIds.length
-        ? dbCtrl.from('comunicados_envios')
-            .select('id, id_comunicado_fk, correo_destino, fecha_envio, nombre_destino, status')
-            .in('id_propietario_fk', allPropIds)
-            .order('fecha_envio', { ascending: false })
-            .limit(30)
-        : Promise.resolve({ data: [] }),
-    ])
+    setStats({ ingresos, egresos, balance: ingresos - egresos, cxp, saldoBancos, cuentas: saldos.length })
+    setUltRecibos(ultIngR.status === 'fulfilled' ? (ultIngR.value.data ?? []) : [])
+    setUltOps(ultOpR.status   === 'fulfilled' ? (ultOpR.value.data  ?? []) : [])
 
-    if (clasifRes.data) loteData.clasificacion = clasifRes.data
-    if (seccionRes.data) loteData.secciones    = seccionRes.data
-    setLote(loteData)
-
-    const propsMap: Record<number, any> = {}
-    ;(propsRes.data ?? []).forEach((p: any) => { propsMap[p.id] = p })
-    setPropietarios((plRows ?? []).map((r: any) => ({ ...r, propietarios: propsMap[r.id_propietario_fk] ?? null })))
-    setAccesos(acs ?? [])
-    setVisitantes(vists ?? [])
-    setVehiculos(vehs ?? [])
-    setContratos(conts ?? [])
-    setEscrituras(escs ?? [])
-    setIncidencias(incs ?? [])
-    setProyectos(projs ?? [])
-    setCargos(cars ?? [])
-    setCfe(cfes ?? [])
-    setAgua(aguas ?? [])
-
-    // Comunicados — un segundo query solo si hay envíos
-    const envios = enviosRes.data ?? []
-    if (envios.length > 0) {
-      const comIds = [...new Set(envios.map((e: any) => e.id_comunicado_fk).filter(Boolean))]
-      const { data: coms } = await dbCtrl.from('comunicados')
-        .select('id, titulo, tipo, created_at').in('id', comIds)
-      const comMap: Record<number, any> = {}
-      ;(coms ?? []).forEach((c: any) => { comMap[c.id] = c })
-      setComunicados(envios.map((e: any) => ({ ...e, comunicado: comMap[e.id_comunicado_fk] ?? null })))
-    }
-
+    // Gráfica últimos 6 meses
+    const meses = getUltimosMeses()
+    const grafData = await Promise.all(meses.map(async m => {
+      const [ig, eg] = await Promise.allSettled([
+        dbCtrl.from('recibos_ingreso').select('monto_total').eq('status', 'Confirmado').gte('fecha', m.ini).lte('fecha', m.fin),
+        dbComp.from('ordenes_pago').select('monto').neq('status', 'Cancelada').gte('created_at', m.ini + 'T00:00:00').lte('created_at', m.fin + 'T23:59:59'),
+      ])
+      const ing = (ig.status === 'fulfilled' ? ig.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
+      const egr = (eg.status === 'fulfilled' ? eg.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
+      return { label: m.label, ing, egr }
+    }))
+    setGrafica(grafData)
     setLoading(false)
-  }, [])
+    setRefreshing(false)
+  }, [periodo])
 
-  const saldoTotal = cargos.reduce((a, c) => a + (c.saldo ?? 0), 0)
+  useEffect(() => { setLoading(true); loadAll() }, [loadAll])
+
+  const isPositive = stats.balance >= 0
+
+  const CENTRO_COLOR: Record<string, string> = {
+    golf: '#059669', cuotas: '#2563eb', rentas_espacios: '#7c3aed', caballerizas: '#d97706', otro: '#64748b',
+  }
 
   return (
-    <div className="page-pad" style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
+    <div style={{ padding: '28px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <Home size={16} style={{ color: 'var(--blue)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Consulta</span>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Scale size={16} style={{ color: 'var(--blue)' }} />
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Panorama</span>
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 600, letterSpacing: '-0.01em' }}>Dashboard Financiero</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>Ingresos y egresos de la operación de Balvanera</p>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 600, letterSpacing: '-0.01em' }}>Expediente de Lote</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>Busca un lote para ver su expediente completo</p>
-      </div>
-
-      {/* Buscador */}
-      <div style={{ position: 'relative', maxWidth: 460, marginBottom: 28 }}>
-        <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-        {searching && <Loader size={13} className="animate-spin" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />}
-        <input
-          className="input"
-          style={{ paddingLeft: 36, paddingRight: 36, fontSize: 15, height: 44 }}
-          placeholder="Escribe la clave del lote…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          autoFocus
-        />
-        {results.length > 0 && (
-          <div className="card" style={{ position: 'absolute', top: 50, left: 0, right: 0, zIndex: 50, padding: '4px 0', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
-            {results.map(r => (
-              <button key={r.id} onClick={() => cargarLote(r.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                <MapPin size={13} style={{ color: 'var(--blue)', flexShrink: 0 }} />
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: 'var(--blue)' }}>{r.cve_lote ?? `#${r.lote}`}</span>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.status_lote}</span>
-                {statusBadge(r.status_lote)}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Selector de período */}
+          <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 9, padding: 3, gap: 2 }}>
+            {PERIODOS.map(p => (
+              <button key={p.key} onClick={() => setPeriodo(p.key)}
+                style={{
+                  padding: '6px 12px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500,
+                  background: periodo === p.key ? '#fff' : 'transparent',
+                  color: periodo === p.key ? 'var(--blue)' : 'var(--text-muted)',
+                  boxShadow: periodo === p.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.15s',
+                }}>
+                {p.label}
               </button>
             ))}
           </div>
-        )}
+          <button className="btn-ghost" onClick={loadAll} title="Actualizar">
+            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-          <Loader size={24} className="animate-spin" style={{ margin: '0 auto 12px' }} />
-          <div style={{ fontSize: 13 }}>Cargando expediente…</div>
-        </div>
-      )}
-
-      {/* Sin lote seleccionado */}
-      {!lote && !loading && (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-          <Home size={48} style={{ margin: '0 auto 16px', opacity: 0.15 }} />
-          <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>Selecciona un lote</div>
-          <div style={{ fontSize: 13 }}>Escribe la clave del lote para ver su expediente completo</div>
-        </div>
-      )}
-
-      {/* Expediente */}
-      {lote && !loading && (
-        <div className="inicio-grid" style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 16, alignItems: 'start' }}>
-
-          {/* ── COLUMNA IZQUIERDA: datos del lote ── */}
-          <div>
-            {/* Card principal del lote */}
-            <div style={{ background: 'linear-gradient(135deg, #0D4F80 0%, #1A6FAD 100%)', borderRadius: 12, padding: '20px', marginBottom: 12, color: '#fff' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, marginBottom: 2 }}>
-                {lote.cve_lote ?? `#${lote.lote}`}
+      {/* KPIs principales */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 20 }}>
+        {[
+          { label: 'Ingresos',      value: fmtK(stats.ingresos), color: '#059669', bg: '#f0fdf4', icon: TrendingUp,   onClick: () => router.push('/ingresos/recibos') },
+          { label: 'Egresos',       value: fmtK(stats.egresos),  color: '#dc2626', bg: '#fef2f2', icon: TrendingDown, onClick: () => router.push('/compras/ordenes-pago') },
+          { label: 'Balance neto',  value: fmtK(Math.abs(stats.balance)), color: isPositive ? '#059669' : '#dc2626', bg: isPositive ? '#f0fdf4' : '#fef2f2', icon: Scale, onClick: undefined },
+          { label: 'CXP pendiente', value: fmtK(stats.cxp),      color: '#d97706', bg: '#fffbeb', icon: FileText,     onClick: () => router.push('/tesoreria/cxp') },
+          { label: 'Saldo bancos',  value: fmtK(stats.saldoBancos), color: '#0f766e', bg: '#f0fdf4', icon: Building2, onClick: () => router.push('/tesoreria/cuentas-bancarias') },
+        ].map(s => {
+          const Icon = s.icon
+          return (
+            <div key={s.label}
+              onClick={s.onClick}
+              className="card"
+              style={{
+                padding: '14px 18px', background: s.bg,
+                display: 'flex', alignItems: 'center', gap: 12,
+                cursor: s.onClick ? 'pointer' : 'default',
+                transition: 'transform 0.1s',
+              }}
+              onMouseEnter={e => { if (s.onClick) (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}
+            >
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: s.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon size={16} style={{ color: s.color }} />
               </div>
-              <div style={{ fontSize: 13, color: '#bfdbfe', marginBottom: 12 }}>
-                {lote.secciones?.nombre ?? '—'}
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {lote.status_lote && (
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-                    background: lote.status_lote === 'Libre' ? '#dcfce7' : lote.status_lote === 'Vendido' ? '#dbeafe' : '#fee2e2',
-                    color: lote.status_lote === 'Libre' ? '#15803d' : lote.status_lote === 'Vendido' ? '#1d4ed8' : '#dc2626' }}>
-                    {lote.status_lote}
-                  </span>
-                )}
-                {lote.status_juridico && (
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: '#e0f2fe' }}>
-                    {lote.status_juridico}
-                  </span>
-                )}
-                {saldoTotal > 0 && (
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#fee2e2', color: '#dc2626' }}>
-                    Adeudo: {fmt(saldoTotal)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Datos del lote */}
-            <div className="card" style={{ padding: '14px 16px', marginBottom: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Datos del Lote</div>
-              <DataRow label="Clasificación"   value={lote.clasificacion?.nombre} />
-              <DataRow label="Dirección"       value={[lote.calle, lote.numero, lote.Diferenciador, lote.manzana].filter(Boolean).join(' ') || null} />
-              <DataRow label="Superficie"      value={lote.superficie ? `${lote.superficie} m²` : null} />
-              <DataRow label="Sup. Constr."    value={lote.sup_construccion ? `${lote.sup_construccion} m²` : null} />
-              <DataRow label="Paga cuotas"     value={lote.paga_cuotas} />
-              <DataRow label="Clave catastral" value={lote.clave_catastral} mono />
-              <DataRow label="Valor catastral" value={lote.valor_catastral ? fmt(lote.valor_catastral) : null} />
-            </div>
-
-          </div>
-
-          {/* ── COLUMNA DERECHA: secciones relacionadas ── */}
-          <div>
-
-            {/* Propietarios */}
-            <Section icon={Users} title="Propietarios" count={propietarios.length} color="#2563eb" defaultOpen={true}>
-              {propietarios.length === 0
-                ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '10px 0' }}>Sin propietarios registrados</div>
-                : propietarios.map(item => (
-                  <PropietarioCard key={item.id} item={item} onClick={() => setPropModal(item.propietarios)} />
-                ))
-              }
-            </Section>
-
-            {/* Adeudos pendientes */}
-            {cargos.length > 0 && (
-              <Section icon={DollarSign} title="Adeudos Pendientes" count={cargos.length} color="#dc2626" defaultOpen={true}>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                  <div style={{ flex: 1, padding: '8px 12px', background: '#fef2f2', borderRadius: 7, textAlign: 'center' }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>{fmt(saldoTotal)}</div>
-                    <div style={{ fontSize: 10, color: '#94a3b8' }}>Saldo Total</div>
-                  </div>
+              <div>
+                <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontWeight: 700, color: s.color, fontVariantNumeric: 'tabular-nums' }}>
+                  {loading ? '—' : (s.label === 'Balance neto' && !isPositive ? '-' : '') + s.value}
                 </div>
-                {cargos.map(c => (
-                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: '#f8fafc', borderRadius: 6, marginBottom: 5, border: '1px solid #e2e8f0' }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 500 }}>{c.concepto}</div>
-                      {c.periodo_mes && <div style={{ fontSize: 11, color: '#94a3b8' }}>{c.periodo_mes} {c.periodo_anio}</div>}
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>{fmt(c.saldo)}</div>
-                      {statusBadge(c.status)}
-                    </div>
-                  </div>
-                ))}
-              </Section>
-            )}
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
-            {/* Contratos */}
-            <Section icon={FileText} title="Contratos" count={contratos.length} color="#7c3aed">
-              {contratos.length === 0
-                ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin contratos</div>
-                : contratos.map(c => (
-                  <div key={c.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{c.tipo_contrato ?? 'Contrato'}</span>
-                      {statusBadge(c.status)}
-                    </div>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      {c.fecha_contrato && <span style={{ fontSize: 11, color: '#64748b' }}>Fecha: {fmtFecha(c.fecha_contrato)}</span>}
-                      {c.monto_operacion && <span style={{ fontSize: 11, color: '#64748b' }}>Monto: {fmt(c.monto_operacion)}</span>}
-                      {c.propietario_contrato && <span style={{ fontSize: 11, color: '#64748b' }}>{c.propietario_contrato}</span>}
-                    </div>
-                    {c.pdf_contrato && <a href={c.pdf_contrato} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#2563eb', display: 'inline-block', marginTop: 4 }}>📄 Ver PDF</a>}
-                  </div>
-                ))
-              }
-            </Section>
+      {/* Gráfica + Resumen */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14, marginBottom: 20 }}>
 
-            {/* Escrituras */}
-            <Section icon={Building2} title="Escrituras" count={escrituras.length} color="#0e7490">
-              {escrituras.length === 0
-                ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin escrituras</div>
-                : escrituras.map(e => (
-                  <div key={e.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{e.notaria ?? 'Escritura'}</span>
-                      {statusBadge(e.status)}
-                    </div>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      {e.numero_escritura && <span style={{ fontSize: 11, color: '#64748b' }}>No. {e.numero_escritura}</span>}
-                      {e.fecha && <span style={{ fontSize: 11, color: '#64748b' }}>Fecha: {fmtFecha(e.fecha)}</span>}
-                      {e.folio_real && <span style={{ fontSize: 11, color: '#64748b' }}>Folio: {e.folio_real}</span>}
-                    </div>
-                    {e.pdf_escritura && <a href={e.pdf_escritura} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#2563eb', display: 'inline-block', marginTop: 4 }}>📄 Ver PDF</a>}
-                  </div>
-                ))
-              }
-            </Section>
-
-            {/* Incidencias */}
-            <Section icon={AlertTriangle} title="Incidencias" count={incidencias.length} color="#d97706">
-              {incidencias.length === 0
-                ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin incidencias</div>
-                : incidencias.map(inc => (
-                  <div key={inc.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{inc.tipo ?? 'Incidencia'}</span>
-                      {statusBadge(inc.status)}
-                    </div>
-                    {inc.descripcion && <div style={{ fontSize: 12, color: '#64748b', marginBottom: 2 }}>{inc.descripcion}</div>}
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      {inc.fecha && <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtFecha(inc.fecha)}</span>}
-                      {inc.responsable && <span style={{ fontSize: 11, color: '#94a3b8' }}>Responsable: {inc.responsable}</span>}
-                    </div>
-                  </div>
-                ))
-              }
-            </Section>
-
-            {/* Proyectos */}
-            <Section icon={Wrench} title="Proyectos de Construcción" count={proyectos.length} color="#059669">
-              {proyectos.length === 0
-                ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin proyectos</div>
-                : proyectos.map(pr => (
-                  <div key={pr.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{pr.nombre ?? pr.tipo ?? 'Proyecto'}</span>
-                      {statusBadge(pr.status)}
-                    </div>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      {pr.fecha_inicio && <span style={{ fontSize: 11, color: '#94a3b8' }}>Inicio: {fmtFecha(pr.fecha_inicio)}</span>}
-                      {pr.presupuesto && <span style={{ fontSize: 11, color: '#94a3b8' }}>Presupuesto: {fmt(pr.presupuesto)}</span>}
-                    </div>
-                    {pr.pdf_proyecto && <a href={pr.pdf_proyecto} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#2563eb', display: 'inline-block', marginTop: 4 }}>📄 Ver PDF</a>}
-                  </div>
-                ))
-              }
-            </Section>
-
-            {/* Visitantes autorizados */}
-            <Section icon={Users} title="Visitantes Autorizados" count={visitantes.length} color="#0891b2">
-              {visitantes.length === 0
-                ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin visitantes autorizados</div>
-                : visitantes.map(v => (
-                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: '#f8fafc', borderRadius: 7, marginBottom: 5, border: '1px solid #e2e8f0' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <User size={13} style={{ color: '#0891b2' }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 500 }}>{[v.nombre, v.apellido].filter(Boolean).join(' ')}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{v.tipo_visita} · {v.tipo_pase}</div>
-                    </div>
-                    {v.vigencia_hasta && <span style={{ fontSize: 10, color: '#64748b' }}>Hasta: {fmtFecha(v.vigencia_hasta)}</span>}
-                  </div>
-                ))
-              }
-            </Section>
-
-            {/* Vehículos */}
-            <Section icon={Car} title="Vehículos" count={vehiculos.length} color="#7c3aed">
-              {vehiculos.length === 0
-                ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin vehículos registrados</div>
-                : vehiculos.map(v => (
-                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', background: '#f8fafc', borderRadius: 7, marginBottom: 5, border: '1px solid #e2e8f0' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Car size={13} style={{ color: '#7c3aed' }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 500 }}>{[v.marca, v.modelo, v.color].filter(Boolean).join(' · ')}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>Placas: {v.placas ?? '—'} {v.tag ? `· TAG: ${v.tag}` : ''}</div>
-                    </div>
-                  </div>
-                ))
-              }
-            </Section>
-
-            {/* Accesos recientes */}
-            <Section icon={Shield} title="Accesos Recientes" count={accesos.length} color="#0f766e">
-              {accesos.length === 0
-                ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin accesos registrados</div>
-                : accesos.slice(0, 10).map(a => (
-                  <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#f8fafc', borderRadius: 6, marginBottom: 4, border: '1px solid #e2e8f0' }}>
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 500 }}>{a.tipo_acceso ?? 'Acceso'}</div>
-                      {a.guardia && <div style={{ fontSize: 11, color: '#94a3b8' }}>Guardia: {a.guardia}</div>}
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 11, color: '#64748b' }}>{fmtFecha(a.fecha_entrada)}</div>
-                      {a.fecha_salida && <div style={{ fontSize: 10, color: '#94a3b8' }}>Salida: {fmtFecha(a.fecha_salida)}</div>}
-                    </div>
-                  </div>
-                ))
-              }
-            </Section>
-
-            {/* Comunicados y Avisos */}
-            {comunicados.length > 0 && (
-              <Section icon={MessageSquare} title="Comunicados y Avisos" count={comunicados.length} color="#7c3aed">
-                {comunicados.map(e => {
-                  const c = e.comunicado
-                  const tipoColor: Record<string, string> = { Urgente: '#dc2626', Comunicado: '#15803d', Aviso: '#2563eb' }
-                  const col = tipoColor[c?.tipo ?? ''] ?? '#64748b'
-                  return (
-                    <div key={e.id} style={{ padding: '8px 12px', background: '#faf5ff', borderRadius: 7, marginBottom: 6, border: '1px solid #e9d5ff' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c?.titulo ?? '—'}</span>
-                        {c?.tipo && (
-                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: col + '18', color: col, border: `1px solid ${col}40` }}>
-                            {c.tipo}
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>📧 {e.correo_destino}</span>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{fmtFechaCorta(e.fecha_envio)}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </Section>
-            )}
-
-            {/* Servicios */}
-            {(cfe.length > 0 || agua.length > 0) && (
-              <Section icon={Zap} title="Servicios" count={cfe.length + agua.length} color="#ca8a04">
-                {cfe.map(c => (
-                  <div key={c.id} style={{ padding: '8px 12px', background: '#fefce8', borderRadius: 7, marginBottom: 6, border: '1px solid #fde68a' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 2 }}>⚡ CFE</div>
-                    <DataRow label="No. Servicio" value={c.no_servicio} mono />
-                    <DataRow label="Medidor"      value={c.medidor} mono />
-                    <DataRow label="Tarifa"       value={c.tarifa} />
-                  </div>
-                ))}
-                {agua.map(a => (
-                  <div key={a.id} style={{ padding: '8px 12px', background: '#eff6ff', borderRadius: 7, marginBottom: 6, border: '1px solid #bfdbfe' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1e40af', marginBottom: 2 }}>💧 Agua</div>
-                    <DataRow label="No. Contrato" value={a.no_contrato} mono />
-                    <DataRow label="Medidor"      value={a.medidor} mono />
-                    <DataRow label="Tipo toma"    value={a.tipo_toma} />
-                  </div>
-                ))}
-              </Section>
-            )}
-
+        {/* Gráfica últimos 6 meses */}
+        <div className="card" style={{ padding: '20px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
+                Últimos 6 meses
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Ingresos vs Egresos</div>
+            </div>
+            <div style={{ display: 'flex', gap: 14, fontSize: 11 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: '#059669', display: 'inline-block' }} /> Ingresos
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ width: 10, height: 10, borderRadius: 2, background: '#dc2626', display: 'inline-block' }} /> Egresos
+              </span>
+            </div>
           </div>
+          {loading ? (
+            <div style={{ height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+              <RefreshCw size={18} className="animate-spin" />
+            </div>
+          ) : (
+            <BarChart datos={grafica} />
+          )}
         </div>
-      )}
 
-      {/* Modal propietario */}
-      {propModal && <PropietarioModal propietario={propModal} onClose={() => setPropModal(null)} />}
+        {/* Balance del período */}
+        <div className="card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16 }}>
+              Período seleccionado
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f0fdf4', borderRadius: 8 }}>
+                <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>⬆ Ingresos</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#059669', fontVariantNumeric: 'tabular-nums' }}>
+                  {loading ? '—' : fmt(stats.ingresos)}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#fef2f2', borderRadius: 8 }}>
+                <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>⬇ Egresos</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
+                  {loading ? '—' : fmt(stats.egresos)}
+                </span>
+              </div>
+              <div style={{ height: 1, background: '#e2e8f0' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', borderRadius: 8,
+                background: isPositive ? '#f0fdf4' : '#fef2f2',
+                border: `1px solid ${isPositive ? '#bbf7d0' : '#fecaca'}` }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: isPositive ? '#15803d' : '#dc2626' }}>= Balance</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: isPositive ? '#059669' : '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
+                  {loading ? '—' : (isPositive ? '' : '-') + fmt(Math.abs(stats.balance))}
+                </span>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => router.push('/ingresos/recibos')} className="btn-primary" style={{ width: '100%', marginTop: 16, justifyContent: 'center' }}>
+            <Receipt size={13} /> Nuevo Recibo
+          </button>
+        </div>
+      </div>
+
+      {/* Últimos movimientos */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+
+        {/* Últimos ingresos */}
+        <div className="card" style={{ padding: '18px 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>Últimos Recibos de Ingreso</div>
+            <button onClick={() => router.push('/ingresos/recibos')} style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+              Ver todos <ChevronRight size={11} />
+            </button>
+          </div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+          ) : ultRecibos.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: 12 }}>Sin recibos capturados aún</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {ultRecibos.map((r: any) => (
+                <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: '#f8fafc', borderRadius: 6 }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{centrosMap[r.id_centro_ingreso_fk] ?? '—'} · {fmtFecha(r.fecha)}</div>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#059669', fontVariantNumeric: 'tabular-nums' }}>{fmt(r.monto_total ?? 0)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* OPs pendientes */}
+        <div className="card" style={{ padding: '18px 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>OP's Pendientes de Pago</div>
+              {ultOps.length > 0 && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: '#fef2f2', color: '#dc2626' }}>{ultOps.length}</span>
+              )}
+            </div>
+            <button onClick={() => router.push('/compras/ordenes-pago')} style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+              Ver todas <ChevronRight size={11} />
+            </button>
+          </div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+          ) : ultOps.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 20, color: '#15803d', fontSize: 12, background: '#f0fdf4', borderRadius: 8 }}>
+              ✓ Sin órdenes de pago pendientes
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {ultOps.map((op: any) => {
+                const vencida = op.fecha_vencimiento && new Date(op.fecha_vencimiento) < new Date()
+                return (
+                  <div key={op.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: vencida ? '#fef2f2' : '#f8fafc', borderRadius: 6, border: vencida ? '1px solid #fecaca' : 'none' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600 }}>{op.folio ?? `#${op.id}`}</span>
+                        {vencida && <AlertTriangle size={11} style={{ color: '#dc2626' }} />}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</div>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>{fmt(op.saldo ?? op.monto ?? 0)}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
     </div>
   )
 }
