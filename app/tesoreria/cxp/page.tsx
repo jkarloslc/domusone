@@ -547,7 +547,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
         const { data: cuentaRow } = await dbCfg.from('cuentas_bancarias')
           .select('saldo').eq('id', cuentaId).single()
         const saldoAntes   = (cuentaRow as any)?.saldo ?? 0
-        const saldoDespues = Math.max(0, saldoAntes - montoAbono)
+        const saldoDespues = saldoAntes - montoAbono   // puede ser negativo
         await Promise.all([
           dbComp.from('movimientos_bancarios').insert({
             id_cuenta_fk:     cuentaId,
