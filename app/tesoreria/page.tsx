@@ -47,7 +47,7 @@ export default function TesoreriaPage() {
   useEffect(() => {
     Promise.all([
       dbComp.from('ordenes_pago').select('monto, saldo, fecha_vencimiento, status')
-        .neq('status', 'Cancelada').neq('status', 'Pagada'),
+        .in('status', ['Pendiente', 'Abonada']),
       dbCfg.from('cuentas_bancarias').select('saldo').eq('activo', true),
     ]).then(([{ data: ops }, { data: cbs }]) => {
       const pendientes = ops ?? []
