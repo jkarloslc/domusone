@@ -301,6 +301,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     await dbComp.from('ordenes_compra_det').insert(
       detValidos.map(d => ({
         id_oc_fk: oc.id, descripcion: d.descripcion.trim(),
+        id_articulo_fk: d.id_articulo_fk ?? null,
         cantidad: Number(d.cantidad), unidad: d.unidad,
         precio_unitario: Number(d.precio_unitario), tasa_iva: Number(d.tasa_iva),
       }))

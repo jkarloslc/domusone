@@ -199,22 +199,26 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
         const nuevoCosto  = precio
 
         // Upsert inventario
+        let invError: any = null
         if (stockActual) {
-          await dbComp.from('inventario').update({
+          const { error: upErr } = await dbComp.from('inventario').update({
             cantidad:        cantDespues,
             costo_promedio:  nuevoCosto,
           }).eq('id', stockActual.id)
+          invError = upErr
         } else {
-          await dbComp.from('inventario').insert({
+          const { error: insErr } = await dbComp.from('inventario').insert({
             id_articulo_fk: artId,
             id_almacen_fk:  almId,
             cantidad:        cantDespues,
             costo_promedio:  nuevoCosto,
           })
+          invError = insErr
         }
+        if (invError) { setError(`Error al actualizar inventario: ${invError.message}`); setSaving(false); return }
 
         // Registrar movimiento en kardex
-        await dbComp.from('movimientos_inv').insert({
+        const { error: movErr } = await dbComp.from('movimientos_inv').insert({
           id_articulo_fk:  artId,
           id_almacen_fk:   almId,
           tipo_mov:         'ENTRADA',
@@ -225,6 +229,7 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
           referencia_folio: folio,
           usuario:          authUser?.nombre ?? 'Sistema',
         })
+        if (movErr) { setError(`Error al registrar kardex: ${movErr.message}`); setSaving(false); return }
       }
     }
 
