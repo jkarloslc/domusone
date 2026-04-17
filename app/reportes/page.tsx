@@ -1,7 +1,7 @@
 'use client'
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2 } from 'lucide-react'
+import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet } from 'lucide-react'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
 import ReportePropietarios from './ReportePropietarios'
@@ -15,6 +15,7 @@ import ReporteConsumoSeccion from './ReporteConsumoSeccion'
 import ReporteConsumoFrente from './ReporteConsumoFrente'
 import ReporteInventario from './ReporteInventario'
 import ReporteOrdenesCompra from './ReporteOrdenesCompra'
+import ReporteOrdenesPago from './ReporteOrdenesPago'
 import ReporteCXP from './ReporteCXP'
 import ReporteKardex from './ReporteKardex'
 import ReporteTransferencias from './ReporteTransferencias'
@@ -52,8 +53,9 @@ const GRUPOS = [
     label: 'Tesorería',
     color: '#0f766e',
     reportes: [
-      { id: 'estado-cuenta', label: 'Estado de Cuenta',           icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
-      { id: 'cxp',           label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
+      { id: 'estado-cuenta',     label: 'Estado de Cuenta',           icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
+      { id: 'cxp',               label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
+      { id: 'ordenes-pago-cc',   label: 'Órdenes de Pago por CC / Área', icon: Wallet, desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
     ],
   },
   {
@@ -66,6 +68,7 @@ const GRUPOS = [
       { id: 'consumo-frente',  label: 'Consumo por Frente',          icon: MapPin,       desc: 'Órdenes de pago agrupadas por frente de obra' },
       { id: 'inventario',      label: 'Inventario Actual',           icon: Package,      desc: 'Existencias por almacén con alertas de stock mínimo' },
       { id: 'ordenes-compra',  label: 'Órdenes de Compra',          icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
+      { id: 'ordenes-pago-cc', label: 'Órdenes de Pago por CC / Área', icon: Wallet,    desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
       { id: 'kardex',          label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
       { id: 'transferencias',  label: 'Transferencias',             icon: Package,      desc: 'Movimientos entre almacenes con filtros por origen, destino y fecha' },
     ],
@@ -157,14 +160,15 @@ function ReportesContent() {
       {active === 'estado-cuenta' && <ReporteEstadoCuenta />}
 
       {/* Reportes compras */}
-      {active === 'consumo-cc'      && <ReporteConsumoCentroCosto />}
-      {active === 'consumo-seccion' && <ReporteConsumoSeccion />}
-      {active === 'consumo-frente'  && <ReporteConsumoFrente />}
-      {active === 'inventario'      && <ReporteInventario />}
-      {active === 'ordenes-compra' && <ReporteOrdenesCompra />}
-      {active === 'cxp'            && <ReporteCXP />}
-      {active === 'kardex'          && <ReporteKardex />}
-      {active === 'transferencias'  && <ReporteTransferencias />}
+      {active === 'consumo-cc'       && <ReporteConsumoCentroCosto />}
+      {active === 'consumo-seccion'  && <ReporteConsumoSeccion />}
+      {active === 'consumo-frente'   && <ReporteConsumoFrente />}
+      {active === 'inventario'       && <ReporteInventario />}
+      {active === 'ordenes-compra'   && <ReporteOrdenesCompra />}
+      {active === 'ordenes-pago-cc'  && <ReporteOrdenesPago />}
+      {active === 'cxp'              && <ReporteCXP />}
+      {active === 'kardex'           && <ReporteKardex />}
+      {active === 'transferencias'   && <ReporteTransferencias />}
     </div>
   )
 }

@@ -69,3 +69,19 @@ Flujo completo: **Requisición → RFQ/Cotización → OC → Recepción → Inv
 - `ordenes_compra` / `ordenes_compra_det` — OC con FK a artículos
 - `rfq` / `rfq_cotizaciones` / `rfq_cotizaciones_det` — proceso de cotización
 - `requisiciones` / `requisiciones_det` — solicitudes de compra con `id_articulo_fk`
+
+---
+
+### Reportes (`/app/reportes/`)
+Índice central en `page.tsx` con grupos: Residencial, Mantenimiento, Tesorería, Compras e Inventarios.
+Patrón estándar: componente `ReporteX.tsx` + filtros en cabecera + `<PrintBar>` (utils.tsx) + bloque con `id="reporte-print-area"` que contiene `<table id="reporte-table">`.
+
+#### Reporte de Órdenes de Pago por CC/Área (2026-04-17)
+Archivo: `ReporteOrdenesPago.tsx`. Registrado en los grupos `tesoreria` y `compras` con id `ordenes-pago-cc` (mismo componente reutilizado).
+
+- **Vista jerárquica**: filas de Centro de Costo (colapsables) → filas de Área (colapsables) → detalle de OPs. Totales en cada nivel + total general al pie. Botones Expandir/Colapsar todo.
+- **Filtros**: Status (los 5 de `ordenes_pago`: Pendiente Auth, Pendiente, Pagada, Rechazada, Cancelada), Centro de Costo (`cfg.centros_costo`), Área (`cfg.areas`, dependiente del CC seleccionado), rango de fechas sobre `fecha_op`.
+- **KPIs**: 5 cards por status (monto y conteo) + 4 cards de totales (Total / Pagado / Por pagar / # de OPs). Los KPIs de status ignoran el filtro de status (para ver la distribución).
+- **Columnas del detalle**: Folio, Proveedor, Concepto, Tipo Gasto, Fecha, Vencimiento (rojo si vencido y Pendiente), Monto, Pagado, Saldo, Status (badge con color).
+- **Datos**: `dbComp.ordenes_pago` (campos: `monto`, `saldo`, `fecha_op`, `fecha_vencimiento`, `id_centro_costo_fk`, `id_area_fk`, `id_proveedor_fk`, `concepto`, `tipo_gasto`, `status`).
+- **Status color map**: Pagada `#15803d`, Pendiente `#d97706`, Pendiente Auth `#7c3aed`, Rechazada `#dc2626`, Cancelada `#64748b`.
