@@ -211,7 +211,7 @@ export default function InicioPage() {
       </div>
 
       {/* KPIs principales */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 20 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         {[
           { label: 'Ingresos',      value: fmtK(stats.ingresos), color: '#059669', bg: '#f0fdf4', icon: TrendingUp,   onClick: () => router.push('/ingresos/recibos') },
           { label: 'Egresos',       value: fmtK(stats.egresos),  color: '#dc2626', bg: '#fef2f2', icon: TrendingDown, onClick: () => router.push('/compras/ordenes-pago') },
@@ -229,6 +229,7 @@ export default function InicioPage() {
                 display: 'flex', alignItems: 'center', gap: 12,
                 cursor: s.onClick ? 'pointer' : 'default',
                 transition: 'transform 0.1s',
+                flex: '1 1 180px', maxWidth: 260,
               }}
               onMouseEnter={e => { if (s.onClick) (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}
