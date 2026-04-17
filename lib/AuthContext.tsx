@@ -27,6 +27,34 @@ type AuthUser = {
   rol:    Rol
 }
 
+export function getHomeRouteByRole(rol?: Rol): string {
+  switch (rol) {
+    case 'superadmin':
+    case 'admin':
+    case 'usuarioadmin':
+    case 'usuariomantto':
+      return '/lotes'
+    case 'compras':
+    case 'compras_supervisor':
+    case 'almacen':
+    case 'usuario_solicitante':
+      return '/compras'
+    case 'mantenimiento':
+      return '/mantenimiento'
+    case 'cobranza':
+      return '/cobranza'
+    case 'vigilancia':
+    case 'seguridad':
+      return '/accesos'
+    case 'tesoreria':
+      return '/tesoreria'
+    case 'ingresos':
+      return '/ingresos'
+    default:
+      return '/lotes'
+  }
+}
+
 type AuthCtx = {
   authUser:   AuthUser | null
   loading:    boolean

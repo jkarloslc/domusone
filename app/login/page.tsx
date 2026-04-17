@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/AuthContext'
+import { getHomeRouteByRole, useAuth } from '@/lib/AuthContext'
 import { LogIn, Loader, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
@@ -13,28 +13,9 @@ export default function LoginPage() {
   const [error, setError]       = useState('')
   const [signing, setSigning]   = useState(false)
 
-  // Ruta de inicio según el rol del usuario
-  const homeRoute = (rol?: string) => {
-    switch (rol) {
-      case 'superadmin':
-      case 'admin':
-      case 'usuarioadmin':
-      case 'usuariomantto': return '/lotes'
-      case 'compras':
-      case 'compras_supervisor':
-      case 'almacen':       return '/compras'
-      case 'mantenimiento': return '/mantenimiento'
-      case 'cobranza':      return '/cobranza'
-      case 'vigilancia':    return '/accesos'
-      case 'seguridad':     return '/accesos'
-      case 'tesoreria':     return '/tesoreria'
-      default:              return '/lotes'
-    }
-  }
-
   // Si ya está autenticado, redirigir a la ruta correcta según rol
   useEffect(() => {
-    if (!loading && authUser) router.replace(homeRoute(authUser.rol))
+    if (!loading && authUser) router.replace(getHomeRouteByRole(authUser.rol))
   }, [authUser, loading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {

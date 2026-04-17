@@ -1,7 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/AuthContext'
+import { getHomeRouteByRole, useAuth } from '@/lib/AuthContext'
 import { Loader } from 'lucide-react'
 
 export default function Home() {
@@ -11,17 +11,7 @@ export default function Home() {
   useEffect(() => {
     if (loading) return
     if (!authUser) { router.replace('/login'); return }
-    switch (authUser.rol) {
-      case 'compras':
-      case 'compras_supervisor':
-      case 'almacen':       router.replace('/compras');       break
-      case 'mantenimiento': router.replace('/mantenimiento'); break
-      case 'cobranza':      router.replace('/cobranza');      break
-      case 'vigilancia':
-      case 'seguridad':     router.replace('/accesos');       break
-      case 'tesoreria':     router.replace('/tesoreria');    break
-      default:              router.replace('/lotes');         break
-    }
+    router.replace(getHomeRouteByRole(authUser.rol))
   }, [authUser, loading, router])
 
   return (

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/AuthContext'
+import { getHomeRouteByRole, useAuth } from '@/lib/AuthContext'
 import { Loader } from 'lucide-react'
 
 export default function AuthGuard({ children, modulo }: { children: React.ReactNode; modulo?: string }) {
@@ -9,10 +9,16 @@ export default function AuthGuard({ children, modulo }: { children: React.ReactN
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !authUser) {
+    if (loading) return
+    if (!authUser) {
       router.replace('/login')
+      return
     }
-  }, [authUser, loading, router])
+    // Si el usuario no tiene permiso para este módulo, redirigir a su home
+    if (modulo && !can(modulo)) {
+      router.replace(getHomeRouteByRole(authUser.rol))
+    }
+  }, [authUser, loading, modulo, router, can])
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' }}>
@@ -22,13 +28,11 @@ export default function AuthGuard({ children, modulo }: { children: React.ReactN
 
   if (!authUser) return null
 
-  // Verificar permiso de módulo
+  // Mientras se procesa la redirección por módulo sin permiso, mostrar loader
   if (modulo && !can(modulo)) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', flexDirection: 'column', gap: 12 }}>
-        <div style={{ fontSize: 48 }}>🔒</div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>Acceso restringido</div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>No tienes permiso para ver este módulo</div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' }}>
+        <Loader size={20} className="animate-spin" style={{ color: 'var(--blue)' }} />
       </div>
     )
   }

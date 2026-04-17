@@ -413,15 +413,17 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       {/* Nav con secciones */}
       <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
 
-        {/* Inicio — siempre visible */}
-        <Link
-          href="/inicio"
-          onClick={onClose}
-          className={`nav-item ${pathname === '/inicio' ? 'active' : ''}`}
-        >
-          <Home size={15} />
-          <span>Inicio</span>
-        </Link>
+        {/* Inicio — visible para todos excepto roles de acceso restringido */}
+        {rol !== 'usuario_solicitante' && (
+          <Link
+            href="/inicio"
+            onClick={onClose}
+            className={`nav-item ${pathname === '/inicio' ? 'active' : ''}`}
+          >
+            <Home size={15} />
+            <span>Inicio</span>
+          </Link>
+        )}
         {/* Secciones por rol */}
         {sections.map(sec => (
           <div key={sec.section}>
