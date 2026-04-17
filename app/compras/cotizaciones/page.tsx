@@ -206,9 +206,13 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
         .then(({ data }) => {
           setReqDet(data ?? [])
           setCotDet((data ?? []).map((d: any) => ({
-            id_requisicion_det_fk: d.id, descripcion: d.descripcion,
-            cantidad: d.cantidad?.toString(), unidad: d.unidad,
-            precio_unitario: '', tasa_iva: '0',
+            id_requisicion_det_fk: d.id,
+            id_articulo_fk:        d.id_articulo_fk ?? null,
+            descripcion:           d.descripcion,
+            cantidad:              d.cantidad?.toString(),
+            unidad:                d.unidad,
+            precio_unitario:       '',
+            tasa_iva:              '0',
           })))
         })
     } else {
@@ -247,6 +251,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
         detValidos.map(d => ({
           id_cotizacion_fk:      cot.id,
           id_requisicion_det_fk: d.id_requisicion_det_fk || null,
+          id_articulo_fk:        (d as any).id_articulo_fk ?? null,
           descripcion:           d.descripcion,
           cantidad:              Number(d.cantidad),
           unidad:                d.unidad,

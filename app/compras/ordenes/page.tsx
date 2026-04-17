@@ -203,23 +203,55 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     if (rfq?.proveedor_ganador) setForm(f => ({ ...f, id_proveedor_fk: rfq.proveedor_ganador.toString() }))
 
     // 2. Cotización seleccionada + detalle de artículos
-    // Usamos hint explícito de FK para evitar que Supabase falle en la inferencia automática
     const { data: cot } = await dbComp.from('rfq_cotizaciones')
       .select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)')
       .eq('id_rfq_fk', Number(rfqId)).eq('seleccionada', true).maybeSingle()
 
     if (cot?.rfq_cotizaciones_det?.length) {
-      const items = cot.rfq_cotizaciones_det.map((d: any) => ({
-        id_articulo_fk: null,
-        descripcion:    d.descripcion   ?? '',
-        cantidad:       d.cantidad?.toString()       ?? '1',
-        unidad:         d.unidad        ?? 'PZA',
-        precio_unitario: d.precio_unitario?.toString() ?? '',
-        tasa_iva:       d.tasa_iva?.toString()        ?? '0',
-      }))
+      // Recuperar id_articulo_fk desde requisiciones_det usando id_requisicion_det_fk
+      // ya que rfq_cotizaciones_det no almacena el vínculo al catálogo directamente
+      const reqDetIds = (cot.rfq_cotizaciones_det as any[])
+        .map((d: any) => d.id_requisicion_det_fk).filter(Boolean) as number[]
+
+      // Mapa: req_det_id → { id_articulo_fk, clave, nombre }
+      const artMap: Record<number, { id: number | null; clave: string; nombre: string }> = {}
+      if (reqDetIds.length) {
+        const { data: reqDets } = await dbComp.from('requisiciones_det')
+          .select('id, id_articulo_fk').in('id', reqDetIds)
+        const artIds = ((reqDets ?? []) as any[]).map((r: any) => r.id_articulo_fk).filter(Boolean) as number[]
+        const artNombres: Record<number, { clave: string; nombre: string }> = {}
+        if (artIds.length) {
+          const { data: arts } = await dbComp.from('articulos').select('id, clave, nombre').in('id', artIds)
+          ;(arts ?? []).forEach((a: any) => { artNombres[a.id] = { clave: a.clave, nombre: a.nombre } })
+        }
+        ;(reqDets ?? []).forEach((rd: any) => {
+          artMap[rd.id] = {
+            id:     rd.id_articulo_fk,
+            clave:  artNombres[rd.id_articulo_fk]?.clave  ?? '',
+            nombre: artNombres[rd.id_articulo_fk]?.nombre ?? '',
+          }
+        })
+      }
+
+      const items = (cot.rfq_cotizaciones_det as any[]).map((d: any) => {
+        const art = d.id_requisicion_det_fk ? artMap[d.id_requisicion_det_fk] : null
+        return {
+          id_articulo_fk:  art?.id ?? null,
+          descripcion:     d.descripcion   ?? '',
+          cantidad:        d.cantidad?.toString()       ?? '1',
+          unidad:          d.unidad        ?? 'PZA',
+          precio_unitario: d.precio_unitario?.toString() ?? '',
+          tasa_iva:        d.tasa_iva?.toString()        ?? '0',
+        }
+      })
       setDet(items)
-      // Bug 1 fix: sincronizar artSearches/artOptions con la cantidad de productos precargados
-      setArtSearches(new Array(items.length).fill(''))
+      // Poblar artSearches con el nombre del artículo para que se vea en la UI
+      setArtSearches(items.map((item: any) => {
+        const art = item.id_articulo_fk
+          ? Object.values(artMap).find(a => a.id === item.id_articulo_fk)
+          : null
+        return art?.clave && art?.nombre ? `${art.clave} — ${art.nombre}` : ''
+      }))
       setArtOptions(new Array(items.length).fill([]))
       setForm(f => ({ ...f, condiciones_pago: cot.condiciones_pago ?? f.condiciones_pago }))
     }
