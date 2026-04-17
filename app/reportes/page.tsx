@@ -1,7 +1,7 @@
 'use client'
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet } from 'lucide-react'
+import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock } from 'lucide-react'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
 import ReportePropietarios from './ReportePropietarios'
@@ -16,6 +16,7 @@ import ReporteConsumoFrente from './ReporteConsumoFrente'
 import ReporteInventario from './ReporteInventario'
 import ReporteOrdenesCompra from './ReporteOrdenesCompra'
 import ReporteOrdenesPago from './ReporteOrdenesPago'
+import ReporteAntiguedadOPporCC from './ReporteAntiguedadOPporCC'
 import ReporteCXP from './ReporteCXP'
 import ReporteKardex from './ReporteKardex'
 import ReporteTransferencias from './ReporteTransferencias'
@@ -53,9 +54,10 @@ const GRUPOS = [
     label: 'Tesorería',
     color: '#0f766e',
     reportes: [
-      { id: 'estado-cuenta',     label: 'Estado de Cuenta',           icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
-      { id: 'cxp',               label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
-      { id: 'ordenes-pago-cc',   label: 'Órdenes de Pago por CC / Área', icon: Wallet, desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
+      { id: 'estado-cuenta',        label: 'Estado de Cuenta',           icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
+      { id: 'cxp',                  label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
+      { id: 'ordenes-pago-cc',      label: 'Órdenes de Pago por CC / Área', icon: Wallet, desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
+      { id: 'antiguedad-op-cc',     label: 'Antigüedad de OPs por CC / Área', icon: Clock, desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
     ],
   },
   {
@@ -67,9 +69,10 @@ const GRUPOS = [
       { id: 'consumo-seccion', label: 'Consumo por Sección',         icon: MapPin,       desc: 'Órdenes de pago agrupadas por sección del residencial' },
       { id: 'consumo-frente',  label: 'Consumo por Frente',          icon: MapPin,       desc: 'Órdenes de pago agrupadas por frente de obra' },
       { id: 'inventario',      label: 'Inventario Actual',           icon: Package,      desc: 'Existencias por almacén con alertas de stock mínimo' },
-      { id: 'ordenes-compra',  label: 'Órdenes de Compra',          icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
-      { id: 'ordenes-pago-cc', label: 'Órdenes de Pago por CC / Área', icon: Wallet,    desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
-      { id: 'kardex',          label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
+      { id: 'ordenes-compra',    label: 'Órdenes de Compra',          icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
+      { id: 'ordenes-pago-cc',   label: 'Órdenes de Pago por CC / Área', icon: Wallet,    desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
+      { id: 'antiguedad-op-cc',  label: 'Antigüedad de OPs por CC / Área', icon: Clock,  desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
+      { id: 'kardex',            label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
       { id: 'transferencias',  label: 'Transferencias',             icon: Package,      desc: 'Movimientos entre almacenes con filtros por origen, destino y fecha' },
     ],
   },
@@ -166,6 +169,7 @@ function ReportesContent() {
       {active === 'inventario'       && <ReporteInventario />}
       {active === 'ordenes-compra'   && <ReporteOrdenesCompra />}
       {active === 'ordenes-pago-cc'  && <ReporteOrdenesPago />}
+      {active === 'antiguedad-op-cc' && <ReporteAntiguedadOPporCC />}
       {active === 'cxp'              && <ReporteCXP />}
       {active === 'kardex'           && <ReporteKardex />}
       {active === 'transferencias'   && <ReporteTransferencias />}
