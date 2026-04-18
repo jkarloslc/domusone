@@ -2,10 +2,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Home, MapPin, Users, FileText, Building2, Wrench,
-  Shield, AlertTriangle, Receipt, ShoppingCart,
+  Home, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  MessageCircle, LayoutDashboard, Truck, TrendingUp, Flag,
+  MessageCircle, Truck, TrendingUp, Flag,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 

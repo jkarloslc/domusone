@@ -33,25 +33,24 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'admin':
     case 'usuarioadmin':
     case 'usuariomantto':
-      return '/lotes'
+    case 'fraccionamiento':
+    case 'atencion_residentes':
+    case 'cobranza':
+    case 'vigilancia':
+    case 'mantenimiento':
+    case 'seguridad':
+      return '/residencial'
     case 'compras':
     case 'compras_supervisor':
     case 'almacen':
     case 'usuario_solicitante':
       return '/compras'
-    case 'mantenimiento':
-      return '/mantenimiento'
-    case 'cobranza':
-      return '/cobranza'
-    case 'vigilancia':
-    case 'seguridad':
-      return '/accesos'
     case 'tesoreria':
       return '/tesoreria'
     case 'ingresos':
       return '/ingresos'
     default:
-      return '/lotes'
+      return '/residencial'
   }
 }
 
