@@ -8,8 +8,8 @@ type Familiar = { id: number; nombre: string; apellido_paterno: string | null; a
 type Espacio = { id: number; nombre: string }
 type FormaJuego = { id: number; nombre: string }
 
-// Un acompañante puede ser familiar seleccionado o texto libre
-type Acomp = { tipo: 'familiar' | 'libre'; id_familiar?: number; nombre: string }
+// Un acompañante puede ser familiar seleccionado, texto libre, o externo (consume pase)
+type Acomp = { tipo: 'familiar' | 'libre' | 'externo'; id_familiar?: number; nombre: string }
 
 type Props = { onClose: () => void; onSaved: () => void }
 
@@ -89,6 +89,24 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     setAcomp([])
   }
 
+  // pases disponibles del socio seleccionado
+  const [pasesDisponibles, setPasesDisponibles] = useState<{ id: number; cantidad_disponible: number; periodo: string | null }[]>([])
+
+  useEffect(() => {
+    if (!socioSelec) { setPasesDisponibles([]); return }
+    const hoy = new Date().toISOString().split('T')[0]
+    dbGolf
+      .from('ctrl_pases')
+      .select('id, cantidad_disponible, periodo')
+      .eq('id_socio_fk', socioSelec.id)
+      .gte('fecha_vencimiento', hoy)
+      .gt('cantidad_disponible', 0)
+      .order('fecha_vencimiento', { ascending: true })
+      .then(({ data }) => setPasesDisponibles(data ?? []))
+  }, [socioSelec])
+
+  const totalPasesDisp = pasesDisponibles.reduce((a, p) => a + (p.cantidad_disponible ?? 0), 0)
+
   // gestión de acompañantes
   const addAcomp = () => {
     if (acompanantes.length < 5) setAcomp(a => [...a, { tipo: 'libre', nombre: '' }])
@@ -112,7 +130,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     ))
   }
 
-  const switchTipoAcomp = (i: number, tipo: 'familiar' | 'libre') => {
+  const switchTipoAcomp = (i: number, tipo: 'familiar' | 'libre' | 'externo') => {
     setAcomp(a => a.map((x, idx) => idx === i
       ? { tipo, nombre: '' }
       : x
@@ -144,13 +162,57 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       .map((a, i) => ({ ...a, orden: i + 1 }))
       .filter(a => a.nombre.trim())
 
+    // Cuántos acompañantes externos hay — intentar descontar pases
+    const externosFiltrados = acompFiltrados.filter(a => a.tipo === 'externo')
+    let pasesRestantes = [...pasesDisponibles]
+    const movIds: number[] = []
+
+    for (const ext of externosFiltrados) {
+      // Buscar lote con saldo disponible
+      const lote = pasesRestantes.find(p => p.cantidad_disponible > 0)
+      if (lote) {
+        // Descontar 1 pase del lote
+        await dbGolf.from('ctrl_pases')
+          .update({ cantidad_usada: lote.cantidad_disponible === undefined ? 1 : undefined })
+          .eq('id', lote.id)
+
+        // Usar RPC-free: incrementar cantidad_usada directamente
+        const { data: loteActual } = await dbGolf.from('ctrl_pases').select('cantidad_usada').eq('id', lote.id).single()
+        await dbGolf.from('ctrl_pases').update({ cantidad_usada: (loteActual?.cantidad_usada ?? 0) + 1 }).eq('id', lote.id)
+
+        // Registrar movimiento
+        const { data: mov } = await dbGolf.from('ctrl_pases_movimientos').insert({
+          id_pase_fk:   lote.id,
+          id_socio_fk:  socioSelec!.id,
+          tipo:         'CONSUMO',
+          cantidad:     -1,
+          motivo:       `Invitado: ${ext.nombre.trim()}`,
+          id_acceso_fk: acceso.id,
+        }).select('id').single()
+
+        if (mov) movIds.push(mov.id)
+
+        // Actualizar disponible local para siguientes iteraciones
+        pasesRestantes = pasesRestantes.map(p =>
+          p.id === lote.id ? { ...p, cantidad_disponible: p.cantidad_disponible - 1 } : p
+        )
+        ext._pase_mov_id = mov?.id ?? null
+        ext._origen_pago = 'PASE'
+      } else {
+        ext._origen_pago = 'GREEN_FEE'
+      }
+    }
+
     if (acompFiltrados.length > 0) {
       await dbGolf.from('ctrl_acceso_acomp').insert(
         acompFiltrados.map(a => ({
-          id_acceso_fk:   acceso.id,
-          orden:          a.orden,
-          nombre:         a.nombre.trim(),
-          id_familiar_fk: a.tipo === 'familiar' ? (a.id_familiar ?? null) : null,
+          id_acceso_fk:    acceso.id,
+          orden:           a.orden,
+          nombre:          a.nombre.trim(),
+          id_familiar_fk:  a.tipo === 'familiar' ? (a.id_familiar ?? null) : null,
+          es_externo:      a.tipo === 'externo',
+          origen_pago:     (a as any)._origen_pago ?? null,
+          id_pase_mov_fk:  (a as any)._pase_mov_id ?? null,
         }))
       )
     }
@@ -250,12 +312,22 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           {/* Acompañantes */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <label style={{ ...labelStyle, marginBottom: 0 }}>Acompañantes</label>
                 <span style={{ fontSize: 11, color: '#94a3b8' }}>(máx. 5)</span>
                 {familiares.length > 0 && (
                   <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#2563eb', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Users size={10} /> {familiares.length} familiar{familiares.length !== 1 ? 'es' : ''} registrado{familiares.length !== 1 ? 's' : ''}
+                    <Users size={10} /> {familiares.length} familiar{familiares.length !== 1 ? 'es' : ''}
+                  </span>
+                )}
+                {socioSelec && totalPasesDisp > 0 && (
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fffbeb', color: '#d97706', fontWeight: 600 }}>
+                    🎫 {totalPasesDisp} pase{totalPasesDisp !== 1 ? 's' : ''} disponible{totalPasesDisp !== 1 ? 's' : ''}
+                  </span>
+                )}
+                {socioSelec && totalPasesDisp === 0 && acompanantes.some(a => a.tipo === 'externo') && (
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', fontWeight: 600 }}>
+                    Sin pases — invitado como green fee
                   </span>
                 )}
               </div>
@@ -275,21 +347,26 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {acompanantes.map((a, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {/* Si hay familiares, mostrar toggle familiar/libre */}
-                  {familiares.length > 0 && (
-                    <div style={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
+                  {/* Toggle tipo: Familiar / Externo (pase) / Otro */}
+                  <div style={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
+                    {familiares.length > 0 && (
                       <button
                         onClick={() => switchTipoAcomp(i, 'familiar')}
-                        style={{ padding: '5px 10px', fontSize: 11, fontWeight: 600, background: a.tipo === 'familiar' ? '#eff6ff' : '#fff', color: a.tipo === 'familiar' ? '#1d4ed8' : '#94a3b8', border: 'none', cursor: 'pointer' }}>
+                        style={{ padding: '5px 8px', fontSize: 10, fontWeight: 600, background: a.tipo === 'familiar' ? '#eff6ff' : '#fff', color: a.tipo === 'familiar' ? '#1d4ed8' : '#94a3b8', border: 'none', cursor: 'pointer' }}>
                         Familiar
                       </button>
-                      <button
-                        onClick={() => switchTipoAcomp(i, 'libre')}
-                        style={{ padding: '5px 10px', fontSize: 11, fontWeight: 600, background: a.tipo === 'libre' ? '#f8fafc' : '#fff', color: a.tipo === 'libre' ? '#475569' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer' }}>
-                        Otro
-                      </button>
-                    </div>
-                  )}
+                    )}
+                    <button
+                      onClick={() => switchTipoAcomp(i, 'externo')}
+                      style={{ padding: '5px 8px', fontSize: 10, fontWeight: 600, background: a.tipo === 'externo' ? '#fffbeb' : '#fff', color: a.tipo === 'externo' ? '#d97706' : '#94a3b8', border: 'none', borderLeft: familiares.length > 0 ? '1px solid #e2e8f0' : 'none', cursor: 'pointer' }}>
+                      🎫 Invitado
+                    </button>
+                    <button
+                      onClick={() => switchTipoAcomp(i, 'libre')}
+                      style={{ padding: '5px 8px', fontSize: 10, fontWeight: 600, background: a.tipo === 'libre' ? '#f8fafc' : '#fff', color: a.tipo === 'libre' ? '#475569' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                      Otro
+                    </button>
+                  </div>
 
                   {/* Input según tipo */}
                   {a.tipo === 'familiar' && familiares.length > 0 ? (
@@ -306,8 +383,8 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                     </select>
                   ) : (
                     <input
-                      style={{ ...inputStyle, flex: 1 }}
-                      placeholder={`Nombre del acompañante ${i + 1}`}
+                      style={{ ...inputStyle, flex: 1, borderColor: a.tipo === 'externo' ? '#fde68a' : '#e2e8f0' }}
+                      placeholder={a.tipo === 'externo' ? `Nombre del invitado ${i + 1} (consumirá 1 pase)` : `Nombre del acompañante ${i + 1}`}
                       value={a.nombre}
                       onChange={e => setAcompLibre(i, e.target.value)}
                     />

@@ -49,7 +49,7 @@ const MODULOS = [
     bg: '#fffbeb',
     border: '#fde68a',
     href: '/golf/pases',
-    activo: false,
+    activo: true,
   },
   {
     key: 'clinicas',
