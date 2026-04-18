@@ -38,7 +38,7 @@ const MODULOS = [
     bg: '#f5f3ff',
     border: '#ddd6fe',
     href: '/golf/reservaciones',
-    activo: false,
+    activo: true,
   },
   {
     key: 'pases',
