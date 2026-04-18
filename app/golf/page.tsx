@@ -111,10 +111,10 @@ export default function GolfPage() {
           <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
         </div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em', marginBottom: 6 }}>
-          Golf
+          Club
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          Administración del club de golf — socios, operaciones de campo y servicios
+          Administración del club — socios, operaciones de campo y servicios deportivos
         </p>
       </div>
 
