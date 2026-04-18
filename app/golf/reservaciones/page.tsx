@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, ChevronRight, Calendar, Car, X, Users, Clock } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, ChevronRight, Calendar, Car, X, Users, UserX } from 'lucide-react'
 import Link from 'next/link'
 import ReservacionModal from './ReservacionModal'
 
@@ -16,6 +16,9 @@ type Reservacion = {
   monto_carro_golf: number | null
   observaciones: string | null
   cancelado: boolean
+  es_externo: boolean
+  nombre_externo: string | null
+  telefono_externo: string | null
   cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null } | null
   cat_espacios_deportivos?: { nombre: string } | null
   cat_formas_juego?: { nombre: string } | null
@@ -58,6 +61,7 @@ export default function ReservacionesPage() {
       .select(`
         id, fecha_reservacion, hora_reservacion, num_jugadores,
         carro_golf, monto, monto_carro_golf, observaciones, cancelado,
+        es_externo, nombre_externo, telefono_externo,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio),
         cat_espacios_deportivos(nombre),
         cat_formas_juego(nombre)
@@ -195,21 +199,24 @@ export default function ReservacionesPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {reservaciones.map(r => {
             const socio = r.cat_socios
-            const nombre = socio ? [socio.nombre, socio.apellido_paterno, socio.apellido_materno].filter(Boolean).join(' ') : '—'
+            const nombre = r.es_externo
+              ? (r.nombre_externo || 'Visitante')
+              : socio ? [socio.nombre, socio.apellido_paterno, socio.apellido_materno].filter(Boolean).join(' ') : '—'
             const isCancelando = cancelando === r.id
             const montoTotal = (r.monto ?? 0) + (r.carro_golf ? (r.monto_carro_golf ?? 0) : 0)
+            const accentColor = r.cancelado ? '#e2e8f0' : r.es_externo ? '#ea580c' : '#7c3aed'
 
             return (
               <div key={r.id} className="card" style={{
                 padding: '14px 18px',
                 opacity: r.cancelado ? 0.5 : 1,
-                borderLeft: `4px solid ${r.cancelado ? '#e2e8f0' : '#7c3aed'}`,
+                borderLeft: `4px solid ${accentColor}`,
                 display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
               }}>
-                {/* Hora + socio */}
+                {/* Hora + nombre */}
                 <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flex: 1, minWidth: 200 }}>
                   <div style={{ textAlign: 'center', minWidth: 52 }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: r.cancelado ? '#94a3b8' : '#7c3aed', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: r.cancelado ? '#94a3b8' : accentColor, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                       {r.hora_reservacion.slice(0, 5)}
                     </div>
                     <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
@@ -218,8 +225,14 @@ export default function ReservacionesPage() {
                   </div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14, color: r.cancelado ? '#94a3b8' : '#1e293b' }}>{nombre}</div>
-                    {socio?.numero_socio && <div style={{ fontSize: 11, color: '#94a3b8' }}>#{socio.numero_socio}</div>}
+                    {!r.es_externo && socio?.numero_socio && <div style={{ fontSize: 11, color: '#94a3b8' }}>#{socio.numero_socio}</div>}
+                    {r.es_externo && r.telefono_externo && <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.telefono_externo}</div>}
                     <div style={{ display: 'flex', gap: 8, marginTop: 5, flexWrap: 'wrap' }}>
+                      {r.es_externo && (
+                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fff7ed', color: '#c2410c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <UserX size={10} /> Visitante
+                        </span>
+                      )}
                       {r.cat_espacios_deportivos?.nombre && (
                         <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed', fontWeight: 500 }}>
                           {r.cat_espacios_deportivos.nombre}
