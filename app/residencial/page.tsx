@@ -1,13 +1,14 @@
 'use client'
 import { useState } from 'react'
 import {
-  MapPin, Users, FileText, Receipt, Shield,
+  MapPin, MapPinned, Users, FileText, Receipt, Shield,
   AlertTriangle, Building2, Wrench, Home,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
 // ── Importar páginas/componentes existentes ─────────────────
 import LotesPage        from '@/app/lotes/page'
+import ExpedientePage   from '@/app/lotes/expediente/page'
 import PropietariosPage from '@/app/propietarios/page'
 import CobranzaPage     from '@/app/cobranza/page'
 import FacturasPage     from '@/app/facturas/page'
@@ -18,8 +19,10 @@ import EscriturasPage   from '@/app/escrituras/page'
 import ProyectosPage    from '@/app/proyectos/page'
 
 // ── Definición de tabs — cada key coincide con el módulo en LEER ─
+// expediente usa la misma key 'lotes' (mismo permiso)
 type TabKey =
   | 'lotes'
+  | 'expediente'
   | 'propietarios'
   | 'cobranza'
   | 'facturas'
@@ -29,23 +32,24 @@ type TabKey =
   | 'escrituras'
   | 'proyectos'
 
-const ALL_TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: 'lotes',        label: 'Lotes',        icon: <MapPin        size={14} /> },
-  { key: 'propietarios', label: 'Propietarios', icon: <Users         size={14} /> },
-  { key: 'cobranza',     label: 'Cobranza',     icon: <FileText      size={14} /> },
-  { key: 'facturas',     label: 'Facturas',     icon: <Receipt       size={14} /> },
-  { key: 'accesos',      label: 'Accesos',      icon: <Shield        size={14} /> },
-  { key: 'incidencias',  label: 'Incidencias',  icon: <AlertTriangle size={14} /> },
-  { key: 'contratos',    label: 'Contratos',    icon: <FileText      size={14} /> },
-  { key: 'escrituras',   label: 'Escrituras',   icon: <Building2     size={14} /> },
-  { key: 'proyectos',    label: 'Proyectos',    icon: <Wrench        size={14} /> },
+const ALL_TABS: { key: TabKey; permKey: string; label: string; icon: React.ReactNode }[] = [
+  { key: 'expediente',   permKey: 'lotes',        label: 'Expediente',   icon: <MapPinned     size={14} /> },
+  { key: 'lotes',        permKey: 'lotes',        label: 'Lotes',        icon: <MapPin        size={14} /> },
+  { key: 'propietarios', permKey: 'propietarios', label: 'Propietarios', icon: <Users         size={14} /> },
+  { key: 'cobranza',     permKey: 'cobranza',     label: 'Cobranza',     icon: <FileText      size={14} /> },
+  { key: 'facturas',     permKey: 'facturas',     label: 'Facturas',     icon: <Receipt       size={14} /> },
+  { key: 'accesos',      permKey: 'accesos',      label: 'Accesos',      icon: <Shield        size={14} /> },
+  { key: 'incidencias',  permKey: 'incidencias',  label: 'Incidencias',  icon: <AlertTriangle size={14} /> },
+  { key: 'contratos',    permKey: 'contratos',    label: 'Contratos',    icon: <FileText      size={14} /> },
+  { key: 'escrituras',   permKey: 'escrituras',   label: 'Escrituras',   icon: <Building2     size={14} /> },
+  { key: 'proyectos',    permKey: 'proyectos',    label: 'Proyectos',    icon: <Wrench        size={14} /> },
 ]
 
 export default function ResidencialPage() {
   const { can } = useAuth()
 
-  // Filtrar tabs según permisos del rol actual
-  const TABS = ALL_TABS.filter(t => can(t.key))
+  // Filtrar tabs según permisos del rol actual (usa permKey para evaluar)
+  const TABS = ALL_TABS.filter(t => can(t.permKey))
 
   const [tab, setTab] = useState<TabKey | null>(null)
 
@@ -112,6 +116,7 @@ export default function ResidencialPage() {
 
       {/* ── Contenido del tab activo ───────────────────────── */}
       <div style={{ flex: 1, overflow: 'auto' }}>
+        {activeTab === 'expediente'   && <ExpedientePage embedded />}
         {activeTab === 'lotes'        && <LotesPage embedded />}
         {activeTab === 'propietarios' && <PropietariosPage />}
         {activeTab === 'cobranza'     && <CobranzaPage embedded />}

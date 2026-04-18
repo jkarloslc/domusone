@@ -153,7 +153,7 @@ function PropietarioModal({ propietario, onClose }: { propietario: any; onClose:
 }
 
 // ════════════════════════════════════════════════════════════════
-export default function ExpedientePage() {
+export default function ExpedientePage({ embedded }: { embedded?: boolean }) {
   const [search, setSearch]       = useState('')
   const [results, setResults]     = useState<any[]>([])
   const [searching, setSearching] = useState(false)
@@ -245,8 +245,8 @@ export default function ExpedientePage() {
   return (
     <div className="page-pad" style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Tabs */}
-      <LotesTabs />
+      {/* Tabs (solo en ruta directa /lotes/expediente, no cuando está embebido) */}
+      {!embedded && <LotesTabs />}
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
