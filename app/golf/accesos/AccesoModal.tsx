@@ -1,11 +1,15 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
-import { X, Save, Loader, Plus, Trash2, Search } from 'lucide-react'
+import { X, Save, Loader, Plus, Trash2, Search, Users } from 'lucide-react'
 
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_tarjeta: string | null; cat_categorias_socios?: { nombre: string } | null }
+type Familiar = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null }
 type Espacio = { id: number; nombre: string }
 type FormaJuego = { id: number; nombre: string }
+
+// Un acompañante puede ser familiar seleccionado o texto libre
+type Acomp = { tipo: 'familiar' | 'libre'; id_familiar?: number; nombre: string }
 
 type Props = { onClose: () => void; onSaved: () => void }
 
@@ -14,6 +18,9 @@ const inputStyle = {
   borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none',
 }
 const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+
+const nombreCompleto = (x: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null }) =>
+  [x.nombre, x.apellido_paterno, x.apellido_materno].filter(Boolean).join(' ')
 
 export default function AccesoModal({ onClose, onSaved }: Props) {
   const [saving, setSaving]       = useState(false)
@@ -27,12 +34,15 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   const [socioSelec, setSocioSelec]     = useState<Socio | null>(null)
   const [buscando, setBuscando]         = useState(false)
 
+  // familiares del socio
+  const [familiares, setFamiliares] = useState<Familiar[]>([])
+
   // form
-  const [idEspacio, setIdEspacio]       = useState<number | ''>('')
-  const [idForma, setIdForma]           = useState<number | ''>('')
-  const [hoyoInicio, setHoyoInicio]     = useState<number | ''>('')
-  const [observaciones, setObs]         = useState('')
-  const [acompanantes, setAcomp]        = useState<string[]>([''])
+  const [idEspacio, setIdEspacio]   = useState<number | ''>('')
+  const [idForma, setIdForma]       = useState<number | ''>('')
+  const [hoyoInicio, setHoyoInicio] = useState<number | ''>('')
+  const [observaciones, setObs]     = useState('')
+  const [acompanantes, setAcomp]    = useState<Acomp[]>([])
 
   useEffect(() => {
     dbGolf.from('cat_espacios_deportivos').select('id, nombre').eq('activo', true).order('nombre')
@@ -58,15 +68,56 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     return () => clearTimeout(t)
   }, [socioSearch])
 
-  const seleccionarSocio = (s: Socio) => {
+  // cargar familiares al seleccionar socio
+  const seleccionarSocio = async (s: Socio) => {
     setSocioSelec(s)
     setSocioSearch('')
     setSocioResults([])
+    setAcomp([])
+    const { data } = await dbGolf
+      .from('cat_familiares')
+      .select('id, nombre, apellido_paterno, apellido_materno, parentesco')
+      .eq('id_socio_fk', s.id)
+      .eq('activo', true)
+      .order('nombre')
+    setFamiliares((data as Familiar[]) ?? [])
   }
 
-  const addAcomp = () => { if (acompanantes.length < 5) setAcomp(a => [...a, '']) }
+  const limpiarSocio = () => {
+    setSocioSelec(null)
+    setFamiliares([])
+    setAcomp([])
+  }
+
+  // gestión de acompañantes
+  const addAcomp = () => {
+    if (acompanantes.length < 5) setAcomp(a => [...a, { tipo: 'libre', nombre: '' }])
+  }
+
   const removeAcomp = (i: number) => setAcomp(a => a.filter((_, idx) => idx !== i))
-  const setAcompVal = (i: number, v: string) => setAcomp(a => a.map((x, idx) => idx === i ? v : x))
+
+  const setAcompFamiliar = (i: number, id_familiar: number) => {
+    const fam = familiares.find(f => f.id === id_familiar)
+    if (!fam) return
+    setAcomp(a => a.map((x, idx) => idx === i
+      ? { tipo: 'familiar', id_familiar: fam.id, nombre: nombreCompleto(fam) }
+      : x
+    ))
+  }
+
+  const setAcompLibre = (i: number, v: string) => {
+    setAcomp(a => a.map((x, idx) => idx === i
+      ? { tipo: 'libre', nombre: v }
+      : x
+    ))
+  }
+
+  const switchTipoAcomp = (i: number, tipo: 'familiar' | 'libre') => {
+    setAcomp(a => a.map((x, idx) => idx === i
+      ? { tipo, nombre: '' }
+      : x
+    ))
+  }
 
   const handleSave = async () => {
     if (!socioSelec) { setError('Selecciona un socio'); return }
@@ -88,20 +139,26 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
     if (err || !acceso) { setError(err?.message ?? 'Error al guardar'); setSaving(false); return }
 
-    // insertar acompañantes
-    const acompFiltrados = acompanantes.map((a, i) => ({ nombre: a.trim(), orden: i + 1 })).filter(a => a.nombre)
+    // insertar acompañantes con FK a familiar si aplica
+    const acompFiltrados = acompanantes
+      .map((a, i) => ({ ...a, orden: i + 1 }))
+      .filter(a => a.nombre.trim())
+
     if (acompFiltrados.length > 0) {
       await dbGolf.from('ctrl_acceso_acomp').insert(
-        acompFiltrados.map(a => ({ id_acceso_fk: acceso.id, orden: a.orden, nombre: a.nombre }))
+        acompFiltrados.map(a => ({
+          id_acceso_fk:   acceso.id,
+          orden:          a.orden,
+          nombre:         a.nombre.trim(),
+          id_familiar_fk: a.tipo === 'familiar' ? (a.id_familiar ?? null) : null,
+        }))
       )
     }
 
     onSaved()
   }
 
-  const nombreSocio = socioSelec
-    ? [socioSelec.nombre, socioSelec.apellido_paterno, socioSelec.apellido_materno].filter(Boolean).join(' ')
-    : ''
+  const socioNombre = socioSelec ? nombreCompleto(socioSelec) : ''
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
@@ -122,14 +179,14 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
             {socioSelec ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1d4ed8' }}>{nombreSocio}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1d4ed8' }}>{socioNombre}</div>
                   <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
                     {socioSelec.numero_socio && `#${socioSelec.numero_socio} · `}
                     {socioSelec.cat_categorias_socios?.nombre}
                     {socioSelec.numero_tarjeta && ` · Tarjeta: ${socioSelec.numero_tarjeta}`}
                   </div>
                 </div>
-                <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>
+                <button onClick={limpiarSocio} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>
               </div>
             ) : (
               <div style={{ position: 'relative' }}>
@@ -144,20 +201,17 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                 />
                 {socioResults.length > 0 && (
                   <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
-                    {socioResults.map(s => {
-                      const nombre = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
-                      return (
-                        <button key={s.id} onClick={() => seleccionarSocio(s)}
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombre}</span>
-                          <span style={{ fontSize: 11, color: '#64748b' }}>
-                            {s.numero_socio && `#${s.numero_socio} · `}{s.cat_categorias_socios?.nombre}
-                          </span>
-                        </button>
-                      )
-                    })}
+                    {socioResults.map(s => (
+                      <button key={s.id} onClick={() => seleccionarSocio(s)}
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(s)}</span>
+                        <span style={{ fontSize: 11, color: '#64748b' }}>
+                          {s.numero_socio && `#${s.numero_socio} · `}{s.cat_categorias_socios?.nombre}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -196,22 +250,69 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           {/* Acompañantes */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <label style={{ ...labelStyle, marginBottom: 0 }}>Acompañantes <span style={{ fontWeight: 400, color: '#94a3b8' }}>(máx. 5)</span></label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label style={{ ...labelStyle, marginBottom: 0 }}>Acompañantes</label>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>(máx. 5)</span>
+                {familiares.length > 0 && (
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#2563eb', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Users size={10} /> {familiares.length} familiar{familiares.length !== 1 ? 'es' : ''} registrado{familiares.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
               {acompanantes.length < 5 && (
                 <button onClick={addAcomp} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
                   <Plus size={13} /> Agregar
                 </button>
               )}
             </div>
+
+            {!socioSelec && acompanantes.length === 0 && (
+              <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
+                Selecciona un socio para agregar acompañantes
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {acompanantes.map((a, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input
-                    style={{ ...inputStyle, flex: 1 }}
-                    placeholder={`Nombre del acompañante ${i + 1}`}
-                    value={a}
-                    onChange={e => setAcompVal(i, e.target.value)}
-                  />
+                  {/* Si hay familiares, mostrar toggle familiar/libre */}
+                  {familiares.length > 0 && (
+                    <div style={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
+                      <button
+                        onClick={() => switchTipoAcomp(i, 'familiar')}
+                        style={{ padding: '5px 10px', fontSize: 11, fontWeight: 600, background: a.tipo === 'familiar' ? '#eff6ff' : '#fff', color: a.tipo === 'familiar' ? '#1d4ed8' : '#94a3b8', border: 'none', cursor: 'pointer' }}>
+                        Familiar
+                      </button>
+                      <button
+                        onClick={() => switchTipoAcomp(i, 'libre')}
+                        style={{ padding: '5px 10px', fontSize: 11, fontWeight: 600, background: a.tipo === 'libre' ? '#f8fafc' : '#fff', color: a.tipo === 'libre' ? '#475569' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                        Otro
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Input según tipo */}
+                  {a.tipo === 'familiar' && familiares.length > 0 ? (
+                    <select
+                      style={{ ...inputStyle, flex: 1 }}
+                      value={a.id_familiar ?? ''}
+                      onChange={e => e.target.value ? setAcompFamiliar(i, Number(e.target.value)) : setAcomp(ac => ac.map((x, idx) => idx === i ? { tipo: 'familiar', nombre: '' } : x))}>
+                      <option value="">— Seleccionar familiar —</option>
+                      {familiares.map(f => (
+                        <option key={f.id} value={f.id}>
+                          {nombreCompleto(f)}{f.parentesco ? ` (${f.parentesco})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      style={{ ...inputStyle, flex: 1 }}
+                      placeholder={`Nombre del acompañante ${i + 1}`}
+                      value={a.nombre}
+                      onChange={e => setAcompLibre(i, e.target.value)}
+                    />
+                  )}
+
                   <button onClick={() => removeAcomp(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, flexShrink: 0 }}>
                     <Trash2 size={14} />
                   </button>
