@@ -76,13 +76,13 @@ const MODULOS = [
   {
     key: 'carritos',
     label: 'Carritos',
-    desc: 'Inventario, asignación y control de renta de carritos',
+    desc: 'Pensiones, slots, CXC y cobros de membresía',
     icon: Car,
     color: '#059669',
     bg: '#ecfdf5',
     border: '#a7f3d0',
     href: '/golf/carritos',
-    activo: false,
+    activo: true,
   },
   {
     key: 'casilleros',
