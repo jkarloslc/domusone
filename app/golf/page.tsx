@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
-  Car, Lock, ArrowRight,
+  Car, Lock, ArrowRight, BookOpen,
 } from 'lucide-react'
 import DashLayout from '@/components/layout/DashLayout'
 
@@ -94,6 +94,17 @@ const MODULOS = [
     border: '#e2e8f0',
     href: '/golf/casilleros',
     activo: false,
+  },
+  {
+    key: 'catalogos',
+    label: 'Catálogos',
+    desc: 'Categorías, espacios deportivos, formas de juego y más',
+    icon: BookOpen,
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
+    href: '/golf/catalogos',
+    activo: true,
   },
 ]
 

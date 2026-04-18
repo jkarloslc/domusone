@@ -66,6 +66,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Club', items: [
       { label: 'Club',           href: '/golf',           icon: Flag          },
+      { label: 'Catálogos Club', href: '/golf/catalogos', icon: BookOpen      },
       RPT('golf'),
     ]},
     { section: 'Operaciones', items: [
@@ -322,6 +323,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuariogolf: [
     { section: 'Club', items: [
       { label: 'Club',           href: '/golf',           icon: Flag          },
+      { label: 'Catálogos Club', href: '/golf/catalogos', icon: BookOpen      },
       RPT('golf'),
     ]},
     { section: 'Comunicación', items: [
