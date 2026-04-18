@@ -9,18 +9,20 @@ const TABS = [
   { id: 'afectaciones', label: 'Servidumbres y Afectaciones' },
 ]
 
-export default function ProyectosPage() {
+export default function ProyectosPage({ embedded }: { embedded?: boolean }) {
   const [tab, setTab] = useState('proyectos')
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <Wrench size={16} style={{ color: 'var(--blue)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+      {!embedded && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Wrench size={16} style={{ color: 'var(--blue)' }} />
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, letterSpacing: '-0.01em' }}>Proyectos</h1>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, letterSpacing: '-0.01em' }}>Proyectos</h1>
-      </div>
+      )}
 
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 24 }}>
         {TABS.map(t => (

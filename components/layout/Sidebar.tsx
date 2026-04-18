@@ -5,7 +5,7 @@ import {
   Home, MapPin, Users, FileText, Building2, Wrench,
   Shield, AlertTriangle, Receipt, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  MessageCircle, LayoutDashboard, Truck, TrendingUp,
+  MessageCircle, LayoutDashboard, Truck, TrendingUp, Flag,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -60,16 +60,11 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   superadmin: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
+    ]},
+    { section: 'Golf', items: [
+      { label: 'Golf',           href: '/golf',           icon: Flag          },
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
@@ -101,15 +96,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   admin: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -141,15 +128,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   // Admin sin Mantenimiento
   usuarioadmin: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Compras', items: [
@@ -172,15 +151,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   // Admin sin Tesorería
   usuariomantto: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -203,12 +174,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   atencion_residentes: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -223,10 +189,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   cobranza: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Comunicación', items: [
@@ -236,10 +199,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   vigilancia: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
     ]},
     { section: 'Comunicación', items: [
       { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
@@ -268,8 +228,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   mantenimiento: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
@@ -283,15 +242,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   fraccionamiento: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -356,10 +307,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   seguridad: [
     { section: 'Residencial', items: [
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },

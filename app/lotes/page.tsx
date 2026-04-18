@@ -48,7 +48,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const PAGE_SIZE = 20
 
-export default function LotesPage() {
+export default function LotesPage({ embedded }: { embedded?: boolean }) {
   const { canWrite, canDelete } = useAuth()
   const [lotes, setLotes]               = useState<Lote[]>([])
   const [secciones, setSecciones]       = useState<Record<number, string>>({})
@@ -118,8 +118,8 @@ export default function LotesPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Tabs */}
-      <LotesTabs />
+      {/* Tabs (solo en ruta directa /lotes, no cuando está embebido en /residencial) */}
+      {!embedded && <LotesTabs />}
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>

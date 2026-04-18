@@ -11,22 +11,24 @@ const TABS = [
   { id: 'vehiculos',   label: 'Vehículos Autorizados' },
 ]
 
-export default function AccesosPage() {
+export default function AccesosPage({ embedded }: { embedded?: boolean }) {
   const [tab, setTab] = useState('bitacora')
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <Shield size={16} style={{ color: 'var(--gold)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+      {/* Header — oculto cuando está dentro de /residencial */}
+      {!embedded && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Shield size={16} style={{ color: 'var(--gold)' }} />
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em' }}>
+            Control de Accesos
+          </h1>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em' }}>
-          Control de Accesos
-        </h1>
-      </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
