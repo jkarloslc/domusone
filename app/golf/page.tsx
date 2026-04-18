@@ -27,7 +27,7 @@ const MODULOS = [
     bg: '#f0fdf4',
     border: '#bbf7d0',
     href: '/golf/accesos',
-    activo: false,
+    activo: true,
   },
   {
     key: 'reservaciones',
