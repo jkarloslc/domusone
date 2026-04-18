@@ -331,14 +331,14 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                   </span>
                 )}
               </div>
-              {acompanantes.length < 5 && (
+              {socioSelec && acompanantes.length < 5 && (
                 <button onClick={addAcomp} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
                   <Plus size={13} /> Agregar
                 </button>
               )}
             </div>
 
-            {!socioSelec && acompanantes.length === 0 && (
+            {!socioSelec && (
               <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>
                 Selecciona un socio para agregar acompañantes
               </div>
@@ -347,23 +347,23 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {acompanantes.map((a, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {/* Toggle tipo: Familiar / Externo (pase) / Otro */}
-                  <div style={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
+                  {/* Toggle tipo: Familiar / Invitado (pase) / Otro */}
+                  <div style={{ display: 'flex', border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
                     {familiares.length > 0 && (
                       <button
                         onClick={() => switchTipoAcomp(i, 'familiar')}
-                        style={{ padding: '5px 8px', fontSize: 10, fontWeight: 600, background: a.tipo === 'familiar' ? '#eff6ff' : '#fff', color: a.tipo === 'familiar' ? '#1d4ed8' : '#94a3b8', border: 'none', cursor: 'pointer' }}>
+                        style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'familiar' ? '#eff6ff' : '#fff', color: a.tipo === 'familiar' ? '#1d4ed8' : '#94a3b8', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         Familiar
                       </button>
                     )}
                     <button
                       onClick={() => switchTipoAcomp(i, 'externo')}
-                      style={{ padding: '5px 8px', fontSize: 10, fontWeight: 600, background: a.tipo === 'externo' ? '#fffbeb' : '#fff', color: a.tipo === 'externo' ? '#d97706' : '#94a3b8', border: 'none', borderLeft: familiares.length > 0 ? '1px solid #e2e8f0' : 'none', cursor: 'pointer' }}>
+                      style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'externo' ? '#fffbeb' : '#fff', color: a.tipo === 'externo' ? '#d97706' : '#94a3b8', border: 'none', borderLeft: familiares.length > 0 ? '1px solid #e2e8f0' : 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                       🎫 Invitado
                     </button>
                     <button
                       onClick={() => switchTipoAcomp(i, 'libre')}
-                      style={{ padding: '5px 8px', fontSize: 10, fontWeight: 600, background: a.tipo === 'libre' ? '#f8fafc' : '#fff', color: a.tipo === 'libre' ? '#475569' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                      style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'libre' ? '#f8fafc' : '#fff', color: a.tipo === 'libre' ? '#475569' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                       Otro
                     </button>
                   </div>
