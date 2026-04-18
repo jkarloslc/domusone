@@ -95,11 +95,11 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   }
 
   const inputStyle = {
-    width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid var(--border)',
-    borderRadius: 8, background: 'var(--surface)', color: 'var(--text-primary)',
-    fontFamily: 'var(--font-body)', outline: 'none',
+    width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
+    borderRadius: 8, background: '#fff', color: '#1e293b',
+    fontFamily: 'inherit', outline: 'none',
   }
-  const labelStyle = { fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4, display: 'block' as const }
+  const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' as const }
 
   return (
     <div style={{
@@ -108,17 +108,17 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       zIndex: 1000, padding: 20,
     }}>
       <div style={{
-        background: 'var(--surface)', borderRadius: 16, width: '100%', maxWidth: 580,
+        background: '#fff', borderRadius: 16, width: '100%', maxWidth: 580,
         maxHeight: '92vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
       }}>
         {/* Header */}
-        <div style={{ padding: '20px 24px 0', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ padding: '20px 24px 0', borderBottom: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
+            <h2 style={{ fontFamily: 'inherit', fontSize: 20, fontWeight: 600 }}>
               {isNew ? 'Nuevo Socio' : 'Editar Socio'}
             </h2>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
               <X size={18} />
             </button>
           </div>
@@ -129,8 +129,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                 padding: '8px 16px', fontSize: 13, background: 'none', border: 'none',
                 cursor: 'pointer', fontFamily: 'var(--font-body)',
                 fontWeight: tab === i ? 600 : 400,
-                color: tab === i ? 'var(--blue)' : 'var(--text-muted)',
-                borderBottom: tab === i ? '2px solid var(--blue)' : '2px solid transparent',
+                color: tab === i ? '#2563eb' : '#94a3b8',
+                borderBottom: tab === i ? '2px solid #2563eb' : '2px solid transparent',
                 marginBottom: -1, transition: 'all 0.15s',
               }}>{t}</button>
             ))}
@@ -237,7 +237,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button className="btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
