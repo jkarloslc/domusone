@@ -25,6 +25,7 @@ type Rol =
   | 'seguridad'
   | 'ingresos'
   | 'usuario_solicitante'
+  | 'usuariogolf'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -46,6 +47,7 @@ const ROL_LABEL: Record<Rol, string> = {
   seguridad:           'Seguridad',
   ingresos:            'Captura de Ingresos',
   usuario_solicitante: 'Solicitante',
+  usuariogolf:         'Operador Golf',
 }
 
 // Ítem de reportes con estilo diferenciado (pie de sección)
@@ -64,6 +66,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Golf', items: [
       { label: 'Golf',           href: '/golf',           icon: Flag          },
+      RPT('golf'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
@@ -315,6 +318,16 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
   ],
+
+  usuariogolf: [
+    { section: 'Golf', items: [
+      { label: 'Golf',           href: '/golf',           icon: Flag          },
+      RPT('golf'),
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
+  ],
 }
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -361,7 +374,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
 
         {/* Inicio — visible para todos excepto roles de acceso restringido */}
-        {rol !== 'usuario_solicitante' && (
+        {rol !== 'usuario_solicitante' && rol !== 'usuariogolf' && (
           <Link
             href="/inicio"
             onClick={onClose}

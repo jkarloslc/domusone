@@ -81,3 +81,4 @@ export type PropietarioLote = {
 }
 
 export const dbComp = base.schema('comp' as any)  // compras e inventarios
+export const dbGolf = base.schema('golf' as any)  // módulo golf

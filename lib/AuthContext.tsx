@@ -20,6 +20,7 @@ type Rol =
   | 'seguridad'
   | 'usuario_solicitante'
   | 'ingresos'
+  | 'usuariogolf'
 
 type AuthUser = {
   user:   User
@@ -49,6 +50,8 @@ export function getHomeRouteByRole(rol?: Rol): string {
       return '/tesoreria'
     case 'ingresos':
       return '/ingresos'
+    case 'usuariogolf':
+      return '/golf'
     default:
       return '/residencial'
   }
@@ -81,6 +84,14 @@ const ADMIN_MODULOS = [
   'compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago',
   'proveedores', 'articulos', 'almacenes', 'areas',
   'tesoreria', 'ingresos', 'reportes', 'catalogos',
+  'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
+  'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
+]
+
+// Módulos Golf para rol dedicado
+const GOLF_MODULOS = [
+  'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
+  'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros', 'reportes',
 ]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
@@ -108,6 +119,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   seguridad:           ['lotes', 'propietarios', 'accesos', 'incidencias', 'compras'],
   usuario_solicitante: ['compras', 'requisiciones', 'transferencias'],
   ingresos:            ['ingresos', 'reportes'],
+  usuariogolf:         GOLF_MODULOS,
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -131,6 +143,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   seguridad:           ['accesos', 'incidencias', 'requisiciones'],
   usuario_solicitante: ['requisiciones', 'transferencias'],
   ingresos:            ['ingresos'],
+  usuariogolf:         GOLF_MODULOS,
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
