@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Search, RefreshCw, Eye, Edit2, Trash2, Users, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Plus, Search, RefreshCw, Eye, Edit2, Trash2, Users, CheckCircle, XCircle, AlertCircle, ChevronLeft } from 'lucide-react'
+import Link from 'next/link'
 import SocioModal from './SocioModal'
 import SocioDetail from './SocioDetail'
 import type { Socio } from './SocioModal'
@@ -119,8 +120,15 @@ export default function MiembrosPage() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Users size={14} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Club</span>
+            <Link href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12, transition: 'color 0.15s' }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#2563eb'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}>
+              <ChevronLeft size={13} />
+              Club
+            </Link>
+            <span style={{ fontSize: 12, color: '#cbd5e1' }}>/</span>
+            <Users size={13} style={{ color: 'var(--gold)' }} />
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Miembros</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
             Miembros
