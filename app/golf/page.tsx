@@ -4,6 +4,7 @@ import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
   Car, Lock, ArrowRight,
 } from 'lucide-react'
+import DashLayout from '@/components/layout/DashLayout'
 
 const MODULOS = [
   {
@@ -100,6 +101,7 @@ export default function GolfPage() {
   const router = useRouter()
 
   return (
+    <DashLayout modulo="golf">
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
@@ -165,5 +167,6 @@ export default function GolfPage() {
         })}
       </div>
     </div>
+    </DashLayout>
   )
 }
