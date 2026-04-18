@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Users, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  MessageCircle, Truck, TrendingUp, Flag, Tag, Car,
+  MessageCircle, Truck, TrendingUp, Flag,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -66,9 +66,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Club', items: [
       { label: 'Club',           href: '/golf',           icon: Flag          },
-      { label: 'Pases',          href: '/golf/pases',     icon: Tag           },
-      { label: 'Carritos',       href: '/golf/carritos',  icon: Car           },
-      { label: 'Catálogos Club', href: '/golf/catalogos', icon: BookOpen      },
       RPT('golf'),
     ]},
     { section: 'Operaciones', items: [
@@ -325,9 +322,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuariogolf: [
     { section: 'Club', items: [
       { label: 'Club',           href: '/golf',           icon: Flag          },
-      { label: 'Pases',          href: '/golf/pases',     icon: Tag           },
-      { label: 'Carritos',       href: '/golf/carritos',  icon: Car           },
-      { label: 'Catálogos Club', href: '/golf/catalogos', icon: BookOpen      },
       RPT('golf'),
     ]},
     { section: 'Comunicación', items: [

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Car, Settings, CreditCard, Search, X, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import CarritoModal from './CarritoModal'
 import PensionModal from './PensionModal'
@@ -51,7 +51,7 @@ const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_mater
   s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—'
 const vencida = (f: string | null) => f ? f < hoy : false
 
-type Tab = 'pensiones' | 'cxc' | 'config'
+type Tab = 'pensiones' | 'config'
 
 export default function CarritosPage() {
   const { canWrite } = useAuth()
@@ -71,12 +71,6 @@ export default function CarritosPage() {
   const [showPension, setShowPension]   = useState<{ idSocio: number; idCarrito: number; nombreSocio: string; descCarrito: string } | null>(null)
   const [carritoNuevo, setCarritoNuevo] = useState<{ id: number; id_socio_fk: number } | null>(null)
 
-  // ── CXC ───────────────────────────────────────────────────
-  const [cuotas, setCuotas]             = useState<Cuota[]>([])
-  const [loadingC, setLoadingC]         = useState(false)
-  const [filtroCXCStatus, setFiltroCXCStatus] = useState<'PENDIENTE' | 'PAGADO' | ''>('PENDIENTE')
-  const [filtroCXCTipo, setFiltroCXCTipo]     = useState<'PENSION_CARRITO' | 'MEMBRESIA' | ''>('')
-  const [busquedaC, setBusquedaC]       = useState('')
   const [showCobrar, setShowCobrar]     = useState<{ cuotas: Cuota[]; nombreSocio: string } | null>(null)
 
   // ── Config ────────────────────────────────────────────────
@@ -133,20 +127,6 @@ export default function CarritosPage() {
     setLoadingP(false)
   }, [soloActivas])
 
-  // ── Fetch CXC ─────────────────────────────────────────────
-  const fetchCXC = useCallback(async () => {
-    setLoadingC(true)
-    let q = dbGolf.from('cxc_golf')
-      .select(`id, id_socio_fk, concepto, periodo, monto_original, descuento, monto_final, status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo,
-        cat_socios(nombre, apellido_paterno, apellido_materno)`)
-      .order('fecha_vencimiento', { ascending: true })
-    if (filtroCXCStatus) q = q.eq('status', filtroCXCStatus)
-    if (filtroCXCTipo)   q = q.eq('tipo', filtroCXCTipo)
-    const { data } = await q
-    setCuotas((data as Cuota[]) ?? [])
-    setLoadingC(false)
-  }, [filtroCXCStatus, filtroCXCTipo])
-
   // ── Fetch Config ──────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
     const { data: cfg } = await dbGolf.from('cfg_carritos').select('tarifa_mensual').single()
@@ -157,7 +137,6 @@ export default function CarritosPage() {
   }, [])
 
   useEffect(() => { fetchPensiones() }, [fetchPensiones])
-  useEffect(() => { if (tab === 'cxc') fetchCXC() }, [tab, fetchCXC])
   useEffect(() => { if (tab === 'config') fetchConfig() }, [tab, fetchConfig])
 
   const guardarTarifa = async () => {
@@ -193,7 +172,6 @@ export default function CarritosPage() {
     setShowPension(null)
     setCarritoNuevo(null)
     fetchPensiones()
-    if (tab === 'cxc') fetchCXC()
   }
 
   // Cuotas pendientes del socio de una pensión
@@ -217,15 +195,8 @@ export default function CarritosPage() {
     return nombre.includes(q) || placa.includes(q)
   })
 
-  const cuotasF = cuotas.filter(c => {
-    if (!busquedaC.trim()) return true
-    const q = busquedaC.toLowerCase()
-    return nc(c.cat_socios).toLowerCase().includes(q) || c.concepto.toLowerCase().includes(q)
-  })
-
   const TABS: { key: Tab; label: string; icon: any }[] = [
-    { key: 'pensiones', label: 'Pensiones', icon: Car },
-    { key: 'cxc',       label: 'CXC Golf',  icon: CreditCard },
+    { key: 'pensiones', label: 'Pensiones',     icon: Car      },
     { key: 'config',    label: 'Configuración', icon: Settings },
   ]
 
@@ -383,80 +354,6 @@ export default function CarritosPage() {
                         )}
                       </div>
                     )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── TAB: CXC GOLF ────────────────────────────────── */}
-      {tab === 'cxc' && (
-        <>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
-                placeholder="Buscar socio o concepto…" value={busquedaC} onChange={e => setBusquedaC(e.target.value)} />
-              {busquedaC && <button onClick={() => setBusquedaC('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
-            </div>
-            <select value={filtroCXCStatus} onChange={e => setFiltroCXCStatus(e.target.value as any)}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
-              <option value="">Todos los status</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="PAGADO">Pagado</option>
-              <option value="CANCELADO">Cancelado</option>
-            </select>
-            <select value={filtroCXCTipo} onChange={e => setFiltroCXCTipo(e.target.value as any)}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
-              <option value="">Todos los tipos</option>
-              <option value="PENSION_CARRITO">Pensión Carrito</option>
-              <option value="MEMBRESIA">Membresía</option>
-            </select>
-          </div>
-
-          {loadingC ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
-          ) : cuotasF.length === 0 ? (
-            <div className="card" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>💳</div>
-              <div style={{ fontWeight: 500 }}>Sin cuotas</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {cuotasF.map(c => {
-                const venc = vencida(c.fecha_vencimiento) && c.status === 'PENDIENTE'
-                const statusColor = c.status === 'PAGADO' ? '#15803d' : c.status === 'CANCELADO' ? '#64748b' : venc ? '#dc2626' : '#d97706'
-                const statusBg   = c.status === 'PAGADO' ? '#f0fdf4' : c.status === 'CANCELADO' ? '#f8fafc' : venc ? '#fef2f2' : '#fffbeb'
-                return (
-                  <div key={c.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: 180 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: '#1e293b' }}>{c.concepto}</div>
-                      <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                        {nc(c.cat_socios)}
-                        {c.fecha_vencimiento && (
-                          <span style={{ marginLeft: 8, color: venc ? '#dc2626' : '#94a3b8' }}>
-                            · {venc ? '⚠ Vencida' : 'Vence'} {new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: c.tipo === 'PENSION_CARRITO' ? '#ecfdf5' : '#eff6ff', color: c.tipo === 'PENSION_CARRITO' ? '#065f46' : '#1d4ed8', fontWeight: 600 }}>
-                        {c.tipo === 'PENSION_CARRITO' ? 'Pensión' : 'Membresía'}
-                      </span>
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: statusBg, color: statusColor, fontWeight: 600 }}>
-                        {c.status}
-                      </span>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: statusColor }}>{fmt$(c.monto_final)}</span>
-                      {c.status === 'PENDIENTE' && puedeEscribir && (
-                        <button onClick={() => setShowCobrar({ cuotas: [c], nombreSocio: nc(c.cat_socios) })}
-                          style={{ fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
-                          Cobrar
-                        </button>
-                      )}
-                    </div>
                   </div>
                 )
               })}

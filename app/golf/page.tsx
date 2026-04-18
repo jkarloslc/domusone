@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
-  Car, Lock, ArrowRight, BookOpen,
+  Car, Lock, ArrowRight, BookOpen, CreditCard,
 } from 'lucide-react'
 import DashLayout from '@/components/layout/DashLayout'
 
@@ -76,12 +76,23 @@ const MODULOS = [
   {
     key: 'carritos',
     label: 'Carritos',
-    desc: 'Pensiones, slots, CXC y cobros de membresía',
+    desc: 'Pensiones, slots y cobros mensuales o anuales',
     icon: Car,
     color: '#059669',
     bg: '#ecfdf5',
     border: '#a7f3d0',
     href: '/golf/carritos',
+    activo: true,
+  },
+  {
+    key: 'cxc',
+    label: 'CXC Golf',
+    desc: 'Cuentas por cobrar — membresías y pensiones de carrito',
+    icon: CreditCard,
+    color: '#0891b2',
+    bg: '#ecfeff',
+    border: '#a5f3fc',
+    href: '/golf/cxc',
     activo: true,
   },
   {
