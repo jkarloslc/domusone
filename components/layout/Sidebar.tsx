@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Home, ShoppingCart,
+  Home, Users, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
   MessageCircle, Truck, TrendingUp, Flag,
 } from 'lucide-react'
