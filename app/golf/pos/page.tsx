@@ -80,39 +80,36 @@ export default function POSPage() {
 
   // Stats del día
   const [statsHoy, setStatsHoy] = useState({ ventas: 0, total: 0, pendCorte: 0 })
+  const [dbError, setDbError]   = useState('')
 
   // ── Cargar centros de venta ─────────────────────────────
   useEffect(() => {
-    dbGolf.from('cat_centros_venta').select('*').eq('activo', true).order('orden')
+    if (!authUser) return   // esperar a que la sesión esté lista
+    dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden').eq('activo', true).order('orden')
       .then(({ data, error }) => {
-        if (error) { console.error('[POS] cat_centros_venta error:', error); return }
+        if (error) {
+          setDbError(`Error cat_centros_venta: ${error.message} | code: ${error.code} | hint: ${error.hint}`)
+          return
+        }
         const cs = (data as Centro[]) ?? []
-        // Si la tabla existe pero está vacía, insertar centros por defecto
         if (cs.length === 0) {
-          dbGolf.from('cat_centros_venta').insert([
-            { nombre: 'Green Fees',     descripcion: 'Cobro de rondas de golf',     orden: 1 },
-            { nombre: 'Carritos',       descripcion: 'Renta y servicio de carritos', orden: 2 },
-            { nombre: 'Tienda Proshop', descripcion: 'Venta de productos y equipos', orden: 3 },
-          ]).select()
-          .then(({ data: ins }) => {
-            const inserted = (ins as Centro[]) ?? []
-            setCentros(inserted)
-            if (inserted.length) setCentroActivo(inserted[0])
-          })
+          setDbError('cat_centros_venta sin registros activos')
         } else {
+          setDbError('')
           setCentros(cs)
-          if (cs.length) setCentroActivo(cs[0])
+          setCentroActivo(cs[0])
         }
       })
-  }, [])
+  }, [authUser])
 
   // ── Stats del día ────────────────────────────────────────
   const fetchStats = useCallback(async () => {
     const hoy = new Date().toISOString().split('T')[0]
-    const { data } = await dbGolf.from('ctrl_ventas')
-      .select('total, status, id_corte_fk')
+    const { data, error } = await dbGolf.from('ctrl_ventas')
+      .select('id, total, status, id_corte_fk')
       .eq('status', 'PAGADA')
       .gte('fecha', hoy + 'T00:00:00')
+    if (error) { console.error('[POS] fetchStats:', error); return }
     const rows = data ?? []
     setStatsHoy({
       ventas:    rows.length,
@@ -125,16 +122,15 @@ export default function POSPage() {
   const fetchVentas = useCallback(async () => {
     setLoadingV(true)
     let q = dbGolf.from('ctrl_ventas')
-      .select(`id, folio_dia, fecha, nombre_cliente, es_socio, total, subtotal, iva,
-        status, id_centro_fk, usuario_crea, num_impresiones, id_corte_fk, facturada,
-        cat_socios(nombre, apellido_paterno)`)
+      .select('id, folio_dia, fecha, nombre_cliente, es_socio, total, subtotal, iva, status, id_centro_fk, usuario_crea, num_impresiones, id_corte_fk, facturada')
       .order('fecha', { ascending: false })
       .limit(200)
     if (filtroStatus)  q = q.eq('status', filtroStatus)
     if (filtroCentro)  q = q.eq('id_centro_fk', Number(filtroCentro))
     if (filtroFecha)   q = q.gte('fecha', filtroFecha + 'T00:00:00').lte('fecha', filtroFecha + 'T23:59:59')
-    const { data } = await q
-    setVentas((data as Venta[]) ?? [])
+    const { data, error } = await q
+    if (error) { console.error('[POS] fetchVentas:', error) }
+    setVentas((data ?? []).map((v: any) => ({ ...v, cat_socios: null })) as Venta[])
     setLoadingV(false)
   }, [filtroStatus, filtroCentro, filtroFecha])
 
@@ -307,6 +303,13 @@ export default function POSPage() {
           <RefreshCw size={13} /> Actualizar
         </button>
       </div>
+
+      {/* Error de DB visible */}
+      {dbError && (
+        <div style={{ marginBottom: 16, padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, fontSize: 13, color: '#dc2626', fontFamily: 'monospace' }}>
+          ⚠ {dbError}
+        </div>
+      )}
 
       {/* Stats del día */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
