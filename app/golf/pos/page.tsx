@@ -84,10 +84,25 @@ export default function POSPage() {
   // ── Cargar centros de venta ─────────────────────────────
   useEffect(() => {
     dbGolf.from('cat_centros_venta').select('*').eq('activo', true).order('orden')
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { console.error('[POS] cat_centros_venta error:', error); return }
         const cs = (data as Centro[]) ?? []
-        setCentros(cs)
-        if (cs.length) setCentroActivo(cs[0])
+        // Si la tabla existe pero está vacía, insertar centros por defecto
+        if (cs.length === 0) {
+          dbGolf.from('cat_centros_venta').insert([
+            { nombre: 'Green Fees',     descripcion: 'Cobro de rondas de golf',     orden: 1 },
+            { nombre: 'Carritos',       descripcion: 'Renta y servicio de carritos', orden: 2 },
+            { nombre: 'Tienda Proshop', descripcion: 'Venta de productos y equipos', orden: 3 },
+          ]).select()
+          .then(({ data: ins }) => {
+            const inserted = (ins as Centro[]) ?? []
+            setCentros(inserted)
+            if (inserted.length) setCentroActivo(inserted[0])
+          })
+        } else {
+          setCentros(cs)
+          if (cs.length) setCentroActivo(cs[0])
+        }
       })
   }, [])
 
@@ -137,6 +152,22 @@ export default function POSPage() {
   // ── Fetch config ─────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
     setLoadingCfg(true)
+
+    // Asegurar fila en cfg_pos
+    const { data: cfgCheck } = await dbGolf.from('cfg_pos').select('id').limit(1)
+    if (!cfgCheck || cfgCheck.length === 0) {
+      await dbGolf.from('cfg_pos').insert({ razon_social: 'Club de Golf Balvanera', leyenda_ticket: '¡Gracias por su visita!' })
+    }
+
+    // Asegurar formas de pago
+    const { data: fpsCheck } = await dbGolf.from('cat_formas_pago_pos').select('id').limit(1)
+    if (!fpsCheck || fpsCheck.length === 0) {
+      await dbGolf.from('cat_formas_pago_pos').insert([
+        { nombre: 'Efectivo' }, { nombre: 'Tarjeta' }, { nombre: 'Transferencia' },
+        { nombre: 'Cargo a Cuenta' }, { nombre: 'Cortesía' },
+      ])
+    }
+
     const [{ data: prods }, { data: fps }, { data: cfg }] = await Promise.all([
       dbGolf.from('cat_productos_pos').select('*').order('nombre'),
       dbGolf.from('cat_formas_pago_pos').select('*').order('id'),
