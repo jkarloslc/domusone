@@ -65,13 +65,13 @@ const MODULOS = [
   {
     key: 'pos',
     label: 'Ventas / POS',
-    desc: 'Punto de venta, cortes de caja y cargos a cuenta',
+    desc: 'Punto de venta, cortes de caja y historial por socio',
     icon: ShoppingCart,
     color: '#dc2626',
     bg: '#fef2f2',
     border: '#fecaca',
     href: '/golf/pos',
-    activo: false,
+    activo: true,
   },
   {
     key: 'carritos',

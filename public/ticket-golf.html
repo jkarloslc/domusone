@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Golf</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px;
+      width: 72mm;
+      margin: 0 auto;
+      background: #fff;
+      color: #000;
+      padding: 4mm 2mm;
+    }
+    .center  { text-align: center; }
+    .right   { text-align: right; }
+    .bold    { font-weight: bold; }
+    .sm      { font-size: 10px; }
+    .lg      { font-size: 14px; }
+    .xl      { font-size: 18px; font-weight: bold; }
+    .divider { border-top: 1px dashed #000; margin: 3mm 0; }
+    .divider-solid { border-top: 1px solid #000; margin: 2mm 0; }
+
+    .header-logo { font-size: 15px; font-weight: bold; letter-spacing: 1px; }
+    .folio-box {
+      border: 1px solid #000;
+      display: inline-block;
+      padding: 1mm 4mm;
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin: 2mm 0;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    .items-header td { font-weight: bold; font-size: 10px; border-bottom: 1px solid #000; padding-bottom: 1mm; }
+    .item-row td { padding: 0.5mm 0; font-size: 11px; vertical-align: top; }
+    .item-name { max-width: 36mm; word-wrap: break-word; }
+    .item-qty  { width: 8mm;  text-align: center; }
+    .item-pu   { width: 14mm; text-align: right; }
+    .item-tot  { width: 14mm; text-align: right; font-weight: bold; }
+
+    .total-box {
+      border: 2px solid #000;
+      padding: 2mm 4mm;
+      margin: 2mm 0;
+    }
+    .total-box .label { font-size: 11px; }
+    .total-box .amount { font-size: 20px; font-weight: bold; }
+
+    .pago-row { display: flex; justify-content: space-between; }
+
+    .leyenda { font-size: 10px; text-align: center; margin-top: 2mm; }
+
+    @media print {
+      body { margin: 0; padding: 2mm 1mm; }
+      .no-print { display: none !important; }
+      @page { margin: 0; size: 80mm auto; }
+    }
+
+    .btn-print {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: #059669;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .btn-print:hover { background: #047857; }
+  </style>
+</head>
+<body>
+
+  <!-- Cabecera del club -->
+  <div class="center">
+    <div class="header-logo" id="t-razon">CLUB DE GOLF</div>
+    <div class="sm" id="t-municipio"></div>
+    <div class="sm" id="t-direccion"></div>
+    <div class="sm" id="t-rfc"></div>
+    <div class="sm" id="t-tel"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Folio y centro -->
+  <div class="center">
+    <div class="sm" id="t-centro" style="font-weight:bold;text-transform:uppercase;letter-spacing:1px"></div>
+    <div class="folio-box" id="t-folio">#000000</div>
+    <div class="sm">Folio del día: <span id="t-folio-dia"></span></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Datos de la venta -->
+  <table>
+    <tr><td class="bold sm">Fecha:</td><td class="sm right" id="t-fecha"></td></tr>
+    <tr><td class="bold sm">Cliente:</td><td class="sm right" id="t-cliente"></td></tr>
+    <tr><td class="bold sm">Cajero:</td><td class="sm right" id="t-cajero"></td></tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <!-- Productos -->
+  <table>
+    <thead>
+      <tr class="items-header">
+        <td class="item-name">Concepto</td>
+        <td class="item-qty">Cant</td>
+        <td class="item-pu">P/U</td>
+        <td class="item-tot">Total</td>
+      </tr>
+    </thead>
+    <tbody id="t-items"></tbody>
+  </table>
+
+  <div class="divider-solid"></div>
+
+  <!-- Desglose -->
+  <table style="margin-bottom:1mm">
+    <tr>
+      <td class="sm">Subtotal:</td>
+      <td class="sm right" id="t-subtotal"></td>
+    </tr>
+    <tr id="row-iva" style="display:none">
+      <td class="sm">IVA:</td>
+      <td class="sm right" id="t-iva"></td>
+    </tr>
+  </table>
+
+  <!-- Total destacado -->
+  <div class="total-box center">
+    <div class="label">TOTAL</div>
+    <div class="amount" id="t-total">$0.00</div>
+  </div>
+
+  <!-- Formas de pago -->
+  <div class="divider"></div>
+  <div class="bold sm center" style="margin-bottom:1mm">FORMA DE PAGO</div>
+  <div id="t-pagos"></div>
+
+  <div class="divider"></div>
+
+  <!-- Leyenda -->
+  <div class="leyenda" id="t-leyenda">¡Gracias por su visita!</div>
+
+  <!-- Botón de impresión (no se imprime) -->
+  <button class="btn-print no-print" onclick="window.print()">🖨 Imprimir</button>
+
+  <script>
+    const fmt = n => '$' + parseFloat(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })
+    const fmtFecha = d => new Date(d).toLocaleString('es-MX', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+
+    const params = new URLSearchParams(window.location.search)
+    const dataParam = params.get('data')
+    const autoPrint = params.get('print') === '1'
+
+    if (dataParam) {
+      try {
+        const d = JSON.parse(decodeURIComponent(dataParam))
+        renderTicket(d)
+        if (autoPrint) setTimeout(() => window.print(), 400)
+      } catch(e) {
+        document.body.innerHTML = '<p style="color:red;padding:20px">Error al cargar datos del ticket.</p>'
+      }
+    } else {
+      document.body.innerHTML = '<p style="padding:20px;color:#888">Sin datos de ticket.</p>'
+    }
+
+    function renderTicket(d) {
+      set('t-razon',     d.razon_social || 'CLUB DE GOLF')
+      set('t-municipio', d.municipio || '')
+      set('t-direccion', d.direccion || '')
+      set('t-rfc',       d.rfc ? 'RFC: ' + d.rfc : '')
+      set('t-tel',       d.telefono ? 'Tel: ' + d.telefono : '')
+      set('t-centro',    d.centro || '')
+      set('t-folio',     '#' + String(d.id || 0).padStart(6, '0'))
+      set('t-folio-dia', d.folio_dia || '—')
+      set('t-fecha',     d.fecha ? fmtFecha(d.fecha) : '—')
+      set('t-cliente',   d.cliente || 'Público en General')
+      set('t-cajero',    d.cajero || '—')
+      set('t-leyenda',   d.leyenda || '¡Gracias por su visita!')
+
+      // Items
+      const tbody = document.getElementById('t-items')
+      let totalIva = 0
+      ;(d.items || []).forEach(item => {
+        totalIva += parseFloat(item.iva || 0)
+        const tr = document.createElement('tr')
+        tr.className = 'item-row'
+        tr.innerHTML = `
+          <td class="item-name">${item.concepto}</td>
+          <td class="item-qty">${parseFloat(item.cantidad || 1).toLocaleString('es-MX', {maximumFractionDigits:2})}</td>
+          <td class="item-pu">${fmt(item.precio_unitario)}</td>
+          <td class="item-tot">${fmt(item.total)}</td>
+        `
+        tbody.appendChild(tr)
+      })
+
+      set('t-subtotal', fmt(d.subtotal))
+      if (totalIva > 0) {
+        document.getElementById('row-iva').style.display = ''
+        set('t-iva', fmt(totalIva))
+      }
+      set('t-total', fmt(d.total))
+
+      // Formas de pago
+      const pagosEl = document.getElementById('t-pagos')
+      ;(d.pagos || []).forEach(p => {
+        const div = document.createElement('div')
+        div.className = 'pago-row sm'
+        div.innerHTML = `<span>${p.forma}</span><span>${fmt(p.monto)}</span>`
+        pagosEl.appendChild(div)
+      })
+    }
+
+    function set(id, val) {
+      const el = document.getElementById(id)
+      if (el) el.textContent = val
+    }
+  </script>
+</body>
+</html>
