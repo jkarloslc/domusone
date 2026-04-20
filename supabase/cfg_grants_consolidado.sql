@@ -7,24 +7,25 @@
 GRANT USAGE ON SCHEMA cfg TO anon;
 GRANT USAGE ON SCHEMA cfg TO authenticated;
 
--- 2. Tablas — ALL para ambos roles
-GRANT ALL ON cfg.areas                  TO anon, authenticated;
-GRANT ALL ON cfg.centros_costo          TO anon, authenticated;
-GRANT ALL ON cfg.centros_ingreso        TO anon, authenticated;
-GRANT ALL ON cfg.clasificacion          TO anon, authenticated;
-GRANT ALL ON cfg.configuracion          TO anon, authenticated;
-GRANT ALL ON cfg.cuentas_bancarias      TO anon, authenticated;
-GRANT ALL ON cfg.cuotas_estandar        TO anon, authenticated;
-GRANT ALL ON cfg.equipos                TO anon, authenticated;
-GRANT ALL ON cfg.formas_pago            TO anon, authenticated;
-GRANT ALL ON cfg.frentes                TO anon, authenticated;
-GRANT ALL ON cfg.frentes_ingreso        TO anon, authenticated;
-GRANT ALL ON cfg.marcas_vehiculos       TO anon, authenticated;
-GRANT ALL ON cfg.origenes_incidencia    TO anon, authenticated;
-GRANT ALL ON cfg.secciones              TO anon, authenticated;
-GRANT ALL ON cfg.tipos_incidencia       TO anon, authenticated;
-GRANT ALL ON cfg.tipos_lote             TO anon, authenticated;
-GRANT ALL ON cfg.usuarios               TO anon, authenticated;
+-- 2. Tablas — ALL para ambos roles (tolerante: omite tablas inexistentes)
+DO $$
+DECLARE
+  t TEXT;
+  tables TEXT[] := ARRAY[
+    'areas','centros_costo','centros_ingreso','clasificacion',
+    'configuracion','cuentas_bancarias','cuotas_estandar','equipos',
+    'formas_pago','frentes','frentes_ingreso','marcas_vehiculos',
+    'origenes_incidencia','secciones','tipos_incidencia','tipos_lote','usuarios'
+  ];
+BEGIN
+  FOREACH t IN ARRAY tables LOOP
+    BEGIN
+      EXECUTE format('GRANT ALL ON cfg.%I TO anon, authenticated', t);
+    EXCEPTION WHEN undefined_table THEN
+      RAISE NOTICE 'Table cfg.% not found — skipped', t;
+    END;
+  END LOOP;
+END $$;
 
 -- 3. Secuencias (para INSERT con SERIAL / BIGSERIAL)
 --    Ejecutar solo las que existan en tu instancia.
