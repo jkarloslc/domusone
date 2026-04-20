@@ -17,8 +17,8 @@ export default function ReporteLotesPropietarios() {
         if (!rows.length) { setRows([]); setLoading(false); return }
 
         // Fetch lotes y propietarios por separado (cross-schema)
-        const loteIds = [...new Set(rows.map((r: any) => r.id_lote_fk).filter(Boolean))]
-        const propIds = [...new Set(rows.map((r: any) => r.id_propietario_fk).filter(Boolean))]
+        const loteIds = Array.from(new Set(rows.map((r: any) => r.id_lote_fk).filter(Boolean)))
+        const propIds = Array.from(new Set(rows.map((r: any) => r.id_propietario_fk).filter(Boolean)))
 
         const [{ data: lotesData }, { data: propsData }] = await Promise.all([
           dbCat.from('lotes').select('id, cve_lote, lote, tipo_lote, status_lote, id_seccion_fk').in('id', loteIds),

@@ -175,7 +175,6 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
       uso_cfdi:              receptor.uso_cfdi,
       metodo_pago:           cfdi.metodo_pago,
       forma_pago:            cfdi.forma_pago,
-      regimen_fiscal:        emisor.regimen_fiscal,
       subtotal,
       iva,
       total,

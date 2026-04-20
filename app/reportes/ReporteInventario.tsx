@@ -23,7 +23,7 @@ export default function ReporteInventario() {
     setAlms(alms ?? [])
 
     // Cargar artículos de los que hay inventario
-    const artIds = [...new Set((inv ?? []).map((i: any) => i.id_articulo_fk))]
+    const artIds = Array.from(new Set((inv ?? []).map((i: any) => i.id_articulo_fk)))
     const { data: arts } = artIds.length
       ? await dbComp.from('articulos').select('id, clave, nombre, unidad, categoria, stock_minimo, precio_ref').in('id', artIds)
       : { data: [] }

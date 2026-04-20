@@ -80,7 +80,7 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
         .select('id, nombre, apellido_paterno, apellido_materno, id_categoria_fk')
         .or(`nombre.ilike.%${socioSearch}%,apellido_paterno.ilike.%${socioSearch}%,numero_socio.ilike.%${socioSearch}%`)
         .eq('activo', true).limit(8)
-        .then(({ data }) => setSocios((data as Socio[]) ?? []))
+        .then(({ data }) => setSocios((data as unknown as Socio[]) ?? []))
     }, 300)
     return () => clearTimeout(t)
   }, [socioSearch])
@@ -422,7 +422,7 @@ export default function CXCGolfPage() {
     if (filtroStatus) q = q.eq('status', filtroStatus)
     if (filtroTipo)   q = q.eq('tipo', filtroTipo)
     const { data } = await q
-    setCuotas((data as Cuota[]) ?? [])
+    setCuotas((data as unknown as Cuota[]) ?? [])
 
     const { data: all } = await dbGolf.from('cxc_golf').select('status, monto_final, fecha_vencimiento')
     const allRows = all ?? []

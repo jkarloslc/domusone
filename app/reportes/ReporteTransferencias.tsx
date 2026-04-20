@@ -54,7 +54,7 @@ export default function ReporteTransferencias() {
       return
     }
     const { data: det } = await dbComp.from('transferencias_det').select('*').eq('id_transferencia_fk', id)
-    const artIds = [...new Set((det ?? []).map((d: any) => d.id_articulo_fk).filter(Boolean))]
+    const artIds = Array.from(new Set((det ?? []).map((d: any) => d.id_articulo_fk).filter(Boolean)))
     const { data: arts } = artIds.length
       ? await dbComp.from('articulos').select('id, clave, nombre, unidad').in('id', artIds)
       : { data: [] }

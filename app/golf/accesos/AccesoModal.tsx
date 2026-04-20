@@ -9,7 +9,7 @@ type Espacio = { id: number; nombre: string }
 type FormaJuego = { id: number; nombre: string }
 
 // Un acompañante puede ser familiar seleccionado, texto libre, o externo (consume pase)
-type Acomp = { tipo: 'familiar' | 'libre' | 'externo'; id_familiar?: number; nombre: string }
+type Acomp = { tipo: 'familiar' | 'libre' | 'externo'; id_familiar?: number; nombre: string; _pase_mov_id?: number | null; _origen_pago?: string | null }
 
 type Props = { onClose: () => void; onSaved: () => void }
 
@@ -62,7 +62,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
         .eq('activo', true)
         .or(`nombre.ilike.%${socioSearch}%,apellido_paterno.ilike.%${socioSearch}%,numero_socio.ilike.%${socioSearch}%,numero_tarjeta.ilike.%${socioSearch}%`)
         .limit(8)
-      setSocioResults((data as Socio[]) ?? [])
+      setSocioResults((data as unknown as Socio[]) ?? [])
       setBuscando(false)
     }, 300)
     return () => clearTimeout(t)

@@ -98,7 +98,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
       total_ventas:    totalVentas,
       total_cancelado: totalCancelado,
       total_neto:      totalVentas,
-      usuario:         authUser?.nombre ?? authUser?.email ?? 'sistema',
+      usuario:         authUser?.nombre ?? 'sistema',
       notas:           notas || null,
     }).select('id').single()
 
@@ -153,7 +153,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
           status:              'Confirmado',
           origen:              'POS_GOLF',
           notas:               `Folio corte Golf: #${corte.id}`,
-          usuario_crea:        authUser?.nombre ?? authUser?.email ?? 'sistema',
+          usuario_crea:        authUser?.nombre ?? 'sistema',
         }).select('id').single()
 
         // Guardar FK en el corte

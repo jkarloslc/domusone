@@ -25,7 +25,7 @@ export default function ReporteIncidenciasAsignado() {
       .then(({ data }) => {
         setIncidencias(data ?? [])
         // Extraer asignados únicos
-        const uniq = [...new Set((data ?? []).map((i: any) => i.responsable).filter(Boolean))] as string[]
+        const uniq = Array.from(new Set((data ?? []).map((i: any) => i.responsable).filter(Boolean))) as string[]
         setAsignados(uniq.sort())
         setLoading(false)
       })

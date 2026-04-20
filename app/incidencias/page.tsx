@@ -78,7 +78,7 @@ export default function IncidenciasPage() {
     if (error) { setLoading(false); return }
 
     // Cargar cve_lote por separado (cat schema)
-    const loteIds = [...new Set((data ?? []).filter(i => i.id_lote_fk).map(i => i.id_lote_fk))]
+    const loteIds = Array.from(new Set((data ?? []).filter(i => i.id_lote_fk).map(i => i.id_lote_fk)))
     const loteMap: Record<number, any> = {}
     if (loteIds.length) {
       const { data: lotes } = await dbCat.from('lotes').select('id, cve_lote, lote').in('id', loteIds)

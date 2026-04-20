@@ -720,7 +720,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
   const [ops,       setOps]       = useState<any[]>([])
   const [opSearch,  setOpSearch]  = useState('')
   const [selectedOps, setSelectedOps] = useState<any[]>([])
-  const [evidencias, setEvidencias] = useState<{ url: string; nombre: string }[]>([])
+  const [evidencias, setEvidencias] = useState<{ url: string; nombre: string; linkId?: number }[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
@@ -762,7 +762,6 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
           id:          lo.id_op_fk,
           folio:       lo.ordenes_pago?.folio ?? '',
           concepto:    lo.ordenes_pago?.concepto ?? '',
-          monto: lo.ordenes_pago?.monto ?? 0,
           monto:       lo.monto ?? lo.ordenes_pago?.monto ?? 0,
           linkId:      lo.id,
         })))
@@ -852,7 +851,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
     }
 
     // Insertar evidencias nuevas (sin URL ya guardada como linkId)
-    const newEvs = evidencias.filter(ev => !ev['linkId'])
+    const newEvs = evidencias.filter(ev => !ev.linkId)
     if (newEvs.length && bitId) {
       await dbCtrl.from('bitacora_equipo_evidencias').insert(
         newEvs.map(ev => ({ id_bitacora_fk: bitId, url: ev.url, nombre: ev.nombre }))

@@ -36,7 +36,7 @@ export default function ReporteKardex() {
     setRows(data ?? [])
 
     // Cargar nombres de artículos que aparecen en los movimientos
-    const artIds = [...new Set((data ?? []).map((m: any) => m.id_articulo_fk).filter(Boolean))]
+    const artIds = Array.from(new Set((data ?? []).map((m: any) => m.id_articulo_fk).filter(Boolean)))
     if (artIds.length) {
       const { data: arts } = await dbComp.from('articulos')
         .select('id, clave, nombre, unidad').in('id', artIds)

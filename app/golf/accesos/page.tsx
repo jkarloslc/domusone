@@ -60,7 +60,7 @@ export default function AccesosPage() {
     if (filtroEspacio) q = q.eq('id_espacio_fk', filtroEspacio)
 
     const { data } = await q
-    const all = (data as Acceso[]) ?? []
+    const all = (data as unknown as Acceso[]) ?? []
 
     const activos     = all.filter(a => !a.fecha_salida).length
     const completados = all.filter(a =>  a.fecha_salida).length

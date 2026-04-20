@@ -43,13 +43,13 @@ export default function ReporteIncidenciasSeccion() {
     if (!incs?.length) { setRows([]); setLoading(false); return }
 
     // 2. Obtener lotes de las incidencias (solo los que tienen id_lote_fk)
-    const loteIds = [...new Set(incs.filter(i => i.id_lote_fk).map(i => i.id_lote_fk))]
+    const loteIds = Array.from(new Set(incs.filter(i => i.id_lote_fk).map(i => i.id_lote_fk)))
     const { data: lotes } = loteIds.length
       ? await dbCat.from('lotes').select('id, cve_lote, lote, id_seccion_fk').in('id', loteIds)
       : { data: [] }
 
     // 3. Obtener secciones de esos lotes
-    const secIds = [...new Set((lotes ?? []).filter(l => l.id_seccion_fk).map(l => l.id_seccion_fk))]
+    const secIds = Array.from(new Set((lotes ?? []).filter(l => l.id_seccion_fk).map(l => l.id_seccion_fk)))
     const { data: secs } = secIds.length
       ? await dbCfg.from('secciones').select('id, nombre').in('id', secIds)
       : { data: [] }

@@ -73,7 +73,7 @@ export default function ReservacionesPage() {
     if (!mostrarCanceladas) q = q.eq('cancelado', false)
 
     const { data } = await q
-    const all = (data as Reservacion[]) ?? []
+    const all = (data as unknown as Reservacion[]) ?? []
 
     const activas = all.filter(r => !r.cancelado)
     setStats({

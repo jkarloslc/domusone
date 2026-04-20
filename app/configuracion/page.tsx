@@ -70,7 +70,7 @@ export default function ConfiguracionPage() {
     reload()
   }
 
-  const grupos = [...new Set(rows.map(r => r.grupo))]
+  const grupos = Array.from(new Set(rows.map(r => r.grupo)))
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out', maxWidth: 700 }}>

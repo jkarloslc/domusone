@@ -81,7 +81,7 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
             <InfoRow label="Propietario" value={r.propietario} />
             <InfoRow label="Fecha Recibo" value={fmtFecha(r.fecha_recibo)} />
             <InfoRow label="Fecha Pago" value={fmtFecha(r.fecha_pago)} />
-            {r.fecha_de && <InfoRow label="Período" value={`${fmtFecha(r.fecha_de)} – ${fmtFecha(r.fecha_a)}`} />}
+            {r.fecha_de && <InfoRow label="Período" value={`${fmtFecha(r.fecha_de)} – ${fmtFecha(r.fecha_a ?? null)}`} />}
             <InfoRow label="Empresa" value={r.empresa} />
             {r.rfc_factura && <InfoRow label="RFC" value={r.rfc_factura} mono />}
             {r.folio_factura && <InfoRow label="Folio Factura" value={r.folio_factura} mono />}
@@ -172,7 +172,7 @@ function InfoRow({ label, value, gold, mono }: { label: string; value?: string |
   return (
     <div>
       <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 13, color: gold ? 'var(--gold-light)' : 'var(--text-primary)', fontFamily: mono ? 'monospace' : 'inherit', fontFamily2: gold ? 'var(--font-display)' : 'inherit' }}>{value}</div>
+      <div style={{ fontSize: 13, color: gold ? 'var(--gold-light)' : 'var(--text-primary)', fontFamily: gold ? 'var(--font-display)' : mono ? 'monospace' : 'inherit' }}>{value}</div>
     </div>
   )
 }

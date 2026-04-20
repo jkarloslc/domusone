@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import CarritoModal from './CarritoModal'
 import PensionModal from './PensionModal'
@@ -182,7 +182,7 @@ export default function CarritosPage() {
       .eq('status', 'PENDIENTE')
       .order('fecha_vencimiento', { ascending: true })
     setShowCobrar({
-      cuotas: (data as Cuota[]) ?? [],
+      cuotas: (data as unknown as Cuota[]) ?? [],
       nombreSocio: nc(pension.cat_socios),
     })
   }
@@ -221,7 +221,7 @@ export default function CarritosPage() {
           </h1>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-ghost" onClick={() => { fetchPensiones(); if (tab === 'cxc') fetchCXC() }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button className="btn-ghost" onClick={() => { fetchPensiones() }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
           </button>
           {puedeEscribir && tab === 'pensiones' && (
@@ -457,7 +457,7 @@ export default function CarritosPage() {
           cuotas={showCobrar.cuotas}
           nombreSocio={showCobrar.nombreSocio}
           onClose={() => setShowCobrar(null)}
-          onSaved={() => { setShowCobrar(null); fetchPensiones(); if (tab === 'cxc') fetchCXC() }}
+          onSaved={() => { setShowCobrar(null); fetchPensiones() }}
         />
       )}
     </div>

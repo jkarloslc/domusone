@@ -368,7 +368,7 @@ function EnvioModal({ comunicado, authUser, onClose }:
       .eq('activo', true)
       .then(async ({ data: emailRows }) => {
         const rows = emailRows ?? []
-        const propIds = [...new Set(rows.map((r: any) => r.id_propietario_fk).filter(Boolean))]
+        const propIds = Array.from(new Set(rows.map((r: any) => r.id_propietario_fk).filter(Boolean)))
         let propMap: Record<number, string> = {}
         if (propIds.length) {
           const { data: props } = await dbCat.from('propietarios')

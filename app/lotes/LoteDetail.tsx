@@ -44,7 +44,7 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
     }
   }, [(lote as any).id_tipo_lote_fk])
 
-  const tipoDisplay = tipoNombre ?? lote.tipo_lote ?? 'Sin tipo'
+  const tipoDisplay = tipoNombre ?? (lote as any).tipo_lote ?? 'Sin tipo'
   const fmt = (v: number | null) =>
     v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 

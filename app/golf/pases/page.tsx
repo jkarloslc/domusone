@@ -93,7 +93,7 @@ export default function PasesPage() {
     const pasesPorSocio: Record<number, LotePase[]> = {}
     for (const p of (pasesData ?? [])) {
       if (!pasesPorSocio[p.id_socio_fk]) pasesPorSocio[p.id_socio_fk] = []
-      pasesPorSocio[p.id_socio_fk].push(p as LotePase)
+      pasesPorSocio[p.id_socio_fk].push(p as unknown as LotePase)
     }
 
     // Solo socios con pases (o todos si !soloActivos)
@@ -132,7 +132,7 @@ export default function PasesPage() {
       .eq('id_socio_fk', socioId)
       .order('created_at', { ascending: false })
       .limit(20)
-    setMovimientos(m => ({ ...m, [socioId]: (data as Movimiento[]) ?? [] }))
+    setMovimientos(m => ({ ...m, [socioId]: (data as unknown as Movimiento[]) ?? [] }))
     setLoadingMov(null)
   }
 

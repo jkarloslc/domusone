@@ -48,7 +48,7 @@ export default function HistorialPropietarios({ loteId, cveLote, onClose }: Prop
     const rows = plData ?? []
 
     // Paso 2: cargar propietarios de cat schema por separado
-    const propIds = [...new Set(rows.map((r: any) => r.id_propietario_fk).filter(Boolean))]
+    const propIds = Array.from(new Set(rows.map((r: any) => r.id_propietario_fk).filter(Boolean)))
     let propsMap: Record<number, any> = {}
     if (propIds.length) {
       const { data: propsData } = await dbCat

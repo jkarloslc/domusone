@@ -171,7 +171,7 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
       total:          totales.total,
       descuento:      0,
       status:         'PAGADA',
-      usuario_crea:   authUser?.nombre ?? authUser?.email ?? 'sistema',
+      usuario_crea:   authUser?.nombre ?? 'sistema',
     }).select('id, folio_dia').single()
 
     if (e1 || !venta) { setError(e1?.message ?? 'Error al crear venta'); setSaving(false); return }
@@ -223,7 +223,7 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
       folio_dia:   folioDia,
       fecha:       new Date().toISOString(),
       cliente:     socioSelec ? nc(socioSelec) : 'Público en General',
-      cajero:      authUser?.nombre ?? authUser?.email ?? '—',
+      cajero:      authUser?.nombre ?? '—',
       centro:      nombreCentro,
       razon_social: cfg?.razon_social ?? 'Club de Golf',
       municipio:   cfg?.municipio ?? '',

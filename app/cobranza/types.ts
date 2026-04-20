@@ -21,6 +21,8 @@ export type Recibo = {
   folio_fiscal: string | null
   rfc_factura: string | null
   forma_pago_2025: string | null
+  fecha_de?: string | null
+  fecha_a?: string | null
   created_at: string
   lotes?: { cve_lote: string | null; lote: number | null }
 }
@@ -66,6 +68,7 @@ export type ReciboPago = {
   monto: number
   referencia: string | null
   fecha: string | null
+  forma_nombre?: string | null
 }
 
 export type CuotaLote = {

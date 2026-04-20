@@ -73,7 +73,7 @@ export default function PaseModal({ socioInicial, onClose, onSaved }: Props) {
         .eq('activo', true)
         .or(`nombre.ilike.%${socioSearch}%,apellido_paterno.ilike.%${socioSearch}%,numero_socio.ilike.%${socioSearch}%`)
         .limit(8)
-      setSocioResults((data as Socio[]) ?? [])
+      setSocioResults((data as unknown as Socio[]) ?? [])
       setBuscando(false)
     }, 300)
     return () => clearTimeout(t)
