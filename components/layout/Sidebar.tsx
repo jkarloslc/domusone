@@ -361,7 +361,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             DomusOne
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-            Administración Residencial
+            Golf & Residencial
           </div>
         </div>
         <button onClick={onClose} className="sidebar-close-btn"
