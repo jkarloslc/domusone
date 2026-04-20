@@ -215,39 +215,38 @@ export default function MiembrosPage() {
         })}
       </div>
 
-      {/* Stats — por categoría */}
+      {/* Stats — por categoría (grid compacto) */}
       {statsCat.length > 0 && (
-        <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-          {statsCat.map((cat, idx) => {
-            const palette = CAT_COLORS[idx % CAT_COLORS.length]
-            const activo  = filtroCat === cat.id
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setFiltroCat(activo ? '' : cat.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
-                  border: `1.5px solid ${activo ? palette.color : palette.color + '44'}`,
-                  background: activo ? palette.bg : '#fff',
-                  transition: 'all 0.15s', outline: 'none',
-                  boxShadow: activo ? `0 0 0 3px ${palette.color}22` : 'none',
-                }}>
-                <Tag size={12} style={{ color: palette.color, flexShrink: 0 }} />
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: 11, color: palette.color, fontWeight: 600, lineHeight: 1.2 }}>{cat.nombre}</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: palette.color, lineHeight: 1.1 }}>{cat.count}</div>
-                </div>
-              </button>
-            )
-          })}
-          {filtroCat !== '' && (
-            <button
-              onClick={() => setFiltroCat('')}
-              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, color: '#64748b' }}>
-              × Quitar filtro
-            </button>
-          )}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+            Por categoría {filtroCat !== '' && <span style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }} onClick={() => setFiltroCat('')}>· limpiar filtro ×</span>}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
+            {statsCat.map((cat, idx) => {
+              const palette = CAT_COLORS[idx % CAT_COLORS.length]
+              const activo  = filtroCat === cat.id
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setFiltroCat(activo ? '' : cat.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
+                    border: `1.5px solid ${activo ? palette.color : palette.color + '33'}`,
+                    background: activo ? palette.bg : '#fafafa',
+                    transition: 'all 0.15s', outline: 'none', textAlign: 'left',
+                    boxShadow: activo ? `0 0 0 2px ${palette.color}22` : 'none',
+                  }}>
+                  <div style={{ fontSize: 11, color: activo ? palette.color : '#64748b', fontWeight: activo ? 600 : 400, lineHeight: 1.3, flex: 1, marginRight: 6 }}>
+                    {cat.nombre}
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: palette.color, lineHeight: 1, flexShrink: 0 }}>
+                    {cat.count}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
