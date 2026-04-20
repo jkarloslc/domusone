@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { dbGolf } from '@/lib/supabase'
-import { X, Save, Loader, Plus, Trash2, Users } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { supabase, dbGolf } from '@/lib/supabase'
+import { X, Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck } from 'lucide-react'
 
 export type Socio = {
   id: number
@@ -20,6 +20,7 @@ export type Socio = {
   numero_tarjeta: string | null
   activo: boolean
   observaciones: string | null
+  identificacion_url: string | null
   created_at: string
   // joins
   cat_categorias_socios?: { nombre: string } | null
@@ -37,6 +38,19 @@ type Familiar = {
   activo: boolean
 }
 
+type Contrato = {
+  id: number
+  id_socio_fk: number
+  anio: number
+  fecha_inicio: string | null
+  fecha_fin: string | null
+  monto: number | null
+  vigente: boolean
+  archivo_url: string | null
+  notas: string | null
+  created_at: string
+}
+
 const PARENTESCOS = ['Cónyuge', 'Hijo', 'Hija', 'Padre', 'Madre', 'Hermano', 'Hermana', 'Otro']
 
 type FamiliarForm = {
@@ -51,13 +65,29 @@ const FAMILIAR_VACIO: FamiliarForm = {
   nombre: '', apellido_paterno: '', apellido_materno: '', parentesco: '', fecha_nacimiento: '',
 }
 
+type ContratoForm = {
+  anio: string
+  fecha_inicio: string
+  fecha_fin: string
+  monto: string
+  notas: string
+}
+
+const CONTRATO_VACIO: ContratoForm = {
+  anio: String(new Date().getFullYear()),
+  fecha_inicio: '',
+  fecha_fin: '',
+  monto: '',
+  notas: '',
+}
+
 type Props = {
   socio: Socio | null
   onClose: () => void
   onSaved: () => void
 }
 
-const TABS = ['Datos Personales', 'Membresía', 'Familiares', 'Notas']
+const TABS = ['Datos Personales', 'Membresía', 'Familiares', 'Identificación', 'Contratos', 'Notas']
 
 export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const isNew = !socio
@@ -74,6 +104,26 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const [errorFam, setErrorFam]         = useState('')
   const [nuevoFam, setNuevoFam]         = useState<FamiliarForm>(FAMILIAR_VACIO)
   const [eliminando, setEliminando]     = useState<number | null>(null)
+
+  // ── Identificación ──
+  const fileInputRef   = useRef<HTMLInputElement>(null)
+  const [idUrl, setIdUrl]               = useState<string | null>(socio?.identificacion_url ?? null)
+  const [uploadingId, setUploadingId]   = useState(false)
+  const [uploadError, setUploadError]   = useState('')
+  const [idSignedUrl, setIdSignedUrl]   = useState<string | null>(null)
+
+  // ── Contratos ──
+  const [contratos, setContratos]       = useState<Contrato[]>([])
+  const [loadingCon, setLoadingCon]     = useState(false)
+  const [showFormCon, setShowFormCon]   = useState(false)
+  const [savingCon, setSavingCon]       = useState(false)
+  const [errorCon, setErrorCon]         = useState('')
+  const [nuevoCon, setNuevoCon]         = useState<ContratoForm>(CONTRATO_VACIO)
+  const [marcandoVigente, setMarcandoVigente] = useState<number | null>(null)
+  const [eliminandoCon, setEliminandoCon]     = useState<number | null>(null)
+  const fileConRef = useRef<HTMLInputElement>(null)
+  const [uploadingCon, setUploadingCon] = useState(false)
+  const [archivoConUrl, setArchivoConUrl] = useState('')
 
   const [form, setForm] = useState({
     numero_socio:      socio?.numero_socio      ?? '',
@@ -93,14 +143,24 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     observaciones:     socio?.observaciones     ?? '',
   })
 
-  const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set    = (k: keyof typeof form, v: any)   => setForm(f => ({ ...f, [k]: v }))
   const setFam = (k: keyof FamiliarForm, v: string) => setNuevoFam(f => ({ ...f, [k]: v }))
+  const setCon = (k: keyof ContratoForm, v: string) => setNuevoCon(f => ({ ...f, [k]: v }))
 
   useEffect(() => {
     dbGolf.from('cat_categorias_socios').select('id, nombre, descripcion').eq('activo', true).order('nombre')
       .then(({ data }) => setCategorias(data ?? []))
   }, [])
 
+  // ── Carga firmada de identificación ──
+  useEffect(() => {
+    if (tab === 3 && idUrl) {
+      supabase.storage.from('golf-docs').createSignedUrl(idUrl, 3600)
+        .then(({ data }) => setIdSignedUrl(data?.signedUrl ?? null))
+    }
+  }, [tab, idUrl])
+
+  // ── Familiares ──
   const fetchFamiliares = async () => {
     if (!socio) return
     setLoadingFam(true)
@@ -113,30 +173,48 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     setLoadingFam(false)
   }
 
-  // Cargar familiares al entrar al tab
   useEffect(() => {
     if (tab === 2 && !isNew) fetchFamiliares()
   }, [tab])
 
+  // ── Contratos ──
+  const fetchContratos = async () => {
+    if (!socio) return
+    setLoadingCon(true)
+    const { data } = await dbGolf
+      .from('ctrl_contratos_membresia')
+      .select('id, id_socio_fk, anio, fecha_inicio, fecha_fin, monto, vigente, archivo_url, notas, created_at')
+      .eq('id_socio_fk', socio.id)
+      .order('anio', { ascending: false })
+    setContratos((data as Contrato[]) ?? [])
+    setLoadingCon(false)
+  }
+
+  useEffect(() => {
+    if (tab === 4 && !isNew) fetchContratos()
+  }, [tab])
+
+  // ── handleSave (datos generales) ──
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
     setSaving(true); setError('')
     const payload = {
-      numero_socio:      form.numero_socio      || null,
-      nombre:            form.nombre.trim(),
-      apellido_paterno:  form.apellido_paterno  || null,
-      apellido_materno:  form.apellido_materno  || null,
-      id_categoria_fk:   form.id_categoria_fk   || null,
-      email:             form.email             || null,
-      telefono:          form.telefono          || null,
-      fecha_nacimiento:  form.fecha_nacimiento  || null,
-      fecha_alta:        form.fecha_alta        || null,
-      fecha_vencimiento: form.fecha_vencimiento || null,
-      rfc:               form.rfc               || null,
-      curp:              form.curp              || null,
-      numero_tarjeta:    form.numero_tarjeta    || null,
-      activo:            form.activo,
-      observaciones:     form.observaciones     || null,
+      numero_socio:       form.numero_socio      || null,
+      nombre:             form.nombre.trim(),
+      apellido_paterno:   form.apellido_paterno  || null,
+      apellido_materno:   form.apellido_materno  || null,
+      id_categoria_fk:    form.id_categoria_fk   || null,
+      email:              form.email             || null,
+      telefono:           form.telefono          || null,
+      fecha_nacimiento:   form.fecha_nacimiento  || null,
+      fecha_alta:         form.fecha_alta        || null,
+      fecha_vencimiento:  form.fecha_vencimiento || null,
+      rfc:                form.rfc               || null,
+      curp:               form.curp              || null,
+      numero_tarjeta:     form.numero_tarjeta    || null,
+      activo:             form.activo,
+      observaciones:      form.observaciones     || null,
+      identificacion_url: idUrl,
     }
     const { error: err } = isNew
       ? await dbGolf.from('cat_socios').insert(payload)
@@ -145,6 +223,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     onSaved()
   }
 
+  // ── Familiares CRUD ──
   const handleGuardarFamiliar = async () => {
     if (!nuevoFam.nombre.trim()) { setErrorFam('El nombre es obligatorio'); return }
     setSavingFam(true); setErrorFam('')
@@ -157,9 +236,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       fecha_nacimiento: nuevoFam.fecha_nacimiento || null,
     })
     if (err) { setErrorFam(err.message); setSavingFam(false); return }
-    setNuevoFam(FAMILIAR_VACIO)
-    setShowFormFam(false)
-    setSavingFam(false)
+    setNuevoFam(FAMILIAR_VACIO); setShowFormFam(false); setSavingFam(false)
     fetchFamiliares()
   }
 
@@ -171,8 +248,81 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     fetchFamiliares()
   }
 
+  // ── Identificación upload ──
+  const handleUploadId = async (file: File) => {
+    if (!socio) return
+    setUploadingId(true); setUploadError('')
+    const ext  = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+    const path = `identificaciones/socio_${socio.id}_${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('golf-docs').upload(path, file, { upsert: true })
+    if (upErr) { setUploadError(upErr.message); setUploadingId(false); return }
+    // Guardar path en BD
+    await dbGolf.from('cat_socios').update({ identificacion_url: path }).eq('id', socio.id)
+    setIdUrl(path)
+    const { data: signed } = await supabase.storage.from('golf-docs').createSignedUrl(path, 3600)
+    setIdSignedUrl(signed?.signedUrl ?? null)
+    setUploadingId(false)
+  }
+
+  const handleRemoveId = async () => {
+    if (!socio || !idUrl) return
+    if (!confirm('¿Eliminar la identificación guardada?')) return
+    await supabase.storage.from('golf-docs').remove([idUrl])
+    await dbGolf.from('cat_socios').update({ identificacion_url: null }).eq('id', socio.id)
+    setIdUrl(null); setIdSignedUrl(null)
+  }
+
+  // ── Contratos CRUD ──
+  const handleUploadContrato = async (file: File) => {
+    if (!socio) return
+    setUploadingCon(true)
+    const ext  = file.name.split('.').pop()?.toLowerCase() ?? 'pdf'
+    const path = `contratos/socio_${socio.id}_${nuevoCon.anio}_${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('golf-docs').upload(path, file, { upsert: true })
+    if (!upErr) setArchivoConUrl(path)
+    setUploadingCon(false)
+  }
+
+  const handleGuardarContrato = async () => {
+    if (!nuevoCon.anio) { setErrorCon('El año es obligatorio'); return }
+    setSavingCon(true); setErrorCon('')
+    const { error: err } = await dbGolf.from('ctrl_contratos_membresia').insert({
+      id_socio_fk:  socio!.id,
+      anio:         Number(nuevoCon.anio),
+      fecha_inicio: nuevoCon.fecha_inicio || null,
+      fecha_fin:    nuevoCon.fecha_fin    || null,
+      monto:        nuevoCon.monto        ? Number(nuevoCon.monto) : null,
+      vigente:      false,
+      archivo_url:  archivoConUrl         || null,
+      notas:        nuevoCon.notas        || null,
+    })
+    if (err) { setErrorCon(err.message); setSavingCon(false); return }
+    setNuevoCon(CONTRATO_VACIO); setArchivoConUrl(''); setShowFormCon(false); setSavingCon(false)
+    fetchContratos()
+  }
+
+  const handleMarcarVigente = async (id: number) => {
+    if (!socio) return
+    setMarcandoVigente(id)
+    // Quitar vigente de todos los contratos del socio, luego marcar el seleccionado
+    await dbGolf.from('ctrl_contratos_membresia').update({ vigente: false }).eq('id_socio_fk', socio.id)
+    await dbGolf.from('ctrl_contratos_membresia').update({ vigente: true }).eq('id', id)
+    setMarcandoVigente(null)
+    fetchContratos()
+  }
+
+  const handleEliminarContrato = async (id: number) => {
+    if (!confirm('¿Eliminar este contrato?')) return
+    setEliminandoCon(id)
+    await dbGolf.from('ctrl_contratos_membresia').delete().eq('id', id)
+    setEliminandoCon(null)
+    fetchContratos()
+  }
+
   const nombreCompleto = (f: Familiar) =>
     [f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ')
+
+  const isTabDisabled = (i: number) => (i === 2 || i === 3 || i === 4) && isNew
 
   const inputStyle = {
     width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
@@ -181,6 +331,9 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   }
   const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' as const }
 
+  // Footer: ocultar guardar en tabs Familiares (2), Identificación (3) y Contratos (4)
+  const showSaveBtn = tab !== 2 && tab !== 4
+
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
@@ -188,7 +341,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       zIndex: 1000, padding: 20,
     }}>
       <div style={{
-        background: '#fff', borderRadius: 16, width: '100%', maxWidth: 580,
+        background: '#fff', borderRadius: 16, width: '100%', maxWidth: 620,
         maxHeight: '92vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
       }}>
@@ -203,14 +356,14 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
             </button>
           </div>
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: 0 }}>
+          <div style={{ display: 'flex', gap: 0, overflowX: 'auto' }}>
             {TABS.map((t, i) => {
-              const disabled = i === 2 && isNew
+              const disabled = isTabDisabled(i)
               return (
                 <button key={t} onClick={() => !disabled && setTab(i)} style={{
-                  padding: '8px 16px', fontSize: 13, background: 'none', border: 'none',
+                  padding: '8px 14px', fontSize: 12, background: 'none', border: 'none',
                   cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-                  fontWeight: tab === i ? 600 : 400,
+                  fontWeight: tab === i ? 600 : 400, whiteSpace: 'nowrap',
                   color: disabled ? '#cbd5e1' : tab === i ? '#2563eb' : '#94a3b8',
                   borderBottom: tab === i ? '2px solid #2563eb' : '2px solid transparent',
                   marginBottom: -1, transition: 'all 0.15s',
@@ -222,7 +375,15 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                       {familiares.length}
                     </span>
                   )}
-                  {i === 2 && isNew && (
+                  {i === 3 && !isNew && idUrl && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: tab === 3 ? '#dcfce7' : '#f0fdf4', color: '#16a34a' }}>✓</span>
+                  )}
+                  {i === 4 && !isNew && contratos.some(c => c.vigente) && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: tab === 4 ? '#dbeafe' : '#f1f5f9', color: tab === 4 ? '#1d4ed8' : '#64748b' }}>
+                      {contratos.length}
+                    </span>
+                  )}
+                  {isTabDisabled(i) && (
                     <span style={{ fontSize: 9, color: '#cbd5e1', fontWeight: 400 }}>(guardar primero)</span>
                   )}
                 </button>
@@ -313,35 +474,26 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
           {/* ── Tab 2: Familiares ── */}
           {tab === 2 && !isNew && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-              {/* Header del tab */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Users size={15} style={{ color: '#2563eb' }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>
-                    Familiares del socio
-                  </span>
-                  {!loadingFam && (
-                    <span style={{ fontSize: 11, color: '#64748b' }}>({familiares.length})</span>
-                  )}
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Familiares del socio</span>
+                  {!loadingFam && <span style={{ fontSize: 11, color: '#64748b' }}>({familiares.length})</span>}
                 </div>
                 {!showFormFam && (
-                  <button
-                    onClick={() => { setShowFormFam(true); setErrorFam('') }}
+                  <button onClick={() => { setShowFormFam(true); setErrorFam('') }}
                     style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                     <Plus size={13} /> Agregar familiar
                   </button>
                 )}
               </div>
-
-              {/* Formulario nuevo familiar */}
               {showFormFam && (
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Nuevo familiar</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={labelStyle}>Nombre *</label>
-                      <input style={inputStyle} value={nuevoFam.nombre} onChange={e => setFam('nombre', e.target.value)} placeholder="Nombre(s)" autoFocus />
+                      <input style={inputStyle} value={nuevoFam.nombre} onChange={e => setFam('nombre', e.target.value)} autoFocus />
                     </div>
                     <div>
                       <label style={labelStyle}>Apellido Paterno</label>
@@ -364,19 +516,14 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                     </div>
                   </div>
                   {errorFam && (
-                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
-                      {errorFam}
-                    </div>
+                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errorFam}</div>
                   )}
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-                    <button
-                      onClick={() => { setShowFormFam(false); setNuevoFam(FAMILIAR_VACIO); setErrorFam('') }}
+                    <button onClick={() => { setShowFormFam(false); setNuevoFam(FAMILIAR_VACIO); setErrorFam('') }}
                       style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
                       Cancelar
                     </button>
-                    <button
-                      onClick={handleGuardarFamiliar}
-                      disabled={savingFam}
+                    <button onClick={handleGuardarFamiliar} disabled={savingFam}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#2563eb', color: '#fff', cursor: 'pointer', opacity: savingFam ? 0.7 : 1 }}>
                       {savingFam ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
                       Guardar
@@ -384,8 +531,6 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                   </div>
                 </div>
               )}
-
-              {/* Lista de familiares */}
               {loadingFam ? (
                 <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
               ) : familiares.length === 0 && !showFormFam ? (
@@ -397,27 +542,17 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {familiares.map(f => (
-                    <div key={f.id} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 14px', background: f.activo ? '#fff' : '#f8fafc',
-                      border: '1px solid #e2e8f0', borderRadius: 8, gap: 12,
-                      opacity: f.activo ? 1 : 0.6,
-                    }}>
+                    <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: f.activo ? '#fff' : '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, gap: 12, opacity: f.activo ? 1 : 0.6 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(f)}</div>
                         <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10 }}>
                           {f.parentesco && <span>{f.parentesco}</span>}
-                          {f.fecha_nacimiento && (
-                            <span>{new Date(f.fecha_nacimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                          )}
+                          {f.fecha_nacimiento && <span>{new Date(f.fecha_nacimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                           {!f.activo && <span style={{ color: '#dc2626', fontWeight: 600 }}>Inactivo</span>}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleEliminarFamiliar(f.id)}
-                        disabled={eliminando === f.id}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, opacity: eliminando === f.id ? 0.5 : 1 }}
-                        title="Eliminar familiar">
+                      <button onClick={() => handleEliminarFamiliar(f.id)} disabled={eliminando === f.id}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, opacity: eliminando === f.id ? 0.5 : 1 }} title="Eliminar">
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -427,8 +562,235 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* ── Tab 3: Notas ── */}
-          {tab === 3 && (
+          {/* ── Tab 3: Identificación ── */}
+          {tab === 3 && !isNew && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <FileText size={15} style={{ color: '#2563eb' }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Identificación oficial</span>
+              </div>
+              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>
+                Sube una foto o PDF de la identificación del socio (INE, pasaporte, etc.). Máximo 5 MB. Formatos: JPG, PNG, PDF.
+              </p>
+
+              {/* Si ya hay archivo */}
+              {idUrl ? (
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+                  {/* Preview */}
+                  {idSignedUrl ? (
+                    idUrl.match(/\.(jpg|jpeg|png)$/i) ? (
+                      <img src={idSignedUrl} alt="Identificación" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', background: '#f8fafc', display: 'block' }} />
+                    ) : (
+                      <div style={{ padding: '32px 20px', textAlign: 'center', background: '#f8fafc' }}>
+                        <FileText size={40} style={{ color: '#2563eb', marginBottom: 10 }} />
+                        <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b', marginBottom: 6 }}>Documento PDF</div>
+                        <a href={idSignedUrl} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 14px', textDecoration: 'none' }}>
+                          <ExternalLink size={12} /> Abrir PDF
+                        </a>
+                      </div>
+                    )
+                  ) : (
+                    <div style={{ padding: '20px', textAlign: 'center', background: '#f8fafc' }}>
+                      <Loader size={20} style={{ color: '#94a3b8' }} className="animate-spin" />
+                    </div>
+                  )}
+                  {/* Acciones */}
+                  <div style={{ padding: '12px 16px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <button onClick={() => fileInputRef.current?.click()}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 12px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#475569' }}>
+                      <Upload size={12} /> Reemplazar
+                    </button>
+                    <button onClick={handleRemoveId}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '6px 12px', border: '1px solid #fecaca', borderRadius: 8, background: '#fef2f2', cursor: 'pointer', color: '#dc2626' }}>
+                      <Trash2 size={12} /> Eliminar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Drop zone */
+                <div
+                  onClick={() => !uploadingId && fileInputRef.current?.click()}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => {
+                    e.preventDefault()
+                    const file = e.dataTransfer.files[0]
+                    if (file) handleUploadId(file)
+                  }}
+                  style={{
+                    border: '2px dashed #bfdbfe', borderRadius: 12, padding: '48px 24px',
+                    textAlign: 'center', cursor: uploadingId ? 'wait' : 'pointer',
+                    background: '#f8fafc', transition: 'border-color 0.15s',
+                  }}>
+                  {uploadingId ? (
+                    <>
+                      <Loader size={28} style={{ color: '#2563eb', marginBottom: 10 }} className="animate-spin" />
+                      <div style={{ fontSize: 13, color: '#2563eb' }}>Subiendo…</div>
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={28} style={{ color: '#93c5fd', marginBottom: 10 }} />
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>
+                        Haz clic o arrastra el archivo aquí
+                      </div>
+                      <div style={{ fontSize: 12, color: '#94a3b8' }}>JPG, PNG o PDF · máx. 5 MB</div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {uploadError && (
+                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{uploadError}</div>
+              )}
+
+              {/* Input oculto */}
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,application/pdf" style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadId(f); e.target.value = '' }} />
+            </div>
+          )}
+
+          {/* ── Tab 4: Contratos ── */}
+          {tab === 4 && !isNew && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <FileCheck size={15} style={{ color: '#7c3aed' }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Contratos de membresía</span>
+                  {!loadingCon && <span style={{ fontSize: 11, color: '#64748b' }}>({contratos.length})</span>}
+                </div>
+                {!showFormCon && (
+                  <button onClick={() => { setShowFormCon(true); setErrorCon(''); setArchivoConUrl('') }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                    <Plus size={13} /> Nuevo contrato
+                  </button>
+                )}
+              </div>
+
+              {/* Formulario nuevo contrato */}
+              {showFormCon && (
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Nuevo contrato</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div>
+                      <label style={labelStyle}>Año *</label>
+                      <input style={inputStyle} type="number" value={nuevoCon.anio} onChange={e => setCon('anio', e.target.value)} placeholder="2025" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Monto (MXN)</label>
+                      <input style={inputStyle} type="number" value={nuevoCon.monto} onChange={e => setCon('monto', e.target.value)} placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Fecha inicio</label>
+                      <input style={inputStyle} type="date" value={nuevoCon.fecha_inicio} onChange={e => setCon('fecha_inicio', e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Fecha fin</label>
+                      <input style={inputStyle} type="date" value={nuevoCon.fecha_fin} onChange={e => setCon('fecha_fin', e.target.value)} />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={labelStyle}>Notas</label>
+                      <input style={inputStyle} value={nuevoCon.notas} onChange={e => setCon('notas', e.target.value)} placeholder="Opcional" />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={labelStyle}>Archivo del contrato (PDF/imagen)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button onClick={() => fileConRef.current?.click()} disabled={uploadingCon}
+                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#475569', opacity: uploadingCon ? 0.6 : 1 }}>
+                          {uploadingCon ? <Loader size={12} className="animate-spin" /> : <Upload size={12} />}
+                          {archivoConUrl ? 'Cambiar archivo' : 'Subir archivo'}
+                        </button>
+                        {archivoConUrl && (
+                          <span style={{ fontSize: 11, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle size={12} /> Archivo listo
+                          </span>
+                        )}
+                      </div>
+                      <input ref={fileConRef} type="file" accept="image/jpeg,image/png,application/pdf" style={{ display: 'none' }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadContrato(f); e.target.value = '' }} />
+                    </div>
+                  </div>
+                  {errorCon && (
+                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errorCon}</div>
+                  )}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+                    <button onClick={() => { setShowFormCon(false); setNuevoCon(CONTRATO_VACIO); setArchivoConUrl('') }}
+                      style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                      Cancelar
+                    </button>
+                    <button onClick={handleGuardarContrato} disabled={savingCon}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: savingCon ? 0.7 : 1 }}>
+                      {savingCon ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Lista de contratos */}
+              {loadingCon ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+              ) : contratos.length === 0 && !showFormCon ? (
+                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>📄</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin contratos registrados</div>
+                  <div style={{ fontSize: 12, color: '#94a3b8' }}>Agrega el contrato anual de membresía del socio</div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {contratos.map(c => (
+                    <div key={c.id} style={{
+                      border: `1px solid ${c.vigente ? '#a3e635' : '#e2e8f0'}`,
+                      background: c.vigente ? '#f7fee7' : '#fff',
+                      borderRadius: 10, padding: '12px 16px',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{c.anio}</span>
+                          {c.vigente && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#84cc16', color: '#fff', letterSpacing: '0.04em' }}>
+                              VIGENTE
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#64748b', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                          {c.fecha_inicio && <span>{new Date(c.fecha_inicio + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                          {c.fecha_fin && <span>→ {new Date(c.fecha_fin + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                          {c.monto != null && <span style={{ color: '#16a34a', fontWeight: 600 }}>${Number(c.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>}
+                          {c.archivo_url && (
+                            <ContratoLink path={c.archivo_url} />
+                          )}
+                        </div>
+                        {c.notas && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>{c.notas}</div>}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        {!c.vigente && (
+                          <button
+                            onClick={() => handleMarcarVigente(c.id)}
+                            disabled={marcandoVigente === c.id}
+                            title="Marcar como vigente"
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', border: '1px solid #84cc16', borderRadius: 7, background: '#f7fee7', color: '#4d7c0f', cursor: 'pointer', opacity: marcandoVigente === c.id ? 0.6 : 1 }}>
+                            {marcandoVigente === c.id ? <Loader size={10} className="animate-spin" /> : <CheckCircle size={11} />}
+                            Vigente
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleEliminarContrato(c.id)}
+                          disabled={eliminandoCon === c.id}
+                          title="Eliminar"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, opacity: eliminandoCon === c.id ? 0.5 : 1 }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Tab 5: Notas ── */}
+          {tab === 5 && (
             <div>
               <label style={labelStyle}>Observaciones</label>
               <textarea
@@ -447,12 +809,12 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
           )}
         </div>
 
-        {/* Footer — ocultar botón guardar en tab Familiares */}
+        {/* Footer */}
         <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button className="btn-ghost" onClick={onClose}>
-            {tab === 2 ? 'Cerrar' : 'Cancelar'}
+            {(tab === 2 || tab === 3 || tab === 4) ? 'Cerrar' : 'Cancelar'}
           </button>
-          {tab !== 2 && (
+          {showSaveBtn && (
             <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
               {isNew ? 'Crear Socio' : 'Guardar Cambios'}
@@ -461,5 +823,21 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
         </div>
       </div>
     </div>
+  )
+}
+
+// Sub-componente para abrir link firmado de contrato
+function ContratoLink({ path }: { path: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    supabase.storage.from('golf-docs').createSignedUrl(path, 3600)
+      .then(({ data }) => setUrl(data?.signedUrl ?? null))
+  }, [path])
+  if (!url) return null
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#2563eb', textDecoration: 'none', fontSize: 11 }}>
+      <ExternalLink size={10} /> Ver archivo
+    </a>
   )
 }
