@@ -2,13 +2,28 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Search, RefreshCw, Eye, Edit2, Trash2, Users, CheckCircle, XCircle, AlertCircle, ChevronLeft } from 'lucide-react'
+import { Plus, Search, RefreshCw, Eye, Edit2, Trash2, Users, CheckCircle, XCircle, AlertCircle, ChevronLeft, Tag } from 'lucide-react'
 import Link from 'next/link'
 import SocioModal from './SocioModal'
 import SocioDetail from './SocioDetail'
 import type { Socio } from './SocioModal'
 
 const PAGE_SIZE = 20
+
+type Categoria = { id: number; nombre: string }
+type StatCat   = { id: number; nombre: string; count: number }
+
+// Paleta de colores para categorías (cicla si hay más de 8)
+const CAT_COLORS = [
+  { color: '#2563eb', bg: '#eff6ff' },
+  { color: '#7c3aed', bg: '#f5f3ff' },
+  { color: '#0891b2', bg: '#ecfeff' },
+  { color: '#059669', bg: '#ecfdf5' },
+  { color: '#d97706', bg: '#fffbeb' },
+  { color: '#dc2626', bg: '#fef2f2' },
+  { color: '#64748b', bg: '#f8fafc' },
+  { color: '#c026d3', bg: '#fdf4ff' },
+]
 
 export default function MiembrosPage() {
   const { canWrite, canDelete } = useAuth()
@@ -23,13 +38,24 @@ export default function MiembrosPage() {
   const [loading, setLoading]         = useState(true)
   const [deleting, setDeleting]       = useState<number | null>(null)
 
+  // Filtro por categoría
+  const [categorias, setCategorias]       = useState<Categoria[]>([])
+  const [filtroCat, setFiltroCat]         = useState<number | ''>('')
+
   // modals
   const [showModal, setShowModal]       = useState(false)
   const [editSocio, setEditSocio]       = useState<Socio | null>(null)
   const [detailSocio, setDetailSocio]   = useState<Socio | null>(null)
 
   // stats
-  const [stats, setStats] = useState({ total: 0, activos: 0, inactivos: 0, vencidos: 0 })
+  const [stats, setStats]         = useState({ total: 0, activos: 0, inactivos: 0, vencidos: 0 })
+  const [statsCat, setStatsCat]   = useState<StatCat[]>([])
+
+  // Cargar categorías una sola vez
+  useEffect(() => {
+    dbGolf.from('cat_categorias_socios').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCategorias((data as Categoria[]) ?? []))
+  }, [])
 
   const fetchSocios = useCallback(async () => {
     setLoading(true)
@@ -48,29 +74,53 @@ export default function MiembrosPage() {
         `nombre.ilike.%${search}%,apellido_paterno.ilike.%${search}%,apellido_materno.ilike.%${search}%,numero_socio.ilike.%${search}%,email.ilike.%${search}%`
       )
     }
+    if (filtroCat !== '') {
+      q = q.eq('id_categoria_fk', filtroCat)
+    }
 
     const { data, count } = await q
     setSocios((data as Socio[]) ?? [])
     setTotal(count ?? 0)
     setLoading(false)
-  }, [page, search])
+  }, [page, search, filtroCat])
 
   const fetchStats = useCallback(async () => {
-    const { data } = await dbGolf.from('cat_socios').select('activo, fecha_vencimiento')
+    const { data } = await dbGolf
+      .from('cat_socios')
+      .select('activo, fecha_vencimiento, id_categoria_fk, cat_categorias_socios(nombre)')
     if (!data) return
-    const hoy = new Date()
-    hoy.setHours(0, 0, 0, 0)
+
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
     let activos = 0, inactivos = 0, vencidos = 0
+    const catMap: Record<number, { nombre: string; count: number }> = {}
+
     data.forEach((s: any) => {
-      if (!s.activo) { inactivos++; return }
-      if (s.fecha_vencimiento && new Date(s.fecha_vencimiento) < hoy) { vencidos++ }
+      // status
+      if (!s.activo) { inactivos++ }
+      else if (s.fecha_vencimiento && new Date(s.fecha_vencimiento) < hoy) { vencidos++ }
       else { activos++ }
+      // por categoría
+      if (s.id_categoria_fk) {
+        if (!catMap[s.id_categoria_fk]) {
+          catMap[s.id_categoria_fk] = {
+            nombre: s.cat_categorias_socios?.nombre ?? `Cat. ${s.id_categoria_fk}`,
+            count:  0,
+          }
+        }
+        catMap[s.id_categoria_fk].count++
+      }
     })
+
     setStats({ total: data.length, activos, inactivos, vencidos })
+    setStatsCat(
+      Object.entries(catMap)
+        .map(([id, v]) => ({ id: Number(id), nombre: v.nombre, count: v.count }))
+        .sort((a, b) => b.count - a.count)
+    )
   }, [])
 
   useEffect(() => { fetchSocios() }, [fetchSocios])
-  useEffect(() => { fetchStats() }, [fetchStats])
+  useEffect(() => { fetchStats()  }, [fetchStats])
 
   // debounce search
   useEffect(() => {
@@ -78,20 +128,20 @@ export default function MiembrosPage() {
     return () => clearTimeout(t)
   }, [searchInput])
 
+  // reset page when filter changes
+  useEffect(() => { setPage(0) }, [filtroCat])
+
   const handleDelete = async (s: Socio) => {
     if (!confirm(`¿Eliminar al socio ${s.nombre} ${s.apellido_paterno ?? ''}? Esta acción no se puede deshacer.`)) return
     setDeleting(s.id)
     await dbGolf.from('cat_socios').delete().eq('id', s.id)
     setDeleting(null)
-    fetchSocios()
-    fetchStats()
+    fetchSocios(); fetchStats()
   }
 
   const handleSaved = () => {
-    setShowModal(false)
-    setEditSocio(null)
-    fetchSocios()
-    fetchStats()
+    setShowModal(false); setEditSocio(null)
+    fetchSocios(); fetchStats()
   }
 
   const openEdit = (s: Socio) => { setDetailSocio(null); setEditSocio(s); setShowModal(true) }
@@ -106,9 +156,8 @@ export default function MiembrosPage() {
   }
 
   const badgeClass = (status: string) =>
-    status === 'activo'   ? 'badge badge-libre' :
-    status === 'vencido'  ? 'badge badge-pendiente' :
-                            'badge badge-bloqueado'
+    status === 'activo'  ? 'badge badge-libre' :
+    status === 'vencido' ? 'badge badge-pendiente' : 'badge badge-bloqueado'
 
   const badgeLabel = (status: string) =>
     status === 'activo' ? 'Activo' : status === 'vencido' ? 'Vencido' : 'Inactivo'
@@ -123,8 +172,7 @@ export default function MiembrosPage() {
             <Link href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12, transition: 'color 0.15s' }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#2563eb'}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}>
-              <ChevronLeft size={13} />
-              Club
+              <ChevronLeft size={13} /> Club
             </Link>
             <span style={{ fontSize: 12, color: '#cbd5e1' }}>/</span>
             <Users size={13} style={{ color: 'var(--gold)' }} />
@@ -146,17 +194,17 @@ export default function MiembrosPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+      {/* Stats — status */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
-          { label: 'Total socios', value: stats.total, icon: Users, color: 'var(--blue)', bg: '#eff6ff' },
-          { label: 'Activos',      value: stats.activos,   icon: CheckCircle, color: '#16a34a', bg: '#f0fdf4' },
-          { label: 'Vencidos',     value: stats.vencidos,  icon: AlertCircle, color: '#d97706', bg: '#fffbeb' },
-          { label: 'Inactivos',    value: stats.inactivos, icon: XCircle,     color: '#64748b', bg: '#f8fafc' },
+          { label: 'Total socios', value: stats.total,    icon: Users,        color: 'var(--blue)', bg: '#eff6ff' },
+          { label: 'Activos',      value: stats.activos,  icon: CheckCircle,  color: '#16a34a',     bg: '#f0fdf4' },
+          { label: 'Vencidos',     value: stats.vencidos, icon: AlertCircle,  color: '#d97706',     bg: '#fffbeb' },
+          { label: 'Inactivos',    value: stats.inactivos,icon: XCircle,      color: '#64748b',     bg: '#f8fafc' },
         ].map(card => {
           const Icon = card.icon
           return (
-            <div key={card.label} className="card" style={{ flex: '1 1 140px', maxWidth: 200, padding: '14px 18px', background: card.bg, border: `1px solid ${card.color}22` }}>
+            <div key={card.label} className="card" style={{ flex: '1 1 130px', maxWidth: 190, padding: '14px 18px', background: card.bg, border: `1px solid ${card.color}22` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <Icon size={14} style={{ color: card.color }} />
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{card.label}</span>
@@ -167,8 +215,44 @@ export default function MiembrosPage() {
         })}
       </div>
 
-      {/* Search */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+      {/* Stats — por categoría */}
+      {statsCat.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+          {statsCat.map((cat, idx) => {
+            const palette = CAT_COLORS[idx % CAT_COLORS.length]
+            const activo  = filtroCat === cat.id
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setFiltroCat(activo ? '' : cat.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                  border: `1.5px solid ${activo ? palette.color : palette.color + '44'}`,
+                  background: activo ? palette.bg : '#fff',
+                  transition: 'all 0.15s', outline: 'none',
+                  boxShadow: activo ? `0 0 0 3px ${palette.color}22` : 'none',
+                }}>
+                <Tag size={12} style={{ color: palette.color, flexShrink: 0 }} />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 11, color: palette.color, fontWeight: 600, lineHeight: 1.2 }}>{cat.nombre}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: palette.color, lineHeight: 1.1 }}>{cat.count}</div>
+                </div>
+              </button>
+            )
+          })}
+          {filtroCat !== '' && (
+            <button
+              onClick={() => setFiltroCat('')}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: 12, color: '#64748b' }}>
+              × Quitar filtro
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Search + filtro categoría */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: 380 }}>
           <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
@@ -183,7 +267,22 @@ export default function MiembrosPage() {
             onChange={e => setSearchInput(e.target.value)}
           />
         </div>
-        {search && (
+
+        <select
+          value={filtroCat}
+          onChange={e => setFiltroCat(e.target.value ? Number(e.target.value) : '')}
+          style={{
+            padding: '8px 12px', fontSize: 13, border: '1px solid var(--border)',
+            borderRadius: 8, background: 'var(--surface)', color: 'var(--text-primary)',
+            fontFamily: 'var(--font-body)', outline: 'none', cursor: 'pointer',
+            minWidth: 160,
+            borderColor: filtroCat !== '' ? 'var(--blue)' : 'var(--border)',
+          }}>
+          <option value="">Todas las categorías</option>
+          {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
+
+        {(search || filtroCat !== '') && (
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {total} resultado{total !== 1 ? 's' : ''}
           </span>
@@ -210,21 +309,19 @@ export default function MiembrosPage() {
                 <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
               ) : socios.length === 0 ? (
                 <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  {search ? 'Sin resultados para la búsqueda.' : 'No hay socios registrados.'}
+                  {search || filtroCat !== '' ? 'Sin resultados para los filtros aplicados.' : 'No hay socios registrados.'}
                 </td></tr>
-              ) : socios.map((s, i) => {
+              ) : socios.map(s => {
                 const status = statusOf(s)
                 const nombre = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
                 const isDel  = deleting === s.id
+                // color de categoría
+                const catIdx = statsCat.findIndex(c => c.id === s.id_categoria_fk)
+                const catPalette = catIdx >= 0 ? CAT_COLORS[catIdx % CAT_COLORS.length] : null
                 return (
-                  <tr key={s.id} style={{
-                    borderBottom: '1px solid var(--border)',
-                    opacity: isDel ? 0.4 : 1,
-                    transition: 'background 0.1s',
-                  }}
+                  <tr key={s.id} style={{ borderBottom: '1px solid var(--border)', opacity: isDel ? 0.4 : 1, transition: 'background 0.1s' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}
-                  >
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
                     <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
                       {s.numero_socio ?? '—'}
                     </td>
@@ -232,8 +329,17 @@ export default function MiembrosPage() {
                       {nombre}
                       {s.email && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{s.email}</div>}
                     </td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
-                      {s.cat_categorias_socios?.nombre ?? '—'}
+                    <td style={{ padding: '10px 14px' }}>
+                      {s.cat_categorias_socios?.nombre
+                        ? <span style={{
+                            fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                            background: catPalette ? catPalette.bg : '#f1f5f9',
+                            color: catPalette ? catPalette.color : '#64748b',
+                          }}>
+                            {s.cat_categorias_socios.nombre}
+                          </span>
+                        : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      }
                     </td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}>
                       {s.numero_tarjeta ?? '—'}
