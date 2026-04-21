@@ -101,6 +101,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
+    { section: 'Club', items: [
+      { label: 'Club',           href: '/golf',           icon: Flag          },
+      RPT('golf'),
+    ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
       { label: 'Equipo & Vehículos', href: '/equipo-flota',   icon: Truck         },
@@ -133,6 +137,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
+    { section: 'Club', items: [
+      { label: 'Club',           href: '/golf',           icon: Flag          },
+      RPT('golf'),
+    ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
@@ -155,6 +163,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
+    ]},
+    { section: 'Club', items: [
+      { label: 'Club',           href: '/golf',           icon: Flag          },
+      RPT('golf'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },

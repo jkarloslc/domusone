@@ -1,0 +1,487 @@
+================================================================
+  DOMUSONE — GESTIÓN DE ROLES Y PERMISOS
+  Guía de referencia para editar AuthContext.tsx
+================================================================
+
+ARCHIVOS A EDITAR:
+  /lib/AuthContext.tsx               — permisos (LEER, ESCRIBIR, etc.)
+  /components/layout/Sidebar.tsx     — links visibles en el menú lateral
+
+IMPORTANTE: AuthContext.tsx y Sidebar.tsx son INDEPENDIENTES.
+  AuthContext controla si el usuario PUEDE acceder a una ruta.
+  Sidebar controla si el LINK APARECE en el menú.
+  Si solo editas uno, el otro queda desincronizado.
+  → Siempre editar AMBOS archivos cuando cambias el acceso de un rol.
+
+RAMA:   main
+DEPLOY: automático en Vercel al hacer push
+
+----------------------------------------------------------------
+ÍNDICE
+----------------------------------------------------------------
+0. ATENCIÓN — Sidebar.tsx es una zona separada
+1. Dónde vive cada permiso
+2. Agregar un módulo nuevo
+3. Modificar permisos de un rol existente
+4. Crear un rol nuevo desde cero
+5. Permisos especiales (borrar, autorizar, home)
+6. Cards del hub de Compras
+7. Tabla de claves de módulos disponibles
+8. Ejemplos completos listos para copiar
+9. Secuencia de deploy
+----------------------------------------------------------------
+
+
+================================================================
+0. ATENCIÓN — DOS ARCHIVOS, DOS RESPONSABILIDADES
+================================================================
+
+AuthContext.tsx  → define QUÉ puede hacer cada rol (acceso real)
+Sidebar.tsx      → define QUÉ VE cada rol en el menú lateral
+
+Son completamente independientes. Si agregas un módulo a un rol
+en AuthContext pero no agregas el link en Sidebar, el usuario
+puede entrar a la URL directamente pero no verá el menú.
+Al revés, si está en Sidebar pero no en AuthContext, el link
+aparece pero la página lanzará "sin acceso".
+
+BUG REAL CORREGIDO (2026-04-21):
+  admin, usuarioadmin y usuariomantto tenían Golf en AuthContext
+  pero NO tenían la sección Club en Sidebar.tsx. Resultado: podían
+  entrar a /golf por URL directa pero no veían el link en el menú.
+  Fix: agregar { section: 'Club', items: [{ label: 'Club',
+  href: '/golf', icon: Flag }] } en los tres roles del Sidebar.
+
+REGLA: siempre editar AMBOS archivos al mismo tiempo.
+
+
+================================================================
+1. DÓNDE VIVE CADA PERMISO
+================================================================
+
+El archivo tiene 6 zonas que hay que conocer:
+
+  ZONA         LÍNEA APROX   QUÉ CONTROLA
+  ----------   -----------   ----------------------------------------
+  Rol (tipo)       6         Lista oficial de roles válidos
+  getHomeRoute    31         Pantalla de inicio al hacer login
+  ADMIN_MODULOS   80         Array base que heredan admin/usuarioadmin
+  LEER           104         Qué módulos aparecen en el sidebar
+  ESCRIBIR       128         En qué módulos puede crear/editar
+  ROLES_DELETE   152         Quién puede eliminar registros
+  ROLES_AUTH     155         Quién puede autorizar Req/OC/Transferencias
+  canCompras()   243         Qué cards ve dentro del hub /compras
+
+Regla de oro:
+  - Todo lo que esté en ESCRIBIR debe estar también en LEER.
+  - Al revés no es necesario (ver sin editar es válido).
+  - superadmin usa '*' en LEER y ESCRIBIR — no tocar nunca.
+
+
+================================================================
+2. AGREGAR UN MÓDULO NUEVO
+================================================================
+
+Cuando creas una página nueva (ej. /app/clientes) necesitas
+registrar su clave para que los roles puedan verla/editarla.
+
+PASO 1 — Decidir la clave del módulo (kebab-case, sin espacios):
+  Ejemplos: 'clientes', 'golf-torneos', 'estadisticas'
+
+PASO 2 — Agregar la clave a ADMIN_MODULOS si admin debe verlo:
+
+  const ADMIN_MODULOS = [
+    'lotes', 'propietarios', ... ,
+    'clientes',   // ← nueva clave aquí
+  ]
+
+  Esto hace que admin, usuarioadmin y usuariomantto lo hereden
+  automáticamente.
+
+PASO 3 — Agregar a los roles específicos que lo necesiten en LEER:
+
+  cobranza: ['lotes', 'propietarios', 'cobranza', 'facturas',
+             'clientes'],   // ← agregar aquí
+
+PASO 4 — Agregar a ESCRIBIR si esos roles deben poder editar:
+
+  cobranza: ['cobranza', 'facturas', 'clientes'],
+
+PASO 5 — En la página nueva, usar can() y canWrite() así:
+
+  const { can, canWrite } = useAuth()
+  if (!can('clientes')) return <Unauthorized />
+  {canWrite('clientes') && <button>Nuevo Cliente</button>}
+
+
+================================================================
+3. MODIFICAR PERMISOS DE UN ROL EXISTENTE
+================================================================
+
+── Dar acceso a un módulo que no tenía ──────────────────────
+
+  Rol: cobranza
+  Acción: que pueda ver Reportes
+
+  // En LEER, buscar la línea de cobranza y agregar 'reportes':
+  cobranza: ['lotes', 'propietarios', 'cobranza', 'facturas', 'reportes'],
+
+  // Si también quiere editar reportes (raro pero posible):
+  // En ESCRIBIR, agregar igual.
+
+── Quitar acceso a un módulo ────────────────────────────────
+
+  Rol: fraccionamiento
+  Acción: que ya no vea Tesorería
+
+  // En LEER, buscar la línea de fraccionamiento y quitar 'tesoreria':
+  fraccionamiento: ['lotes', 'propietarios', 'contratos', 'escrituras',
+                    'proyectos', 'mantenimiento', 'accesos', 'incidencias',
+                    'cobranza', 'facturas', 'compras', 'comunicados', 'reportes'],
+                    // 'tesoreria' eliminado ↑
+
+  // Hacer lo mismo en ESCRIBIR si estaba ahí también.
+
+── Convertir un rol de lectura a escritura ──────────────────
+
+  Rol: mantenimiento
+  Acción: que pueda editar Comunicados además de Mantenimiento
+
+  // En ESCRIBIR:
+  mantenimiento: ['mantenimiento', 'comunicados'],   // agregar 'comunicados'
+
+── Dar permiso de borrar a un rol ───────────────────────────
+
+  // En ROLES_DELETE, agregar el rol:
+  const ROLES_DELETE: Rol[] = ['superadmin', 'admin', 'fraccionamiento']
+
+── Dar permiso de autorizar documentos ──────────────────────
+
+  // En ROLES_AUTH, agregar el rol:
+  const ROLES_AUTH: Rol[] = [
+    'superadmin', 'admin', 'usuarioadmin', 'usuariomantto',
+    'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria',
+    'mi_rol_nuevo',   // ← aquí
+  ]
+
+
+================================================================
+4. CREAR UN ROL NUEVO DESDE CERO
+================================================================
+
+Se necesita tocar 5 lugares en orden:
+
+──────────────────────────────────────────────────────────────
+LUGAR 1 — Declarar el tipo (línea ~6)
+──────────────────────────────────────────────────────────────
+
+  type Rol =
+    | 'superadmin'
+    | 'admin'
+    | ... (roles existentes)
+    | 'mi_nuevo_rol'       // ← agregar al final de la lista
+
+──────────────────────────────────────────────────────────────
+LUGAR 2 — Pantalla de inicio al hacer login (línea ~31)
+──────────────────────────────────────────────────────────────
+
+  export function getHomeRouteByRole(rol?: Rol): string {
+    switch (rol) {
+      case 'mi_nuevo_rol':
+        return '/residencial'   // o '/golf', '/compras', '/tesoreria'
+      ...
+    }
+  }
+
+──────────────────────────────────────────────────────────────
+LUGAR 3 — LEER: qué módulos puede ver en el sidebar
+──────────────────────────────────────────────────────────────
+
+  const LEER: Record<Rol, string[] | '*'> = {
+    ...
+    mi_nuevo_rol: ['lotes', 'propietarios', 'reportes'],
+  }
+
+──────────────────────────────────────────────────────────────
+LUGAR 4 — ESCRIBIR: en qué módulos puede crear/editar
+──────────────────────────────────────────────────────────────
+
+  const ESCRIBIR: Record<Rol, string[] | '*'> = {
+    ...
+    mi_nuevo_rol: [],    // [] = solo lectura en todo
+    // o:
+    mi_nuevo_rol: ['lotes'],   // puede editar lotes pero no propietarios
+  }
+
+──────────────────────────────────────────────────────────────
+LUGAR 5 — Crear el usuario en Supabase
+──────────────────────────────────────────────────────────────
+
+  En Supabase → Authentication → Users → Invite user
+  Luego en SQL Editor:
+
+  UPDATE cfg.usuarios
+  SET rol = 'mi_nuevo_rol', nombre = 'Nombre Apellido'
+  WHERE email = 'usuario@ejemplo.com';
+
+
+================================================================
+5. PERMISOS ESPECIALES
+================================================================
+
+── ROLES_DELETE — quién puede eliminar registros ────────────
+
+  const ROLES_DELETE: Rol[] = ['superadmin', 'admin']
+
+  Usado con: canDelete() → retorna true/false
+  En código de páginas: {canDelete() && <button>Eliminar</button>}
+
+── ROLES_AUTH — quién puede autorizar documentos ────────────
+
+  const ROLES_AUTH: Rol[] = [
+    'superadmin', 'admin', 'usuarioadmin', 'usuariomantto',
+    'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria'
+  ]
+
+  Usado con: canAuth() → retorna true/false
+  Aplica en: Requisiciones, Órdenes de Compra, Transferencias
+
+── getHomeRouteByRole — pantalla inicial por rol ────────────
+
+  Opciones de ruta por área:
+    '/residencial'  → Módulo principal (lotes, propietarios)
+    '/golf'         → Hub Golf
+    '/compras'      → Hub Compras
+    '/tesoreria'    → Tesorería
+    '/ingresos'     → Ingresos
+
+
+================================================================
+6. CARDS DEL HUB DE COMPRAS (canCompras)
+================================================================
+
+La función canCompras() (línea ~243) es especial porque el hub
+de Compras tiene muchas secciones y cada rol ve solo algunas.
+
+Retorna uno de estos valores:
+  'all'       → ve todo (admin, superadmin, fraccionamiento)
+  'compras'   → ve sección de compras (rol compras/supervisor)
+  'almacen'   → ve sección de almacén (rol almacen)
+  'seguridad' → ve sección de seguridad (rol seguridad)
+  'solicitante' → solo Requisiciones y Transferencias
+  false       → sin acceso a compras
+
+Para agregar un rol nuevo con acceso parcial a Compras:
+
+  // Al final de la función, antes del return false:
+  if (r === 'mi_nuevo_rol') {
+    const MODS = ['requisiciones', 'ordenes']
+    if (!key) return 'compras'
+    return MODS.includes(key) ? 'compras' : false
+  }
+
+Cards disponibles en el hub de Compras:
+  'requisiciones'   Requisiciones
+  'cotizaciones'    Cotizaciones / RFQ
+  'ordenes'         Órdenes de Compra
+  'ordenes-pago'    Órdenes de Pago
+  'proveedores'     Proveedores
+  'articulos'       Artículos / Catálogo
+  'almacenes'       Almacenes
+  'recepciones'     Recepciones de Mercancía
+  'transferencias'  Transferencias
+  'inventario'      Inventario
+  'caja-chica'      Caja Chica
+
+
+================================================================
+7. TABLA DE CLAVES DE MÓDULOS DISPONIBLES
+================================================================
+
+  CLAVE                 MÓDULO / RUTA
+  --------------------  ----------------------------------------
+  lotes                 Lotes (/residencial/lotes)
+  propietarios          Propietarios (/residencial/propietarios)
+  contratos             Contratos
+  escrituras            Escrituras
+  cobranza              Cobranza (/cobranza)
+  facturas              Facturas
+  accesos               Accesos de residentes
+  incidencias           Incidencias
+  mantenimiento         Mantenimiento (/mantenimiento)
+  proyectos             Proyectos
+  comunicados           Comunicados
+  compras               Hub Compras (/compras)
+  requisiciones         Requisiciones
+  cotizaciones          Cotizaciones / RFQ
+  ordenes               Órdenes de Compra
+  ordenes-pago          Órdenes de Pago / CXP
+  proveedores           Proveedores
+  articulos             Artículos
+  almacenes             Almacenes
+  areas                 Áreas / Secciones
+  transferencias        Transferencias
+  inventario            Inventario
+  caja-chica            Caja Chica
+  tesoreria             Tesorería (/tesoreria)
+  ingresos              Ingresos (/ingresos)
+  reportes              Reportes (/reportes)
+  catalogos             Catálogos
+  golf                  Hub Golf (/golf)
+  golf-miembros         Miembros / Socios
+  golf-accesos          Salidas al Campo
+  golf-reservaciones    Reservaciones
+  golf-pases            Pases
+  golf-clinicas         Clínicas
+  golf-pos              POS Ventas
+  golf-carritos         Carritos & Pensiones
+  golf-cxc              CXC Golf
+  golf-cuotas           Cuotas Golf
+  golf-recibos          Recibos Golf
+
+
+================================================================
+8. EJEMPLOS COMPLETOS LISTOS PARA COPIAR
+================================================================
+
+──────────────────────────────────────────────────────────────
+EJEMPLO A — Rol "auditor_financiero"
+Solo puede ver Tesorería, Ingresos y Reportes. Sin escritura.
+──────────────────────────────────────────────────────────────
+
+  // Zona 1 — tipo
+  | 'auditor_financiero'
+
+  // Zona 2 — home
+  case 'auditor_financiero': return '/tesoreria'
+
+  // Zona 3 — LEER
+  auditor_financiero: ['tesoreria', 'ingresos', 'reportes'],
+
+  // Zona 4 — ESCRIBIR
+  auditor_financiero: [],
+
+  // No va en ROLES_DELETE ni ROLES_AUTH
+
+──────────────────────────────────────────────────────────────
+EJEMPLO B — Rol "supervisor_golf"
+Ve todo el módulo Golf, puede editar todo Golf,
+puede autorizar documentos, NO puede borrar.
+──────────────────────────────────────────────────────────────
+
+  // Zona 1 — tipo
+  | 'supervisor_golf'
+
+  // Zona 2 — home
+  case 'supervisor_golf': return '/golf'
+
+  // Zona 3 — LEER (copiar GOLF_MODULOS y agregar más si aplica)
+  supervisor_golf: [
+    'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
+    'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos',
+    'golf-cxc', 'golf-cuotas', 'golf-recibos', 'reportes',
+  ],
+
+  // Zona 4 — ESCRIBIR (mismo array)
+  supervisor_golf: [
+    'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
+    'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos',
+    'golf-cxc', 'golf-cuotas', 'golf-recibos',
+  ],
+
+  // Agregar a ROLES_AUTH para que pueda autorizar:
+  const ROLES_AUTH: Rol[] = [
+    'superadmin', 'admin', 'usuarioadmin', 'usuariomantto',
+    'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria',
+    'supervisor_golf',   // ← aquí
+  ]
+
+──────────────────────────────────────────────────────────────
+EJEMPLO C — Agregar 'golf-recibos' al rol usuariogolf existente
+──────────────────────────────────────────────────────────────
+
+  // Buscar GOLF_MODULOS (~línea 93) y agregar la clave:
+  const GOLF_MODULOS = [
+    'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
+    'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos',
+    'golf-casilleros', 'golf-cxc', 'golf-cuotas', 'golf-recibos',  // ← aquí
+    'reportes', 'compras', 'requisiciones', 'transferencias',
+  ]
+
+  // Listo. usuariogolf lo hereda automáticamente en LEER y ESCRIBIR.
+
+──────────────────────────────────────────────────────────────
+EJEMPLO D — Quitar acceso a Tesorería de fraccionamiento
+──────────────────────────────────────────────────────────────
+
+  // En LEER, línea de fraccionamiento — quitar 'tesoreria':
+  fraccionamiento: [
+    'lotes', 'propietarios', 'contratos', 'escrituras',
+    'proyectos', 'mantenimiento', 'accesos', 'incidencias',
+    'cobranza', 'facturas', 'compras', 'comunicados', 'reportes',
+    // 'tesoreria' ← eliminado
+  ],
+
+  // Hacer lo mismo en ESCRIBIR.
+
+──────────────────────────────────────────────────────────────
+EJEMPLO E — Rol "recepcion_golf"
+Solo puede registrar entradas al campo y reservaciones.
+No puede ver socios, POS, ni carritos.
+──────────────────────────────────────────────────────────────
+
+  // Zona 1
+  | 'recepcion_golf'
+
+  // Zona 2
+  case 'recepcion_golf': return '/golf'
+
+  // Zona 3 — LEER
+  recepcion_golf: [
+    'golf', 'golf-accesos', 'golf-reservaciones',
+  ],
+
+  // Zona 4 — ESCRIBIR (puede crear entradas y reservaciones)
+  recepcion_golf: [
+    'golf-accesos', 'golf-reservaciones',
+  ],
+
+  // No va en ROLES_DELETE ni ROLES_AUTH
+
+
+================================================================
+9. SECUENCIA DE DEPLOY
+================================================================
+
+PASO 1 — Editar el archivo en tu máquina:
+  /Users/jkarloslc/Downloads/domusone/lib/AuthContext.tsx
+
+PASO 2 — Verificar que TypeScript no tenga errores:
+  Si al guardar el archivo el editor marca error rojo en algún
+  rol, significa que falta agregarlo en LEER o ESCRIBIR.
+  TypeScript exige que Record<Rol, ...> tenga TODOS los roles.
+
+PASO 3 — Commit y push:
+  cd /Users/jkarloslc/Downloads/domusone
+  git add lib/AuthContext.tsx
+  git commit -m "permisos: descripcion del cambio"
+  git push origin main
+
+PASO 4 — Vercel despliega en ~60 segundos automáticamente.
+
+PASO 5 — El usuario afectado debe cerrar sesión y volver a
+  entrar para que los permisos nuevos surtan efecto.
+  (Los permisos se cargan al hacer login, no en tiempo real.)
+
+NOTA IMPORTANTE:
+  Si el usuario tiene sesión activa, los cambios NO se aplican
+  hasta que recargue o cierre sesión. Para forzar el refresh
+  inmediato en todos los usuarios activos habría que invalidar
+  sesiones desde Supabase Authentication → Users.
+
+
+================================================================
+FIN DEL DOCUMENTO
+Última actualización: 2026-04-21
+Proyecto: DomusOne — Balvanera
+================================================================
