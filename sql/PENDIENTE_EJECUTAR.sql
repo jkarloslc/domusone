@@ -29,12 +29,13 @@ CREATE SEQUENCE IF NOT EXISTS comp.seq_folio_rfq;
 CREATE SEQUENCE IF NOT EXISTS comp.seq_folio_rec;
 CREATE SEQUENCE IF NOT EXISTS comp.seq_folio_val;
 
-SELECT setval('comp.seq_folio_op',  GREATEST(1, (SELECT COUNT(*) FROM comp.ordenes_pago)));
-SELECT setval('comp.seq_folio_oc',  GREATEST(1, (SELECT COUNT(*) FROM comp.ordenes_compra)));
-SELECT setval('comp.seq_folio_req', GREATEST(1, (SELECT COUNT(*) FROM comp.requisiciones)));
-SELECT setval('comp.seq_folio_trf', GREATEST(1, (SELECT COUNT(*) FROM comp.transferencias)));
-SELECT setval('comp.seq_folio_rfq', GREATEST(1, (SELECT COUNT(*) FROM comp.rfq)));
-SELECT setval('comp.seq_folio_rec', GREATEST(1, (SELECT COUNT(*) FROM comp.recepciones)));
+-- Inicializar desde el MÁXIMO número de folio (no COUNT, por si hay huecos o registros borrados)
+SELECT setval('comp.seq_folio_op',  GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.ordenes_pago   WHERE folio ~ '^OP-[0-9]+-[0-9]+$'),  1)));
+SELECT setval('comp.seq_folio_oc',  GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.ordenes_compra  WHERE folio ~ '^OC-[0-9]+-[0-9]+$'),  1)));
+SELECT setval('comp.seq_folio_req', GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.requisiciones   WHERE folio ~ '^REQ-[0-9]+-[0-9]+$'), 1)));
+SELECT setval('comp.seq_folio_trf', GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.transferencias   WHERE folio ~ '^TRF-[0-9]+-[0-9]+$'), 1)));
+SELECT setval('comp.seq_folio_rfq', GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.rfq              WHERE folio ~ '^RFQ-[0-9]+-[0-9]+$'), 1)));
+SELECT setval('comp.seq_folio_rec', GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.recepciones      WHERE folio ~ '^REC-[0-9]+-[0-9]+$'), 1)));
 
 CREATE OR REPLACE FUNCTION comp.fn_next_folio(prefijo TEXT)
 RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER AS $$
