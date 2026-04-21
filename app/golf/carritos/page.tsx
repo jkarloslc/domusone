@@ -71,7 +71,7 @@ export default function CarritosPage() {
   const [showPension, setShowPension]   = useState<{ idSocio: number; idCarrito: number; nombreSocio: string; descCarrito: string } | null>(null)
   const [carritoNuevo, setCarritoNuevo] = useState<{ id: number; id_socio_fk: number } | null>(null)
 
-  const [showCobrar, setShowCobrar]     = useState<{ cuotas: Cuota[]; nombreSocio: string } | null>(null)
+  const [showCobrar, setShowCobrar]     = useState<{ cuotas: Cuota[]; nombreSocio: string; idSocio: number } | null>(null)
 
   // ── Config ────────────────────────────────────────────────
   const [tarifa, setTarifa]             = useState<number>(0)
@@ -184,6 +184,7 @@ export default function CarritosPage() {
     setShowCobrar({
       cuotas: (data as unknown as Cuota[]) ?? [],
       nombreSocio: nc(pension.cat_socios),
+      idSocio: pension.id_socio_fk,
     })
   }
 
@@ -456,6 +457,7 @@ export default function CarritosPage() {
         <CobrarCuotaModal
           cuotas={showCobrar.cuotas}
           nombreSocio={showCobrar.nombreSocio}
+          idSocio={showCobrar.idSocio}
           onClose={() => setShowCobrar(null)}
           onSaved={() => { setShowCobrar(null); fetchPensiones() }}
         />

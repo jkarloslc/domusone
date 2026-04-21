@@ -406,7 +406,7 @@ export default function CXCGolfPage() {
   const [busqueda, setBusqueda]     = useState('')
   const [filtroStatus, setFiltroStatus] = useState<string>('PENDIENTE')
   const [filtroTipo, setFiltroTipo] = useState<string>('')
-  const [showCobrar, setShowCobrar] = useState<{ cuotas: Cuota[]; nombreSocio: string } | null>(null)
+  const [showCobrar, setShowCobrar] = useState<{ cuotas: Cuota[]; nombreSocio: string; idSocio: number } | null>(null)
   const [showNueva, setShowNueva]   = useState(false)
   const [showMasivo, setShowMasivo] = useState(false)
 
@@ -573,7 +573,11 @@ export default function CXCGolfPage() {
                   )}
                   <span style={{ fontSize: 14, fontWeight: 700, color: statusColor }}>{fmt$(c.monto_final)}</span>
                   {c.status === 'PENDIENTE' && puedeEscribir && (
-                    <button onClick={() => setShowCobrar({ cuotas: [c], nombreSocio: nc(c.cat_socios) })}
+                    <button onClick={() => {
+                      // Agrupar todas las cuotas pendientes del mismo socio
+                      const cuotasSocio = cuotasF.filter(x => x.id_socio_fk === c.id_socio_fk && x.status === 'PENDIENTE')
+                      setShowCobrar({ cuotas: cuotasSocio.length > 1 ? cuotasSocio : [c], nombreSocio: nc(c.cat_socios), idSocio: c.id_socio_fk })
+                    }}
                       style={{ fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                       Cobrar
                     </button>
@@ -601,6 +605,7 @@ export default function CXCGolfPage() {
         <CobrarCuotaModal
           cuotas={showCobrar.cuotas}
           nombreSocio={showCobrar.nombreSocio}
+          idSocio={showCobrar.idSocio}
           onClose={() => setShowCobrar(null)}
           onSaved={() => { setShowCobrar(null); fetchCuotas() }}
         />
