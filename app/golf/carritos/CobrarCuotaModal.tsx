@@ -404,8 +404,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           ) : (
             <>
               {/* Lista de cuotas con checkboxes */}
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
-                <div style={{ padding: '10px 14px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                <div style={{ padding: '10px 14px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', borderRadius: '10px 10px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
                     {cuotasSelec.length} / {cuotas.length} cuota{cuotas.length !== 1 ? 's' : ''} seleccionada{cuotasSelec.length !== 1 ? 's' : ''}
                   </span>
@@ -415,7 +415,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                     {seleccionadas.size === cuotas.length ? 'Desmarcar todo' : 'Marcar todo'}
                   </button>
                 </div>
-                <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+                <div style={{ maxHeight: 240, overflowY: 'auto', borderRadius: '0 0 10px 10px' }}>
                   {cuotas.map((c, i) => {
                     const venc = vencida(c.fecha_vencimiento)
                     const sel  = seleccionadas.has(c.id)
