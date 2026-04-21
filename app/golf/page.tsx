@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
-  Car, Lock, ArrowRight, BookOpen, CreditCard, Receipt,
+  Car, Lock, ArrowRight, BookOpen, CreditCard, Receipt, FileText,
 } from 'lucide-react'
 import DashLayout from '@/components/layout/DashLayout'
 
@@ -104,6 +104,17 @@ const MODULOS = [
     bg: '#ecfeff',
     border: '#a5f3fc',
     href: '/golf/cxc',
+    activo: true,
+  },
+  {
+    key: 'recibos',
+    label: 'Recibos',
+    desc: 'Consulta, reimpresión y facturación de cobros emitidos',
+    icon: FileText,
+    color: '#0891b2',
+    bg: '#ecfeff',
+    border: '#a5f3fc',
+    href: '/golf/recibos',
     activo: true,
   },
   {
