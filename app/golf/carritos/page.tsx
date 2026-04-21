@@ -2,13 +2,31 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import CarritoModal from './CarritoModal'
 import PensionModal from './PensionModal'
 import CobrarCuotaModal from './CobrarCuotaModal'
+import BitacoraModal from './BitacoraModal'
 
 // ── Tipos ─────────────────────────────────────────────────────
+type BitacoraEntry = {
+  id: number
+  tipo_evento: string
+  descripcion: string
+  taller: string | null
+  tercero_nombre: string | null
+  tercero_telefono: string | null
+  costo_estimado: number | null
+  costo_real: number | null
+  nivel_urgencia: string | null
+  resuelto: boolean
+  fecha_evento: string
+  fecha_fin: string | null
+  observaciones: string | null
+  usuario_registra: string | null
+}
+
 type Pension = {
   id: number
   id_socio_fk: number
@@ -73,6 +91,11 @@ export default function CarritosPage() {
 
   const [showCobrar, setShowCobrar]     = useState<{ cuotas: Cuota[]; nombreSocio: string; idSocio: number } | null>(null)
 
+  // ── Bitácora ──────────────────────────────────────────────
+  const [bitacora, setBitacora]         = useState<Record<number, BitacoraEntry[]>>({})
+  const [loadingBit, setLoadingBit]     = useState<Record<number, boolean>>({})
+  const [showBitacora, setShowBitacora] = useState<{ idCarrito: number; idPension: number | null; idSocio: number | null; nombreSocio: string; descCarrito: string } | null>(null)
+
   // ── Config ────────────────────────────────────────────────
   const [tarifa, setTarifa]             = useState<number>(0)
   const [tarifaEdit, setTarifaEdit]     = useState<number>(0)
@@ -135,6 +158,17 @@ export default function CarritosPage() {
     const { data: sl } = await dbGolf.from('cat_slots').select('id, numero').eq('activo', true).order('numero')
     setSlots(sl ?? [])
   }, [])
+
+  const fetchBitacora = async (idCarrito: number) => {
+    setLoadingBit(prev => ({ ...prev, [idCarrito]: true }))
+    const { data } = await dbGolf
+      .from('bitacora_carritos')
+      .select('id, tipo_evento, descripcion, taller, tercero_nombre, tercero_telefono, costo_estimado, costo_real, nivel_urgencia, resuelto, fecha_evento, fecha_fin, observaciones, usuario_registra')
+      .eq('id_carrito_fk', idCarrito)
+      .order('fecha_evento', { ascending: false })
+    setBitacora(prev => ({ ...prev, [idCarrito]: (data as unknown as BitacoraEntry[]) ?? [] }))
+    setLoadingBit(prev => ({ ...prev, [idCarrito]: false }))
+  }
 
   useEffect(() => { fetchPensiones() }, [fetchPensiones])
   useEffect(() => { if (tab === 'config') fetchConfig() }, [tab, fetchConfig])
@@ -304,7 +338,11 @@ export default function CarritosPage() {
                     return (
                       <>
                         <tr key={p.id}
-                          onClick={() => setExpandido(abierto ? null : p.id)}
+                          onClick={() => {
+                            const next = abierto ? null : p.id
+                            setExpandido(next)
+                            if (next && !bitacora[p.id_carrito_fk]) fetchBitacora(p.id_carrito_fk)
+                          }}
                           style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', opacity: p.activo ? 1 : 0.55, transition: 'background 0.1s', background: abierto ? '#f0fdf4' : '' }}
                           onMouseEnter={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)' }}
                           onMouseLeave={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = '' }}>
@@ -353,29 +391,134 @@ export default function CarritosPage() {
                         </tr>
 
                         {/* Fila expandida */}
-                        {abierto && (
-                          <tr key={`${p.id}-det`}>
-                            <td colSpan={9} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
-                              <div style={{ padding: '14px 20px 16px 48px', background: '#fafafa', display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                                <div style={{ fontSize: 12, color: '#64748b' }}>
-                                  <span style={{ fontWeight: 600, color: '#475569' }}>Inicio de pensión: </span>
-                                  {new Date(p.fecha_inicio + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                  {p.observaciones && <div style={{ marginTop: 4, fontStyle: 'italic' }}>{p.observaciones}</div>}
+                        {abierto && (() => {
+                          const idCar = p.id_carrito_fk
+                          const entries = bitacora[idCar] ?? []
+                          const loadingB = loadingBit[idCar]
+                          const carDesc2 = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
+                          const tipoLabel: Record<string, string> = {
+                            SALIDA_TALLER:    '🔧 Salida a Taller',
+                            REGRESO_TALLER:   '✅ Regreso de Taller',
+                            PRESTAMO_TERCERO: '🤝 Préstamo a Tercero',
+                            INCIDENCIA:       '⚠️ Incidencia',
+                          }
+                          const tipoColor: Record<string, { color: string; bg: string }> = {
+                            SALIDA_TALLER:    { color: '#d97706', bg: '#fffbeb' },
+                            REGRESO_TALLER:   { color: '#15803d', bg: '#f0fdf4' },
+                            PRESTAMO_TERCERO: { color: '#2563eb', bg: '#eff6ff' },
+                            INCIDENCIA:       { color: '#dc2626', bg: '#fef2f2' },
+                          }
+                          const fmtDt = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                          return (
+                            <tr key={`${p.id}-det`}>
+                              <td colSpan={9} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
+                                <div style={{ background: '#f8fafc', padding: '16px 20px 20px 48px' }}>
+
+                                  {/* Info de pensión + acciones */}
+                                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+                                    <div style={{ fontSize: 12, color: '#64748b' }}>
+                                      <span style={{ fontWeight: 600, color: '#475569' }}>Inicio de pensión: </span>
+                                      {new Date(p.fecha_inicio + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                      {p.observaciones && <span style={{ marginLeft: 8, fontStyle: 'italic' }}>{p.observaciones}</span>}
+                                    </div>
+                                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                                      {puedeEscribir && p.activo && (
+                                        <button onClick={e => {
+                                          e.stopPropagation()
+                                          setShowPension({ idSocio: p.id_socio_fk, idCarrito: idCar, nombreSocio: nc(p.cat_socios), descCarrito: carDesc2 })
+                                        }}
+                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                          <Plus size={12} /> Nueva cuota
+                                        </button>
+                                      )}
+                                      {puedeEscribir && (
+                                        <button onClick={e => {
+                                          e.stopPropagation()
+                                          setShowBitacora({ idCarrito: idCar, idPension: p.id, idSocio: p.id_socio_fk, nombreSocio: nc(p.cat_socios), descCarrito: carDesc2 })
+                                        }}
+                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#1e293b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                          <BookOpen size={12} /> Nuevo registro
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Bitácora — tabla */}
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <BookOpen size={12} /> Bitácora del carrito
+                                    {loadingB && <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: 11 }}>Cargando…</span>}
+                                    {!loadingB && <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: 11 }}>({entries.length} registro{entries.length !== 1 ? 's' : ''})</span>}
+                                  </div>
+
+                                  {!loadingB && entries.length === 0 ? (
+                                    <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', paddingLeft: 4 }}>
+                                      Sin registros en bitácora. Usa "Nuevo registro" para agregar el primero.
+                                    </div>
+                                  ) : (
+                                    <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                        <thead>
+                                          <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                                            {['Tipo', 'Descripción', 'Detalle', 'Fecha', 'Resuelto', ''].map(h => (
+                                              <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                                            ))}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {entries.map(e => {
+                                            const tc = tipoColor[e.tipo_evento] ?? { color: '#475569', bg: '#f8fafc' }
+                                            let detalle = ''
+                                            if (e.taller) detalle = `Taller: ${e.taller}`
+                                            if (e.costo_estimado) detalle += `${detalle ? ' · ' : ''}Est: $${e.costo_estimado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                                            if (e.costo_real) detalle += `${detalle ? ' · ' : ''}Real: $${e.costo_real.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                                            if (e.tercero_nombre) detalle = `${e.tercero_nombre}${e.tercero_telefono ? ` · ${e.tercero_telefono}` : ''}`
+                                            if (e.nivel_urgencia) detalle = `Urgencia: ${e.nivel_urgencia}`
+                                            return (
+                                              <tr key={e.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
+                                                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: tc.bg, color: tc.color }}>
+                                                    {tipoLabel[e.tipo_evento] ?? e.tipo_evento}
+                                                  </span>
+                                                </td>
+                                                <td style={{ padding: '8px 12px', color: '#1e293b', maxWidth: 240 }}>
+                                                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.descripcion}</div>
+                                                  {e.observaciones && <div style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic', marginTop: 2 }}>{e.observaciones}</div>}
+                                                </td>
+                                                <td style={{ padding: '8px 12px', color: '#64748b', whiteSpace: 'nowrap' }}>{detalle || '—'}</td>
+                                                <td style={{ padding: '8px 12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                                                  {fmtDt(e.fecha_evento)}
+                                                  {e.fecha_fin && <div style={{ fontSize: 10, color: '#94a3b8' }}>→ {fmtDt(e.fecha_fin)}</div>}
+                                                </td>
+                                                <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                                  {e.resuelto
+                                                    ? <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 20, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>✓</span>
+                                                    : <span style={{ color: '#cbd5e1', fontSize: 11 }}>—</span>}
+                                                </td>
+                                                <td style={{ padding: '8px 12px' }}>
+                                                  {!e.resuelto && puedeEscribir && (
+                                                    <button
+                                                      onClick={async ev => {
+                                                        ev.stopPropagation()
+                                                        await dbGolf.from('bitacora_carritos').update({ resuelto: true }).eq('id', e.id)
+                                                        fetchBitacora(idCar)
+                                                      }}
+                                                      style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: 'none', border: '1px solid #e2e8f0', color: '#64748b', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                                      Resolver
+                                                    </button>
+                                                  )}
+                                                </td>
+                                              </tr>
+                                            )
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
                                 </div>
-                                {puedeEscribir && p.activo && (
-                                  <button onClick={e => {
-                                    e.stopPropagation()
-                                    const carDesc2 = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
-                                    setShowPension({ idSocio: p.id_socio_fk, idCarrito: p.id_carrito_fk, nombreSocio: nc(p.cat_socios), descCarrito: carDesc2 })
-                                  }}
-                                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
-                                    <Plus size={12} /> Nueva cuota
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
+                              </td>
+                            </tr>
+                          )
+                        })()}
                       </>
                     )
                   })}
@@ -483,6 +626,21 @@ export default function CarritosPage() {
           idSocio={showCobrar.idSocio}
           onClose={() => setShowCobrar(null)}
           onSaved={() => { setShowCobrar(null); fetchPensiones() }}
+        />
+      )}
+
+      {showBitacora && (
+        <BitacoraModal
+          idCarrito={showBitacora.idCarrito}
+          idPension={showBitacora.idPension}
+          idSocio={showBitacora.idSocio}
+          nombreSocio={showBitacora.nombreSocio}
+          descCarrito={showBitacora.descCarrito}
+          onClose={() => setShowBitacora(null)}
+          onSaved={() => {
+            setShowBitacora(null)
+            fetchBitacora(showBitacora.idCarrito)
+          }}
         />
       )}
     </div>
