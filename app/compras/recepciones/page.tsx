@@ -5,7 +5,7 @@ import { dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, Search, RefreshCw, Eye, X, Save, Loader, ArrowLeft, Truck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { fmt, fmtFecha, folioGen, StatusBadge } from '../types'
+import { fmt, fmtFecha, folioGen, StatusBadge, nextFolio } from '../types'
 
 export default function RecepcionesPage() {
   const router = useRouter()
@@ -155,8 +155,8 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     }
     setSaving(true); setError('')
 
-    const { data: folioREC } = await dbComp.rpc('fn_next_folio', { prefijo: 'REC' })
-    const folio = folioREC as string
+    let folio: string
+    try { folio = await nextFolio(dbComp, 'REC') } catch (e: any) { setError(e.message); setSaving(false); return }
     const condicion = tipoRecepcion === 'completa' ? 'Completa' : 'Parcial'
 
     const { data: rec, error: err } = await dbComp.from('recepciones').insert({

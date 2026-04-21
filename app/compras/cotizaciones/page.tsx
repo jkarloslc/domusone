@@ -8,7 +8,7 @@ import {
   ArrowLeft, ChevronRight, CheckCircle, Trash2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, FORMAS_PAGO_COMP } from '../types'
+import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, FORMAS_PAGO_COMP, nextFolio } from '../types'
 
 const PAGE_SIZE = 20
 
@@ -123,8 +123,8 @@ function RFQModal({ row, onClose, onSaved }: { row: any | null; onClose: () => v
 
   const handleSave = async () => {
     setSaving(true); setError('')
-    const { data: folioRFQ } = await dbComp.rpc('fn_next_folio', { prefijo: 'RFQ' })
-    const folio = folioRFQ as string
+    let folio: string
+    try { folio = await nextFolio(dbComp, 'RFQ') } catch (e: any) { setError(e.message); setSaving(false); return }
     const { error: err } = await dbComp.from('rfq').insert({
       folio,
       id_requisicion_fk: form.id_requisicion_fk ? Number(form.id_requisicion_fk) : null,

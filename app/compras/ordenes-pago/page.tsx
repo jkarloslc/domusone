@@ -9,7 +9,7 @@ import {
   Edit2, Upload, ExternalLink, FileText, AlertTriangle, MessageSquare, Send
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP } from '../types'
+import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP, nextFolio } from '../types'
 
 const PAGE_SIZE = 25
 
@@ -454,8 +454,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
 
     // NUEVO
-    const { data: folioOP } = await dbComp.rpc('fn_next_folio', { prefijo: 'OP' })
-    payload.folio      = folioOP as string
+    try {
+      payload.folio = await nextFolio(dbComp, 'OP')
+    } catch (e: any) {
+      setError(e.message); setSaving(false); return
+    }
     // OP con OC: ya viene autorizada por la cadena REQ→COT→OC → entra directo a CXP
     // OP sin OC: gasto directo sin cadena de aprobación → requiere autorización previa
     payload.status     = conOC ? 'Pendiente' : 'Pendiente Auth'

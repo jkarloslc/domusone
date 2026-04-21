@@ -92,3 +92,27 @@ export const CATEGORIAS_ART = [
   'Servicios',
 ]
 export const FORMAS_PAGO_COMP = ['Transferencia', 'Cheque', 'Efectivo', 'Tarjeta', 'Crédito 30 días', 'Crédito 60 días', 'Crédito 90 días']
+
+/**
+ * Genera el siguiente folio atómico usando la función RPC en Supabase.
+ * Lanza un error claro si el RPC falla (función no existe, sin permisos, etc.)
+ * En lugar de insertar null silenciosamente y romper el NOT NULL constraint.
+ *
+ * Uso: const folio = await nextFolio(dbComp, 'OP')
+ */
+export async function nextFolio(db: any, prefijo: string): Promise<string> {
+  const { data, error } = await db.rpc('fn_next_folio', { prefijo })
+  if (error) {
+    throw new Error(
+      `Error al generar folio ${prefijo}: ${error.message}\n` +
+      `Verifica que el SQL de secuencias (sql/PENDIENTE_EJECUTAR.sql sección 3) fue ejecutado en Supabase.`
+    )
+  }
+  if (!data) {
+    throw new Error(
+      `fn_next_folio devolvió null para prefijo "${prefijo}". ` +
+      `Ejecuta el SQL de secuencias en Supabase SQL Editor (sql/PENDIENTE_EJECUTAR.sql sección 3).`
+    )
+  }
+  return data as string
+}

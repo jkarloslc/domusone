@@ -8,7 +8,7 @@ import {
   ArrowLeft, CheckCircle, XCircle, Trash2, ChevronLeft, ChevronRight, Printer
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { type Articulo, fmt, fmtFecha, folioGen, StatusBadge, UNIDADES } from '../types'
+import { type Articulo, fmt, fmtFecha, folioGen, StatusBadge, UNIDADES, nextFolio } from '../types'
 
 const PAGE_SIZE = 20
 
@@ -387,8 +387,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
 
     let reqId = row?.id
     if (isNew) {
-      const { data: folioREQ } = await dbComp.rpc('fn_next_folio', { prefijo: 'REQ' })
-      const folio = folioREQ as string
+      let folio: string
+      try { folio = await nextFolio(dbComp, 'REQ') } catch (e: any) { setError(e.message); setSaving(false); return }
       const { data, error: err } = await dbComp.from('requisiciones').insert({
         folio,
         area_solicitante:   form.area_solicitante.trim(),

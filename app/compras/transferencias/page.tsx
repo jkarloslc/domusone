@@ -9,7 +9,7 @@ import {
   Truck, PackageCheck, ClipboardList, Printer
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { fmt, fmtFecha, folioGen, StatusBadge } from '../types'
+import { fmt, fmtFecha, folioGen, StatusBadge, nextFolio } from '../types'
 
 // ── Stepper visual ────────────────────────────────────────────
 const PASOS = [
@@ -363,8 +363,8 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     if (!detValidos.length) { setError('Agrega al menos un artículo'); return }
     setSaving(true); setError('')
 
-    const { data: folioTRF } = await dbComp.rpc('fn_next_folio', { prefijo: 'TRF' })
-    const folio = folioTRF as string
+    let folio: string
+    try { folio = await nextFolio(dbComp, 'TRF') } catch (e: any) { setError(e.message); setSaving(false); return }
 
     const { data: trf, error: err } = await dbComp.from('transferencias').insert({
       folio,

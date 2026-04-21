@@ -8,7 +8,7 @@ import {
   ArrowLeft, CheckCircle, XCircle, Printer, Trash2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP } from '../types'
+import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP, nextFolio } from '../types'
 
 const PAGE_SIZE = 20
 
@@ -312,8 +312,8 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     const detValidos = det.filter(d => d.descripcion && Number(d.precio_unitario) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto con precio'); return }
     setSaving(true); setError('')
-    const { data: folioOC } = await dbComp.rpc('fn_next_folio', { prefijo: 'OC' })
-    const folio = folioOC as string
+    let folio: string
+    try { folio = await nextFolio(dbComp, 'OC') } catch (e: any) { setError(e.message); setSaving(false); return }
     const { data: oc, error: err } = await dbComp.from('ordenes_compra').insert({
       folio,
       id_proveedor_fk:       Number(form.id_proveedor_fk),
@@ -527,10 +527,10 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
 
   const crearOrdenPago = async () => {
     setSavingOP(true)
-    const { data: folioOP } = await dbComp.rpc('fn_next_folio', { prefijo: 'OP' })
-    const folio = folioOP as string
+    let folioOP: string
+    try { folioOP = await nextFolio(dbComp, 'OP') } catch (e: any) { setSavingOP(false); alert(e.message); return }
     await dbComp.from('ordenes_pago').insert({
-      folio, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
+      folio: folioOP, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
       id_almacen_fk: oc.id_almacen_entrega_fk ?? null,
       monto: oc.total, forma_pago: opForm.forma_pago,
       fecha_vencimiento: opForm.fecha_vencimiento || null,

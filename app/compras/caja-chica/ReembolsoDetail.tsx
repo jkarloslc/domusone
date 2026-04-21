@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { X, CheckCircle, XCircle, ExternalLink, DollarSign, Printer } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
-import { folioGen, fmt } from '../types'
+import { folioGen, fmt, nextFolio } from '../types'
 
 type Props = {
   reembolso: any
@@ -54,8 +54,8 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
       }).eq('id', r.id)
 
       // 2. Generar OP automática al usuario como beneficiario
-      const { data: folioOP } = await dbComp.rpc('fn_next_folio', { prefijo: 'OP' })
-      const folio = folioOP as string
+      let folio: string
+      try { folio = await nextFolio(dbComp, 'OP') } catch (e: any) { alert((e as Error).message); return }
 
       const { data: opData } = await dbComp.from('ordenes_pago').insert({
         folio,
