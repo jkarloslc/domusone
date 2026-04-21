@@ -51,7 +51,7 @@ type Contrato = {
   created_at: string
 }
 
-const PARENTESCOS = ['Cónyuge', 'Hijo', 'Hija', 'Padre', 'Madre', 'Hermano', 'Hermana', 'Otro']
+const PARENTESCOS = ['Esposo','Esposa', 'Hijo', 'Hija', 'Padre', 'Madre', 'Hermano', 'Hermana', 'Sobrino', 'Usuario']
 
 type FamiliarForm = {
   nombre: string
