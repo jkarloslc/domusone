@@ -324,6 +324,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Club',           href: '/golf',           icon: Flag          },
       RPT('golf'),
     ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
     { section: 'Comunicación', items: [
       { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},

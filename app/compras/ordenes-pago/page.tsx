@@ -748,7 +748,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 // ════════════════════════════════════════════════════════════
 // Detalle OP
 // ════════════════════════════════════════════════════════════
-const ROLES_AUTH_OP = ['admin', 'compras_supervisor', 'fraccionamiento']
+const ROLES_AUTH_OP = ['superadmin', 'admin', 'compras_supervisor', 'fraccionamiento']
 
 function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void

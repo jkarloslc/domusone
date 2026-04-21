@@ -89,9 +89,11 @@ const ADMIN_MODULOS = [
 ]
 
 // Módulos Golf para rol dedicado
+// Incluye requisiciones y transferencias de Compras para flujo de solicitudes
 const GOLF_MODULOS = [
   'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros', 'reportes',
+  'compras', 'requisiciones', 'transferencias',
 ]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
@@ -255,7 +257,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!key) return 'seguridad'
       return MODS_SEGURIDAD.includes(key) ? 'seguridad' : false
     }
-    if (r === 'usuario_solicitante') {
+    if (r === 'usuario_solicitante' || r === 'usuariogolf') {
       // Solo ve Requisiciones y Transferencias — sin autorización, sin catálogos
       const MODS_SOLICITANTE = ['requisiciones', 'transferencias']
       if (!key) return 'solicitante'
