@@ -1,11 +1,11 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbGolf } from '@/lib/supabase'
+import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
   ChevronDown, ChevronRight, Scissors, Settings, History,
-  Printer, Ban, AlertCircle, Store, Save, Loader,
+  Printer, Ban, AlertCircle, Store, Save, Loader, FileText, Receipt,
 } from 'lucide-react'
 import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
@@ -23,8 +23,10 @@ type Venta = {
 type Corte = {
   id: number; centro_nombre: string; fecha_corte: string
   fecha_inicio: string; fecha_fin: string
-  num_ventas: number; total_ventas: number; total_neto: number
-  usuario: string | null; id_recibo_ingreso: number | null
+  num_ventas: number; num_canceladas: number
+  total_ventas: number; total_cancelado: number; total_neto: number
+  usuario: string | null; notas: string | null
+  id_recibo_ingreso: number | null
 }
 type Producto = {
   id: number; nombre: string; descripcion: string | null; sku: string | null
@@ -77,6 +79,9 @@ export default function POSPage() {
   const [editingProd,    setEditingProd]    = useState<Partial<Producto> | null>(null)
   const [savingProd,     setSavingProd]     = useState(false)
   const [nuevoCentroNom, setNuevoCentroNom] = useState('')
+
+  // Cortes — acciones
+  const [generandoRecibo, setGenerandoRecibo] = useState<number | null>(null)
 
   // Stats del día
   const [statsHoy, setStatsHoy] = useState({ ventas: 0, total: 0, pendCorte: 0 })
@@ -220,6 +225,183 @@ export default function POSPage() {
     const url = `/ticket-golf.html?data=${encodeURIComponent(JSON.stringify(ticketData))}`
     window.open(url, '_blank', 'width=400,height=700')
     await dbGolf.from('ctrl_ventas').update({ num_impresiones: v.num_impresiones + 1 }).eq('id', v.id)
+  }
+
+  // ── Imprimir corte de caja ────────────────────────────────
+  const imprimirCorte = async (c: Corte) => {
+    // Cargar desglose de formas de pago
+    const { data: det } = await dbGolf.from('ctrl_cortes_caja_det')
+      .select('forma_nombre, monto').eq('id_corte_fk', c.id).order('monto', { ascending: false })
+    // Cargar cfg del POS
+    const { data: cfg } = await dbGolf.from('cfg_pos').select('*').single()
+    const rs = (cfg as any)?.razon_social ?? 'Club de Golf Balvanera'
+    const dir = (cfg as any)?.direccion ?? ''
+    const tel = (cfg as any)?.telefono ?? ''
+    const rfc = (cfg as any)?.rfc ?? ''
+
+    const desglose = (det ?? []) as { forma_nombre: string; monto: number }[]
+    const fmt = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+    const fdt = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    const fd  = (d: string) => new Date(d).toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+
+    const filasDesglose = desglose.map(f => `
+      <tr>
+        <td>${f.forma_nombre}</td>
+        <td class="right">${fmt(f.monto)}</td>
+      </tr>`).join('')
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<title>Corte de Caja #${String(c.id).padStart(4,'0')}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; font-size:12px; color:#1e293b; background:#fff; padding:20mm 18mm; }
+  @media print { body { padding:10mm 12mm; } @page { size:A4; margin:0; } }
+  h1 { font-size:20px; font-weight:800; color:#065f46; margin-bottom:2px; }
+  h2 { font-size:14px; font-weight:700; color:#1e293b; margin:14px 0 6px; border-bottom:2px solid #e2e8f0; padding-bottom:4px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; border-bottom:3px solid #059669; padding-bottom:14px; }
+  .club { }
+  .club-sub { font-size:11px; color:#64748b; margin-top:2px; }
+  .folio { text-align:right; }
+  .folio-num { font-size:26px; font-weight:900; color:#059669; }
+  .folio-label { font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:.08em; }
+  table { width:100%; border-collapse:collapse; margin-bottom:8px; }
+  th { background:#f1f5f9; color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:.05em; padding:6px 10px; text-align:left; }
+  td { padding:7px 10px; border-bottom:1px solid #f1f5f9; font-size:12px; }
+  .right { text-align:right; }
+  .bold { font-weight:700; }
+  .total-row td { font-size:14px; font-weight:800; color:#059669; border-top:2px solid #e2e8f0; padding-top:10px; }
+  .kpi-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin:14px 0; }
+  .kpi { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; }
+  .kpi-label { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
+  .kpi-value { font-size:20px; font-weight:800; margin-top:2px; }
+  .kpi-green { color:#059669; }
+  .kpi-red   { color:#dc2626; }
+  .kpi-blue  { color:#2563eb; }
+  .meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0; font-size:12px; }
+  .meta-item { display:flex; gap:8px; }
+  .meta-label { color:#94a3b8; min-width:80px; }
+  .meta-value { font-weight:600; color:#1e293b; }
+  .recibo-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; background:#dcfce7; color:#15803d; margin-top:4px; }
+  .footer { margin-top:24px; border-top:1px solid #e2e8f0; padding-top:12px; text-align:center; font-size:10px; color:#94a3b8; }
+  .no-print { margin-bottom:16px; }
+  @media print { .no-print { display:none; } }
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button onclick="window.print()" style="padding:8px 20px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">🖨 Imprimir</button>
+</div>
+
+<div class="header">
+  <div class="club">
+    <h1>${rs}</h1>
+    <div class="club-sub">${dir}</div>
+    ${tel ? `<div class="club-sub">Tel. ${tel}</div>` : ''}
+    ${rfc ? `<div class="club-sub">RFC: ${rfc}</div>` : ''}
+  </div>
+  <div class="folio">
+    <div class="folio-label">Corte de Caja</div>
+    <div class="folio-num">#${String(c.id).padStart(4,'0')}</div>
+    <div class="club-sub" style="text-align:right">${fdt(c.fecha_corte)}</div>
+    ${c.id_recibo_ingreso ? `<div class="recibo-badge">✓ Recibo ingreso #${c.id_recibo_ingreso}</div>` : ''}
+  </div>
+</div>
+
+<div class="meta">
+  <div class="meta-item"><span class="meta-label">Centro:</span><span class="meta-value">${c.centro_nombre}</span></div>
+  <div class="meta-item"><span class="meta-label">Cajero:</span><span class="meta-value">${c.usuario ?? '—'}</span></div>
+  <div class="meta-item"><span class="meta-label">Período:</span><span class="meta-value">${fd(c.fecha_inicio)} — ${fd(c.fecha_fin)}</span></div>
+  <div class="meta-item"><span class="meta-label">Fecha corte:</span><span class="meta-value">${fdt(c.fecha_corte)}</span></div>
+  ${c.notas ? `<div class="meta-item" style="grid-column:1/-1"><span class="meta-label">Notas:</span><span class="meta-value">${c.notas}</span></div>` : ''}
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-label">Ventas cobradas</div><div class="kpi-value kpi-green">${c.num_ventas}</div></div>
+  <div class="kpi"><div class="kpi-label">Canceladas</div><div class="kpi-value kpi-red">${c.num_canceladas ?? 0}</div></div>
+  <div class="kpi"><div class="kpi-label">Total ventas</div><div class="kpi-value kpi-blue">${fmt(c.total_ventas)}</div></div>
+  <div class="kpi"><div class="kpi-label">Total neto</div><div class="kpi-value kpi-green">${fmt(c.total_neto)}</div></div>
+</div>
+
+<h2>Desglose por Forma de Pago</h2>
+${desglose.length > 0 ? `
+<table>
+  <thead><tr><th>Forma de Pago</th><th class="right">Monto</th></tr></thead>
+  <tbody>
+    ${filasDesglose}
+    <tr class="total-row"><td class="bold">TOTAL NETO</td><td class="right bold">${fmt(c.total_neto)}</td></tr>
+  </tbody>
+</table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin desglose de formas de pago registrado.</p>'}
+
+<div class="footer">
+  Corte generado el ${fdt(c.fecha_corte)} · ${rs}
+  <br/>Este documento es el comprobante oficial del cierre de caja.
+</div>
+</body>
+</html>`
+
+    const w = window.open('', '_blank', 'width=800,height=900')
+    if (w) { w.document.write(html); w.document.close(); w.focus() }
+  }
+
+  // ── Generar recibo de ingreso para corte ──────────────────
+  const generarReciboCorte = async (c: Corte) => {
+    if (c.id_recibo_ingreso) {
+      alert(`Este corte ya tiene el recibo de ingreso #${c.id_recibo_ingreso} generado.`)
+      return
+    }
+    if (!confirm(`¿Generar recibo de ingreso por ${fmt$(c.total_neto)} para el corte #${String(c.id).padStart(4,'0')}?`)) return
+    setGenerandoRecibo(c.id)
+
+    try {
+      // Obtener desglose de formas de pago
+      const { data: det } = await dbGolf.from('ctrl_cortes_caja_det')
+        .select('forma_nombre, monto').eq('id_corte_fk', c.id)
+      const fps = (det ?? []) as { forma_nombre: string; monto: number }[]
+
+      const fpagoMap: Record<string, number> = {}
+      for (const fp of fps) {
+        const n = fp.forma_nombre.toLowerCase()
+        if (n.includes('efectivo'))     fpagoMap['monto_efectivo']      = (fpagoMap['monto_efectivo'] ?? 0) + fp.monto
+        else if (n.includes('tarjeta')) fpagoMap['monto_tarjeta']       = (fpagoMap['monto_tarjeta'] ?? 0) + fp.monto
+        else if (n.includes('transf'))  fpagoMap['monto_transferencia'] = (fpagoMap['monto_transferencia'] ?? 0) + fp.monto
+        else if (n.includes('cheque'))  fpagoMap['monto_cheque']        = (fpagoMap['monto_cheque'] ?? 0) + fp.monto
+        else                            fpagoMap['monto_efectivo']      = (fpagoMap['monto_efectivo'] ?? 0) + fp.monto
+      }
+
+      const f1 = c.fecha_inicio.split('T')[0]
+      const f2 = c.fecha_fin.split('T')[0]
+
+      const { data: centroIng } = await dbCtrl.from('centros_ingreso')
+        .select('id').ilike('nombre', '%golf%').limit(1)
+
+      const { data: recibo, error: reErr } = await dbCtrl.from('recibos_ingreso').insert({
+        fecha:                f2,
+        id_centro_ingreso_fk: centroIng?.[0]?.id ?? null,
+        descripcion:          `Corte POS Golf — ${c.centro_nombre} — ${f1} al ${f2}`,
+        monto_efectivo:       fpagoMap['monto_efectivo']      ?? 0,
+        monto_transferencia:  fpagoMap['monto_transferencia'] ?? 0,
+        monto_tarjeta:        fpagoMap['monto_tarjeta']       ?? 0,
+        monto_cheque:         fpagoMap['monto_cheque']        ?? 0,
+        monto_total:          c.total_neto,
+        status:               'Confirmado',
+        origen:               'POS_GOLF',
+        notas:                `Folio corte Golf: #${c.id}`,
+        usuario_crea:         authUser?.nombre ?? 'sistema',
+      }).select('id').single()
+
+      if (reErr || !recibo) { alert('Error al generar recibo: ' + (reErr?.message ?? 'desconocido')); return }
+
+      await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: recibo.id }).eq('id', c.id)
+      fetchCortes()
+      alert(`✅ Recibo de ingreso #${recibo.id} generado exitosamente.`)
+    } catch (e: any) {
+      alert('Error: ' + e.message)
+    } finally {
+      setGenerandoRecibo(null)
+    }
   }
 
   // ── Guardar producto ──────────────────────────────────────
@@ -495,37 +677,107 @@ export default function POSPage() {
       {/* ── TAB: CORTES ──────────────────────────────────── */}
       {tab === 'cortes' && (
         <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <button className="btn-ghost" onClick={fetchCortes} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <RefreshCw size={12} /> Actualizar
+            </button>
+          </div>
+
           {loadingC ? (
             <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
           ) : cortes.length === 0 ? (
             <div className="card" style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
               <Scissors size={32} style={{ margin: '0 auto 10px' }} />
               <div style={{ fontWeight: 500 }}>Sin cortes registrados</div>
+              <div style={{ fontSize: 12, marginTop: 4 }}>Realiza un corte de caja desde el Punto de Venta</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {cortes.map(c => (
-                <div key={c.id} className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: 180 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: '#1e293b' }}>
-                      Corte #{String(c.id).padStart(4, '0')} — {c.centro_nombre}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-                      {fmtDT(c.fecha_corte)} · {c.num_ventas} venta{c.num_ventas !== 1 ? 's' : ''}
-                      {c.usuario && <span style={{ marginLeft: 8 }}>· {c.usuario}</span>}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
-                      Período: {fmtD(c.fecha_inicio)} — {fmtD(c.fecha_fin)}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: '#059669' }}>{fmt$(c.total_neto)}</div>
-                    {c.id_recibo_ingreso && (
-                      <div style={{ fontSize: 10, color: '#059669', marginTop: 2 }}>✓ Recibo ingreso #{c.id_recibo_ingreso}</div>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
+                      {['Folio', 'Centro', 'Período', 'Ventas', 'Canceladas', 'Total Neto', 'Cajero', 'Recibo Ingreso', ''].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cortes.map(c => (
+                      <tr key={c.id}
+                        style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontWeight: 700, color: '#1e293b' }}>#{String(c.id).padStart(4, '0')}</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8' }}>{fmtDT(c.fecha_corte)}</div>
+                        </td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                          {c.centro_nombre}
+                        </td>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: 12, color: '#475569' }}>{fmtD(c.fecha_inicio)}</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8' }}>— {fmtD(c.fecha_fin)}</div>
+                        </td>
+                        <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{c.num_ventas}</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                          {(c.num_canceladas ?? 0) > 0
+                            ? <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{c.num_canceladas}</span>
+                            : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        </td>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 15, fontWeight: 800, color: '#059669' }}>{fmt$(c.total_neto)}</span>
+                          {c.total_cancelado > 0 && (
+                            <div style={{ fontSize: 11, color: '#dc2626' }}>−{fmt$(c.total_cancelado)} cancelado</div>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
+                          {c.usuario ?? '—'}
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          {c.id_recibo_ingreso ? (
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#15803d', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                              ✓ #{c.id_recibo_ingreso}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin recibo</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                            <button
+                              onClick={() => imprimirCorte(c)}
+                              title="Imprimir corte de caja"
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <Printer size={11} /> Imprimir
+                            </button>
+                            {!c.id_recibo_ingreso && puedeEscribir && (
+                              <button
+                                onClick={() => generarReciboCorte(c)}
+                                disabled={generandoRecibo === c.id}
+                                title="Generar recibo de ingreso"
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: generandoRecibo === c.id ? 0.5 : 1 }}>
+                                {generandoRecibo === c.id ? <Loader size={11} /> : <Receipt size={11} />}
+                                {generandoRecibo === c.id ? 'Generando…' : 'Recibo'}
+                              </button>
+                            )}
+                            {c.id_recibo_ingreso && (
+                              <button
+                                onClick={() => alert(`Recibo de ingreso #${c.id_recibo_ingreso} ya generado. Puedes consultarlo en el módulo de Ingresos.`)}
+                                title="Ver recibo de ingreso"
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                <FileText size={11} /> Recibo #{c.id_recibo_ingreso}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </>
