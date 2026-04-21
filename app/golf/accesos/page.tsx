@@ -191,7 +191,7 @@ export default function AccesosPage() {
                 <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
               ) : accesos.length === 0 ? (
                 <tr><td colSpan={8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>⛳</div>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>-</div>
                   <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin registros para este día</div>
                   <div style={{ fontSize: 12 }}>Registra la primera salida al campo</div>
                 </td></tr>
