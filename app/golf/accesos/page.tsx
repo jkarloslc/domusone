@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, MapPin, Users, Clock, Filter } from 'lucide-react'
+import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Users, Clock, Filter } from 'lucide-react'
 import Link from 'next/link'
 import AccesoModal from './AccesoModal'
 
@@ -99,15 +99,12 @@ export default function AccesosPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12, transition: 'color 0.15s' }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#2563eb'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
+            <Link href="/golf" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
               <ChevronLeft size={13} /> Club
             </Link>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>/</span>
-            <MapPin size={13} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Salidas al Campo</span>
+            <span>/</span>
+            <span style={{ color: '#475569', fontWeight: 500 }}>Salidas al Campo</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
             Salidas al Campo

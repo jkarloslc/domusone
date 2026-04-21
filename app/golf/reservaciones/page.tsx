@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, ChevronRight, Calendar, Car, X, Users, UserX } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import Link from 'next/link'
 import ReservacionModal from './ReservacionModal'
 
@@ -36,6 +36,8 @@ const addDays = (dateStr: string, n: number) => {
 
 const fmtFechaLarga = (dateStr: string) =>
   new Date(dateStr + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+const fmtHora = (h: string) => h.slice(0, 5)
 
 export default function ReservacionesPage() {
   const { canWrite } = useAuth()
@@ -77,10 +79,10 @@ export default function ReservacionesPage() {
 
     const activas = all.filter(r => !r.cancelado)
     setStats({
-      total:    activas.length,
+      total:     activas.length,
       jugadores: activas.reduce((s, r) => s + (r.num_jugadores ?? 0), 0),
-      carros:   activas.filter(r => r.carro_golf).length,
-      monto:    activas.reduce((s, r) => s + (r.monto ?? 0) + (r.monto_carro_golf ?? 0), 0),
+      carros:    activas.filter(r => r.carro_golf).length,
+      monto:     activas.reduce((s, r) => s + (r.monto ?? 0) + (r.monto_carro_golf ?? 0), 0),
     })
 
     setReservaciones(all)
@@ -105,21 +107,22 @@ export default function ReservacionesPage() {
   const handleSaved = () => { setShowModal(false); fetchReservaciones() }
   const esHoy = fecha === hoy
 
+  const nc = (r: Reservacion) => r.es_externo
+    ? (r.nombre_externo || 'Visitante')
+    : r.cat_socios ? [r.cat_socios.nombre, r.cat_socios.apellido_paterno, r.cat_socios.apellido_materno].filter(Boolean).join(' ') : '—'
+
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12, transition: 'color 0.15s' }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#2563eb'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
+            <Link href="/golf" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
               <ChevronLeft size={13} /> Club
             </Link>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>/</span>
-            <Calendar size={13} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Reservaciones</span>
+            <span>/</span>
+            <span style={{ color: '#475569', fontWeight: 500 }}>Reservaciones</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
             Reservaciones
@@ -158,13 +161,13 @@ export default function ReservacionesPage() {
         )}
       </div>
 
-      {/* Stats */}
+      {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Reservaciones', value: stats.total,    color: '#7c3aed', bg: '#f5f3ff', icon: Calendar },
-          { label: 'Jugadores',     value: stats.jugadores, color: '#2563eb', bg: '#eff6ff', icon: Users   },
-          { label: 'Carros',        value: stats.carros,   color: '#0891b2', bg: '#ecfeff', icon: Car      },
-          { label: 'Monto Total',   value: fmt$(stats.monto), color: '#16a34a', bg: '#f0fdf4', icon: null  },
+          { label: 'Reservaciones', value: stats.total,              color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Jugadores',     value: stats.jugadores,          color: '#2563eb', bg: '#eff6ff' },
+          { label: 'Carros',        value: stats.carros,             color: '#0891b2', bg: '#ecfeff' },
+          { label: 'Monto Total',   value: fmt$(stats.monto),        color: '#16a34a', bg: '#f0fdf4' },
         ].map(card => (
           <div key={card.label} className="card" style={{ flex: '1 1 140px', maxWidth: 200, padding: '12px 16px', background: card.bg, border: `1px solid ${card.color}22` }}>
             <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{card.label}</div>
@@ -186,97 +189,81 @@ export default function ReservacionesPage() {
         </label>
       </div>
 
-      {/* Lista de reservaciones */}
-      {loading ? (
-        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</div>
-      ) : reservaciones.length === 0 ? (
-        <div className="card" style={{ padding: '56px', textAlign: 'center', color: 'var(--text-muted)' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
-          <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin reservaciones para este día</div>
-          <div style={{ fontSize: 12 }}>Crea la primera reservación del día</div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {reservaciones.map(r => {
-            const socio = r.cat_socios
-            const nombre = r.es_externo
-              ? (r.nombre_externo || 'Visitante')
-              : socio ? [socio.nombre, socio.apellido_paterno, socio.apellido_materno].filter(Boolean).join(' ') : '—'
-            const isCancelando = cancelando === r.id
-            const montoTotal = (r.monto ?? 0) + (r.carro_golf ? (r.monto_carro_golf ?? 0) : 0)
-            const accentColor = r.cancelado ? '#e2e8f0' : r.es_externo ? '#ea580c' : '#7c3aed'
-
-            return (
-              <div key={r.id} className="card" style={{
-                padding: '14px 18px',
-                opacity: r.cancelado ? 0.5 : 1,
-                borderLeft: `4px solid ${accentColor}`,
-                display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-              }}>
-                {/* Hora + nombre */}
-                <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flex: 1, minWidth: 200 }}>
-                  <div style={{ textAlign: 'center', minWidth: 52 }}>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: r.cancelado ? '#94a3b8' : accentColor, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-                      {r.hora_reservacion.slice(0, 5)}
-                    </div>
-                    <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
-                      {r.num_jugadores} jug.
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: r.cancelado ? '#94a3b8' : '#1e293b' }}>{nombre}</div>
-                    {!r.es_externo && socio?.numero_socio && <div style={{ fontSize: 11, color: '#94a3b8' }}>#{socio.numero_socio}</div>}
-                    {r.es_externo && r.telefono_externo && <div style={{ fontSize: 11, color: '#94a3b8' }}>{r.telefono_externo}</div>}
-                    <div style={{ display: 'flex', gap: 8, marginTop: 5, flexWrap: 'wrap' }}>
+      {/* Tabla */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
+                {['Hora', 'Socio / Visitante', 'Espacio', 'Forma de Juego', 'Jugadores', 'Carro', 'Monto', 'Status', ''].map(h => (
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+              ) : reservaciones.length === 0 ? (
+                <tr><td colSpan={9} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin reservaciones para este día</div>
+                  <div style={{ fontSize: 12 }}>Crea la primera reservación del día</div>
+                </td></tr>
+              ) : reservaciones.map(r => {
+                const montoTotal = (r.monto ?? 0) + (r.carro_golf ? (r.monto_carro_golf ?? 0) : 0)
+                return (
+                  <tr key={r.id}
+                    style={{ borderBottom: '1px solid var(--border)', opacity: r.cancelado ? 0.5 : 1, transition: 'background 0.1s' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                    <td style={{ padding: '10px 14px', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: r.cancelado ? '#94a3b8' : 'var(--text-primary)' }}>{fmtHora(r.hora_reservacion)}</span>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nc(r)}</div>
+                      {!r.es_externo && r.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{r.cat_socios.numero_socio}</div>}
+                      {r.es_externo && r.telefono_externo && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.telefono_externo}</div>}
                       {r.es_externo && (
-                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fff7ed', color: '#c2410c', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <UserX size={10} /> Visitante
-                        </span>
+                        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#fff7ed', color: '#c2410c', fontWeight: 600 }}>Visitante</span>
                       )}
-                      {r.cat_espacios_deportivos?.nombre && (
-                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed', fontWeight: 500 }}>
-                          {r.cat_espacios_deportivos.nombre}
-                        </span>
+                    </td>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
+                      {r.cat_espacios_deportivos?.nombre ?? '—'}
+                    </td>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
+                      {r.cat_formas_juego?.nombre ?? '—'}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      {r.num_jugadores}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                      {r.carro_golf
+                        ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#ecfeff', color: '#0891b2', fontWeight: 600 }}>Sí</span>
+                        : <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>}
+                    </td>
+                    <td style={{ padding: '10px 14px', fontWeight: 600, color: '#16a34a', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      {montoTotal > 0 ? fmt$(montoTotal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      {r.cancelado
+                        ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', fontWeight: 600 }}>Cancelada</span>
+                        : <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#16a34a', fontWeight: 600 }}>Activa</span>}
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      {!r.cancelado && puedeEscribir && (
+                        <button className="btn-ghost"
+                          style={{ padding: '4px 10px', fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 5, opacity: cancelando === r.id ? 0.5 : 1 }}
+                          onClick={() => cancelar(r.id)} disabled={cancelando === r.id}>
+                          <X size={13} /> Cancelar
+                        </button>
                       )}
-                      {r.cat_formas_juego?.nombre && (
-                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#475569', fontWeight: 500 }}>
-                          {r.cat_formas_juego.nombre}
-                        </span>
-                      )}
-                      {r.carro_golf && (
-                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#ecfeff', color: '#0891b2', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <Car size={10} /> Carro
-                        </span>
-                      )}
-                      {r.cancelado && (
-                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', fontWeight: 600 }}>
-                          CANCELADA
-                        </span>
-                      )}
-                    </div>
-                    {r.observaciones && <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>{r.observaciones}</div>}
-                  </div>
-                </div>
-
-                {/* Monto + acción */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                  {montoTotal > 0 && (
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#16a34a', fontVariantNumeric: 'tabular-nums' }}>
-                      {fmt$(montoTotal)}
-                    </div>
-                  )}
-                  {!r.cancelado && puedeEscribir && (
-                    <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 5, opacity: isCancelando ? 0.5 : 1 }}
-                      onClick={() => cancelar(r.id)} disabled={isCancelando}>
-                      <X size={13} /> Cancelar
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
 
       {showModal && <ReservacionModal fecha={fecha} onClose={() => setShowModal(false)} onSaved={handleSaved} />}
     </div>

@@ -207,18 +207,15 @@ export default function CarritosPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12 }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#2563eb'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
+            <Link href="/golf" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
               <ChevronLeft size={13} /> Club
             </Link>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>/</span>
-            <Car size={13} style={{ color: '#059669' }} />
-            <span style={{ fontSize: 11, color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Carritos</span>
+            <span>/</span>
+            <span style={{ color: '#475569', fontWeight: 500 }}>Carritos</span>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-            Carritos & CXC Golf
+            Carritos & Pensiones
           </h1>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -283,83 +280,109 @@ export default function CarritosPage() {
             </label>
           </div>
 
-          {loadingP ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
-          ) : pensionesF.length === 0 ? (
-            <div className="card" style={{ padding: '56px', textAlign: 'center', color: '#94a3b8' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🚗</div>
-              <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin pensiones registradas</div>
-              <div style={{ fontSize: 12 }}>Registra un nuevo carrito para comenzar</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {pensionesF.map(p => {
-                const abierto = expandido === p.id
-                const carDesc = [p.cat_carritos?.marca, p.cat_carritos?.modelo, p.cat_carritos?.color].filter(Boolean).join(' ')
-                return (
-                  <div key={p.id} className="card" style={{ padding: 0, overflow: 'hidden', borderLeft: `4px solid ${p.activo ? '#059669' : '#e2e8f0'}`, opacity: p.activo ? 1 : 0.6 }}>
-                    <div onClick={() => setExpandido(abierto ? null : p.id)}
-                      style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', flexWrap: 'wrap' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
-                      <div style={{ color: '#94a3b8', flexShrink: 0 }}>
-                        {abierto ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 180 }}>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: '#1e293b' }}>{nc(p.cat_socios)}</div>
-                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {p.cat_socios?.numero_socio && <span>#{p.cat_socios.numero_socio}</span>}
-                          <span style={{ padding: '1px 6px', borderRadius: 20, background: p.cat_carritos?.tipo === 'ELECTRICO' ? '#eff6ff' : '#fffbeb', color: p.cat_carritos?.tipo === 'ELECTRICO' ? '#1d4ed8' : '#92400e', fontWeight: 600 }}>
-                            {p.cat_carritos?.tipo === 'ELECTRICO' ? '⚡' : '⛽'} {carDesc || 'Carrito'}
-                          </span>
-                          {p.cat_slots && <span>Cajón {p.cat_slots.numero}</span>}
-                          {p.cat_carritos?.placa && <span>Placa: {p.cat_carritos.placa}</span>}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{fmt$(p.monto_mensual)}/mes</div>
-                          <div style={{ fontSize: 10, color: '#94a3b8' }}>tarifa</div>
-                        </div>
-                        {p.pendientes > 0 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 20, background: '#fef2f2', border: '1px solid #fecaca' }}>
-                            <AlertCircle size={12} color="#dc2626" />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{p.pendientes} pendiente{p.pendientes !== 1 ? 's' : ''} · {fmt$(p.monto_pendiente)}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {abierto && (
-                      <div style={{ borderTop: '1px solid #f1f5f9', padding: '14px 18px', background: '#fafafa', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        <div style={{ fontSize: 12, color: '#64748b', flex: 1 }}>
-                          <span style={{ fontWeight: 600 }}>Inicio:</span> {new Date(p.fecha_inicio + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          {p.observaciones && <div style={{ marginTop: 4, fontStyle: 'italic' }}>{p.observaciones}</div>}
-                        </div>
-                        {puedeEscribir && p.activo && (
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {p.pendientes > 0 && (
-                              <button onClick={() => abrirCobro(p)}
-                                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
-                                <CreditCard size={12} /> Cobrar cuotas
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
+                    {['', 'Socio', 'Carrito', 'Cajón', 'Placa', 'Tarifa/mes', 'Pendientes', 'Status', ''].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingP ? (
+                    <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                  ) : pensionesF.length === 0 ? (
+                    <tr><td colSpan={9} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin pensiones registradas</div>
+                      <div style={{ fontSize: 12 }}>Registra un nuevo carrito para comenzar</div>
+                    </td></tr>
+                  ) : pensionesF.map(p => {
+                    const abierto = expandido === p.id
+                    const carDesc = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
+                    return (
+                      <>
+                        <tr key={p.id}
+                          onClick={() => setExpandido(abierto ? null : p.id)}
+                          style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', opacity: p.activo ? 1 : 0.55, transition: 'background 0.1s', background: abierto ? '#f0fdf4' : '' }}
+                          onMouseEnter={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)' }}
+                          onMouseLeave={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = '' }}>
+                          <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#94a3b8' }}>
+                            {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nc(p.cat_socios)}</div>
+                            {p.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{p.cat_socios.numero_socio}</div>}
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ color: 'var(--text-secondary)' }}>{carDesc}</div>
+                            {p.cat_carritos?.tipo && (
+                              <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: p.cat_carritos.tipo === 'ELECTRICO' ? '#eff6ff' : '#fffbeb', color: p.cat_carritos.tipo === 'ELECTRICO' ? '#1d4ed8' : '#92400e', fontWeight: 600 }}>
+                                {p.cat_carritos.tipo === 'ELECTRICO' ? '⚡ Eléctrico' : '⛽ Combustión'}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
+                            {p.cat_slots ? `Cajón ${p.cat_slots.numero}` : '—'}
+                          </td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
+                            {p.cat_carritos?.placa ?? '—'}
+                          </td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#059669', whiteSpace: 'nowrap' }}>
+                            {fmt$(p.monto_mensual)}
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            {p.pendientes > 0
+                              ? <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{p.pendientes} · {fmt$(p.monto_pendiente)}</span>
+                              : <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>}
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: p.activo ? '#dcfce7' : '#f1f5f9', color: p.activo ? '#15803d' : '#64748b' }}>
+                              {p.activo ? 'Activa' : 'Inactiva'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            {puedeEscribir && p.activo && p.pendientes > 0 && (
+                              <button onClick={e => { e.stopPropagation(); abrirCobro(p) }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                <CreditCard size={12} /> Cobrar
                               </button>
                             )}
-                            <button onClick={() => {
-                              const carDesc2 = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
-                              setShowPension({ idSocio: p.id_socio_fk, idCarrito: p.id_carrito_fk, nombreSocio: nc(p.cat_socios), descCarrito: carDesc2 })
-                            }}
-                              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
-                              <Plus size={12} /> Nueva cuota
-                            </button>
-                          </div>
+                          </td>
+                        </tr>
+
+                        {/* Fila expandida */}
+                        {abierto && (
+                          <tr key={`${p.id}-det`}>
+                            <td colSpan={9} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
+                              <div style={{ padding: '14px 20px 16px 48px', background: '#fafafa', display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                                <div style={{ fontSize: 12, color: '#64748b' }}>
+                                  <span style={{ fontWeight: 600, color: '#475569' }}>Inicio de pensión: </span>
+                                  {new Date(p.fecha_inicio + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                  {p.observaciones && <div style={{ marginTop: 4, fontStyle: 'italic' }}>{p.observaciones}</div>}
+                                </div>
+                                {puedeEscribir && p.activo && (
+                                  <button onClick={e => {
+                                    e.stopPropagation()
+                                    const carDesc2 = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
+                                    setShowPension({ idSocio: p.id_socio_fk, idCarrito: p.id_carrito_fk, nombreSocio: nc(p.cat_socios), descCarrito: carDesc2 })
+                                  }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                    <Plus size={12} /> Nueva cuota
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                      </>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
         </>
       )}
 
