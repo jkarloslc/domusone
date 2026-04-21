@@ -63,7 +63,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const [socioInfo, setSocioInfo]       = useState<Socio | null>(null)
   const [loadingInit, setLoadingInit]   = useState(true)
 
-  const [seleccionadas, setSeleccionadas] = useState<Set<number>>(new Set(cuotas.map(c => c.id)))
   const [descuentoExtra, setDescuentoExtra] = useState('')   // descuento adicional en $ sobre el total
   const [idFormaPago, setIdFormaPago]   = useState<number>(0)
   const [referencia, setReferencia]     = useState('')
@@ -94,15 +93,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   }, [idSocio])
 
   // ── Cálculos ───────────────────────────────────────────────
-  const toggleCuota = (id: number) => {
-    setSeleccionadas(s => {
-      const next = new Set(s)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  const cuotasSelec   = cuotas.filter(c => seleccionadas.has(c.id))
+  const cuotasSelec   = cuotas
   const subtotalBruto = cuotasSelec.reduce((a, c) => a + c.monto_final, 0)
   const descExtra     = Math.min(parseFloat(descuentoExtra) || 0, subtotalBruto)
   const totalCobro    = Math.max(0, subtotalBruto - descExtra)
@@ -110,7 +101,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
 
   // ── Guardar cobro ──────────────────────────────────────────
   const handleSave = async () => {
-    if (cuotasSelec.length === 0) { setError('Selecciona al menos una cuota'); return }
+    if (cuotasSelec.length === 0) { setError('No hay cuotas para cobrar'); return }
     if (!idFormaPago) { setError('Selecciona forma de pago'); return }
     setSaving(true); setError('')
 
@@ -403,43 +394,36 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
             <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}><Loader size={20} className="animate-spin" /></div>
           ) : (
             <>
-              {/* Lista de cuotas seleccionables */}
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
-                  Cuotas pendientes — selecciona las que vas a cobrar
+              {/* Lista de cuotas (solo lectura) */}
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ padding: '10px 14px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600, color: '#475569' }}>
+                  {cuotas.length} cuota{cuotas.length !== 1 ? 's' : ''} a cobrar
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {cuotas.map(c => {
-                    const sel  = seleccionadas.has(c.id)
-                    const venc = vencida(c.fecha_vencimiento)
-                    return (
-                      <div key={c.id} onClick={() => toggleCuota(c.id)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: `1px solid ${sel ? '#059669' : '#e2e8f0'}`, borderRadius: 8, background: sel ? '#ecfdf5' : '#fff', cursor: 'pointer', transition: 'all 0.1s' }}>
-                        <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${sel ? '#059669' : '#cbd5e1'}`, background: sel ? '#059669' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          {sel && <CheckCircle size={12} color="#fff" />}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{c.concepto}</div>
-                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, display: 'flex', gap: 8 }}>
-                            {c.periodo && <span>{c.periodo}</span>}
-                            {c.fecha_vencimiento && (
-                              <span style={{ color: venc ? '#dc2626' : '#94a3b8' }}>
-                                {venc ? '⚠ Vencida' : 'Vence'} {new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
-                              </span>
-                            )}
-                            <span style={{ padding: '1px 6px', borderRadius: 20, background: '#f1f5f9', color: '#475569', fontSize: 10, fontWeight: 600 }}>
-                              {TIPOS_LABEL[c.tipo] ?? c.tipo}
+                {cuotas.map((c, i) => {
+                  const venc = vencida(c.fecha_vencimiento)
+                  return (
+                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: i < cuotas.length - 1 ? '1px solid #f1f5f9' : 'none', background: venc ? '#fff5f5' : '#fff' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{c.concepto}</div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {c.periodo && <span>{c.periodo}</span>}
+                          {c.fecha_vencimiento && (
+                            <span style={{ color: venc ? '#dc2626' : '#94a3b8' }}>
+                              {venc ? '⚠ Vencida' : 'Vence'} {new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
                             </span>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          {c.descuento > 0 && <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>}
-                          <div style={{ fontSize: 14, fontWeight: 700, color: sel ? '#059669' : '#475569' }}>{fmt$(c.monto_final)}</div>
+                          )}
+                          <span style={{ padding: '1px 6px', borderRadius: 20, background: '#f1f5f9', color: '#475569', fontSize: 10, fontWeight: 600 }}>
+                            {TIPOS_LABEL[c.tipo] ?? c.tipo}
+                          </span>
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        {c.descuento > 0 && <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>}
+                        <div style={{ fontSize: 14, fontWeight: 700, color: venc ? '#dc2626' : '#1e293b' }}>{fmt$(c.monto_final)}</div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
 
               {/* Descuento adicional */}

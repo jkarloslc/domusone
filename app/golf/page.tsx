@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
-  Car, Lock, ArrowRight, BookOpen, CreditCard,
+  Car, Lock, ArrowRight, BookOpen, CreditCard, Receipt,
 } from 'lucide-react'
 import DashLayout from '@/components/layout/DashLayout'
 
@@ -85,9 +85,20 @@ const MODULOS = [
     activo: true,
   },
   {
+    key: 'cuotas',
+    label: 'Cuotas',
+    desc: 'Asignación de cuotas por socio — individual o masivo',
+    icon: Receipt,
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    border: '#ddd6fe',
+    href: '/golf/cuotas',
+    activo: true,
+  },
+  {
     key: 'cxc',
-    label: 'CXC Golf',
-    desc: 'Cuentas por cobrar — membresías y pensiones de carrito',
+    label: 'Cobro / CXC',
+    desc: 'Cobro de cuotas agrupado por socio y emisión de recibos',
     icon: CreditCard,
     color: '#0891b2',
     bg: '#ecfeff',
