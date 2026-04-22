@@ -23,6 +23,8 @@ import ReporteTransferencias from './ReporteTransferencias'
 import ReporteOrdenesTrabajo from './ReporteOrdenesTrabajo'
 import ReporteProgramasMantenimiento from './ReporteProgramasMantenimiento'
 import ReporteEstadoCuenta from './ReporteEstadoCuenta'
+import ReporteComprasPorProveedor from './ReporteComprasPorProveedor'
+import ReporteIngresos from './ReporteIngresos'
 
 const GRUPOS = [
   {
@@ -61,6 +63,15 @@ const GRUPOS = [
     ],
   },
   {
+    slug:  'ingresos',
+    label: 'Ingresos',
+    color: '#059669',
+    reportes: [
+      { id: 'ingresos-tipo',   label: 'Ingresos por Tipo',           icon: TrendingDown, desc: 'Recibos agrupados por tipo de ingreso (Golf, Cuotas, Rentas, Caballerizas)' },
+      { id: 'ingresos-centro', label: 'Ingresos por Centro',         icon: Building2,    desc: 'Recibos agrupados por centro de ingreso con desglose de forma de pago' },
+    ],
+  },
+  {
     slug:  'compras',
     label: 'Compras e Inventarios',
     color: '#059669',
@@ -69,7 +80,8 @@ const GRUPOS = [
       { id: 'consumo-seccion', label: 'Consumo por Sección',         icon: MapPin,       desc: 'Órdenes de pago agrupadas por sección del residencial' },
       { id: 'consumo-frente',  label: 'Consumo por Frente',          icon: MapPin,       desc: 'Órdenes de pago agrupadas por frente de obra' },
       { id: 'inventario',      label: 'Inventario Actual',           icon: Package,      desc: 'Existencias por almacén con alertas de stock mínimo' },
-      { id: 'ordenes-compra',    label: 'Órdenes de Compra',          icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
+      { id: 'ordenes-compra',         label: 'Órdenes de Compra',               icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
+      { id: 'compras-por-proveedor',  label: 'Compras por Proveedor',           icon: ShoppingCart, desc: 'OCs agrupadas por proveedor con totales, filtrable por CC, status y fecha' },
       { id: 'ordenes-pago-cc',   label: 'Órdenes de Pago por CC / Área', icon: Wallet,    desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
       { id: 'antiguedad-op-cc',  label: 'Antigüedad de OPs por CC / Área', icon: Clock,  desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
       { id: 'kardex',            label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
@@ -163,6 +175,11 @@ function ReportesContent() {
       {active === 'estado-cuenta' && <ReporteEstadoCuenta />}
 
       {/* Reportes compras */}
+      {/* Reportes ingresos */}
+      {active === 'ingresos-tipo'   && <ReporteIngresos />}
+      {active === 'ingresos-centro' && <ReporteIngresos />}
+
+      {/* Reportes compras */}
       {active === 'consumo-cc'       && <ReporteConsumoCentroCosto />}
       {active === 'consumo-seccion'  && <ReporteConsumoSeccion />}
       {active === 'consumo-frente'   && <ReporteConsumoFrente />}
@@ -172,7 +189,8 @@ function ReportesContent() {
       {active === 'antiguedad-op-cc' && <ReporteAntiguedadOPporCC />}
       {active === 'cxp'              && <ReporteCXP />}
       {active === 'kardex'           && <ReporteKardex />}
-      {active === 'transferencias'   && <ReporteTransferencias />}
+      {active === 'transferencias'        && <ReporteTransferencias />}
+      {active === 'compras-por-proveedor' && <ReporteComprasPorProveedor />}
     </div>
   )
 }
