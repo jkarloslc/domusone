@@ -510,6 +510,9 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
   const [det, setDet]       = useState<any[]>([])
   const [op, setOP]         = useState<any | null>(null)
   const [almMap, setAlmMap] = useState<Record<number, string>>({})
+  const [ccMap,  setCcMap]  = useState<Record<number, string>>({})
+  const [areaMap,setAreaMap]= useState<Record<number, string>>({})
+  const [frMap,  setFrMap]  = useState<Record<number, string>>({})
   const [comentario, setCom]    = useState('')
   const [creandoOP, setCreandoOP] = useState(false)
   const [savingOP, setSavingOP]   = useState(false)
@@ -522,6 +525,21 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
       const m: Record<number, string> = {}
       ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
       setAlmMap(m)
+    })
+    dbCfg.from('centros_costo').select('id, nombre').then(({ data }) => {
+      const m: Record<number, string> = {}
+      ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
+      setCcMap(m)
+    })
+    dbCfg.from('areas').select('id, nombre').then(({ data }) => {
+      const m: Record<number, string> = {}
+      ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
+      setAreaMap(m)
+    })
+    dbCfg.from('frentes').select('id, nombre').then(({ data }) => {
+      const m: Record<number, string> = {}
+      ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
+      setFrMap(m)
     })
   }, [oc.id])
 
@@ -703,6 +721,9 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
             <DI label="Almacén de Entrega"  value={oc.id_almacen_entrega_fk ? (almMap[oc.id_almacen_entrega_fk] ?? `#${oc.id_almacen_entrega_fk}`) : null} />
             {oc.autorizado_por    && <DI label="Autorizado por" value={`${oc.autorizado_por} — ${fmtFecha(oc.fecha_autorizacion)}`} />}
             {oc.comentario_auth   && <DI label="Comentario"     value={oc.comentario_auth} />}
+            {oc.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[oc.id_centro_costo_fk] ?? `#${oc.id_centro_costo_fk}`} />}
+            {oc.id_area_fk         && <DI label="Área"            value={areaMap[oc.id_area_fk]        ?? `#${oc.id_area_fk}`}        />}
+            {oc.id_frente_fk       && <DI label="Frente"          value={frMap[oc.id_frente_fk]        ?? `#${oc.id_frente_fk}`}        />}
           </div>
 
           {canAuth && oc.status === 'Pendiente Auth' && (
