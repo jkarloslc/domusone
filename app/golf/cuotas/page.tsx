@@ -372,6 +372,8 @@ export default function CuotasGolfPage() {
   const [filtroCat, setFiltroCat]       = useState('')
   const [showNueva, setShowNueva]       = useState(false)
   const [showMasivo, setShowMasivo]     = useState(false)
+  const [pagina, setPagina]             = useState(1)
+  const PAGE_SIZE = 50
 
   const fetchCuotas = useCallback(async () => {
     setLoading(true)
@@ -410,6 +412,8 @@ export default function CuotasGolfPage() {
   })
 
   const totalPendiente = cuotasF.filter(c => c.status === 'PENDIENTE').reduce((a, c) => a + c.monto_final, 0)
+  const totalPaginas   = Math.max(1, Math.ceil(cuotasF.length / PAGE_SIZE))
+  const cuotasPag      = cuotasF.slice((pagina - 1) * PAGE_SIZE, pagina * PAGE_SIZE)
 
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -456,19 +460,19 @@ export default function CuotasGolfPage() {
           <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
           <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
             placeholder="Socio, concepto, período…" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+          {busqueda && <button onClick={() => { setBusqueda(''); setPagina(1) }} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
         </div>
-        <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)}
+        <select value={filtroCat} onChange={e => { setFiltroCat(e.target.value); setPagina(1) }}
           style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todas las categorías</option>
           {categorias.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
         </select>
-        <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
+        <select value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setPagina(1) }}
           style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los tipos</option>
           {TIPO_OPTS.filter(Boolean).map(t => <option key={t} value={t}>{TIPOS_LABEL[t]}</option>)}
         </select>
-        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
+        <select value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPagina(1) }}
           style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los status</option>
           {STATUS_OPTS.filter(Boolean).map(s => <option key={s} value={s}>{s === 'PENDIENTE' ? 'Pendiente' : s === 'PAGADO' ? 'Pagado' : 'Cancelado'}</option>)}
@@ -499,7 +503,7 @@ export default function CuotasGolfPage() {
               </tr>
             </thead>
             <tbody>
-              {cuotasF.map(c => {
+              {cuotasPag.map(c => {
                 const venc = vencida(c.fecha_vencimiento) && c.status === 'PENDIENTE'
                 const stKey = venc ? 'VENCIDA' : c.status
                 const st = STATUS_STYLE[stKey] ?? STATUS_STYLE.PENDIENTE
@@ -536,6 +540,50 @@ export default function CuotasGolfPage() {
           </table>
         )}
       </div>
+
+      {/* Paginación */}
+      {!loading && totalPaginas > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
+          <span style={{ fontSize: 12, color: '#94a3b8' }}>
+            Mostrando {(pagina - 1) * PAGE_SIZE + 1}–{Math.min(pagina * PAGE_SIZE, cuotasF.length)} de {cuotasF.length}
+          </span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button onClick={() => setPagina(1)} disabled={pagina === 1}
+              style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: pagina === 1 ? '#cbd5e1' : '#475569', cursor: pagina === 1 ? 'default' : 'pointer' }}>
+              «
+            </button>
+            <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}
+              style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: pagina === 1 ? '#cbd5e1' : '#475569', cursor: pagina === 1 ? 'default' : 'pointer' }}>
+              ‹ Anterior
+            </button>
+            {Array.from({ length: totalPaginas }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPaginas || Math.abs(p - pagina) <= 1)
+              .reduce<(number | '...')[]>((acc, p, i, arr) => {
+                if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push('...')
+                acc.push(p)
+                return acc
+              }, [])
+              .map((p, i) =>
+                p === '...' ? (
+                  <span key={`ellipsis-${i}`} style={{ padding: '5px 8px', fontSize: 12, color: '#94a3b8' }}>…</span>
+                ) : (
+                  <button key={p} onClick={() => setPagina(p as number)}
+                    style={{ padding: '5px 10px', fontSize: 12, border: '1px solid', borderRadius: 6, cursor: 'pointer', borderColor: pagina === p ? '#2563eb' : '#e2e8f0', background: pagina === p ? '#2563eb' : '#fff', color: pagina === p ? '#fff' : '#475569', fontWeight: pagina === p ? 600 : 400 }}>
+                    {p}
+                  </button>
+                )
+              )}
+            <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}
+              style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: pagina === totalPaginas ? '#cbd5e1' : '#475569', cursor: pagina === totalPaginas ? 'default' : 'pointer' }}>
+              Siguiente ›
+            </button>
+            <button onClick={() => setPagina(totalPaginas)} disabled={pagina === totalPaginas}
+              style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: pagina === totalPaginas ? '#cbd5e1' : '#475569', cursor: pagina === totalPaginas ? 'default' : 'pointer' }}>
+              »
+            </button>
+          </div>
+        </div>
+      )}
 
       {showNueva && <NuevaCuotaModal authUser={authUser} onClose={() => setShowNueva(false)} onSaved={() => { setShowNueva(false); fetchCuotas() }} />}
       {showMasivo && <GenerarMasivoModal authUser={authUser} onClose={() => setShowMasivo(false)} onSaved={() => { setShowMasivo(false); fetchCuotas() }} />}
