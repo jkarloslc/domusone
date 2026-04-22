@@ -7,20 +7,23 @@ import { useAuth } from '@/lib/AuthContext'
 type Usuario = { id: string; nombre: string; rol: string; activo: boolean; created_at: string; email?: string }
 
 const ROLES = [
-  { value: 'superadmin',        label: 'Super Administrador',   desc: 'Acceso total incluyendo Usuarios, Config y eliminación de registros' },
-  { value: 'admin',             label: 'Administrador',         desc: 'Acceso completo a todos los módulos operativos. Sin acceso a Usuarios ni Config.' },
-  { value: 'usuarioadmin',      label: 'Administrador (Op.)',   desc: 'Igual que Admin sin acceso a Mantenimiento' },
-  { value: 'usuariomantto',     label: 'Administrador (Mant.)', desc: 'Igual que Admin sin acceso a Tesorería' },
-  { value: 'fraccionamiento',   label: 'Fraccionamiento',       desc: 'Acceso amplio operativo: residencial, compras, tesorería, reportes' },
-  { value: 'atencion_residentes', label: 'Atención a Residentes', desc: 'Lotes, propietarios, contratos, escrituras, incidencias, reportes' },
-  { value: 'cobranza',          label: 'Cobranza',               desc: 'Lotes y propietarios en consulta, cobranza, facturas, reportes' },
-  { value: 'tesoreria',         label: 'Tesorería',              desc: 'Módulo de tesorería y CXP, reportes' },
-  { value: 'compras',           label: 'Compras',                desc: 'Requisiciones, cotizaciones, OC, OP, artículos, proveedores, CXP' },
-  { value: 'compras_supervisor',label: 'Supervisor de Compras',  desc: 'Todo compras + autorización de cotizaciones, OC y requisiciones' },
-  { value: 'almacen',           label: 'Almacén',                desc: 'Recepciones, transferencias, artículos, inventario' },
-  { value: 'mantenimiento',     label: 'Mantenimiento',          desc: 'Órdenes de trabajo y proyectos de mantenimiento' },
-  { value: 'vigilancia',        label: 'Vigilancia',             desc: 'Accesos, incidencias, lotes y propietarios en consulta' },
-  { value: 'seguridad',         label: 'Seguridad',              desc: 'Accesos, incidencias y requisiciones en consulta' },
+  { value: 'superadmin',          label: 'Super Administrador',     desc: 'Acceso total incluyendo Usuarios, Config y eliminación de registros' },
+  { value: 'admin',               label: 'Administrador',           desc: 'Acceso completo a todos los módulos operativos. Sin acceso a Usuarios ni Config.' },
+  { value: 'usuarioadmin',        label: 'Administrador (Op.)',     desc: 'Igual que Admin sin acceso a Mantenimiento' },
+  { value: 'usuariomantto',       label: 'Administrador (Mant.)',   desc: 'Igual que Admin sin acceso a Tesorería' },
+  { value: 'fraccionamiento',     label: 'Fraccionamiento',         desc: 'Acceso amplio operativo: residencial, compras, tesorería, reportes' },
+  { value: 'atencion_residentes', label: 'Atención a Residentes',   desc: 'Lotes, propietarios, contratos, escrituras, incidencias, reportes' },
+  { value: 'cobranza',            label: 'Cobranza',                desc: 'Lotes y propietarios en consulta, cobranza, facturas, reportes' },
+  { value: 'tesoreria',           label: 'Tesorería',               desc: 'Módulo de tesorería y CXP, reportes' },
+  { value: 'ingresos',            label: 'Ingresos',                desc: 'Módulo de ingresos y recibos, reportes' },
+  { value: 'compras',             label: 'Compras',                 desc: 'Requisiciones, cotizaciones, OC, OP, artículos, proveedores, CXP' },
+  { value: 'compras_supervisor',  label: 'Supervisor de Compras',   desc: 'Todo compras + autorización de cotizaciones, OC y requisiciones' },
+  { value: 'almacen',             label: 'Almacén',                 desc: 'Recepciones, transferencias, artículos, inventario' },
+  { value: 'usuario_solicitante', label: 'Usuario Solicitante',     desc: 'Solo puede crear y ver sus propias requisiciones y transferencias' },
+  { value: 'mantenimiento',       label: 'Mantenimiento',           desc: 'Órdenes de trabajo y proyectos de mantenimiento' },
+  { value: 'vigilancia',          label: 'Vigilancia',              desc: 'Accesos, incidencias, lotes y propietarios en consulta' },
+  { value: 'seguridad',           label: 'Seguridad',               desc: 'Accesos, incidencias y requisiciones en consulta' },
+  { value: 'usuariogolf',         label: 'Usuario Golf',            desc: 'Acceso exclusivo al módulo Golf: miembros, reservaciones, POS, carritos y reportes' },
 ]
 
 export default function UsuariosPage() {
