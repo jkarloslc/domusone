@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
-import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText } from 'lucide-react'
+import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users } from 'lucide-react'
 import type { Socio } from './SocioModal'
 
 type Props = { socio: Socio; onClose: () => void; onEdit: () => void }
@@ -19,11 +19,66 @@ const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
 )
 
 const TABS = [
-  { key: 'info',     label: 'Información',      icon: FileText     },
-  { key: 'accesos',  label: 'Accesos al Campo',  icon: MapPin       },
-  { key: 'pos',      label: 'Compras POS',       icon: ShoppingCart },
-  { key: 'cuotas',   label: 'Cuotas',            icon: CreditCard   },
+  { key: 'info',       label: 'Información',      icon: FileText     },
+  { key: 'familiares', label: 'Familiares',        icon: Users        },
+  { key: 'accesos',    label: 'Accesos al Campo',  icon: MapPin       },
+  { key: 'pos',        label: 'Compras POS',       icon: ShoppingCart },
+  { key: 'cuotas',     label: 'Cuotas',            icon: CreditCard   },
 ]
+
+// ── Tab Familiares ────────────────────────────────────────────
+function TabFamiliares({ socioId }: { socioId: number }) {
+  const [rows, setRows]     = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    dbGolf.from('cat_familiares').select('*').eq('id_socio_fk', socioId).order('created_at')
+      .then(({ data }) => { setRows(data ?? []); setLoading(false) })
+  }, [socioId])
+
+  const PARENTESCO_COLOR: Record<string, string> = {
+    Cónyuge: '#7c3aed', Hijo: '#2563eb', Hija: '#db2777',
+    Padre: '#d97706', Madre: '#d97706', Hermano: '#059669',
+    Hermana: '#059669', Otro: '#64748b',
+  }
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+  if (rows.length === 0) return (
+    <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}>
+      <Users size={28} style={{ margin: '0 auto 8px', opacity: 0.3 }} />
+      <div style={{ fontSize: 13 }}>Sin familiares registrados</div>
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {rows.map(f => (
+        <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <div style={{ width: 34, height: 34, borderRadius: '50%', background: (PARENTESCO_COLOR[f.parentesco] ?? '#64748b') + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <User size={15} style={{ color: PARENTESCO_COLOR[f.parentesco] ?? '#64748b' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{f.nombre}</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
+              {f.parentesco && (
+                <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: (PARENTESCO_COLOR[f.parentesco] ?? '#64748b') + '15', color: PARENTESCO_COLOR[f.parentesco] ?? '#64748b' }}>
+                  {f.parentesco}
+                </span>
+              )}
+              {f.fecha_nacimiento && <span style={{ fontSize: 11, color: '#94a3b8' }}>Nac. {new Date(f.fecha_nacimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+              {f.telefono && <span style={{ fontSize: 11, color: '#94a3b8' }}>📞 {f.telefono}</span>}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            {f.activo !== false
+              ? <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>Activo</span>
+              : <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f8fafc', color: '#94a3b8', border: '1px solid #e2e8f0' }}>Inactivo</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 // ── Tab Accesos ──────────────────────────────────────────────
 function TabAccesos({ socioId }: { socioId: number }) {
@@ -298,9 +353,10 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
             </>
           )}
 
-          {tab === 'accesos' && <TabAccesos socioId={socio.id} />}
-          {tab === 'pos'     && <TabPOS     socioId={socio.id} />}
-          {tab === 'cuotas'  && <TabCuotas  socioId={socio.id} />}
+          {tab === 'familiares' && <TabFamiliares socioId={socio.id} />}
+          {tab === 'accesos'    && <TabAccesos   socioId={socio.id} />}
+          {tab === 'pos'        && <TabPOS        socioId={socio.id} />}
+          {tab === 'cuotas'     && <TabCuotas     socioId={socio.id} />}
         </div>
 
         <div style={{ padding: '12px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
