@@ -82,6 +82,7 @@ const ADMIN_MODULOS = [
   'cobranza', 'facturas', 'accesos', 'incidencias',
   'proyectos', 'mantenimiento', 'comunicados',
   'compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago',
+  'transferencias', 'recepciones',
   'proveedores', 'articulos', 'almacenes', 'areas',
   'tesoreria', 'ingresos', 'reportes', 'catalogos',
   'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
