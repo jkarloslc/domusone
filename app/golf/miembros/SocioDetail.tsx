@@ -272,52 +272,67 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
   const vencido = socio.fecha_vencimiento && new Date(socio.fecha_vencimiento) < new Date()
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 620, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+      <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 780, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.22)' }}>
 
-        {/* Header */}
-        <div style={{ padding: '18px 24px 0', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#b8952a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <User size={20} style={{ color: '#fff' }} />
+        {/* Header con gradiente sutil */}
+        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', borderRadius: '20px 20px 0 0', padding: '20px 24px 0' }}>
+          {/* Fila superior: avatar + info + acciones */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+            <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <User size={24} style={{ color: '#fff' }} />
               </div>
               <div>
-                <div style={{ fontSize: 17, fontWeight: 600, color: '#1e293b' }}>{nombre}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
-                  {socio.numero_socio && <span style={{ fontSize: 11, color: '#94a3b8' }}>#{socio.numero_socio}</span>}
-                  <span className={`badge ${socio.activo && !vencido ? 'badge-libre' : 'badge-bloqueado'}`} style={{ fontSize: 10 }}>
+                <div style={{ fontSize: 19, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>{nombre}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+                  {socio.numero_socio && (
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)' }}>
+                      #{socio.numero_socio}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
+                    background: socio.activo && !vencido ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)',
+                    color: socio.activo && !vencido ? '#86efac' : '#fca5a5',
+                    border: `1px solid ${socio.activo && !vencido ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+                  }}>
                     {!socio.activo ? 'Inactivo' : vencido ? 'Vencido' : 'Activo'}
                   </span>
                   {socio.cat_categorias_socios?.nombre && (
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: 'rgba(167,139,250,0.25)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.35)' }}>
                       {socio.cat_categorias_socios.nombre}
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-ghost" style={{ padding: '5px 8px' }} onClick={onEdit} title="Editar"><Edit2 size={13} /></button>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}><X size={17} /></button>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600 }}>
+                <Edit2 size={13} /> Editar
+              </button>
+              <button onClick={onClose} style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={15} />
+              </button>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 0, overflowX: 'auto' }}>
+          {/* Tabs pill style sobre fondo azul */}
+          <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 1 }}>
             {TABS.map(t => {
               const Icon = t.icon
+              const active = tab === t.key
               return (
                 <button key={t.key} onClick={() => setTab(t.key)} style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '7px 14px', fontSize: 12, background: 'none', border: 'none',
-                  cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
-                  fontWeight: tab === t.key ? 600 : 400,
-                  color: tab === t.key ? '#2563eb' : '#94a3b8',
-                  borderBottom: tab === t.key ? '2px solid #2563eb' : '2px solid transparent',
-                  marginBottom: -1, transition: 'all 0.15s',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 16px', fontSize: 12, fontWeight: active ? 700 : 500,
+                  border: 'none', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+                  borderRadius: '8px 8px 0 0',
+                  background: active ? '#fff' : 'transparent',
+                  color: active ? '#2563eb' : 'rgba(255,255,255,0.7)',
+                  transition: 'all 0.15s',
+                  marginBottom: 0,
                 }}>
-                  <Icon size={12} />
+                  <Icon size={13} style={{ opacity: active ? 1 : 0.8 }} />
                   {t.label}
                 </button>
               )
@@ -326,7 +341,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 20px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px 24px' }}>
 
           {/* ── Información ── */}
           {tab === 'info' && (
@@ -359,8 +374,9 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           {tab === 'cuotas'     && <TabCuotas     socioId={socio.id} />}
         </div>
 
-        <div style={{ padding: '12px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
-          <button className="btn-ghost" onClick={onClose}>Cerrar</button>
+        <div style={{ padding: '12px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>Solo lectura · para editar usa el botón Editar</span>
+          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
         </div>
       </div>
     </div>

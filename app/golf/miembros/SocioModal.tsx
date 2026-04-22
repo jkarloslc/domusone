@@ -336,55 +336,75 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+      position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1000, padding: 20,
     }}>
       <div style={{
-        background: '#fff', borderRadius: 16, width: '100%', maxWidth: 620,
+        background: '#fff', borderRadius: 20, width: '100%', maxWidth: 780,
         maxHeight: '92vh', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.22)',
       }}>
-        {/* Header */}
-        <div style={{ padding: '20px 24px 0', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2 style={{ fontFamily: 'inherit', fontSize: 20, fontWeight: 600 }}>
-              {isNew ? 'Nuevo Socio' : 'Editar Socio'}
-            </h2>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}>
-              <X size={18} />
+        {/* Header con gradiente */}
+        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', borderRadius: '20px 20px 0 0', padding: '20px 24px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Users size={18} style={{ color: '#fff' }} />
+              </div>
+              <div>
+                <h2 style={{ fontFamily: 'inherit', fontSize: 19, fontWeight: 700, color: '#fff', margin: 0 }}>
+                  {isNew ? 'Nuevo Socio' : `Editar Socio`}
+                </h2>
+                {!isNew && (
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>
+                    {[form.nombre, form.apellido_paterno, form.apellido_materno].filter(Boolean).join(' ')}
+                  </div>
+                )}
+              </div>
+            </div>
+            <button onClick={onClose} style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={15} />
             </button>
           </div>
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 0, overflowX: 'auto' }}>
+
+          {/* Tabs pill style */}
+          <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
             {TABS.map((t, i) => {
               const disabled = isTabDisabled(i)
+              const active   = tab === i
               return (
                 <button key={t} onClick={() => !disabled && setTab(i)} style={{
-                  padding: '8px 14px', fontSize: 12, background: 'none', border: 'none',
-                  cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-                  fontWeight: tab === i ? 600 : 400, whiteSpace: 'nowrap',
-                  color: disabled ? '#cbd5e1' : tab === i ? '#2563eb' : '#94a3b8',
-                  borderBottom: tab === i ? '2px solid #2563eb' : '2px solid transparent',
-                  marginBottom: -1, transition: 'all 0.15s',
-                  display: 'flex', alignItems: 'center', gap: 5,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '8px 16px', fontSize: 12, fontWeight: active ? 700 : 500,
+                  border: 'none', fontFamily: 'inherit', whiteSpace: 'nowrap',
+                  borderRadius: '8px 8px 0 0',
+                  cursor: disabled ? 'not-allowed' : 'pointer',
+                  background: active ? '#fff' : 'transparent',
+                  color: disabled ? 'rgba(255,255,255,0.25)' : active ? '#2563eb' : 'rgba(255,255,255,0.7)',
+                  transition: 'all 0.15s',
                 }}>
                   {t}
                   {i === 2 && !isNew && familiares.length > 0 && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: tab === 2 ? '#dbeafe' : '#f1f5f9', color: tab === 2 ? '#1d4ed8' : '#64748b' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
+                      background: active ? '#dbeafe' : 'rgba(255,255,255,0.2)',
+                      color: active ? '#1d4ed8' : '#fff' }}>
                       {familiares.length}
                     </span>
                   )}
                   {i === 3 && !isNew && idUrl && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: tab === 3 ? '#dcfce7' : '#f0fdf4', color: '#16a34a' }}>✓</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
+                      background: active ? '#dcfce7' : 'rgba(34,197,94,0.3)', color: active ? '#16a34a' : '#86efac' }}>✓</span>
                   )}
                   {i === 4 && !isNew && contratos.some(c => c.vigente) && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: tab === 4 ? '#dbeafe' : '#f1f5f9', color: tab === 4 ? '#1d4ed8' : '#64748b' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
+                      background: active ? '#dbeafe' : 'rgba(255,255,255,0.2)',
+                      color: active ? '#1d4ed8' : '#fff' }}>
                       {contratos.length}
                     </span>
                   )}
                   {isTabDisabled(i) && (
-                    <span style={{ fontSize: 9, color: '#cbd5e1', fontWeight: 400 }}>(guardar primero)</span>
+                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>🔒</span>
                   )}
                 </button>
               )
@@ -393,7 +413,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
 
           {/* ── Tab 0: Datos Personales ── */}
           {tab === 0 && (
@@ -810,8 +830,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button className="btn-ghost" onClick={onClose}>
+        <div style={{ padding: '14px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10, background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>
+          <button className="btn-secondary" onClick={onClose}>
             {(tab === 2 || tab === 3 || tab === 4) ? 'Cerrar' : 'Cancelar'}
           </button>
           {showSaveBtn && (
