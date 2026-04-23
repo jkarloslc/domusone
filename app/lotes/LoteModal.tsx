@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react'
 import { dbCat, dbCfg, type Lote, type Seccion } from '@/lib/supabase'
 import { Save, Loader } from 'lucide-react'
-import ModalShell from '@/components/ui/ModalShell'
 import FileUpload from '@/components/FileUpload'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Props = { lote: Lote | null; onClose: () => void; onSaved: () => void }
 

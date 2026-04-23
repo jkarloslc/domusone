@@ -11,7 +11,6 @@ import {
 import { type Cargo, fmt, STATUS_CARGO_COLOR, MESES } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 
-
 const PAGE_SIZE = 30
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,17 +243,19 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
   }
 
   return (
-    <ModalShell modulo="cobranza" titulo={'Generar Cargos del Mes'} onClose={onClose} maxWidth={580}
-      footer={<>        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          {step === 2 && preview.length > 0 && (
-            <button className="btn-primary" onClick={handleGenerar} disabled={saving}>
-              {saving
-                ? <><Loader size={13} className="animate-spin" /> Generando…</>
-                : <><Zap size={13} /> Confirmar — {preview.length} cargos</>}
-            </button>
-          )}</>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 580 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Generar Cargos del Mes</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              {step === 1 ? 'Selecciona la cuota y el período' : `Vista previa — ${preview.length} lotes recibirán el cargo`}
+            </p>
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Step 1: configuración */}
@@ -360,7 +361,19 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
               )}
             </>
           )}
-    </ModalShell>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          {step === 2 && preview.length > 0 && (
+            <button className="btn-primary" onClick={handleGenerar} disabled={saving}>
+              {saving
+                ? <><Loader size={13} className="animate-spin" /> Generando…</>
+                : <><Zap size={13} /> Confirmar — {preview.length} cargos</>}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -431,13 +444,16 @@ function CargoEspecialModal({ onClose, onSaved }: { onClose: () => void; onSaved
   }
 
   return (
-    <ModalShell modulo="cobranza" titulo={'Cargo Especial'} onClose={onClose} maxWidth={500}
-      footer={<>        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || !form.id_lote_fk || !form.concepto || !form.monto}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Generar Cargo
-          </button></>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 500 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Cargo Especial</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Cargo individual a un lote específico</p>
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {/* Lote */}
@@ -529,7 +545,15 @@ function CargoEspecialModal({ onClose, onSaved }: { onClose: () => void; onSaved
             <label className="label">Notas</label>
             <textarea className="input" rows={2} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} />
           </div>
-    </ModalShell>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || !form.id_lote_fk || !form.concepto || !form.monto}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Generar Cargo
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

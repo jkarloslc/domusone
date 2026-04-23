@@ -3,12 +3,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-import ModalShell from '@/components/ui/ModalShell'
   ArrowLeft, Building2, Plus, Edit2, Trash2, X, Save,
   Loader, RefreshCw, ToggleLeft, ToggleRight, Eye,
   ArrowUpCircle, ArrowDownCircle, TrendingUp, CheckCircle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import ModalShell from '@/components/ui/ModalShell'
 
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtD = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -207,14 +207,20 @@ function CuentaModal({ row, onClose, onSaved }: { row: any | null; onClose: () =
   }
 
   return (
-    <ModalShell modulo="tesoreria" titulo={isNew ? 'Nueva Cuenta Bancaria' : `Editar — ${row.banco} onClose={onClose} maxWidth={480}
-      footer={<>        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {isNew ? 'Crear Cuenta' : 'Guardar Cambios'}
-          </button></>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 480 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: '#0f766e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Building2 size={14} style={{ color: '#0f766e' }} />
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600 }}>
+              {isNew ? 'Nueva Cuenta Bancaria' : `Editar — ${row.banco}`}
+            </h2>
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && (
             <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>
@@ -249,7 +255,16 @@ function CuentaModal({ row, onClose, onSaved }: { row: any | null; onClose: () =
               Cuenta activa
             </label>
           )}
-    </ModalShell>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {isNew ? 'Crear Cuenta' : 'Guardar Cambios'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -339,8 +354,32 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
   const totalAbonos = movs.filter(m => m.tipo === 'Abono').reduce((a, m) => a + (m.monto ?? 0), 0)
 
   return (
-    <ModalShell modulo="tesoreria" titulo={cuenta.banco} onClose={onClose} maxWidth={800}
-      footer={<>          {[
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 800 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#0f766e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Building2 size={15} style={{ color: '#0f766e' }} />
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{cuenta.banco}</h2>
+            </div>
+            <div style={{ display: 'flex', gap: 16, marginLeft: 42, flexWrap: 'wrap' }}>
+              {cuenta.numero_cuenta && (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>No. {cuenta.numero_cuenta}</span>
+              )}
+              {cuenta.clabe && (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>CLABE: {cuenta.clabe}</span>
+              )}
+            </div>
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        {/* KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #f1f5f9' }}>
+          {[
             { label: 'Saldo Actual',   value: fmt(saldoActual), color: '#0f766e', icon: TrendingUp },
             { label: 'Cargos período', value: fmt(totalCargos), color: '#dc2626', icon: ArrowDownCircle },
             { label: 'Abonos período', value: fmt(totalAbonos), color: '#15803d', icon: ArrowUpCircle },
@@ -484,9 +523,9 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderTop: '1px solid #e2e8f0' }}>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{movs.length} movimiento{movs.length !== 1 ? 's' : ''}</span>
-          <button className="btn-secondary" onClick={onClose}>Cerrar</button></>}
-    >
-    </ModalShell>
+          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
+        </div>
+      </div>
     </div>
   )
 }

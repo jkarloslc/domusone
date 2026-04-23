@@ -5,7 +5,6 @@ import { X, Ban, Printer, CheckCircle } from 'lucide-react'
 import { type Recibo, type ReciboDetalle, type ReciboPago, fmt } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 
-
 type Props = { recibo: Recibo; onClose: () => void; onCanceled: () => void }
 
 export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) {
@@ -39,8 +38,33 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
     d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
 
   return (
-    <ModalShell modulo="cobranza" titulo="Cobranza" onClose={onClose} maxWidth={580}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 580 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)' }}>
+                {r.folio ?? `Recibo #${r.id}`}
+              </span>
+              <span className={`badge ${r.activo ? 'badge-vendido' : 'badge-bloqueado'}`}>
+                {r.activo ? 'Activo' : 'Cancelado'}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              {r.tipo_concepto} · {r.tipo_cobranza} · {r.periodicidad}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {r.activo && (
+              <button className="btn-ghost" style={{ color: '#f87171' }} onClick={() => setShowCancel(true)}>
+                <Ban size={13} /> Cancelar
+              </button>
+            )}
+            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          </div>
+        </div>
+
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
 
           {/* Cancelación */}
@@ -135,7 +159,8 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
               </div>
             </div>
           )}
-    </ModalShell>
+        </div>
+      </div>
     </div>
   )
 }

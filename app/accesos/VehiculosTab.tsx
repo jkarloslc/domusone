@@ -7,7 +7,6 @@ import { Plus, Search, RefreshCw, Edit2, Trash2, X, Save, Loader, Car } from 'lu
 import { type Vehiculo, TIPOS_VEHICULO } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 
-
 export default function VehiculosTab() {
   const { canWrite, canDelete } = useAuth()
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
@@ -136,12 +135,13 @@ function VehiculoModal({ vehiculo, marcas, onClose, onSaved }: { vehiculo: Vehic
   }
 
   return (
-    <ModalShell modulo="accesos" titulo={isNew ? 'Nuevo Vehículo' : 'Editar Vehículo'} onClose={onClose} maxWidth={480}
-      footer={<>          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
-          </button></>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 480 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>{isNew ? 'Nuevo Vehículo' : 'Editar Vehículo'}</h2>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label className="label">Placas</label><input className="input" value={form.placas} onChange={set('placas')} style={{ textTransform: 'uppercase', fontFamily: 'monospace' }} /></div>
             <div><label className="label">TAG</label><input className="input" value={form.tag} onChange={set('tag')} style={{ textTransform: 'uppercase', fontFamily: 'monospace' }} placeholder="Ej: 1234" /></div>
@@ -166,7 +166,14 @@ function VehiculoModal({ vehiculo, marcas, onClose, onSaved }: { vehiculo: Vehic
             <div><label className="label">Color</label><input className="input" value={form.color} onChange={set('color')} /></div>
             <div><label className="label">No. Serie</label><input className="input" value={form.num_serie} onChange={set('num_serie')} style={{ fontFamily: 'monospace', fontSize: 11 }} /></div>
           </div>
-    </ModalShell>
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid var(--border)' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -207,8 +214,16 @@ function AutorizarVehiculoModal({ vehiculo, onClose }: { vehiculo: Vehiculo; onC
   }
 
   return (
-    <ModalShell modulo="accesos" titulo={'Autorizar Vehículo'} onClose={onClose} maxWidth={480}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 480 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 400 }}>Autorizar Vehículo</h2>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, fontFamily: 'monospace' }}>{vehiculo.placas ?? '—'} · {vehiculo.tipo_vehiculo}</div>
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+        <div style={{ padding: '20px 24px' }}>
           {autorizados.length > 0 && (
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--gold)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Lotes Autorizados</div>
@@ -246,7 +261,8 @@ function AutorizarVehiculoModal({ vehiculo, onClose }: { vehiculo: Vehiculo; onC
               {saving ? <Loader size={13} className="animate-spin" /> : <Car size={13} />} Autorizar
             </button>
           </div>
-    </ModalShell>
+        </div>
+      </div>
     </div>
   )
 }

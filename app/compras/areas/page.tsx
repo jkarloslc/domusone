@@ -3,11 +3,11 @@ import { useAuth } from '@/lib/AuthContext'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
 import {
-import ModalShell from '@/components/ui/ModalShell'
   Plus, RefreshCw, Edit2, Trash2, X, Save, Loader,
   ArrowLeft, ToggleLeft, ToggleRight, Layers
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Area = { id: number; nombre: string; responsable: string | null; activo: boolean }
 
@@ -126,12 +126,13 @@ function AreaModal({ row, onClose, onSaved }: { row: Area | null; onClose: () =>
   }
 
   return (
-    <ModalShell modulo="almacenes" titulo={isNew ? 'Nueva Área' : `Editar: ${row.nombre} onClose={onClose} maxWidth={400}
-      footer={<>          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
-          </button></>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 400 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{isNew ? 'Nueva Área' : `Editar: ${row.nombre}`}</h2>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
           <div><label className="label">Nombre del Área *</label>
             <input className="input" value={form.nombre} onChange={set('nombre')} placeholder="ej. Mantenimiento" />
@@ -146,7 +147,14 @@ function AreaModal({ row, onClose, onSaved }: { row: Area | null; onClose: () =>
               <option value="false">Inactiva</option>
             </select>
           </div>
-    </ModalShell>
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

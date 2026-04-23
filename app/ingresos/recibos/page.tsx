@@ -3,11 +3,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-import ModalShell from '@/components/ui/ModalShell'
   Plus, Search, RefreshCw, Receipt, ChevronLeft, ChevronRight,
   X, Save, Loader, Calendar, Eye, Ban, Layers, DollarSign
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = {
@@ -239,8 +239,31 @@ function ReciboModal({
   )
 
   return (
-    <ModalShell modulo="ingresos" titulo="Ingresos" onClose={onClose} maxWidth={600}
-      footer={<>        {/* Cuerpo */}
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 600, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+
+        {/* Cabecera */}
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Receipt size={16} style={{ color: '#059669' }} />
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
+                {isView ? recibo!.folio ?? `Recibo #${recibo!.id}` : 'Nuevo Recibo de Ingreso'}
+              </h2>
+            </div>
+            {isView && (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                background: STATUS_STYLE[recibo!.status]?.bg ?? '#f8fafc',
+                color: STATUS_STYLE[recibo!.status]?.color ?? '#64748b',
+                marginTop: 4, display: 'inline-block' }}>
+                {recibo!.status}
+              </span>
+            )}
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        {/* Cuerpo */}
         <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', borderRadius: 6, fontSize: 12, color: '#dc2626' }}>{error}</div>}
 
@@ -421,26 +444,9 @@ function ReciboModal({
                 Guardar Recibo
               </button>
             )}
-          </div></>}
-    >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Receipt size={16} style={{ color: '#059669' }} />
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
-                {isView ? recibo!.folio ?? `Recibo #${recibo!.id}` : 'Nuevo Recibo de Ingreso'}
-              </h2>
-            </div>
-            {isView && (
-              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                background: STATUS_STYLE[recibo!.status]?.bg ?? '#f8fafc',
-                color: STATUS_STYLE[recibo!.status]?.color ?? '#64748b',
-                marginTop: 4, display: 'inline-block' }}>
-                {recibo!.status}
-              </span>
-            )}
           </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-    </ModalShell>
+        </div>
+      </div>
     </div>
   )
 }

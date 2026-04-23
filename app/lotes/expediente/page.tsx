@@ -4,12 +4,12 @@ import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-import ModalShell from '@/components/ui/ModalShell'
   Search, Home, Users, Shield, FileText, Building2,
   AlertTriangle, Wrench, Zap, ChevronDown, ChevronRight,
   X, Clock, MapPin, Phone, Mail, Car,
   User, Calendar, DollarSign, Loader, MessageSquare, MapPinned, List
 } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tabs compartidos ─────────────────────────────────────────
 function LotesTabs() {
@@ -113,8 +113,16 @@ function PropietarioModal({ propietario, onClose }: { propietario: any; onClose:
 
   const nombre = [p.nombre, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ')
   return (
-    <ModalShell modulo="lotes" titulo={nombre || p.razon_social} onClose={onClose} maxWidth={540}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 540 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: '#1e293b' }}>{nombre || p.razon_social}</h2>
+            <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{p.tipo_persona ?? 'Persona Física'}</div>
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(85vh - 80px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <div style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Datos Personales</div>
             <DataRow label="RFC"              value={p.rfc} mono />
@@ -139,7 +147,8 @@ function PropietarioModal({ propietario, onClose }: { propietario: any; onClose:
               {emails.map((e, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}><Mail size={12} style={{ color: '#64748b' }} /><span style={{ fontSize: 12, color: '#2563eb' }}>{e.correo}</span></div>)}
             </div>
           )}
-    </ModalShell>
+        </div>
+      </div>
     </div>
   )
 }

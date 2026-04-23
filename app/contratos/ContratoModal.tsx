@@ -2,9 +2,9 @@
 import { useState, useEffect } from 'react'
 import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import { Save, Loader, Search } from 'lucide-react'
-import ModalShell from '@/components/ui/ModalShell'
 import FileUpload from '@/components/FileUpload'
 import { type Contrato } from './page'
+import ModalShell from '@/components/ui/ModalShell'
 
 const TIPOS    = ['Promesa de Compra-Venta', 'Cesión de Derechos', 'Compra-Venta', 'Permuta', 'Donación', 'Otro']
 const FORMAS   = ['Contado', 'Financiado', 'Intercambio', 'Mixto']

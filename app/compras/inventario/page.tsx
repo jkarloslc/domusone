@@ -172,8 +172,18 @@ export default function InventarioPage() {
 
       {/* Modal Kardex */}
       {kardex && (
-        <ModalShell modulo="almacenes" titulo="Almacenes" onClose={onClose} maxWidth={720}
-        >
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setKardex(null)}>
+          <div className="modal" style={{ maxWidth: 720 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>
+                  Kardex — {kardex.art?.clave} · {kardex.art?.nombre}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Últimos 100 movimientos · {kardex.art?.unidad}</div>
+              </div>
+              <button className="btn-ghost" onClick={() => setKardex(null)}><X size={16} /></button>
+            </div>
+            <div style={{ overflowY: 'auto', maxHeight: 'calc(88vh - 80px)' }}>
               <table>
                 <thead>
                   <tr>
@@ -210,7 +220,8 @@ export default function InventarioPage() {
                   ))}
                 </tbody>
               </table>
-        </ModalShell>
+            </div>
+          </div>
         </div>
       )}
 
@@ -366,15 +377,13 @@ function MovimientoModal({
   const tc = tipoConfig[form.tipo_mov]
 
   return (
-    <ModalShell modulo="almacenes" titulo="Agregar Movimiento de Inventario" onClose={onClose} maxWidth={520}
-      footer={<>        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}
-            style={{ background: tc.color, borderColor: tc.color }}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            Registrar {tc.label}
-          </button></>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 520 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Agregar Movimiento de Inventario</h2>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
             <div style={{ padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, color: '#dc2626', fontSize: 13 }}>
@@ -527,7 +536,17 @@ function MovimientoModal({
                 placeholder="ej. Inventario físico abril" />
             </div>
           </div>
-    </ModalShell>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}
+            style={{ background: tc.color, borderColor: tc.color }}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            Registrar {tc.label}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

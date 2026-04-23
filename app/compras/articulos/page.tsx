@@ -4,12 +4,12 @@ import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
 import {
-import ModalShell from '@/components/ui/ModalShell'
   Plus, Search, RefreshCw, Edit2, X, Save, Loader,
   Package, ArrowLeft, AlertTriangle, Filter
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Articulo, fmt, UNIDADES, CATEGORIAS_ART } from '../types'
+import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZE = 50
 
@@ -295,8 +295,22 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
   const saldoTotal = invPorAlmacen.reduce((a, i) => a + Number(i.cantidad ?? 0), 0)
 
   return (
-    <ModalShell modulo="articulos" titulo={isNew ? 'Nuevo Artículo' : row.nombre} onClose={onClose} maxWidth={540}
-      footer={<>          <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 24px' }}>
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 540 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
+              {isNew ? 'Nuevo Artículo' : row.nombre}
+            </h2>
+            {!isNew && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{row.clave}</div>}
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        {/* Tabs (solo en edición) */}
+        {!isNew && (
+          <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 24px' }}>
             {[
               { key: 'datos',      label: 'Datos' },
               { key: 'inventario', label: `Inventario ${invPorAlmacen.length ? `(${saldoTotal.toLocaleString('es-MX', { maximumFractionDigits: 3 })})` : ''}` },
@@ -430,8 +444,8 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
               {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
             </button>
           )}
-        </div></>}
-    >
-    </ModalShell>
+        </div>
+      </div>
+    </div>
   )
 }

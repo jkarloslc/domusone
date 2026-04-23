@@ -1,7 +1,7 @@
 'use client'
 import { Edit2, DollarSign, FileText, Users } from 'lucide-react'
-import ModalShell from '@/components/ui/ModalShell'
 import { type Contrato } from './page'
+import ModalShell from '@/components/ui/ModalShell'
 
 const fmt = (v: number | null) => v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 const fmtFecha = (d: string | null) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
@@ -47,8 +47,7 @@ export default function ContratoDetail({ contrato: c, onClose, onEdit }: { contr
             </Group>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

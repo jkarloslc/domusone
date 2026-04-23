@@ -6,7 +6,6 @@ import { Plus, Search, RefreshCw, X, Save, Loader, Trash2, Settings } from 'luci
 import { type CuotaLote, PERIODICIDADES, fmt } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 
-
 export default function CuotasTab() {
   const { canWrite, canDelete } = useAuth()
   const [cuotas, setCuotas]         = useState<CuotaLote[]>([])
@@ -170,12 +169,13 @@ function CuotaModal({ cuota, onClose, onSaved }: { cuota: CuotaLote | null; onCl
   }
 
   return (
-    <ModalShell modulo="cobranza" titulo={isNew ? 'Asignar Cuota a Lote' : 'Editar Cuota'} onClose={onClose} maxWidth={480}
-      footer={<>          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || !form.id_lote_fk || !form.monto}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
-          </button></>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 480 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{isNew ? 'Asignar Cuota a Lote' : 'Editar Cuota'}</h2>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Lote */}
           <div>
             <label className="label">Lote *</label>
@@ -229,7 +229,14 @@ function CuotaModal({ cuota, onClose, onSaved }: { cuota: CuotaLote | null; onCl
               <option value="false">Inactiva</option>
             </select>
           </div>
-    </ModalShell>
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || !form.id_lote_fk || !form.monto}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

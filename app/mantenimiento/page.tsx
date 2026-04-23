@@ -10,7 +10,6 @@ import {
 import OrdenesTrabajoTab from './OrdenesTrabajoTab'
 import ModalShell from '@/components/ui/ModalShell'
 
-
 const FRECUENCIAS = ['Semanal','Quincenal','Mensual','Bimestral','Trimestral','Semestral','Anual']
 const TIPOS       = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Otro']
 const MESES       = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
@@ -565,14 +564,16 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
   }
 
   return (
-    <ModalShell modulo="mantenimiento" titulo={prog ? 'Editar Programa' : 'Nuevo Programa de Mantenimiento'} onClose={onClose} maxWidth={540}
-      footer={<>          padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
-            {prog ? 'Guardar' : 'Crear'}
-          </button></>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 540 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
+            {prog ? 'Editar Programa' : 'Nuevo Programa de Mantenimiento'}
+          </h2>
+          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
+        </div>
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10,
           overflowY: 'auto', maxHeight: 'calc(90vh - 110px)' }}>
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
             borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
@@ -643,7 +644,16 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
             <textarea className="input" rows={3} value={form.descripcion} onChange={setF('descripcion')}
               style={{ fontSize: 13, resize: 'vertical' }} />
           </div>
-    </ModalShell>
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end',
+          padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
+            {prog ? 'Guardar' : 'Crear'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -717,8 +727,45 @@ function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
   const completadas = tareas.filter(t => t.status === 'Completada').length
 
   return (
-    <ModalShell modulo="mantenimiento" titulo={prog.nombre} onClose={onClose} maxWidth={760}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 760 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{prog.nombre}</h2>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+              {prog.tipo_trabajo ?? '—'} · {prog.frecuencia} · {prog.anio}
+            </div>
+            <div style={{ display: 'flex', gap: 16, marginTop: 6, flexWrap: 'wrap' }}>
+              {prog.id_centro_costo_fk && (
+                <span style={{ fontSize: 11 }}>
+                  <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>CC </span>
+                  <span style={{ fontWeight: 600 }}>{ccMap[prog.id_centro_costo_fk] ?? `#${prog.id_centro_costo_fk}`}</span>
+                </span>
+              )}
+              {prog.id_area_fk && (
+                <span style={{ fontSize: 11 }}>
+                  <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Sección </span>
+                  <span style={{ fontWeight: 600 }}>{areaMap[prog.id_area_fk] ?? `#${prog.id_area_fk}`}</span>
+                </span>
+              )}
+              {prog.id_frente_fk && (
+                <span style={{ fontSize: 11 }}>
+                  <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Frente </span>
+                  <span style={{ fontWeight: 600 }}>{frMap[prog.id_frente_fk] ?? `#${prog.id_frente_fk}`}</span>
+                </span>
+              )}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ textAlign: 'right', fontSize: 12 }}>
+              <div style={{ fontWeight: 700, color: 'var(--blue)', fontSize: 16 }}>{completadas}/{tareas.length}</div>
+              <div style={{ color: 'var(--text-muted)' }}>completadas</div>
+            </div>
+            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          </div>
+        </div>
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 120px)' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40 }}>
               <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
@@ -782,7 +829,8 @@ function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
               </tbody>
             </table>
           )}
-    </ModalShell>
+        </div>
+      </div>
     </div>
   )
 }

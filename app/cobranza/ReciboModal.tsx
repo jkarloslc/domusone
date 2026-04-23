@@ -5,7 +5,6 @@ import { X, Save, Loader, Plus, Trash2, CheckCircle } from 'lucide-react'
 import { type ReciboDetalle, type ReciboPago, type Cargo, fmt, MESES, CUENTAS } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 
-
 type Lote = { id: number; cve_lote: string | null; lote: number | null }
 type FormaPago = { id: number; nombre: string }
 
@@ -178,14 +177,15 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
   const filteredLotes = lotes.filter(l => l.cve_lote?.toLowerCase().includes(loteSearch.toLowerCase())).slice(0, 6)
 
   return (
-    <ModalShell modulo="cobranza" titulo={cargoInicial ? `Pagar: ${cargoInicial.concepto}` : 'Nuevo Recibo'} onClose={onClose} maxWidth={780}
-      footer={<>        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Guardando…' : 'Guardar Recibo'}
-          </button></>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 780, maxHeight: '92vh' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600 }}>
+            {cargoInicial ? `Pagar: ${cargoInicial.concepto}` : 'Nuevo Recibo'}
+          </h2>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(92vh - 130px)', display: 'flex', flexDirection: 'column', gap: 20 }}>
           {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
 
@@ -327,7 +327,16 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
               <span style={{ fontWeight: 700, color: diferencia === 0 ? '#15803d' : '#dc2626' }}>{fmt(diferencia)}</span>
             </div>
           </Section>
-    </ModalShell>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {saving ? 'Guardando…' : 'Guardar Recibo'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

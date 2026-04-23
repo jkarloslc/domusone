@@ -176,8 +176,23 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
   }
 
   return (
-    <ModalShell modulo="compras" titulo="Compras" onClose={onClose} maxWidth={780}
-      footer={<>        {/* Body */}
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 780, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 400 }}>
+              {isNew ? 'Nuevo Reembolso de Caja Chica' : `Editar ${reembolso.folio ?? '#' + reembolso.id}`}
+            </h2>
+            {fondo && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+              Fondo: ${(fondo.monto_asignado ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} — {fondo.status}
+            </div>}
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        {/* Body */}
         <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
           {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
 
@@ -312,18 +327,9 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
           <button className="btn-primary" onClick={() => handleSubmit('Pendiente Auth')} disabled={saving}>
             {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
             {saving ? 'Enviando…' : 'Enviar a autorización'}
-          </button></>}
-    >
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 400 }}>
-              {isNew ? 'Nuevo Reembolso de Caja Chica' : `Editar ${reembolso.folio ?? '#' + reembolso.id}`}
-            </h2>
-            {fondo && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              Fondo: ${(fondo.monto_asignado ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} — {fondo.status}
-            </div>}
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-    </ModalShell>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

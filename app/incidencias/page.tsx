@@ -12,7 +12,6 @@ import {
 import MultiImageUpload from '@/components/MultiImageUpload'
 import ModalShell from '@/components/ui/ModalShell'
 
-
 // ── Tipos ─────────────────────────────────────────────────────
 type Incidencia = {
   id: number
@@ -368,14 +367,15 @@ function IncidenciaModal({ incidencia, tipos, origenes, onClose, onSaved }: { in
   }
 
   return (
-    <ModalShell modulo="incidencias" titulo={isNew ? 'Nueva Incidencia' : `Editar Incidencia #${incidencia.id}`} onClose={onClose} maxWidth={620}
-      footer={<>        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid var(--border)' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button></>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 620 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>
+            {isNew ? 'Nueva Incidencia' : `Editar Incidencia #${incidencia.id}`}
+          </h2>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>
           {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
 
@@ -493,7 +493,16 @@ function IncidenciaModal({ incidencia, tipos, origenes, onClose, onSaved }: { in
             <textarea className="input" rows={2} value={form.notas} onChange={set('notas')}
               placeholder="Acciones tomadas, observaciones, seguimiento…" style={{ resize: 'vertical' }} />
           </div>
-    </ModalShell>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid var(--border)' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -553,8 +562,28 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
   }
 
   return (
-    <ModalShell modulo="incidencias" titulo="Incidencias" onClose={onClose} maxWidth={520}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 520 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>#{inc.id}</span>
+              <span className={`badge ${STATUS_COLOR[inc.status ?? ''] ?? 'badge-default'}`}>{inc.status ?? '—'}</span>
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 400, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+              {inc.tipo ?? 'Incidencia'}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
+              {(inc as any).lotes?.cve_lote ? `Lote ${(inc as any).lotes.cve_lote}` : 'Sin lote'} · {fmtFecha(inc.fecha)}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>
+            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          </div>
+        </div>
+
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>
 
           {/* Descripción */}
@@ -643,7 +672,8 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
             )}
           </div>
 
-    </ModalShell>
+        </div>
+      </div>
     </div>
   )
 }
