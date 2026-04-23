@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
-import { X, Save, Loader, Search } from 'lucide-react'
+import { Save, Loader, Search } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null }
 type Carrito = { id: number; id_socio_fk: number; marca: string | null; modelo: string | null; anio: number | null; color: string | null; numero_serie: string | null; placa: string | null; tipo: string; activo: boolean; observaciones: string | null }
@@ -83,14 +84,14 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 520, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1e293b' }}>{isNew ? 'Registrar Carrito' : 'Editar Carrito'}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}><X size={18} /></button>
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <ModalShell modulo="golf-carritos" titulo={isNew ? 'Registrar Carrito' : 'Editar Carrito'} maxWidth={520} onClose={onClose} footer={<>
+      <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
+      <button onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+        {saving ? <Loader size={14} /> : <Save size={14} />}
+        {isNew ? 'Registrar' : 'Guardar'}
+      </button>
+    </>}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {/* Socio */}
           {isNew && (
@@ -178,16 +179,7 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
           </div>
 
           {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>}
-        </div>
-
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-          <button onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
-            {saving ? <Loader size={14} /> : <Save size={14} />}
-            {isNew ? 'Registrar' : 'Guardar'}
-          </button>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   )
 }

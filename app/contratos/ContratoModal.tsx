@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
-import { X, Save, Loader, Search } from 'lucide-react'
+import { Save, Loader, Search } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 import FileUpload from '@/components/FileUpload'
 import { type Contrato } from './page'
 
@@ -89,15 +90,18 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 680 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>{isNew ? 'Nuevo Contrato' : `Editar Contrato ${contrato.sucesivo ?? ''}`}</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
-        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
+    <ModalShell modulo="contratos" titulo={isNew ? 'Nuevo Contrato' : `Editar Contrato ${contrato.sucesivo ?? ''}`} onClose={onClose} maxWidth={680}
+      footer={
+        <>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button>
+        </>
+      }
+    >
+      {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
 
           <Section label="Identificación">
             <Grid3>
@@ -190,17 +194,7 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
             <Field label="Descripción General"><textarea className="input" rows={2} value={form.descripcion} onChange={set('descripcion')} style={{ resize: 'vertical' }} /></Field>
             <Field label="Adéndum"><textarea className="input" rows={2} value={form.adendum} onChange={set('adendum')} style={{ resize: 'vertical' }} /></Field>
           </Section>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid var(--border)' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

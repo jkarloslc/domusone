@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCfg, dbCtrl, type Lote } from '@/lib/supabase'
-import { X, Edit2, MapPin, FileText, Zap, Droplets, Plus, Trash2, Save, Loader } from 'lucide-react'
+import { Edit2, MapPin, FileText, Zap, Droplets, Plus, Trash2, Save, Loader } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Props = { lote: Lote; onClose: () => void; onEdit: () => void }
 
@@ -48,38 +49,23 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
   const fmt = (v: number | null) =>
     v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 
+  const tabs = [
+    { key: 'datos', label: 'Datos Generales' },
+    { key: 'servicios', label: 'Servicios' },
+  ]
+
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)' }}>
-              {lote.cve_lote ?? `Lote #${lote.lote}`}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              {tipoDisplay} · {lote.superficie ? lote.superficie.toLocaleString('es-MX') + ' m²' : 'Sin superficie'}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
+    <ModalShell modulo="lotes" titulo={lote.cve_lote ?? `Lote #${lote.lote}`} subtitulo={`${tipoDisplay} · ${lote.superficie ? lote.superficie.toLocaleString('es-MX') + ' m²' : 'Sin superficie'}`} onClose={onClose} maxWidth={520}
+      tabs={tabs} activeTab={tab} onTabChange={setTab}
+      footer={
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>
         </div>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 24px' }}>
-          <button onClick={() => setTab('datos')} style={{ padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: tab === 'datos' ? 600 : 400, color: tab === 'datos' ? 'var(--blue)' : 'var(--text-muted)', borderBottom: tab === 'datos' ? '2px solid var(--blue)' : '2px solid transparent', marginBottom: -1 }}>
-            Datos Generales
-          </button>
-          <button onClick={() => setTab('servicios')} style={{ padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: tab === 'servicios' ? 600 : 400, color: tab === 'servicios' ? 'var(--blue)' : 'var(--text-muted)', borderBottom: tab === 'servicios' ? '2px solid var(--blue)' : '2px solid transparent', marginBottom: -1 }}>
-            Servicios
-          </button>
-        </div>
-
+      }
+    >
         {/* Tab: Datos */}
         {tab === 'datos' && (
-          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 150px)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <Group icon={<MapPin size={14} />} label="Identificación">
               <Row2 label="Calle"             value={lote.calle} />
               <Row2 label="Número"            value={lote.numero} />
@@ -113,8 +99,7 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
         {tab === 'servicios' && (
           <ServiciosTab loteId={lote.id} />
         )}
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -182,7 +167,7 @@ function ServiciosTab({ loteId }: { loteId: number }) {
   )
 
   return (
-    <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 150px)', display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* CFE */}
       <div>

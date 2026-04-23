@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbCat, dbCtrl, type Propietario, type Lote } from '@/lib/supabase'
-import { X, Save, Loader, Plus, Trash2 } from 'lucide-react'
+import { Save, Loader, Plus, Trash2 } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Props = { propietario: Propietario | null; onClose: () => void; onSaved: () => void }
 
@@ -149,30 +150,25 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
     onSaved()
   }
 
+  const tabs = TABS.map(t => ({ key: t, label: t }))
+
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 680 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>
-            {isNew ? 'Nuevo Propietario' : `${propietario.nombre} ${(propietario as any).apellido_paterno ?? ''}`}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+    <ModalShell modulo="propietarios" titulo={isNew ? 'Nuevo Propietario' : `${propietario.nombre} ${(propietario as any).apellido_paterno ?? ''}`} onClose={onClose} maxWidth={680}
+      tabs={tabs} activeTab={TABS[tab]} onTabChange={(key) => setTab(TABS.indexOf(key))}
+      footer={
+        <div style={{ display: 'flex', gap: 8 }}>
+          {tab > 0 && <button className="btn-secondary" onClick={() => setTab(t => t - 1)}>← Anterior</button>}
+          {tab < TABS.length - 1 && <button className="btn-secondary" onClick={() => setTab(t => t + 1)}>Siguiente →</button>}
+          <div style={{ flex: 1 }} />
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button>
         </div>
-
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 24px' }}>
-          {TABS.map((t, i) => (
-            <button key={t} onClick={() => setTab(i)} style={{
-              padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 13, fontFamily: 'var(--font-body)',
-              color: tab === i ? 'var(--gold-light)' : 'var(--text-muted)',
-              borderBottom: tab === i ? '2px solid var(--gold)' : '2px solid transparent',
-              marginBottom: -1, transition: 'color 0.2s',
-            }}>{t}</button>
-          ))}
-        </div>
-
-        <div style={{ padding: '20px 24px', minHeight: 340 }}>
-          {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+      }
+    >
+      {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
           {/* TAB 0 — Datos Personales */}
           {tab === 0 && (
@@ -356,23 +352,7 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
               ))}
             </div>
           )}
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {tab > 0 && <button className="btn-secondary" onClick={() => setTab(t => t - 1)}>← Anterior</button>}
-            {tab < TABS.length - 1 && <button className="btn-secondary" onClick={() => setTab(t => t + 1)}>Siguiente →</button>}
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-            <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
-              {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-              {saving ? 'Guardando…' : 'Guardar'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

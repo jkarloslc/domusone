@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Save, Loader, CheckCircle, Printer, Receipt } from 'lucide-react'
+import { Save, Loader, CheckCircle, Printer, Receipt } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Cuota = {
   id: number
@@ -224,22 +225,19 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   // ── Panel de recibo emitido ────────────────────────────────
   if (recibo) {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-        <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 680, maxHeight: '94vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
-          {/* Header */}
-          <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ background: '#dcfce7', borderRadius: 8, padding: 8 }}><CheckCircle size={20} color="#16a34a" /></div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#15803d' }}>Cobro registrado</div>
-                <div style={{ fontSize: 12, color: '#64748b' }}>Folio: <strong>{recibo.folio}</strong></div>
-              </div>
-            </div>
-            <button onClick={onSaved} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
-          </div>
-
-          {/* Vista previa del recibo */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+      <ModalShell modulo="golf-carritos" titulo="Cobro registrado" subtitulo={`Folio: ${recibo.folio}`} maxWidth={680} icono={CheckCircle} onClose={onSaved} footer={<>
+        <div style={{ fontSize: 12, color: '#64748b' }}>
+          {cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} cobrada{cuotasSelec.length !== 1 ? 's' : ''} · {fmt$(totalCobro)}
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <button onClick={onSaved} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cerrar</button>
+          <button onClick={handlePrint}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
+            <Printer size={14} /> Imprimir Recibo
+          </button>
+        </div>
+      </>}>
+        {/* Vista previa del recibo */}
             <div ref={printRef}>
               {/* ── RECIBO IMPRIMIBLE ── */}
               <div className="header">
@@ -362,43 +360,29 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                 {INSTITUCION.nombre} · {new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
               </div>
             </div>
-          </div>
-
-          {/* Footer */}
-          <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 12, color: '#64748b' }}>
-              {cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} cobrada{cuotasSelec.length !== 1 ? 's' : ''} · {fmt$(totalCobro)}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={onSaved} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cerrar</button>
-              <button onClick={handlePrint}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
-                <Printer size={14} /> Imprimir Recibo
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Vista previa del recibo */}
+      </ModalShell>
     )
   }
 
   // ── Formulario de cobro ────────────────────────────────────
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 560, maxHeight: '94vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.3)' }}>
-
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Receipt size={18} color="#059669" />
-            <div>
-              <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1e293b' }}>Cobrar Cuotas</h2>
-              <p style={{ fontSize: 12, color: '#64748b', marginTop: 1 }}>{nombreSocio}</p>
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}><X size={18} /></button>
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <ModalShell modulo="golf-carritos" titulo="Cobrar Cuotas" subtitulo={nombreSocio} maxWidth={520} icono={Receipt} onClose={onClose} footer={<>
+      <div>
+        <div style={{ fontSize: 11, color: '#64748b' }}>{cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} · subtotal {fmt$(subtotalBruto)}</div>
+        {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626' }}>– descuento {fmt$(descExtra)}</div>}
+        <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>{fmt$(totalCobro)}</div>
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
+        <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
+        <button onClick={handleSave} disabled={saving || cuotasSelec.length === 0 || !idFormaPago}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || cuotasSelec.length === 0 || !idFormaPago) ? 0.6 : 1 }}>
+          {saving ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
+          Registrar cobro
+        </button>
+      </div>
+    </>}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {loadingInit ? (
             <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}><Loader size={20} className="animate-spin" /></div>
           ) : (
@@ -518,25 +502,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
               {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>}
             </>
           )}
-        </div>
-
-        {/* Footer con total */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <div>
-            <div style={{ fontSize: 11, color: '#64748b' }}>{cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} · subtotal {fmt$(subtotalBruto)}</div>
-            {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626' }}>– descuento {fmt$(descExtra)}</div>}
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>{fmt$(totalCobro)}</div>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-            <button onClick={handleSave} disabled={saving || cuotasSelec.length === 0 || !idFormaPago}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || cuotasSelec.length === 0 || !idFormaPago) ? 0.6 : 1 }}>
-              {saving ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
-              Registrar cobro
-            </button>
-          </div>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   )
 }

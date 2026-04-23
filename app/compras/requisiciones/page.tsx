@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Articulo, fmt, fmtFecha, folioGen, StatusBadge, UNIDADES, nextFolio } from '../types'
+import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZE = 20
 
@@ -430,14 +431,37 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 700 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{isNew ? 'Nueva Requisición' : `Editar ${row.folio}`}</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+    <ModalShell modulo="compras" titulo={isNew ? 'Nueva Requisición' : `Editar ${row.folio}`} onClose={onClose} maxWidth={720}
+      footer={
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div>
+            {row && (
+              <button className="btn-secondary" onClick={() => imprimirRequisicion({
+                ...row,
+                id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+                id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
+                id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
+                centro_costo: null,
+                seccion: null,
+                frente: null,
+              }, det.filter(d => d.descripcion.trim() && Number(d.cantidad) > 0))}>
+                <Printer size={13} /> Imprimir
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+            <button className="btn-secondary" onClick={() => handleSave(false)} disabled={saving}>
+              {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar Borrador
+            </button>
+            <button className="btn-primary" onClick={() => handleSave(true)} disabled={saving}>
+              {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Enviar para Autorización
+            </button>
+          </div>
         </div>
-        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+      }
+    >
+      {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
 
           <Sec label="Datos de la Solicitud">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -556,35 +580,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
               <Plus size={12} /> Agregar producto
             </button>
           </Sec>
-        </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <div>
-            {row && (
-              <button className="btn-secondary" onClick={() => imprimirRequisicion({
-                ...row,
-                id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
-                id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
-                id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
-                centro_costo: null,
-                seccion: null,
-                frente: null,
-              }, det.filter(d => d.descripcion.trim() && Number(d.cantidad) > 0))}>
-                <Printer size={13} /> Imprimir
-              </button>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-            <button className="btn-secondary" onClick={() => handleSave(false)} disabled={saving}>
-              {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar Borrador
-            </button>
-            <button className="btn-primary" onClick={() => handleSave(true)} disabled={saving}>
-              {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Enviar para Autorización
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -617,27 +613,25 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
     return () => { cancelled = true }
   }, [req.id, req.centro_costo, req.seccion, req.frente, req.id_centro_costo_fk, req.id_area_fk, req.id_frente_fk])
 
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 620 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>{req.folio}</span>
-              <StatusBadge status={req.status} />
-              <span style={{ fontSize: 11, fontWeight: 600, color: req.prioridad === 'Crítica' ? '#dc2626' : req.prioridad === 'Urgente' ? '#d97706' : '#64748b' }}>● {req.prioridad}</span>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{req.area_solicitante} · {req.solicitante} · {fmtFecha(req.fecha_solicitud)}</div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => imprimirRequisicion(req, det)}>
-              <Printer size={13} /> Imprimir
-            </button>
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
+  const headerContent = (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>{req.folio}</span>
+        <StatusBadge status={req.status} />
+        <span style={{ fontSize: 11, fontWeight: 600, color: req.prioridad === 'Crítica' ? '#dc2626' : req.prioridad === 'Urgente' ? '#d97706' : '#64748b' }}>● {req.prioridad}</span>
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{req.area_solicitante} · {req.solicitante} · {fmtFecha(req.fecha_solicitud)}</div>
+    </div>
+  )
 
-        <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 120px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+  return (
+    <ModalShell modulo="compras" titulo={req.folio} subtitulo={`${req.area_solicitante} · ${req.solicitante}`} onClose={onClose} maxWidth={720}
+      footer={
+        <button className="btn-secondary" onClick={() => imprimirRequisicion(req, det)}>
+          <Printer size={13} /> Imprimir
+        </button>
+      }
+    >
           {/* Info */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
             <DI label="Fecha Requerida"  value={fmtFecha(req.fecha_requerida)} />
@@ -685,9 +679,7 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

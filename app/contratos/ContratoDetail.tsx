@@ -1,28 +1,21 @@
 'use client'
-import { X, Edit2, DollarSign, FileText, Users } from 'lucide-react'
+import { Edit2, DollarSign, FileText, Users } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 import { type Contrato } from './page'
 
 const fmt = (v: number | null) => v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 const fmtFecha = (d: string | null) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
 
 export default function ContratoDetail({ contrato: c, onClose, onEdit }: { contrato: Contrato; onClose: () => void; onEdit: () => void }) {
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 560 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 400, color: 'var(--gold-light)' }}>{c.sucesivo ?? `Contrato #${c.id}`}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
-              {c.tipo_contrato ?? '—'} · {fmtFecha(c.fecha)}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
+  const subtitulo = `${c.tipo_contrato ?? '—'} · ${fmtFecha(c.fecha)}`
 
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+  return (
+    <ModalShell modulo="contratos" titulo={c.sucesivo ?? `Contrato #${c.id}`} subtitulo={subtitulo} onClose={onClose} maxWidth={560}
+      footer={
+        <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <Group icon={<FileText size={14} />} label="Identificación">
             <Row label="Lote"        value={(c as any).lotes?.cve_lote ?? `#${c.id_lote_fk}`} gold />
             <Row label="Sucesivo"    value={c.sucesivo} mono />

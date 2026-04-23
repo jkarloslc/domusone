@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP, nextFolio } from '../types'
+import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZE = 20
 

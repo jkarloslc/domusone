@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, FORMAS_PAGO_COMP, nextFolio } from '../types'
+import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZE = 20
 
@@ -138,41 +139,36 @@ function RFQModal({ row, onClose, onSaved }: { row: any | null; onClose: () => v
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 480 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Nueva Solicitud de Cotización</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {error && <div style={{ padding: '10px', background: '#fef2f2', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
-          <div>
-            <label className="label">Requisición Asociada (opcional)</label>
-            <select className="select" value={form.id_requisicion_fk}
-              onChange={e => setForm(f => ({ ...f, id_requisicion_fk: e.target.value }))}>
-              <option value="">— Sin requisición —</option>
-              {requisiciones.map(r => <option key={r.id} value={r.id}>{r.folio} — {r.area_solicitante}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label">Fecha Límite Cotizaciones</label>
-            <input className="input" type="date" value={form.fecha_limite}
-              onChange={e => setForm(f => ({ ...f, fecha_limite: e.target.value }))} />
-          </div>
-          <div>
-            <label className="label">Notas</label>
-            <textarea className="input" rows={2} value={form.notas}
-              onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} style={{ resize: 'vertical' }} />
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+    <ModalShell modulo="compras" titulo="Nueva Solicitud de Cotización" onClose={onClose} maxWidth={580}
+      footer={
+        <>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Crear RFQ
           </button>
-        </div>
+        </>
+      }
+    >
+      {error && <div style={{ padding: '10px', background: '#fef2f2', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
+      <div>
+        <label className="label">Requisición Asociada (opcional)</label>
+        <select className="select" value={form.id_requisicion_fk}
+          onChange={e => setForm(f => ({ ...f, id_requisicion_fk: e.target.value }))}>
+          <option value="">— Sin requisición —</option>
+          {requisiciones.map(r => <option key={r.id} value={r.id}>{r.folio} — {r.area_solicitante}</option>)}
+        </select>
       </div>
-    </div>
+      <div>
+        <label className="label">Fecha Límite Cotizaciones</label>
+        <input className="input" type="date" value={form.fecha_limite}
+          onChange={e => setForm(f => ({ ...f, fecha_limite: e.target.value }))} />
+      </div>
+      <div>
+        <label className="label">Notas</label>
+        <textarea className="input" rows={2} value={form.notas}
+          onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} style={{ resize: 'vertical' }} />
+      </div>
+    </ModalShell>
   )
 }
 
@@ -279,28 +275,15 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
   const setCD = (i: number, k: string, v: string) =>
     setCotDet(d => d.map((x, j) => j === i ? { ...x, [k]: v } : x))
 
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 860 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>{rfq.folio}</span>
-              <StatusBadge status={rfq.status} />
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {rfq.id_requisicion_fk ? `Requisición #${rfq.id_requisicion_fk} · ` : ''}Fecha límite: {fmtFecha(rfq.fecha_limite)}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {rfq.status === 'Abierta' && cotizaciones.length < 3 && (
-              <button className="btn-primary" onClick={() => setAddingCot(true)}><Plus size={13} /> Agregar Cotización</button>
-            )}
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
+  const headerActionButton = rfq.status === 'Abierta' && cotizaciones.length < 3 ? (
+    <button className="btn-primary" onClick={() => setAddingCot(true)}><Plus size={13} /> Agregar Cotización</button>
+  ) : null
 
-        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 80px)' }}>
+  return (
+    <ModalShell modulo="compras" titulo={rfq.folio}
+      subtitulo={`${rfq.id_requisicion_fk ? `Requisición #${rfq.id_requisicion_fk} · ` : ''}Fecha límite: ${fmtFecha(rfq.fecha_limite)}`}
+      onClose={onClose} maxWidth={880}
+    >
 
           {/* Cuadro comparativo */}
           {cotizaciones.length > 0 && (
@@ -467,8 +450,6 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

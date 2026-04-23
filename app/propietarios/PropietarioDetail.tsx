@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { dbCat, dbCtrl, type Propietario } from '@/lib/supabase'
-import { X, Edit2, User, Phone, Mail, MapPin, FileText, Home } from 'lucide-react'
+import { Edit2, User, Phone, Mail, MapPin, FileText, Home } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Props = { propietario: Propietario; onClose: () => void; onEdit: () => void }
 
@@ -29,27 +30,15 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
   }, [p.id])
 
   const nombre = [p.nombre, (p as any).apellido_paterno, (p as any).apellido_materno].filter(Boolean).join(' ')
+  const subtitulo = [(p as any).razon_social, (p as any).tipo_persona ?? 'Física', p.activo ? 'Activo' : 'Inactivo'].filter(Boolean).join(' • ')
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 500 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 400, color: 'var(--text-primary)' }}>{nombre}</div>
-            {(p as any).razon_social && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{(p as any).razon_social}</div>}
-            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-              <span className={`badge ${(p as any).tipo_persona === 'Moral' ? 'badge-bloqueado' : 'badge-libre'}`}>{(p as any).tipo_persona ?? 'Física'}</span>
-              <span className={`badge ${p.activo ? 'badge-vendido' : 'badge-default'}`}>{p.activo ? 'Activo' : 'Inactivo'}</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
-
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <ModalShell modulo="propietarios" titulo={nombre} subtitulo={subtitulo} onClose={onClose} maxWidth={500}
+      footer={
+        <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
           {/* Datos personales */}
           <Group icon={<User size={14} />} label="Datos Personales">
@@ -95,9 +84,8 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
             }
           </Group>
 
-        </div>
       </div>
-    </div>
+    </ModalShell>
   )
 }
 

@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbCat, dbCfg, type Lote, type Seccion } from '@/lib/supabase'
-import { X, Save, Loader } from 'lucide-react'
+import { Save, Loader } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 import FileUpload from '@/components/FileUpload'
 
 type Props = { lote: Lote | null; onClose: () => void; onSaved: () => void }
@@ -88,19 +89,18 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>
-            {isNew ? 'Nuevo Lote' : `Editar ${lote.cve_lote ?? '#' + lote.lote}`}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: '20px 24px' }}>
-          {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+    <ModalShell modulo="lotes" titulo={isNew ? 'Nuevo Lote' : `Editar ${lote.cve_lote ?? '#' + lote.lote}`} onClose={onClose} maxWidth={680}
+      footer={
+        <>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button>
+        </>
+      }
+    >
+      {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
           <Section label="Identificación">
             <Row>
@@ -198,18 +198,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
               <textarea className="input" rows={2} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} />
             </Field>
           </Section>
-        </div>
-
-        {/* Footer */}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid var(--border)' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
