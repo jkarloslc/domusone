@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCtrl, dbCat } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
+import ModalShell from '@/components/ui/ModalShell'
+
   MessageSquare, Plus, Eye, Send, RefreshCw, X, Loader,
   Search, CheckCircle, AlertTriangle, Mail, Users,
   FileText, Clock, Trash2, ChevronDown
@@ -255,18 +257,14 @@ function NuevoComunicadoModal({ authUser, onClose, onSaved }:
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 600 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <MessageSquare size={14} style={{ color: 'var(--blue)' }} />
-            </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600 }}>Nuevo Comunicado</h2>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
+    <ModalShell modulo="comunicados" titulo={'Nuevo Comunicado'} onClose={onClose} maxWidth={600}
+      footer={<>        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <FileText size={13} />}
+            Guardar Borrador
+          </button></>}
+    >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
             <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>
@@ -297,16 +295,7 @@ function NuevoComunicadoModal({ authUser, onClose, onSaved }:
               El texto se enviará con formato de correo electrónico.
             </div>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <FileText size={13} />}
-            Guardar Borrador
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }
@@ -467,22 +456,8 @@ function EnvioModal({ comunicado, authUser, onClose }:
   }
 
   return (
-    <div className="modal-overlay" onClick={e => !sending && e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 560 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)', marginBottom: 2 }}>{comunicado.titulo}</div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <TipoBadge tipo={comunicado.tipo} />
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Envío de comunicado</span>
-            </div>
-          </div>
-          {!sending && <button className="btn-ghost" onClick={onClose}><X size={16} /></button>}
-        </div>
-
-        {done ? (
-          <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-            <CheckCircle size={48} style={{ color: '#15803d', margin: '0 auto 16px' }} />
+    <ModalShell modulo="comunicados" titulo="Comunicados" onClose={onClose} maxWidth={560}
+      footer={<>            <CheckCircle size={48} style={{ color: '#15803d', margin: '0 auto 16px' }} />
             <div style={{ fontSize: 18, fontWeight: 700, color: '#15803d', marginBottom: 6 }}>¡Enviado correctamente!</div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
               {tab === 'individual'
@@ -626,9 +601,9 @@ function EnvioModal({ comunicado, authUser, onClose }:
               </button>
             </div>
           </>
-        )}
-      </div>
-    </div>
+        )}</>}
+    >
+    </ModalShell>
   )
 }
 
@@ -650,22 +625,8 @@ function EnviosDetailModal({ comunicado, onClose }: { comunicado: any; onClose: 
   const errores  = envios.filter(e => e.status === 'Error').length
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 680 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{comunicado.titulo}</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <TipoBadge tipo={comunicado.tipo} />
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Historial de envíos</span>
-            </div>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
-        {envios.length > 0 && (
-          <div style={{ display: 'flex', gap: 10, padding: '12px 24px', borderBottom: '1px solid #f1f5f9' }}>
-            <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✓ {exitosos} enviados</span>
+    <ModalShell modulo="comunicados" titulo="Comunicados" onClose={onClose} maxWidth={680}
+      footer={<>            <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✓ {exitosos} enviados</span>
             {errores > 0 && <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>✗ {errores} con error</span>}
           </div>
         )}
@@ -710,9 +671,9 @@ function EnviosDetailModal({ comunicado, onClose }: { comunicado: any; onClose: 
         </div>
 
         <div style={{ padding: '12px 24px', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
-          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
-        </div>
-      </div>
+          <button className="btn-secondary" onClick={onClose}>Cerrar</button></>}
+    >
+    </ModalShell>
     </div>
   )
 }

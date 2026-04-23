@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { Plus, Search, RefreshCw, Eye, X, Save, Loader, ArrowLeft, Truck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, nextFolio } from '../types'
+import ModalShell from '@/components/ui/ModalShell'
 
 export default function RecepcionesPage() {
   const router = useRouter()
@@ -251,13 +252,13 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 680 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Nueva Recepción de Mercancías</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
+    <ModalShell modulo="compras" titulo="Nueva Recepción de Mercancías" onClose={onClose} maxWidth={680}
+      footer={<>        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || !tipoRecepcion}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Truck size={13} />} Registrar Recepción
+          </button></>}
+    >
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
 
@@ -389,15 +390,7 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
             <textarea className="input" rows={2} value={form.notas}
               onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} style={{ resize: 'vertical' }} />
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || !tipoRecepcion}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Truck size={13} />} Registrar Recepción
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }
@@ -410,16 +403,8 @@ function RecepcionDetail({ rec, onClose }: { rec: any; onClose: () => void }) {
   }, [rec.id])
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 580 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>{rec.folio}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtFecha(rec.fecha_recepcion)} · Recibió: {rec.recibio}</div>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-        <div style={{ padding: '18px 24px' }}>
+    <ModalShell modulo="compras" titulo="Compras" onClose={onClose} maxWidth={580}
+    >
           <div className="card" style={{ overflow: 'hidden' }}>
             <table>
               <thead><tr><th>Descripción</th><th style={{ textAlign: 'right' }}>Pedido</th><th style={{ textAlign: 'right' }}>Recibido</th><th>Unidad</th></tr></thead>
@@ -436,8 +421,7 @@ function RecepcionDetail({ rec, onClose }: { rec: any; onClose: () => void }) {
             </table>
           </div>
           {rec.notas && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12 }}>Notas: {rec.notas}</p>}
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }

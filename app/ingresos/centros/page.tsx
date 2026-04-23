@@ -4,6 +4,7 @@ import { dbCfg } from '@/lib/supabase'
 import { Plus, Edit2, Tag, Layers, ChevronLeft, X, Save, Loader } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Centro = {
   id: number
@@ -56,15 +57,13 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 500 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
-            {centro ? 'Editar Centro' : 'Nuevo Centro de Ingreso'}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <ModalShell modulo="ingresos" titulo={centro ? 'Editar Centro' : 'Nuevo Centro de Ingreso'} onClose={onClose} maxWidth={500}
+      footer={<>          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+            {centro ? 'Guardar cambios' : 'Crear Centro'}
+          </button></>}
+    >
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', borderRadius: 6, fontSize: 12, color: '#dc2626' }}>{error}</div>}
 
           <div>
@@ -114,15 +113,7 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
             <input type="checkbox" id="activo-chk" checked={form.activo ?? true} onChange={e => set('activo', e.target.checked)} />
             <label htmlFor="activo-chk" style={{ fontSize: 13, color: '#374151' }}>Centro activo</label>
           </div>
-        </div>
-        <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-            {centro ? 'Guardar cambios' : 'Crear Centro'}
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }

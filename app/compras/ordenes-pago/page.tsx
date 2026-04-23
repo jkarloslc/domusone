@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { dbComp, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
+import ModalShell from '@/components/ui/ModalShell'
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
   ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight,
   Edit2, Upload, ExternalLink, FileText, AlertTriangle, MessageSquare, Send
@@ -482,13 +483,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // Paso 1: elegir si tiene OC o no — solo en nuevo
   if (conOC === null && !isEdit) {
     return (
-      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-        <div className="modal" style={{ maxWidth: 440 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Nueva Orden de Pago</h2>
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-          <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <ModalShell modulo="compras" titulo="Nueva Orden de Pago" onClose={onClose} maxWidth={440}
+      >
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>¿Esta orden de pago está relacionada con una compra?</p>
             <button onClick={() => setConOC(true)}
               style={{ padding: '16px', border: '1px solid #bfdbfe', borderRadius: 10, background: '#eff6ff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
@@ -504,30 +500,20 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               <div style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>◇ Sin Orden de Compra</div>
               <div style={{ fontSize: 12, color: '#64748b' }}>Servicios, honorarios, arrendamiento u otros gastos que no afectan inventario.</div>
             </button>
-          </div>
-        </div>
+      </ModalShell>
       </div>
     )
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 640 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
-              {isEdit ? 'Editar Orden de Pago' : 'Nueva Orden de Pago'}
-            </h2>
-            {!isEdit && (
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                {conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo'}
-                <button onClick={() => setConOC(null)} style={{ marginLeft: 8, fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>cambiar</button>
-              </div>
-            )}
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
+    <ModalShell modulo="compras" titulo={isEdit ? 'Editar Orden de Pago' : 'Nueva Orden de Pago'} onClose={onClose} maxWidth={640}
+      footer={<>        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || !!uploading}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {isEdit ? 'Guardar Cambios' : 'Generar Orden de Pago'}
+          </button></>}
+    >
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
 
@@ -734,16 +720,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
             </span>
             <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(montoTotal)}</span>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || !!uploading}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {isEdit ? 'Guardar Cambios' : 'Generar Orden de Pago'}
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }
@@ -1001,24 +978,8 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 580 }}>
-
-        {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--blue)' }}>{op.folio}</span>
-              <StatusBadge status={op.status} />
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {op._provNombre ?? 'Sin proveedor'} · {fmtFecha(op.fecha_op)}
-            </div>
-          </div>
-          <button className="btn-ghost" style={{ marginTop: 2 }} onClick={onClose}><X size={16} /></button>
-        </div>
-
-        {/* Cuerpo */}
+    <ModalShell modulo="compras" titulo="Compras" onClose={onClose} maxWidth={580}
+      footer={<>        {/* Cuerpo */}
         <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 180px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           <Sec label="Beneficiario">
@@ -1359,9 +1320,19 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                 <Edit2 size={13} /> Editar
               </button>
             )}
+          </div></>}
+    >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--blue)' }}>{op.folio}</span>
+              <StatusBadge status={op.status} />
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {op._provNombre ?? 'Sin proveedor'} · {fmtFecha(op.fecha_op)}
+            </div>
           </div>
-        </div>
-      </div>
+          <button className="btn-ghost" style={{ marginTop: 2 }} onClick={onClose}><X size={16} /></button>
+    </ModalShell>
     </div>
   )
 }

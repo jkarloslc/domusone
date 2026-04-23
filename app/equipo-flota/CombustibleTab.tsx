@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, dbCtrl, dbComp, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
+import ModalShell from '@/components/ui/ModalShell'
+
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2,
   Fuel, Droplets, FileText, Search, Upload, CheckCircle, AlertTriangle
 } from 'lucide-react'
@@ -427,15 +429,13 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
   const esGasolineria = form.tipo_suministro === 'Gasolinería'
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 540 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
-            {vale ? 'Editar Vale' : 'Nuevo Vale de Combustible'}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-        </div>
-        <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <ModalShell modulo="mantenimiento" titulo={vale ? 'Editar Vale' : 'Nuevo Vale de Combustible'} onClose={onClose} maxWidth={540}
+      footer={<>          <button className="btn-secondary" onClick={onClose} style={{ fontSize: 12 }}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: 12 }}>
+            {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button></>}
+    >
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -530,15 +530,7 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
             <label className="label" style={{ fontSize: 11 }}>Notas</label>
             <textarea className="input" rows={2} style={{ fontSize: 12, resize: 'vertical' }} value={form.notas} onChange={setF('notas')} />
           </div>
-        </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button className="btn-secondary" onClick={onClose} style={{ fontSize: 12 }}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: 12 }}>
-            {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }
@@ -661,15 +653,13 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
   )
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
-            {carga ? 'Editar Carga' : 'Registrar Carga'}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-        </div>
-        <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <ModalShell modulo="mantenimiento" titulo={carga ? 'Editar Carga' : 'Registrar Carga'} onClose={onClose} maxWidth={520}
+      footer={<>          <button className="btn-secondary" onClick={onClose} style={{ fontSize: 12 }}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: 12 }}>
+            {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button></>}
+    >
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -756,15 +746,7 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
             <label className="label" style={{ fontSize: 11 }}>Notas</label>
             <textarea className="input" rows={2} style={{ fontSize: 12, resize: 'vertical' }} value={form.notas} onChange={setF('notas')} />
           </div>
-        </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button className="btn-secondary" onClick={onClose} style={{ fontSize: 12 }}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: 12 }}>
-            {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }
@@ -789,19 +771,8 @@ function ValeDetail({ vale, areaMap, equipoMap, onClose }: {
   const pct = vale.litros_autorizados > 0 ? (vale.litros_usados / vale.litros_autorizados) * 100 : 0
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: 0 }}>{vale.folio}</h2>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{vale.tipo_suministro}{vale.periodo ? ` · ${vale.periodo}` : ''}</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Badge text={vale.status} map={VALE_STATUS_STYLE} />
-            <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-          </div>
-        </div>
-        <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <ModalShell modulo="mantenimiento" titulo={vale.folio} onClose={onClose} maxWidth={520}
+    >
           {/* Progreso litros */}
           <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -858,7 +829,6 @@ function ValeDetail({ vale, areaMap, equipoMap, onClose }: {
             ))}
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

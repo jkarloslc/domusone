@@ -3,6 +3,8 @@ import { useDebounce } from '@/lib/useDebounce'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
 import {
+import ModalShell from '@/components/ui/ModalShell'
+
   Plus, Search, RefreshCw, Edit2, Trash2, X, Save,
   Loader, Eye, MessageSquare, Clock, CheckCircle, DollarSign
 } from 'lucide-react'
@@ -269,15 +271,14 @@ function AfectacionModal({ afectacion, onClose, onSaved }: { afectacion: Afectac
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 620 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
-            {isNew ? 'Nueva Afectación / Servidumbre' : 'Editar Afectación'}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
+    <ModalShell modulo="proyectos" titulo={isNew ? 'Nueva Afectación / Servidumbre' : 'Editar Afectación'} onClose={onClose} maxWidth={620}
+      footer={<>        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button></>}
+    >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
 
@@ -381,16 +382,7 @@ function AfectacionModal({ afectacion, onClose, onSaved }: { afectacion: Afectac
             <label className="label">Notas Generales</label>
             <textarea className="input" rows={2} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} />
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }
@@ -430,27 +422,8 @@ function AfectacionDetail({ afectacion: a, onClose, onEdit }: { afectacion: Afec
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 600 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--blue)' }}>
-                {(a as any).lotes?.cve_lote ?? `#${a.id_lote_fk}`}
-              </span>
-              <span className={`badge ${STATUS_COLOR[a.status ?? ''] ?? 'badge-default'}`}>{a.status}</span>
-              {a.con_cobro && <span className="badge badge-vendido" style={{ fontSize: 10 }}>Con cobro</span>}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{a.tipo}</div>
-            {a.beneficiario && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Beneficiario: {a.beneficiario}</div>}
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn-secondary" onClick={onEdit} style={{ fontSize: 12 }}><Edit2 size={13} /> Editar</button>
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
-
+    <ModalShell modulo="proyectos" titulo="Proyectos" onClose={onClose} maxWidth={600}
+    >
         <div style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 100px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
 
           {/* Datos generales */}
@@ -517,8 +490,7 @@ function AfectacionDetail({ afectacion: a, onClose, onEdit }: { afectacion: Afec
               </div>
             )}
           </div>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }

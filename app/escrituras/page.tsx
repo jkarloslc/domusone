@@ -5,6 +5,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Building2, Eye, Edit2, Trash2, X, Save, Loader, ChevronLeft, ChevronRight } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
+import ModalShell from '@/components/ui/ModalShell'
+
 
 const PAGE_SIZE = 20
 
@@ -231,13 +233,13 @@ function EscrituraModal({ escritura, onClose, onSaved }: { escritura: Escritura 
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>{isNew ? 'Nueva Escritura' : `Escritura ${escritura.no_escritura ?? ''}`}</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <ModalShell modulo="escrituras" titulo={isNew ? 'Nueva Escritura' : `Escritura ${escritura.no_escritura ?? ''}`} onClose={onClose} maxWidth={520}
+      footer={<>          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            Guardar
+          </button></>}
+    >
           {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
 
           <div>
@@ -293,15 +295,7 @@ function EscrituraModal({ escritura, onClose, onSaved }: { escritura: Escritura 
             <div><label className="label">Fecha</label><input className="input" type="date" value={form.fecha} onChange={set('fecha')} /></div>
             <div><label className="label">Propietario</label><input className="input" value={form.propietario} onChange={set('propietario')} /></div>
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid var(--border)' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            Guardar
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }

@@ -9,6 +9,8 @@ import {
   Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
+import ModalShell from '@/components/ui/ModalShell'
+
 
 // ── Tipos ─────────────────────────────────────────────────────
 type CatConfig = {
@@ -584,32 +586,8 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
   const totalAbonos = movs.filter(m => m.tipo === 'Abono').reduce((a, m) => a + (m.monto ?? 0), 0)
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 780 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#0f766e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Building2 size={15} style={{ color: '#0f766e' }} />
-              </div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{cuenta.banco}</h2>
-            </div>
-            <div style={{ display: 'flex', gap: 16, marginLeft: 42, flexWrap: 'wrap' }}>
-              {cuenta.numero_cuenta && (
-                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>No. {cuenta.numero_cuenta}</span>
-              )}
-              {cuenta.clabe && (
-                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>CLABE: {cuenta.clabe}</span>
-              )}
-            </div>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
-        {/* Saldo + stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '1px solid #f1f5f9' }}>
-          {[
+    <ModalShell modulo="default" titulo={cuenta.banco} onClose={onClose} maxWidth={780}
+      footer={<>          {[
             { label: 'Saldo Actual',   value: fmtMXN(saldoActual), color: '#0f766e', icon: TrendingUp },
             { label: 'Cargos período', value: fmtMXN(totalCargos), color: '#dc2626', icon: ArrowDownCircle },
             { label: 'Abonos período', value: fmtMXN(totalAbonos), color: '#15803d', icon: ArrowUpCircle },
@@ -756,9 +734,9 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderTop: '1px solid #e2e8f0' }}>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{movs.length} movimiento{movs.length !== 1 ? 's' : ''}</span>
-          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
-        </div>
-      </div>
+          <button className="btn-secondary" onClick={onClose}>Cerrar</button></>}
+    >
+    </ModalShell>
     </div>
   )
 }
@@ -833,21 +811,14 @@ function CatalogoModal({ config, row, onClose, onSaved }:
   const Icon = config.icon
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: config.color + '18',
-              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon size={14} style={{ color: config.color }} />
-            </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600 }}>
-              {isNew ? `Nuevo — ${config.label}` : `Editar — ${row?.[config.sortBy ?? 'nombre'] ?? config.label}`}
-            </h2>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
+    <ModalShell modulo="default" titulo={isNew ? `Nuevo — ${config.label}` : `Editar — ${row?.[config.sortBy ?? 'nombre'] ?? config.label}`} onClose={onClose} maxWidth={520}
+      footer={<>        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || uploading}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button></>}
+    >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', maxHeight: 'calc(88vh - 130px)' }}>
           {error && (
             <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>
@@ -937,16 +908,7 @@ function CatalogoModal({ config, row, onClose, onSaved }:
               <option value="false">Inactivo</option>
             </select>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || uploading}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }

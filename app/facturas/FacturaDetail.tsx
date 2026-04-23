@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { dbCtrl } from '@/lib/supabase'
 import { X, Printer, Mail, XCircle, Download, CheckCircle, Loader, AlertTriangle } from 'lucide-react'
 import { cancelarCFDI } from '@/lib/pacService'
+import ModalShell from '@/components/ui/ModalShell'
+
 
 const fmt = (v: number | null | undefined) =>
   v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
@@ -71,53 +73,8 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 600 }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>
-                {f.serie}{f.folio_interno}
-              </span>
-              <span style={{
-                fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-                background: f.status === 'Vigente' ? '#f0fdf4' : f.status === 'Cancelada' ? '#fef2f2' : '#fffbeb',
-                color:      f.status === 'Vigente' ? '#15803d' : f.status === 'Cancelada' ? '#dc2626' : '#d97706',
-                border:     `1px solid ${f.status === 'Vigente' ? '#bbf7d0' : f.status === 'Cancelada' ? '#fecaca' : '#fde68a'}`,
-              }}>
-                {f.status}
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-              {f.folio_fiscal ?? 'Sin folio fiscal'}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {f.status === 'Vigente' && (
-              <>
-                <button className="btn-secondary" onClick={handleImprimir} style={{ fontSize: 12 }}>
-                  <Printer size={13} /> {f.pdf_url ? 'PDF' : 'Imprimir'}
-                </button>
-                {f.pdf_url && (
-                  <a href={f.pdf_url} download className="btn-secondary" style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <Download size={13} /> XML
-                  </a>
-                )}
-                <button className="btn-secondary" onClick={() => setShowEmail(e => !e)} style={{ fontSize: 12 }}>
-                  <Mail size={13} /> Enviar
-                </button>
-                <button className="btn-ghost" onClick={() => setShowCancelar(e => !e)} style={{ color: '#dc2626', fontSize: 12 }}>
-                  <XCircle size={13} /> Cancelar
-                </button>
-              </>
-            )}
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
-
-        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 80px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <ModalShell modulo="facturas" titulo="Facturas" onClose={onClose} maxWidth={600}
+      footer={<>        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 80px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {msg && (
             <div style={{ padding: '10px 14px', background: msg.startsWith('✓') ? '#f0fdf4' : '#fef2f2', border: `1px solid ${msg.startsWith('✓') ? '#bbf7d0' : '#fecaca'}`, borderRadius: 6, fontSize: 13, color: msg.startsWith('✓') ? '#15803d' : '#dc2626' }}>
@@ -223,9 +180,48 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
                 <DataItem label="Fecha Envío" value={fmtFecha(f.fecha_envio)} />
               </Row2>
             </Section>
-          )}
-        </div>
-      </div>
+          )}</>}
+    >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>
+                {f.serie}{f.folio_interno}
+              </span>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                background: f.status === 'Vigente' ? '#f0fdf4' : f.status === 'Cancelada' ? '#fef2f2' : '#fffbeb',
+                color:      f.status === 'Vigente' ? '#15803d' : f.status === 'Cancelada' ? '#dc2626' : '#d97706',
+                border:     `1px solid ${f.status === 'Vigente' ? '#bbf7d0' : f.status === 'Cancelada' ? '#fecaca' : '#fde68a'}`,
+              }}>
+                {f.status}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+              {f.folio_fiscal ?? 'Sin folio fiscal'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {f.status === 'Vigente' && (
+              <>
+                <button className="btn-secondary" onClick={handleImprimir} style={{ fontSize: 12 }}>
+                  <Printer size={13} /> {f.pdf_url ? 'PDF' : 'Imprimir'}
+                </button>
+                {f.pdf_url && (
+                  <a href={f.pdf_url} download className="btn-secondary" style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Download size={13} /> XML
+                  </a>
+                )}
+                <button className="btn-secondary" onClick={() => setShowEmail(e => !e)} style={{ fontSize: 12 }}>
+                  <Mail size={13} /> Enviar
+                </button>
+                <button className="btn-ghost" onClick={() => setShowCancelar(e => !e)} style={{ color: '#dc2626', fontSize: 12 }}>
+                  <XCircle size={13} /> Cancelar
+                </button>
+              </>
+            )}
+            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          </div>
+    </ModalShell>
     </div>
   )
 }

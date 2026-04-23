@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { dbCtrl, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
+import ModalShell from '@/components/ui/ModalShell'
+
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
   Camera, Trash2, ExternalLink, CheckCircle, Wrench, ChevronDown, Printer, Filter
 } from 'lucide-react'
@@ -359,23 +361,12 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 620 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
-              {ot ? 'Editar OT' : 'Nueva Orden de Trabajo'}
-            </h2>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-              background: empresa === 'Oitydisa' ? '#eff6ff' : '#f0fdf4',
-              color: empresa === 'Oitydisa' ? '#2563eb' : '#15803d',
-              border: `1px solid ${empresa === 'Oitydisa' ? '#bfdbfe' : '#bbf7d0'}` }}>
-              {empresa}
-            </span>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-        </div>
-        <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <ModalShell modulo="mantenimiento" titulo={ot ? 'Editar OT' : 'Nueva Orden de Trabajo'} onClose={onClose} maxWidth={620}
+      footer={<>          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
+          </button></>}
+    >
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
           <div><label className="label" style={{ fontSize: 11 }}>Título *</label>
             <input className="input" style={{ fontSize: 13 }} value={form.titulo} onChange={setF('titulo')} /></div>
@@ -446,14 +437,7 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
               </div>}
             </div>
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
-          </button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }
@@ -656,41 +640,8 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 640 }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>{ot.folio}</span>
-                <Badge text={ot.prioridad ?? 'Media'} map={PRIORIDAD_STYLE} />
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{ot.titulo}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                {ot.id_area_fk ? areaMap[ot.id_area_fk] : '—'}
-                {ot.ubicacion_detalle && ` · ${ot.ubicacion_detalle}`}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirOT}><Printer size={13} /> Imprimir</button>
-              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => onEdit(ot)}>Editar</button>
-              <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            {STATUSES.map(s => (
-              <button key={s} onClick={() => cambiarStatus(s)} disabled={updatingStatus}
-                style={{ fontSize: 11, fontWeight: s === currentStatus ? 700 : 400,
-                  padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
-                  border: `1px solid ${s === currentStatus ? (STATUS_STYLE[s]?.border ?? '#e2e8f0') : '#e2e8f0'}`,
-                  background: s === currentStatus ? (STATUS_STYLE[s]?.bg ?? '#f8fafc') : '#fff',
-                  color: s === currentStatus ? (STATUS_STYLE[s]?.color ?? '#64748b') : 'var(--text-muted)' }}>
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-
+    <ModalShell modulo="mantenimiento" titulo="Mantenimiento" onClose={onClose} maxWidth={640}
+    >
         <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 200px)', padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
             {ot.tipo_trabajo && <DI label="Tipo" value={ot.tipo_trabajo} />}
@@ -801,8 +752,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
               </div>
             )}
           </div>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }

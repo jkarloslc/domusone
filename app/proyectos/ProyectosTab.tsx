@@ -8,6 +8,8 @@ import {
   ChevronLeft, ChevronRight, DollarSign
 } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
+import ModalShell from '@/components/ui/ModalShell'
+
 
 const PAGE_SIZE = 20
 
@@ -177,13 +179,10 @@ function ProyectoModal({ proyecto, onClose, onSaved }: { proyecto: Proyecto | nu
     setSaving(false); if (err) { setError(err.message); return }; onSaved()
   }
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 560 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{isNew ? 'Nuevo Proyecto' : `Editar: ${proyecto.nombre ?? ''}`}</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <ModalShell modulo="proyectos" titulo={isNew ? 'Nuevo Proyecto' : `Editar: ${proyecto.nombre ?? ''}`} onClose={onClose} maxWidth={560}
+      footer={<>          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar</button></>}
+    >
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
           <div>
             <label className="label">Lote *</label>
@@ -212,12 +211,7 @@ function ProyectoModal({ proyecto, onClose, onSaved }: { proyecto: Proyecto | nu
             preview={false}
           />
           <div><label className="label">Notas</label><textarea className="input" rows={3} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} /></div>
-        </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar</button>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }
@@ -241,13 +235,8 @@ function PagosModal({ proyecto, onClose }: { proyecto: Proyecto; onClose: () => 
   const totalPagado = pagos.reduce((a, p) => a + (p.monto ?? 0), 0)
   const saldo = (proyecto.presupuesto ?? 0) - totalPagado
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 560 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div><h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Pagos del Proyecto</h2><div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{proyecto.nombre} · {(proyecto as any).lotes?.cve_lote}</div></div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-        <div style={{ padding: '20px 24px' }}>
+    <ModalShell modulo="proyectos" titulo={'Pagos del Proyecto'} onClose={onClose} maxWidth={560}
+    >
           <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
             {[{ label: 'Presupuesto', value: fmt(proyecto.presupuesto), color: 'var(--text-primary)' }, { label: 'Pagado', value: fmt(totalPagado), color: '#15803d' }, { label: 'Saldo', value: fmt(saldo), color: saldo > 0 ? '#dc2626' : '#15803d' }].map(s => (
               <div key={s.label} className="card" style={{ padding: '10px 14px', flex: 1 }}>
@@ -270,8 +259,7 @@ function PagosModal({ proyecto, onClose }: { proyecto: Proyecto; onClose: () => 
             </div>
             <button className="btn-primary" onClick={handleAdd} disabled={saving || !form.monto} style={{ alignSelf: 'flex-start' }}>{saving ? <Loader size={13} className="animate-spin" /> : <Plus size={13} />} Registrar Pago</button>
           </div>
-        </div>
-      </div>
+    </ModalShell>
     </div>
   )
 }

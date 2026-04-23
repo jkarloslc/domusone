@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { dbCtrl, dbCat, dbCfg, supabase } from '@/lib/supabase'
 import { X, Save, Loader, Search, FileText, CheckCircle } from 'lucide-react'
 import {
+import ModalShell from '@/components/ui/ModalShell'
+
   timbrarCFDI, USOS_CFDI, FORMAS_PAGO_SAT, METODOS_PAGO,
   REGIMENES_FISCALES, type DatosFactura, type ConceptoFactura
 } from '@/lib/pacService'
@@ -199,20 +201,8 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
     setReceptor(r => ({ ...r, [k]: e.target.value }))
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 620 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600 }}>Nueva Factura</h2>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Comprobante Fiscal Digital (CFDI 4.0)</p>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
-        {/* Steps */}
-        <div style={{ display: 'flex', padding: '12px 24px', gap: 4, borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-          {['Recibo', 'Receptor', 'CFDI', 'Confirmar'].map((label, i) => (
+    <ModalShell modulo="facturas" titulo={'Nueva Factura'} onClose={onClose} maxWidth={620}
+      footer={<>          {['Recibo', 'Receptor', 'CFDI', 'Confirmar'].map((label, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
               <div style={{
                 width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0,
@@ -425,8 +415,8 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
               </button>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+        </div></>}
+    >
+    </ModalShell>
   )
 }
