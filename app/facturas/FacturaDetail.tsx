@@ -72,9 +72,8 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 600 }}>
-
+    <ModalShell modulo="facturas" titulo="Modal" onClose={onClose} maxWidth={600}
+    >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
@@ -226,8 +225,7 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
             </Section>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

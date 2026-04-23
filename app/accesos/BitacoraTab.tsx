@@ -190,12 +190,15 @@ function RegistrarAccesoModal({ onClose, onSaved }: { onClose: () => void; onSav
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>Registrar Acceso</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="accesos" titulo="Registrar Acceso" onClose={onClose} maxWidth={520}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving}>
+        {saving ? <RefreshCw size={13} className="animate-spin" /> : (form.tipo === 'Entrada' ? <LogIn size={13} /> : <LogOut size={13} />)}
+        Registrar {form.tipo}
+        </button>
+      </>}
+    >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
           {/* Tipo */}
@@ -272,14 +275,6 @@ function RegistrarAccesoModal({ onClose, onSaved }: { onClose: () => void; onSav
             <textarea className="input" rows={2} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} />
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid var(--border)' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <RefreshCw size={13} className="animate-spin" /> : (form.tipo === 'Entrada' ? <LogIn size={13} /> : <LogOut size={13} />)}
-            Registrar {form.tipo}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

@@ -396,14 +396,15 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const almOrigNombre = almacenes.find(a => a.id.toString() === form.id_almacen_origen)?.nombre
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 660 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
-            Solicitud de Transferencia
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="almacenes" titulo="Solicitud de Transferencia" onClose={onClose} maxWidth={660}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving}>
+        {saving ? <Loader size={13} className="animate-spin" /> : <ArrowLeftRight size={13} />}
+        Enviar Solicitud
+        </button>
+      </>}
+    >
 
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
@@ -565,15 +566,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <ArrowLeftRight size={13} />}
-            Enviar Solicitud
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -734,29 +727,8 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
   const esSolicitante = trans.solicitante === solicitante || true // por ahora cualquier usuario puede confirmar
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 620 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>
-              {trans.folio}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              {almMap[trans.id_almacen_origen] ?? `#${trans.id_almacen_origen}`}
-              {' → '}
-              {almMap[trans.id_almacen_destino] ?? `#${trans.id_almacen_destino}`}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {trans.status !== 'Solicitada' && trans.status !== 'Rechazada' && (
-              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirVale}>
-                <Printer size={13} /> Imprimir Vale
-              </button>
-            )}
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
+    <ModalShell modulo="almacenes" titulo="Modal" onClose={onClose} maxWidth={620}
+    >
 
         <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 80px)', padding: '0 24px 20px' }}>
           {/* Stepper */}
@@ -928,8 +900,7 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

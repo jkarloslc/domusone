@@ -200,8 +200,29 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
     setReceptor(r => ({ ...r, [k]: e.target.value }))
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 620 }}>
+    <ModalShell modulo="facturas" titulo="Modal" onClose={onClose} maxWidth={620}
+      footer={<>
+        <div>
+        {paso > 1 && <button className="btn-secondary" onClick={() => setPaso(p => p - 1)}>← Anterior</button>}
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        {paso < 4 ? (
+        <button className="btn-primary"
+        onClick={() => {
+        if (paso === 1 && !recibo) { setError('Selecciona un recibo'); return }
+        setError(''); setPaso(p => p + 1)
+        }}>
+        Siguiente →
+        </button>
+        ) : (
+        <button className="btn-primary" onClick={handleTimbrar} disabled={saving}>
+        {saving ? <><Loader size={13} className="animate-spin" /> Timbrando…</> : <><FileText size={13} /> Timbrar CFDI</>}
+        </button>
+        )}
+        </div>
+      </>}
+    >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
@@ -406,28 +427,6 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
         </div>
 
         {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <div>
-            {paso > 1 && <button className="btn-secondary" onClick={() => setPaso(p => p - 1)}>← Anterior</button>}
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-            {paso < 4 ? (
-              <button className="btn-primary"
-                onClick={() => {
-                  if (paso === 1 && !recibo) { setError('Selecciona un recibo'); return }
-                  setError(''); setPaso(p => p + 1)
-                }}>
-                Siguiente →
-              </button>
-            ) : (
-              <button className="btn-primary" onClick={handleTimbrar} disabled={saving}>
-                {saving ? <><Loader size={13} className="animate-spin" /> Timbrando…</> : <><FileText size={13} /> Timbrar CFDI</>}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

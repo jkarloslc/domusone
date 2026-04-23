@@ -521,14 +521,14 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 560 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
-            {eq ? 'Editar Equipo' : 'Nuevo Equipo'}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-        </div>
+    <ModalShell modulo="mantenimiento" titulo={eq ? 'Editar Equipo' : 'Nuevo Equipo'} onClose={onClose} maxWidth={560}
+      footer={<>
+        <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
+        {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
+        </button>
+      </>}
+    >
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
 
@@ -622,14 +622,7 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -648,12 +641,14 @@ function EquipoDetail({ eq, areaMap, bitacora, onClose, onNewBit }: {
   )
   const costoTotal = bitacora.reduce((a, b) => a + (b.costo_total ?? 0), 0)
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>{eq.nombre}</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-        </div>
+    <ModalShell modulo="mantenimiento" titulo={eq.nombre} onClose={onClose} maxWidth={520}
+      footer={<>
+        <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cerrar</button>
+        <button className="btn-primary" style={{ fontSize: 12 }} onClick={onNewBit}>
+        <Plus size={11} /> Nueva Entrada Bitácora
+        </button>
+      </>}
+    >
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {eq.foto_url && <img src={eq.foto_url} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10 }} />}
           <div style={{ display: 'flex', gap: 8 }}>
@@ -696,14 +691,7 @@ function EquipoDetail({ eq, areaMap, bitacora, onClose, onNewBit }: {
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cerrar</button>
-          <button className="btn-primary" style={{ fontSize: 12 }} onClick={onNewBit}>
-            <Plus size={11} /> Nueva Entrada Bitácora
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -879,14 +867,14 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
   })
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 660 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
-            {isNew ? 'Nueva Entrada de Bitácora' : `Editar — ${bit?.folio}`}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-        </div>
+    <ModalShell modulo="mantenimiento" titulo={isNew ? 'Nueva Entrada de Bitácora' : `Editar — ${bit?.folio}`} onClose={onClose} maxWidth={660}
+      footer={<>
+        <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
+        {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
+        </button>
+      </>}
+    >
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
 
@@ -1036,14 +1024,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
             <textarea className="input" rows={2} style={{ fontSize: 13, resize: 'vertical' }} value={form.notas} onChange={setF('notas')} />
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -1080,15 +1061,14 @@ function BitacoraDetail({ bit, equipoMap, onClose, onEdit }: {
   )
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 580 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>{bit.folio}</h2>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{eq?.nombre ?? `Equipo #${bit.id_equipo_fk}`}</p>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-        </div>
+    <ModalShell modulo="mantenimiento" titulo={bit.folio} onClose={onClose} maxWidth={580}
+      footer={<>
+        <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cerrar</button>
+        <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => onEdit(bit)}>
+        <Edit2 size={11} /> Editar
+        </button>
+      </>}
+    >
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', gap: 8 }}>
             <Badge text={bit.tipo} map={TIPO_MANT_STYLE} />
@@ -1150,13 +1130,6 @@ function BitacoraDetail({ bit, equipoMap, onClose, onEdit }: {
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cerrar</button>
-          <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => onEdit(bit)}>
-            <Edit2 size={11} /> Editar
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

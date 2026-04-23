@@ -564,15 +564,8 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 540 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
-            {prog ? 'Editar Programa' : 'Nuevo Programa de Mantenimiento'}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-        </div>
+    <ModalShell modulo="mantenimiento" titulo={prog ? 'Editar Programa' : 'Nuevo Programa de Mantenimiento'} onClose={onClose} maxWidth={540}
+    >
         <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10,
           overflowY: 'auto', maxHeight: 'calc(90vh - 110px)' }}>
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
@@ -653,8 +646,7 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
             {prog ? 'Guardar' : 'Crear'}
           </button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -727,44 +719,8 @@ function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
   const completadas = tareas.filter(t => t.status === 'Completada').length
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 760 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-          padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{prog.nombre}</h2>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-              {prog.tipo_trabajo ?? '—'} · {prog.frecuencia} · {prog.anio}
-            </div>
-            <div style={{ display: 'flex', gap: 16, marginTop: 6, flexWrap: 'wrap' }}>
-              {prog.id_centro_costo_fk && (
-                <span style={{ fontSize: 11 }}>
-                  <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>CC </span>
-                  <span style={{ fontWeight: 600 }}>{ccMap[prog.id_centro_costo_fk] ?? `#${prog.id_centro_costo_fk}`}</span>
-                </span>
-              )}
-              {prog.id_area_fk && (
-                <span style={{ fontSize: 11 }}>
-                  <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Sección </span>
-                  <span style={{ fontWeight: 600 }}>{areaMap[prog.id_area_fk] ?? `#${prog.id_area_fk}`}</span>
-                </span>
-              )}
-              {prog.id_frente_fk && (
-                <span style={{ fontSize: 11 }}>
-                  <span style={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.05em' }}>Frente </span>
-                  <span style={{ fontWeight: 600 }}>{frMap[prog.id_frente_fk] ?? `#${prog.id_frente_fk}`}</span>
-                </span>
-              )}
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ textAlign: 'right', fontSize: 12 }}>
-              <div style={{ fontWeight: 700, color: 'var(--blue)', fontSize: 16 }}>{completadas}/{tareas.length}</div>
-              <div style={{ color: 'var(--text-muted)' }}>completadas</div>
-            </div>
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
+    <ModalShell modulo="mantenimiento" titulo={prog.nombre} onClose={onClose} maxWidth={760}
+    >
         <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 120px)' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40 }}>
@@ -830,7 +786,6 @@ function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
             </table>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

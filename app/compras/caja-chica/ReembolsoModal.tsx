@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { X, Save, Loader, Plus, Trash2 } from 'lucide-react'
 import { folioGen } from '../types'
-import ModalShell from '@/components/ui/ModalShell'
 
 type Detalle = {
   id?: number

@@ -134,12 +134,15 @@ function VisitanteModal({ visitante, onClose, onSaved }: { visitante: Visitante 
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>{isNew ? 'Nuevo Visitante' : 'Editar Visitante'}</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="accesos" titulo={isNew ? 'Nuevo Visitante' : 'Editar Visitante'} onClose={onClose} maxWidth={520}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving}>
+        {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+        Guardar
+        </button>
+      </>}
+    >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label className="label">Nombre(s) *</label><input className="input" value={form.nombre} onChange={set('nombre')} /></div>
@@ -181,15 +184,7 @@ function VisitanteModal({ visitante, onClose, onSaved }: { visitante: Visitante 
             </select>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid var(--border)' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            Guardar
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -244,15 +239,8 @@ function AutorizarModal({ visitante, onClose }: { visitante: Visitante; onClose:
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 400 }}>Autorizar Acceso</h2>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{visitante.nombre} {visitante.apellido_paterno ?? ''}</div>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="accesos" titulo="Autorizar Acceso" onClose={onClose} maxWidth={520}
+    >
         <div style={{ padding: '20px 24px' }}>
           {/* Lotes autorizados actuales */}
           {autorizados.length > 0 && (
@@ -316,7 +304,6 @@ function AutorizarModal({ visitante, onClose }: { visitante: Visitante; onClose:
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

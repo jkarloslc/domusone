@@ -6,7 +6,6 @@ import {
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2,
   Fuel, Droplets, FileText, Search, Upload, CheckCircle, AlertTriangle
 } from 'lucide-react'
-import ModalShell from '@/components/ui/ModalShell'
 
 const TIPOS_SUMINISTRO = ['Gasolinería', 'Garrafa']
 const TIPOS_CARGA      = ['Gasolinería', 'Entrega Garrafa', 'Consumo Garrafa']

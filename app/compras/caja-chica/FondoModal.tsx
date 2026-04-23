@@ -75,14 +75,15 @@ export default function FondoModal({ fondo, onClose, onSaved }: Props) {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 480 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 400 }}>
-            {isNew ? 'Asignar Fondo de Caja Chica' : 'Editar Fondo'}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="compras" titulo={isNew ? 'Asignar Fondo de Caja Chica' : 'Editar Fondo'} onClose={onClose} maxWidth={480}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
+        {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+        {saving ? 'Guardando…' : 'Guardar'}
+        </button>
+      </>}
+    >
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
@@ -129,14 +130,6 @@ export default function FondoModal({ fondo, onClose, onSaved }: Props) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '14px 24px', borderTop: '1px solid var(--border)' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

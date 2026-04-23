@@ -190,14 +190,14 @@ function AlmacenModal({ row, onClose, onSaved }: { row: Almacen | null; onClose:
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 460 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
-            {isNew ? 'Nuevo Almacén' : row.nombre}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="almacenes" titulo={isNew ? 'Nuevo Almacén' : row.nombre} onClose={onClose} maxWidth={460}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving}>
+        {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
+        </button>
+      </>}
+    >
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
           <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 10 }}>
@@ -229,13 +229,6 @@ function AlmacenModal({ row, onClose, onSaved }: { row: Almacen | null; onClose:
             </select>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

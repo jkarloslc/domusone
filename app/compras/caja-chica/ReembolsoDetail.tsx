@@ -4,7 +4,6 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { X, CheckCircle, XCircle, ExternalLink, DollarSign, Printer } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { folioGen, fmt, nextFolio } from '../types'
-import ModalShell from '@/components/ui/ModalShell'
 
 type Props = {
   reembolso: any

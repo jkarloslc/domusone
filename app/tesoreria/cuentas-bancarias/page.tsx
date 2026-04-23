@@ -207,19 +207,15 @@ function CuentaModal({ row, onClose, onSaved }: { row: any | null; onClose: () =
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 480 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: '#0f766e18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Building2 size={14} style={{ color: '#0f766e' }} />
-            </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600 }}>
-              {isNew ? 'Nueva Cuenta Bancaria' : `Editar — ${row.banco}`}
-            </h2>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="tesoreria" titulo={isNew ? 'Nueva Cuenta Bancaria' : `Editar — ${row.banco}`} onClose={onClose} maxWidth={480}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving}>
+        {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+        {isNew ? 'Crear Cuenta' : 'Guardar Cambios'}
+        </button>
+      </>}
+    >
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && (
@@ -257,15 +253,7 @@ function CuentaModal({ row, onClose, onSaved }: { row: any | null; onClose: () =
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {isNew ? 'Crear Cuenta' : 'Guardar Cambios'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -354,8 +342,12 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
   const totalAbonos = movs.filter(m => m.tipo === 'Abono').reduce((a, m) => a + (m.monto ?? 0), 0)
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 800 }}>
+    <ModalShell modulo="tesoreria" titulo="Modal" onClose={onClose} maxWidth={800}
+      footer={<>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{movs.length} movimiento{movs.length !== 1 ? 's' : ''}</span>
+        <button className="btn-secondary" onClick={onClose}>Cerrar</button>
+      </>}
+    >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
@@ -521,11 +513,6 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
           )}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{movs.length} movimiento{movs.length !== 1 ? 's' : ''}</span>
-          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

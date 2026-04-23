@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import { X, Save, Loader, Plus, Trash2, CheckCircle } from 'lucide-react'
 import { type ReciboDetalle, type ReciboPago, type Cargo, fmt, MESES, CUENTAS } from './types'
-import ModalShell from '@/components/ui/ModalShell'
 
 type Lote = { id: number; cve_lote: string | null; lote: number | null }
 type FormaPago = { id: number; nombre: string }

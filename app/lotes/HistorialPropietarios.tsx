@@ -78,9 +78,8 @@ export default function HistorialPropietarios({ loteId, cveLote, onClose }: Prop
     p ? [p.nombre, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ') : '—'
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 600 }}>
-
+    <ModalShell modulo="lotes" titulo="Modal" onClose={onClose} maxWidth={600}
+    >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
@@ -153,8 +152,7 @@ export default function HistorialPropietarios({ loteId, cveLote, onClose }: Prop
             onSaved={() => { setShowTransfer(false); fetchHistorial() }}
           />
         )}
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -274,15 +272,15 @@ function TransferirPropietarioModal({
     [p.nombre, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ')
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 60 }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Cambio de Propietario</h2>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>El propietario anterior quedará en el historial con fecha de cierre</p>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="lotes" titulo="Cambio de Propietario" onClose={onClose} maxWidth={520}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleTransfer} disabled={saving || !selectedProp}>
+        {saving ? <Loader size={13} className="animate-spin" /> : <UserCheck size={13} />}
+        {saving ? 'Registrando…' : 'Confirmar Cambio'}
+        </button>
+      </>}
+    >
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
@@ -356,14 +354,6 @@ function TransferirPropietarioModal({
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleTransfer} disabled={saving || !selectedProp}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <UserCheck size={13} />}
-            {saving ? 'Registrando…' : 'Confirmar Cambio'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

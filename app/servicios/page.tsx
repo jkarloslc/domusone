@@ -360,14 +360,14 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 660 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
-            {ot ? 'Editar Orden de Trabajo' : 'Nueva Orden de Trabajo'}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="residencial" titulo={ot ? 'Editar Orden de Trabajo' : 'Nueva Orden de Trabajo'} onClose={onClose} maxWidth={660}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving}>
+        {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar OT
+        </button>
+      </>}
+    >
 
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
@@ -476,14 +476,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar OT
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -559,45 +552,8 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 640 }}>
-        {/* Header */}
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>{ot.folio}</span>
-                <Badge text={ot.prioridad ?? 'Media'} map={PRIORIDAD_STYLE} />
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 2 }}>{ot.titulo}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                {ot.id_seccion_fk ? secMap[ot.id_seccion_fk] : '—'}
-                {ot.ubicacion_detalle && ` · ${ot.ubicacion_detalle}`}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => onEdit(ot)}>
-                Editar
-              </button>
-              <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-            </div>
-          </div>
-
-          {/* Cambio rápido de status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Status:</span>
-            {STATUSES.map(s => (
-              <button key={s} onClick={() => cambiarStatus(s)} disabled={updatingStatus}
-                style={{ fontSize: 11, fontWeight: s === currentStatus ? 700 : 400,
-                  padding: '3px 10px', borderRadius: 20, cursor: 'pointer',
-                  border: `1px solid ${s === currentStatus ? (STATUS_STYLE[s]?.border ?? '#e2e8f0') : '#e2e8f0'}`,
-                  background: s === currentStatus ? (STATUS_STYLE[s]?.bg ?? '#f8fafc') : '#fff',
-                  color: s === currentStatus ? (STATUS_STYLE[s]?.color ?? '#64748b') : 'var(--text-muted)' }}>
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
+    <ModalShell modulo="residencial" titulo="Modal" onClose={onClose} maxWidth={640}
+    >
 
         <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 200px)', padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
@@ -729,8 +685,7 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -954,12 +909,14 @@ ${todosRecursos.length > 0 ? `
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 500 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Reporte Semanal</h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="residencial" titulo="Reporte Semanal" onClose={onClose} maxWidth={500}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={generarPDF} disabled={generating || !loaded || ots.length === 0}>
+        {generating ? <><Loader size={13} className="animate-spin" /> Generando…</> : <><ClipboardList size={13} /> Generar PDF</>}
+        </button>
+      </>}
+    >
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {/* Semana y año */}
@@ -1002,14 +959,7 @@ ${todosRecursos.length > 0 ? `
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={generarPDF} disabled={generating || !loaded || ots.length === 0}>
-            {generating ? <><Loader size={13} className="animate-spin" /> Generando…</> : <><ClipboardList size={13} /> Generar PDF</>}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

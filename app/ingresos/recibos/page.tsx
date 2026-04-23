@@ -7,7 +7,6 @@ import {
   X, Save, Loader, Calendar, Eye, Ban, Layers, DollarSign
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = {

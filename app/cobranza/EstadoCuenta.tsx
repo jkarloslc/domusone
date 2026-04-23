@@ -73,15 +73,8 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 760, maxHeight: '92vh' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600 }}>Estado de Cuenta</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {loteId && <button className="btn-secondary" onClick={handlePrint} style={{ fontSize: 12 }}><Printer size={13} /> Imprimir</button>}
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
+    <ModalShell modulo="cobranza" titulo="Estado de Cuenta" onClose={onClose} maxWidth={760}
+    >
 
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(92vh - 80px)' }}>
 
@@ -239,8 +232,7 @@ export default function EstadoCuenta({ onClose }: { onClose: () => void }) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

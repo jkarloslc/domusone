@@ -38,8 +38,8 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
     d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 580 }}>
+    <ModalShell modulo="cobranza" titulo="Modal" onClose={onClose} maxWidth={580}
+    >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
           <div>
@@ -160,8 +160,7 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

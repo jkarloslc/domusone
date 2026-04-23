@@ -7,7 +7,6 @@ import {
   Search, CheckCircle, AlertTriangle, Mail, Users,
   FileText, Clock, Trash2, ChevronDown
 } from 'lucide-react'
-import ModalShell from '@/components/ui/ModalShell'
 
 // ── Helpers ────────────────────────────────────────────────────
 const fmtFecha = (d: string | null | undefined) =>

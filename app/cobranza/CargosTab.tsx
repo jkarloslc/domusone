@@ -243,8 +243,18 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 580 }}>
+    <ModalShell modulo="cobranza" titulo="Modal" onClose={onClose} maxWidth={580}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        {step === 2 && preview.length > 0 && (
+        <button className="btn-primary" onClick={handleGenerar} disabled={saving}>
+        {saving
+        ? <><Loader size={13} className="animate-spin" /> Generando…</>
+        : <><Zap size={13} /> Confirmar — {preview.length} cargos</>}
+        </button>
+        )}
+      </>}
+    >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
@@ -363,18 +373,7 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          {step === 2 && preview.length > 0 && (
-            <button className="btn-primary" onClick={handleGenerar} disabled={saving}>
-              {saving
-                ? <><Loader size={13} className="animate-spin" /> Generando…</>
-                : <><Zap size={13} /> Confirmar — {preview.length} cargos</>}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -444,15 +443,14 @@ function CargoEspecialModal({ onClose, onSaved }: { onClose: () => void; onSaved
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 500 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Cargo Especial</h2>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Cargo individual a un lote específico</p>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
+    <ModalShell modulo="cobranza" titulo="Cargo Especial" onClose={onClose} maxWidth={500}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving || !form.id_lote_fk || !form.concepto || !form.monto}>
+        {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Generar Cargo
+        </button>
+      </>}
+    >
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
@@ -547,14 +545,7 @@ function CargoEspecialModal({ onClose, onSaved }: { onClose: () => void; onSaved
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || !form.id_lote_fk || !form.concepto || !form.monto}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Generar Cargo
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

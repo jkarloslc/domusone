@@ -351,18 +351,8 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 780 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>{prov.nombre}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>RFC: {prov.rfc ?? '—'} · Condiciones: {prov.condiciones_pago ?? '—'}</div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirEC}><Printer size={13} /> Estado de Cuenta</button>
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-        </div>
+    <ModalShell modulo="compras" titulo={prov.nombre} onClose={onClose} maxWidth={780}
+    >
 
         <div style={{ display: 'flex', gap: 10, padding: '14px 24px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
           {[
@@ -428,8 +418,7 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -610,8 +599,8 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   )
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 640 }}>
+    <ModalShell modulo="compras" titulo="Modal" onClose={onClose} maxWidth={640}
+    >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
@@ -832,7 +821,6 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
