@@ -351,8 +351,8 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
   // ── Render ─────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
-      {/* Back + título */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+      {/* Back */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <a href="/hospitality" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
           <ChevronLeft size={15} /> Hospitality
         </a>
@@ -360,8 +360,21 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
         <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>Eventos</span>
       </div>
 
+      {/* Título + botón nuevo */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>Eventos</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
+            {eventosFiltrados.length} evento{eventosFiltrados.length !== 1 ? 's' : ''} en los filtros actuales
+          </p>
+        </div>
+        <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, flexShrink: 0 }}>
+          <Plus size={14} /> Nuevo Evento
+        </button>
+      </div>
+
       {/* KPIs */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         {[
           { label: 'Total eventos', value: totalEventos, color: '#9333ea', bg: '#faf5ff' },
           { label: 'Confirmados / En curso', value: confirmados, color: '#2563eb', bg: '#eff6ff' },
@@ -374,18 +387,15 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
         ))}
       </div>
 
-      {/* Barra filtros + nuevo */}
+      {/* Barra de filtros */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
         <input className="input" placeholder="Buscar por nombre, folio o cliente…"
           value={busqueda} onChange={e => setBusqueda(e.target.value)}
-          style={{ flex: '1 1 200px', fontSize: 13 }} />
-        <select className="input" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ fontSize: 13, minWidth: 150 }}>
+          style={{ flex: '1 1 220px', fontSize: 13, maxWidth: 360 }} />
+        <select className="input" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ fontSize: 13, minWidth: 160 }}>
           <option value="">Todos los status</option>
           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-          <Plus size={14} /> Nuevo Evento
-        </button>
       </div>
 
       {/* Tabla */}
