@@ -268,6 +268,173 @@ tbody tr:last-child td { border-bottom: none; }
 .animate-spin { animation: spin 0.7s linear infinite; }
 
 /* ════════════════════════════════════════════════════════════
+   PAGE HEADER ESTÁNDAR (usar en todas las pages)
+   Contrato:
+   .page-header  → contenedor flex (título a la izq · acciones a la der)
+   .page-header-left  → grupo izquierdo (botón-atrás + título + subtítulo)
+   .page-header-actions → grupo derecho (refrescar + nuevo / exportar …)
+   .page-title    → título de página interior (26 px)
+   .page-title-xl → título de módulo principal (32 px)
+   .page-subtitle → subtítulo / descripción breve (13 px, muted)
+   .page-eyebrow  → mini-chip con ícono + label UPPERCASE sobre el título
+   .btn-back      → botón "regresar" redondeado 34×34
+   ════════════════════════════════════════════════════════════ */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.page-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.page-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--text-primary);
+  margin: 0;
+}
+.page-title-xl {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: var(--text-primary);
+  margin: 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+  line-height: 1.4;
+  font-weight: 400;
+}
+.page-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.page-eyebrow-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+  padding: 0;
+}
+.btn-back:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: var(--text-primary);
+}
+.btn-back:active { transform: scale(0.96); }
+
+/* ════════════════════════════════════════════════════════════
+   FILTER BAR ESTÁNDAR
+   .filter-bar       → contenedor flex (inputs + acciones)
+   .filter-bar-main  → grupo scrollable de filtros (izquierda)
+   .filter-bar-end   → grupo de acciones al final (derecha)
+   .filter-search    → wrapper posicional para input con ícono interno
+   ════════════════════════════════════════════════════════════ */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-bar-main {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.filter-bar-end {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-bar .input,
+.filter-bar .select,
+.filter-bar-main .input,
+.filter-bar-main .select { height: 36px; }
+
+.filter-search {
+  position: relative;
+  flex: 1 1 240px;
+  max-width: 340px;
+  min-width: 180px;
+}
+.filter-search > svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.filter-search > input { padding-left: 30px; }
+
+/* Row actions (íconos editar/ver/eliminar en filas de tabla) */
+.row-actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+  align-items: center;
+}
+.row-actions .btn-ghost { padding: 4px 6px; }
+
+/* Modal — wrapper de scroll horizontal para tablas internas anchas.
+   Úsalo envolviendo <table> dentro de un modal. Evita que el modal
+   mismo tenga overflow-x:auto, limitando el scroll al bloque de tabla. */
+.modal-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+.modal-table-scroll > table { min-width: 560px; }
+
+/* Variante "wide" del modal (para cuadros comparativos, OC con muchas columnas).
+   Se usa combinada con maxWidth dinámico del ModalShell. */
+.modal-wide { width: 100%; }
+
+/* ════════════════════════════════════════════════════════════
    RESPONSIVE — Mobile & Tablet
    Breakpoints: sm=480px  md=768px  lg=1024px
    ════════════════════════════════════════════════════════════ */
@@ -396,8 +563,23 @@ tbody tr:last-child td { border-bottom: none; }
 
 /* Filtros: flex-wrap forzado en móvil */
 @media (max-width: 640px) {
-  .filter-bar { flex-wrap: wrap !important; }
+  .filter-bar { flex-wrap: wrap !important; gap: 8px; }
   .filter-bar input, .filter-bar select { min-width: 0; flex: 1 1 140px; }
+  .filter-bar-main { width: 100%; gap: 8px; }
+  .filter-bar-end { width: 100%; justify-content: flex-end; }
+  .filter-search { flex: 1 1 100%; max-width: none; }
+}
+
+/* Page header responsive */
+@media (max-width: 768px) {
+  .page-header { margin-bottom: 16px; gap: 12px; }
+  .page-header-actions { width: auto; }
+}
+@media (max-width: 480px) {
+  .page-title-xl { font-size: 26px !important; }
+  .page-title    { font-size: 22px !important; }
+  .page-header { align-items: flex-start; flex-direction: column; }
+  .page-header-actions { width: 100%; justify-content: flex-start; }
 }
 
 /* Ocultar columnas no esenciales en móvil */
@@ -408,7 +590,7 @@ tbody tr:last-child td { border-bottom: none; }
   .hide-tablet { display: none !important; }
 }
 
-/* Texto de título adaptativo */
+/* Texto de título adaptativo (fallback para h1 con inline styles) */
 @media (max-width: 480px) {
-  h1 { font-size: 24px !important; }
+  h1:not(.page-title):not(.page-title-xl) { font-size: 24px !important; }
 }

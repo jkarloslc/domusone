@@ -51,13 +51,15 @@ export default function ComprasPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <ShoppingCart size={16} style={{ color: 'var(--blue)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
+            <ShoppingCart size={16} style={{ color: 'var(--blue)' }} />
+            <span className="page-eyebrow-label">Módulo</span>
+          </div>
+          <h1 className="page-title-xl">Compras e Inventarios</h1>
+          <p className="page-subtitle">Gestión P2P — Requisición hasta Inventario Lógico</p>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600 }}>Compras e Inventarios</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>Gestión P2P — Requisición hasta Inventario Lógico</p>
       </div>
 
       {/* Stats rápidas */}

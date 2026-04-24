@@ -70,15 +70,15 @@ export default function TesoreriaPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <Landmark size={16} style={{ color: 'var(--blue)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
+            <Landmark size={16} style={{ color: 'var(--blue)' }} />
+            <span className="page-eyebrow-label">Módulo</span>
+          </div>
+          <h1 className="page-title-xl">Tesorería</h1>
+          <p className="page-subtitle">Gestión de cuentas bancarias, cuentas por pagar y flujo de efectivo</p>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600 }}>Tesorería</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
-          Gestión de cuentas bancarias, cuentas por pagar y flujo de efectivo
-        </p>
       </div>
 
       {/* KPIs */}
