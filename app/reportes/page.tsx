@@ -27,6 +27,9 @@ import ReporteComprasPorProveedor from './ReporteComprasPorProveedor'
 import ReporteIngresos from './ReporteIngresos'
 import ReporteHipicoEstadoCuenta from './ReporteHipicoEstadoCuenta'
 import ReporteHipicoServicios from './ReporteHipicoServicios'
+import ReporteGolfEstadoCuenta from './ReporteGolfEstadoCuenta'
+import ReporteGolfCobranza from './ReporteGolfCobranza'
+import ReporteGolfAccesos from './ReporteGolfAccesos'
 
 const GRUPOS = [
   {
@@ -95,7 +98,9 @@ const GRUPOS = [
     label: 'Club Golf',
     color: '#b8952a',
     reportes: [
-      { id: 'golf-placeholder', label: 'Próximamente', icon: BarChart3, desc: 'Reportes del módulo Golf en desarrollo' },
+      { id: 'golf-estado-cuenta', label: 'Estado de Cuenta',    icon: FileText,  desc: 'Cuotas y recibos por socio en un período' },
+      { id: 'golf-cobranza',      label: 'Cobranza / CXC',      icon: Wallet,    desc: 'Cuotas por categoría, tipo y status con resumen y detalle' },
+      { id: 'golf-accesos',       label: 'Salidas al Campo',     icon: MapPin,    desc: 'Registro de rondas por socio, espacio y forma de juego' },
     ],
   },
   {
@@ -210,6 +215,11 @@ function ReportesContent() {
       {active === 'kardex'           && <ReporteKardex />}
       {active === 'transferencias'        && <ReporteTransferencias />}
       {active === 'compras-por-proveedor' && <ReporteComprasPorProveedor />}
+
+      {/* Reportes golf */}
+      {active === 'golf-estado-cuenta' && <ReporteGolfEstadoCuenta />}
+      {active === 'golf-cobranza'      && <ReporteGolfCobranza />}
+      {active === 'golf-accesos'       && <ReporteGolfAccesos />}
 
       {/* Reportes hípico */}
       {active === 'hipico-estado-cuenta' && <ReporteHipicoEstadoCuenta />}
