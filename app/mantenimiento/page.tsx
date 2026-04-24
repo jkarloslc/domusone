@@ -72,6 +72,7 @@ export default function MantenimientoPage() {
   const [ccMap,        setCcMap]      = useState<Record<number, string>>({})
   const [frentes,      setFrentes]    = useState<any[]>([])
   const [frMap,        setFrMap]      = useState<Record<number, string>>({})
+  const [relAF,        setRelAF]      = useState<{id_area: number; id_frente: number}[]>([])
   const [loading,      setLoading]    = useState(true)
   const [filterAnio,   setFilterAnio] = useState(new Date().getFullYear())
   const [filterCC,     setFilterCC]   = useState('')
@@ -87,10 +88,12 @@ export default function MantenimientoPage() {
       dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-    ]).then(([{ data: secs }, { data: ccs }, { data: frs }]) => {
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+    ]).then(([{ data: secs }, { data: ccs }, { data: frs }, { data: relaf }]) => {
       setAreas(secs ?? [])
       setCentros(ccs ?? [])
       setFrentes(frs ?? [])
+      setRelAF((relaf ?? []) as any)
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
       const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
@@ -257,9 +260,15 @@ export default function MantenimientoPage() {
             <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr}
               onChange={e => setFilterFr(e.target.value)}>
               <option value="">Frente</option>
-              {frentes
-                .filter(f => !filterArea || f.id_area_fk === Number(filterArea))
-                .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+              {(() => {
+                const aId = Number(filterArea)
+                const permitidos = filterArea
+                  ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
+                  : null
+                return frentes
+                  .filter(f => !permitidos || permitidos.has(f.id))
+                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
+              })()}
             </select>
             {(filterCC || filterArea || filterFr) && (
               <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
@@ -493,6 +502,7 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
   const [error,  setError]  = useState('')
   const [centrosCosto, setCentros] = useState<any[]>([])
   const [frentes, setFrentes]      = useState<any[]>([])
+  const [relAF, setRelAFProg]      = useState<{id_area: number; id_frente: number}[]>([])
   const [form, setForm] = useState({
     nombre:             prog?.nombre             ?? '',
     anio:               prog?.anio?.toString()   ?? new Date().getFullYear().toString(),
@@ -515,6 +525,8 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
       .then(({ data }) => setCentros(data ?? []))
     dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
+    dbCfg.from('rel_area_frente').select('id_area, id_frente')
+      .then(({ data }) => setRelAFProg((data ?? []) as any))
   }, [])
 
   const totalFechas = generarFechas(Number(form.anio), form.frecuencia, Number(form.mes_inicio)).length
@@ -601,9 +613,15 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
             <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
                 <option value="">—</option>
-                {frentes
-                  .filter(f => !form.id_area_fk || f.id_area_fk === Number(form.id_area_fk))
-                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                {(() => {
+                  const aId = Number(form.id_area_fk)
+                  const permitidos = form.id_area_fk
+                    ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
+                    : null
+                  return frentes
+                    .filter(f => !permitidos || permitidos.has(f.id))
+                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
+                })()}
               </select>
             </div>
           </div>

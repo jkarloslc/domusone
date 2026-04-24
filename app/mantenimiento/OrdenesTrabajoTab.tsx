@@ -64,6 +64,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
   const [filterArea,  setFilterArea]    = useState('')
   const [filterFr,     setFilterFr]     = useState('')
   const [frentes,      setFrentesOT]    = useState<any[]>([])
+  const [relAF,        setRelAF]        = useState<{id_area: number; id_frente: number}[]>([])
   const [modal,    setModal]    = useState(false)
   const [editingOT, setEditingOT] = useState<any | null>(null)
   const [detail,   setDetail]   = useState<any | null>(null)
@@ -89,10 +90,12 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
       dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-    ]).then(([{ data: secs }, { data: ccs }, { data: frs }]) => {
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+    ]).then(([{ data: secs }, { data: ccs }, { data: frs }, { data: relaf }]) => {
       setAreas(secs ?? [])
       setCentros(ccs ?? [])
       setFrentesOT(frs ?? [])
+      setRelAF((relaf ?? []) as any)
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
       const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
@@ -157,9 +160,15 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
         </select>
         <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr} onChange={e => setFilterFr(e.target.value)}>
           <option value="">Frente</option>
-          {frentes
-            .filter(f => !filterArea || f.id_area_fk === Number(filterArea))
-            .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+          {(() => {
+            const aId = Number(filterArea)
+            const permitidos = filterArea
+              ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
+              : null
+            return frentes
+              .filter(f => !permitidos || permitidos.has(f.id))
+              .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
+          })()}
         </select>
         {(search || filterStatus || filterTipo || filterCC || filterArea || filterFr) && (
           <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
@@ -249,6 +258,7 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
   const [error,  setError]  = useState('')
   const [centrosCosto, setCentros] = useState<any[]>([])
   const [frentes, setFrentes]      = useState<any[]>([])
+  const [relAF, setRelAFModal]     = useState<{id_area: number; id_frente: number}[]>([])
   const [form, setForm] = useState({
     titulo:             ot?.titulo            ?? '',
     tipo_trabajo:       ot?.tipo_trabajo      ?? '',
@@ -290,6 +300,8 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
       .then(({ data }) => setCentros(data ?? []))
     dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
+    dbCfg.from('rel_area_frente').select('id_area, id_frente')
+      .then(({ data }) => setRelAFModal((data ?? []) as any))
   }, [])
   const setR = (i: number, k: string, v: string) =>
     setRecursos(r => r.map((x, j) => j === i ? { ...x, [k]: v } : x))
@@ -399,9 +411,15 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
             <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
                 <option value="">—</option>
-                {frentes
-                  .filter(f => !form.id_area_fk || f.id_area_fk === Number(form.id_area_fk))
-                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                {(() => {
+                  const aId = Number(form.id_area_fk)
+                  const permitidos = form.id_area_fk
+                    ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
+                    : null
+                  return frentes
+                    .filter(f => !permitidos || permitidos.has(f.id))
+                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
+                })()}
               </select></div>
           </div>
           <div><label className="label" style={{ fontSize: 11 }}>Ubicación detalle</label>

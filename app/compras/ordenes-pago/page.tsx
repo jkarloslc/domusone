@@ -245,6 +245,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [centrosCosto, setCentros]  = useState<any[]>([])
   const [areas, setAreas]   = useState<any[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
+  const [relAF, setRelAF]           = useState<{id_area: number; id_frente: number}[]>([])
   const [formasPago, setFormasPago] = useState<any[]>([])
   const [areaId, setAreaId]   = useState<string>(opEdit?.id_area_fk?.toString() ?? '')
   const [ocsDisp, setOcsDisp]       = useState<any[]>([])
@@ -295,6 +296,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
         .then(({ data }) => setAreas(data ?? []))
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
         .then(({ data }) => setFrentes(data ?? []))
+      dbCfg.from('rel_area_frente').select('id_area, id_frente')
+        .then(({ data }) => setRelAF((data ?? []) as any))
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
         .then(({ data }) => setFormasPago(data ?? []))
     })
@@ -616,8 +619,15 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                   <label className="label">Frente *</label>
                   <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!areaId}>
                     <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
-                    {frentes.filter(f => !areaId || f.id_area_fk === Number(areaId))
-                      .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                    {(() => {
+                      const aId = Number(areaId)
+                      const permitidos = areaId
+                        ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
+                        : null
+                      return frentes
+                        .filter(f => !permitidos || permitidos.has(f.id))
+                        .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
+                    })()}
                   </select>
                 </div>
               </div>

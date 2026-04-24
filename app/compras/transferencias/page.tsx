@@ -278,6 +278,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const [centrosCosto, setCentros] = useState<any[]>([])
   const [secciones, setSecciones]  = useState<any[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
+  const [relAF, setRelAF]           = useState<{id_area: number; id_frente: number}[]>([])
 
   const [form, setForm] = useState({
     id_almacen_origen:  '',
@@ -300,12 +301,14 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-    ]).then(([{ data: alms }, { data: areas }, { data: cc }, { data: sec }, { data: fr }]) => {
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+    ]).then(([{ data: alms }, { data: areas }, { data: cc }, { data: sec }, { data: fr }, { data: relaf }]) => {
       setAlms(alms ?? [])
       setAreas(areas ?? [])
       setCentros(cc ?? [])
       setSecciones(sec ?? [])
       setFrentes(fr ?? [])
+      setRelAF((relaf ?? []) as any)
     })
   }, [])
 
@@ -484,9 +487,15 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
                 onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
                 disabled={!form.id_area_fk}>
                 <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
-                {frentes
-                  .filter(f => !form.id_area_fk || f.id_area_fk === Number(form.id_area_fk))
-                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                {(() => {
+                  const aId = Number(form.id_area_fk)
+                  const permitidos = form.id_area_fk
+                    ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
+                    : null
+                  return frentes
+                    .filter(f => !permitidos || permitidos.has(f.id))
+                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
+                })()}
               </select>
             </div>
           </div>

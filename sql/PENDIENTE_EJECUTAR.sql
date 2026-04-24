@@ -72,3 +72,36 @@ GRANT USAGE ON SEQUENCE comp.seq_folio_val TO authenticated;
 ALTER TABLE ctrl.ordenes_trabajo
   ADD COLUMN IF NOT EXISTS empresa TEXT NOT NULL DEFAULT 'Balvanera'
   CHECK (empresa IN ('Balvanera', 'Oitydisa'));
+
+-- ─────────────────────────────────────────────────────────────
+-- 5. Relación N:M gobernada Áreas ↔ Frentes (2026-04-24)
+--    Ver supabase/migrations/20260424120000_rel_area_frente_nm.sql
+-- ─────────────────────────────────────────────────────────────
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS cfg.rel_area_frente (
+  id         BIGSERIAL PRIMARY KEY,
+  id_area    BIGINT NOT NULL REFERENCES cfg.areas(id)   ON DELETE CASCADE,
+  id_frente  BIGINT NOT NULL REFERENCES cfg.frentes(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT rel_area_frente_unq UNIQUE (id_area, id_frente)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rel_af_area   ON cfg.rel_area_frente(id_area);
+CREATE INDEX IF NOT EXISTS idx_rel_af_frente ON cfg.rel_area_frente(id_frente);
+
+-- Migrar datos históricos (1:N existente → N:M)
+INSERT INTO cfg.rel_area_frente (id_area, id_frente)
+SELECT f.id_area_fk, f.id
+FROM   cfg.frentes f
+WHERE  f.id_area_fk IS NOT NULL
+ON CONFLICT (id_area, id_frente) DO NOTHING;
+
+-- Back-compat: id_area_fk queda NULLable como "área principal" opcional
+ALTER TABLE cfg.frentes
+  ALTER COLUMN id_area_fk DROP NOT NULL;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON cfg.rel_area_frente                 TO authenticated;
+GRANT USAGE,  SELECT                 ON SEQUENCE cfg.rel_area_frente_id_seq TO authenticated;
+
+COMMIT;

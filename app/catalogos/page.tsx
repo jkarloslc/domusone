@@ -79,27 +79,28 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
-    key:   'areas',
-    tabla: 'areas',
-    label: 'Áreas',
-    icon:  Layers,
-    color: '#0891b2',
-    desc:  'Áreas de obra o zona dentro de un Centro de Costo (compras / mantenimiento)',
+    key:       'areas',
+    tabla:     'areas',
+    label:     'Áreas',
+    icon:      Layers,
+    color:     '#0891b2',
+    desc:      'Áreas de obra o zona dentro de un Centro de Costo. Usa "Frentes" para gestionar los frentes permitidos en cada área.',
+    hasDetail: true,
     campos: [
       { key: 'nombre',              label: 'Nombre *',         type: 'text',   required: true },
       { key: 'id_centro_costo_fk',  label: 'Centro de Costo *',type: 'select', selectTabla: 'centros_costo', required: true },
     ],
   },
   {
-    key:   'frentes',
-    tabla: 'frentes',
-    label: 'Frentes',
-    icon:  MapPin,
-    color: '#7c3aed',
-    desc:  'Frentes de obra dentro de un Área, para clasificación detallada en compras y mantenimiento',
+    key:       'frentes',
+    tabla:     'frentes',
+    label:     'Frentes',
+    icon:      MapPin,
+    color:     '#7c3aed',
+    desc:      'Frentes transversales — cada frente puede pertenecer a varias áreas (relación N:M gobernada). Usa el botón "Áreas" para administrar las áreas del frente.',
+    hasDetail: true,
     campos: [
-      { key: 'nombre',      label: 'Nombre *', type: 'text',   required: true },
-      { key: 'id_area_fk',  label: 'Área *',   type: 'select', selectTabla: 'areas', required: true },
+      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
     ],
   },
   {
@@ -489,6 +490,20 @@ function CatalogoTable({ config }: { config: CatConfig }) {
       {detailRow !== null && config.key === 'cuentas_bancarias' && (
         <CuentaBancariaDetail
           cuenta={detailRow}
+          onClose={() => { setDetailRow(null); fetchData() }}
+        />
+      )}
+      {detailRow !== null && config.key === 'frentes' && (
+        <RelAreaFrenteDetail
+          modo="frente"
+          fila={detailRow}
+          onClose={() => { setDetailRow(null); fetchData() }}
+        />
+      )}
+      {detailRow !== null && config.key === 'areas' && (
+        <RelAreaFrenteDetail
+          modo="area"
+          fila={detailRow}
           onClose={() => { setDetailRow(null); fetchData() }}
         />
       )}
@@ -916,6 +931,210 @@ function CatalogoModal({ config, row, onClose, onSaved }:
           </div>
         </div>
 
+    </ModalShell>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// Editor de relación N:M Áreas ↔ Frentes
+// ══════════════════════════════════════════════════════════════
+// modo 'frente' → muestra una fila = un área, para el frente seleccionado
+// modo 'area'   → muestra una fila = un frente, para el área seleccionada
+// Guarda calculando delta (added / removed) contra cfg.rel_area_frente
+// ══════════════════════════════════════════════════════════════
+function RelAreaFrenteDetail({ modo, fila, onClose }:
+  { modo: 'area' | 'frente'; fila: any; onClose: () => void }) {
+
+  const [catalogo, setCatalogo] = useState<{ id: number; nombre: string; id_centro_costo_fk?: number }[]>([])
+  const [centros, setCentros]   = useState<Record<number, string>>({})
+  const [seleccion, setSeleccion] = useState<Set<number>>(new Set())
+  const [inicial, setInicial]     = useState<Set<number>>(new Set())
+  const [busqueda, setBusqueda]   = useState('')
+  const [loading, setLoading]     = useState(true)
+  const [saving, setSaving]       = useState(false)
+  const [error, setError]         = useState('')
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError('')
+
+    if (modo === 'frente') {
+      // Listado: todas las áreas activas (con su CC)
+      const [{ data: areas }, { data: ccRows }, { data: rels }] = await Promise.all([
+        dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+        dbCfg.from('centros_costo').select('id, nombre'),
+        dbCfg.from('rel_area_frente').select('id_area').eq('id_frente', fila.id),
+      ])
+      const ccMap: Record<number, string> = {}
+      ;(ccRows ?? []).forEach((c: any) => { ccMap[c.id] = c.nombre })
+      setCentros(ccMap)
+      setCatalogo(areas ?? [])
+      const ids = new Set<number>((rels ?? []).map((r: any) => Number(r.id_area)))
+      setSeleccion(new Set(ids))
+      setInicial(new Set(ids))
+    } else {
+      // Listado: todos los frentes activos
+      const [{ data: frentes }, { data: rels }] = await Promise.all([
+        dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
+        dbCfg.from('rel_area_frente').select('id_frente').eq('id_area', fila.id),
+      ])
+      setCatalogo(frentes ?? [])
+      const ids = new Set<number>((rels ?? []).map((r: any) => Number(r.id_frente)))
+      setSeleccion(new Set(ids))
+      setInicial(new Set(ids))
+    }
+    setLoading(false)
+  }, [modo, fila.id])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const toggle = (id: number) => {
+    setSeleccion(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  const seleccionarTodos = () => setSeleccion(new Set(catalogo.map(c => c.id)))
+  const limpiarTodo      = () => setSeleccion(new Set())
+
+  const handleSave = async () => {
+    setSaving(true); setError('')
+
+    const added   = Array.from(seleccion).filter(id => !inicial.has(id))
+    const removed = Array.from(inicial).filter(id => !seleccion.has(id))
+
+    if (added.length === 0 && removed.length === 0) {
+      setSaving(false); onClose(); return
+    }
+
+    // Eliminar las quitadas (en batch)
+    if (removed.length > 0) {
+      const col = modo === 'frente' ? 'id_area' : 'id_frente'
+      const fijo = modo === 'frente' ? 'id_frente' : 'id_area'
+      const { error: errDel } = await dbCfg.from('rel_area_frente')
+        .delete().eq(fijo, fila.id).in(col, removed)
+      if (errDel) { setError('Error al eliminar: ' + errDel.message); setSaving(false); return }
+    }
+
+    // Insertar las nuevas (en batch)
+    if (added.length > 0) {
+      const payload = added.map(id => modo === 'frente'
+        ? { id_area: id, id_frente: fila.id }
+        : { id_area: fila.id, id_frente: id }
+      )
+      const { error: errIns } = await dbCfg.from('rel_area_frente').insert(payload)
+      if (errIns) { setError('Error al insertar: ' + errIns.message); setSaving(false); return }
+    }
+
+    setSaving(false)
+    onClose()
+  }
+
+  const dirty = Array.from(seleccion).some(id => !inicial.has(id)) || Array.from(inicial).some(id => !seleccion.has(id))
+
+  const filtrados = catalogo.filter(c =>
+    !busqueda.trim() || c.nombre.toLowerCase().includes(busqueda.trim().toLowerCase())
+  )
+
+  const titulo = modo === 'frente'
+    ? `Áreas del frente · ${fila.nombre}`
+    : `Frentes del área · ${fila.nombre}`
+
+  const subtitulo = modo === 'frente'
+    ? 'Selecciona las áreas en las que este frente estará disponible.'
+    : 'Selecciona los frentes disponibles para esta área.'
+
+  return (
+    <ModalShell modulo="residencial" titulo={titulo} onClose={onClose} maxWidth={640}
+      footer={<>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', marginRight: 'auto' }}>
+          {seleccion.size} de {catalogo.length} seleccionad{modo === 'frente' ? 'as' : 'os'}
+          {dirty && <span style={{ color: '#d97706', marginLeft: 8, fontWeight: 600 }}>· cambios sin guardar</span>}
+        </span>
+        <button className="btn-secondary" onClick={onClose} disabled={saving}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving || !dirty}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+          {saving ? 'Guardando…' : 'Guardar'}
+        </button>
+      </>}
+    >
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, marginBottom: 10 }}>{subtitulo}</p>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            className="input"
+            placeholder={modo === 'frente' ? 'Buscar área…' : 'Buscar frente…'}
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <button className="btn-ghost" style={{ fontSize: 12 }} onClick={seleccionarTodos} disabled={saving}>
+            Seleccionar todos
+          </button>
+          <button className="btn-ghost" style={{ fontSize: 12 }} onClick={limpiarTodo} disabled={saving}>
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ padding: '10px 20px', background: '#fef2f2', color: '#dc2626', fontSize: 12, borderBottom: '1px solid #fecaca' }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{ maxHeight: 'calc(82vh - 220px)', overflowY: 'auto' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+          </div>
+        ) : filtrados.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
+            {busqueda ? 'No hay coincidencias' : 'No hay registros en el catálogo'}
+          </div>
+        ) : (
+          <div>
+            {filtrados.map(item => {
+              const checked = seleccion.has(item.id)
+              const ccNombre = modo === 'frente' && item.id_centro_costo_fk
+                ? centros[item.id_centro_costo_fk]
+                : null
+              return (
+                <label key={item.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px',
+                    borderBottom: '1px solid #f8fafc', cursor: 'pointer',
+                    background: checked ? '#eff6ff' : '#fff',
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => { if (!checked) e.currentTarget.style.background = '#f8fafc' }}
+                  onMouseLeave={e => { if (!checked) e.currentTarget.style.background = '#fff' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggle(item.id)}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#2563eb' }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: checked ? 600 : 500, color: checked ? '#1d4ed8' : '#1e293b' }}>
+                      {item.nombre}
+                    </div>
+                    {ccNombre && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                        CC: {ccNombre}
+                      </div>
+                    )}
+                  </div>
+                  {checked && <CheckCircle size={14} style={{ color: '#2563eb', flexShrink: 0 }} />}
+                </label>
+              )
+            })}
+          </div>
+        )}
+      </div>
     </ModalShell>
   )
 }

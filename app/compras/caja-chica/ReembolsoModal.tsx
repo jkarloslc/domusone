@@ -50,16 +50,19 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
   const [ccs,       setCCs]       = useState<any[]>([])
   const [areas, setAreas] = useState<any[]>([])
   const [frentes,   setFrentes]   = useState<any[]>([])
+  const [relAF, setRelAF]         = useState<{id_area: number; id_frente: number}[]>([])
 
   useEffect(() => {
     Promise.all([
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-    ]).then(([cc, sec, frt]) => {
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+    ]).then(([cc, sec, frt, relaf]) => {
       setCCs(cc.data ?? [])
       setAreas(sec.data ?? [])
       setFrentes(frt.data ?? [])
+      setRelAF((relaf.data ?? []) as any)
     })
 
     // Si es edición, cargar detalles existentes
@@ -223,9 +226,12 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
                 const secsFiltradas = d.id_centro_costo_fk
                   ? areas.filter(s => s.id_centro_costo_fk === Number(d.id_centro_costo_fk))
                   : areas
-                const frtsFiltrados = d.id_area_fk
-                  ? frentes.filter(f => f.id_area_fk === Number(d.id_area_fk))
-                  : frentes
+                const frtsFiltrados = (() => {
+                  if (!d.id_area_fk) return frentes
+                  const aId = Number(d.id_area_fk)
+                  const permitidos = new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
+                  return frentes.filter(f => permitidos.has(f.id))
+                })()
 
                 return (
                   <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 14, background: 'var(--surface-700)', display: 'flex', flexDirection: 'column', gap: 10 }}>

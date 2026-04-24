@@ -16,6 +16,7 @@ export default function ReporteProgramasMantenimiento() {
   const [areas,       setSecs]    = useState<any[]>([])
   const [centrosCosto, setCentros] = useState<any[]>([])
   const [frentes,      setFrentes] = useState<any[]>([])
+  const [relAF,        setRelAF]   = useState<{id_area: number; id_frente: number}[]>([])
   const [loading,      setLoading] = useState(true)
   const [filtroTipo,   setFiltroTipo]   = useState('')
   const [filtroCc,     setFiltroCc]     = useState('')
@@ -25,16 +26,18 @@ export default function ReporteProgramasMantenimiento() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: progs }, { data: tar }, { data: secs }, { data: ccs }, { data: frs }] = await Promise.all([
+    const [{ data: progs }, { data: tar }, { data: secs }, { data: ccs }, { data: frs }, { data: relaf }] = await Promise.all([
       dbCtrl.from('programas_mantenimiento').select('*').eq('activo', true).order('anio', { ascending: false }).order('nombre'),
       dbCtrl.from('programa_tareas').select('*').order('id'),
       dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
     ])
     setSecs(secs ?? [])
     setCentros(ccs ?? [])
     setFrentes(frs ?? [])
+    setRelAF((relaf ?? []) as any)
     const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
     const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
     const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
@@ -80,9 +83,15 @@ export default function ReporteProgramasMantenimiento() {
         </select>
         <select className="select" style={{ minWidth: 150 }} value={filtroFr} onChange={e => setFiltroFr(e.target.value)}>
           <option value="">Todos los frentes</option>
-          {frentes
-            .filter(f => !filtroArea || f.id_area_fk === Number(filtroArea))
-            .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+          {(() => {
+            const aId = Number(filtroArea)
+            const permitidos = filtroArea
+              ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
+              : null
+            return frentes
+              .filter(f => !permitidos || permitidos.has(f.id))
+              .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
+          })()}
         </select>
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
       </div>
