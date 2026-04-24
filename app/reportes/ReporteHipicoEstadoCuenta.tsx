@@ -94,8 +94,8 @@ export default function ReporteHipicoEstadoCuenta() {
       .lte('fecha_pago', fechaHasta)
       .order('fecha_pago', { ascending: true })
 
-    setCargos((cargosData as Cargo[]) ?? [])
-    setPagos((pagosData as Pago[]) ?? [])
+    setCargos((cargosData as unknown as Cargo[]) ?? [])
+    setPagos((pagosData as unknown as Pago[]) ?? [])
     setLoading(false)
   }, [idArr, fechaDesde, fechaHasta])
 
@@ -128,7 +128,7 @@ export default function ReporteHipicoEstadoCuenta() {
         <button className="btn-primary" onClick={fetchData} disabled={idArr === '' || loading} style={{ fontSize: 12 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && <PrintBar targetId="reporte-print-area" />}
+        {buscado && !loading && <PrintBar title={`Estado-Cuenta-Hipico-${arrendatarioSel ? fmtNombre(arrendatarioSel).replace(/\s+/g,'-') : 'arrendatario'}`} count={cargos.length + pagos.length} reportTitle="Estado de Cuenta — Módulo Hípico" />}
       </div>
 
       {!buscado && (

@@ -89,7 +89,7 @@ export default function ReporteHipicoServicios() {
     if (filtroTipo)       q = q.eq('tipo', filtroTipo)
     if (soloFacturar)     q = q.eq('cobrar_arrendatario', true)
     const { data } = await q
-    setServicios((data as Servicio[]) ?? [])
+    setServicios((data as unknown as Servicio[]) ?? [])
     setLoading(false)
   }, [idArr, idCaballo, filtroTipo, soloFacturar, fechaDesde, fechaHasta])
 
@@ -147,7 +147,7 @@ export default function ReporteHipicoServicios() {
         <button className="btn-primary" onClick={fetchData} disabled={loading} style={{ fontSize: 12 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && <PrintBar targetId="reporte-print-area" />}
+        {buscado && !loading && <PrintBar title="Servicios-Hipico" count={servicios.length} reportTitle="Servicios por Caballo — Módulo Hípico" />}
       </div>
 
       {!buscado && (

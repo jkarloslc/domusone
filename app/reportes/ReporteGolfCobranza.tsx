@@ -80,7 +80,7 @@ export default function ReporteGolfCobranza() {
     if (filtroPeriodo) q = q.eq('periodo', filtroPeriodo)
 
     const { data } = await q
-    let resultado = (data as Cuota[]) ?? []
+    let resultado = (data as unknown as Cuota[]) ?? []
 
     // Filtro por categoría (post-fetch porque viene en join anidado)
     if (filtroCategoria) {
@@ -157,7 +157,7 @@ export default function ReporteGolfCobranza() {
         <button className="btn-primary" onClick={fetchData} disabled={loading} style={{ fontSize: 12 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && <PrintBar targetId="reporte-print-area" />}
+        {buscado && !loading && <PrintBar title="Cobranza-Golf-CXC" count={cuotas.length} reportTitle="Cobranza / CXC — Club Golf" />}
       </div>
 
       {!buscado && (

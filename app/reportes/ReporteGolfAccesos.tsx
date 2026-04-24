@@ -72,7 +72,7 @@ export default function ReporteGolfAccesos() {
     if (filtroForma   !== '') q = q.eq('id_forma_juego_fk', filtroForma)
 
     const { data } = await q
-    setAccesos((data as Acceso[]) ?? [])
+    setAccesos((data as unknown as Acceso[]) ?? [])
     setLoading(false)
   }, [fechaDesde, fechaHasta, filtroSocio, filtroEspacio, filtroForma])
 
@@ -139,7 +139,7 @@ export default function ReporteGolfAccesos() {
         <button className="btn-primary" onClick={fetchData} disabled={loading} style={{ fontSize: 12 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && <PrintBar targetId="reporte-print-area" />}
+        {buscado && !loading && <PrintBar title="Salidas-al-Campo-Golf" count={accesos.length} reportTitle="Salidas al Campo — Club Golf" />}
       </div>
 
       {!buscado && (

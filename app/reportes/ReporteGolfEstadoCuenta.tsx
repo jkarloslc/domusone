@@ -143,7 +143,7 @@ export default function ReporteGolfEstadoCuenta() {
         <button className="btn-primary" onClick={fetchData} disabled={idSocio === '' || loading} style={{ fontSize: 12 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && <PrintBar targetId="reporte-print-area" />}
+        {buscado && !loading && <PrintBar title={`Estado-Cuenta-Golf-${socioSel ? [socioSel.nombre, socioSel.apellido_paterno].filter(Boolean).join('-') : 'socio'}`} count={cuotas.length + recibos.length} reportTitle="Estado de Cuenta — Club Golf" />}
       </div>
 
       {!buscado && (

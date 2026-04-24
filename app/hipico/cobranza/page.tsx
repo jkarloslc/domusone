@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clock, Receipt, Zap } from 'lucide-react'
+import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clock, Receipt, Zap, Printer } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -63,6 +63,163 @@ const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
   'Pagado':    { bg: '#dcfce7', color: '#16a34a' },
   'Vencido':   { bg: '#fee2e2', color: '#dc2626' },
   'Cancelado': { bg: '#f8fafc', color: '#64748b' },
+}
+
+// ── Institución ──────────────────────────────────────────────
+const INSTITUCION = {
+  nombre:    'Club Hípico Balvanera',
+  domicilio: 'Balvanera, Corregidora, Querétaro',
+  rfc:       'CGB000101AAA',
+}
+
+// ── Imprimir recibo hípico ───────────────────────────────────
+const printReciboHipico = async (pago: {
+  id: number
+  folio: string
+  fecha_pago: string
+  monto_total: number
+  forma_pago: string
+  referencia: string | null
+  notas: string | null
+  cat_arrendatarios?: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string }
+}, dbHipRef: typeof import('@/lib/supabase').dbHip) => {
+  // Cargar detalle de cargos cubiertos
+  const { data: detData } = await dbHipRef
+    .from('ctrl_pagos_det')
+    .select('monto, ctrl_cargos(descripcion, mes_aplicacion, id_concepto_fk)')
+    .eq('id_pago_fk', pago.id)
+
+  const det = (detData ?? []) as unknown as {
+    monto: number
+    ctrl_cargos?: { descripcion: string; mes_aplicacion: string | null }
+  }[]
+
+  const fmtFechaLarga = (d: string) =>
+    new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  const fmtMes = (d: string | null) =>
+    d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '—'
+
+  const fmt$p = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
+
+  const nombreArr = pago.cat_arrendatarios
+    ? pago.cat_arrendatarios.tipo_persona === 'Moral' && pago.cat_arrendatarios.razon_social
+      ? pago.cat_arrendatarios.razon_social
+      : [pago.cat_arrendatarios.nombre, pago.cat_arrendatarios.apellido_paterno].filter(Boolean).join(' ')
+    : '—'
+
+  const filas = det.map(d => `
+    <tr>
+      <td>${d.ctrl_cargos?.descripcion ?? '—'}</td>
+      <td>${fmtMes(d.ctrl_cargos?.mes_aplicacion ?? null)}</td>
+      <td class="right" style="font-weight:600">${fmt$p(d.monto)}</td>
+    </tr>`).join('')
+
+  const win = window.open('', '_blank', 'width=720,height=900')
+  if (!win) return
+  win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="utf-8"/>
+    <title>Recibo Hípico ${pago.folio}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:Arial,sans-serif;font-size:12px;color:#1c0a00;padding:32px}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:3px solid #44200d;padding-bottom:16px}
+      .inst-name{font-size:18px;font-weight:700;color:#44200d}
+      .inst-sub{font-size:11px;color:#6b4c3b;margin-top:2px}
+      .folio-box{text-align:right}
+      .folio-lbl{font-size:10px;color:#6b4c3b;text-transform:uppercase;letter-spacing:.08em}
+      .folio-val{font-size:22px;font-weight:700;color:#44200d;font-family:monospace}
+      .section{margin-bottom:18px}
+      .section-title{font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #d6b99a;padding-bottom:4px}
+      .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px}
+      .info-item label{font-size:10px;color:#6b4c3b;display:block;margin-bottom:1px}
+      .info-item span{font-size:12px;font-weight:600;color:#1c0a00}
+      table{width:100%;border-collapse:collapse;margin-bottom:16px}
+      th{padding:7px 10px;background:#44200d;color:#f5e6d3;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em}
+      td{padding:8px 10px;border-bottom:1px solid #e8d5c0;font-size:12px}
+      tr:last-child td{border-bottom:none}
+      .right{text-align:right}
+      .totales{margin-left:auto;width:240px}
+      .totales-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+      .totales-row.total{font-weight:700;font-size:16px;border-top:2px solid #44200d;padding-top:8px;margin-top:4px;color:#44200d}
+      .pago-box{background:#fdf6ec;border:1px solid #d6b99a;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:16px}
+      .pago-label{font-size:10px;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+      .pago-val{font-size:14px;font-weight:700;color:#44200d}
+      .firma-area{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:52px}
+      .firma-line{border-top:1px solid #44200d;padding-top:4px;font-size:10px;color:#6b4c3b;text-align:center}
+      .footer{margin-top:32px;font-size:10px;color:#a87d5c;text-align:center;border-top:1px solid #e8d5c0;padding-top:12px}
+      @media print{body{padding:20px}}
+    </style></head><body>
+
+    <div class="header">
+      <div>
+        <div class="inst-name">${INSTITUCION.nombre}</div>
+        <div class="inst-sub">${INSTITUCION.domicilio}</div>
+        <div class="inst-sub">RFC: ${INSTITUCION.rfc}</div>
+      </div>
+      <div class="folio-box">
+        <div class="folio-lbl">Recibo de Cobro</div>
+        <div class="folio-val">${pago.folio}</div>
+        <div style="font-size:11px;color:#6b4c3b;margin-top:3px">${fmtFechaLarga(pago.fecha_pago)}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Datos del Arrendatario</div>
+      <div class="info-grid">
+        <div class="info-item"><label>Nombre / Razón Social</label><span>${nombreArr}</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Cargos Cubiertos</div>
+      <table>
+        <thead><tr>
+          <th>Descripción</th>
+          <th>Mes Aplicación</th>
+          <th class="right">Importe</th>
+        </tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+      <div class="totales">
+        <div class="totales-row total">
+          <span>TOTAL</span>
+          <span>${fmt$p(pago.monto_total)}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pago-box">
+      <div>
+        <div class="pago-label">Forma de Pago</div>
+        <div class="pago-val">${pago.forma_pago}</div>
+      </div>
+      ${pago.referencia ? `
+      <div style="margin-left:24px">
+        <div class="pago-label">Referencia / Folio bancario</div>
+        <div class="pago-val" style="font-size:12px">${pago.referencia}</div>
+      </div>` : ''}
+    </div>
+
+    ${pago.notas ? `
+    <div style="font-size:11px;color:#6b4c3b;padding:8px 12px;background:#fdf6ec;border:1px solid #e8d5c0;border-radius:6px;margin-bottom:16px">
+      <strong>Notas:</strong> ${pago.notas}
+    </div>` : ''}
+
+    <div class="firma-area">
+      <div class="firma-line">Firma del Arrendatario</div>
+      <div class="firma-line">Recibió / Administración</div>
+    </div>
+
+    <div class="footer">
+      Este recibo es comprobante de pago de rentas y servicios de caballeriza.<br/>
+      ${INSTITUCION.nombre} &middot; ${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
+    </div>
+
+  </body></html>`)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print(); win.close() }, 400)
 }
 
 export default function CobranzaPage() {
@@ -155,7 +312,7 @@ export default function CobranzaPage() {
 
     const contratosCargados = new Set((cargosExist ?? []).map((c: any) => c.id_contrato_fk as number))
 
-    const lista = (contratos as ContratoPrev[]).map(ct => ({
+    const lista = (contratos as unknown as ContratoPrev[]).map(ct => ({
       ...ct,
       ya_tiene_cargo: contratosCargados.has(ct.id),
     }))
@@ -585,16 +742,16 @@ export default function CobranzaPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                  {['Folio', 'Arrendatario', 'Fecha', 'Forma de Pago', 'Referencia', 'Total'].map(h => (
+                  {['Folio', 'Arrendatario', 'Fecha', 'Forma de Pago', 'Referencia', 'Total', ''].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loadingPagos ? (
-                  <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                  <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
                 ) : pagos.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin recibos</td></tr>
+                  <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin recibos</td></tr>
                 ) : pagos.map((p, i) => (
                   <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--gold-light)', fontFamily: 'monospace' }}>{p.folio}</td>
@@ -603,6 +760,15 @@ export default function CobranzaPage() {
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{p.forma_pago}</td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{p.referencia ?? '—'}</td>
                     <td style={{ padding: '10px 14px', fontWeight: 700, color: '#16a34a' }}>{fmt$(p.monto_total)}</td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <button
+                        className="btn-ghost"
+                        title="Imprimir recibo"
+                        onClick={() => printReciboHipico(p, dbHip)}
+                        style={{ padding: '4px 8px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Printer size={13} /> Imprimir
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
