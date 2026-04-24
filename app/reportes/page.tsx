@@ -25,6 +25,8 @@ import ReporteProgramasMantenimiento from './ReporteProgramasMantenimiento'
 import ReporteEstadoCuenta from './ReporteEstadoCuenta'
 import ReporteComprasPorProveedor from './ReporteComprasPorProveedor'
 import ReporteIngresos from './ReporteIngresos'
+import ReporteHipicoEstadoCuenta from './ReporteHipicoEstadoCuenta'
+import ReporteHipicoServicios from './ReporteHipicoServicios'
 
 const GRUPOS = [
   {
@@ -101,7 +103,8 @@ const GRUPOS = [
     label: 'Hípico',
     color: '#92400e',
     reportes: [
-      { id: 'hipico-placeholder', label: 'Próximamente', icon: BarChart3, desc: 'Reportes del módulo Hípico en desarrollo' },
+      { id: 'hipico-estado-cuenta', label: 'Estado de Cuenta', icon: FileText,  desc: 'Cargos y pagos por arrendatario en un período' },
+      { id: 'hipico-servicios',     label: 'Servicios por Caballo', icon: BarChart3, desc: 'Bitácora de veterinario, herrajes y alimentos por caballo, arrendatario y tipo' },
     ],
   },
 ]
@@ -207,6 +210,10 @@ function ReportesContent() {
       {active === 'kardex'           && <ReporteKardex />}
       {active === 'transferencias'        && <ReporteTransferencias />}
       {active === 'compras-por-proveedor' && <ReporteComprasPorProveedor />}
+
+      {/* Reportes hípico */}
+      {active === 'hipico-estado-cuenta' && <ReporteHipicoEstadoCuenta />}
+      {active === 'hipico-servicios'     && <ReporteHipicoServicios />}
     </div>
   )
 }
