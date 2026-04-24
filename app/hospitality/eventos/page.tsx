@@ -388,11 +388,11 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
       </div>
 
       {/* Barra de filtros */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
         <input className="input" placeholder="Buscar por nombre, folio o cliente…"
           value={busqueda} onChange={e => setBusqueda(e.target.value)}
-          style={{ flex: '1 1 220px', fontSize: 13, maxWidth: 360 }} />
-        <select className="input" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ fontSize: 13, minWidth: 160 }}>
+          style={{ flex: 1, fontSize: 13 }} />
+        <select className="input" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ fontSize: 13, width: 180, flexShrink: 0 }}>
           <option value="">Todos los status</option>
           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
