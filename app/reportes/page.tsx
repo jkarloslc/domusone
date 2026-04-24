@@ -88,6 +88,22 @@ const GRUPOS = [
       { id: 'transferencias',  label: 'Transferencias',             icon: Package,      desc: 'Movimientos entre almacenes con filtros por origen, destino y fecha' },
     ],
   },
+  {
+    slug:  'golf',
+    label: 'Club Golf',
+    color: '#b8952a',
+    reportes: [
+      { id: 'golf-placeholder', label: 'Próximamente', icon: BarChart3, desc: 'Reportes del módulo Golf en desarrollo' },
+    ],
+  },
+  {
+    slug:  'hipico',
+    label: 'Hípico',
+    color: '#92400e',
+    reportes: [
+      { id: 'hipico-placeholder', label: 'Próximamente', icon: BarChart3, desc: 'Reportes del módulo Hípico en desarrollo' },
+    ],
+  },
 ]
 
 const ALL = GRUPOS.flatMap(g => g.reportes)

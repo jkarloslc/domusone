@@ -6,6 +6,7 @@ import {
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
   MessageCircle, Truck, TrendingUp, Flag,
 } from 'lucide-react'
+import HorseIcon from '@/components/ui/HorseIcon'
 import { useAuth } from '@/lib/AuthContext'
 
 type Rol =
@@ -26,6 +27,7 @@ type Rol =
   | 'ingresos'
   | 'usuario_solicitante'
   | 'usuariogolf'
+  | 'usuariohipico'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -48,6 +50,7 @@ const ROL_LABEL: Record<Rol, string> = {
   ingresos:            'Captura de Ingresos',
   usuario_solicitante: 'Solicitante',
   usuariogolf:         'Operador Golf',
+  usuariohipico:       'Operador Hípico',
 }
 
 // Ítem de reportes con estilo diferenciado (pie de sección)
@@ -67,6 +70,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Club', items: [
       { label: 'Club',           href: '/golf',           icon: Flag          },
       RPT('golf'),
+    ]},
+    { section: 'Hípico', items: [
+      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
+      RPT('hipico'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
@@ -104,6 +111,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Club', items: [
       { label: 'Club',           href: '/golf',           icon: Flag          },
       RPT('golf'),
+    ]},
+    { section: 'Hípico', items: [
+      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
+      RPT('hipico'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
@@ -343,6 +354,16 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
   ],
+
+  usuariohipico: [
+    { section: 'Hípico', items: [
+      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
+      RPT('hipico'),
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
+  ],
 }
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -389,7 +410,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
 
         {/* Inicio — visible para todos excepto roles de acceso restringido */}
-        {rol !== 'usuario_solicitante' && rol !== 'usuariogolf' && (
+        {rol !== 'usuario_solicitante' && rol !== 'usuariogolf' && rol !== 'usuariohipico' && (
           <Link
             href="/inicio"
             onClick={onClose}

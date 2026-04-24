@@ -21,6 +21,7 @@ type Rol =
   | 'usuario_solicitante'
   | 'ingresos'
   | 'usuariogolf'
+  | 'usuariohipico'
 
 type AuthUser = {
   user:   User
@@ -52,6 +53,8 @@ export function getHomeRouteByRole(rol?: Rol): string {
       return '/ingresos'
     case 'usuariogolf':
       return '/golf'
+    case 'usuariohipico':
+      return '/hipico'
     default:
       return '/residencial'
   }
@@ -96,6 +99,13 @@ const GOLF_MODULOS = [
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros', 'reportes',
   'compras', 'requisiciones', 'transferencias',
 ]
+
+// Módulos Hípico para rol dedicado
+const HIPICO_MODULOS = [
+  'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
+  'hipico-contratos', 'hipico-cobranza', 'hipico-servicios', 'reportes',
+  'compras', 'requisiciones', 'transferencias',
+]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
 // usuariomantto: igual que admin pero sin tesoreria
@@ -123,6 +133,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   usuario_solicitante: ['compras', 'requisiciones', 'transferencias'],
   ingresos:            ['ingresos', 'reportes'],
   usuariogolf:         GOLF_MODULOS,
+  usuariohipico:       HIPICO_MODULOS,
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -147,6 +158,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   usuario_solicitante: ['requisiciones', 'transferencias'],
   ingresos:            ['ingresos'],
   usuariogolf:         GOLF_MODULOS,
+  usuariohipico:       HIPICO_MODULOS,
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
@@ -258,7 +270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!key) return 'seguridad'
       return MODS_SEGURIDAD.includes(key) ? 'seguridad' : false
     }
-    if (r === 'usuario_solicitante' || r === 'usuariogolf') {
+    if (r === 'usuario_solicitante' || r === 'usuariogolf' || r === 'usuariohipico') {
       // Solo ve Requisiciones y Transferencias — sin autorización, sin catálogos
       const MODS_SOLICITANTE = ['requisiciones', 'transferencias']
       if (!key) return 'solicitante'
