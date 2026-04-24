@@ -75,20 +75,22 @@ export default function ConfiguracionPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out', maxWidth: 700 }}>
 
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
             <Settings size={16} style={{ color: 'var(--blue)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Sistema</span>
+            <span className="page-eyebrow-label">Sistema</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, letterSpacing: '-0.01em' }}>Configuración</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>Parámetros generales de la aplicación</p>
+          <h1 className="page-title-xl">Configuración</h1>
+          <p className="page-subtitle">Parámetros generales de la aplicación</p>
         </div>
-        <button className="btn-primary" onClick={handleSave} disabled={saving || loading}>
-          {saving ? <><Loader size={13} className="animate-spin" /> Guardando…</>
-            : saved ? <><CheckCircle size={13} /> Guardado</>
-            : <><Save size={13} /> Guardar Cambios</>}
-        </button>
+        <div className="page-header-actions">
+          <button className="btn-primary" onClick={handleSave} disabled={saving || loading}>
+            {saving ? <><Loader size={13} className="animate-spin" /> Guardando…</>
+              : saved ? <><CheckCircle size={13} /> Guardado</>
+              : <><Save size={13} /> Guardar Cambios</>}
+          </button>
+        </div>
       </div>
 
       {debugMsg && (

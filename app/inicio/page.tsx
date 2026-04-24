@@ -179,16 +179,16 @@ export default function InicioPage() {
     <div style={{ padding: '28px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
             <Scale size={16} style={{ color: 'var(--blue)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Panorama</span>
+            <span className="page-eyebrow-label">Panorama</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 600, letterSpacing: '-0.01em' }}>Dashboard Financiero</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>Ingresos y egresos de la operación de Balvanera</p>
+          <h1 className="page-title-xl" style={{ fontSize: 30 }}>Dashboard Financiero</h1>
+          <p className="page-subtitle">Ingresos y egresos de la operación de Balvanera</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="page-header-actions">
           {/* Selector de período */}
           <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 9, padding: 3, gap: 2 }}>
             {PERIODOS.map(p => (

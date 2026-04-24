@@ -53,18 +53,20 @@ export default function FacturasPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
             <FileText size={16} style={{ color: 'var(--blue)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+            <span className="page-eyebrow-label">Módulo</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600 }}>Facturas</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>Comprobantes Fiscales Digitales (CFDI)</p>
+          <h1 className="page-title-xl">Facturas</h1>
+          <p className="page-subtitle">Comprobantes Fiscales Digitales (CFDI)</p>
         </div>
-        <button className="btn-primary" onClick={() => setModalOpen(true)}>
-          <Plus size={14} /> Nueva Factura
-        </button>
+        <div className="page-header-actions">
+          <button className="btn-primary" onClick={() => setModalOpen(true)}>
+            <Plus size={14} /> Nueva Factura
+          </button>
+        </div>
       </div>
 
       {/* Banner PAC */}

@@ -19,14 +19,16 @@ export default function AccesosPage({ embedded }: { embedded?: boolean }) {
 
       {/* Header — oculto cuando está dentro de /residencial */}
       {!embedded && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Shield size={16} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+        <div className="page-header">
+          <div className="page-header-left" style={{ display: 'block' }}>
+            <div className="page-eyebrow">
+              <Shield size={16} style={{ color: 'var(--gold)' }} />
+              <span className="page-eyebrow-label">Módulo</span>
+            </div>
+            <h1 className="page-title-xl" style={{ fontWeight: 400 }}>
+              Control de Accesos
+            </h1>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em' }}>
-            Control de Accesos
-          </h1>
         </div>
       )}
 

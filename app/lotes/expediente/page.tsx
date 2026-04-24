@@ -242,13 +242,15 @@ export default function ExpedientePage({ embedded }: { embedded?: boolean }) {
       {!embedded && <LotesTabs />}
 
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <MapPinned size={16} style={{ color: 'var(--blue)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Consulta</span>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
+            <MapPinned size={16} style={{ color: 'var(--blue)' }} />
+            <span className="page-eyebrow-label">Consulta</span>
+          </div>
+          <h1 className="page-title-xl" style={{ fontSize: 30 }}>Expediente de Lote</h1>
+          <p className="page-subtitle">Busca un lote para ver su expediente completo</p>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 600, letterSpacing: '-0.01em' }}>Expediente de Lote</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>Busca un lote para ver su expediente completo</p>
       </div>
 
       {/* Buscador */}

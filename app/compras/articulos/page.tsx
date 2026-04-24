@@ -65,15 +65,19 @@ export default function ArticulosPage() {
   return (
     <div style={{ padding: '32px 36px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
+      <div className="page-header">
+        <div className="page-header-left">
+          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Artículos</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Catálogo maestro · {total} registros</p>
+            <h1 className="page-title">Artículos</h1>
+            <p className="page-subtitle">Catálogo maestro · {total} registros</p>
           </div>
         </div>
-        {canWrite('articulos') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Artículo</button>}
+        {canWrite('articulos') && (
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Artículo</button>
+          </div>
+        )}
       </div>
 
       {/* Stats rápidas */}

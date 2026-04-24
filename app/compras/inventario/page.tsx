@@ -80,18 +80,20 @@ export default function InventarioPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
+      <div className="page-header">
+        <div className="page-header-left">
+          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Inventario</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Saldos por almacén y kardex de movimientos</p>
+            <h1 className="page-title">Inventario</h1>
+            <p className="page-subtitle">Saldos por almacén y kardex de movimientos</p>
           </div>
         </div>
         {puedeAgregarMov && (
-          <button className="btn-primary" onClick={() => setMovModal(true)}>
-            <Plus size={14} /> Agregar Movimiento
-          </button>
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => setMovModal(true)}>
+              <Plus size={14} /> Agregar Movimiento
+            </button>
+          </div>
         )}
       </div>
 

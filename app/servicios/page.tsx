@@ -106,21 +106,19 @@ export default function OrdenesTrabajoPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--blue-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="page-header">
+        <div className="page-header-left">
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--blue-pale)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Wrench size={18} style={{ color: 'var(--blue)' }} />
           </div>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, letterSpacing: '-0.01em' }}>
-              Órdenes de Trabajo
-            </h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            <h1 className="page-title">Órdenes de Trabajo</h1>
+            <p className="page-subtitle">
               Mantenimiento residencial · {total} registros
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="page-header-actions">
           <button className="btn-secondary" onClick={() => setReportModal(true)}>
             <ClipboardList size={14} /> Reporte Semanal
           </button>

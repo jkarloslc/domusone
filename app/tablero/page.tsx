@@ -157,24 +157,28 @@ export default function TableroPage() {
 
   return (
     <div style={{ padding: '32px 36px', maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 8 }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #2563eb18, #0891b218)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <LayoutDashboard size={24} style={{ color: 'var(--blue)' }} />
+      <div className="page-header">
+        <div className="page-header-left">
+          <div style={{
+            width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #2563eb18, #0891b218)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <LayoutDashboard size={24} style={{ color: 'var(--blue)' }} />
+          </div>
+          <div>
+            <h1 className="page-title" style={{ fontSize: 28 }}>
+              Mi Tablero
+            </h1>
+            <p className="page-subtitle" style={{ maxWidth: 720, lineHeight: 1.5 }}>
+              Mensajería interna entre usuarios del sistema.
+            </p>
+          </div>
         </div>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, margin: 0 }}>
-            Mi Tablero
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6, maxWidth: 720, lineHeight: 1.5 }}>
-            Mensajería interna entre usuarios del sistema.
-          </p>
+        <div className="page-header-actions">
+          <button type="button" className="btn-ghost" onClick={() => { fetchMensajes(); fetchUsuarios() }} title="Actualizar">
+            <RefreshCw size={15} className={loadingMsgs ? 'animate-spin' : ''} />
+          </button>
         </div>
-        <button type="button" className="btn-ghost" onClick={() => { fetchMensajes(); fetchUsuarios() }} title="Actualizar">
-          <RefreshCw size={15} className={loadingMsgs ? 'animate-spin' : ''} />
-        </button>
       </div>
 
       {error && (

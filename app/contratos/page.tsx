@@ -79,18 +79,22 @@ export default function ContratosPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
             <FileText size={16} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+            <span className="page-eyebrow-label">Módulo</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em' }}>Contratos</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>{total} contratos registrados</p>
+          <h1 className="page-title-xl" style={{ fontWeight: 400 }}>Contratos</h1>
+          <p className="page-subtitle">{total} contratos registrados</p>
         </div>
-        {canWrite('contratos') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-          <Plus size={14} /> Nuevo Contrato
-        </button>}
+        {canWrite('contratos') && (
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+              <Plus size={14} /> Nuevo Contrato
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filtros */}

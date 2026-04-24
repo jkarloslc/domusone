@@ -77,18 +77,22 @@ export default function EscriturasPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
             <Building2 size={16} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+            <span className="page-eyebrow-label">Módulo</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em' }}>Escrituras</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>{total} escrituras registradas</p>
+          <h1 className="page-title-xl" style={{ fontWeight: 400 }}>Escrituras</h1>
+          <p className="page-subtitle">{total} escrituras registradas</p>
         </div>
-        {canWrite('escrituras') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-          <Plus size={14} /> Nueva Escritura
-        </button>}
+        {canWrite('escrituras') && (
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+              <Plus size={14} /> Nueva Escritura
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Stats por status */}

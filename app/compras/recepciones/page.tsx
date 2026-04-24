@@ -31,11 +31,13 @@ export default function RecepcionesPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Recepción de Mercancías</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Entrada a almacén y actualización de inventario · {total} registros</p>
+      <div className="page-header">
+        <div className="page-header-left">
+          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
+          <div>
+            <h1 className="page-title">Recepción de Mercancías</h1>
+            <p className="page-subtitle">Entrada a almacén y actualización de inventario · {total} registros</p>
+          </div>
         </div>
       </div>
 

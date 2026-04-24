@@ -58,22 +58,26 @@ export default function PropietariosPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
             <Users size={16} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+            <span className="page-eyebrow-label">Módulo</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, letterSpacing: '-0.01em' }}>
+          <h1 className="page-title-xl" style={{ fontWeight: 400 }}>
             Propietarios
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+          <p className="page-subtitle">
             {total} propietarios registrados
           </p>
         </div>
-        {canWrite('propietarios') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-          <Plus size={14} /> Nuevo Propietario
-        </button>}
+        {canWrite('propietarios') && (
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+              <Plus size={14} /> Nuevo Propietario
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filtros */}

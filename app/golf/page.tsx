@@ -149,17 +149,19 @@ export default function GolfPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <Flag size={15} style={{ color: 'var(--gold)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
+            <Flag size={15} style={{ color: 'var(--gold)' }} />
+            <span className="page-eyebrow-label">Módulo</span>
+          </div>
+          <h1 className="page-title-xl" style={{ fontWeight: 400, color: 'var(--gold-light)' }}>
+            Club
+          </h1>
+          <p className="page-subtitle">
+            Administración del club — socios, operaciones de campo y servicios deportivos
+          </p>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em', marginBottom: 6 }}>
-          Club
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-          Administración del club — socios, operaciones de campo y servicios deportivos
-        </p>
       </div>
 
       {/* Grid de módulos */}

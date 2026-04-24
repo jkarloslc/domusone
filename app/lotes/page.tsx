@@ -122,22 +122,26 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
       {!embedded && <LotesTabs />}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
             <MapPin size={16} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+            <span className="page-eyebrow-label">Módulo</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 400, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+          <h1 className="page-title-xl" style={{ fontWeight: 400 }}>
             Catálogo de Lotes
           </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+          <p className="page-subtitle">
             {total} lotes registrados
           </p>
         </div>
-        {canWrite('lotes') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-          <Plus size={14} /> Nuevo Lote
-        </button>}
+        {canWrite('lotes') && (
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+              <Plus size={14} /> Nuevo Lote
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Stats rápidas */}

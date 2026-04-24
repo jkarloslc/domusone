@@ -50,17 +50,17 @@ export default function CuentasBancariasPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => router.push('/tesoreria')}>
+      <div className="page-header">
+        <div className="page-header-left">
+          <button className="btn-back" onClick={() => router.push('/tesoreria')} title="Regresar">
             <ArrowLeft size={15} />
           </button>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Cuentas Bancarias</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Administración de cuentas y registro de movimientos</p>
+            <h1 className="page-title">Cuentas Bancarias</h1>
+            <p className="page-subtitle">Administración de cuentas y registro de movimientos</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="page-header-actions">
           <button className="btn-ghost" onClick={fetchData} style={{ padding: '7px 10px' }}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>

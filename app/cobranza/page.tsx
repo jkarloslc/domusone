@@ -17,13 +17,15 @@ export default function CobranzaPage({ embedded }: { embedded?: boolean }) {
   return (
     <div style={{ padding: '28px 32px' }}>
       {!embedded && (
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 400, color: 'var(--gold-light)', marginBottom: 4 }}>
-            Cobranza
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            Generación de cargos y registro de pagos
-          </p>
+        <div className="page-header">
+          <div className="page-header-left" style={{ display: 'block' }}>
+            <h1 className="page-title" style={{ fontWeight: 400, color: 'var(--gold-light)', fontSize: 28 }}>
+              Cobranza
+            </h1>
+            <p className="page-subtitle">
+              Generación de cargos y registro de pagos
+            </p>
+          </div>
         </div>
       )}
 

@@ -141,16 +141,15 @@ function ReportesContent() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <BarChart3 size={16} style={{ color: grupoActivo?.color ?? 'var(--blue)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            {grupoParam ? grupoActivo?.label : 'Módulo'}
-          </span>
-        </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, letterSpacing: '-0.01em' }}>
-          Reportes
-        </h1>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
+            <BarChart3 size={16} style={{ color: grupoActivo?.color ?? 'var(--blue)' }} />
+            <span className="page-eyebrow-label">
+              {grupoParam ? grupoActivo?.label : 'Módulo'}
+            </span>
+          </div>
+          <h1 className="page-title-xl">Reportes</h1>
         {/* Breadcrumb cuando hay reporte activo */}
         {active && current && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -161,6 +160,7 @@ function ReportesContent() {
             <span>{current.label}</span>
           </div>
         )}
+        </div>
       </div>
 
       {/* Grid agrupado */}

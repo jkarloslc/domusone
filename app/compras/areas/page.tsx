@@ -40,15 +40,15 @@ export default function AreasPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
+      <div className="page-header">
+        <div className="page-header-left">
+          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Áreas Solicitantes</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Áreas disponibles en requisiciones · {rows.length} registros</p>
+            <h1 className="page-title">Áreas Solicitantes</h1>
+            <p className="page-subtitle">Áreas disponibles en requisiciones · {rows.length} registros</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="page-header-actions">
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
           {canWrite('areas') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva Área</button>}
         </div>

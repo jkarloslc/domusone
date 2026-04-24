@@ -64,16 +64,16 @@ export default function CajaChicaPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
             <Wallet size={16} style={{ color: '#d97706' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Compras</span>
+            <span className="page-eyebrow-label">Compras</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Caja Chica</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>Fondos y reembolsos de gastos menores</p>
+          <h1 className="page-title">Caja Chica</h1>
+          <p className="page-subtitle">Fondos y reembolsos de gastos menores</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="page-header-actions">
           {(misFondos.length > 0 || isAdmin) && fondos.length > 0 && (
             <button className="btn-primary" onClick={() => setRemModal({ open: true, fondo: misFondos[0] ?? fondos[0] })}>
               <Plus size={13} /> Nuevo Reembolso

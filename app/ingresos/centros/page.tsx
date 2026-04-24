@@ -143,24 +143,26 @@ export default function CentrosIngresoPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <button onClick={() => router.push('/ingresos')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, marginBottom: 6 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <button onClick={() => router.push('/ingresos')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, marginBottom: 6, padding: 0 }}>
             <ChevronLeft size={14} /> Ingresos
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <div className="page-eyebrow">
             <Tag size={16} style={{ color: '#7c3aed' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Catálogo</span>
+            <span className="page-eyebrow-label">Catálogo</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600 }}>Centros de Ingreso</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+          <h1 className="page-title-xl">Centros de Ingreso</h1>
+          <p className="page-subtitle">
             Configura los centros y su tipo de captura
           </p>
         </div>
         {canWrite('ingresos') && (
-          <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
-            <Plus size={14} /> Nuevo Centro
-          </button>
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
+              <Plus size={14} /> Nuevo Centro
+            </button>
+          </div>
         )}
       </div>
 

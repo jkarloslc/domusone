@@ -101,15 +101,17 @@ export default function CXPPage() {
   return (
     <div style={{ padding: '32px 36px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
+      <div className="page-header">
+        <div className="page-header-left">
+          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Cuentas por Pagar</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>CXP — Saldos, antigüedad y registro de pagos</p>
+            <h1 className="page-title">Cuentas por Pagar</h1>
+            <p className="page-subtitle">CXP — Saldos, antigüedad y registro de pagos</p>
           </div>
         </div>
-        <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
+        <div className="page-header-actions">
+          <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
+        </div>
       </div>
 
       {/* KPIs */}

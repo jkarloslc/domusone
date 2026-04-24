@@ -93,18 +93,18 @@ export default function ComunicadosPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
             <MessageSquare size={16} style={{ color: 'var(--blue)' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Residencial</span>
+            <span className="page-eyebrow-label">Residencial</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600 }}>Comunicados y Avisos</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+          <h1 className="page-title-xl">Comunicados y Avisos</h1>
+          <p className="page-subtitle">
             Crea y envía comunicados por correo a propietarios individualmente o de forma masiva
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="page-header-actions">
           <button className="btn-ghost" onClick={fetchData} style={{ padding: '8px 10px' }}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>

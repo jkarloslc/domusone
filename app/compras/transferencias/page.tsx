@@ -152,18 +152,20 @@ export default function TransferenciasPage() {
   return (
     <div style={{ padding: '32px 36px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
+      <div className="page-header">
+        <div className="page-header-left">
+          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Transferencias</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            <h1 className="page-title">Transferencias</h1>
+            <p className="page-subtitle">
               Movimientos entre centros de costo · {total} registros
             </p>
           </div>
         </div>
         {canWrite('transferencias') && (
-          <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Solicitud</button>
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Solicitud</button>
+          </div>
         )}
       </div>
 

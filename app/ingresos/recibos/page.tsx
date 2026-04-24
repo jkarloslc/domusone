@@ -515,24 +515,26 @@ export default function RecibosIngresoPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <button onClick={() => router.push('/ingresos')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, marginBottom: 6 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <button onClick={() => router.push('/ingresos')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, marginBottom: 6, padding: 0 }}>
             <ChevronLeft size={14} /> Ingresos
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <div className="page-eyebrow">
             <Receipt size={16} style={{ color: '#059669' }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Captura</span>
+            <span className="page-eyebrow-label">Captura</span>
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600 }}>Recibos de Ingreso</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
+          <h1 className="page-title-xl">Recibos de Ingreso</h1>
+          <p className="page-subtitle">
             {total} recibos · {fmt(totalMes)} en los filtros actuales
           </p>
         </div>
         {canWrite('ingresos') && (
-          <button className="btn-primary" onClick={() => setModal(true)}>
-            <Plus size={14} /> Nuevo Recibo
-          </button>
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => setModal(true)}>
+              <Plus size={14} /> Nuevo Recibo
+            </button>
+          </div>
         )}
       </div>
 

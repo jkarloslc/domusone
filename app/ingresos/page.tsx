@@ -78,15 +78,17 @@ export default function IngresosPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <TrendingUp size={16} style={{ color: '#059669' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Módulo</span>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
+            <TrendingUp size={16} style={{ color: '#059669' }} />
+            <span className="page-eyebrow-label">Módulo</span>
+          </div>
+          <h1 className="page-title-xl">Ingresos</h1>
+          <p className="page-subtitle">
+            Captura de ventas diarias por centro de ingreso — Golf, Cuotas, Espacios, Caballerizas
+          </p>
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600 }}>Ingresos</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 2 }}>
-          Captura de ventas diarias por centro de ingreso — Golf, Cuotas, Espacios, Caballerizas
-        </p>
       </div>
 
       {/* KPIs */}
