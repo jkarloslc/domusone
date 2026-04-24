@@ -44,22 +44,10 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
       </div>
     `
 
-    const style = document.createElement('style')
-    style.id = 'print-override'
-    style.innerHTML = `
-      @media print {
-        body > * { display: none !important; }
-        #print-root-wrapper { display: block !important; }
-        @page { margin: 1.2cm; size: landscape; }
-      }
-    `
-    document.head.appendChild(style)
-
-    // 1. Buscar área de impresión pre-definida en el JSX (reportes con acordeón)
+    // 1. Buscar área de impresión
     let printArea = document.getElementById('reporte-print-area') as HTMLElement | null
     let dynamicId = false
 
-    // 2. Fallback: buscar vía #reporte-table → .card (reportes de tabla simple)
     if (!printArea) {
       const table = document.getElementById('reporte-table')
       if (table) {
@@ -73,63 +61,71 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
     }
 
     if (printArea) {
-      // Crear wrapper de impresión sobre el body
-      const wrapper = document.createElement('div')
-      wrapper.id = 'print-root-wrapper'
-      wrapper.style.cssText = `
-        position: fixed; inset: 0; background: white; z-index: 99999;
-        padding: 20px; overflow: auto; display: none;
-      `
-
-      // Header
+      // Inyectar header dentro del área
       const headerDiv = document.createElement('div')
       headerDiv.id = 'print-header-injected'
       headerDiv.innerHTML = headerHtml
-      wrapper.appendChild(headerDiv)
-
-      // Clonar el área de impresión para no modificar el DOM original
-      const clone = printArea.cloneNode(true) as HTMLElement
-      clone.style.cssText = `
-        background: white; border: none; border-radius: 0;
-        box-shadow: none; padding: 0; overflow: visible;
-      `
-      // Compactar tabla para impresión
-      clone.querySelectorAll('table').forEach(t => {
-        (t as HTMLElement).style.fontSize = '11px'
-        ;(t as HTMLElement).style.width = '100%'
-        ;(t as HTMLElement).style.borderCollapse = 'collapse'
-      })
-      clone.querySelectorAll('th, td').forEach(el => {
-        (el as HTMLElement).style.padding = '5px 7px'
-        ;(el as HTMLElement).style.border = '1px solid #cbd5e1'
-        ;(el as HTMLElement).style.color = '#0f172a'
-        ;(el as HTMLElement).style.background = 'white'
-        ;(el as HTMLElement).style.pageBreakInside = 'avoid'
-      })
-      clone.querySelectorAll('thead th').forEach(el => {
-        (el as HTMLElement).style.background = '#f1f5f9'
-        ;(el as HTMLElement).style.fontWeight = '700'
-        ;(el as HTMLElement).style.fontSize = '9px'
-        ;(el as HTMLElement).style.textTransform = 'uppercase'
-        ;(el as HTMLElement).style.letterSpacing = '0.04em'
-      })
-      // Quitar badges y spans que no imprimen bien (opcional: mantener)
-      wrapper.appendChild(clone)
-      document.body.appendChild(wrapper)
-
-      // Mostrar wrapper en pantalla durante print
-      const wrapperStyle = document.createElement('style')
-      wrapperStyle.id = 'wrapper-show'
-      wrapperStyle.innerHTML = `@media print { #print-root-wrapper { display: block !important; } }`
-      document.head.appendChild(wrapperStyle)
+      printArea.insertBefore(headerDiv, printArea.firstChild)
     }
+
+    const style = document.createElement('style')
+    style.id = 'print-override'
+    style.innerHTML = `
+      @media print {
+        body * { visibility: hidden !important; }
+        #reporte-print-area,
+        #reporte-print-area * { visibility: visible !important; }
+        #reporte-print-area {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          background: white !important;
+          padding: 16px !important;
+          overflow: visible !important;
+          border: none !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          height: auto !important;
+          max-height: none !important;
+        }
+        #reporte-print-area table {
+          font-size: 11px !important;
+          width: 100% !important;
+          border-collapse: collapse !important;
+          page-break-inside: auto !important;
+        }
+        #reporte-print-area tr {
+          page-break-inside: avoid !important;
+          page-break-after: auto !important;
+        }
+        #reporte-print-area th,
+        #reporte-print-area td {
+          padding: 5px 7px !important;
+          border: 1px solid #cbd5e1 !important;
+          color: #0f172a !important;
+          background: white !important;
+        }
+        #reporte-print-area thead {
+          display: table-header-group !important;
+        }
+        #reporte-print-area thead th {
+          background: #f1f5f9 !important;
+          font-weight: 700 !important;
+          font-size: 9px !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.04em !important;
+        }
+        @page { margin: 1.2cm; size: landscape; }
+      }
+    `
+    document.head.appendChild(style)
 
     window.print()
 
     setTimeout(() => {
       document.getElementById('print-override')?.remove()
-      document.getElementById('wrapper-show')?.remove()
-      document.getElementById('print-root-wrapper')?.remove()
+      document.getElementById('print-header-injected')?.remove()
       if (dynamicId) {
         document.getElementById('reporte-print-area')?.removeAttribute('id')
       }
