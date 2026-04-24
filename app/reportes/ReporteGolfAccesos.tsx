@@ -103,7 +103,7 @@ export default function ReporteGolfAccesos() {
   return (
     <div>
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10, alignItems: 'flex-end' }}>
         <div>
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Socio</label>
           <select className="input" value={filtroSocio} onChange={e => setFiltroSocio(e.target.value ? Number(e.target.value) : '')}
@@ -136,7 +136,10 @@ export default function ReporteGolfAccesos() {
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hasta</label>
           <input className="input" type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={{ fontSize: 12 }} />
         </div>
-        <button className="btn-primary" onClick={fetchData} disabled={loading} style={{ fontSize: 12 }}>
+      </div>
+      {/* Barra de acción */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <button className="btn-primary" onClick={fetchData} disabled={loading} style={{ fontSize: 13 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
         {buscado && !loading && <PrintBar title="Salidas-al-Campo-Golf" count={accesos.length} reportTitle="Salidas al Campo — Club Golf" />}

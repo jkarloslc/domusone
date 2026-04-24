@@ -48,38 +48,8 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
     style.id = 'print-override'
     style.innerHTML = `
       @media print {
-        body * { visibility: hidden !important; }
-        #reporte-print-area, #reporte-print-area * { visibility: visible !important; }
-        #print-header-injected, #print-header-injected * { visibility: visible !important; }
-        #reporte-print-area {
-          position: fixed !important;
-          top: 0 !important; left: 0 !important;
-          width: 100% !important;
-          background: white !important;
-          padding: 16px !important;
-          overflow: visible !important;
-          border: none !important;
-          border-radius: 0 !important;
-          box-shadow: none !important;
-        }
-        #reporte-print-area table {
-          font-size: 11px !important;
-          width: 100% !important;
-          border-collapse: collapse !important;
-        }
-        #reporte-print-area th, #reporte-print-area td {
-          padding: 5px 8px !important;
-          border: 1px solid #cbd5e1 !important;
-          color: #0f172a !important;
-          background: white !important;
-        }
-        #reporte-print-area thead th {
-          background: #f1f5f9 !important;
-          font-weight: 700 !important;
-          font-size: 10px !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.04em !important;
-        }
+        body > * { display: none !important; }
+        #print-root-wrapper { display: block !important; }
         @page { margin: 1.2cm; size: landscape; }
       }
     `
@@ -103,18 +73,63 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
     }
 
     if (printArea) {
+      // Crear wrapper de impresión sobre el body
+      const wrapper = document.createElement('div')
+      wrapper.id = 'print-root-wrapper'
+      wrapper.style.cssText = `
+        position: fixed; inset: 0; background: white; z-index: 99999;
+        padding: 20px; overflow: auto; display: none;
+      `
+
+      // Header
       const headerDiv = document.createElement('div')
       headerDiv.id = 'print-header-injected'
       headerDiv.innerHTML = headerHtml
-      printArea.insertBefore(headerDiv, printArea.firstChild)
+      wrapper.appendChild(headerDiv)
+
+      // Clonar el área de impresión para no modificar el DOM original
+      const clone = printArea.cloneNode(true) as HTMLElement
+      clone.style.cssText = `
+        background: white; border: none; border-radius: 0;
+        box-shadow: none; padding: 0; overflow: visible;
+      `
+      // Compactar tabla para impresión
+      clone.querySelectorAll('table').forEach(t => {
+        (t as HTMLElement).style.fontSize = '11px'
+        ;(t as HTMLElement).style.width = '100%'
+        ;(t as HTMLElement).style.borderCollapse = 'collapse'
+      })
+      clone.querySelectorAll('th, td').forEach(el => {
+        (el as HTMLElement).style.padding = '5px 7px'
+        ;(el as HTMLElement).style.border = '1px solid #cbd5e1'
+        ;(el as HTMLElement).style.color = '#0f172a'
+        ;(el as HTMLElement).style.background = 'white'
+        ;(el as HTMLElement).style.pageBreakInside = 'avoid'
+      })
+      clone.querySelectorAll('thead th').forEach(el => {
+        (el as HTMLElement).style.background = '#f1f5f9'
+        ;(el as HTMLElement).style.fontWeight = '700'
+        ;(el as HTMLElement).style.fontSize = '9px'
+        ;(el as HTMLElement).style.textTransform = 'uppercase'
+        ;(el as HTMLElement).style.letterSpacing = '0.04em'
+      })
+      // Quitar badges y spans que no imprimen bien (opcional: mantener)
+      wrapper.appendChild(clone)
+      document.body.appendChild(wrapper)
+
+      // Mostrar wrapper en pantalla durante print
+      const wrapperStyle = document.createElement('style')
+      wrapperStyle.id = 'wrapper-show'
+      wrapperStyle.innerHTML = `@media print { #print-root-wrapper { display: block !important; } }`
+      document.head.appendChild(wrapperStyle)
     }
 
     window.print()
 
     setTimeout(() => {
       document.getElementById('print-override')?.remove()
-      document.getElementById('print-header-injected')?.remove()
-      // Solo quitar el id si fue asignado dinámicamente (no si viene del JSX)
+      document.getElementById('wrapper-show')?.remove()
+      document.getElementById('print-root-wrapper')?.remove()
       if (dynamicId) {
         document.getElementById('reporte-print-area')?.removeAttribute('id')
       }

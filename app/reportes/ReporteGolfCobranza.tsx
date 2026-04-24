@@ -118,7 +118,7 @@ export default function ReporteGolfCobranza() {
   return (
     <div>
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10, alignItems: 'flex-end' }}>
         <div>
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Categoría</label>
           <select className="input" value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)} style={{ fontSize: 12, minWidth: 180 }}>
@@ -128,14 +128,14 @@ export default function ReporteGolfCobranza() {
         </div>
         <div>
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Tipo</label>
-          <select className="input" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ fontSize: 12 }}>
+          <select className="input" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ fontSize: 12, minWidth: 160 }}>
             <option value="">Todos</option>
             {TIPOS.map(t => <option key={t} value={t}>{TIPO_LABEL[t]}</option>)}
           </select>
         </div>
         <div>
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-          <select className="input" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ fontSize: 12 }}>
+          <select className="input" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ fontSize: 12, minWidth: 140 }}>
             <option value="">Todos</option>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -154,7 +154,10 @@ export default function ReporteGolfCobranza() {
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hasta</label>
           <input className="input" type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={{ fontSize: 12 }} />
         </div>
-        <button className="btn-primary" onClick={fetchData} disabled={loading} style={{ fontSize: 12 }}>
+      </div>
+      {/* Barra de acción */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <button className="btn-primary" onClick={fetchData} disabled={loading} style={{ fontSize: 13 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
         {buscado && !loading && <PrintBar title="Cobranza-Golf-CXC" count={cuotas.length} reportTitle="Cobranza / CXC — Club Golf" />}

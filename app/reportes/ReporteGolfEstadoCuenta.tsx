@@ -119,11 +119,11 @@ export default function ReporteGolfEstadoCuenta() {
   return (
     <div>
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10, alignItems: 'flex-end' }}>
         <div>
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Socio *</label>
           <select className="input" value={idSocio} onChange={e => setIdSocio(e.target.value ? Number(e.target.value) : '')}
-            style={{ fontSize: 12, minWidth: 240 }}>
+            style={{ fontSize: 12, minWidth: 260 }}>
             <option value="">— Seleccionar —</option>
             {socios.map(s => (
               <option key={s.id} value={s.id}>
@@ -140,7 +140,10 @@ export default function ReporteGolfEstadoCuenta() {
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hasta</label>
           <input className="input" type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={{ fontSize: 12 }} />
         </div>
-        <button className="btn-primary" onClick={fetchData} disabled={idSocio === '' || loading} style={{ fontSize: 12 }}>
+      </div>
+      {/* Barra de acción */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <button className="btn-primary" onClick={fetchData} disabled={idSocio === '' || loading} style={{ fontSize: 13 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
         {buscado && !loading && <PrintBar title={`Estado-Cuenta-Golf-${socioSel ? [socioSel.nombre, socioSel.apellido_paterno].filter(Boolean).join('-') : 'socio'}`} count={cuotas.length + recibos.length} reportTitle="Estado de Cuenta — Club Golf" />}
