@@ -82,4 +82,10 @@ export type PropietarioLote = {
 
 export const dbComp = base.schema('comp' as any)  // compras e inventarios
 export const dbGolf = base.schema('golf' as any)  // módulo golf
-export const dbHip  = base.schema('hip'  as any)  // módulo hípico
+
+// dbHip usa cliente dedicado para garantizar Accept-Profile: hip en cada request
+const baseHip = createClient(supabaseUrl, supabaseKey, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionFromUrl: false },
+  global: { headers: { 'Accept-Profile': 'hip', 'Content-Profile': 'hip' } },
+})
+export const dbHip = baseHip.schema('hip' as any)  // módulo hípico
