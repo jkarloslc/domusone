@@ -275,14 +275,13 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
   const setCD = (i: number, k: string, v: string) =>
     setCotDet(d => d.map((x, j) => j === i ? { ...x, [k]: v } : x))
 
-  const headerActionButton = rfq.status === 'Abierta' && cotizaciones.length < 3 ? (
-    <button className="btn-primary" onClick={() => setAddingCot(true)}><Plus size={13} /> Agregar Cotización</button>
-  ) : null
-
   return (
     <ModalShell modulo="compras" titulo={rfq.folio}
       subtitulo={`${rfq.id_requisicion_fk ? `Requisición #${rfq.id_requisicion_fk} · ` : ''}Fecha límite: ${fmtFecha(rfq.fecha_limite)}`}
       onClose={onClose} maxWidth={880}
+      footer={rfq.status === 'Abierta' && cotizaciones.length < 3 && !addingCot ? (
+        <button className="btn-primary" onClick={() => setAddingCot(true)}><Plus size={13} /> Agregar Cotización</button>
+      ) : undefined}
     >
 
           {/* Cuadro comparativo */}
