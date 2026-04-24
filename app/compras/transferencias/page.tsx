@@ -360,6 +360,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     if (!form.area_solicitante) { setError('Selecciona el área solicitante'); return }
     if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
     if (!form.id_area_fk) { setError('Área es obligatoria'); return }
+    if (!form.id_frente_fk) { setError('Frente es obligatorio'); return }
     const detValidos = det.filter(d => d.id_articulo_fk && Number(d.cantidad_solicitada) > 0)
     if (!detValidos.length) { setError('Agrega al menos un artículo'); return }
     setSaving(true); setError('')
@@ -476,7 +477,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
               </select>
             </div>
             <div>
-              <label className="label">Frente</label>
+              <label className="label">Frente *</label>
               <select className="select" value={form.id_frente_fk}
                 onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
                 disabled={!form.id_area_fk}>

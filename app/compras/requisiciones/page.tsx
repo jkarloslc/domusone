@@ -382,6 +382,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
     if (!form.area_solicitante.trim() || !form.solicitante.trim()) { setError('Área y Solicitante son obligatorios'); return }
     if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
     if (!form.id_area_fk) { setError('Área es obligatoria'); return }
+    if (!form.id_frente_fk) { setError('Frente es obligatorio'); return }
     const detValidos = det.filter(d => d.descripcion.trim() && Number(d.cantidad) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto'); return }
     setSaving(true); setError('')
@@ -496,7 +497,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
                 </select>
               </div>
               <div>
-                <label className="label">Frente</label>
+                <label className="label">Frente *</label>
                 <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')}
                   disabled={!form.id_area_fk}>
                   <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>

@@ -310,6 +310,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     if (!form.id_proveedor_fk) { setError('Selecciona un proveedor'); return }
     if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
     if (!form.id_area_fk) { setError('Área es obligatoria'); return }
+    if (!form.id_frente_fk) { setError('Frente es obligatorio'); return }
     const detValidos = det.filter(d => d.descripcion && Number(d.precio_unitario) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto con precio'); return }
     setSaving(true); setError('')
@@ -417,7 +418,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                 </select>
               </div>
               <div>
-                <label className="label">Frente</label>
+                <label className="label">Frente *</label>
                 <select className="select" value={form.id_frente_fk}
                   onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
                   disabled={!areaId}>

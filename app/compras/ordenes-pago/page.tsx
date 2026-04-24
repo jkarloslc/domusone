@@ -414,6 +414,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
     if (!conOC && !form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
     if (!conOC && !form.id_area_fk) { setError('Área es obligatoria'); return }
+    if (!conOC && !form.id_frente_fk) { setError('Frente es obligatorio'); return }
     setSaving(true); setError('')
 
     // Obtener CC/Sección/Frente de la OC cuando aplica
@@ -423,6 +424,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
         .select('id_centro_costo_fk, id_area_fk, id_frente_fk')
         .eq('id', ocsSelected[0].id).single()
       if (ocData) ocCampos = ocData
+      // Validar que la OC herede CC, Área y Frente
+      if (!ocCampos.id_centro_costo_fk) { setSaving(false); setError('La OC seleccionada no tiene Centro de Costo asignado. Actualiza la OC antes de generar la OP.'); return }
+      if (!ocCampos.id_area_fk)         { setSaving(false); setError('La OC seleccionada no tiene Área asignada. Actualiza la OC antes de generar la OP.'); return }
+      if (!ocCampos.id_frente_fk)       { setSaving(false); setError('La OC seleccionada no tiene Frente asignado. Actualiza la OC antes de generar la OP.'); return }
     }
 
     const payload: any = {
@@ -606,7 +611,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                   </select>
                 </div>
                 <div>
-                  <label className="label">Frente</label>
+                  <label className="label">Frente *</label>
                   <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!areaId}>
                     <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
                     {frentes.filter(f => !areaId || f.id_area_fk === Number(areaId))
