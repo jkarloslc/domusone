@@ -1,7 +1,7 @@
 'use client'
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock } from 'lucide-react'
+import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star } from 'lucide-react'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
 import ReportePropietarios from './ReportePropietarios'
@@ -30,6 +30,7 @@ import ReporteHipicoServicios from './ReporteHipicoServicios'
 import ReporteGolfEstadoCuenta from './ReporteGolfEstadoCuenta'
 import ReporteGolfCobranza from './ReporteGolfCobranza'
 import ReporteGolfAccesos from './ReporteGolfAccesos'
+import ReporteHospitalityEventos from './ReporteHospitalityEventos'
 
 const GRUPOS = [
   {
@@ -110,6 +111,14 @@ const GRUPOS = [
     reportes: [
       { id: 'hipico-estado-cuenta', label: 'Estado de Cuenta', icon: FileText,  desc: 'Cargos y pagos por arrendatario en un período' },
       { id: 'hipico-servicios',     label: 'Servicios por Caballo', icon: BarChart3, desc: 'Bitácora de veterinario, herrajes y alimentos por caballo, arrendatario y tipo' },
+    ],
+  },
+  {
+    slug:  'hospitality',
+    label: 'Hospitality',
+    color: '#9333ea',
+    reportes: [
+      { id: 'hospitality-eventos', label: 'Eventos — Ingresos vs Gastos', icon: Star, desc: 'Resumen financiero por evento: ingresos cobrados, OPs vinculadas y balance neto' },
     ],
   },
 ]
@@ -224,6 +233,9 @@ function ReportesContent() {
       {/* Reportes hípico */}
       {active === 'hipico-estado-cuenta' && <ReporteHipicoEstadoCuenta />}
       {active === 'hipico-servicios'     && <ReporteHipicoServicios />}
+
+      {/* Reportes hospitality */}
+      {active === 'hospitality-eventos' && <ReporteHospitalityEventos />}
     </div>
   )
 }

@@ -79,6 +79,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Hospitality', items: [
       { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      RPT('hospitality'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
@@ -123,6 +124,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Hospitality', items: [
       { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      RPT('hospitality'),
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
@@ -376,6 +378,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuariohospitality: [
     { section: 'Hospitality', items: [
       { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      RPT('hospitality'),
     ]},
     { section: 'Comunicación', items: [
       { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
