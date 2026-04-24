@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Users, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  MessageCircle, Truck, TrendingUp, Flag,
+  MessageCircle, Truck, TrendingUp, Flag, Star,
 } from 'lucide-react'
 import HorseIcon from '@/components/ui/HorseIcon'
 import { useAuth } from '@/lib/AuthContext'
@@ -28,6 +28,7 @@ type Rol =
   | 'usuario_solicitante'
   | 'usuariogolf'
   | 'usuariohipico'
+  | 'usuariohospitality'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -49,8 +50,9 @@ const ROL_LABEL: Record<Rol, string> = {
   seguridad:           'Seguridad',
   ingresos:            'Captura de Ingresos',
   usuario_solicitante: 'Solicitante',
-  usuariogolf:         'Operador Golf',
-  usuariohipico:       'Operador Hípico',
+  usuariogolf:          'Operador Golf',
+  usuariohipico:        'Operador Hípico',
+  usuariohospitality:   'Operador Hospitality',
 }
 
 // Ítem de reportes con estilo diferenciado (pie de sección)
@@ -74,6 +76,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Hípico', items: [
       { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
       RPT('hipico'),
+    ]},
+    { section: 'Hospitality', items: [
+      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
@@ -115,6 +120,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Hípico', items: [
       { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
       RPT('hipico'),
+    ]},
+    { section: 'Hospitality', items: [
+      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
     ]},
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
@@ -359,6 +367,15 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Hípico', items: [
       { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
       RPT('hipico'),
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
+  ],
+
+  usuariohospitality: [
+    { section: 'Hospitality', items: [
+      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
     ]},
     { section: 'Comunicación', items: [
       { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
