@@ -90,6 +90,9 @@ const ADMIN_MODULOS = [
   'tesoreria', 'ingresos', 'reportes', 'catalogos',
   'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
+  // Hípico
+  'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
+  'hipico-contratos', 'hipico-cobranza', 'hipico-servicios',
 ]
 
 // Módulos Golf para rol dedicado
