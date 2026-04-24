@@ -84,11 +84,11 @@ export default function ServiciosPage() {
   const [tiposFiltrados, setTiposFiltrados] = useState<TipoServCat[]>([])
 
   useEffect(() => {
-    (dbHip as any).from('cat_caballos').select('id, nombre').eq('activo', true).order('nombre')
+    dbHip.from('cat_caballos').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }: any) => setCaballos(data ?? []))
-    ;(dbHip as any).from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
+    ;dbHip.from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
       .then(({ data }: any) => setArrendatarios(data ?? []))
-    ;(dbHip as any).from('cat_tipos_servicio').select('id, nombre, tipo').eq('activo', true).order('nombre')
+    ;dbHip.from('cat_tipos_servicio').select('id, nombre, tipo').eq('activo', true).order('nombre')
       .then(({ data }: any) => setTiposServ(data ?? []))
   }, [])
 
@@ -102,7 +102,7 @@ export default function ServiciosPage() {
     setLoading(true)
     const from = page * PAGE_SIZE
     const to   = from + PAGE_SIZE - 1
-    let q = (dbHip as any)
+    let q = dbHip
       .from('ctrl_servicios')
       .select('*, cat_caballos(nombre), cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), cat_tipos_servicio(nombre)', { count: 'exact' })
       .order('fecha', { ascending: false })
@@ -135,7 +135,7 @@ export default function ServiciosPage() {
       cobrar_arrendatario: form.cobrar_arrendatario,
       notas: form.notas || null,
     }
-    const { error } = await (dbHip as any).from('ctrl_servicios').insert(payload)
+    const { error } = await dbHip.from('ctrl_servicios').insert(payload)
     setSaving(false)
     if (error) { setErr(error.message); return }
     setShowModal(false)
@@ -145,7 +145,7 @@ export default function ServiciosPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este registro?')) return
     setDeleting(id)
-    await (dbHip as any).from('ctrl_servicios').delete().eq('id', id)
+    await dbHip.from('ctrl_servicios').delete().eq('id', id)
     setDeleting(null)
     fetchItems()
   }

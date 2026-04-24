@@ -81,9 +81,9 @@ export default function CaballosPage() {
   const [caballerizas, setCaballerizas]   = useState<CaballoCat[]>([])
 
   useEffect(() => {
-    (dbHip as any).from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
+    dbHip.from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
       .then(({ data }: any) => setArrendatarios(data ?? []))
-    ;(dbHip as any).from('cat_caballerizas').select('id, clave, nombre').eq('activo', true).order('clave')
+    ;dbHip.from('cat_caballerizas').select('id, clave, nombre').eq('activo', true).order('clave')
       .then(({ data }: any) => setCaballerizas(data ?? []))
   }, [])
 
@@ -91,7 +91,7 @@ export default function CaballosPage() {
     setLoading(true)
     const from = page * PAGE_SIZE
     const to   = from + PAGE_SIZE - 1
-    let q = (dbHip as any)
+    let q = dbHip
       .from('cat_caballos')
       .select('*, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), cat_caballerizas(clave, nombre)', { count: 'exact' })
       .order('nombre', { ascending: true })
@@ -144,9 +144,9 @@ export default function CaballosPage() {
     }
     let error
     if (editItem) {
-      ;({ error } = await (dbHip as any).from('cat_caballos').update(payload).eq('id', editItem.id))
+      ;({ error } = await dbHip.from('cat_caballos').update(payload).eq('id', editItem.id))
     } else {
-      ;({ error } = await (dbHip as any).from('cat_caballos').insert(payload))
+      ;({ error } = await dbHip.from('cat_caballos').insert(payload))
     }
     setSaving(false)
     if (error) { setErr(error.message); return }
@@ -157,7 +157,7 @@ export default function CaballosPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este caballo?')) return
     setDeleting(id)
-    await (dbHip as any).from('cat_caballos').delete().eq('id', id)
+    await dbHip.from('cat_caballos').delete().eq('id', id)
     setDeleting(null)
     fetchItems()
   }

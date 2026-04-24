@@ -72,9 +72,9 @@ export default function ContratosPage() {
   const [caballerizas, setCaballerizas]   = useState<CabCat[]>([])
 
   useEffect(() => {
-    (dbHip as any).from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
+    dbHip.from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
       .then(({ data }: any) => setArrendatarios(data ?? []))
-    ;(dbHip as any).from('cat_caballerizas').select('id, clave, nombre').eq('activo', true).order('clave')
+    ;dbHip.from('cat_caballerizas').select('id, clave, nombre').eq('activo', true).order('clave')
       .then(({ data }: any) => setCaballerizas(data ?? []))
   }, [])
 
@@ -82,7 +82,7 @@ export default function ContratosPage() {
     setLoading(true)
     const from = page * PAGE_SIZE
     const to   = from + PAGE_SIZE - 1
-    const { data, count } = await (dbHip as any)
+    const { data, count } = await dbHip
       .from('ctrl_contratos')
       .select('*, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), cat_caballerizas(clave, nombre)', { count: 'exact' })
       .order('fecha_inicio', { ascending: false })
@@ -129,9 +129,9 @@ export default function ContratosPage() {
     }
     let error
     if (editItem) {
-      ;({ error } = await (dbHip as any).from('ctrl_contratos').update(payload).eq('id', editItem.id))
+      ;({ error } = await dbHip.from('ctrl_contratos').update(payload).eq('id', editItem.id))
     } else {
-      ;({ error } = await (dbHip as any).from('ctrl_contratos').insert(payload))
+      ;({ error } = await dbHip.from('ctrl_contratos').insert(payload))
     }
     setSaving(false)
     if (error) { setErr(error.message); return }
@@ -142,7 +142,7 @@ export default function ContratosPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este contrato?')) return
     setDeleting(id)
-    await (dbHip as any).from('ctrl_contratos').delete().eq('id', id)
+    await dbHip.from('ctrl_contratos').delete().eq('id', id)
     setDeleting(null)
     fetchItems()
   }

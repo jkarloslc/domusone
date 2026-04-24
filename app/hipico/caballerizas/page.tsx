@@ -50,7 +50,7 @@ export default function CaballerizasPage() {
     setLoading(true)
     const from = page * PAGE_SIZE
     const to   = from + PAGE_SIZE - 1
-    let q = (dbHip as any)
+    let q = dbHip
       .from('cat_caballerizas')
       .select('*', { count: 'exact' })
       .order('clave', { ascending: true })
@@ -83,9 +83,9 @@ export default function CaballerizasPage() {
     }
     let error
     if (editItem) {
-      ;({ error } = await (dbHip as any).from('cat_caballerizas').update(payload).eq('id', editItem.id))
+      ;({ error } = await dbHip.from('cat_caballerizas').update(payload).eq('id', editItem.id))
     } else {
-      ;({ error } = await (dbHip as any).from('cat_caballerizas').insert(payload))
+      ;({ error } = await dbHip.from('cat_caballerizas').insert(payload))
     }
     setSaving(false)
     if (error) { setErr(error.message); return }
@@ -96,7 +96,7 @@ export default function CaballerizasPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar esta caballeriza?')) return
     setDeleting(id)
-    await (dbHip as any).from('cat_caballerizas').delete().eq('id', id)
+    await dbHip.from('cat_caballerizas').delete().eq('id', id)
     setDeleting(null)
     fetchItems()
   }

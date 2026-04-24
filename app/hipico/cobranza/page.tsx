@@ -74,12 +74,12 @@ export default function CobranzaPage() {
   const [kpis, setKpis] = useState({ pendiente: 0, vencido: 0, pagado: 0, total_cargos: 0 })
 
   useEffect(() => {
-    (dbHip as any).from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
+    dbHip.from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
       .then(({ data }: any) => setArrendatarios(data ?? []))
-    ;(dbHip as any).from('cat_conceptos_cuota').select('id, nombre, tipo, monto').eq('activo', true).order('nombre')
+    ;dbHip.from('cat_conceptos_cuota').select('id, nombre, tipo, monto').eq('activo', true).order('nombre')
       .then(({ data }: any) => setConceptos(data ?? []))
     // KPIs globales
-    ;(dbHip as any).from('ctrl_cargos').select('status, monto, saldo')
+    ;dbHip.from('ctrl_cargos').select('status, monto, saldo')
       .then(({ data }: any) => {
         const all = (data ?? []) as { status: string; monto: number; saldo: number }[]
         setKpis({
@@ -95,7 +95,7 @@ export default function CobranzaPage() {
     setLoading(true)
     const from = page * PAGE_SIZE
     const to   = from + PAGE_SIZE - 1
-    let q = (dbHip as any)
+    let q = dbHip
       .from('ctrl_cargos')
       .select('*, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), cat_conceptos_cuota(nombre)', { count: 'exact' })
       .order('fecha_vencimiento', { ascending: true })
@@ -141,7 +141,7 @@ export default function CobranzaPage() {
       notas: formCargo.notas || null,
       updated_at: new Date().toISOString(),
     }
-    const { error } = await (dbHip as any).from('ctrl_cargos').insert(payload)
+    const { error } = await dbHip.from('ctrl_cargos').insert(payload)
     setSaving(false)
     if (error) { setErr(error.message); return }
     setShowCargo(false)
@@ -150,7 +150,7 @@ export default function CobranzaPage() {
 
   const marcarPagado = async (cargo: Cargo) => {
     if (!confirm(`¿Marcar "${cargo.descripcion}" como Pagado?`)) return
-    await (dbHip as any).from('ctrl_cargos').update({ status: 'Pagado', saldo: 0, updated_at: new Date().toISOString() }).eq('id', cargo.id)
+    await dbHip.from('ctrl_cargos').update({ status: 'Pagado', saldo: 0, updated_at: new Date().toISOString() }).eq('id', cargo.id)
     fetchCargos()
   }
 
