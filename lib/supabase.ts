@@ -82,4 +82,9 @@ export type PropietarioLote = {
 
 export const dbComp = base.schema('comp' as any)  // compras e inventarios
 export const dbGolf = base.schema('golf' as any)  // módulo golf
-export const dbHip  = base.schema('hip'  as any)  // módulo hípico
+
+// Hípico — cliente dedicado con schema en constructor (evita bug 406 de .schema() en v2.39)
+export const dbHip = createClient(supabaseUrl, supabaseKey, {
+  db: { schema: 'hip' as any },
+  auth: { persistSession: false },
+})
