@@ -617,15 +617,15 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
               </select>
             </div>
             <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk} onChange={setF('id_frente_fk')}>
-                <option value="">—</option>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk}
+                onChange={setF('id_frente_fk')} disabled={!form.id_area_fk}>
+                <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
                 {(() => {
+                  if (!form.id_area_fk) return null
                   const aId = Number(form.id_area_fk)
-                  const permitidos = form.id_area_fk
-                    ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
-                    : null
+                  const permitidos = new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
                   return frentes
-                    .filter(f => !permitidos || permitidos.has(f.id))
+                    .filter(f => permitidos.has(f.id))
                     .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
                 })()}
               </select>
