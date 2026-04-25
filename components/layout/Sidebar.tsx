@@ -399,54 +399,75 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       className={`sidebar ${open ? 'open' : ''}`}
       style={{
         width: 220, flexShrink: 0,
-        background: 'var(--surface-900)',
-        borderRight: '1px solid var(--surface-800)',
+        background: '#2d3660',
+        borderRight: 'none',
         display: 'flex', flexDirection: 'column',
         height: '100vh', position: 'sticky', top: 0,
         overflowY: 'auto',
       }}
     >
-      {/* Header */}
+      {/* Header / Logo */}
       <div style={{
-        padding: '20px 16px 12px',
-        borderBottom: '1px solid var(--surface-800)',
+        padding: '20px 16px 14px',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--blue)', lineHeight: 1.2 }}>
-            DomusOne
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+            {/* Gold mark */}
+            <div style={{
+              width: 26, height: 26, borderRadius: 7,
+              background: 'rgba(196,160,72,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#C4A048' }} />
+            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: '#f0ead6', lineHeight: 1.2 }}>
+              DomusOne
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-            Golf & Residencial
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', paddingLeft: 34 }}>
+            Balvanera Golf & Residencial
           </div>
         </div>
         <button onClick={onClose} className="sidebar-close-btn"
-          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, borderRadius: 6 }}>
+          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 4, borderRadius: 6 }}>
           <X size={16} />
         </button>
       </div>
 
       {/* Nav con secciones */}
-      <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
+      <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
 
         {/* Inicio — visible para todos excepto roles de acceso restringido */}
         {rol !== 'usuario_solicitante' && rol !== 'usuariogolf' && rol !== 'usuariohipico' && (
           <Link
             href="/inicio"
             onClick={onClose}
-            className={`nav-item ${pathname === '/inicio' ? 'active' : ''}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '7px 10px', paddingLeft: pathname === '/inicio' ? 8 : 10,
+              margin: '1px 0', borderRadius: 7,
+              fontSize: 13, textDecoration: 'none', transition: 'all 0.15s',
+              borderLeft: pathname === '/inicio' ? '2px solid #C4A048' : '2px solid transparent',
+              ...(pathname === '/inicio'
+                ? { background: 'rgba(196,160,72,0.15)', color: '#E8CA75', fontWeight: 500 }
+                : { color: 'rgba(255,255,255,0.6)' }
+              ),
+            }}
           >
-            <Home size={15} />
+            <Home size={15} style={{ flexShrink: 0 }} />
             <span>Inicio</span>
           </Link>
         )}
+
         {/* Secciones por rol */}
         {sections.map(sec => (
           <div key={sec.section}>
             <div style={{
-              fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-              textTransform: 'uppercase', color: 'var(--text-muted)',
-              padding: '12px 8px 4px',
+              fontSize: 9, fontWeight: 600, letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)',
+              padding: '12px 10px 4px',
             }}>
               {sec.section}
             </div>
@@ -461,16 +482,23 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className={`nav-item ${active ? 'active' : ''}`}
-                  style={isRpt ? {
-                    marginTop: 4,
-                    opacity: 0.7,
-                    fontSize: 11,
-                    borderTop: '1px dashed var(--surface-700)',
-                    paddingTop: 6,
-                  } : undefined}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: isRpt ? '5px 10px 7px' : '7px 10px',
+                    paddingLeft: active ? 8 : 10,
+                    margin: isRpt ? '4px 0 1px' : '1px 0',
+                    borderRadius: 7,
+                    fontSize: isRpt ? 11 : 13,
+                    textDecoration: 'none', transition: 'all 0.15s',
+                    borderLeft: active ? '2px solid #C4A048' : '2px solid transparent',
+                    borderTop: isRpt ? '1px dashed rgba(255,255,255,0.1)' : 'none',
+                    ...(active
+                      ? { background: 'rgba(196,160,72,0.15)', color: '#E8CA75', fontWeight: 500 }
+                      : { color: isRpt ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.58)' }
+                    ),
+                  }}
                 >
-                  <Icon size={isRpt ? 13 : 15} />
+                  <Icon size={isRpt ? 13 : 15} style={{ flexShrink: 0 }} />
                   <span>{item.label}</span>
                 </Link>
               )
@@ -480,19 +508,27 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       </nav>
 
       {/* Footer usuario */}
-      <div style={{ padding: '10px 12px 16px', borderTop: '1px solid var(--surface-800)' }}>
+      <div style={{ padding: '10px 12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
-          padding: '8px 10px', background: '#f8fafc', borderRadius: 8,
+          padding: '8px 10px',
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8,
         }}>
-          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={14} style={{ color: '#fff' }} />
+          <div style={{
+            width: 30, height: 30, borderRadius: '50%',
+            background: 'rgba(196,160,72,0.25)',
+            border: '1px solid rgba(196,160,72,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <User size={14} style={{ color: '#E8CA75' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.82)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {authUser?.nombre ?? '—'}
             </div>
-            <div style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 500 }}>
+            <div style={{ fontSize: 10, color: '#C4A048', fontWeight: 500 }}>
               {label}
             </div>
           </div>
@@ -502,17 +538,17 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 8,
             padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-muted)', fontSize: 12, borderRadius: 6, transition: 'all 0.15s',
+            color: 'rgba(255,255,255,0.35)', fontSize: 12, borderRadius: 6, transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.15)'; e.currentTarget.style.color = '#f87171' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}
         >
           <LogOut size={13} />
           Cerrar sesión
         </button>
         <div style={{ marginTop: 10, textAlign: 'center' }}>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em', opacity: 0.6 }}>
-            Powered by <strong style={{ color: 'var(--blue)', opacity: 1, letterSpacing: '0.02em' }}>JK</strong>
+          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em' }}>
+            Powered by <strong style={{ color: '#C4A048', opacity: 0.8, letterSpacing: '0.02em' }}>JK</strong>
           </span>
         </div>
       </div>

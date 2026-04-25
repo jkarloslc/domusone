@@ -8,12 +8,18 @@
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-body:    'Inter', system-ui, sans-serif;
 
-  /* Azul primario */
-  --blue:         #2563eb;
-  --blue-light:   #3b82f6;
-  --blue-dark:    #1d4ed8;
-  --blue-pale:    #eff6ff;
-  --blue-subtle:  #dbeafe;
+  /* Azul primario — navy-slate corporativo */
+  --blue:         #3F4A75;
+  --blue-light:   #5566a0;
+  --blue-dark:    #2d3660;
+  --blue-pale:    #eef0f8;
+  --blue-subtle:  #dde0f2;
+
+  /* Acento dorado — identidad club */
+  --gold:         #C4A048;
+  --gold-light:   #E8CA75;
+  --gold-pale:    #fdf8ec;
+  --gold-subtle:  #f7eed3;
 
   /* Superficies grises claras */
   --surface-950:  #f1f5f9;   /* fondo principal */
@@ -31,10 +37,7 @@
   --border:       rgba(37,99,235,0.12);
   --border-hover: rgba(37,99,235,0.30);
 
-  /* Compatibilidad con código que usa --gold */
-  --gold:         var(--blue);
-  --gold-light:   var(--blue-light);
-  --gold-pale:    var(--blue-pale);
+  /* --gold, --gold-light, --gold-pale definidos arriba junto a --blue */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
