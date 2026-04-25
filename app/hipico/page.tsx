@@ -90,7 +90,7 @@ export default function HipicoPage() {
           fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0,
           display: 'flex', alignItems: 'center', gap: 10,
         }}>
-          <span style={{ fontSize: 28 }}>🐴</span>
+          <span style={{ fontSize: 28 }}>🏇</span>
           Módulo Hípico
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
