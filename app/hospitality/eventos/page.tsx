@@ -5,7 +5,7 @@ import ModalShell from '@/components/ui/ModalShell'
 import {
   Plus, Star, MapPin, Calendar, Users, DollarSign,
   FileText, Trash2, Edit2, ChevronLeft, Receipt, ShoppingBag,
-  Printer, X, Check,
+  Printer, X, Check, Eye, TrendingUp, TrendingDown,
 } from 'lucide-react'
 
 // ── Types ────────────────────────────────────────────────────
@@ -92,6 +92,12 @@ export default function EventosPage() {
   const [activeTab, setActiveTab] = useState('info')
   const [saving,   setSaving]   = useState(false)
   const [err,      setErr]      = useState('')
+
+  // Modal de consulta (read-only)
+  const [viewEvt,  setViewEvt]  = useState<Evento | null>(null)
+  const [viewIng,  setViewIng]  = useState<Ingreso[]>([])
+  const [viewOps,  setViewOps]  = useState<OP[]>([])
+  const [viewLoad, setViewLoad] = useState(false)
 
   // Formulario
   const blankForm = () => ({
@@ -198,6 +204,28 @@ export default function EventosPage() {
     setErr('')
     setModal(true)
     await loadEventoDetalle(ev.id)
+  }
+
+  // ── Open consulta (read-only) ──────────────────────────────
+  const openView = async (ev: Evento) => {
+    setViewEvt(ev)
+    setViewIng([])
+    setViewOps([])
+    setViewLoad(true)
+    const [{ data: ing }, { data: eops }] = await Promise.all([
+      dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas').eq('id_evento_fk', ev.id),
+      dbCtrl.from('eventos_ops').select('id, id_op_fk').eq('id_evento_fk', ev.id),
+    ])
+    setViewIng((ing as unknown as Ingreso[]) ?? [])
+    const evOps = (eops as unknown as EventoOP[]) ?? []
+    if (evOps.length > 0) {
+      const ids = evOps.map(e => e.id_op_fk)
+      const { data: opData } = await dbComp.from('ordenes_pago')
+        .select('id, folio, concepto, monto, saldo, status, id_proveedor_fk')
+        .in('id', ids)
+      setViewOps((opData as unknown as OP[]) ?? [])
+    }
+    setViewLoad(false)
   }
 
   // ── Save evento ────────────────────────────────────────────
@@ -452,10 +480,13 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
                     </td>
                     <td style={{ padding: '9px 12px' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="btn-ghost" onClick={() => openEdit(ev)} style={{ padding: '4px 8px', fontSize: 11 }}>
+                        <button className="btn-ghost" onClick={() => openView(ev)} style={{ padding: '4px 8px', fontSize: 11, color: '#0f766e' }} title="Consultar">
+                          <Eye size={12} />
+                        </button>
+                        <button className="btn-ghost" onClick={() => openEdit(ev)} style={{ padding: '4px 8px', fontSize: 11 }} title="Editar">
                           <Edit2 size={12} />
                         </button>
-                        <button className="btn-ghost" onClick={() => deleteEvento(ev.id)} style={{ padding: '4px 8px', fontSize: 11, color: '#dc2626' }}>
+                        <button className="btn-ghost" onClick={() => deleteEvento(ev.id)} style={{ padding: '4px 8px', fontSize: 11, color: '#dc2626' }} title="Eliminar">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -766,6 +797,179 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
           )}
         </ModalShell>
       )}
+
+      {/* ── MODAL DE CONSULTA (read-only) ── */}
+      {viewEvt && (() => {
+        const totalIng    = viewIng.reduce((s, i) => s + (i.monto ?? 0), 0)
+        const totalGastos = viewOps.reduce((s, o) => s + (o.monto ?? 0), 0)
+        const saldoGastos = viewOps.reduce((s, o) => s + (o.saldo ?? 0), 0)
+        const utilidad    = totalIng - totalGastos
+        const sc          = STATUS_COLORS[viewEvt.status] ?? { bg: '#f8fafc', color: '#64748b' }
+        const tipo        = viewEvt.cat_tipos_evento
+
+        return (
+          <ModalShell
+            modulo="default"
+            titulo={`${viewEvt.folio} — ${viewEvt.nombre}`}
+            subtitulo="Resumen del evento"
+            icono={Eye}
+            onClose={() => setViewEvt(null)}
+            maxWidth={760}
+            footer={<button className="btn-secondary" onClick={() => setViewEvt(null)}>Cerrar</button>}
+          >
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* Cabecera del evento */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: 14, background: 'var(--surface-700)', borderRadius: 8 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 2 }}>Status</div>
+                  <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{viewEvt.status}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 2 }}>Tipo</div>
+                  {tipo ? (
+                    <span style={{ fontSize: 12, padding: '2px 10px', borderRadius: 10, fontWeight: 600, background: tipo.color + '22', color: tipo.color }}>{tipo.nombre}</span>
+                  ) : <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                  <Calendar size={13} style={{ color: 'var(--text-muted)' }} />
+                  <span>{fmtFecha(viewEvt.fecha_inicio)}{viewEvt.fecha_fin && viewEvt.fecha_fin !== viewEvt.fecha_inicio ? ` → ${fmtFecha(viewEvt.fecha_fin)}` : ''}</span>
+                  {(viewEvt.hora_inicio || viewEvt.hora_fin) && (
+                    <span style={{ color: 'var(--text-muted)' }}>· {viewEvt.hora_inicio ?? ''}{viewEvt.hora_fin ? ` – ${viewEvt.hora_fin}` : ''}</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                  <MapPin size={13} style={{ color: 'var(--text-muted)' }} />
+                  <span>{viewEvt.cat_lugares?.nombre ?? '—'}</span>
+                  {viewEvt.num_asistentes != null && (
+                    <span style={{ color: 'var(--text-muted)' }}>· <Users size={11} style={{ display: 'inline', verticalAlign: 'middle' }} /> {viewEvt.num_asistentes}</span>
+                  )}
+                </div>
+                {viewEvt.cliente_nombre && (
+                  <div style={{ gridColumn: '1 / -1', fontSize: 12, color: 'var(--text-muted)' }}>
+                    <strong style={{ color: 'var(--text-secondary)' }}>Cliente:</strong> {viewEvt.cliente_nombre}
+                    {viewEvt.cliente_telefono && <> · {viewEvt.cliente_telefono}</>}
+                    {viewEvt.cliente_email && <> · {viewEvt.cliente_email}</>}
+                  </div>
+                )}
+                {viewEvt.responsable && (
+                  <div style={{ gridColumn: '1 / -1', fontSize: 12, color: 'var(--text-muted)' }}>
+                    <strong style={{ color: 'var(--text-secondary)' }}>Responsable:</strong> {viewEvt.responsable}
+                  </div>
+                )}
+              </div>
+
+              {/* KPIs financieros */}
+              {viewLoad ? (
+                <div style={{ textAlign: 'center', padding: 30, color: 'var(--text-muted)', fontSize: 13 }}>Cargando totales…</div>
+              ) : (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                    <div className="card" style={{ padding: '12px 14px', background: '#f0fdf4' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <TrendingUp size={13} style={{ color: '#16a34a' }} />
+                        <span style={{ fontSize: 10, color: '#166534', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Ingresos</span>
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: '#16a34a' }}>{fmt$(totalIng)}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{viewIng.length} pago{viewIng.length !== 1 ? 's' : ''}</div>
+                    </div>
+                    <div className="card" style={{ padding: '12px 14px', background: '#fef2f2' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <TrendingDown size={13} style={{ color: '#dc2626' }} />
+                        <span style={{ fontSize: 10, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Gastos (OPs)</span>
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: '#dc2626' }}>{fmt$(totalGastos)}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {viewOps.length} OP{viewOps.length !== 1 ? 's' : ''}
+                        {saldoGastos > 0 && <> · saldo {fmt$(saldoGastos)}</>}
+                      </div>
+                    </div>
+                    <div className="card" style={{ padding: '12px 14px', background: utilidad >= 0 ? '#eff6ff' : '#fef2f2' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <DollarSign size={13} style={{ color: utilidad >= 0 ? '#2563eb' : '#dc2626' }} />
+                        <span style={{ fontSize: 10, color: utilidad >= 0 ? '#1e40af' : '#991b1b', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Utilidad</span>
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: utilidad >= 0 ? '#2563eb' : '#dc2626' }}>{fmt$(utilidad)}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Ingresos − Gastos</div>
+                    </div>
+                  </div>
+
+                  {/* Detalle compacto de ingresos */}
+                  {viewIng.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                        Detalle de Ingresos
+                      </div>
+                      <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                          <thead>
+                            <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
+                              {['Folio', 'Descripción', 'Forma de pago', 'Fecha', 'Monto'].map(h => (
+                                <th key={h} style={{ padding: '7px 10px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {viewIng.map((ing, i) => (
+                              <tr key={ing.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                                <td style={{ padding: '6px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{ing.folio}</td>
+                                <td style={{ padding: '6px 10px' }}>{ing.descripcion}</td>
+                                <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{ing.forma_pago}</td>
+                                <td style={{ padding: '6px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(ing.fecha_pago)}</td>
+                                <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>{fmt$(ing.monto)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Detalle compacto de OPs */}
+                  {viewOps.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                        Detalle de Gastos / OPs
+                      </div>
+                      <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                          <thead>
+                            <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
+                              {['Folio', 'Concepto', 'Proveedor', 'Status', 'Monto', 'Saldo'].map(h => (
+                                <th key={h} style={{ padding: '7px 10px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {viewOps.map((op, i) => (
+                              <tr key={op.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                                <td style={{ padding: '6px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{op.folio}</td>
+                                <td style={{ padding: '6px 10px' }}>{op.concepto}</td>
+                                <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '—') : '—'}</td>
+                                <td style={{ padding: '6px 10px' }}>
+                                  <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#f8fafc', color: '#64748b', fontWeight: 600 }}>{op.status}</span>
+                                </td>
+                                <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>{fmt$(op.monto)}</td>
+                                <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right', color: op.saldo > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(op.saldo)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {viewIng.length === 0 && viewOps.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 13 }}>
+                      Sin movimientos financieros registrados
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </ModalShell>
+        )
+      })()}
     </div>
   )
 }
