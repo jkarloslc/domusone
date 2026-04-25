@@ -464,7 +464,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                   <input style={inputStyle} value={form.numero_socio} onChange={e => set('numero_socio', e.target.value)} placeholder="Ej. 1042" />
                 </div>
                 <div>
-                  <label style={labelStyle}>Número de Tarjeta</label>
+                  <label style={labelStyle}>Ghin</label>
                   <input style={inputStyle} value={form.numero_tarjeta} onChange={e => set('numero_tarjeta', e.target.value)} />
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
