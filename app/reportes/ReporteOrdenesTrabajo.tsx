@@ -40,7 +40,7 @@ export default function ReporteOrdenesTrabajo() {
     setLoading(true)
     const [{ data: ots }, { data: secs }, { data: ccs }, { data: frs }, { data: relaf }] = await Promise.all([
       dbCtrl.from('ordenes_trabajo').select('*').order('created_at', { ascending: false }).limit(5000),
-      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_frente').select('id_area, id_frente'),
@@ -91,13 +91,15 @@ export default function ReporteOrdenesTrabajo() {
           <option value="">Todos los tipos</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroCc} onChange={e => { setFiltroCc(e.target.value); setFiltroFr('') }}>
+        <select className="select" style={{ minWidth: 180 }} value={filtroCc} onChange={e => { setFiltroCc(e.target.value); setFiltroArea(''); setFiltroFr('') }}>
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select className="select" style={{ minWidth: 160 }} value={filtroArea} onChange={e => { setFiltroArea(e.target.value); setFiltroFr('') }}>
           <option value="">Todas las áreas</option>
-          {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          {(areas as any[])
+            .filter(s => !filtroCc || s.id_centro_costo_fk === Number(filtroCc))
+            .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
         <select className="select" style={{ minWidth: 150 }} value={filtroFr} onChange={e => setFiltroFr(e.target.value)}>
           <option value="">Todos los frentes</option>

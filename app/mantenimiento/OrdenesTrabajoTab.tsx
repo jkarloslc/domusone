@@ -87,7 +87,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
 
   useEffect(() => {
     Promise.all([
-      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_frente').select('id_area, id_frente'),
@@ -150,13 +150,15 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
         </select>
         <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
         {/* Filtros ubicación */}
-        <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
+        <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setFilterFr('') }}>
           <option value="">Centro de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterFr('') }}>
           <option value="">Área</option>
-          {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          {areas
+            .filter((s: any) => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+            .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
         <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr} onChange={e => setFilterFr(e.target.value)}>
           <option value="">Frente</option>
@@ -400,13 +402,18 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>Centro de Costo</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk}
+                onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
                 <option value="">—</option>
                 {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select></div>
             <div><label className="label" style={{ fontSize: 11 }}>Área</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk} onChange={setF('id_area_fk')}>
-                <option value="">—</option>{areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk}
+                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}>
+                <option value="">—</option>
+                {(areas as any[])
+                  .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                  .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select></div>
             <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk} onChange={setF('id_frente_fk')}>

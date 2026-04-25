@@ -85,7 +85,7 @@ export default function MantenimientoPage() {
 
   useEffect(() => {
     Promise.all([
-      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_frente').select('id_area, id_frente'),
@@ -248,14 +248,16 @@ export default function MantenimientoPage() {
               {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
             </select>
             <select className="select" style={{ flex: '1 1 130px', maxWidth: 210, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC}
-              onChange={e => { setFilterCC(e.target.value); setFilterFr('') }}>
+              onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setFilterFr('') }}>
               <option value="">Centro de costo</option>
               {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
             <select className="select" style={{ flex: '1 1 110px', maxWidth: 190, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea}
               onChange={e => { setFilterArea(e.target.value); setFilterFr('') }}>
               <option value="">Área</option>
-              {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              {(areas as any[])
+                .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+                .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
             <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr}
               onChange={e => setFilterFr(e.target.value)}>
@@ -599,15 +601,19 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>Centro de Costo</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk}
+                onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
                 <option value="">—</option>
                 {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
             <div><label className="label" style={{ fontSize: 11 }}>Área</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk} onChange={setF('id_area_fk')}>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk}
+                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}>
                 <option value="">—</option>
-                {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                {(areas as any[])
+                  .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                  .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </div>
             <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
