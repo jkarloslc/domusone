@@ -45,9 +45,16 @@ COMMENT ON COLUMN cfg.frentes.id_area_fk IS
   'DEPRECADO para uso exclusivo: la relación N:M vive en cfg.rel_area_frente. '
   'Se mantiene NULLable como "área principal" del frente (back-compat).';
 
--- 4) Grants (si aplica RLS en el proyecto) -------------------------
-GRANT SELECT, INSERT, UPDATE, DELETE ON cfg.rel_area_frente           TO authenticated;
-GRANT USAGE, SELECT                  ON SEQUENCE cfg.rel_area_frente_id_seq TO authenticated;
+-- 4) Grants + RLS --------------------------------------------------
+GRANT SELECT, INSERT, UPDATE, DELETE ON cfg.rel_area_frente                 TO anon, authenticated;
+GRANT USAGE,  SELECT                 ON SEQUENCE cfg.rel_area_frente_id_seq TO anon, authenticated;
+
+ALTER TABLE cfg.rel_area_frente ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "rel_area_frente_all" ON cfg.rel_area_frente;
+CREATE POLICY "rel_area_frente_all" ON cfg.rel_area_frente
+  FOR ALL TO anon, authenticated
+  USING (true) WITH CHECK (true);
 
 COMMIT;
 
