@@ -294,7 +294,7 @@ export default function MiembrosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                {['#', 'Nombre', 'Categoría', 'Tarjeta', 'Vencimiento', 'Estatus', ''].map(h => (
+                {['Memb.', 'Nombre', 'Categoría', 'Ghin', 'Vencimiento', 'Estatus', ''].map(h => (
                   <th key={h} style={{
                     padding: '10px 14px', textAlign: 'left', fontSize: 11,
                     fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em',
