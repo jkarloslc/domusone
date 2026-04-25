@@ -423,11 +423,11 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#C4A048' }} />
             </div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: '#f0ead6', lineHeight: 1.2 }}>
-              DomusOne
+              Balvanera
             </div>
           </div>
           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.32)', paddingLeft: 34 }}>
-            Balvanera Golf & Residencial
+            Golf & Residencial
           </div>
         </div>
         <button onClick={onClose} className="sidebar-close-btn"
