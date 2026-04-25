@@ -126,10 +126,10 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
         <div className="page-header-left" style={{ display: 'block' }}>
           <div className="page-eyebrow">
             <MapPin size={16} style={{ color: 'var(--gold)' }}
-             <span className="page-eyebrow-label">Cátalogo de Lotes</span>
+             <span className="page-eyebrow-label">-</span>
           </div>
-            {/*<h1 className="page-title-xl" style={{ fontWeight: 400 }}>
-            Catálogo de Lotes*/}
+            {<h1 className="page-title-xl" style={{ fontWeight: 400 }}>
+            Catálogo de Lotes
           </h1>
           <p className="page-subtitle">
             {total} lotes registrados
