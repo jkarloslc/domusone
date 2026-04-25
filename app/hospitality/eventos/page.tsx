@@ -52,7 +52,7 @@ type OP = {
   monto: number
   saldo: number
   status: string
-  proveedor_nombre: string | null
+  id_proveedor_fk: number | null
 }
 
 type EventoOP = { id: number; id_op_fk: number }
@@ -116,6 +116,7 @@ export default function EventosPage() {
   const [busqOP,   setBusqOP]   = useState('')
   const [opsComp,  setOpsComp]  = useState<OP[]>([])
   const [loadingOps, setLoadingOps] = useState(false)
+  const [provMap,  setProvMap]  = useState<Record<number, string>>({})
 
   // ── Load catálogos ─────────────────────────────────────────
   useEffect(() => {
@@ -123,6 +124,12 @@ export default function EventosPage() {
       .then(({ data }: any) => setTipos(data ?? []))
     dbCtrl.from('cat_lugares').select('id, nombre, capacidad').eq('activo', true).order('nombre')
       .then(({ data }: any) => setLugares(data ?? []))
+    dbComp.from('proveedores').select('id, nombre').eq('activo', true)
+      .then(({ data }) => {
+        const m: Record<number, string> = {}
+        ;(data ?? []).forEach((p: any) => { m[p.id] = p.nombre })
+        setProvMap(m)
+      })
   }, [])
 
   // ── Load eventos ───────────────────────────────────────────
@@ -151,7 +158,7 @@ export default function EventosPage() {
     if (evOps.length > 0) {
       const ids = evOps.map(e => e.id_op_fk)
       const { data: opData } = await dbComp.from('ordenes_pago')
-        .select('id, folio, concepto, monto, saldo, status, proveedor_nombre')
+        .select('id, folio, concepto, monto, saldo, status, id_proveedor_fk')
         .in('id', ids)
       setOps((opData as unknown as OP[]) ?? [])
     } else {
@@ -264,10 +271,13 @@ export default function EventosPage() {
   const buscarOPs = async () => {
     if (!busqOP.trim()) return
     setLoadingOps(true)
-    const { data } = await dbComp.from('ordenes_pago')
-      .select('id, folio, concepto, monto, saldo, status, proveedor_nombre')
-      .ilike('concepto', `%${busqOP}%`)
+    const term = busqOP.trim()
+    // Busca por concepto OR por folio (ambos campos relevantes)
+    const { data, error } = await dbComp.from('ordenes_pago')
+      .select('id, folio, concepto, monto, saldo, status, id_proveedor_fk')
+      .or(`concepto.ilike.%${term}%,folio.ilike.%${term}%`)
       .limit(20)
+    if (error) console.error('Error buscando OPs:', error)
     setOpsComp((data as unknown as OP[]) ?? [])
     setLoadingOps(false)
   }
@@ -686,7 +696,7 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
                           <div>
                             <span style={{ fontWeight: 700, color: '#16a34a', marginRight: 8, fontFamily: 'monospace' }}>{op.folio}</span>
                             <span style={{ color: 'var(--text-primary)' }}>{op.concepto}</span>
-                            <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{op.proveedor_nombre}</span>
+                            <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '') : ''}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span style={{ fontWeight: 700 }}>{fmt$(op.monto)}</span>
@@ -726,7 +736,7 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
                           <tr key={op.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                             <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{op.folio}</td>
                             <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>{op.concepto}</td>
-                            <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{op.proveedor_nombre ?? '—'}</td>
+                            <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                             <td style={{ padding: '8px 10px', fontWeight: 600 }}>{fmt$(op.monto)}</td>
                             <td style={{ padding: '8px 10px', color: op.saldo > 0 ? '#dc2626' : '#16a34a', fontWeight: 600 }}>{fmt$(op.saldo)}</td>
                             <td style={{ padding: '8px 10px' }}>
