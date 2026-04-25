@@ -175,18 +175,21 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const [artOptions,  setArtOptions]  = useState<any[][]>([[]])
 
   useEffect(() => {
-    dbComp.from('proveedores').select('*').eq('activo', true).order('nombre')
-      .then(({ data }) => setProvs(data as Proveedor[] ?? []))
-    dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setAlms(data ?? []))
-    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setCentros(data ?? []))
-    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => setAreas(data ?? []))
-    dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => setFrentes(data ?? []))
-    dbCfg.from('rel_area_frente').select('id_area, id_frente')
-      .then(({ data }) => setRelAF((data ?? []) as any))
+    Promise.all([
+      dbComp.from('proveedores').select('*').eq('activo', true).order('nombre'),
+      dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+    ]).then(([prov, alm, cc, ar, fr, rel]) => {
+      setProvs((prov.data ?? []) as Proveedor[])
+      setAlms(alm.data ?? [])
+      setCentros(cc.data ?? [])
+      setAreas(ar.data ?? [])
+      setFrentes(fr.data ?? [])
+      setRelAF((rel.data ?? []) as any)
+    })
     ;(async () => {
       const { data: rfqsConOC } = await dbComp.from('ordenes_compra').select('id_rfq_fk').not('id_rfq_fk', 'is', null)
       const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk))

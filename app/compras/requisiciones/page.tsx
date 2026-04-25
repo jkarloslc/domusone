@@ -312,10 +312,11 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [articulos, setArticulos] = useState<Articulo[]>([])
   const [artSearches, setArtSearches] = useState<string[]>([''])  // search per row
   const [artOptions, setArtOptions]   = useState<Articulo[][]>([[]])  // options per row
-  const [areas, setAreas]           = useState<{id: number; nombre: string}[]>([])
-  const [centrosCosto, setCentros]  = useState<{id: number; nombre: string}[]>([])
-  const [frentes, setFrentes]       = useState<{id: number; nombre: string}[]>([])
-  const [relAF, setRelAF]           = useState<{id_area: number; id_frente: number}[]>([])
+  const [areasSolic,   setAreasSolic]   = useState<{id: number; nombre: string}[]>([])
+  const [areasObra,    setAreasObra]    = useState<{id: number; nombre: string; id_centro_costo_fk: number}[]>([])
+  const [centrosCosto, setCentros]      = useState<{id: number; nombre: string}[]>([])
+  const [frentes,      setFrentes]      = useState<{id: number; nombre: string}[]>([])
+  const [relAF,        setRelAF]        = useState<{id_area: number; id_frente: number}[]>([])
   const [form, setForm] = useState({
     area_solicitante:   row?.area_solicitante ?? '',
     solicitante:        row?.solicitante ?? (authUser?.nombre ?? ''),
@@ -329,16 +330,19 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [det, setDet] = useState<Det[]>([{ id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', notas: '' }])
 
   useEffect(() => {
-    dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setAreas(data ?? []))
-    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setCentros(data ?? []))
-    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => setAreas(data ?? []))
-    dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setFrentes(data ?? []))
-    dbCfg.from('rel_area_frente').select('id_area, id_frente')
-      .then(({ data }) => setRelAF((data ?? []) as any))
+    Promise.all([
+      dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+    ]).then(([sol, cc, ar, fr, rel]) => {
+      setAreasSolic((sol.data ?? []) as any)
+      setCentros((cc.data ?? []) as any)
+      setAreasObra((ar.data ?? []) as any)
+      setFrentes((fr.data ?? []) as any)
+      setRelAF((rel.data ?? []) as any)
+    })
     if (!isNew && row?.id) {
       dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', row.id)
         .then(({ data }) => {
@@ -475,7 +479,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
                 <label className="label">Área Solicitante *</label>
                 <select className="select" value={form.area_solicitante} onChange={setF('area_solicitante')}>
                   <option value="">— Seleccionar —</option>
-                  {areas.map(a => <option key={a.id} value={a.nombre}>{a.nombre}</option>)}
+                  {areasSolic.map(a => <option key={a.id} value={a.nombre}>{a.nombre}</option>)}
                 </select>
               </div>
               <div><label className="label">Solicitante *</label><input className="input" value={form.solicitante} onChange={setF('solicitante')} /></div>
@@ -496,8 +500,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
                   onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}
                   disabled={!form.id_centro_costo_fk}>
                   <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                  {areas
-                    .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                  {areasObra
+                    .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
                     .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
               </div>

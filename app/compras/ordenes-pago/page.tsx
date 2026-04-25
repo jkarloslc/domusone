@@ -283,23 +283,20 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       dbComp.from('proveedores').select('id, nombre, banco, cuenta_clabe, condiciones_pago').eq('activo', true).order('nombre'),
       dbComp.from('almacenes').select('id, nombre, tipo').eq('activo', true).order('nombre'),
       dbComp.from('ordenes_compra').select('id, folio, total, id_proveedor_fk').eq('status', 'Autorizada').order('folio'),
-    ]).then(([{ data: provs }, { data: alms }, { data: ocs }]) => {
-      setProvs(provs ?? [])
-      setAlms(alms ?? [])
-      setOcsDisp(ocs ?? [])
-    })
-    // Catálogos cfg para opción sin OC
-    import('@/lib/supabase').then(({ dbCfg }) => {
-      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
-        .then(({ data }) => setCentros(data ?? []))
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
-        .then(({ data }) => setAreas(data ?? []))
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
-        .then(({ data }) => setFrentes(data ?? []))
-      dbCfg.from('rel_area_frente').select('id_area, id_frente')
-        .then(({ data }) => setRelAF((data ?? []) as any))
-      dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
-        .then(({ data }) => setFormasPago(data ?? []))
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+      dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
+    ]).then(([prov, alm, ocs, cc, ar, fr, rel, fp]) => {
+      setProvs(prov.data ?? [])
+      setAlms(alm.data ?? [])
+      setOcsDisp(ocs.data ?? [])
+      setCentros(cc.data ?? [])
+      setAreas((ar.data ?? []) as any)
+      setFrentes(fr.data ?? [])
+      setRelAF((rel.data ?? []) as any)
+      setFormasPago(fp.data ?? [])
     })
   }, [])
 

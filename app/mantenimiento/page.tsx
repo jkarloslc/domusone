@@ -523,12 +523,15 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
     setForm(f => ({ ...f, [k]: e.target.value }))
 
   useEffect(() => {
-    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setCentros(data ?? []))
-    dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => setFrentes(data ?? []))
-    dbCfg.from('rel_area_frente').select('id_area, id_frente')
-      .then(({ data }) => setRelAFProg((data ?? []) as any))
+    Promise.all([
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+    ]).then(([cc, fr, rel]) => {
+      setCentros(cc.data ?? [])
+      setFrentes(fr.data ?? [])
+      setRelAFProg((rel.data ?? []) as any)
+    })
   }, [])
 
   const totalFechas = generarFechas(Number(form.anio), form.frecuencia, Number(form.mes_inicio)).length

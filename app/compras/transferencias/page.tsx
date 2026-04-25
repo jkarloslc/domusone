@@ -273,10 +273,10 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const [almacenes, setAlms]  = useState<any[]>([])
   const [artSearches, setArtSearches] = useState<string[]>([''])
   const [artOptions,  setArtOptions]  = useState<any[][]>([[]])
-  const [areas, setAreas]     = useState<any[]>([])
+  const [areasSolic, setAreasSolic] = useState<any[]>([])
   const [invMap, setInvMap]   = useState<Record<string, number>>({})  // artId_almId → saldo
   const [centrosCosto, setCentros] = useState<any[]>([])
-  const [secciones, setSecciones]  = useState<any[]>([])
+  const [areasObra, setAreasObra]  = useState<any[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
   const [relAF, setRelAF]           = useState<{id_area: number; id_frente: number}[]>([])
 
@@ -302,11 +302,11 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-    ]).then(([{ data: alms }, { data: areas }, { data: cc }, { data: sec }, { data: fr }, { data: relaf }]) => {
+    ]).then(([{ data: alms }, { data: solic }, { data: cc }, { data: ar }, { data: fr }, { data: relaf }]) => {
       setAlms(alms ?? [])
-      setAreas(areas ?? [])
+      setAreasSolic(solic ?? [])
       setCentros(cc ?? [])
-      setSecciones(sec ?? [])
+      setAreasObra(ar ?? [])
       setFrentes(fr ?? [])
       setRelAF((relaf ?? []) as any)
     })
@@ -443,7 +443,7 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
               <select className="select" value={form.area_solicitante}
                 onChange={e => setForm(f => ({ ...f, area_solicitante: e.target.value }))}>
                 <option value="">— Seleccionar —</option>
-                {areas.map(a => <option key={a.id} value={a.nombre}>{a.nombre}</option>)}
+                {areasSolic.map(a => <option key={a.id} value={a.nombre}>{a.nombre}</option>)}
               </select>
             </div>
             <div>
@@ -476,9 +476,9 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
                 onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}
                 disabled={!form.id_centro_costo_fk}>
                 <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                {areas
-                  .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
-                  .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                {areasObra
+                  .filter((s: any) => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                  .map((s: any) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </div>
             <div>
