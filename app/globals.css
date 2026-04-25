@@ -15,11 +15,10 @@
   --blue-pale:    #eef0f8;
   --blue-subtle:  #dde0f2;
 
-  /* Acento dorado — identidad club */
-  --gold:         #C4A048;
-  --gold-light:   #E8CA75;
-  --gold-pale:    #fdf8ec;
-  --gold-subtle:  #f7eed3;
+  /* --gold sigue siendo alias de --blue para compatibilidad con páginas existentes */
+  --gold:         var(--blue);
+  --gold-light:   var(--blue-light);
+  --gold-pale:    var(--blue-pale);
 
   /* Superficies grises claras */
   --surface-950:  #f1f5f9;   /* fondo principal */
@@ -37,7 +36,6 @@
   --border:       rgba(37,99,235,0.12);
   --border-hover: rgba(37,99,235,0.30);
 
-  /* --gold, --gold-light, --gold-pale definidos arriba junto a --blue */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
