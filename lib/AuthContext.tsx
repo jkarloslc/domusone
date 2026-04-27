@@ -132,7 +132,7 @@ const LEER: Record<Rol, string[] | '*'> = {
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
   tesoreria:           ['tesoreria', 'ingresos', 'reportes'],
-  seguridad:           ['lotes', 'propietarios', 'accesos', 'incidencias', 'compras'],
+  seguridad:           ['lotes', 'accesos', 'incidencias', 'compras'],
   usuario_solicitante: ['compras', 'requisiciones', 'transferencias'],
   ingresos:            ['ingresos', 'reportes'],
   usuariogolf:         GOLF_MODULOS,
@@ -157,7 +157,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes'],
   tesoreria:           ['tesoreria', 'ingresos'],
-  seguridad:           ['accesos', 'incidencias', 'requisiciones'],
+  seguridad:           ['accesos', 'incidencias', 'requisiciones', 'transferencias'],
   usuario_solicitante: ['requisiciones', 'transferencias'],
   ingresos:            ['ingresos'],
   usuariogolf:         GOLF_MODULOS,
@@ -269,7 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return MODS_ALMACEN.includes(key) ? 'almacen' : false
     }
     if (r === 'seguridad') {
-      const MODS_SEGURIDAD = ['requisiciones', 'transferencias', 'caja-chica']
+      const MODS_SEGURIDAD = ['requisiciones', 'transferencias']
       if (!key) return 'seguridad'
       return MODS_SEGURIDAD.includes(key) ? 'seguridad' : false
     }
