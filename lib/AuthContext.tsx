@@ -269,7 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return MODS_ALMACEN.includes(key) ? 'almacen' : false
     }
     if (r === 'seguridad') {
-      const MODS_SEGURIDAD = ['requisiciones', 'transferencias']
+      const MODS_SEGURIDAD = ['requisiciones', 'transferencias', 'caja-chica']
       if (!key) return 'seguridad'
       return MODS_SEGURIDAD.includes(key) ? 'seguridad' : false
     }
