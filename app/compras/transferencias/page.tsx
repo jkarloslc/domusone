@@ -1,7 +1,7 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect } from 'react'
-import { dbComp, dbCfg } from '@/lib/supabase'
+import { dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
@@ -193,7 +193,7 @@ export default function TransferenciasPage() {
               <th>Folio</th>
               <th>Área / Solicitante</th>
               <th>Origen</th>
-              <th>Destino (C. Costo)</th>
+              <th>Destino</th>
               <th>Fecha</th>
               <th>Status</th>
               <th style={{ width: 50 }}></th>
@@ -275,10 +275,6 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const [artOptions,  setArtOptions]  = useState<any[][]>([[]])
   const [areasSolic, setAreasSolic] = useState<any[]>([])
   const [invMap, setInvMap]   = useState<Record<string, number>>({})  // artId_almId → saldo
-  const [centrosCosto, setCentros] = useState<any[]>([])
-  const [areasObra, setAreasObra]  = useState<any[]>([])
-  const [frentes, setFrentes]       = useState<any[]>([])
-  const [relAF, setRelAF]           = useState<{id_area: number; id_frente: number}[]>([])
 
   const [form, setForm] = useState({
     id_almacen_origen:  '',
@@ -286,9 +282,6 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     area_solicitante:   '',
     solicitante:        authUser?.nombre ?? '',
     justificacion:      '',
-    id_centro_costo_fk: '',
-    id_area_fk:         '',
-    id_frente_fk:       '',
   })
   const [det, setDet] = useState([
     { id_articulo_fk: '', cantidad_solicitada: '1', unidad: 'PZA', notas: '' }
@@ -298,17 +291,9 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
     Promise.all([
       dbComp.from('almacenes').select('*').eq('activo', true).order('nombre'),
       dbComp.from('areas_solicitantes').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-    ]).then(([{ data: alms }, { data: solic }, { data: cc }, { data: ar }, { data: fr }, { data: relaf }]) => {
+    ]).then(([{ data: alms }, { data: solic }]) => {
       setAlms(alms ?? [])
       setAreasSolic(solic ?? [])
-      setCentros(cc ?? [])
-      setAreasObra(ar ?? [])
-      setFrentes(fr ?? [])
-      setRelAF((relaf ?? []) as any)
     })
   }, [])
 
@@ -363,9 +348,6 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
       setError('Origen y destino deben ser diferentes'); return
     }
     if (!form.area_solicitante) { setError('Selecciona el área solicitante'); return }
-    if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
-    if (!form.id_area_fk) { setError('Área es obligatoria'); return }
-    if (!form.id_frente_fk) { setError('Frente es obligatorio'); return }
     const detValidos = det.filter(d => d.id_articulo_fk && Number(d.cantidad_solicitada) > 0)
     if (!detValidos.length) { setError('Agrega al menos un artículo'); return }
     setSaving(true); setError('')
@@ -380,9 +362,6 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
       area_solicitante:   form.area_solicitante.trim(),
       solicitante:        form.solicitante.trim(),
       justificacion:      form.justificacion.trim() || null,
-      id_centro_costo_fk: Number(form.id_centro_costo_fk),
-      id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
-      id_frente_fk:       form.id_frente_fk ? Number(form.id_frente_fk) : null,
       status:             'Solicitada',
     }).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
@@ -458,46 +437,6 @@ function TransferenciaModal({ onClose, onSaved }: { onClose: () => void; onSaved
             <textarea className="input" rows={2} value={form.justificacion}
               onChange={e => setForm(f => ({ ...f, justificacion: e.target.value }))}
               style={{ resize: 'vertical' }} />
-          </div>
-
-          {/* Clasificación */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, paddingTop: 8, borderTop: '1px solid #e2e8f0' }}>
-            <div>
-              <label className="label">Centro de Costo *</label>
-              <select className="select" value={form.id_centro_costo_fk}
-                onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
-                <option value="">— Seleccionar —</option>
-                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Sección *</label>
-              <select className="select" value={form.id_area_fk}
-                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}
-                disabled={!form.id_centro_costo_fk}>
-                <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                {areasObra
-                  .filter((s: any) => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
-                  .map((s: any) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Frente *</label>
-              <select className="select" value={form.id_frente_fk}
-                onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
-                disabled={!form.id_area_fk}>
-                <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
-                {(() => {
-                  const aId = Number(form.id_area_fk)
-                  const permitidos = form.id_area_fk
-                    ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
-                    : null
-                  return frentes
-                    .filter(f => !permitidos || permitidos.has(f.id))
-                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
-                })()}
-              </select>
-            </div>
           </div>
 
           {/* Artículos */}
