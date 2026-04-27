@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Users, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  MessageCircle, Truck, TrendingUp, Flag, Star,
+  MessageCircle, Truck, TrendingUp, Flag, Star, MapPinned,
 } from 'lucide-react'
 import HorseIcon from '@/components/ui/HorseIcon'
 import { useAuth } from '@/lib/AuthContext'
@@ -390,9 +390,13 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const pathname = usePathname()
   const { authUser, signOut } = useAuth()
 
-  const rol     = (authUser?.rol ?? 'vigilancia') as Rol
+  const rol      = (authUser?.rol ?? 'vigilancia') as Rol
   const sections = NAV_POR_ROL[rol] ?? []
-  const label   = authUser?.rol ? (ROL_LABEL[authUser.rol as Rol] ?? authUser.rol) : '—'
+  const label    = authUser?.rol ? (ROL_LABEL[authUser.rol as Rol] ?? authUser.rol) : '—'
+  const canLotes = authUser?.rol
+    ? ['superadmin','admin','usuarioadmin','usuariomantto','atencion_residentes',
+       'cobranza','vigilancia','mantenimiento','fraccionamiento','seguridad'].includes(authUser.rol)
+    : false
 
   return (
     <aside
@@ -503,6 +507,27 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 </Link>
               )
             })}
+            {/* Expedientes — sub-ítem bajo Residencial */}
+            {sec.section === 'Residencial' && canLotes && (
+              <Link
+                href="/lotes/expediente"
+                onClick={onClose}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '6px 10px', paddingLeft: pathname.startsWith('/lotes/expediente') ? 8 : 10,
+                  margin: '1px 0', borderRadius: 7,
+                  fontSize: 12, textDecoration: 'none', transition: 'all 0.15s',
+                  borderLeft: pathname.startsWith('/lotes/expediente') ? '2px solid #C4A048' : '2px solid transparent',
+                  ...(pathname.startsWith('/lotes/expediente')
+                    ? { background: 'rgba(196,160,72,0.15)', color: '#E8CA75', fontWeight: 500 }
+                    : { color: 'rgba(255,255,255,0.42)' }
+                  ),
+                }}
+              >
+                <MapPinned size={13} style={{ flexShrink: 0 }} />
+                <span>Expedientes</span>
+              </Link>
+            )}
           </div>
         ))}
       </nav>
