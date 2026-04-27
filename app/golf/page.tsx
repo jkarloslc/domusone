@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
-  Car, Lock, ArrowRight, BookOpen, CreditCard, Receipt, FileText,
+  Car, Lock, BookOpen, CreditCard, Receipt, FileText, ChevronRight,
 } from 'lucide-react'
 import DashLayout from '@/components/layout/DashLayout'
 
@@ -12,9 +12,7 @@ const MODULOS = [
     label: 'Miembros',
     desc: 'Socios, categorías, familiares y expediente del club',
     icon: Users,
-    color: '#2563eb',
-    bg: '#eff6ff',
-    border: '#bfdbfe',
+    color: '#3F4A75',
     href: '/golf/miembros',
     activo: true,
   },
@@ -24,8 +22,6 @@ const MODULOS = [
     desc: 'Registro de entradas, hoyo de inicio y acompañantes',
     icon: MapPin,
     color: '#16a34a',
-    bg: '#f0fdf4',
-    border: '#bbf7d0',
     href: '/golf/accesos',
     activo: true,
   },
@@ -35,8 +31,6 @@ const MODULOS = [
     desc: 'Reservas de canchas, rangos y espacios deportivos',
     icon: Calendar,
     color: '#7c3aed',
-    bg: '#f5f3ff',
-    border: '#ddd6fe',
     href: '/golf/reservaciones',
     activo: true,
   },
@@ -46,8 +40,6 @@ const MODULOS = [
     desc: 'Asignación y consumo de pases por socio',
     icon: Tag,
     color: '#d97706',
-    bg: '#fffbeb',
-    border: '#fde68a',
     href: '/golf/pases',
     activo: true,
   },
@@ -57,8 +49,6 @@ const MODULOS = [
     desc: 'Programas de enseñanza, instructores e inscripciones',
     icon: Flag,
     color: '#0891b2',
-    bg: '#ecfeff',
-    border: '#a5f3fc',
     href: '/golf/clinicas',
     activo: false,
   },
@@ -68,8 +58,6 @@ const MODULOS = [
     desc: 'Punto de venta, cortes de caja y historial por socio',
     icon: ShoppingCart,
     color: '#dc2626',
-    bg: '#fef2f2',
-    border: '#fecaca',
     href: '/golf/pos',
     activo: true,
   },
@@ -79,8 +67,6 @@ const MODULOS = [
     desc: 'Pensiones, slots y cobros mensuales o anuales',
     icon: Car,
     color: '#059669',
-    bg: '#ecfdf5',
-    border: '#a7f3d0',
     href: '/golf/carritos',
     activo: true,
   },
@@ -90,8 +76,6 @@ const MODULOS = [
     desc: 'Asignación de cuotas por socio — individual o masivo',
     icon: Receipt,
     color: '#7c3aed',
-    bg: '#f5f3ff',
-    border: '#ddd6fe',
     href: '/golf/cuotas',
     activo: true,
   },
@@ -101,8 +85,6 @@ const MODULOS = [
     desc: 'Cobro de cuotas agrupado por socio y emisión de recibos',
     icon: CreditCard,
     color: '#0891b2',
-    bg: '#ecfeff',
-    border: '#a5f3fc',
     href: '/golf/cxc',
     activo: true,
   },
@@ -112,8 +94,6 @@ const MODULOS = [
     desc: 'Consulta, reimpresión y facturación de cobros emitidos',
     icon: FileText,
     color: '#0891b2',
-    bg: '#ecfeff',
-    border: '#a5f3fc',
     href: '/golf/recibos',
     activo: true,
   },
@@ -123,8 +103,6 @@ const MODULOS = [
     desc: 'Asignación y seguimiento de casilleros por socio',
     icon: Lock,
     color: '#64748b',
-    bg: '#f8fafc',
-    border: '#e2e8f0',
     href: '/golf/casilleros',
     activo: false,
   },
@@ -134,8 +112,6 @@ const MODULOS = [
     desc: 'Categorías, espacios deportivos, formas de juego y más',
     icon: BookOpen,
     color: '#7c3aed',
-    bg: '#f5f3ff',
-    border: '#ddd6fe',
     href: '/golf/catalogos',
     activo: true,
   },
@@ -146,73 +122,63 @@ export default function GolfPage() {
 
   return (
     <DashLayout modulo="golf">
-    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
+      <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Flag size={15} style={{ color: 'var(--gold)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
+        {/* Header */}
+        <div className="page-header">
+          <div className="page-header-left" style={{ display: 'block' }}>
+            <div className="page-eyebrow">
+              <Flag size={16} style={{ color: 'var(--blue)' }} />
+              <span className="page-eyebrow-label">Módulo</span>
+            </div>
+            <h1 className="page-title-xl">Club</h1>
+            <p className="page-subtitle">Administración del club — socios, operaciones de campo y servicios deportivos</p>
           </div>
-          <h1 className="page-title-xl" style={{ fontWeight: 400, color: 'var(--gold-light)' }}>
-            Club
-          </h1>
-          <p className="page-subtitle">
-            Administración del club — socios, operaciones de campo y servicios deportivos
-          </p>
         </div>
-      </div>
 
-      {/* Grid de módulos */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
-        {MODULOS.map(m => {
-          const Icon = m.icon
-          return (
-            <div
-              key={m.key}
-              onClick={() => m.activo && router.push(m.href)}
-              style={{
-                background: m.activo ? m.bg : '#f8fafc',
-                border: `1px solid ${m.activo ? m.border : '#e2e8f0'}`,
-                borderRadius: 12,
-                padding: '20px 22px',
-                cursor: m.activo ? 'pointer' : 'default',
-                opacity: m.activo ? 1 : 0.55,
-                transition: 'all 0.15s',
-                position: 'relative',
-              }}
-              onMouseEnter={e => { if (m.activo) (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { if (m.activo) (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+        {/* Grid de módulos */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+          {MODULOS.map(m => {
+            const Icon = m.icon
+            return (
+              <button
+                key={m.key}
+                onClick={() => m.activo && router.push(m.href)}
+                className={m.activo ? 'card card-hover' : 'card'}
+                style={{
+                  padding: '18px 20px',
+                  textAlign: 'left',
+                  background: '#fff',
+                  border: '1px solid #e2e8f0',
+                  cursor: m.activo ? 'pointer' : 'default',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  opacity: m.activo ? 1 : 0.5,
+                }}
+              >
                 <div style={{
                   width: 40, height: 40, borderRadius: 10,
-                  background: m.activo ? '#fff' : '#f1f5f9',
-                  border: `1px solid ${m.activo ? m.border : '#e2e8f0'}`,
+                  background: m.color + '15',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <Icon size={18} style={{ color: m.activo ? m.color : '#94a3b8' }} />
+                  <Icon size={18} style={{ color: m.color }} />
                 </div>
-                {m.activo && <ArrowRight size={14} style={{ color: m.color, marginTop: 4 }} />}
-                {!m.activo && (
-                  <span style={{ fontSize: 10, background: '#e2e8f0', color: '#64748b', padding: '2px 8px', borderRadius: 99, fontWeight: 600, letterSpacing: '0.05em' }}>
-                    PRÓXIMO
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: m.activo ? '#1e293b' : '#94a3b8', marginBottom: 4 }}>
-                {m.label}
-              </div>
-              <div style={{ fontSize: 12, color: m.activo ? '#64748b' : '#94a3b8', lineHeight: 1.4 }}>
-                {m.desc}
-              </div>
-            </div>
-          )
-        })}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
+                </div>
+                {m.activo
+                  ? <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+                  : <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', flexShrink: 0, whiteSpace: 'nowrap' }}>PRÓXIMO</span>
+                }
+              </button>
+            )
+          })}
+        </div>
+
       </div>
-    </div>
     </DashLayout>
   )
 }
