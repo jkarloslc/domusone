@@ -53,19 +53,42 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
         notas_auth: notasAuth.trim() || null,
       }).eq('id', r.id)
 
-      // 2. Generar OP automática al usuario como beneficiario
+      // 2. Resolver proveedor del beneficiario (usuario que solicitó el reembolso)
+      //    ordenes_pago.id_proveedor_fk es NOT NULL; para reembolsos el empleado actúa como proveedor
+      const usuarioNombre = r.usuario_nombre ?? 'Empleado'
+      const claveEmp      = `EMP-${(r.id_usuario_fk ?? 'USR').toString().slice(0, 8).toUpperCase()}`
+
+      // Buscar si ya existe como proveedor
+      let idProvFk: number
+      const { data: provExist } = await dbComp.from('proveedores')
+        .select('id').eq('clave', claveEmp).maybeSingle()
+
+      if (provExist) {
+        idProvFk = provExist.id
+      } else {
+        // Crear proveedor-empleado automáticamente
+        const { data: provNew, error: provErr } = await dbComp.from('proveedores').insert({
+          clave:  claveEmp,
+          nombre: usuarioNombre,
+          activo: true,
+        }).select('id').single()
+        if (provErr) { alert(`Error al registrar beneficiario: ${provErr.message}`); setLoading(false); return }
+        idProvFk = provNew.id
+      }
+
+      // 3. Generar OP automática
       let folio: string
       try { folio = await nextFolio(dbComp, 'OP') } catch (e: any) { alert((e as Error).message); setLoading(false); return }
 
       const { data: opData, error: opErr } = await dbComp.from('ordenes_pago').insert({
         folio,
-        concepto:          `Reembolso caja chica ${r.folio ?? '#' + r.id} — ${r.usuario_nombre ?? r.id_usuario_fk}`,
+        id_proveedor_fk:   idProvFk,
+        concepto:          `Reembolso caja chica ${r.folio ?? '#' + r.id} — ${usuarioNombre}`,
         monto:             r.total,
-        saldo:             r.total,   // saldo inicial = monto completo
+        saldo:             r.total,
         fecha_vencimiento: new Date().toISOString().slice(0, 10),
         forma_pago:        'Cheque',
         status:            'Pendiente',
-        // CC/Área/Frente = null (trazabilidad está en reembolsos_detalle)
         id_centro_costo_fk: null,
         id_area_fk:         null,
         id_frente_fk:       null,
