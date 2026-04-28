@@ -15,18 +15,25 @@ type Caballeriza = {
   seccion: string | null
   tipo: string | null
   metros2: number | null
+  status: string
   activo: boolean
   notas: string | null
   created_at: string
 }
 
 const EMPTY: Omit<Caballeriza, 'id' | 'created_at'> = {
-  clave: '', nombre: '', seccion: '', tipo: 'Box', metros2: null, activo: true, notas: '',
+  clave: '', nombre: '', seccion: '', tipo: 'Box', metros2: null, status: 'Libre', activo: true, notas: '',
 }
 
-const STATUS_COLOR = (activo: boolean) => activo
-  ? { bg: '#dcfce7', color: '#16a34a' }
-  : { bg: '#fee2e2', color: '#dc2626' }
+const STATUSES = ['Libre', 'Rentada', 'Ocupada', 'Mantenimiento', 'Bloqueada']
+
+const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
+  'Libre':         { bg: '#dcfce7', color: '#16a34a' },
+  'Rentada':       { bg: '#dbeafe', color: '#1d4ed8' },
+  'Ocupada':       { bg: '#fef9c3', color: '#b45309' },
+  'Mantenimiento': { bg: '#f3e8ff', color: '#7c3aed' },
+  'Bloqueada':     { bg: '#fee2e2', color: '#dc2626' },
+}
 
 export default function CaballerizasPage() {
   const { canWrite, canDelete } = useAuth()
@@ -78,6 +85,7 @@ export default function CaballerizasPage() {
       seccion: form.seccion || null,
       tipo: form.tipo || 'Box',
       metros2: form.metros2 ?? null,
+      status: form.status || 'Libre',
       activo: form.activo,
       notas: form.notas || null,
     }
@@ -152,7 +160,7 @@ export default function CaballerizasPage() {
             ) : items.length === 0 ? (
               <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin registros</td></tr>
             ) : items.map((c, i) => {
-              const sc = STATUS_COLOR(c.activo)
+              const sc = STATUS_COLOR[c.status] ?? { bg: '#f1f5f9', color: '#64748b' }
               return (
                 <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                   <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--gold-light)', fontFamily: 'monospace' }}>{c.clave}</td>
@@ -162,7 +170,7 @@ export default function CaballerizasPage() {
                   <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{c.metros2 ?? '—'}</td>
                   <td style={{ padding: '10px 14px' }}>
                     <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>
-                      {c.activo ? 'Activa' : 'Inactiva'}
+                      {c.status ?? 'Libre'}
                     </span>
                   </td>
                   <td style={{ padding: '10px 14px' }}>
@@ -206,6 +214,14 @@ export default function CaballerizasPage() {
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Tipo</label>
               <select className="input" value={form.tipo ?? 'Box'} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={{ width: '100%' }}>
                 {['Box', 'Patio', 'Paddock', 'Otro'].map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+
+            {/* Status */}
+            <div style={{ gridColumn: 'span 1' }}>
+              <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+              <select className="input" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={{ width: '100%' }}>
+                {STATUSES.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
 
