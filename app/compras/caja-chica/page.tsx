@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Wallet, Plus, Eye, Edit2, CheckCircle, Clock, AlertTriangle, Ban, DollarSign, Users } from 'lucide-react'
+import { Wallet, Plus, Eye, Edit2, CheckCircle, Clock, AlertTriangle, Ban, DollarSign, Users, ArrowLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import FondoModal from './FondoModal'
 import ReembolsoModal from './ReembolsoModal'
 import ReembolsoDetail from './ReembolsoDetail'
@@ -24,6 +25,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 
 export default function CajaChicaPage() {
   const { authUser, canAuth } = useAuth()
+  const router = useRouter()
   const isAdmin = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'compras_supervisor'
 
   const [fondos,      setFondos]      = useState<any[]>([])
@@ -65,13 +67,16 @@ export default function CajaChicaPage() {
 
       {/* Header */}
       <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
+        <div className="page-header-left">
+          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
+          <div>
           <div className="page-eyebrow">
             <Wallet size={16} style={{ color: '#d97706' }} />
             <span className="page-eyebrow-label">Compras</span>
           </div>
           <h1 className="page-title">Caja Chica</h1>
           <p className="page-subtitle">Fondos y reembolsos de gastos menores</p>
+          </div>
         </div>
         <div className="page-header-actions">
           {(misFondos.length > 0 || isAdmin) && fondos.length > 0 && (
