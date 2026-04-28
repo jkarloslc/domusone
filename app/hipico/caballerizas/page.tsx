@@ -60,7 +60,7 @@ export default function CaballerizasPage() {
     let q = dbHip
       .from('cat_caballerizas')
       .select('*', { count: 'exact' })
-      .order('clave', { ascending: true })
+      .order('Id', { ascending: true })
       .range(from, to)
     if (search.trim()) {
       q = q.or(`clave.ilike.%${search}%,nombre.ilike.%${search}%,seccion.ilike.%${search}%`)
