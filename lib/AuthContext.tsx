@@ -22,6 +22,7 @@ type Rol =
   | 'ingresos'
   | 'usuariogolf'
   | 'usuariohipico'
+  | 'usuariohospitality'
 
 type AuthUser = {
   user:   User
@@ -55,6 +56,8 @@ export function getHomeRouteByRole(rol?: Rol): string {
       return '/golf'
     case 'usuariohipico':
       return '/hipico'
+    case 'usuariohospitality':
+      return '/hospitality'
     default:
       return '/residencial'
   }
@@ -109,6 +112,12 @@ const HIPICO_MODULOS = [
   'hipico-contratos', 'hipico-cobranza', 'hipico-servicios', 'reportes',
   'compras', 'requisiciones', 'transferencias',
 ]
+
+// Módulos Hospitality para rol dedicado
+const HOSPITALITY_MODULOS = [
+  'hospitality', 'reportes',
+  'compras', 'requisiciones', 'transferencias',
+]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
 // usuariomantto: igual que admin pero sin tesoreria
@@ -137,6 +146,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   ingresos:            ['ingresos', 'reportes'],
   usuariogolf:         GOLF_MODULOS,
   usuariohipico:       HIPICO_MODULOS,
+  usuariohospitality:  HOSPITALITY_MODULOS,
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -162,6 +172,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   ingresos:            ['ingresos'],
   usuariogolf:         GOLF_MODULOS,
   usuariohipico:       HIPICO_MODULOS,
+  usuariohospitality:  HOSPITALITY_MODULOS,
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
@@ -273,7 +284,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!key) return 'seguridad'
       return MODS_SEGURIDAD.includes(key) ? 'seguridad' : false
     }
-    if (r === 'usuario_solicitante' || r === 'usuariogolf' || r === 'usuariohipico') {
+    if (r === 'usuario_solicitante' || r === 'usuariogolf' || r === 'usuariohipico' || r === 'usuariohospitality') {
       // Solo ve Requisiciones y Transferencias — sin autorización, sin catálogos
       const MODS_SOLICITANTE = ['requisiciones', 'transferencias']
       if (!key) return 'solicitante'
