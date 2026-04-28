@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { dbComp, dbCfg } from '@/lib/supabase'
-import { X, Save, Loader, Plus, Trash2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { dbComp, dbCfg, supabase } from '@/lib/supabase'
+import { X, Save, Loader, Plus, Trash2, Upload, FileText, Image as ImageIcon, XCircle } from 'lucide-react'
 import { folioGen } from '../types'
 
 type Detalle = {
@@ -37,9 +37,22 @@ type Props = {
 
 export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, onSaved }: Props) {
   const isNew = !reembolso
-  const [saving, setSaving]     = useState(false)
-  const [error, setError]       = useState('')
-  const [detalles, setDetalles] = useState<Detalle[]>([emptyDetalle()])
+  const [saving, setSaving]         = useState(false)
+  const [error, setError]           = useState('')
+  const [detalles, setDetalles]     = useState<Detalle[]>([emptyDetalle()])
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null)
+  const fileRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  const uploadComprobante = async (file: File, idx: number) => {
+    setUploadingIdx(idx)
+    const ext  = file.name.split('.').pop()
+    const path = `reembolsos/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+    const { error: upErr } = await supabase.storage.from('comprobantes').upload(path, file, { upsert: true })
+    if (upErr) { setError('Error al subir archivo: ' + upErr.message); setUploadingIdx(null); return }
+    const { data } = supabase.storage.from('comprobantes').getPublicUrl(path)
+    setDet(idx, 'url_comprobante', data.publicUrl)
+    setUploadingIdx(null)
+  }
 
   const [form, setForm] = useState({
     fecha:        reembolso?.fecha        ?? new Date().toISOString().slice(0, 10),
@@ -301,10 +314,40 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
                       </div>
                     </div>
 
-                    {/* URL comprobante */}
+                    {/* Comprobante — uploader */}
                     <div>
-                      <label className="label">URL / link del comprobante</label>
-                      <input className="input" value={d.url_comprobante} onChange={e => setDet(i, 'url_comprobante', e.target.value)} placeholder="https://… o ruta al archivo" />
+                      <label className="label">Comprobante (imagen o PDF)</label>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        style={{ display: 'none' }}
+                        ref={el => { fileRefs.current[i] = el }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) uploadComprobante(f, i) }}
+                      />
+                      {d.url_comprobante ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-800)' }}>
+                          {/\.(jpg|jpeg|png|gif|webp)$/i.test(d.url_comprobante)
+                            ? <ImageIcon size={14} style={{ color: '#2563eb', flexShrink: 0 }} />
+                            : <FileText size={14} style={{ color: '#dc2626', flexShrink: 0 }} />}
+                          <a href={d.url_comprobante} target="_blank" rel="noreferrer"
+                            style={{ fontSize: 12, color: 'var(--blue)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {decodeURIComponent(d.url_comprobante.split('/').pop() ?? 'Ver archivo')}
+                          </a>
+                          <button type="button" onClick={() => setDet(i, 'url_comprobante', '')}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 0, flexShrink: 0 }}>
+                            <XCircle size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button type="button"
+                          onClick={() => fileRefs.current[i]?.click()}
+                          disabled={uploadingIdx === i}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1px dashed var(--border)', borderRadius: 6, background: 'transparent', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)', width: '100%' }}>
+                          {uploadingIdx === i
+                            ? <><Loader size={13} className="animate-spin" /> Subiendo…</>
+                            : <><Upload size={13} /> Seleccionar archivo</>}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )

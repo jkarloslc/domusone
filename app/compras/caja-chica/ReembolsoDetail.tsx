@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
-import { X, CheckCircle, XCircle, ExternalLink, DollarSign, Printer } from 'lucide-react'
+import { X, CheckCircle, XCircle, ExternalLink, DollarSign, Printer, FileText, Download } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { folioGen, fmt, nextFolio } from '../types'
 
@@ -316,10 +316,24 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
                         ${(d.monto ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </div>
                       {d.url_comprobante && (
-                        <a href={d.url_comprobante} target="_blank" rel="noreferrer"
-                          style={{ fontSize: 11, color: 'var(--blue)', display: 'inline-flex', alignItems: 'center', gap: 3, marginTop: 4 }}>
-                          <ExternalLink size={10} /> Ver comprobante
-                        </a>
+                        <div style={{ marginTop: 8 }}>
+                          {/\.(jpg|jpeg|png|gif|webp)$/i.test(d.url_comprobante) ? (
+                            <a href={d.url_comprobante} target="_blank" rel="noreferrer">
+                              <img
+                                src={d.url_comprobante}
+                                alt="Comprobante"
+                                style={{ maxWidth: '100%', maxHeight: 180, borderRadius: 6, border: '1px solid var(--border)', objectFit: 'contain', display: 'block' }}
+                              />
+                            </a>
+                          ) : (
+                            <a href={d.url_comprobante} target="_blank" rel="noreferrer"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-800)', fontSize: 12, color: 'var(--text-secondary)', textDecoration: 'none' }}>
+                              <FileText size={13} style={{ color: '#dc2626' }} />
+                              {decodeURIComponent(d.url_comprobante.split('/').pop() ?? 'Comprobante')}
+                              <Download size={11} style={{ color: 'var(--text-muted)', marginLeft: 2 }} />
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
