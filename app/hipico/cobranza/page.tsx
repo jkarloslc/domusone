@@ -382,7 +382,17 @@ export default function CobranzaPage() {
     dbHip.from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
       .then(({ data }: any) => setArrendatarios(data ?? []))
     dbHip.from('cat_conceptos_cuota').select('id, nombre, tipo, monto').eq('activo', true).order('nombre')
-      .then(({ data }: any) => setConceptos(data ?? []))
+      .then(({ data }: any) => {
+        // Deduplicar por nombre+tipo (por si hay duplicados en BD)
+        const seen = new Set<string>()
+        const unique = (data ?? []).filter((c: ConceptoCat) => {
+          const key = `${c.tipo}|${c.nombre.trim().toLowerCase()}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        setConceptos(unique)
+      })
     // KPIs
     dbHip.from('ctrl_cargos').select('status, monto, saldo')
       .then(({ data }: any) => {
