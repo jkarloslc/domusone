@@ -53,27 +53,45 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
         notas_auth: notasAuth.trim() || null,
       }).eq('id', r.id)
 
-      // 2. Resolver proveedor del beneficiario (usuario que solicitó el reembolso)
-      //    ordenes_pago.id_proveedor_fk es NOT NULL; para reembolsos el empleado actúa como proveedor
+      // 2. Resolver proveedor del beneficiario
+      //    ordenes_pago.id_proveedor_fk es NOT NULL; el empleado actúa como proveedor en reembolsos
       const usuarioNombre = r.usuario_nombre ?? 'Empleado'
       const claveEmp      = `EMP-${(r.id_usuario_fk ?? 'USR').toString().slice(0, 8).toUpperCase()}`
 
-      // Buscar si ya existe como proveedor
-      let idProvFk: number
-      const { data: provExist } = await dbComp.from('proveedores')
-        .select('id').eq('clave', claveEmp).maybeSingle()
+      let idProvFk: number | null = null
 
-      if (provExist) {
-        idProvFk = provExist.id
+      // 2a. Buscar proveedor-empleado existente
+      const { data: provRows, error: findErr } = await dbComp.from('proveedores')
+        .select('id').eq('clave', claveEmp).limit(1)
+
+      if (!findErr && provRows && provRows.length > 0) {
+        idProvFk = provRows[0].id
       } else {
-        // Crear proveedor-empleado automáticamente
+        // 2b. Crear proveedor-empleado
         const { data: provNew, error: provErr } = await dbComp.from('proveedores').insert({
           clave:  claveEmp,
           nombre: usuarioNombre,
           activo: true,
         }).select('id').single()
-        if (provErr) { alert(`Error al registrar beneficiario: ${provErr.message}`); setLoading(false); return }
-        idProvFk = provNew.id
+
+        if (provErr) {
+          // 2c. Si falla por duplicado (race condition), intentar buscar de nuevo
+          const { data: retry } = await dbComp.from('proveedores')
+            .select('id').eq('clave', claveEmp).limit(1)
+          if (retry && retry.length > 0) {
+            idProvFk = retry[0].id
+          } else {
+            alert(`Error al registrar beneficiario: ${provErr.message}`)
+            setLoading(false); return
+          }
+        } else {
+          idProvFk = provNew?.id ?? null
+        }
+      }
+
+      if (!idProvFk) {
+        alert('No se pudo obtener el ID del beneficiario. Verifica permisos en tabla proveedores.')
+        setLoading(false); return
       }
 
       // 3. Generar OP automática
