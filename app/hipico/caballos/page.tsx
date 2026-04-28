@@ -73,6 +73,8 @@ export default function CaballosPage() {
   const [showModal, setShowModal] = useState(false)
   const [editItem, setEditItem] = useState<Caballo | null>(null)
   const [detailItem, setDetailItem] = useState<Caballo | null>(null)
+  const [detailServicios, setDetailServicios] = useState<any[]>([])
+  const [loadingServicios, setLoadingServicios] = useState(false)
   const [saving, setSaving]     = useState(false)
   const [form, setForm]         = useState<typeof EMPTY>(EMPTY)
   const [err, setErr]           = useState('')
@@ -106,6 +108,26 @@ export default function CaballosPage() {
   }, [page, search])
 
   useEffect(() => { fetchItems() }, [fetchItems])
+
+  // Cargar servicios al abrir detalle del caballo
+  useEffect(() => {
+    if (!detailItem) { setDetailServicios([]); return }
+    setLoadingServicios(true)
+    dbHip.from('ctrl_servicios')
+      .select('id, fecha, tipo, descripcion, proveedor, costo, cat_tipos_servicio(nombre)')
+      .eq('id_caballo_fk', detailItem.id)
+      .order('fecha', { ascending: false })
+      .limit(50)
+      .then(({ data }: any) => { setDetailServicios(data ?? []); setLoadingServicios(false) })
+  }, [detailItem])
+
+  const TIPO_COLOR: Record<string, { bg: string; color: string }> = {
+    'veterinario': { bg: '#ecfeff', color: '#0891b2' },
+    'herraje':     { bg: '#fffbeb', color: '#b45309' },
+    'alimento':    { bg: '#f0fdf4', color: '#16a34a' },
+    'otro':        { bg: '#f8fafc', color: '#64748b' },
+  }
+  const fmt$ = (v: number | null) => v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
 
   const openNew = () => { setForm(EMPTY); setEditItem(null); setErr(''); setShowModal(true) }
   const openEdit = (c: Caballo) => {
@@ -253,10 +275,11 @@ export default function CaballosPage() {
       {/* Detalle */}
       {detailItem && (
         <ModalShell modulo="hipico" titulo={detailItem.nombre} subtitulo={`${detailItem.raza ?? ''} · ${detailItem.status}`}
-          onClose={() => setDetailItem(null)} maxWidth={520}
+          onClose={() => setDetailItem(null)} maxWidth={620}
           footer={puedeEscribir ? <button className="btn-secondary" onClick={() => { setDetailItem(null); openEdit(detailItem) }}><Edit2 size={13} /> Editar</button> : undefined}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Perfil del caballo */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             {([
               ['Registro', detailItem.registro],
               ['Raza', detailItem.raza],
@@ -276,6 +299,56 @@ export default function CaballosPage() {
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'right' }}>{val}</span>
               </div>
             ) : null)}
+          </div>
+
+          {/* Historial de servicios */}
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+              Historial de Servicios
+            </div>
+            {loadingServicios ? (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '12px 0' }}>Cargando…</div>
+            ) : detailServicios.length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '12px 0' }}>Sin servicios registrados</div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--surface-800)' }}>
+                      {['Fecha', 'Tipo', 'Descripción', 'Proveedor', 'Costo'].map(h => (
+                        <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 11 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailServicios.map((s: any, i: number) => {
+                      const tc = TIPO_COLOR[s.tipo] ?? { bg: '#f8fafc', color: '#64748b' }
+                      return (
+                        <tr key={s.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                          <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtFecha(s.fecha)}</td>
+                          <td style={{ padding: '7px 10px' }}>
+                            <span style={{ background: tc.bg, color: tc.color, borderRadius: 4, padding: '2px 6px', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                              {s.cat_tipos_servicio?.nombre ?? s.tipo}
+                            </span>
+                          </td>
+                          <td style={{ padding: '7px 10px', color: 'var(--text-secondary)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.descripcion || '—'}</td>
+                          <td style={{ padding: '7px 10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{s.proveedor || '—'}</td>
+                          <td style={{ padding: '7px 10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{fmt$(s.costo)}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-800)' }}>
+                      <td colSpan={4} style={{ padding: '7px 10px', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)' }}>Total servicios</td>
+                      <td style={{ padding: '7px 10px', fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                        {fmt$(detailServicios.reduce((acc: number, s: any) => acc + (s.costo ?? 0), 0))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
           </div>
         </ModalShell>
       )}
