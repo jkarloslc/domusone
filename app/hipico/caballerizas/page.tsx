@@ -43,8 +43,9 @@ export default function CaballerizasPage() {
   const [items, setItems]       = useState<Caballeriza[]>([])
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
-  const [search, setSearch]     = useState('')
+  const [search, setSearch]         = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const [filtroStatus, setFiltroStatus] = useState('')
   const [loading, setLoading]   = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -65,11 +66,12 @@ export default function CaballerizasPage() {
     if (search.trim()) {
       q = q.or(`clave.ilike.%${search}%,nombre.ilike.%${search}%,seccion.ilike.%${search}%`)
     }
+    if (filtroStatus) q = q.eq('status', filtroStatus)
     const { data, count } = await q
     setItems((data as Caballeriza[]) ?? [])
     setTotal(count ?? 0)
     setLoading(false)
-  }, [page, search])
+  }, [page, search, filtroStatus])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
@@ -136,6 +138,10 @@ export default function CaballerizasPage() {
               onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
               style={{ paddingLeft: 30, width: 200, fontSize: 12 }} />
           </div>
+          <select className="input" value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPage(0) }} style={{ width: 150, fontSize: 12 }}>
+            <option value="">Todos los status</option>
+            {STATUSES.map(s => <option key={s}>{s}</option>)}
+          </select>
           <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
           {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nueva</button>}
         </div>
