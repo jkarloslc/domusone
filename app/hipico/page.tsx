@@ -1,5 +1,4 @@
-'use client'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   Users, Home, FileText, DollarSign, Stethoscope, ChevronRight,
 } from 'lucide-react'
@@ -65,8 +64,6 @@ const MODULOS = [
 ]
 
 export default function HipicoPage() {
-  const router = useRouter()
-
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
@@ -87,9 +84,9 @@ export default function HipicoPage() {
         {MODULOS.map(m => {
           const Icon = m.icon
           return (
-            <button
+            <Link
               key={m.key}
-              onClick={() => router.push(m.href)}
+              href={m.href}
               className="card card-hover"
               style={{
                 padding: '18px 20px',
@@ -100,6 +97,7 @@ export default function HipicoPage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 14,
+                textDecoration: 'none',
               }}
             >
               <div style={{
@@ -115,7 +113,7 @@ export default function HipicoPage() {
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
               </div>
               <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
-            </button>
+            </Link>
           )
         })}
       </div>
