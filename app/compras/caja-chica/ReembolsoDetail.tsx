@@ -55,27 +55,32 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
       // 2. Generar OP automática al usuario como beneficiario
       let folio: string
-      try { folio = await nextFolio(dbComp, 'OP') } catch (e: any) { alert((e as Error).message); return }
+      try { folio = await nextFolio(dbComp, 'OP') } catch (e: any) { alert((e as Error).message); setLoading(false); return }
 
-      const { data: opData } = await dbComp.from('ordenes_pago').insert({
+      const { data: opData, error: opErr } = await dbComp.from('ordenes_pago').insert({
         folio,
-        concepto:         `Reembolso caja chica ${r.folio ?? '#' + r.id} — ${r.usuario_nombre ?? r.id_usuario_fk}`,
-        monto:            r.total,
+        concepto:          `Reembolso caja chica ${r.folio ?? '#' + r.id} — ${r.usuario_nombre ?? r.id_usuario_fk}`,
+        monto:             r.total,
+        saldo:             r.total,   // saldo inicial = monto completo
         fecha_vencimiento: new Date().toISOString().slice(0, 10),
-        forma_pago:       'Cheque',
-        status:           'Pendiente',      // ya autorizado, va directo a CXP
-        tipo_op:          'Reembolso',
-        id_reembolso_fk:  r.id,
-        // CC/Sección/Frente = null (la trazabilidad está en reembolsos_detalle)
+        forma_pago:        'Cheque',
+        status:            'Pendiente',
+        // CC/Área/Frente = null (trazabilidad está en reembolsos_detalle)
         id_centro_costo_fk: null,
-        id_seccion_fk:      null,
+        id_area_fk:         null,
         id_frente_fk:       null,
-        created_by:       authUser?.nombre ?? null,
+        created_by:        authUser?.nombre ?? null,
       }).select('id').single()
+
+      if (opErr) {
+        alert(`Error al generar OP: ${opErr.message}`)
+        setLoading(false)
+        return
+      }
 
       // 3. Enlazar OP al reembolso
       if (opData) {
-        await dbComp.from('reembolsos').update({ id_op_fk: opData.id, status: 'Autorizado' }).eq('id', r.id)
+        await dbComp.from('reembolsos').update({ id_op_fk: opData.id }).eq('id', r.id)
       }
 
     } else {
