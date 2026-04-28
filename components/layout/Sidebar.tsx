@@ -380,6 +380,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
       RPT('hospitality'),
     ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
     { section: 'Comunicación', items: [
       { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
     ]},
