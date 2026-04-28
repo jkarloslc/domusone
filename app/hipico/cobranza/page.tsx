@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbHip } from '@/lib/supabase'
+import { dbHip, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clock, Receipt, Zap, Printer } from 'lucide-react'
 import Link from 'next/link'
@@ -9,7 +9,8 @@ import ModalShell from '@/components/ui/ModalShell'
 const PAGE_SIZE = 30
 
 type ArrendCat   = { id: number; nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string }
-type ConceptoCat = { id: number; nombre: string; tipo: string; monto: number }
+type ConceptoCat  = { id: number; nombre: string; tipo: string; monto: number }
+type FormaPagoCat = { id: number; nombre: string }
 
 type Cargo = {
   id: number
@@ -47,7 +48,6 @@ const EMPTY_CARGO = {
   fecha_vencimiento: '', notas: '',
 }
 
-const FORMAS_PAGO = ['Efectivo', 'Transferencia', 'Cheque', 'Tarjeta', 'Otro']
 
 const fmtNombreArr = (a?: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string }) => {
   if (!a) return '—'
@@ -260,7 +260,8 @@ export default function CobranzaPage() {
   const [cobrarArr, setCobrarArr]         = useState<number | ''>('')
   const [cargosArrendatario, setCargosArrendatario] = useState<Cargo[]>([])
   const [selectedCargos, setSelectedCargos]         = useState<Set<number>>(new Set())
-  const [formaPago, setFormaPago]         = useState('Transferencia')
+  const [formasPago, setFormasPago]       = useState<FormaPagoCat[]>([])
+  const [formaPago, setFormaPago]         = useState('')
   const [referencia, setReferencia]       = useState('')
   const [notasPago, setNotasPago]         = useState('')
   const [savingPago, setSavingPago]       = useState(false)
@@ -381,6 +382,12 @@ export default function CobranzaPage() {
   useEffect(() => {
     dbHip.from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
       .then(({ data }: any) => setArrendatarios(data ?? []))
+    dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }: any) => {
+        const fps = data ?? []
+        setFormasPago(fps)
+        if (fps.length > 0) setFormaPago(fps[0].nombre)
+      })
     dbHip.from('cat_conceptos_cuota').select('id, nombre, tipo, monto').eq('activo', true).order('nombre')
       .then(({ data }: any) => {
         // Deduplicar por nombre+tipo (por si hay duplicados en BD)
@@ -1030,7 +1037,7 @@ export default function CobranzaPage() {
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Forma de Pago</label>
               <select className="input" value={formaPago} onChange={e => setFormaPago(e.target.value)} style={{ width: '100%' }}>
-                {FORMAS_PAGO.map(f => <option key={f}>{f}</option>)}
+                {formasPago.map(f => <option key={f.id} value={f.nombre}>{f.nombre}</option>)}
               </select>
             </div>
 
