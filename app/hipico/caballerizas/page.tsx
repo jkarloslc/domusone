@@ -54,22 +54,22 @@ export default function CaballerizasPage() {
   const [form, setForm]         = useState<Omit<Caballeriza, 'id' | 'created_at'>>(EMPTY)
   const [err, setErr]           = useState('')
 
+  const naturalSort = (a: string, b: string) =>
+    a.localeCompare(b, 'es', { numeric: true, sensitivity: 'base' })
+
   const fetchItems = useCallback(async () => {
     setLoading(true)
-    const from = page * PAGE_SIZE
-    const to   = from + PAGE_SIZE - 1
     let q = dbHip
       .from('cat_caballerizas')
-      .select('*', { count: 'exact' })
-      .order('clave', { ascending: true })
-      .range(from, to)
+      .select('*')
     if (search.trim()) {
       q = q.or(`clave.ilike.%${search}%,nombre.ilike.%${search}%,seccion.ilike.%${search}%`)
     }
     if (filtroStatus) q = q.eq('status', filtroStatus)
-    const { data, count } = await q
-    setItems((data as Caballeriza[]) ?? [])
-    setTotal(count ?? 0)
+    const { data } = await q
+    const sorted = ((data as Caballeriza[]) ?? []).sort((a, b) => naturalSort(a.clave, b.clave))
+    setTotal(sorted.length)
+    setItems(sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE))
     setLoading(false)
   }, [page, search, filtroStatus])
 
