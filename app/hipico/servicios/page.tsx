@@ -89,7 +89,17 @@ export default function ServiciosPage() {
     ;dbHip.from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno')
       .then(({ data }: any) => setArrendatarios(data ?? []))
     ;dbHip.from('cat_tipos_servicio').select('id, nombre, tipo').eq('activo', true).order('nombre')
-      .then(({ data }: any) => setTiposServ(data ?? []))
+      .then(({ data }: any) => {
+        // Deduplicar por nombre+tipo (por si hay duplicados en BD)
+        const seen = new Set<string>()
+        const unique = (data ?? []).filter((t: TipoServCat) => {
+          const key = `${t.tipo}|${t.nombre.trim().toLowerCase()}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        })
+        setTiposServ(unique)
+      })
   }, [])
 
   // Filtrar tipos por el tipo seleccionado en el form
