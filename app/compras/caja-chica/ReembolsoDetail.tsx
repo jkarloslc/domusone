@@ -24,7 +24,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
   const { authUser } = useAuth()
   const [detalles,  setDetalles]  = useState<any[]>([])
   const [ccMap,     setCCMap]     = useState<Record<number, string>>({})
-  const [secMap,    setSecMap]    = useState<Record<number, string>>({})
+  const [areaMap,   setAreaMap]   = useState<Record<number, string>>({})
   const [frtMap,    setFrtMap]    = useState<Record<number, string>>({})
   const [notasAuth, setNotasAuth] = useState('')
   const [loading,   setLoading]   = useState(false)
@@ -33,13 +33,13 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
     Promise.all([
       dbComp.from('reembolsos_detalle').select('*').eq('id_reembolso_fk', r.id).eq('activo', true),
       dbCfg.from('centros_costo').select('id, nombre'),
-      dbCfg.from('secciones').select('id, nombre'),
+      dbCfg.from('areas').select('id, nombre'),
       dbCfg.from('frentes').select('id, nombre'),
-    ]).then(([det, cc, sec, frt]) => {
+    ]).then(([det, cc, ar, frt]) => {
       setDetalles(det.data ?? [])
       const toMap = (arr: any[]) => Object.fromEntries((arr ?? []).map((x: any) => [x.id, x.nombre]))
       setCCMap(toMap(cc.data ?? []))
-      setSecMap(toMap(sec.data ?? []))
+      setAreaMap(toMap(ar.data ?? []))
       setFrtMap(toMap(frt.data ?? []))
     })
   }, [r.id])
@@ -174,7 +174,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
         <td style="text-align:center">${d.tipo_comprobante}${d.num_comprobante ? `<br/><span style="font-family:monospace;font-size:10px;color:#64748b">${d.num_comprobante}</span>` : ''}</td>
         <td style="font-size:11px;color:#475569">
           ${d.id_centro_costo_fk ? `<span class="chip">${ccMap[d.id_centro_costo_fk] ?? '—'}</span>` : ''}
-          ${d.id_seccion_fk      ? `<span class="chip">${secMap[d.id_seccion_fk] ?? '—'}</span>`      : ''}
+          ${d.id_area_fk         ? `<span class="chip">${areaMap[d.id_area_fk] ?? '—'}</span>`         : ''}
           ${d.id_frente_fk       ? `<span class="chip">${frtMap[d.id_frente_fk] ?? '—'}</span>`       : ''}
         </td>
         <td style="text-align:right;font-weight:600">${fmt(d.monto)}</td>
@@ -353,7 +353,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
                       {/* CC-Sección-Frente */}
                       <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
                         {d.id_centro_costo_fk && <span style={{ fontSize: 10, background: '#1e3a5f', color: '#93c5fd', padding: '2px 7px', borderRadius: 10 }}>{ccMap[d.id_centro_costo_fk]}</span>}
-                        {d.id_seccion_fk      && <span style={{ fontSize: 10, background: '#1e3a5f', color: '#93c5fd', padding: '2px 7px', borderRadius: 10 }}>{secMap[d.id_seccion_fk]}</span>}
+                        {d.id_area_fk         && <span style={{ fontSize: 10, background: '#1e3a5f', color: '#93c5fd', padding: '2px 7px', borderRadius: 10 }}>{areaMap[d.id_area_fk]}</span>}
                         {d.id_frente_fk       && <span style={{ fontSize: 10, background: '#1e3a5f', color: '#93c5fd', padding: '2px 7px', borderRadius: 10 }}>{frtMap[d.id_frente_fk]}</span>}
                       </div>
                     </div>

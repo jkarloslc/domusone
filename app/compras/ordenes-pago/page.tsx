@@ -33,9 +33,9 @@ export default function OrdenesPagoPage() {
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
-  const [filterSec, setFilterSec] = useState('')
+  const [filterArea, setFilterArea] = useState('')
   const [centrosCosto, setCentros] = useState<{ id: number; nombre: string }[]>([])
-  const [secciones, setSecciones] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
+  const [areaFiltros, setAreaFiltros] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState(false)
   const [editOp, setEditOp]     = useState<any | null>(null)
@@ -48,7 +48,7 @@ export default function OrdenesPagoPage() {
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,concepto.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? [])
@@ -65,14 +65,14 @@ export default function OrdenesPagoPage() {
     setProvMap(pm)
     setAlmMap(am)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterSec])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterArea])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCentros((data ?? []) as { id: number; nombre: string }[]))
-    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => setSecciones((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
+    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setAreaFiltros((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
   }, [])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -128,14 +128,14 @@ export default function OrdenesPagoPage() {
           <option value="Cancelada">Canceladas</option>
         </select>
         <select className="select" style={{ width: 220 }} value={filterCC}
-          onChange={e => { setFilterCC(e.target.value); setFilterSec(''); setPage(0) }}>
+          onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setPage(0) }}>
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ width: 200 }} value={filterSec}
-          onChange={e => { setFilterSec(e.target.value); setPage(0) }}>
-          <option value="">Todas las secciones</option>
-          {secciones
+        <select className="select" style={{ width: 200 }} value={filterArea}
+          onChange={e => { setFilterArea(e.target.value); setPage(0) }}>
+          <option value="">Todas las áreas</option>
+          {areaFiltros
             .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
             .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
@@ -233,10 +233,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [proveedores, setProvs]     = useState<any[]>([])
   const [almacenes, setAlms]        = useState<any[]>([])
   const [centrosCosto, setCentros]  = useState<any[]>([])
-  const [secciones, setSecciones]   = useState<any[]>([])
+  const [ccAreas, setCcAreas]       = useState<any[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
   const [formasPago, setFormasPago] = useState<any[]>([])
-  const [seccionId, setSeccionId]   = useState<string>(opEdit?.id_seccion_fk?.toString() ?? '')
+  const [areaId, setAreaId]         = useState<string>(opEdit?.id_area_fk?.toString() ?? '')
   const [ocsDisp, setOcsDisp]       = useState<any[]>([])
   const [ocsSelected, setOcsSel]    = useState<{ id: number; folio: string; total: number; monto: string }[]>([])
   const [conOC, setConOC] = useState<boolean | null>(
@@ -251,7 +251,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     id_proveedor_fk:    opEdit?.id_proveedor_fk?.toString() ?? '',
     id_almacen_fk:      opEdit?.id_almacen_fk?.toString()   ?? '',
     id_centro_costo_fk: opEdit?.id_centro_costo_fk?.toString() ?? '',
-    id_seccion_fk:      opEdit?.id_seccion_fk?.toString()   ?? '',
+    id_area_fk:         opEdit?.id_area_fk?.toString()       ?? '',
     id_frente_fk:       opEdit?.id_frente_fk?.toString()    ?? '',
     forma_pago:        opEdit?.forma_pago        ?? 'Transferencia',
     fecha_vencimiento: opEdit?.fecha_vencimiento ?? '',
@@ -279,9 +279,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     import('@/lib/supabase').then(({ dbCfg }) => {
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
         .then(({ data }) => setCentros(data ?? []))
-      dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
-        .then(({ data }) => setSecciones(data ?? []))
-      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+        .then(({ data }) => setCcAreas(data ?? []))
+      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
         .then(({ data }) => setFrentes(data ?? []))
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
         .then(({ data }) => setFormasPago(data ?? []))
@@ -307,17 +307,17 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (!oc || ocsSelected.some(o => o.id === oc.id)) return
     setOcsSel(prev => {
       const next = [...prev, { id: oc.id, folio: oc.folio, total: oc.total, monto: oc.total?.toString() ?? '' }]
-      // Cargar preview de CC/Sección/Frente de la primera OC
+      // Cargar preview de CC/Área/Frente de la primera OC
       if (next.length === 1) {
         dbComp.from('ordenes_compra')
-          .select('id_centro_costo_fk, id_seccion_fk, id_frente_fk')
+          .select('id_centro_costo_fk, id_area_fk, id_frente_fk')
           .eq('id', oc.id).single()
           .then(async ({ data: ocData }) => {
             if (!ocData) return
             const { dbCfg: cfg } = await import('@/lib/supabase')
             const [{ data: ccData }, { data: secData }, { data: frData }] = await Promise.all([
               ocData.id_centro_costo_fk ? cfg.from('centros_costo').select('nombre').eq('id', ocData.id_centro_costo_fk).single() : Promise.resolve({ data: null }),
-              ocData.id_seccion_fk      ? cfg.from('secciones').select('nombre').eq('id', ocData.id_seccion_fk).single()      : Promise.resolve({ data: null }),
+              ocData.id_area_fk         ? cfg.from('areas').select('nombre').eq('id', ocData.id_area_fk).single()             : Promise.resolve({ data: null }),
               ocData.id_frente_fk       ? cfg.from('frentes').select('nombre').eq('id', ocData.id_frente_fk).single()        : Promise.resolve({ data: null }),
             ])
             setOcCCPreview({
@@ -403,14 +403,14 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (montoTotal <= 0) { setError('El monto debe ser mayor a cero'); return }
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
     if (!conOC && !form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
-    if (!conOC && !form.id_seccion_fk) { setError('Sección es obligatoria'); return }
+    if (!conOC && !form.id_area_fk) { setError('Área es obligatoria'); return }
     setSaving(true); setError('')
 
-    // Obtener CC/Sección/Frente de la OC cuando aplica
-    let ocCampos = { id_centro_costo_fk: null as number|null, id_seccion_fk: null as number|null, id_frente_fk: null as number|null }
+    // Obtener CC/Área/Frente de la OC cuando aplica
+    let ocCampos = { id_centro_costo_fk: null as number|null, id_area_fk: null as number|null, id_frente_fk: null as number|null }
     if (conOC && ocsSelected.length > 0) {
       const { data: ocData } = await dbComp.from('ordenes_compra')
-        .select('id_centro_costo_fk, id_seccion_fk, id_frente_fk')
+        .select('id_centro_costo_fk, id_area_fk, id_frente_fk')
         .eq('id', ocsSelected[0].id).single()
       if (ocData) ocCampos = ocData
     }
@@ -419,7 +419,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       id_proveedor_fk:    form.id_proveedor_fk ? Number(form.id_proveedor_fk) : null,
       id_almacen_fk:      conOC && form.id_almacen_fk ? Number(form.id_almacen_fk) : null,
       id_centro_costo_fk: conOC ? ocCampos.id_centro_costo_fk : (form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null),
-      id_seccion_fk:      conOC ? ocCampos.id_seccion_fk      : (form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null),
+      id_area_fk:         conOC ? ocCampos.id_area_fk         : (form.id_area_fk         ? Number(form.id_area_fk)         : null),
       id_frente_fk:       conOC ? ocCampos.id_frente_fk       : (form.id_frente_fk       ? Number(form.id_frente_fk)       : null),
       id_oc_fk:           (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
       forma_pago:        form.forma_pago,
@@ -585,27 +585,27 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 <div>
                   <label className="label">Centro de Costo *</label>
                   <select className="select" value={form.id_centro_costo_fk}
-                    onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' }))}>
+                    onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
                     <option value="">— Seleccionar —</option>
                     {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label">Sección *</label>
-                  <select className="select" value={seccionId}
-                    onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' })) }}
+                  <label className="label">Área *</label>
+                  <select className="select" value={areaId}
+                    onChange={e => { setAreaId(e.target.value); setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' })) }}
                     disabled={!form.id_centro_costo_fk}>
                     <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                    {secciones
-                      .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                    {ccAreas
+                      .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
                       .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="label">Frente</label>
-                  <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!seccionId}>
-                    <option value="">— {seccionId ? 'Seleccionar' : 'Elige sección primero'} —</option>
-                    {frentes.filter(f => !seccionId || f.id_seccion_fk === Number(seccionId))
+                  <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!areaId}>
+                    <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
+                    {frentes.filter(f => !areaId || f.id_area_fk === Number(areaId))
                       .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                   </select>
                 </div>
@@ -723,7 +723,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
 
   const [ocsRel, setOcsRel]       = useState<any[]>([])
   const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
-  const [secMap, setSecMap]       = useState<Record<number, string>>({})
+  const [areaMap, setAreaMap]     = useState<Record<number, string>>({})
   const [frMap,  setFrMap]        = useState<Record<number, string>>({})
   const [abonos, setAbonos]       = useState<any[]>([])
   const [loadingAbonos, setLoadingAbonos] = useState(true)
@@ -806,17 +806,17 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     dbComp.from('ordenes_pago_oc').select('*, ordenes_compra(folio, total)')
       .eq('id_op_fk', op.id)
       .then(({ data }) => setOcsRel(data ?? []))
-    // Cargar catálogos para CC/Sección/Frente
+    // Cargar catálogos para CC/Área/Frente
     import('@/lib/supabase').then(({ dbCfg }) => {
       Promise.all([
         dbCfg.from('centros_costo').select('id, nombre'),
-        dbCfg.from('secciones').select('id, nombre'),
+        dbCfg.from('areas').select('id, nombre'),
         dbCfg.from('frentes').select('id, nombre'),
-      ]).then(([{ data: cc }, { data: sec }, { data: fr }]) => {
+      ]).then(([{ data: cc }, { data: ar }, { data: fr }]) => {
         const cm: Record<number, string> = {}; (cc ?? []).forEach((r: any) => { cm[r.id] = r.nombre })
-        const sm: Record<number, string> = {}; (sec ?? []).forEach((r: any) => { sm[r.id] = r.nombre })
+        const am: Record<number, string> = {}; (ar ?? []).forEach((r: any) => { am[r.id] = r.nombre })
         const fm: Record<number, string> = {}; (fr ?? []).forEach((r: any) => { fm[r.id] = r.nombre })
-        setCcMap(cm); setSecMap(sm); setFrMap(fm)
+        setCcMap(cm); setAreaMap(am); setFrMap(fm)
       })
     })
 
@@ -900,7 +900,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
         <tr><th>Almacén</th><td>${op._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td></tr>
         ${op.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${op.tipo_gasto}</td></tr>` : ''}
-        ${op.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`}</td><th>Sección</th><td>${op.id_seccion_fk ? (secMap[op.id_seccion_fk] ?? `#${op.id_seccion_fk}`) : '—'}</td></tr>` : ''}
+        ${op.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`}</td><th>Área</th><td>${op.id_area_fk ? (areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`) : '—'}</td></tr>` : ''}
         ${op.id_frente_fk ? `<tr><th>Frente</th><td colspan="3">${frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(op.monto)}</td></tr>
@@ -962,7 +962,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               <DI label="Almacén"         value={op._almNombre} />
               <DI label="Vencimiento"     value={fmtFecha(op.fecha_vencimiento)} />
               {op.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`} />}
-              {op.id_seccion_fk     && <DI label="Sección"          value={secMap[op.id_seccion_fk] ?? `#${op.id_seccion_fk}`} />}
+              {op.id_area_fk        && <DI label="Área"             value={areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`} />}
               {op.id_frente_fk      && <DI label="Frente"           value={frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`} />}
               {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
               {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
