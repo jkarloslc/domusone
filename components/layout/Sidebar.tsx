@@ -5,9 +5,17 @@ import {
   Home, MapPin, Users, FileText, Building2, Wrench,
   Shield, AlertTriangle, Receipt, ShoppingCart,
   BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  LayoutDashboard,
+  LayoutDashboard, Flag, Star, DollarSign, MessageCircle,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
+
+// Ícono caballo inline (no disponible en lucide)
+const HorseIcon = ({ size = 15 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 7c0-1.1-.9-2-2-2h-3L9 9H5a2 2 0 0 0-2 2v3h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5h-4z"/>
+    <circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/>
+  </svg>
+)
 
 type Rol =
   | 'superadmin'
@@ -24,6 +32,11 @@ type Rol =
   | 'fraccionamiento'
   | 'tesoreria'
   | 'seguridad'
+  | 'usuario_solicitante'
+  | 'ingresos'
+  | 'usuariogolf'
+  | 'usuariohipico'
+  | 'usuariohospitality'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -43,6 +56,11 @@ const ROL_LABEL: Record<Rol, string> = {
   fraccionamiento:     'Fraccionamiento',
   tesoreria:           'Tesorería',
   seguridad:           'Seguridad',
+  usuario_solicitante: 'Solicitante',
+  ingresos:            'Ingresos',
+  usuariogolf:         'Operador Golf',
+  usuariohipico:       'Operador Hípico',
+  usuariohospitality:  'Operador Hospitality',
 }
 
 // Ítem de reportes con estilo diferenciado (pie de sección)
@@ -56,163 +74,160 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   superadmin: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
+      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
+      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
       { label: 'Accesos',        href: '/accesos',        icon: Shield        },
       { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      RPT('mantenimiento'),
+    { section: 'Club', items: [
+      { label: 'Club',           href: '/golf',           icon: Flag          },
+      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
+      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
     ]},
-    { section: 'Tesorería', items: [
+    { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       RPT('tesoreria'),
     ]},
-    { section: 'Comunicación', items: [
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
-    ]},
     { section: 'Sistema', items: [
-      { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
-      { label: 'Usuarios',       href: '/usuarios',       icon: Users         },
-      { label: 'Config.',        href: '/configuracion',  icon: Settings      },
+      { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
     ]},
   ],
 
   admin: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
+      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
+      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
       { label: 'Accesos',        href: '/accesos',        icon: Shield        },
       { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      RPT('mantenimiento'),
+    { section: 'Club', items: [
+      { label: 'Club',           href: '/golf',           icon: Flag          },
+      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
+      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
     ]},
-    { section: 'Tesorería', items: [
+    { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       RPT('tesoreria'),
     ]},
-    { section: 'Comunicación', items: [
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
-    ]},
     { section: 'Sistema', items: [
-      { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
+      { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
     ]},
   ],
 
-  // Admin sin Mantenimiento
   usuarioadmin: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
+      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
+      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
       { label: 'Accesos',        href: '/accesos',        icon: Shield        },
       { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
+    ]},
+    { section: 'Club', items: [
+      { label: 'Club',           href: '/golf',           icon: Flag          },
+      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
+      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
     ]},
-    { section: 'Tesorería', items: [
+    { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       RPT('tesoreria'),
     ]},
-    { section: 'Comunicación', items: [
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
-    ]},
     { section: 'Sistema', items: [
-      { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
+      { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
     ]},
   ],
 
-  // Admin sin Tesorería
   usuariomantto: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
+      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
+      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
       { label: 'Accesos',        href: '/accesos',        icon: Shield        },
       { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
+      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
     ]},
-    { section: 'Comunicación', items: [
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+    { section: 'Finanzas', items: [
+      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      RPT('tesoreria'),
     ]},
     { section: 'Sistema', items: [
-      { label: 'Catálogos',      href: '/catalogos',      icon: BookOpen      },
+      { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
     ]},
   ],
 
   atencion_residentes: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
       { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
+      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
       { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
-      RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      RPT('mantenimiento'),
-    ]},
-    { section: 'Comunicación', items: [
+      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+      RPT('residencial'),
     ]},
   ],
 
   cobranza: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
       RPT('residencial'),
     ]},
   ],
 
   vigilancia: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
       { label: 'Accesos',        href: '/accesos',        icon: Shield        },
@@ -221,6 +236,13 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   compras: [
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+      RPT('compras'),
+    ]},
+  ],
+
+  compras_supervisor: [
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
@@ -236,61 +258,49 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   mantenimiento: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      RPT('mantenimiento'),
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      RPT('residencial'),
     ]},
   ],
 
   fraccionamiento: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
       { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: Building2     },
+      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
+      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Accesos',        href: '/accesos',        icon: Shield        },
       { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Wrench        },
-      { label: 'Cobranza',       href: '/cobranza',       icon: FileText      },
-      { label: 'Facturas',       href: '/facturas',       icon: Receipt       },
+      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Calendar      },
-      RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
     ]},
-    { section: 'Tesorería', items: [
+    { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       RPT('tesoreria'),
-    ]},
-    { section: 'Comunicación', items: [
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
     ]},
   ],
 
   tesoreria: [
-    { section: 'Tesorería', items: [
+    { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       RPT('tesoreria'),
-    ]},
-  ],
-
-  compras_supervisor: [
-    { section: 'Compras', items: [
-      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
-      RPT('compras'),
     ]},
   ],
 
   seguridad: [
     { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
       { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
       { label: 'Accesos',        href: '/accesos',        icon: Shield        },
@@ -300,23 +310,82 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
     ]},
   ],
+
+  usuario_solicitante: [
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
+  ],
+
+  ingresos: [
+    { section: 'Finanzas', items: [
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      RPT('ingresos'),
+    ]},
+  ],
+
+  usuariogolf: [
+    { section: 'Club', items: [
+      { label: 'Club',           href: '/golf',           icon: Flag          },
+      RPT('golf'),
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
+  ],
+
+  usuariohipico: [
+    { section: 'Hípico', items: [
+      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
+      RPT('hipico'),
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
+  ],
+
+  usuariohospitality: [
+    { section: 'Hospitality', items: [
+      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      RPT('hospitality'),
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Comunicación', items: [
+      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+    ]},
+  ],
 }
+
+const ROLES_CON_LOTES = ['superadmin','admin','usuarioadmin','usuariomantto','atencion_residentes',
+  'cobranza','vigilancia','mantenimiento','fraccionamiento','seguridad']
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname()
   const { authUser, signOut } = useAuth()
 
-  const rol     = (authUser?.rol ?? 'vigilancia') as Rol
+  const rol      = (authUser?.rol ?? 'vigilancia') as Rol
   const sections = NAV_POR_ROL[rol] ?? []
-  const label   = authUser?.rol ? (ROL_LABEL[authUser.rol as Rol] ?? authUser.rol) : '—'
+  const label    = authUser?.rol ? (ROL_LABEL[authUser.rol as Rol] ?? authUser.rol) : '—'
+  const canLotes = authUser?.rol ? ROLES_CON_LOTES.includes(authUser.rol) : false
 
   return (
     <aside
       className={`sidebar ${open ? 'open' : ''}`}
       style={{
         width: 220, flexShrink: 0,
-        background: 'var(--surface-900)',
-        borderRight: '1px solid var(--surface-800)',
+        background: '#2d3660',
+        borderRight: 'none',
         display: 'flex', flexDirection: 'column',
         height: '100vh', position: 'sticky', top: 0,
         overflowY: 'auto',
@@ -325,58 +394,80 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       {/* Header */}
       <div style={{
         padding: '20px 16px 12px',
-        borderBottom: '1px solid var(--surface-800)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--blue)', lineHeight: 1.2 }}>
-            DomusOne
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#E8CA75', lineHeight: 1.2 }}>
+            Balvanera
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-            Administración Residencial
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2, letterSpacing: '0.05em' }}>
+            Polo &amp; Country Club
           </div>
         </div>
         <button onClick={onClose} className="sidebar-close-btn"
-          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, borderRadius: 6 }}>
+          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 4, borderRadius: 6 }}>
           <X size={16} />
         </button>
       </div>
 
       {/* Nav con secciones */}
-      <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
+      <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
 
-        {/* Inicio — siempre visible */}
-        <Link
-          href="/inicio"
-          onClick={onClose}
-          className={`nav-item ${pathname === '/inicio' ? 'active' : ''}`}
-        >
-          <Home size={15} />
-          <span>Inicio</span>
-        </Link>
-        <Link
-          href="/tablero"
-          onClick={onClose}
-          className={`nav-item ${pathname.startsWith('/tablero') ? 'active' : ''}`}
-        >
-          <LayoutDashboard size={15} />
-          <span>Mi Tablero</span>
-        </Link>
+        {/* Inicio — solo para roles con acceso general */}
+        {rol !== 'usuario_solicitante' && rol !== 'usuariogolf' && rol !== 'usuariohipico' && rol !== 'usuariohospitality' && (
+          <Link
+            href="/inicio"
+            onClick={onClose}
+            className="nav-item"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 10px', borderRadius: 6, marginBottom: 2,
+              fontSize: 13, color: pathname === '/inicio' ? '#E8CA75' : 'rgba(255,255,255,0.7)',
+              background: pathname === '/inicio' ? 'rgba(196,160,72,0.15)' : 'transparent',
+              borderLeft: pathname === '/inicio' ? '2px solid #C4A048' : '2px solid transparent',
+              textDecoration: 'none', transition: 'all 0.15s',
+            }}
+          >
+            <Home size={15} />
+            <span>Inicio</span>
+          </Link>
+        )}
+
+        {/* Expedientes — solo para roles con acceso a lotes */}
+        {canLotes && (
+          <Link
+            href="/expedientes"
+            onClick={onClose}
+            className="nav-item"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 10px', borderRadius: 6, marginBottom: 2,
+              fontSize: 13, color: pathname.startsWith('/expedientes') ? '#E8CA75' : 'rgba(255,255,255,0.7)',
+              background: pathname.startsWith('/expedientes') ? 'rgba(196,160,72,0.15)' : 'transparent',
+              borderLeft: pathname.startsWith('/expedientes') ? '2px solid #C4A048' : '2px solid transparent',
+              textDecoration: 'none', transition: 'all 0.15s',
+            }}
+          >
+            <BookOpen size={15} />
+            <span>Expedientes</span>
+          </Link>
+        )}
 
         {/* Secciones por rol */}
         {sections.map(sec => (
           <div key={sec.section}>
             <div style={{
               fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-              textTransform: 'uppercase', color: 'var(--text-muted)',
-              padding: '12px 8px 4px',
+              textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)',
+              padding: '12px 10px 4px',
             }}>
               {sec.section}
             </div>
             {sec.items.map(item => {
-              const Icon    = item.icon
-              const isRpt   = item.label === 'Reportes'
-              const active  = isRpt
+              const Icon   = item.icon
+              const isRpt  = item.label === 'Reportes'
+              const active = isRpt
                 ? pathname.startsWith('/reportes')
                 : pathname.startsWith(item.href)
               return (
@@ -384,14 +475,19 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                   key={item.href}
                   href={item.href}
                   onClick={onClose}
-                  className={`nav-item ${active ? 'active' : ''}`}
-                  style={isRpt ? {
-                    marginTop: 4,
-                    opacity: 0.7,
-                    fontSize: 11,
-                    borderTop: '1px dashed var(--surface-700)',
-                    paddingTop: 6,
-                  } : undefined}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: isRpt ? '5px 10px' : '7px 10px',
+                    borderRadius: 6, marginBottom: 2,
+                    fontSize: isRpt ? 11 : 13,
+                    color: active ? '#E8CA75' : 'rgba(255,255,255,0.7)',
+                    background: active ? 'rgba(196,160,72,0.15)' : 'transparent',
+                    borderLeft: active ? '2px solid #C4A048' : '2px solid transparent',
+                    textDecoration: 'none', transition: 'all 0.15s',
+                    opacity: isRpt ? 0.75 : 1,
+                    borderTop: isRpt ? '1px dashed rgba(255,255,255,0.1)' : undefined,
+                    marginTop: isRpt ? 4 : 0,
+                  }}
                 >
                   <Icon size={isRpt ? 13 : 15} />
                   <span>{item.label}</span>
@@ -403,19 +499,19 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       </nav>
 
       {/* Footer usuario */}
-      <div style={{ padding: '10px 12px 16px', borderTop: '1px solid var(--surface-800)' }}>
+      <div style={{ padding: '10px 12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
-          padding: '8px 10px', background: '#f8fafc', borderRadius: 8,
+          padding: '8px 10px', background: 'rgba(255,255,255,0.07)', borderRadius: 8,
         }}>
-          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <User size={14} style={{ color: '#fff' }} />
+          <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#C4A048', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <User size={14} style={{ color: '#1a1f3e' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {authUser?.nombre ?? '—'}
             </div>
-            <div style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 500 }}>
+            <div style={{ fontSize: 10, color: '#E8CA75', fontWeight: 500 }}>
               {label}
             </div>
           </div>
@@ -425,10 +521,10 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 8,
             padding: '7px 10px', background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-muted)', fontSize: 12, borderRadius: 6, transition: 'all 0.15s',
+            color: 'rgba(255,255,255,0.45)', fontSize: 12, borderRadius: 6, transition: 'all 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.color = '#f87171' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
         >
           <LogOut size={13} />
           Cerrar sesión
