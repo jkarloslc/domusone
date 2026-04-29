@@ -153,6 +153,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const [centrosCosto, setCentros] = useState<any[]>([])
   const [ccAreas, setCcAreas]      = useState<any[]>([])
   const [frentes, setFrentes]      = useState<any[]>([])
+  const [relAF,   setRelAF]        = useState<{id_area: number; id_frente: number}[]>([])
   const [areaId, setAreaId]        = useState<string>(row?.id_area_fk?.toString() ?? '')
   const [rfqs, setRFQs]         = useState<any[]>([])
   const [form, setForm] = useState({
@@ -179,8 +180,10 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       .then(({ data }) => setCentros(data ?? []))
     dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setCcAreas(data ?? []))
-    dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
+    dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
+    dbCfg.from('rel_area_frente').select('id_area, id_frente')
+      .then(({ data }) => setRelAF(data ?? []))
     ;(async () => {
       const { data: rfqsConOC } = await dbComp.from('ordenes_compra').select('id_rfq_fk').not('id_rfq_fk', 'is', null)
       const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk))
@@ -385,7 +388,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                   onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
                   disabled={!areaId}>
                   <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
-                  {frentes.filter(f => !areaId || f.id_area_fk === Number(areaId))
+                  {frentes.filter(f => !areaId || relAF.some(r => r.id_area === Number(areaId) && r.id_frente === f.id))
                     .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                 </select>
               </div>

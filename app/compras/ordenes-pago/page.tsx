@@ -235,6 +235,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [centrosCosto, setCentros]  = useState<any[]>([])
   const [ccAreas, setCcAreas]       = useState<any[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
+  const [relAF,   setRelAF]         = useState<{id_area: number; id_frente: number}[]>([])
   const [formasPago, setFormasPago] = useState<any[]>([])
   const [areaId, setAreaId]         = useState<string>(opEdit?.id_area_fk?.toString() ?? '')
   const [ocsDisp, setOcsDisp]       = useState<any[]>([])
@@ -281,8 +282,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
         .then(({ data }) => setCentros(data ?? []))
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
         .then(({ data }) => setCcAreas(data ?? []))
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
+      dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre')
         .then(({ data }) => setFrentes(data ?? []))
+      dbCfg.from('rel_area_frente').select('id_area, id_frente')
+        .then(({ data }) => setRelAF(data ?? []))
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
         .then(({ data }) => setFormasPago(data ?? []))
     })
@@ -605,7 +608,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                   <label className="label">Frente</label>
                   <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!areaId}>
                     <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
-                    {frentes.filter(f => !areaId || f.id_area_fk === Number(areaId))
+                    {frentes.filter(f => !areaId || relAF.some(r => r.id_area === Number(areaId) && r.id_frente === f.id))
                       .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                   </select>
                 </div>

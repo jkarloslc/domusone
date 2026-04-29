@@ -69,7 +69,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
     Promise.all([
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_frente').select('id_area, id_frente'),
     ]).then(([cc, sec, frt, relaf]) => {
       setCCs(cc.data ?? [])

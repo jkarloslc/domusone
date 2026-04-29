@@ -312,7 +312,8 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
   const [areas, setAreas]           = useState<{id: number; nombre: string}[]>([])
   const [centrosCosto, setCentros]  = useState<{id: number; nombre: string}[]>([])
   const [ccAreas, setCcAreas]       = useState<{id: number; nombre: string; id_centro_costo_fk: number}[]>([])
-  const [frentes, setFrentes]       = useState<{id: number; nombre: string; id_area_fk: number}[]>([])
+  const [frentes, setFrentes]       = useState<{id: number; nombre: string}[]>([])
+  const [relAF,   setRelAF]         = useState<{id_area: number; id_frente: number}[]>([])
   const [form, setForm] = useState({
     area_solicitante:   row?.area_solicitante ?? '',
     solicitante:        row?.solicitante ?? (authUser?.nombre ?? ''),
@@ -332,8 +333,10 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
       .then(({ data }) => setCentros(data ?? []))
     dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setCcAreas(data ?? []))
-    dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre')
+    dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setFrentes(data ?? []))
+    dbCfg.from('rel_area_frente').select('id_area, id_frente')
+      .then(({ data }) => setRelAF(data ?? []))
     if (!isNew && row?.id) {
       dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', row.id)
         .then(({ data }) => {
@@ -478,7 +481,7 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
                   disabled={!form.id_area_fk}>
                   <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
                   {frentes
-                    .filter(f => !form.id_area_fk || f.id_area_fk === Number(form.id_area_fk))
+                    .filter(f => !form.id_area_fk || relAF.some(r => r.id_area === Number(form.id_area_fk) && r.id_frente === f.id))
                     .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
                   }
                 </select>
