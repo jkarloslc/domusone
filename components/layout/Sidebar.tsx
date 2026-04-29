@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, Truck, ShoppingCart,
-  BarChart3, Settings, LogOut, User, X, Landmark, MessageSquare,
+  BarChart3, Settings, LogOut, User, Users, X, Landmark, MessageSquare,
   Flag, Star, DollarSign, MessageCircle,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
@@ -74,10 +74,12 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   superadmin: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
-      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
       { label: 'Club',           href: '/golf',           icon: Flag          },
@@ -95,6 +97,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
+      { label: 'Configuración',  href: '/configuracion',  icon: Settings      },
+      { label: 'Usuarios',       href: '/usuarios',       icon: Users         },
     ]},
   ],
 
