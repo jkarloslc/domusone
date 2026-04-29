@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
-import { Save, Loader, Search } from 'lucide-react'
+import { Save, Loader, Search, X } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null }

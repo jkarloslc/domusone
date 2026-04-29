@@ -9,23 +9,15 @@ import {
   Edit2, Upload, ExternalLink, FileText, AlertTriangle, MessageSquare, Send
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP, nextFolio } from '../types'
-import ModalShell from '@/components/ui/ModalShell'
+import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP } from '../types'
 
 const PAGE_SIZE = 25
 
 const TIPOS_GASTO = [
-  // Operación general
   'Servicios Profesionales', 'Mantenimiento', 'Reparación',
   'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
   'Electricidad', 'Agua', 'Telefonía / Internet',
-  'Honorarios', 'Asesoría', 'Capacitación',
-  // Nómina
-  'Nómina Semanal', 'Nómina Quincenal',
-  // Impuestos y contribuciones
-  'ISR', 'IMSS', 'IVA', 'IEPS', '3% SN',
-  // Otros
-  'Otro',
+  'Honorarios', 'Asesoría', 'Capacitación', 'Otro',
 ]
 
 export default function OrdenesPagoPage() {
@@ -41,9 +33,9 @@ export default function OrdenesPagoPage() {
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
-  const [filterArea, setFilterArea] = useState('')
+  const [filterSec, setFilterSec] = useState('')
   const [centrosCosto, setCentros] = useState<{ id: number; nombre: string }[]>([])
-  const [areas, setAreas] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
+  const [secciones, setSecciones] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState(false)
   const [editOp, setEditOp]     = useState<any | null>(null)
@@ -56,7 +48,7 @@ export default function OrdenesPagoPage() {
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
+    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,concepto.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? [])
@@ -73,14 +65,14 @@ export default function OrdenesPagoPage() {
     setProvMap(pm)
     setAlmMap(am)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterArea])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterSec])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCentros((data ?? []) as { id: number; nombre: string }[]))
-    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => setAreas((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
+    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setSecciones((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
   }, [])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -91,18 +83,16 @@ export default function OrdenesPagoPage() {
   return (
     <div style={{ padding: '32px 36px' }}>
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
           <div>
-            <h1 className="page-title">Órdenes de Pago</h1>
-            <p className="page-subtitle">Con o sin OC relacionada · {total} registros</p>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Órdenes de Pago</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Con o sin OC relacionada · {total} registros</p>
           </div>
         </div>
         {canWrite('ordenes-pago') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>
-          </div>
+          <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>
         )}
       </div>
 
@@ -138,14 +128,14 @@ export default function OrdenesPagoPage() {
           <option value="Cancelada">Canceladas</option>
         </select>
         <select className="select" style={{ width: 220 }} value={filterCC}
-          onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setPage(0) }}>
+          onChange={e => { setFilterCC(e.target.value); setFilterSec(''); setPage(0) }}>
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ width: 200 }} value={filterArea}
-          onChange={e => { setFilterArea(e.target.value); setPage(0) }}>
-          <option value="">Todas las áreas</option>
-          {areas
+        <select className="select" style={{ width: 200 }} value={filterSec}
+          onChange={e => { setFilterSec(e.target.value); setPage(0) }}>
+          <option value="">Todas las secciones</option>
+          {secciones
             .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
             .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
@@ -243,11 +233,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [proveedores, setProvs]     = useState<any[]>([])
   const [almacenes, setAlms]        = useState<any[]>([])
   const [centrosCosto, setCentros]  = useState<any[]>([])
-  const [areas, setAreas]   = useState<any[]>([])
+  const [secciones, setSecciones]   = useState<any[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
-  const [relAF, setRelAF]           = useState<{id_area: number; id_frente: number}[]>([])
   const [formasPago, setFormasPago] = useState<any[]>([])
-  const [areaId, setAreaId]   = useState<string>(opEdit?.id_area_fk?.toString() ?? '')
+  const [seccionId, setSeccionId]   = useState<string>(opEdit?.id_seccion_fk?.toString() ?? '')
   const [ocsDisp, setOcsDisp]       = useState<any[]>([])
   const [ocsSelected, setOcsSel]    = useState<{ id: number; folio: string; total: number; monto: string }[]>([])
   const [conOC, setConOC] = useState<boolean | null>(
@@ -262,7 +251,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     id_proveedor_fk:    opEdit?.id_proveedor_fk?.toString() ?? '',
     id_almacen_fk:      opEdit?.id_almacen_fk?.toString()   ?? '',
     id_centro_costo_fk: opEdit?.id_centro_costo_fk?.toString() ?? '',
-    id_area_fk:         opEdit?.id_area_fk?.toString()   ?? '',
+    id_seccion_fk:      opEdit?.id_seccion_fk?.toString()   ?? '',
     id_frente_fk:       opEdit?.id_frente_fk?.toString()    ?? '',
     forma_pago:        opEdit?.forma_pago        ?? 'Transferencia',
     fecha_vencimiento: opEdit?.fecha_vencimiento ?? '',
@@ -270,12 +259,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     tipo_gasto:        opEdit?.tipo_gasto        ?? '',
     banco_destino:     opEdit?.banco_destino     ?? '',
     cuenta_clabe:      opEdit?.cuenta_clabe      ?? '',
-    notas:                opEdit?.notas                ?? '',
-    instrucciones_pago:   opEdit?.instrucciones_pago   ?? '',
-    referencia_pago:      opEdit?.referencia_pago      ?? '',
-    monto_manual:         opEdit?.monto?.toString()    ?? '',
-    pdf_factura:          opEdit?.pdf_factura          ?? '',
-    xml_factura:          opEdit?.xml_factura          ?? '',
+    notas:             opEdit?.notas             ?? '',
+    monto_manual:      opEdit?.monto?.toString() ?? '',
+    pdf_factura:       opEdit?.pdf_factura       ?? '',
+    xml_factura:       opEdit?.xml_factura       ?? '',
   })
 
   useEffect(() => {
@@ -283,20 +270,21 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       dbComp.from('proveedores').select('id, nombre, banco, cuenta_clabe, condiciones_pago').eq('activo', true).order('nombre'),
       dbComp.from('almacenes').select('id, nombre, tipo').eq('activo', true).order('nombre'),
       dbComp.from('ordenes_compra').select('id, folio, total, id_proveedor_fk').eq('status', 'Autorizada').order('folio'),
-      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-      dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
-    ]).then(([prov, alm, ocs, cc, ar, fr, rel, fp]) => {
-      setProvs(prov.data ?? [])
-      setAlms(alm.data ?? [])
-      setOcsDisp(ocs.data ?? [])
-      setCentros(cc.data ?? [])
-      setAreas((ar.data ?? []) as any)
-      setFrentes(fr.data ?? [])
-      setRelAF((rel.data ?? []) as any)
-      setFormasPago(fp.data ?? [])
+    ]).then(([{ data: provs }, { data: alms }, { data: ocs }]) => {
+      setProvs(provs ?? [])
+      setAlms(alms ?? [])
+      setOcsDisp(ocs ?? [])
+    })
+    // Catálogos cfg para opción sin OC
+    import('@/lib/supabase').then(({ dbCfg }) => {
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+        .then(({ data }) => setCentros(data ?? []))
+      dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+        .then(({ data }) => setSecciones(data ?? []))
+      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+        .then(({ data }) => setFrentes(data ?? []))
+      dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
+        .then(({ data }) => setFormasPago(data ?? []))
     })
   }, [])
 
@@ -322,14 +310,14 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       // Cargar preview de CC/Sección/Frente de la primera OC
       if (next.length === 1) {
         dbComp.from('ordenes_compra')
-          .select('id_centro_costo_fk, id_area_fk, id_frente_fk')
+          .select('id_centro_costo_fk, id_seccion_fk, id_frente_fk')
           .eq('id', oc.id).single()
           .then(async ({ data: ocData }) => {
             if (!ocData) return
             const { dbCfg: cfg } = await import('@/lib/supabase')
             const [{ data: ccData }, { data: secData }, { data: frData }] = await Promise.all([
               ocData.id_centro_costo_fk ? cfg.from('centros_costo').select('nombre').eq('id', ocData.id_centro_costo_fk).single() : Promise.resolve({ data: null }),
-              ocData.id_area_fk      ? cfg.from('areas').select('nombre').eq('id', ocData.id_area_fk).single()      : Promise.resolve({ data: null }),
+              ocData.id_seccion_fk      ? cfg.from('secciones').select('nombre').eq('id', ocData.id_seccion_fk).single()      : Promise.resolve({ data: null }),
               ocData.id_frente_fk       ? cfg.from('frentes').select('nombre').eq('id', ocData.id_frente_fk).single()        : Promise.resolve({ data: null }),
             ])
             setOcCCPreview({
@@ -415,28 +403,23 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (montoTotal <= 0) { setError('El monto debe ser mayor a cero'); return }
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
     if (!conOC && !form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
-    if (!conOC && !form.id_area_fk) { setError('Área es obligatoria'); return }
-    if (!conOC && !form.id_frente_fk) { setError('Frente es obligatorio'); return }
+    if (!conOC && !form.id_seccion_fk) { setError('Sección es obligatoria'); return }
     setSaving(true); setError('')
 
     // Obtener CC/Sección/Frente de la OC cuando aplica
-    let ocCampos = { id_centro_costo_fk: null as number|null, id_area_fk: null as number|null, id_frente_fk: null as number|null }
+    let ocCampos = { id_centro_costo_fk: null as number|null, id_seccion_fk: null as number|null, id_frente_fk: null as number|null }
     if (conOC && ocsSelected.length > 0) {
       const { data: ocData } = await dbComp.from('ordenes_compra')
-        .select('id_centro_costo_fk, id_area_fk, id_frente_fk')
+        .select('id_centro_costo_fk, id_seccion_fk, id_frente_fk')
         .eq('id', ocsSelected[0].id).single()
       if (ocData) ocCampos = ocData
-      // Validar que la OC herede CC, Área y Frente
-      if (!ocCampos.id_centro_costo_fk) { setSaving(false); setError('La OC seleccionada no tiene Centro de Costo asignado. Actualiza la OC antes de generar la OP.'); return }
-      if (!ocCampos.id_area_fk)         { setSaving(false); setError('La OC seleccionada no tiene Área asignada. Actualiza la OC antes de generar la OP.'); return }
-      if (!ocCampos.id_frente_fk)       { setSaving(false); setError('La OC seleccionada no tiene Frente asignado. Actualiza la OC antes de generar la OP.'); return }
     }
 
     const payload: any = {
       id_proveedor_fk:    form.id_proveedor_fk ? Number(form.id_proveedor_fk) : null,
       id_almacen_fk:      conOC && form.id_almacen_fk ? Number(form.id_almacen_fk) : null,
       id_centro_costo_fk: conOC ? ocCampos.id_centro_costo_fk : (form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null),
-      id_area_fk:         conOC ? ocCampos.id_area_fk      : (form.id_area_fk         ? Number(form.id_area_fk)         : null),
+      id_seccion_fk:      conOC ? ocCampos.id_seccion_fk      : (form.id_seccion_fk      ? Number(form.id_seccion_fk)      : null),
       id_frente_fk:       conOC ? ocCampos.id_frente_fk       : (form.id_frente_fk       ? Number(form.id_frente_fk)       : null),
       id_oc_fk:           (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
       forma_pago:        form.forma_pago,
@@ -445,10 +428,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       tipo_gasto:        form.tipo_gasto || null,
       banco_destino:     form.banco_destino.trim() || null,
       cuenta_clabe:      form.cuenta_clabe.trim() || null,
-      notas:              form.notas.trim() || null,
-      instrucciones_pago: form.instrucciones_pago.trim() || null,
-      referencia_pago:    form.referencia_pago.trim() || null,
-      monto:              montoTotal,
+      notas:             form.notas.trim() || null,
+      monto:             montoTotal,
       pdf_factura:       form.pdf_factura || null,
       xml_factura:       form.xml_factura || null,
     }
@@ -462,11 +443,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
 
     // NUEVO
-    try {
-      payload.folio = await nextFolio(dbComp, 'OP')
-    } catch (e: any) {
-      setError(e.message); setSaving(false); return
-    }
+    payload.folio      = folioGen('OP', (await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })).count ?? 0 + 1)
     // OP con OC: ya viene autorizada por la cadena REQ→COT→OC → entra directo a CXP
     // OP sin OC: gasto directo sin cadena de aprobación → requiere autorización previa
     payload.status     = conOC ? 'Pendiente' : 'Pendiente Auth'
@@ -490,8 +467,12 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // Paso 1: elegir si tiene OC o no — solo en nuevo
   if (conOC === null && !isEdit) {
     return (
-      <ModalShell modulo="compras" titulo="Nueva Orden de Pago" onClose={onClose} maxWidth={440}
-      >
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="modal" style={{ maxWidth: 440 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Nueva Orden de Pago</h2>
+            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          </div>
           <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>¿Esta orden de pago está relacionada con una compra?</p>
             <button onClick={() => setConOC(true)}
@@ -509,20 +490,28 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               <div style={{ fontSize: 12, color: '#64748b' }}>Servicios, honorarios, arrendamiento u otros gastos que no afectan inventario.</div>
             </button>
           </div>
-      </ModalShell>
+        </div>
+      </div>
     )
   }
 
   return (
-    <ModalShell modulo="compras" titulo={isEdit ? 'Editar Orden de Pago' : 'Nueva Orden de Pago'} onClose={onClose} maxWidth={640}
-      footer={<>
-        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-        <button className="btn-primary" onClick={handleSave} disabled={saving || !!uploading}>
-        {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-        {isEdit ? 'Guardar Cambios' : 'Generar Orden de Pago'}
-        </button>
-      </>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 640 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
+              {isEdit ? 'Editar Orden de Pago' : 'Nueva Orden de Pago'}
+            </h2>
+            {!isEdit && (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                {conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo'}
+                <button onClick={() => setConOC(null)} style={{ marginLeft: 8, fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>cambiar</button>
+              </div>
+            )}
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
 
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
@@ -561,7 +550,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               {ocCCPreview && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, padding: '8px 12px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, marginTop: 4 }}>
                   <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Centro de Costo</div><div style={{ fontSize: 12 }}>{ocCCPreview.cc}</div></div>
-                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Área</div><div style={{ fontSize: 12 }}>{ocCCPreview.sec}</div></div>
+                  <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Sección</div><div style={{ fontSize: 12 }}>{ocCCPreview.sec}</div></div>
                   <div><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', marginBottom: 2 }}>Frente</div><div style={{ fontSize: 12 }}>{ocCCPreview.frente}</div></div>
                 </div>
               )}
@@ -596,35 +585,28 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 <div>
                   <label className="label">Centro de Costo *</label>
                   <select className="select" value={form.id_centro_costo_fk}
-                    onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
+                    onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' }))}>
                     <option value="">— Seleccionar —</option>
                     {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="label">Sección *</label>
-                  <select className="select" value={areaId}
-                    onChange={e => { setAreaId(e.target.value); setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' })) }}
+                  <select className="select" value={seccionId}
+                    onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' })) }}
                     disabled={!form.id_centro_costo_fk}>
                     <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                    {areas
+                    {secciones
                       .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
                       .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label">Frente *</label>
-                  <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!areaId}>
-                    <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
-                    {(() => {
-                      const aId = Number(areaId)
-                      const permitidos = areaId
-                        ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
-                        : null
-                      return frentes
-                        .filter(f => !permitidos || permitidos.has(f.id))
-                        .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
-                    })()}
+                  <label className="label">Frente</label>
+                  <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!seccionId}>
+                    <option value="">— {seccionId ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                    {frentes.filter(f => !seccionId || f.id_seccion_fk === Number(seccionId))
+                      .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                   </select>
                 </div>
               </div>
@@ -688,37 +670,6 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
             <textarea className="input" rows={2} value={form.notas} onChange={setF('notas')} style={{ resize: 'vertical' }} />
           </div>
 
-          {/* ── Autorización ── */}
-          <Sec label="Autorización y Control de Pago">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div>
-                <label className="label">Ref. de Pago / Folio transferencia</label>
-                <input className="input" value={form.referencia_pago} onChange={setF('referencia_pago')}
-                  style={{ fontFamily: 'monospace' }} placeholder="ej. 202604-001 o N° de transferencia" />
-              </div>
-              {isEdit && opEdit?.autorizado_por && (
-                <div>
-                  <label className="label">Autorizado por</label>
-                  <input className="input" value={opEdit.autorizado_por} readOnly
-                    style={{ background: 'var(--bg-muted)', color: 'var(--text-secondary)', cursor: 'default' }} />
-                </div>
-              )}
-              {isEdit && opEdit?.fecha_autorizacion && (
-                <div>
-                  <label className="label">Fecha de autorización</label>
-                  <input className="input" value={new Date(opEdit.fecha_autorizacion).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })} readOnly
-                    style={{ background: 'var(--bg-muted)', color: 'var(--text-secondary)', cursor: 'default' }} />
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="label">Instrucciones de pago <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(para Tesorería)</span></label>
-              <textarea className="input" rows={2} value={form.instrucciones_pago} onChange={setF('instrucciones_pago')}
-                placeholder="ej. Pagar antes del viernes / Retener IVA / Pago parcial 50% …"
-                style={{ resize: 'vertical' }} />
-            </div>
-          </Sec>
-
           {/* ── Documentos de la Operación ── */}
           <Sec label="Documentos de la Operación">
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
@@ -739,21 +690,30 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
           </div>
         </div>
 
-    </ModalShell>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || !!uploading}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {isEdit ? 'Guardar Cambios' : 'Generar Orden de Pago'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
 // ════════════════════════════════════════════════════════════
 // Detalle OP
 // ════════════════════════════════════════════════════════════
-const ROLES_AUTH_OP = ['superadmin', 'admin', 'compras_supervisor', 'fraccionamiento']
+const ROLES_AUTH_OP = ['admin', 'compras_supervisor', 'fraccionamiento']
 
 function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
-  const { authUser, canWrite } = useAuth()
+  const { authUser, canWrite, canCompras } = useAuth()
+  /** Mismo criterio que ver la tarjeta Órdenes de Pago en /compras + tesorería (CXP). */
   const puedePublicarInstruccion = Boolean(
-    authUser && (canWrite('ordenes-pago') || authUser.rol === 'tesoreria')
+    authUser && (Boolean(canCompras('ordenes-pago')) || authUser.rol === 'tesoreria')
   )
   const puedeSubirFacturaPagada = op.status === 'Pagada' && canWrite('ordenes-pago')
   const [localOp, setLocalOp]   = useState(op)
@@ -763,7 +723,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
 
   const [ocsRel, setOcsRel]       = useState<any[]>([])
   const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
-  const [areaMap, setAreaMap]       = useState<Record<number, string>>({})
+  const [secMap, setSecMap]       = useState<Record<number, string>>({})
   const [frMap,  setFrMap]        = useState<Record<number, string>>({})
   const [abonos, setAbonos]       = useState<any[]>([])
   const [loadingAbonos, setLoadingAbonos] = useState(true)
@@ -850,13 +810,13 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     import('@/lib/supabase').then(({ dbCfg }) => {
       Promise.all([
         dbCfg.from('centros_costo').select('id, nombre'),
-        dbCfg.from('areas').select('id, nombre'),
+        dbCfg.from('secciones').select('id, nombre'),
         dbCfg.from('frentes').select('id, nombre'),
       ]).then(([{ data: cc }, { data: sec }, { data: fr }]) => {
         const cm: Record<number, string> = {}; (cc ?? []).forEach((r: any) => { cm[r.id] = r.nombre })
         const sm: Record<number, string> = {}; (sec ?? []).forEach((r: any) => { sm[r.id] = r.nombre })
         const fm: Record<number, string> = {}; (fr ?? []).forEach((r: any) => { fm[r.id] = r.nombre })
-        setCcMap(cm); setAreaMap(sm); setFrMap(fm)
+        setCcMap(cm); setSecMap(sm); setFrMap(fm)
       })
     })
 
@@ -875,26 +835,17 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const handleAuth = async (aprobado: boolean) => {
     if (!aprobado && !confirm('¿Rechazar esta Orden de Pago? Esta acción no entrará a CXP.')) return
     setAuthLd(true)
-    const updatePayload: any = {
-      status: aprobado ? 'Pendiente' : 'Rechazada',
-      notas:  authComment.trim()
+    await dbComp.from('ordenes_pago').update({
+      status:          aprobado ? 'Pendiente' : 'Rechazada',
+      notas:           authComment.trim()
         ? `[${aprobado ? 'Autorizado' : 'Rechazado'} por ${authUser?.nombre ?? ''}]: ${authComment.trim()}${op.notas ? '\n' + op.notas : ''}`
         : op.notas ?? null,
-    }
-    if (aprobado) {
-      updatePayload.autorizado_por     = authUser?.nombre ?? null
-      updatePayload.fecha_autorizacion = new Date().toISOString()
-    }
-    await dbComp.from('ordenes_pago').update(updatePayload).eq('id', op.id)
+    }).eq('id', op.id)
     setAuthLd(false)
     onAuthorized()
   }
 
   const imprimir = async () => {
-    // Fresh fetch del OP para asegurar campos actualizados (created_by, autorizado_por, referencia_pago, etc.)
-    const { data: freshOP } = await dbComp.from('ordenes_pago').select('*').eq('id', op.id).single()
-    const opData = freshOP ? { ...op, ...freshOP } : op
-
     // Cargar config de organización
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
@@ -916,7 +867,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
-    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${opData.folio}</title>
+    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${op.folio}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
         .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
@@ -940,45 +891,24 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Orden de Pago</div>
-          <div class="sub" style="margin:0">Folio: <strong>${opData.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(opData.fecha_op)}</div>
+          <div class="sub" style="margin:0">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(op.fecha_op)}</div>
         </div>
       </div>
       <table>
-        <tr><th>Beneficiario</th><td>${opData._provNombre ?? '—'}</td><th>Banco</th><td>${opData.banco_destino ?? '—'}</td></tr>
-        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
-        <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
-        <tr><th>Almacén</th><td>${opData._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
-        ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
-        ${opData.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap[opData.id_centro_costo_fk] ?? `#${opData.id_centro_costo_fk}`}</td><th>Área</th><td>${opData.id_area_fk ? (areaMap[opData.id_area_fk] ?? `#${opData.id_area_fk}`) : '—'}</td></tr>` : ''}
-        ${opData.id_frente_fk ? `<tr><th>Frente</th><td colspan="3">${frMap[opData.id_frente_fk] ?? `#${opData.id_frente_fk}`}</td></tr>` : ''}
+        <tr><th>Beneficiario</th><td>${op._provNombre ?? '—'}</td><th>Banco</th><td>${op.banco_destino ?? '—'}</td></tr>
+        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${op.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>
+        <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
+        <tr><th>Almacén</th><td>${op._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td></tr>
+        ${op.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${op.tipo_gasto}</td></tr>` : ''}
+        ${op.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`}</td><th>Sección</th><td>${op.id_seccion_fk ? (secMap[op.id_seccion_fk] ?? `#${op.id_seccion_fk}`) : '—'}</td></tr>` : ''}
+        ${op.id_frente_fk ? `<tr><th>Frente</th><td colspan="3">${frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
-        <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
+        <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(op.monto)}</td></tr>
       </table>
-      ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
-
-      ${(opData.autorizado_por || opData.fecha_autorizacion || opData.instrucciones_pago || opData.referencia_pago) ? `
-      <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
-        <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
-          Autorización y Control de Pago
-        </div>
-        <table style="margin:0">
-          ${opData.autorizado_por     ? `<tr><th>Autorizado por</th><td>${opData.autorizado_por}</td></tr>` : ''}
-          ${opData.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
-          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
-          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
-        </table>
-      </div>` : ''}
-
+      ${op.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${op.notas}</em></p>` : ''}
       <div class="firmas">
-        <div class="firma">
-          ${opData.created_by ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.created_by}</div>` : ''}
-          Elaboró
-        </div>
-        <div class="firma">
-          ${opData.autorizado_por ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.autorizado_por}</div>` : ''}
-          Autorizó
-          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
-        </div>
+        <div class="firma">Elaboró</div>
+        <div class="firma">Autorizó</div>
         <div class="firma">Recibió</div>
       </div>
       </body></html>`
@@ -996,28 +926,22 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   }
 
   return (
-    <ModalShell modulo="compras" titulo="Modal" onClose={onClose} maxWidth={580}
-      footer={<>
-        <div>
-        {op.status === 'Pendiente' && (
-        <button onClick={cancelar} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 7,
-        background: 'none', border: '1px solid #fecaca', color: '#dc2626', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
-        Cancelar OP
-        </button>
-        )}
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 580 }}>
+
+        {/* Header */}
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--blue)' }}>{op.folio}</span>
+              <StatusBadge status={op.status} />
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {op._provNombre ?? 'Sin proveedor'} · {fmtFecha(op.fecha_op)}
+            </div>
+          </div>
+          <button className="btn-ghost" style={{ marginTop: 2 }} onClick={onClose}><X size={16} /></button>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}>
-        <Printer size={13} /> Imprimir
-        </button>
-        {['Pendiente Auth', 'Pendiente', 'Rechazada'].includes(op.status) && (
-        <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
-        <Edit2 size={13} /> Editar
-        </button>
-        )}
-        </div>
-      </>}
-    >
 
         {/* Cuerpo */}
         <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 180px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1038,31 +962,11 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               <DI label="Almacén"         value={op._almNombre} />
               <DI label="Vencimiento"     value={fmtFecha(op.fecha_vencimiento)} />
               {op.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`} />}
-              {op.id_area_fk && <DI label="Área"          value={areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`} />}
+              {op.id_seccion_fk     && <DI label="Sección"          value={secMap[op.id_seccion_fk] ?? `#${op.id_seccion_fk}`} />}
               {op.id_frente_fk      && <DI label="Frente"           value={frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`} />}
-              {op.fecha_pago && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
+              {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
+              {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
             </div>
-          </Sec>
-
-          {/* Sección de autorización — siempre visible */}
-          <Sec label="Autorización y Control de Pago">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
-              <DI label="Ref. de Pago"       value={op.referencia_pago} mono />
-              <DI label="Autorizado por"     value={op.autorizado_por} />
-              <DI label="Fecha autorización" value={op.fecha_autorizacion ? new Date(op.fecha_autorizacion).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : null} />
-            </div>
-            {op.instrucciones_pago ? (
-              <div style={{ marginTop: 8, padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Instrucciones de pago</div>
-                <div style={{ fontSize: 13, color: '#78350f', whiteSpace: 'pre-wrap' }}>{op.instrucciones_pago}</div>
-              </div>
-            ) : (
-              !op.autorizado_por && !op.referencia_pago && (
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                  Sin datos de autorización. Edita la OP para agregar referencia o instrucciones.
-                </p>
-              )
-            )}
           </Sec>
 
           <Sec label="Instrucciones y respuestas (CXP)">
@@ -1342,7 +1246,28 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         </div>
 
         {/* Footer */}
-    </ModalShell>
+        <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            {op.status === 'Pendiente' && (
+              <button onClick={cancelar} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 7,
+                background: 'none', border: '1px solid #fecaca', color: '#dc2626', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                Cancelar OP
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}>
+              <Printer size={13} /> Imprimir
+            </button>
+            {op.status === 'Pendiente' && (
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
+                <Edit2 size={13} /> Editar
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 

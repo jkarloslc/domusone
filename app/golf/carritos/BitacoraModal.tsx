@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { BookOpen, Save, Loader } from 'lucide-react'
+import { BookOpen, Save, Loader, X } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 type TipoEvento = 'SALIDA_TALLER' | 'REGRESO_TALLER' | 'PRESTAMO_TERCERO' | 'INCIDENCIA'

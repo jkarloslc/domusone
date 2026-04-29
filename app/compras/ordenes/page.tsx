@@ -8,8 +8,7 @@ import {
   ArrowLeft, CheckCircle, XCircle, Printer, Trash2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP, nextFolio } from '../types'
-import ModalShell from '@/components/ui/ModalShell'
+import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP } from '../types'
 
 const PAGE_SIZE = 20
 
@@ -24,7 +23,7 @@ export default function OrdenesPage() {
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
-  const [filterArea, setFilterArea] = useState('')
+  const [filterSec, setFilterSec] = useState('')
   const [ccFiltros, setCcFiltros] = useState<{ id: number; nombre: string }[]>([])
   const [secFiltros, setSecFiltros] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,7 +37,7 @@ export default function OrdenesPage() {
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
+    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
     if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
@@ -47,13 +46,13 @@ export default function OrdenesPage() {
     ;(provs ?? []).forEach((p: any) => { m[p.id] = p.nombre })
     setProvMap(m)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterArea])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterSec])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCcFiltros((data ?? []) as { id: number; nombre: string }[]))
-    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setSecFiltros((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
   }, [])
 
@@ -71,13 +70,11 @@ export default function OrdenesPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Órdenes de Compra</h1>
-            <p className="page-subtitle">OC y órdenes de pago · {total} registros</p>
-          </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Órdenes de Compra</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>OC y órdenes de pago · {total} registros</p>
         </div>
       </div>
 
@@ -93,13 +90,13 @@ export default function OrdenesPage() {
             {['Borrador','Pendiente Auth','Autorizada','Enviada al Prov','Recibida Parcial','Cerrada','Cancelada'].map(s => <option key={s}>{s}</option>)}
           </select>
           <select className="select" style={{ width: 220 }} value={filterCC}
-            onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setPage(0) }}>
+            onChange={e => { setFilterCC(e.target.value); setFilterSec(''); setPage(0) }}>
             <option value="">Todos los centros de costo</option>
             {ccFiltros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
-          <select className="select" style={{ width: 200 }} value={filterArea}
-            onChange={e => { setFilterArea(e.target.value); setPage(0) }}>
-            <option value="">Todas las áreas</option>
+          <select className="select" style={{ width: 200 }} value={filterSec}
+            onChange={e => { setFilterSec(e.target.value); setPage(0) }}>
+            <option value="">Todas las secciones</option>
             {secFiltros
               .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
               .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
@@ -154,10 +151,9 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const [proveedores, setProvs] = useState<Proveedor[]>([])
   const [almacenes, setAlms]    = useState<any[]>([])
   const [centrosCosto, setCentros] = useState<any[]>([])
-  const [areas, setAreas]  = useState<any[]>([])
+  const [secciones, setSecciones]  = useState<any[]>([])
   const [frentes, setFrentes]      = useState<any[]>([])
-  const [relAF, setRelAF]          = useState<{id_area: number; id_frente: number}[]>([])
-  const [areaId, setAreaId]  = useState<string>(row?.id_area_fk?.toString() ?? '')
+  const [seccionId, setSeccionId]  = useState<string>(row?.id_seccion_fk?.toString() ?? '')
   const [rfqs, setRFQs]         = useState<any[]>([])
   const [form, setForm] = useState({
     id_proveedor_fk:       row?.id_proveedor_fk?.toString() ?? '',
@@ -166,7 +162,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     condiciones_pago:      row?.condiciones_pago ?? '',
     id_almacen_entrega_fk: row?.id_almacen_entrega_fk?.toString() ?? '',
     id_centro_costo_fk:    row?.id_centro_costo_fk?.toString() ?? '',
-    id_area_fk:         row?.id_area_fk?.toString() ?? '',
+    id_seccion_fk:         row?.id_seccion_fk?.toString() ?? '',
     id_frente_fk:          row?.id_frente_fk?.toString() ?? '',
     notas:                 row?.notas ?? '',
   })
@@ -175,21 +171,16 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const [artOptions,  setArtOptions]  = useState<any[][]>([[]])
 
   useEffect(() => {
-    Promise.all([
-      dbComp.from('proveedores').select('*').eq('activo', true).order('nombre'),
-      dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-    ]).then(([prov, alm, cc, ar, fr, rel]) => {
-      setProvs((prov.data ?? []) as Proveedor[])
-      setAlms(alm.data ?? [])
-      setCentros(cc.data ?? [])
-      setAreas(ar.data ?? [])
-      setFrentes(fr.data ?? [])
-      setRelAF((rel.data ?? []) as any)
-    })
+    dbComp.from('proveedores').select('*').eq('activo', true).order('nombre')
+      .then(({ data }) => setProvs(data as Proveedor[] ?? []))
+    dbComp.from('almacenes').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setAlms(data ?? []))
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCentros(data ?? []))
+    dbCfg.from('secciones').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setSecciones(data ?? []))
+    dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setFrentes(data ?? []))
     ;(async () => {
       const { data: rfqsConOC } = await dbComp.from('ordenes_compra').select('id_rfq_fk').not('id_rfq_fk', 'is', null)
       const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk))
@@ -212,55 +203,23 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     if (rfq?.proveedor_ganador) setForm(f => ({ ...f, id_proveedor_fk: rfq.proveedor_ganador.toString() }))
 
     // 2. Cotización seleccionada + detalle de artículos
+    // Usamos hint explícito de FK para evitar que Supabase falle en la inferencia automática
     const { data: cot } = await dbComp.from('rfq_cotizaciones')
       .select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)')
       .eq('id_rfq_fk', Number(rfqId)).eq('seleccionada', true).maybeSingle()
 
     if (cot?.rfq_cotizaciones_det?.length) {
-      // Recuperar id_articulo_fk desde requisiciones_det usando id_requisicion_det_fk
-      // ya que rfq_cotizaciones_det no almacena el vínculo al catálogo directamente
-      const reqDetIds = (cot.rfq_cotizaciones_det as any[])
-        .map((d: any) => d.id_requisicion_det_fk).filter(Boolean) as number[]
-
-      // Mapa: req_det_id → { id_articulo_fk, clave, nombre }
-      const artMap: Record<number, { id: number | null; clave: string; nombre: string }> = {}
-      if (reqDetIds.length) {
-        const { data: reqDets } = await dbComp.from('requisiciones_det')
-          .select('id, id_articulo_fk').in('id', reqDetIds)
-        const artIds = ((reqDets ?? []) as any[]).map((r: any) => r.id_articulo_fk).filter(Boolean) as number[]
-        const artNombres: Record<number, { clave: string; nombre: string }> = {}
-        if (artIds.length) {
-          const { data: arts } = await dbComp.from('articulos').select('id, clave, nombre').in('id', artIds)
-          ;(arts ?? []).forEach((a: any) => { artNombres[a.id] = { clave: a.clave, nombre: a.nombre } })
-        }
-        ;(reqDets ?? []).forEach((rd: any) => {
-          artMap[rd.id] = {
-            id:     rd.id_articulo_fk,
-            clave:  artNombres[rd.id_articulo_fk]?.clave  ?? '',
-            nombre: artNombres[rd.id_articulo_fk]?.nombre ?? '',
-          }
-        })
-      }
-
-      const items = (cot.rfq_cotizaciones_det as any[]).map((d: any) => {
-        const art = d.id_requisicion_det_fk ? artMap[d.id_requisicion_det_fk] : null
-        return {
-          id_articulo_fk:  art?.id ?? null,
-          descripcion:     d.descripcion   ?? '',
-          cantidad:        d.cantidad?.toString()       ?? '1',
-          unidad:          d.unidad        ?? 'PZA',
-          precio_unitario: d.precio_unitario?.toString() ?? '',
-          tasa_iva:        d.tasa_iva?.toString()        ?? '0',
-        }
-      })
-      setDet(items)
-      // Poblar artSearches con el nombre del artículo para que se vea en la UI
-      setArtSearches(items.map((item: any) => {
-        const art = item.id_articulo_fk
-          ? Object.values(artMap).find(a => a.id === item.id_articulo_fk)
-          : null
-        return art?.clave && art?.nombre ? `${art.clave} — ${art.nombre}` : ''
+      const items = cot.rfq_cotizaciones_det.map((d: any) => ({
+        id_articulo_fk: null,
+        descripcion:    d.descripcion   ?? '',
+        cantidad:       d.cantidad?.toString()       ?? '1',
+        unidad:         d.unidad        ?? 'PZA',
+        precio_unitario: d.precio_unitario?.toString() ?? '',
+        tasa_iva:       d.tasa_iva?.toString()        ?? '0',
       }))
+      setDet(items)
+      // Bug 1 fix: sincronizar artSearches/artOptions con la cantidad de productos precargados
+      setArtSearches(new Array(items.length).fill(''))
       setArtOptions(new Array(items.length).fill([]))
       setForm(f => ({ ...f, condiciones_pago: cot.condiciones_pago ?? f.condiciones_pago }))
     }
@@ -268,17 +227,17 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     // 3. CC / Sección / Frente desde la requisición vinculada al RFQ
     // Consolidamos en un solo query trayendo rfq + requisición en una sola consulta
     const { data: rfqData } = await dbComp.from('rfq')
-      .select('id_requisicion_fk, requisiciones(id_centro_costo_fk, id_area_fk, id_frente_fk)')
+      .select('id_requisicion_fk, requisiciones(id_centro_costo_fk, id_seccion_fk, id_frente_fk)')
       .eq('id', Number(rfqId)).maybeSingle()
 
     const req = (rfqData as any)?.requisiciones
     if (req) {
-      const secId = req.id_area_fk?.toString() ?? ''
-      setAreaId(secId)
+      const secId = req.id_seccion_fk?.toString() ?? ''
+      setSeccionId(secId)
       setForm(f => ({
         ...f,
         id_centro_costo_fk: req.id_centro_costo_fk?.toString() ?? f.id_centro_costo_fk,
-        id_area_fk:         secId                              || f.id_area_fk,
+        id_seccion_fk:      secId                              || f.id_seccion_fk,
         id_frente_fk:       req.id_frente_fk?.toString()       ?? f.id_frente_fk,
       }))
     }
@@ -317,13 +276,12 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const handleSave = async (enviar = false) => {
     if (!form.id_proveedor_fk) { setError('Selecciona un proveedor'); return }
     if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
-    if (!form.id_area_fk) { setError('Área es obligatoria'); return }
-    if (!form.id_frente_fk) { setError('Frente es obligatorio'); return }
+    if (!form.id_seccion_fk) { setError('Sección es obligatoria'); return }
     const detValidos = det.filter(d => d.descripcion && Number(d.precio_unitario) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto con precio'); return }
     setSaving(true); setError('')
-    let folio: string
-    try { folio = await nextFolio(dbComp, 'OC') } catch (e: any) { setError(e.message); setSaving(false); return }
+    const { count } = await dbComp.from('ordenes_compra').select('id', { count: 'exact', head: true })
+    const folio = folioGen('OC', (count ?? 0) + 1)
     const { data: oc, error: err } = await dbComp.from('ordenes_compra').insert({
       folio,
       id_proveedor_fk:       Number(form.id_proveedor_fk),
@@ -332,7 +290,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       condiciones_pago:      form.condiciones_pago || null,
       id_almacen_entrega_fk: form.id_almacen_entrega_fk ? Number(form.id_almacen_entrega_fk) : null,
       id_centro_costo_fk:    form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
-      id_area_fk:            form.id_area_fk ? Number(form.id_area_fk) : null,
+      id_seccion_fk:         form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
       id_frente_fk:          form.id_frente_fk ? Number(form.id_frente_fk) : null,
       notas:                 form.notas.trim() || null,
       subtotal, iva, total: subtotal + iva,
@@ -343,7 +301,6 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     await dbComp.from('ordenes_compra_det').insert(
       detValidos.map(d => ({
         id_oc_fk: oc.id, descripcion: d.descripcion.trim(),
-        id_articulo_fk: d.id_articulo_fk ?? null,
         cantidad: Number(d.cantidad), unidad: d.unidad,
         precio_unitario: Number(d.precio_unitario), tasa_iva: Number(d.tasa_iva),
       }))
@@ -352,15 +309,12 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   }
 
   return (
-    <ModalShell modulo="compras" titulo="Nueva Orden de Compra" onClose={onClose} maxWidth={720}
-      footer={<>
-        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-        <button className="btn-secondary" onClick={() => handleSave(false)} disabled={saving}><Save size={13} /> Borrador</button>
-        <button className="btn-primary" onClick={() => handleSave(true)} disabled={saving}>
-        {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Enviar para Autorización
-        </button>
-      </>}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 720 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Nueva Orden de Compra</h2>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
 
@@ -409,37 +363,30 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
               <div>
                 <label className="label">Centro de Costo *</label>
                 <select className="select" value={form.id_centro_costo_fk}
-                  onChange={e => { setAreaId(''); setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' })) }}>
+                  onChange={e => { setSeccionId(''); setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_seccion_fk: '', id_frente_fk: '' })) }}>
                   <option value="">— Seleccionar —</option>
                   {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
               <div>
                 <label className="label">Sección *</label>
-                <select className="select" value={areaId}
-                  onChange={e => { setAreaId(e.target.value); setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' })) }}
+                <select className="select" value={seccionId}
+                  onChange={e => { setSeccionId(e.target.value); setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_frente_fk: '' })) }}
                   disabled={!form.id_centro_costo_fk}>
                   <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                  {areas
+                  {secciones
                     .filter(s => !form.id_centro_costo_fk || (s as any).id_centro_costo_fk === Number(form.id_centro_costo_fk))
                     .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
               </div>
               <div>
-                <label className="label">Frente *</label>
+                <label className="label">Frente</label>
                 <select className="select" value={form.id_frente_fk}
                   onChange={e => setForm(f => ({ ...f, id_frente_fk: e.target.value }))}
-                  disabled={!areaId}>
-                  <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
-                  {(() => {
-                    const aId = Number(areaId)
-                    const permitidos = areaId
-                      ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
-                      : null
-                    return frentes
-                      .filter(f => !permitidos || permitidos.has(f.id))
-                      .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
-                  })()}
+                  disabled={!seccionId}>
+                  <option value="">— {seccionId ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                  {frentes.filter(f => !seccionId || f.id_seccion_fk === Number(seccionId))
+                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                 </select>
               </div>
             </div>
@@ -514,7 +461,15 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
               onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} style={{ resize: 'vertical' }} />
           </div>
         </div>
-    </ModalShell>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-secondary" onClick={() => handleSave(false)} disabled={saving}><Save size={13} /> Borrador</button>
+          <button className="btn-primary" onClick={() => handleSave(true)} disabled={saving}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Enviar para Autorización
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -522,9 +477,6 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
   const [det, setDet]       = useState<any[]>([])
   const [op, setOP]         = useState<any | null>(null)
   const [almMap, setAlmMap] = useState<Record<number, string>>({})
-  const [ccMap,  setCcMap]  = useState<Record<number, string>>({})
-  const [areaMap,setAreaMap]= useState<Record<number, string>>({})
-  const [frMap,  setFrMap]  = useState<Record<number, string>>({})
   const [comentario, setCom]    = useState('')
   const [creandoOP, setCreandoOP] = useState(false)
   const [savingOP, setSavingOP]   = useState(false)
@@ -538,29 +490,14 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
       ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
       setAlmMap(m)
     })
-    dbCfg.from('centros_costo').select('id, nombre').then(({ data }) => {
-      const m: Record<number, string> = {}
-      ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
-      setCcMap(m)
-    })
-    dbCfg.from('areas').select('id, nombre').then(({ data }) => {
-      const m: Record<number, string> = {}
-      ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
-      setAreaMap(m)
-    })
-    dbCfg.from('frentes').select('id, nombre').then(({ data }) => {
-      const m: Record<number, string> = {}
-      ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
-      setFrMap(m)
-    })
   }, [oc.id])
 
   const crearOrdenPago = async () => {
     setSavingOP(true)
-    let folioOP: string
-    try { folioOP = await nextFolio(dbComp, 'OP') } catch (e: any) { setSavingOP(false); alert(e.message); return }
+    const { count } = await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })
+    const folio = folioGen('OP', (count ?? 0) + 1)
     await dbComp.from('ordenes_pago').insert({
-      folio: folioOP, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
+      folio, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
       id_almacen_fk: oc.id_almacen_entrega_fk ?? null,
       monto: oc.total, forma_pago: opForm.forma_pago,
       fecha_vencimiento: opForm.fecha_vencimiento || null,
@@ -572,58 +509,37 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
 
   const imprimirOP = async () => {
     if (!op) return
-    // Fresh fetch del OP para asegurar campos actualizados (created_by, autorizado_por, referencia_pago, etc.)
-    const { data: freshOP } = await dbComp.from('ordenes_pago').select('*').eq('id', op.id).single()
-    const opData = freshOP ? { ...op, ...freshOP } : op
-
-    // Cargar CC/Área/Frente y config org en paralelo
+    // Cargar config de organización
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
     let orgLogo = ''
-    const ccMap2: Record<number, string> = {}
-    const areaMap2: Record<number, string> = {}
-    const frMap2: Record<number, string> = {}
     try {
       const { createClient } = await import('@supabase/supabase-js')
       const sb = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
-      const sbCfg = sb.schema('cfg' as any)
-      const [cfgRows, ccRows, areaRows, frRows] = await Promise.all([
-        sbCfg.from('configuracion').select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url']),
-        sbCfg.from('centros_costo').select('id, nombre'),
-        sbCfg.from('areas').select('id, nombre'),
-        sbCfg.from('frentes').select('id, nombre'),
-      ])
-      ;(cfgRows.data ?? []).forEach((r: any) => {
+      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
         if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
         if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
         if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
       })
-      ;(ccRows.data ?? []).forEach((r: any) => { ccMap2[r.id] = r.nombre })
-      ;(areaRows.data ?? []).forEach((r: any) => { areaMap2[r.id] = r.nombre })
-      ;(frRows.data ?? []).forEach((r: any) => { frMap2[r.id] = r.nombre })
     } catch {}
-
-    const provNombre = opData._provNombre ?? oc._provNombre ?? '—'
-    const almNombre  = opData._almNombre ?? almMap[oc.id_almacen_entrega_fk] ?? '—'
-
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
-    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${opData.folio}</title>
+    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${op.folio}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
         .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
         .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
         .org-sub { font-size: 11px; color: #64748b; }
         .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
-        .sub { color: #64748b; font-size: 12px; margin-bottom: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
         td, th { border: 1px solid #e2e8f0; padding: 8px 12px; }
-        th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
-        .total { background: #eff6ff; font-size: 16px; font-weight: 700; color: #0D4F80; }
+        th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; }
         .firmas { display: flex; gap: 60px; margin-top: 60px; }
         .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
         @page { margin: 1.2cm; }
@@ -636,45 +552,19 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Orden de Pago</div>
-          <div class="sub" style="margin:0">Folio: <strong>${opData.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(opData.fecha_op)}</div>
+          <div style="font-size:12px;color:#64748b">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; OC: ${oc.folio}</div>
         </div>
       </div>
       <table>
-        <tr><th>Beneficiario</th><td>${provNombre}</td><th>Banco</th><td>${opData.banco_destino ?? '—'}</td></tr>
-        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
-        <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
-        <tr><th>Almacén</th><td>${almNombre}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
-        ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
-        ${opData.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap2[opData.id_centro_costo_fk] ?? `#${opData.id_centro_costo_fk}`}</td><th>Área</th><td>${opData.id_area_fk ? (areaMap2[opData.id_area_fk] ?? `#${opData.id_area_fk}`) : '—'}</td></tr>` : ''}
-        ${opData.id_frente_fk ? `<tr><th>Frente</th><td colspan="3">${frMap2[opData.id_frente_fk] ?? `#${opData.id_frente_fk}`}</td></tr>` : ''}
-        <tr><th>OC Relacionada</th><td colspan="3">${oc.folio}</td></tr>
-        <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
+        <tr><th>Proveedor</th><td colspan="3">${oc._provNombre ?? '—'}</td></tr>
+        <tr><th>Folio OP</th><td>${op.folio}</td><th>OC Ref.</th><td>${oc.folio}</td></tr>
+        <tr><th>Monto</th><td><strong>${fmt(op.monto)}</strong></td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>
+        <tr><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td><th>Almacén</th><td>${almMap[oc.id_almacen_entrega_fk] ?? '—'}</td></tr>
+        <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
       </table>
-      ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
-
-      ${(opData.autorizado_por || opData.fecha_autorizacion || opData.instrucciones_pago || opData.referencia_pago) ? `
-      <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
-        <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
-          Autorización y Control de Pago
-        </div>
-        <table style="margin:0">
-          ${opData.autorizado_por     ? `<tr><th>Autorizado por</th><td>${opData.autorizado_por}</td></tr>` : ''}
-          ${opData.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
-          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
-          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
-        </table>
-      </div>` : ''}
-
       <div class="firmas">
-        <div class="firma">
-          ${opData.created_by ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.created_by}</div>` : ''}
-          Elaboró
-        </div>
-        <div class="firma">
-          ${opData.autorizado_por ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.autorizado_por}</div>` : ''}
-          Autorizó
-          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
-        </div>
+        <div class="firma">Elaboró</div>
+        <div class="firma">Autorizó</div>
         <div class="firma">Recibió</div>
       </div>
       </body></html>`
@@ -692,8 +582,18 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
   }
 
   return (
-    <ModalShell modulo="compras" titulo="Modal" onClose={onClose} maxWidth={660}
-    >
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 660 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>{oc.folio}</span>
+              <StatusBadge status={oc.status} />
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{oc._provNombre ?? ''} · {fmtFecha(oc.fecha_oc)}</div>
+          </div>
+          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
         <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 120px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Sec label="Productos">
             <div className="card" style={{ overflow: 'hidden' }}>
@@ -723,9 +623,6 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
             <DI label="Almacén de Entrega"  value={oc.id_almacen_entrega_fk ? (almMap[oc.id_almacen_entrega_fk] ?? `#${oc.id_almacen_entrega_fk}`) : null} />
             {oc.autorizado_por    && <DI label="Autorizado por" value={`${oc.autorizado_por} — ${fmtFecha(oc.fecha_autorizacion)}`} />}
             {oc.comentario_auth   && <DI label="Comentario"     value={oc.comentario_auth} />}
-            {oc.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[oc.id_centro_costo_fk] ?? `#${oc.id_centro_costo_fk}`} />}
-            {oc.id_area_fk         && <DI label="Área"            value={areaMap[oc.id_area_fk]        ?? `#${oc.id_area_fk}`}        />}
-            {oc.id_frente_fk       && <DI label="Frente"          value={frMap[oc.id_frente_fk]        ?? `#${oc.id_frente_fk}`}        />}
           </div>
 
           {canAuth && oc.status === 'Pendiente Auth' && (
@@ -792,7 +689,8 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
             </div>
           )}
         </div>
-    </ModalShell>
+      </div>
+    </div>
   )
 }
 
