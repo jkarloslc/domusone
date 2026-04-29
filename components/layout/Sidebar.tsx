@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Home, Wrench, ShoppingCart,
+  Home, Wrench, Truck, ShoppingCart,
   BarChart3, Settings, LogOut, User, X, Landmark, MessageSquare,
   Flag, Star, DollarSign, MessageCircle,
 } from 'lucide-react'
@@ -75,6 +75,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
@@ -101,6 +102,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
@@ -151,6 +153,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuariomantto: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
@@ -214,6 +218,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
       RPT('residencial'),
     ]},
   ],
