@@ -2,10 +2,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Home, MapPin, Users, FileText, Building2, Wrench,
-  Shield, AlertTriangle, Receipt, ShoppingCart,
-  BarChart3, BookOpen, Settings, LogOut, User, X, Calendar, Landmark, MessageSquare,
-  LayoutDashboard, Flag, Star, DollarSign, MessageCircle,
+  Home, Wrench, ShoppingCart,
+  BarChart3, Settings, LogOut, User, X, Landmark, MessageSquare,
+  Flag, Star, DollarSign, MessageCircle,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -75,14 +74,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   superadmin: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
-      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
@@ -109,14 +100,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   admin: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
-      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
@@ -143,14 +126,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuarioadmin: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
-      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
@@ -176,14 +151,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuariomantto: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
-      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
@@ -203,12 +170,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   atencion_residentes: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
@@ -218,9 +179,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   cobranza: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
       RPT('residencial'),
     ]},
   ],
@@ -228,10 +186,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   vigilancia: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
     ]},
   ],
 
@@ -259,8 +213,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   mantenimiento: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('residencial'),
     ]},
@@ -269,15 +221,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   fraccionamiento: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Contratos',      href: '/contratos',      icon: FileText      },
-      { label: 'Escrituras',     href: '/escrituras',     icon: BookOpen      },
-      { label: 'Proyectos',      href: '/proyectos',      icon: Building2     },
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
-      { label: 'Cobranza',       href: '/cobranza',       icon: Receipt       },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
@@ -301,10 +245,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   seguridad: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Lotes',          href: '/lotes',          icon: MapPin        },
-      { label: 'Propietarios',   href: '/propietarios',   icon: Users         },
-      { label: 'Accesos',        href: '/accesos',        icon: Shield        },
-      { label: 'Incidencias',    href: '/incidencias',    icon: AlertTriangle },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -367,9 +307,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 }
 
-const ROLES_CON_LOTES = ['superadmin','admin','usuarioadmin','usuariomantto','atencion_residentes',
-  'cobranza','vigilancia','mantenimiento','fraccionamiento','seguridad']
-
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname()
   const { authUser, signOut } = useAuth()
@@ -377,7 +314,6 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const rol      = (authUser?.rol ?? 'vigilancia') as Rol
   const sections = NAV_POR_ROL[rol] ?? []
   const label    = authUser?.rol ? (ROL_LABEL[authUser.rol as Rol] ?? authUser.rol) : '—'
-  const canLotes = authUser?.rol ? ROLES_CON_LOTES.includes(authUser.rol) : false
 
   return (
     <aside
@@ -431,26 +367,6 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           >
             <Home size={15} />
             <span>Inicio</span>
-          </Link>
-        )}
-
-        {/* Expedientes — solo para roles con acceso a lotes */}
-        {canLotes && (
-          <Link
-            href="/expedientes"
-            onClick={onClose}
-            className="nav-item"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 10px', borderRadius: 6, marginBottom: 2,
-              fontSize: 13, color: pathname.startsWith('/expedientes') ? '#E8CA75' : 'rgba(255,255,255,0.7)',
-              background: pathname.startsWith('/expedientes') ? 'rgba(196,160,72,0.15)' : 'transparent',
-              borderLeft: pathname.startsWith('/expedientes') ? '2px solid #C4A048' : '2px solid transparent',
-              textDecoration: 'none', transition: 'all 0.15s',
-            }}
-          >
-            <BookOpen size={15} />
-            <span>Expedientes</span>
           </Link>
         )}
 
