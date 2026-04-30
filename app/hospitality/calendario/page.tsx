@@ -73,6 +73,12 @@ function eventoEnDia(ev: Evento, year: number, month: number, day: number): bool
   return d >= start && d <= end
 }
 
+function sortEventos(a: Evento, b: Evento) {
+  const fecha = a.fecha_inicio.localeCompare(b.fecha_inicio)
+  if (fecha !== 0) return fecha
+  return (a.hora_inicio ?? '').localeCompare(b.hora_inicio ?? '')
+}
+
 // ── Component ────────────────────────────────────────────────
 
 export default function CalendarioPage() {
@@ -92,17 +98,13 @@ export default function CalendarioPage() {
   // ── Cargar eventos del mes ──────────────────────────────────
   const loadEventos = useCallback(async () => {
     setLoading(true)
-    // traer todo el mes + ±7 días para eventos multipía
-    const desde = new Date(year, month - 1, 24).toISOString().split('T')[0]
-    const hasta = new Date(year, month + 1, 7).toISOString().split('T')[0]
     const { data } = await dbCtrl.from('eventos')
       .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, cat_tipos_evento(nombre, color), cat_lugares(nombre, capacidad)')
-      .gte('fecha_inicio', desde)
-      .lte('fecha_inicio', hasta)
       .order('fecha_inicio')
-    setEventos((data as unknown as Evento[]) ?? [])
+      .order('hora_inicio')
+    setEventos(((data as unknown as Evento[]) ?? []).sort(sortEventos))
     setLoading(false)
-  }, [year, month])
+  }, [])
 
   useEffect(() => { loadEventos() }, [loadEventos])
 
