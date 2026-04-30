@@ -29,7 +29,7 @@ export default function ArticulosPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    let q = dbComp.from('articulos').select('*', { count: 'exact' }).order('nombre')
+    let q = dbComp.from('articulos').select('*', { count: 'exact' }).order('clave')
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (debouncedSearch) q = q.or(`clave.ilike.%${debouncedSearch}%,nombre.ilike.%${debouncedSearch}%,descripcion.ilike.%${debouncedSearch}%`)
     if (filterCat)       q = q.eq('categoria', filterCat)
