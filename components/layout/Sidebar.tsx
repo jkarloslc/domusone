@@ -105,10 +105,12 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   admin: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
-      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
       { label: 'Club',           href: '/golf',           icon: Flag          },
@@ -157,10 +159,12 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuariomantto: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
-      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -178,9 +182,11 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   atencion_residentes: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
     ]},
   ],
 
@@ -221,18 +227,22 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   mantenimiento: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
+      RPT('residencial'),
+    ]},
+    { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
-      RPT('residencial'),
     ]},
   ],
 
   fraccionamiento: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
