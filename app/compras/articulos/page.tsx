@@ -282,19 +282,6 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
     }
   }, [row?.id, isNew])
 
-  useEffect(() => {
-    if (!isNew) return
-    let cancelled = false
-    generarClaveArticulo()
-      .then((clave) => {
-        if (!cancelled) setForm(f => ({ ...f, clave }))
-      })
-      .catch((err: any) => {
-        if (!cancelled) setError(err.message ?? 'No se pudo generar la clave automática')
-      })
-    return () => { cancelled = true }
-  }, [isNew, generarClaveArticulo])
-
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
@@ -376,10 +363,11 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
                     onChange={set('clave')}
                     disabled={isNew || loadingClave}
                     style={{ textTransform: 'uppercase', fontFamily: 'monospace', background: isNew ? '#f8fafc' : undefined }}
+                    placeholder={isNew ? 'Se asigna al guardar' : ''}
                   />
                   {isNew && (
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                      {loadingClave ? 'Generando clave...' : 'La clave se genera automáticamente con el siguiente consecutivo.'}
+                      {loadingClave ? 'Generando clave...' : 'La clave se asigna automaticamente al confirmar con Guardar.'}
                     </div>
                   )}
                 </div>
