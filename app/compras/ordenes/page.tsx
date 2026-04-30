@@ -8,7 +8,7 @@ import {
   ArrowLeft, CheckCircle, XCircle, Printer, Trash2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP } from '../types'
+import { fmt, fmtFecha, folioGen, nextFolio, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP } from '../types'
 
 const PAGE_SIZE = 20
 
@@ -497,8 +497,14 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
 
   const crearOrdenPago = async () => {
     setSavingOP(true)
-    const { count } = await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })
-    const folio = folioGen('OP', (count ?? 0) + 1)
+    let folio: string
+    try {
+      folio = await nextFolio(dbComp, 'OP')
+    } catch (e: any) {
+      alert(e.message)
+      setSavingOP(false)
+      return
+    }
     await dbComp.from('ordenes_pago').insert({
       folio, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
       id_almacen_fk: oc.id_almacen_entrega_fk ?? null,

@@ -9,7 +9,7 @@ import {
   Edit2, Upload, ExternalLink, FileText, AlertTriangle, MessageSquare, Send
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { fmt, fmtFecha, folioGen, StatusBadge, FORMAS_PAGO_COMP } from '../types'
+import { fmt, fmtFecha, nextFolio, StatusBadge, FORMAS_PAGO_COMP } from '../types'
 
 const PAGE_SIZE = 25
 
@@ -244,6 +244,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     opEdit ? (opEdit.id_oc_fk != null) : null
   )
   const [ocCCPreview, setOcCCPreview] = useState<{ cc: string; sec: string; frente: string } | null>(null)
+  const [ocCCId, setOcCCId]           = useState<number | null>(opEdit?.id_centro_costo_fk ?? null)
+  type DetLine = { tempId: number; descripcion: string; id_area_fk: string; id_frente_fk: string; monto: string }
+  const [detLines, setDetLines]       = useState<DetLine[]>([])
+  const [nextTempId, setNextTempId]   = useState(0)
 
   const pdfRef = useRef<HTMLInputElement>(null)
   const xmlRef = useRef<HTMLInputElement>(null)
@@ -289,6 +293,22 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
         .then(({ data }) => setFormasPago(data ?? []))
     })
+    // Cargar líneas de distribución al editar
+    if (isEdit && opEdit?.id) {
+      dbComp.from('ordenes_pago_det').select('*').eq('id_op_fk', opEdit.id).order('id')
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setDetLines(data.map((d: any, i: number) => ({
+              tempId:       i,
+              descripcion:  d.descripcion  ?? '',
+              id_area_fk:   d.id_area_fk?.toString()   ?? '',
+              id_frente_fk: d.id_frente_fk?.toString() ?? '',
+              monto:        d.monto?.toString()         ?? '0',
+            })))
+            setNextTempId(data.length)
+          }
+        })
+    }
   }, [])
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -328,6 +348,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               sec:    (secData as any)?.nombre ?? '—',
               frente: (frData as any)?.nombre  ?? '—',
             })
+            setOcCCId(ocData.id_centro_costo_fk ?? null)
           })
       }
       return next
@@ -345,9 +366,23 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const setOCMonto = (id: number, v: string) =>
     setOcsSel(prev => prev.map(o => o.id === id ? { ...o, monto: v } : o))
 
-  const montoTotal = conOC
-    ? ocsSelected.reduce((a, o) => a + (Number(o.monto) || 0), 0)
-    : Number(form.monto_manual) || 0
+  // ── Distribución por área ──────────────────────────────────
+  const headerCCId = conOC ? ocCCId : (form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null)
+  const addDetLine = () => {
+    setDetLines(l => [...l, { tempId: nextTempId, descripcion: '', id_area_fk: '', id_frente_fk: '', monto: '' }])
+    setNextTempId(n => n + 1)
+  }
+  const removeDetLine = (tid: number) => setDetLines(l => l.filter(x => x.tempId !== tid))
+  const updateDetLine = (tid: number, field: string, value: string) =>
+    setDetLines(l => l.map(x => x.tempId === tid
+      ? { ...x, [field]: value, ...(field === 'id_area_fk' ? { id_frente_fk: '' } : {}) }
+      : x))
+  const detTotal   = detLines.reduce((a, l) => a + (Number(l.monto) || 0), 0)
+  const montoTotal = detLines.length > 0
+    ? detTotal
+    : conOC
+      ? ocsSelected.reduce((a, o) => a + (Number(o.monto) || 0), 0)
+      : Number(form.monto_manual) || 0
 
   const ocsDelProv = form.id_proveedor_fk
     ? ocsDisp.filter(o => o.id_proveedor_fk === Number(form.id_proveedor_fk) && !ocsSelected.some(s => s.id === o.id))
@@ -406,7 +441,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (montoTotal <= 0) { setError('El monto debe ser mayor a cero'); return }
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
     if (!conOC && !form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
-    if (!conOC && !form.id_area_fk) { setError('Área es obligatoria'); return }
+    if (!conOC && detLines.length === 0 && !form.id_area_fk) { setError('Área es obligatoria (o agrega líneas de distribución)'); return }
+    if (detLines.length > 0 && detLines.some(l => !l.id_area_fk)) { setError('Todas las líneas de distribución deben tener Área asignada'); return }
+    if (detLines.length > 0 && detTotal <= 0) { setError('El total de distribución debe ser mayor a cero'); return }
     setSaving(true); setError('')
 
     // Obtener CC/Área/Frente de la OC cuando aplica
@@ -422,8 +459,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       id_proveedor_fk:    form.id_proveedor_fk ? Number(form.id_proveedor_fk) : null,
       id_almacen_fk:      conOC && form.id_almacen_fk ? Number(form.id_almacen_fk) : null,
       id_centro_costo_fk: conOC ? ocCampos.id_centro_costo_fk : (form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null),
-      id_area_fk:         conOC ? ocCampos.id_area_fk         : (form.id_area_fk         ? Number(form.id_area_fk)         : null),
-      id_frente_fk:       conOC ? ocCampos.id_frente_fk       : (form.id_frente_fk       ? Number(form.id_frente_fk)       : null),
+      id_area_fk:         detLines.length > 0 ? null : (conOC ? ocCampos.id_area_fk   : (form.id_area_fk   ? Number(form.id_area_fk)   : null)),
+      id_frente_fk:       detLines.length > 0 ? null : (conOC ? ocCampos.id_frente_fk : (form.id_frente_fk ? Number(form.id_frente_fk) : null)),
       id_oc_fk:           (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
       forma_pago:        form.forma_pago,
       fecha_vencimiento: form.fecha_vencimiento || null,
@@ -441,12 +478,31 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (isEdit) {
       const { error: err } = await dbComp.from('ordenes_pago').update(payload).eq('id', opEdit.id)
       if (err) { setError(err.message); setSaving(false); return }
+      // Sincronizar líneas de distribución
+      await dbComp.from('ordenes_pago_det').delete().eq('id_op_fk', opEdit.id)
+      if (detLines.length > 0) {
+        await dbComp.from('ordenes_pago_det').insert(
+          detLines.map(l => ({
+            id_op_fk:     opEdit.id,
+            descripcion:  l.descripcion  || null,
+            id_area_fk:   l.id_area_fk   ? Number(l.id_area_fk)   : null,
+            id_frente_fk: l.id_frente_fk ? Number(l.id_frente_fk) : null,
+            monto:        Number(l.monto) || 0,
+          }))
+        )
+      }
       setSaving(false); onSaved()
       return
     }
 
     // NUEVO
-    payload.folio      = folioGen('OP', (await dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })).count ?? 0 + 1)
+    try {
+      payload.folio = await nextFolio(dbComp, 'OP')
+    } catch (e: any) {
+      setError(e.message)
+      setSaving(false)
+      return
+    }
     // OP con OC: ya viene autorizada por la cadena REQ→COT→OC → entra directo a CXP
     // OP sin OC: gasto directo sin cadena de aprobación → requiere autorización previa
     payload.status     = conOC ? 'Pendiente' : 'Pendiente Auth'
@@ -462,6 +518,18 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       for (const o of ocsSelected) {
         await dbComp.from('ordenes_compra').update({ status: 'Enviada al Prov' }).eq('id', o.id)
       }
+    }
+    // Guardar líneas de distribución
+    if (detLines.length > 0) {
+      await dbComp.from('ordenes_pago_det').insert(
+        detLines.map(l => ({
+          id_op_fk:     op.id,
+          descripcion:  l.descripcion  || null,
+          id_area_fk:   l.id_area_fk   ? Number(l.id_area_fk)   : null,
+          id_frente_fk: l.id_frente_fk ? Number(l.id_frente_fk) : null,
+          monto:        Number(l.monto) || 0,
+        }))
+      )
     }
 
     setSaving(false); onSaved()
@@ -582,36 +650,38 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               )}
             </div>
 
-            {/* Sin OC → Centro de Costo + Sección + Frente */}
+            {/* Sin OC → Centro de Costo (siempre) + Área/Frente solo cuando sin detalle */}
             {!conOC && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: detLines.length > 0 ? '1fr' : '1fr 1fr 1fr', gap: 10 }}>
                 <div>
                   <label className="label">Centro de Costo *</label>
                   <select className="select" value={form.id_centro_costo_fk}
-                    onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
+                    onChange={e => { setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' })); setDetLines([]); }}>
                     <option value="">— Seleccionar —</option>
                     {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="label">Área *</label>
-                  <select className="select" value={areaId}
-                    onChange={e => { setAreaId(e.target.value); setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' })) }}
-                    disabled={!form.id_centro_costo_fk}>
-                    <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                    {ccAreas
-                      .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
-                      .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Frente</label>
-                  <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!areaId}>
-                    <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
-                    {frentes.filter(f => !areaId || relAF.some(r => r.id_area === Number(areaId) && r.id_frente === f.id))
-                      .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-                  </select>
-                </div>
+                {detLines.length === 0 && (<>
+                  <div>
+                    <label className="label">Área *</label>
+                    <select className="select" value={areaId}
+                      onChange={e => { setAreaId(e.target.value); setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' })) }}
+                      disabled={!form.id_centro_costo_fk}>
+                      <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
+                      {ccAreas
+                        .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                        .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Frente</label>
+                    <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!areaId}>
+                      <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
+                      {frentes.filter(f => !areaId || relAF.some(r => r.id_area === Number(areaId) && r.id_frente === f.id))
+                        .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                    </select>
+                  </div>
+                </>)}
               </div>
             )}
 
@@ -624,11 +694,13 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                     {TIPOS_GASTO.map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="label">Monto *</label>
-                  <input className="input" type="number" step="0.01" value={form.monto_manual}
-                    onChange={setF('monto_manual')} style={{ textAlign: 'right' }} />
-                </div>
+                {detLines.length === 0 && (
+                  <div>
+                    <label className="label">Monto *</label>
+                    <input className="input" type="number" step="0.01" value={form.monto_manual}
+                      onChange={setF('monto_manual')} style={{ textAlign: 'right' }} />
+                  </div>
+                )}
               </div>
             )}
 
@@ -637,6 +709,85 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               <input className="input" value={form.concepto} onChange={setF('concepto')}
                 placeholder={conOC ? `ej. Pago OC ${ocsSelected.map(o=>o.folio).join(', ')}` : 'ej. Servicio de mantenimiento mensual'} />
             </div>
+
+            {/* ── Distribución por Área ── */}
+            {headerCCId && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    Distribución por Área {detLines.length > 0 && <span style={{ color: 'var(--blue)', marginLeft: 4 }}>{detLines.length} línea{detLines.length > 1 ? 's' : ''}</span>}
+                  </span>
+                  <button type="button" className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }} onClick={addDetLine}>
+                    + Agregar línea
+                  </button>
+                </div>
+                {detLines.length > 0 && (
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc' }}>
+                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Descripción</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Área</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Frente</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Monto</th>
+                          <th style={{ width: 28 }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detLines.map((line, idx) => (
+                          <tr key={line.tempId} style={{ borderTop: idx > 0 ? '1px solid #f1f5f9' : undefined }}>
+                            <td style={{ padding: '4px 6px' }}>
+                              <input className="input" style={{ padding: '4px 6px', fontSize: 12 }}
+                                placeholder="Descripción" value={line.descripcion}
+                                onChange={e => updateDetLine(line.tempId, 'descripcion', e.target.value)} />
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}
+                                value={line.id_area_fk}
+                                onChange={e => updateDetLine(line.tempId, 'id_area_fk', e.target.value)}>
+                                <option value="">— Área —</option>
+                                {ccAreas.filter(a => a.id_centro_costo_fk === headerCCId)
+                                  .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                              </select>
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}
+                                value={line.id_frente_fk} disabled={!line.id_area_fk}
+                                onChange={e => updateDetLine(line.tempId, 'id_frente_fk', e.target.value)}>
+                                <option value="">— Frente —</option>
+                                {frentes.filter(f => !line.id_area_fk || relAF.some(r => r.id_area === Number(line.id_area_fk) && r.id_frente === f.id))
+                                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                              </select>
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <input className="input" type="number" step="0.01" style={{ padding: '4px 6px', fontSize: 12, textAlign: 'right' }}
+                                placeholder="0.00" value={line.monto}
+                                onChange={e => updateDetLine(line.tempId, 'monto', e.target.value)} />
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <button type="button" className="btn-ghost" style={{ padding: '3px', color: '#dc2626' }}
+                                onClick={() => removeDetLine(line.tempId)}><Trash2 size={11} /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                          <td colSpan={3} style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)' }}>Total distribución</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>{fmt(detTotal)}</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+                {detLines.length === 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px', background: '#f8fafc', borderRadius: 6, border: '1px dashed #e2e8f0' }}>
+                    Sin distribución por área. El pago se imputará al CC completo.
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
