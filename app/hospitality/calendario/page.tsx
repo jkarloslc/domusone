@@ -67,7 +67,7 @@ function getDiasDelMes(year: number, month: number) {
 }
 
 function eventoEnDia(ev: Evento, year: number, month: number, day: number): boolean {
-  const d     = new Date(year, month, day)
+  const d     = new Date(year, month, day, 12, 0, 0)
   const start = new Date(ev.fecha_inicio + 'T12:00:00')
   const end   = ev.fecha_fin ? new Date(ev.fecha_fin + 'T12:00:00') : start
   return d >= start && d <= end
