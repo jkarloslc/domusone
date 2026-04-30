@@ -28,6 +28,7 @@ CREATE SEQUENCE IF NOT EXISTS comp.seq_folio_trf;
 CREATE SEQUENCE IF NOT EXISTS comp.seq_folio_rfq;
 CREATE SEQUENCE IF NOT EXISTS comp.seq_folio_rec;
 CREATE SEQUENCE IF NOT EXISTS comp.seq_folio_val;
+CREATE SEQUENCE IF NOT EXISTS comp.seq_folio_art;
 
 -- Inicializar desde el MÁXIMO número de folio (no COUNT, por si hay huecos o registros borrados)
 SELECT setval('comp.seq_folio_op',  GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.ordenes_pago   WHERE folio ~ '^OP-[0-9]+-[0-9]+$'),  1)));
@@ -36,6 +37,7 @@ SELECT setval('comp.seq_folio_req', GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_
 SELECT setval('comp.seq_folio_trf', GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.transferencias   WHERE folio ~ '^TRF-[0-9]+-[0-9]+$'), 1)));
 SELECT setval('comp.seq_folio_rfq', GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.rfq              WHERE folio ~ '^RFQ-[0-9]+-[0-9]+$'), 1)));
 SELECT setval('comp.seq_folio_rec', GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(folio,'-',3) AS INTEGER)) FROM comp.recepciones      WHERE folio ~ '^REC-[0-9]+-[0-9]+$'), 1)));
+SELECT setval('comp.seq_folio_art', GREATEST(1, COALESCE((SELECT MAX(CAST(SPLIT_PART(clave,'-',2) AS INTEGER))      FROM comp.articulos       WHERE clave ~ '^ART-[0-9]+$'), 1)));
 
 CREATE OR REPLACE FUNCTION comp.fn_next_folio(prefijo TEXT)
 RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -51,6 +53,9 @@ BEGIN
     WHEN 'RFQ' THEN num := nextval('comp.seq_folio_rfq');
     WHEN 'REC' THEN num := nextval('comp.seq_folio_rec');
     WHEN 'VAL' THEN num := nextval('comp.seq_folio_val');
+    WHEN 'ART' THEN
+      num := nextval('comp.seq_folio_art');
+      RETURN prefijo || '-' || LPAD(num::TEXT, 4, '0');
     ELSE RAISE EXCEPTION 'Prefijo desconocido: %', prefijo;
   END CASE;
   RETURN prefijo || '-' || anio || '-' || LPAD(num::TEXT, 4, '0');
@@ -65,6 +70,7 @@ GRANT USAGE ON SEQUENCE comp.seq_folio_trf TO authenticated;
 GRANT USAGE ON SEQUENCE comp.seq_folio_rfq TO authenticated;
 GRANT USAGE ON SEQUENCE comp.seq_folio_rec TO authenticated;
 GRANT USAGE ON SEQUENCE comp.seq_folio_val TO authenticated;
+GRANT USAGE ON SEQUENCE comp.seq_folio_art TO authenticated;
 
 -- ─────────────────────────────────────────────────────────────
 -- 4. Columna empresa en ordenes_trabajo (OT Balvanera vs Oitydisa)

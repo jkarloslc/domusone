@@ -8,7 +8,7 @@ import {
   Package, ArrowLeft, AlertTriangle, Filter
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { type Articulo, fmt, UNIDADES, CATEGORIAS_ART } from '../types'
+import { type Articulo, fmt, UNIDADES, CATEGORIAS_ART, nextFolio } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZE = 50
@@ -243,6 +243,7 @@ export default function ArticulosPage() {
 function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClose: () => void; onSaved: () => void }) {
   const isNew = !row
   const [saving, setSaving] = useState(false)
+  const [loadingClave, setLoadingClave] = useState(false)
   const [error, setError]   = useState('')
   const [tab, setTab]       = useState<'datos'|'inventario'>('datos')
   const [invPorAlmacen, setInvPorAlmacen] = useState<any[]>([])
@@ -259,6 +260,15 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
     activo:       row?.activo       ?? true,
   })
 
+  const generarClaveArticulo = useCallback(async () => {
+    setLoadingClave(true)
+    try {
+      return await nextFolio(dbComp, 'ART')
+    } finally {
+      setLoadingClave(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (!isNew && row?.id) {
       // Cargar saldo por almacén
@@ -272,14 +282,37 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
     }
   }, [row?.id, isNew])
 
+  useEffect(() => {
+    if (!isNew) return
+    let cancelled = false
+    generarClaveArticulo()
+      .then((clave) => {
+        if (!cancelled) setForm(f => ({ ...f, clave }))
+      })
+      .catch((err: any) => {
+        if (!cancelled) setError(err.message ?? 'No se pudo generar la clave automática')
+      })
+    return () => { cancelled = true }
+  }, [isNew, generarClaveArticulo])
+
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
   const handleSave = async () => {
-    if (!form.clave.trim() || !form.nombre.trim()) { setError('Clave y Nombre son obligatorios'); return }
+    if (!form.nombre.trim()) { setError('Nombre es obligatorio'); return }
     setSaving(true); setError('')
+    let clave = form.clave.trim().toUpperCase()
+    if (isNew) {
+      try {
+        clave = await generarClaveArticulo()
+      } catch (e: any) {
+        setError(e.message ?? 'No se pudo generar la clave automática')
+        setSaving(false)
+        return
+      }
+    }
     const payload = {
-      clave:        form.clave.trim().toUpperCase(),
+      clave,
       nombre:       form.nombre.trim(),
       descripcion:  form.descripcion.trim() || null,
       unidad:       form.unidad,
@@ -337,7 +370,18 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
               <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: 10 }}>
                 <div>
                   <label className="label">Clave *</label>
-                  <input className="input" value={form.clave} onChange={set('clave')} style={{ textTransform: 'uppercase', fontFamily: 'monospace' }} />
+                  <input
+                    className="input"
+                    value={form.clave}
+                    onChange={set('clave')}
+                    disabled={isNew || loadingClave}
+                    style={{ textTransform: 'uppercase', fontFamily: 'monospace', background: isNew ? '#f8fafc' : undefined }}
+                  />
+                  {isNew && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                      {loadingClave ? 'Generando clave...' : 'La clave se genera automáticamente con el siguiente consecutivo.'}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="label">Nombre *</label>
