@@ -73,6 +73,12 @@ const STATUSES    = ['Cotización', 'Confirmado', 'En curso', 'Realizado', 'Canc
 const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
 const fmtFecha = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 
+function sortEventosDesc(a: Evento, b: Evento) {
+  const fecha = b.fecha_inicio.localeCompare(a.fecha_inicio)
+  if (fecha !== 0) return fecha
+  return (b.hora_inicio ?? '').localeCompare(a.hora_inicio ?? '')
+}
+
 // ── Component ────────────────────────────────────────────────
 
 export default function EventosPage() {
@@ -379,7 +385,7 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
     e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
     e.folio.toLowerCase().includes(busqueda.toLowerCase()) ||
     (e.cliente_nombre ?? '').toLowerCase().includes(busqueda.toLowerCase())
-  )
+  ).sort(sortEventosDesc)
 
   // ── KPIs ───────────────────────────────────────────────────
   const totalEventos    = eventos.length
