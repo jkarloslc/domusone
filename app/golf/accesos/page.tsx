@@ -17,7 +17,7 @@ type Acceso = {
   cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null; numero_tarjeta: string | null } | null
   cat_espacios_deportivos?: { nombre: string } | null
   cat_formas_juego?: { nombre: string } | null
-  ctrl_acceso_acomp?: { nombre: string; orden: number; es_externo: boolean; origen_pago: string | null }[]
+  ctrl_acceso_acomp?: { nombre: string; orden: number }[]
 }
 
 type Espacio = { id: number; nombre: string }
@@ -57,7 +57,7 @@ export default function AccesosPage() {
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, numero_tarjeta),
         cat_espacios_deportivos(nombre),
         cat_formas_juego(nombre),
-        ctrl_acceso_acomp(nombre, orden, es_externo, origen_pago)
+        ctrl_acceso_acomp(nombre, orden)
       `)
       .gte('fecha_entrada', new Date(`${fecha}T00:00:00`).toISOString())
       .lte('fecha_entrada', new Date(`${fecha}T23:59:59`).toISOString())
@@ -251,11 +251,8 @@ export default function AccesosPage() {
                             {acomps.length} acomp.
                           </span>
                           {acomps.map((ac, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-secondary)' }}>
-                              {ac.es_externo
-                                ? <span style={{ color: '#d97706' }}>🎫</span>
-                                : <span>·</span>}
-                              {ac.nombre}
+                            <div key={i} style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                              · {ac.nombre}
                             </div>
                           ))}
                         </div>
@@ -314,7 +311,6 @@ export default function AccesosPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {[
                 { label: 'Espacio deportivo', value: detalle.cat_espacios_deportivos?.nombre ?? '—' },
-                { label: 'Forma de juego',    value: detalle.cat_formas_juego?.nombre ?? '—' },
                 { label: 'Hoyo de inicio',    value: detalle.hoyo_inicio ? `Hoyo ${detalle.hoyo_inicio}` : '—' },
                 { label: 'Entrada',           value: `${fmtFecha(detalle.fecha_entrada)} ${fmtHora(detalle.fecha_entrada)}` },
                 { label: 'Salida',            value: detalle.fecha_salida ? `${fmtFecha(detalle.fecha_salida)} ${fmtHora(detalle.fecha_salida)}` : '—' },
@@ -340,17 +336,8 @@ export default function AccesosPage() {
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {acomps.map((ac, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                          <span style={{ fontSize: 13, color: '#334155', fontWeight: 500, flex: 1 }}>{ac.nombre}</span>
-                          {ac.es_externo ? (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a' }}>
-                              🎫 {ac.origen_pago === 'PASE' ? 'Pase' : 'Green Fee'}
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                              Invitado
-                            </span>
-                          )}
+                        <div key={i} style={{ padding: '8px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, color: '#334155', fontWeight: 500 }}>
+                          {ac.nombre}
                         </div>
                       ))}
                     </div>
