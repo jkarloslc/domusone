@@ -18,6 +18,9 @@ type Cuota = {
 }
 
 type FormaPago = { id: number; nombre: string }
+type PosCentro = { id: number; nombre: string; activo: boolean }
+type PosFormaPago = { id: number; nombre: string; activo: boolean }
+type PosCfg = { razon_social: string | null; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string | null }
 
 type Socio = {
   id: number
@@ -47,6 +50,10 @@ const TIPOS_LABEL: Record<string, string> = {
   MENSUALIDAD:     'Mensualidad',
   PENSION_CARRITO: 'Pensión Carrito',
 }
+const norm = (s: string) => s
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
 
 // ── Config de la institución (ajusta a tu realidad) ──────────
 const INSTITUCION = {
@@ -83,6 +90,9 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState('')
   const [recibo, setRecibo]     = useState<{ id: number; folio: string } | null>(null)
+  const [idVentaPos, setIdVentaPos] = useState<number | null>(null)
+  const [generandoTicket, setGenerandoTicket] = useState(false)
+  const [ticketErr, setTicketErr] = useState('')
 
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -108,6 +118,26 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const descExtra     = Math.min(parseFloat(descuentoExtra) || 0, subtotalBruto)
   const totalCobro    = Math.max(0, subtotalBruto - descExtra)
   const formaPagoNombre = formasPago.find(f => f.id === idFormaPago)?.nombre ?? ''
+
+  const detectarTipoTicket = (): 'PENSION' | 'MEMBRESIA' | null => {
+    const hayPension = cuotasSelec.some(c => c.tipo === 'PENSION_CARRITO')
+    const hayMembresia = cuotasSelec.some(c => c.tipo !== 'PENSION_CARRITO')
+    if (hayPension && hayMembresia) return null
+    return hayPension ? 'PENSION' : 'MEMBRESIA'
+  }
+
+  const abrirTicketPOS = (payload: any, autoPrint = true) => {
+    const encoded = encodeURIComponent(JSON.stringify(payload))
+    const url = `/ticket-golf.html?data=${encoded}${autoPrint ? '&print=1' : ''}`
+    window.open(url, '_blank', 'width=400,height=700')
+  }
+
+  const resolverFormaPagoPOS = (formasPos: PosFormaPago[]) => {
+    const objetivo = norm(formaPagoNombre)
+    return formasPos.find(f => norm(f.nombre) === objetivo)
+      ?? formasPos.find(f => norm(f.nombre).includes(objetivo) || objetivo.includes(norm(f.nombre)))
+      ?? formasPos[0]
+  }
 
   // ── Guardar cobro ──────────────────────────────────────────
   const handleSave = async () => {
@@ -135,11 +165,12 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       usuario_cobra:    authUser?.nombre ?? 'sistema',
       status:           'VIGENTE',
       facturable,
-    }).select('id, folio').single()
+    }).select('id, folio, id_venta_pos_fk').single()
 
     if (e1 || !reciboData) { setError(e1?.message ?? 'Error al crear recibo'); setSaving(false); return }
-    const reciboId = (reciboData as { id: number; folio: string }).id
-    const folioFinal = (reciboData as { id: number; folio: string }).folio
+    const reciboId = (reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).id
+    const folioFinal = (reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).folio
+    setIdVentaPos((reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).id_venta_pos_fk ?? null)
 
     // 3. Insertar detalle del recibo
     const detRows = cuotasSelec.map(c => ({
@@ -169,7 +200,175 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     if (e3) { setError(e3.message); setSaving(false); return }
 
     setSaving(false)
+    setTicketErr('')
     setRecibo({ id: reciboId, folio: folioFinal })
+  }
+
+  const generarTicketPOS = async () => {
+    if (!recibo) return
+    setGenerandoTicket(true)
+    setTicketErr('')
+
+    try {
+      const tipoTicket = detectarTipoTicket()
+      if (!tipoTicket) {
+        setTicketErr('El cobro mezcla conceptos de membresía y pensión. Para ticket POS, cobra cada tipo por separado.')
+        setGenerandoTicket(false)
+        return
+      }
+
+      const [{ data: reciboDB, error: errRec }, { data: centros }, { data: formasPos }, { data: cfg }] = await Promise.all([
+        dbGolf.from('recibos_golf').select('id, folio, id_venta_pos_fk').eq('id', recibo.id).single(),
+        dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
+        dbGolf.from('cat_formas_pago_pos').select('id, nombre, activo').eq('activo', true).order('id'),
+        dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+      ])
+      if (errRec || !reciboDB) { throw new Error(errRec?.message ?? 'No se pudo leer el recibo para generar ticket') }
+
+      const centrosPos = (centros as PosCentro[]) ?? []
+      const formasPagoPos = (formasPos as PosFormaPago[]) ?? []
+      if (centrosPos.length === 0) throw new Error('No hay centros de venta POS activos.')
+      if (formasPagoPos.length === 0) throw new Error('No hay formas de pago POS activas.')
+
+      const etiquetas = tipoTicket === 'PENSION'
+        ? ['pension', 'pensiones', 'carrito']
+        : ['membresia', 'membresias', 'cuota', 'cuotas', 'inscripcion']
+      const centroSel = centrosPos.find(c => etiquetas.some(k => norm(c.nombre).includes(k)))
+      if (!centroSel) {
+        throw new Error(`No encontré un centro POS para ${tipoTicket === 'PENSION' ? 'Pensiones' : 'Membresías'}. Configura uno con ese nombre.`)
+      }
+
+      const formaPos = resolverFormaPagoPOS(formasPagoPos)
+      if (!formaPos) throw new Error('No se pudo determinar la forma de pago POS.')
+
+      let ventaId = (reciboDB as { id_venta_pos_fk: number | null }).id_venta_pos_fk ?? null
+      let folioDia = 0
+      const fechaVentaIso = `${fechaPago}T12:00:00`
+
+      if (!ventaId) {
+        const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
+          .select('folio_dia')
+          .eq('id_centro_fk', centroSel.id)
+          .gte('fecha', `${fechaPago}T00:00:00`)
+          .lte('fecha', `${fechaPago}T23:59:59`)
+          .order('folio_dia', { ascending: false })
+          .limit(1)
+        folioDia = maxFolio && maxFolio.length > 0 ? ((maxFolio[0] as { folio_dia: number }).folio_dia + 1) : 1
+
+        const { data: ventaData, error: errVenta } = await dbGolf.from('ctrl_ventas').insert({
+          folio_dia: folioDia,
+          id_centro_fk: centroSel.id,
+          fecha: fechaVentaIso,
+          id_socio_fk: idSocio,
+          nombre_cliente: nc(socioInfo),
+          es_socio: true,
+          subtotal: subtotalBruto,
+          descuento: descExtra,
+          iva: 0,
+          total: totalCobro,
+          status: 'PAGADA',
+          usuario_crea: authUser?.nombre ?? 'sistema',
+          notas: `Ticket POS generado desde recibo golf ${recibo.folio} (#${recibo.id})`,
+        }).select('id, folio_dia').single()
+        if (errVenta || !ventaData) throw new Error(errVenta?.message ?? 'No se pudo crear la venta POS')
+
+        ventaId = (ventaData as { id: number; folio_dia: number }).id
+        folioDia = (ventaData as { id: number; folio_dia: number }).folio_dia
+
+        const detInsert = cuotasSelec.map(c => ({
+          id_venta_fk: ventaId!,
+          id_producto_fk: null,
+          concepto: c.concepto,
+          cantidad: 1,
+          precio_unitario: c.monto_final,
+          descuento: 0,
+          iva_pct: 0,
+          iva: 0,
+          subtotal: c.monto_final,
+          total: c.monto_final,
+          notas: c.periodo ?? null,
+        }))
+        if (descExtra > 0) {
+          detInsert.push({
+            id_venta_fk: ventaId!,
+            id_producto_fk: null,
+            concepto: `Descuento adicional (${recibo.folio})`,
+            cantidad: 1,
+            precio_unitario: -descExtra,
+            descuento: 0,
+            iva_pct: 0,
+            iva: 0,
+            subtotal: -descExtra,
+            total: -descExtra,
+            notas: null,
+          })
+        }
+        const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detInsert)
+        if (errDet) throw new Error(errDet.message)
+
+        const { error: errPag } = await dbGolf.from('ctrl_ventas_pagos').insert({
+          id_venta_fk: ventaId,
+          id_forma_fk: formaPos.id,
+          forma_nombre: formaPos.nombre,
+          monto: totalCobro,
+        })
+        if (errPag) throw new Error(errPag.message)
+
+        const { error: errReciboLink } = await dbGolf.from('recibos_golf')
+          .update({ id_venta_pos_fk: ventaId })
+          .eq('id', recibo.id)
+        if (errReciboLink) throw new Error(errReciboLink.message)
+        setIdVentaPos(ventaId)
+      } else {
+        const { data: ventaExist } = await dbGolf.from('ctrl_ventas')
+          .select('folio_dia')
+          .eq('id', ventaId)
+          .single()
+        folioDia = ((ventaExist as { folio_dia: number } | null)?.folio_dia) ?? 0
+      }
+
+      const itemsTicket = cuotasSelec.map(c => ({
+        concepto: c.concepto,
+        cantidad: 1,
+        precio_unitario: c.monto_final,
+        iva: 0,
+        total: c.monto_final,
+      }))
+      if (descExtra > 0) {
+        itemsTicket.push({
+          concepto: `Descuento adicional (${recibo.folio})`,
+          cantidad: 1,
+          precio_unitario: -descExtra,
+          iva: 0,
+          total: -descExtra,
+        })
+      }
+
+      const ticketData = {
+        id: ventaId,
+        folio_dia: folioDia || '—',
+        fecha: fechaVentaIso,
+        cliente: nc(socioInfo),
+        cajero: authUser?.nombre ?? '—',
+        centro: centroSel.nombre,
+        razon_social: (cfg as PosCfg | null)?.razon_social ?? INSTITUCION.nombre,
+        municipio: (cfg as PosCfg | null)?.municipio ?? '',
+        direccion: (cfg as PosCfg | null)?.direccion ?? INSTITUCION.domicilio,
+        rfc: (cfg as PosCfg | null)?.rfc ?? INSTITUCION.rfc,
+        telefono: (cfg as PosCfg | null)?.telefono ?? INSTITUCION.tel,
+        leyenda: (cfg as PosCfg | null)?.leyenda_ticket ?? `Cobro relacionado al recibo ${recibo.folio}.`,
+        subtotal: subtotalBruto,
+        iva: 0,
+        total: totalCobro,
+        pagos: [{ forma: formaPos.nombre, monto: totalCobro }],
+        items: itemsTicket,
+      }
+      abrirTicketPOS(ticketData, true)
+    } catch (e: any) {
+      setTicketErr(e?.message ?? 'No se pudo generar el ticket POS')
+    } finally {
+      setGenerandoTicket(false)
+    }
   }
 
   // ── Imprimir ───────────────────────────────────────────────
@@ -228,9 +427,15 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       <ModalShell modulo="golf-carritos" titulo="Cobro registrado" subtitulo={`Folio: ${recibo.folio}`} maxWidth={680} icono={CheckCircle} onClose={onSaved} footer={<>
         <div style={{ fontSize: 12, color: '#64748b' }}>
           {cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} cobrada{cuotasSelec.length !== 1 ? 's' : ''} · {fmt$(totalCobro)}
+          {idVentaPos && <span style={{ marginLeft: 8, color: '#15803d', fontWeight: 600 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</span>}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <button onClick={onSaved} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cerrar</button>
+          <button onClick={generarTicketPOS} disabled={generandoTicket}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicket ? 0.6 : 1 }}>
+            {generandoTicket ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
+            {idVentaPos ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
+          </button>
           <button onClick={handlePrint}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
             <Printer size={14} /> Imprimir Recibo
@@ -343,6 +548,12 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#15803d' }}>{authUser?.nombre ?? '—'}</div>
                 </div>
               </div>
+
+              {ticketErr && (
+                <div style={{ marginBottom: 14, padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                  {ticketErr}
+                </div>
+              )}
 
               {observaciones && (
                 <div style={{ fontSize: 11, color: '#64748b', padding: '8px 12px', background: '#f8fafc', borderRadius: 6, marginBottom: 16 }}>
