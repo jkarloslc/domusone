@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, nextFolio, StatusBadge, FORMAS_PAGO_COMP } from '../types'
+import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZE = 25
 
@@ -539,52 +540,40 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // Paso 1: elegir si tiene OC o no — solo en nuevo
   if (conOC === null && !isEdit) {
     return (
-      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-        <div className="modal" style={{ maxWidth: 440 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Nueva Orden de Pago</h2>
-            <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-          </div>
-          <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>¿Esta orden de pago está relacionada con una compra?</p>
-            <button onClick={() => setConOC(true)}
-              style={{ padding: '16px', border: '1px solid #bfdbfe', borderRadius: 10, background: '#eff6ff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--blue)')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = '#bfdbfe')}>
-              <div style={{ fontWeight: 600, color: 'var(--blue)', marginBottom: 4 }}>✓ Con Orden de Compra</div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>Vincula una o varias OC autorizadas. El monto se calcula automáticamente.</div>
-            </button>
-            <button onClick={() => setConOC(false)}
-              style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: 10, background: '#f8fafc', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = '#94a3b8')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
-              <div style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>◇ Sin Orden de Compra</div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>Servicios, honorarios, arrendamiento u otros gastos que no afectan inventario.</div>
-            </button>
-          </div>
+      <ModalShell modulo="compras" titulo="Nueva Orden de Pago" onClose={onClose} maxWidth={440}>
+        <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>¿Esta orden de pago está relacionada con una compra?</p>
+          <button onClick={() => setConOC(true)}
+            style={{ padding: '16px', border: '1px solid #bfdbfe', borderRadius: 10, background: '#eff6ff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--blue)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = '#bfdbfe')}>
+            <div style={{ fontWeight: 600, color: 'var(--blue)', marginBottom: 4 }}>✓ Con Orden de Compra</div>
+            <div style={{ fontSize: 12, color: '#64748b' }}>Vincula una o varias OC autorizadas. El monto se calcula automáticamente.</div>
+          </button>
+          <button onClick={() => setConOC(false)}
+            style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: 10, background: '#f8fafc', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = '#94a3b8')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
+            <div style={{ fontWeight: 600, color: '#475569', marginBottom: 4 }}>◇ Sin Orden de Compra</div>
+            <div style={{ fontSize: 12, color: '#64748b' }}>Servicios, honorarios, arrendamiento u otros gastos que no afectan inventario.</div>
+          </button>
         </div>
-      </div>
+      </ModalShell>
     )
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 640 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
-              {isEdit ? 'Editar Orden de Pago' : 'Nueva Orden de Pago'}
-            </h2>
-            {!isEdit && (
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                {conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo'}
-                <button onClick={() => setConOC(null)} style={{ marginLeft: 8, fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>cambiar</button>
-              </div>
-            )}
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
+    <ModalShell modulo="compras" titulo={isEdit ? 'Editar Orden de Pago' : 'Nueva Orden de Pago'}
+      subtitulo={!isEdit ? (conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo') : undefined}
+      onClose={onClose} maxWidth={640}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving || !!uploading}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+          {isEdit ? 'Guardar Cambios' : 'Generar Orden de Pago'}
+        </button>
+      </>}
+    >
         <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(90vh - 130px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
 
@@ -844,31 +833,21 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
             <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(montoTotal)}</span>
           </div>
         </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || !!uploading}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {isEdit ? 'Guardar Cambios' : 'Generar Orden de Pago'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
 // ════════════════════════════════════════════════════════════
 // Detalle OP
 // ════════════════════════════════════════════════════════════
-const ROLES_AUTH_OP = ['admin', 'compras_supervisor', 'fraccionamiento']
+const ROLES_AUTH_OP = ['superadmin', 'admin', 'compras_supervisor', 'fraccionamiento']
 
 function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
-  const { authUser, canWrite, canCompras } = useAuth()
-  /** Mismo criterio que ver la tarjeta Órdenes de Pago en /compras + tesorería (CXP). */
+  const { authUser, canWrite } = useAuth()
   const puedePublicarInstruccion = Boolean(
-    authUser && (Boolean(canCompras('ordenes-pago')) || authUser.rol === 'tesoreria')
+    authUser && (canWrite('ordenes-pago') || authUser.rol === 'tesoreria')
   )
   const puedeSubirFacturaPagada = op.status === 'Pagada' && canWrite('ordenes-pago')
   const [localOp, setLocalOp]   = useState(op)
@@ -993,17 +972,25 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const handleAuth = async (aprobado: boolean) => {
     if (!aprobado && !confirm('¿Rechazar esta Orden de Pago? Esta acción no entrará a CXP.')) return
     setAuthLd(true)
-    await dbComp.from('ordenes_pago').update({
-      status:          aprobado ? 'Pendiente' : 'Rechazada',
-      notas:           authComment.trim()
+    const updatePayload: any = {
+      status: aprobado ? 'Pendiente' : 'Rechazada',
+      notas:  authComment.trim()
         ? `[${aprobado ? 'Autorizado' : 'Rechazado'} por ${authUser?.nombre ?? ''}]: ${authComment.trim()}${op.notas ? '\n' + op.notas : ''}`
         : op.notas ?? null,
-    }).eq('id', op.id)
+    }
+    if (aprobado) {
+      updatePayload.autorizado_por     = authUser?.nombre ?? null
+      updatePayload.fecha_autorizacion = new Date().toISOString()
+    }
+    await dbComp.from('ordenes_pago').update(updatePayload).eq('id', op.id)
     setAuthLd(false)
     onAuthorized()
   }
 
   const imprimir = async () => {
+    // Fresh fetch para asegurar campos actualizados (autorizado_por, referencia_pago, etc.)
+    const { data: freshOP } = await dbComp.from('ordenes_pago').select('*').eq('id', op.id).single()
+    const opData = freshOP ? { ...op, ...freshOP } : op
     // Cargar config de organización
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
@@ -1025,7 +1012,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
-    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${op.folio}</title>
+    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${opData.folio}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
         .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
@@ -1049,19 +1036,19 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Orden de Pago</div>
-          <div class="sub" style="margin:0">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(op.fecha_op)}</div>
+          <div class="sub" style="margin:0">Folio: <strong>${opData.folio}</strong> &nbsp;·&nbsp; Fecha: ${fmtFecha(opData.fecha_op)}</div>
         </div>
       </div>
       <table>
-        <tr><th>Beneficiario</th><td>${op._provNombre ?? '—'}</td><th>Banco</th><td>${op.banco_destino ?? '—'}</td></tr>
-        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${op.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>
-        <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
-        <tr><th>Almacén</th><td>${op._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td></tr>
-        ${op.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${op.tipo_gasto}</td></tr>` : ''}
-        ${op.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td colspan="3">${ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`}</td></tr>` : ''}
-        ${detLinesView.length === 0 && op.id_area_fk ? `<tr><th>Área</th><td>${areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`}</td><th>Frente</th><td>${op.id_frente_fk ? (frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`) : '—'}</td></tr>` : ''}
+        <tr><th>Beneficiario</th><td>${opData._provNombre ?? '—'}</td><th>Banco</th><td>${opData.banco_destino ?? '—'}</td></tr>
+        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
+        <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
+        <tr><th>Almacén</th><td>${opData._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
+        ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
+        ${opData.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td colspan="3">${ccMap[opData.id_centro_costo_fk] ?? `#${opData.id_centro_costo_fk}`}</td></tr>` : ''}
+        ${detLinesView.length === 0 && opData.id_area_fk ? `<tr><th>Área</th><td>${areaMap[opData.id_area_fk] ?? `#${opData.id_area_fk}`}</td><th>Frente</th><td>${opData.id_frente_fk ? (frMap[opData.id_frente_fk] ?? `#${opData.id_frente_fk}`) : '—'}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
-        <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(op.monto)}</td></tr>
+        <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
       ${detLinesView.length > 0 ? `
       <h3 style="font-size:13px;font-weight:700;color:#0D4F80;margin:18px 0 8px">Distribución por Área</h3>
@@ -1077,10 +1064,29 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         </tbody>
         <tfoot><tr><th colspan="3">Total distribución</th><th style="text-align:right">${fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}</th></tr></tfoot>
       </table>` : ''}
-      ${op.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${op.notas}</em></p>` : ''}
+      ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
+      ${(opData.autorizado_por || opData.fecha_autorizacion || opData.instrucciones_pago || opData.referencia_pago) ? `
+      <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
+        <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
+          Autorización y Control de Pago
+        </div>
+        <table style="margin:0">
+          ${opData.autorizado_por     ? `<tr><th>Autorizado por</th><td>${opData.autorizado_por}</td></tr>` : ''}
+          ${opData.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
+          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
+          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
+        </table>
+      </div>` : ''}
       <div class="firmas">
-        <div class="firma">Elaboró</div>
-        <div class="firma">Autorizó</div>
+        <div class="firma">
+          ${opData.created_by ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.created_by}</div>` : ''}
+          Elaboró
+        </div>
+        <div class="firma">
+          ${opData.autorizado_por ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.autorizado_por}</div>` : ''}
+          Autorizó
+          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+        </div>
         <div class="firma">Recibió</div>
       </div>
       </body></html>`
@@ -1098,25 +1104,42 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 580 }}>
-
-        {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+    <ModalShell
+      modulo="compras"
+      titulo={op.folio}
+      subtitulo={`${op._provNombre ?? 'Sin proveedor'} · ${fmtFecha(op.fecha_op)}`}
+      onClose={onClose}
+      maxWidth={580}
+      footer={
+        <>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--blue)' }}>{op.folio}</span>
-              <StatusBadge status={op.status} />
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {op._provNombre ?? 'Sin proveedor'} · {fmtFecha(op.fecha_op)}
-            </div>
+            {op.status === 'Pendiente' && (
+              <button onClick={cancelar} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 7,
+                background: 'none', border: '1px solid #fecaca', color: '#dc2626', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                Cancelar OP
+              </button>
+            )}
           </div>
-          <button className="btn-ghost" style={{ marginTop: 2 }} onClick={onClose}><X size={16} /></button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}>
+              <Printer size={13} /> Imprimir
+            </button>
+            {['Pendiente Auth', 'Pendiente', 'Rechazada'].includes(op.status) && (
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
+                <Edit2 size={13} /> Editar
+              </button>
+            )}
+          </div>
+        </>
+      }
+    >
+        {/* Status badge inline */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <StatusBadge status={op.status} />
         </div>
 
         {/* Cuerpo */}
-        <div style={{ padding: '18px 24px', overflowY: 'auto', maxHeight: 'calc(88vh - 180px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           <Sec label="Beneficiario">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
@@ -1453,30 +1476,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            {op.status === 'Pendiente' && (
-              <button onClick={cancelar} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 7,
-                background: 'none', border: '1px solid #fecaca', color: '#dc2626', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
-                Cancelar OP
-              </button>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}>
-              <Printer size={13} /> Imprimir
-            </button>
-            {op.status === 'Pendiente' && (
-              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
-                <Edit2 size={13} /> Editar
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
