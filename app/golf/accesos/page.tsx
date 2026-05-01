@@ -37,7 +37,11 @@ export default function AccesosPage() {
   const [registrandoSalida, setRegistrandoSalida] = useState<number | null>(null)
 
   // filtros
-  const [fecha, setFecha]           = useState(new Date().toISOString().split('T')[0])
+  const localToday = () => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  }
+  const [fecha, setFecha]           = useState(localToday)
   const [filtroEspacio, setFiltroEspacio] = useState<number | ''>('')
   const [filtroStatus, setFiltroStatus]   = useState<'todos' | 'activos' | 'completados'>('todos')
 
@@ -55,13 +59,14 @@ export default function AccesosPage() {
         cat_formas_juego(nombre),
         ctrl_acceso_acomp(nombre, orden, es_externo, origen_pago, id_familiar_fk)
       `)
-      .gte('fecha_entrada', `${fecha}T00:00:00`)
-      .lte('fecha_entrada', `${fecha}T23:59:59`)
+      .gte('fecha_entrada', new Date(`${fecha}T00:00:00`).toISOString())
+      .lte('fecha_entrada', new Date(`${fecha}T23:59:59`).toISOString())
       .order('fecha_entrada', { ascending: false })
 
     if (filtroEspacio) q = q.eq('id_espacio_fk', filtroEspacio)
 
-    const { data } = await q
+    const { data, error: qErr } = await q
+    if (qErr) console.error('[AccesosPage] query error:', qErr.message)
     const all = (data as unknown as Acceso[]) ?? []
 
     const activos     = all.filter(a => !a.fecha_salida).length
@@ -93,7 +98,7 @@ export default function AccesosPage() {
 
   const handleSaved = () => { setShowModal(false); fetchAccesos() }
 
-  const esHoy = fecha === new Date().toISOString().split('T')[0]
+  const esHoy = fecha === localToday()
 
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
