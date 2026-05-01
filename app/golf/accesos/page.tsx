@@ -69,9 +69,32 @@ export default function AccesosPage() {
     if (qErr) console.error('[AccesosPage] query error:', qErr.message)
     const all = (data as unknown as Acceso[]) ?? []
 
-    const activos     = all.filter(a => !a.fecha_salida).length
-    const completados = all.filter(a =>  a.fecha_salida).length
-    setStats({ total: all.length, activos, completados })
+    const activosArr     = all.filter(a => !a.fecha_salida)
+    const completadosArr = all.filter(a =>  a.fecha_salida)
+
+    // Contar acompañantes por acceso para sumarlos a los stats
+    let totalAcomps     = 0
+    let activosAcomps   = 0
+    let completadosAcomps = 0
+    if (all.length > 0) {
+      const ids = all.map(a => a.id)
+      const { data: acompsData } = await dbGolf
+        .from('ctrl_acceso_acomp')
+        .select('id_acceso_fk')
+        .in('id_acceso_fk', ids)
+      const acompsList = (acompsData ?? []) as { id_acceso_fk: number }[]
+      const activosIds     = new Set(activosArr.map(a => a.id))
+      const completadosIds = new Set(completadosArr.map(a => a.id))
+      totalAcomps       = acompsList.length
+      activosAcomps     = acompsList.filter(ac => activosIds.has(ac.id_acceso_fk)).length
+      completadosAcomps = acompsList.filter(ac => completadosIds.has(ac.id_acceso_fk)).length
+    }
+
+    setStats({
+      total:      all.length + totalAcomps,
+      activos:    activosArr.length + activosAcomps,
+      completados: completadosArr.length + completadosAcomps,
+    })
 
     let filtrados = all
     if (filtroStatus === 'activos')     filtrados = all.filter(a => !a.fecha_salida)
@@ -145,9 +168,9 @@ setDetalleAcomps((data ?? []) as { nombre: string; orden: number }[])
       {/* Stats */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
-          { label: esHoy ? 'En Campo Hoy' : 'Total del Día', value: stats.total,      color: '#2563eb', bg: '#eff6ff', icon: Users },
-          { label: 'Activos (sin salida)',                    value: stats.activos,     color: '#16a34a', bg: '#f0fdf4', icon: LogIn  },
-          { label: 'Completados',                             value: stats.completados, color: '#64748b', bg: '#f8fafc', icon: LogOut },
+          { label: esHoy ? 'Jugadores Hoy' : 'Total del Día', value: stats.total,      color: '#2563eb', bg: '#eff6ff', icon: Users },
+          { label: 'En campo (socios + acomp.)',              value: stats.activos,     color: '#16a34a', bg: '#f0fdf4', icon: LogIn  },
+          { label: 'Completados (socios + acomp.)',           value: stats.completados, color: '#64748b', bg: '#f8fafc', icon: LogOut },
         ].map(card => {
           const Icon = card.icon
           return (
