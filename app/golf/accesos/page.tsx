@@ -17,7 +17,7 @@ type Acceso = {
   cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null; numero_tarjeta: string | null } | null
   cat_espacios_deportivos?: { nombre: string } | null
   cat_formas_juego?: { nombre: string } | null
-  ctrl_acceso_acomp?: { nombre: string; orden: number; es_externo: boolean; origen_pago: string | null; id_familiar_fk: number | null }[]
+  ctrl_acceso_acomp?: { nombre: string; orden: number; es_externo: boolean; origen_pago: string | null }[]
 }
 
 type Espacio = { id: number; nombre: string }
@@ -57,7 +57,7 @@ export default function AccesosPage() {
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, numero_tarjeta),
         cat_espacios_deportivos(nombre),
         cat_formas_juego(nombre),
-        ctrl_acceso_acomp(nombre, orden, es_externo, origen_pago, id_familiar_fk)
+        ctrl_acceso_acomp(nombre, orden, es_externo, origen_pago)
       `)
       .gte('fecha_entrada', new Date(`${fecha}T00:00:00`).toISOString())
       .lte('fecha_entrada', new Date(`${fecha}T23:59:59`).toISOString())
@@ -254,9 +254,7 @@ export default function AccesosPage() {
                             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-secondary)' }}>
                               {ac.es_externo
                                 ? <span style={{ color: '#d97706' }}>🎫</span>
-                                : ac.id_familiar_fk
-                                  ? <span style={{ color: '#2563eb' }}>👤</span>
-                                  : <span>·</span>}
+                                : <span>·</span>}
                               {ac.nombre}
                             </div>
                           ))}
@@ -347,10 +345,6 @@ export default function AccesosPage() {
                           {ac.es_externo ? (
                             <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a' }}>
                               🎫 {ac.origen_pago === 'PASE' ? 'Pase' : 'Green Fee'}
-                            </span>
-                          ) : ac.id_familiar_fk ? (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
-                              👤 Familiar
                             </span>
                           ) : (
                             <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>
