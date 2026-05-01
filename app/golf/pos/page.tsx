@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbGolf, dbCtrl } from '@/lib/supabase'
+import { dbGolf, dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
@@ -13,6 +13,13 @@ import CorteModal from './CorteModal'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number }
+type CentroIngreso = { id: number; nombre: string; activo: boolean }
+type CentroIngresoMap = {
+  id: number
+  id_centro_venta_fk: number
+  id_centro_ingreso_fk: number
+  activo: boolean
+}
 type Venta = {
   id: number; folio_dia: number; fecha: string; nombre_cliente: string
   es_socio: boolean; total: number; subtotal: number; iva: number
@@ -21,7 +28,7 @@ type Venta = {
   cat_socios: { nombre: string; apellido_paterno: string | null } | null
 }
 type Corte = {
-  id: number; centro_nombre: string; fecha_corte: string
+  id: number; id_centro_fk: number; centro_nombre: string; fecha_corte: string
   fecha_inicio: string; fecha_fin: string
   num_ventas: number; num_canceladas: number
   total_ventas: number; total_cancelado: number; total_neto: number
@@ -79,6 +86,9 @@ export default function POSPage() {
   const [editingProd,    setEditingProd]    = useState<Partial<Producto> | null>(null)
   const [savingProd,     setSavingProd]     = useState(false)
   const [nuevoCentroNom, setNuevoCentroNom] = useState('')
+  const [centrosIngreso, setCentrosIngreso] = useState<CentroIngreso[]>([])
+  const [centrosIngresoMap, setCentrosIngresoMap] = useState<CentroIngresoMap[]>([])
+  const [savingMap, setSavingMap] = useState<number | null>(null)
 
   // Cortes — acciones
   const [generandoRecibo, setGenerandoRecibo] = useState<number | null>(null)
@@ -169,13 +179,17 @@ export default function POSPage() {
       ])
     }
 
-    const [{ data: prods }, { data: fps }, { data: cfg }] = await Promise.all([
+    const [{ data: prods }, { data: fps }, { data: cfg }, { data: cis }, { data: maps }] = await Promise.all([
       dbGolf.from('cat_productos_pos').select('*').order('nombre'),
       dbGolf.from('cat_formas_pago_pos').select('*').order('id'),
       dbGolf.from('cfg_pos').select('*').single(),
+      dbCfg.from('centros_ingreso').select('id, nombre, activo').eq('activo', true).order('nombre'),
+      dbGolf.from('pos_centros_ingreso_map').select('id, id_centro_venta_fk, id_centro_ingreso_fk, activo'),
     ])
     setProductos((prods as Producto[]) ?? [])
     setFormasPago((fps as FormaPago[]) ?? [])
+    setCentrosIngreso((cis as CentroIngreso[]) ?? [])
+    setCentrosIngresoMap((maps as CentroIngresoMap[]) ?? [])
     const c = cfg as CfgPos
     setCfgPos(c)
     setCfgForm(c ?? {})
@@ -346,6 +360,31 @@ ${desglose.length > 0 ? `
     if (w) { w.document.write(html); w.document.close(); w.focus() }
   }
 
+  const mapFormasPago = (rows: { forma_nombre: string; monto: number }[]) => {
+    const mapped: Record<string, number> = {
+      monto_efectivo: 0, monto_transferencia: 0, monto_tarjeta: 0, monto_cheque: 0,
+    }
+    for (const fp of rows) {
+      const n = fp.forma_nombre.toLowerCase()
+      if (n.includes('efectivo')) mapped.monto_efectivo += fp.monto
+      else if (n.includes('tarjeta')) mapped.monto_tarjeta += fp.monto
+      else if (n.includes('transf')) mapped.monto_transferencia += fp.monto
+      else if (n.includes('cheque')) mapped.monto_cheque += fp.monto
+      else mapped.monto_efectivo += fp.monto
+    }
+    return mapped
+  }
+
+  const getCentroIngresoMap = (idCentroVenta: number) =>
+    centrosIngresoMap.find(m => m.id_centro_venta_fk === idCentroVenta && m.activo)
+
+  const getCentroIngresoIdForCentroVenta = (idCentroVenta: number) => {
+    const mapped = getCentroIngresoMap(idCentroVenta)
+    if (mapped?.id_centro_ingreso_fk) return mapped.id_centro_ingreso_fk
+    const sameId = centrosIngreso.find(c => c.id === idCentroVenta)
+    return sameId?.id ?? null
+  }
+
   // ── Generar recibo de ingreso para corte ──────────────────
   const generarReciboCorte = async (c: Corte) => {
     if (c.id_recibo_ingreso) {
@@ -360,34 +399,29 @@ ${desglose.length > 0 ? `
       const { data: det } = await dbGolf.from('ctrl_cortes_caja_det')
         .select('forma_nombre, monto').eq('id_corte_fk', c.id)
       const fps = (det ?? []) as { forma_nombre: string; monto: number }[]
-
-      const fpagoMap: Record<string, number> = {}
-      for (const fp of fps) {
-        const n = fp.forma_nombre.toLowerCase()
-        if (n.includes('efectivo'))     fpagoMap['monto_efectivo']      = (fpagoMap['monto_efectivo'] ?? 0) + fp.monto
-        else if (n.includes('tarjeta')) fpagoMap['monto_tarjeta']       = (fpagoMap['monto_tarjeta'] ?? 0) + fp.monto
-        else if (n.includes('transf'))  fpagoMap['monto_transferencia'] = (fpagoMap['monto_transferencia'] ?? 0) + fp.monto
-        else if (n.includes('cheque'))  fpagoMap['monto_cheque']        = (fpagoMap['monto_cheque'] ?? 0) + fp.monto
-        else                            fpagoMap['monto_efectivo']      = (fpagoMap['monto_efectivo'] ?? 0) + fp.monto
-      }
+      const fpagoMap = mapFormasPago(fps)
 
       const f1 = c.fecha_inicio.split('T')[0]
       const f2 = c.fecha_fin.split('T')[0]
 
-      const { data: centroIng } = await dbCtrl.from('centros_ingreso')
-        .select('id').ilike('nombre', '%golf%').limit(1)
+      const idCentroIngreso = getCentroIngresoIdForCentroVenta(c.id_centro_fk)
+      if (!idCentroIngreso) {
+        alert(`No hay mapeo de centro de ingreso para "${c.centro_nombre}". Configúralo en Configuración > Mapeo POS.`)
+        return
+      }
 
       const { data: recibo, error: reErr } = await dbCtrl.from('recibos_ingreso').insert({
         fecha:                f2,
-        id_centro_ingreso_fk: centroIng?.[0]?.id ?? null,
+        id_centro_ingreso_fk: idCentroIngreso,
         descripcion:          `Corte POS Golf — ${c.centro_nombre} — ${f1} al ${f2}`,
-        monto_efectivo:       fpagoMap['monto_efectivo']      ?? 0,
-        monto_transferencia:  fpagoMap['monto_transferencia'] ?? 0,
-        monto_tarjeta:        fpagoMap['monto_tarjeta']       ?? 0,
-        monto_cheque:         fpagoMap['monto_cheque']        ?? 0,
+        monto_efectivo:       fpagoMap.monto_efectivo,
+        monto_transferencia:  fpagoMap.monto_transferencia,
+        monto_tarjeta:        fpagoMap.monto_tarjeta,
+        monto_cheque:         fpagoMap.monto_cheque,
         monto_total:          c.total_neto,
         status:               'Confirmado',
         origen:               'POS_GOLF',
+        referencia_externa:   `golf.ctrl_cortes_caja:${c.id}`,
         notas:                `Folio corte Golf: #${c.id}`,
         usuario_crea:         authUser?.nombre ?? 'sistema',
       }).select('id').single()
@@ -435,6 +469,30 @@ ${desglose.length > 0 ? `
     setSavingCfg(true)
     await dbGolf.from('cfg_pos').update({ ...cfgForm, updated_at: new Date().toISOString() }).eq('id', cfgPos?.id ?? 1)
     setSavingCfg(false)
+    fetchConfig()
+  }
+
+  const guardarMapCentroIngreso = async (idCentroVenta: number, idCentroIngreso: number | null) => {
+    setSavingMap(idCentroVenta)
+    if (idCentroIngreso) {
+      const existente = centrosIngresoMap.find(m => m.id_centro_venta_fk === idCentroVenta)
+      if (existente) {
+        await dbGolf.from('pos_centros_ingreso_map').update({
+          id_centro_ingreso_fk: idCentroIngreso,
+          activo: true,
+          updated_at: new Date().toISOString(),
+        }).eq('id', existente.id)
+      } else {
+        await dbGolf.from('pos_centros_ingreso_map').insert({
+          id_centro_venta_fk: idCentroVenta,
+          id_centro_ingreso_fk: idCentroIngreso,
+          activo: true,
+        })
+      }
+    } else {
+      await dbGolf.from('pos_centros_ingreso_map').delete().eq('id_centro_venta_fk', idCentroVenta)
+    }
+    setSavingMap(null)
     fetchConfig()
   }
 
@@ -703,7 +761,9 @@ ${desglose.length > 0 ? `
                     </tr>
                   </thead>
                   <tbody>
-                    {cortes.map(c => (
+                    {cortes.map(c => {
+                      const hasCentroIngreso = !!getCentroIngresoIdForCentroVenta(c.id_centro_fk)
+                      return (
                       <tr key={c.id}
                         style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
@@ -756,12 +816,17 @@ ${desglose.length > 0 ? `
                             {!c.id_recibo_ingreso && puedeEscribir && (
                               <button
                                 onClick={() => generarReciboCorte(c)}
-                                disabled={generandoRecibo === c.id}
+                                disabled={generandoRecibo === c.id || !hasCentroIngreso}
                                 title="Generar recibo de ingreso"
-                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: generandoRecibo === c.id ? 0.5 : 1 }}>
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: (generandoRecibo === c.id || !hasCentroIngreso) ? 0.5 : 1 }}>
                                 {generandoRecibo === c.id ? <Loader size={11} /> : <Receipt size={11} />}
                                 {generandoRecibo === c.id ? 'Generando…' : 'Recibo'}
                               </button>
+                            )}
+                            {!c.id_recibo_ingreso && !hasCentroIngreso && (
+                              <span style={{ fontSize: 10, color: '#dc2626', whiteSpace: 'nowrap' }}>
+                                Sin mapeo POS
+                              </span>
                             )}
                             {c.id_recibo_ingreso && (
                               <button
@@ -774,7 +839,8 @@ ${desglose.length > 0 ? `
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -843,6 +909,37 @@ ${desglose.length > 0 ? `
                     style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: nuevoCentroNom.trim() ? 1 : 0.5 }}>
                     <Plus size={13} /> Agregar
                   </button>
+                </div>
+              </div>
+
+              {/* Mapeo POS a Ingresos */}
+              <div className="card" style={{ padding: 20, maxWidth: 760 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>Mapeo POS a Centro de Ingreso</div>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>
+                  Define qué centro de ingreso se usa al generar recibos desde cortes de caja.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {centros.map(c => {
+                    const m = getCentroIngresoMap(c.id)
+                    return (
+                      <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px' }}>
+                        <div>
+                          <div style={{ fontSize: 12, color: '#94a3b8' }}>Centro POS</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{c.nombre}</div>
+                        </div>
+                        <select
+                          value={m?.id_centro_ingreso_fk ?? ''}
+                          onChange={e => guardarMapCentroIngreso(c.id, e.target.value ? Number(e.target.value) : null)}
+                          style={{ width: '100%', padding: '7px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
+                          <option value="">Sin asignar</option>
+                          {centrosIngreso.map(ci => <option key={ci.id} value={ci.id}>{ci.nombre}</option>)}
+                        </select>
+                        <div style={{ minWidth: 90, textAlign: 'right', fontSize: 11, color: m ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
+                          {savingMap === c.id ? 'Guardando…' : (m ? 'Mapeado' : 'Pendiente')}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
