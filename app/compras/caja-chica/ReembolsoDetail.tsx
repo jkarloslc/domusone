@@ -2,7 +2,7 @@
 import ModalShell from '@/components/ui/ModalShell'
 import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
-import { X, CheckCircle, XCircle, ExternalLink, DollarSign, Printer, FileText, Download } from 'lucide-react'
+import { CheckCircle, XCircle, ExternalLink, DollarSign, Printer, FileText, Download } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { folioGen, fmt, nextFolio } from '../types'
 

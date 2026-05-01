@@ -2,7 +2,7 @@
 import ModalShell from '@/components/ui/ModalShell'
 import { useState, useEffect, useRef } from 'react'
 import { dbComp, dbCfg, supabase } from '@/lib/supabase'
-import { X, Save, Loader, Plus, Trash2, Upload, FileText, Image as ImageIcon, XCircle } from 'lucide-react'
+import { Save, Loader, Plus, Trash2, Upload, FileText, Image as ImageIcon, XCircle } from 'lucide-react'
 import { folioGen } from '../types'
 
 type Detalle = {

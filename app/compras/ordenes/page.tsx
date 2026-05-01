@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  Plus, Search, RefreshCw, Eye, X, Save, Loader,
+  Plus, Search, RefreshCw, Eye, Save, Loader,
   ArrowLeft, CheckCircle, XCircle, Printer, Trash2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
