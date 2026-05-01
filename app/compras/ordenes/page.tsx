@@ -476,6 +476,9 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
   const [det, setDet]       = useState<any[]>([])
   const [op, setOP]         = useState<any | null>(null)
   const [almMap, setAlmMap] = useState<Record<number, string>>({})
+  const [ccMap,   setCCMap]   = useState<Record<number, string>>({})
+  const [areaMap, setAreaMap] = useState<Record<number, string>>({})
+  const [frMap,   setFrMap]   = useState<Record<number, string>>({})
   const [comentario, setCom]    = useState('')
   const [creandoOP, setCreandoOP] = useState(false)
   const [savingOP, setSavingOP]   = useState(false)
@@ -484,10 +487,17 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
   useEffect(() => {
     dbComp.from('ordenes_compra_det').select('*').eq('id_oc_fk', oc.id).then(({ data }) => setDet(data ?? []))
     dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle().then(({ data }) => setOP(data))
-    dbComp.from('almacenes').select('id, nombre').then(({ data }) => {
-      const m: Record<number, string> = {}
-      ;(data ?? []).forEach((a: any) => { m[a.id] = a.nombre })
-      setAlmMap(m)
+    Promise.all([
+      dbComp.from('almacenes').select('id, nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true),
+      dbCfg.from('areas').select('id, nombre').eq('activo', true),
+      dbCfg.from('frentes').select('id, nombre').eq('activo', true),
+    ]).then(([alm, cc, ar, fr]) => {
+      const mk = (rows: any[]) => Object.fromEntries(rows.map((r: any) => [r.id, r.nombre]))
+      setAlmMap(mk(alm.data ?? []))
+      setCCMap(mk(cc.data ?? []))
+      setAreaMap(mk(ar.data ?? []))
+      setFrMap(mk(fr.data ?? []))
     })
   }, [oc.id])
 
@@ -624,6 +634,9 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
             <DI label="Condiciones de Pago" value={oc.condiciones_pago} />
             <DI label="Entrega Estimada"    value={fmtFecha(oc.fecha_entrega_est)} />
             <DI label="Almacén de Entrega"  value={oc.id_almacen_entrega_fk ? (almMap[oc.id_almacen_entrega_fk] ?? `#${oc.id_almacen_entrega_fk}`) : null} />
+            {oc.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[oc.id_centro_costo_fk] ?? `#${oc.id_centro_costo_fk}`} />}
+            {oc.id_area_fk         && <DI label="Área"            value={areaMap[oc.id_area_fk]       ?? `#${oc.id_area_fk}`} />}
+            {oc.id_frente_fk       && <DI label="Frente"          value={frMap[oc.id_frente_fk]       ?? `#${oc.id_frente_fk}`} />}
             {oc.autorizado_por    && <DI label="Autorizado por" value={`${oc.autorizado_por} — ${fmtFecha(oc.fecha_autorizacion)}`} />}
             {oc.comentario_auth   && <DI label="Comentario"     value={oc.comentario_auth} />}
           </div>

@@ -1,4 +1,5 @@
 'use client'
+import ModalShell from '@/components/ui/ModalShell'
 import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { X, CheckCircle, XCircle, ExternalLink, DollarSign, Printer, FileText, Download } from 'lucide-react'
@@ -302,28 +303,21 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 640, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 400 }}>
-              {r.folio ?? `Reembolso #${r.id}`}
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-              <span className={`badge ${r.status === 'Pagado' ? 'badge-vendido' : r.status === 'Autorizado' ? 'badge-libre' : r.status === 'Pendiente Auth' ? 'badge-bloqueado' : r.status === 'Rechazado' ? 'badge-cancelado' : 'badge-default'}`}>
-                {r.status}
-              </span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.fecha}</span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.usuario_nombre ?? r.id_usuario_fk}</span>
-            </div>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+    <ModalShell modulo="compras" titulo={r.folio ?? `Reembolso #${r.id}`}
+      subtitulo={`${r.fecha ?? ''} · ${r.usuario_nombre ?? r.id_usuario_fk ?? ''}`}
+      onClose={onClose} maxWidth={640}
+      footer={<>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className={`badge ${r.status === 'Pagado' ? 'badge-vendido' : r.status === 'Autorizado' ? 'badge-libre' : r.status === 'Pendiente Auth' ? 'badge-bloqueado' : r.status === 'Rechazado' ? 'badge-cancelado' : 'badge-default'}`}>
+            {r.status}
+          </span>
         </div>
-
-        {/* Body */}
-        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <button className="btn-secondary" onClick={imprimir} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Printer size={13} /> Imprimir
+        </button>
+      </>}
+    >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Observaciones */}
           {r.observaciones && (
@@ -435,14 +429,6 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
             </div>
           )}
         </div>
-
-        <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <button className="btn-secondary" onClick={imprimir} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Printer size={13} /> Imprimir
-          </button>
-          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
