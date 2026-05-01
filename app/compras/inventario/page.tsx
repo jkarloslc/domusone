@@ -174,7 +174,7 @@ export default function InventarioPage() {
 
       {/* Modal Kardex */}
       {kardex && (
-        <ModalShell modulo="almacenes" titulo="Modal" onClose={setKardex} maxWidth={720}
+        <ModalShell modulo="almacenes" titulo="Modal" onClose={() => setKardex(null)} maxWidth={720}
         >
             <div style={{ overflowY: 'auto', maxHeight: 'calc(88vh - 80px)' }}>
               <table>
