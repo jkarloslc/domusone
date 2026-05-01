@@ -102,11 +102,12 @@ export default function AccesosPage() {
     setDetalle(a)
     setDetalleAcomps([])
     setLoadingAcomps(true)
-    const { data } = await dbGolf
+    const { data, error: aErr } = await dbGolf
       .from('ctrl_acceso_acomp')
       .select('nombre, orden')
       .eq('id_acceso_fk', a.id)
       .order('orden', { ascending: true })
+    console.log('[acomps] id_acceso_fk:', a.id, '| data:', data, '| error:', aErr?.message)
     setDetalleAcomps((data ?? []) as { nombre: string; orden: number }[])
     setLoadingAcomps(false)
   }
