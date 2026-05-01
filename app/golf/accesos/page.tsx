@@ -17,7 +17,6 @@ type Acceso = {
   cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null; numero_tarjeta: string | null } | null
   cat_espacios_deportivos?: { nombre: string } | null
   cat_formas_juego?: { nombre: string } | null
-  ctrl_acceso_acomp?: { nombre: string; orden: number }[]
 }
 
 type Espacio = { id: number; nombre: string }
@@ -34,6 +33,8 @@ export default function AccesosPage() {
   const [loading, setLoading]       = useState(true)
   const [showModal, setShowModal]       = useState(false)
   const [detalle, setDetalle]           = useState<Acceso | null>(null)
+  const [detalleAcomps, setDetalleAcomps] = useState<{ nombre: string; orden: number }[]>([])
+  const [loadingAcomps, setLoadingAcomps] = useState(false)
   const [registrandoSalida, setRegistrandoSalida] = useState<number | null>(null)
 
   // filtros
@@ -56,8 +57,7 @@ export default function AccesosPage() {
         id, fecha_entrada, fecha_salida, hoyo_inicio, observaciones, id_socio_fk,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, numero_tarjeta),
         cat_espacios_deportivos(nombre),
-        cat_formas_juego(nombre),
-        ctrl_acceso_acomp(nombre, orden)
+        cat_formas_juego(nombre)
       `)
       .gte('fecha_entrada', new Date(`${fecha}T00:00:00`).toISOString())
       .lte('fecha_entrada', new Date(`${fecha}T23:59:59`).toISOString())
@@ -97,6 +97,19 @@ export default function AccesosPage() {
   }
 
   const handleSaved = () => { setShowModal(false); fetchAccesos() }
+
+  const abrirDetalle = async (a: Acceso) => {
+    setDetalle(a)
+    setDetalleAcomps([])
+    setLoadingAcomps(true)
+    const { data } = await dbGolf
+      .from('ctrl_acceso_acomp')
+      .select('nombre, orden')
+      .eq('id_acceso_fk', a.id)
+      .order('orden', { ascending: true })
+    setDetalleAcomps((data ?? []) as { nombre: string; orden: number }[])
+    setLoadingAcomps(false)
+  }
 
   const esHoy = fecha === localToday()
 
@@ -188,16 +201,16 @@ export default function AccesosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                {['Socio', 'Espacio', 'Forma de Juego', 'Hoyo', 'Entrada', 'Salida', 'Acompañantes', 'Acciones'].map(h => (
+                {['Socio', 'Espacio', 'Hoyo', 'Entrada', 'Salida', 'Acompañantes', 'Acciones'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
               ) : accesos.length === 0 ? (
-                <tr><td colSpan={8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <tr><td colSpan={7} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>-</div>
                   <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin registros para este día</div>
                   <div style={{ fontSize: 12 }}>Registra la primera salida al campo</div>
@@ -206,7 +219,6 @@ export default function AccesosPage() {
                 const socio = a.cat_socios
                 const nombreSocio = socio ? [socio.nombre, socio.apellido_paterno, socio.apellido_materno].filter(Boolean).join(' ') : '—'
                 const enCampo = !a.fecha_salida
-                const acomps = (a.ctrl_acceso_acomp ?? []).sort((x, y) => x.orden - y.orden)
                 const isSalida = registrandoSalida === a.id
                 return (
                   <tr key={a.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
@@ -218,9 +230,6 @@ export default function AccesosPage() {
                     </td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
                       {a.cat_espacios_deportivos?.nombre ?? '—'}
-                    </td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>
-                      {a.cat_formas_juego?.nombre ?? '—'}
                     </td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', textAlign: 'center' }}>
                       {a.hoyo_inicio ?? '—'}
@@ -244,28 +253,15 @@ export default function AccesosPage() {
                         <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#16a34a' }}>En campo</span>
                       )}
                     </td>
-                    <td style={{ padding: '10px 14px', fontSize: 12, maxWidth: 200 }}>
-                      {acomps.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', borderRadius: 20, padding: '1px 8px', display: 'inline-block', width: 'fit-content' }}>
-                            {acomps.length} acomp.
-                          </span>
-                          {acomps.map((ac, i) => (
-                            <div key={i} style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                              · {ac.nombre}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span style={{ color: '#cbd5e1' }}>—</span>
-                      )}
+                    <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)' }}>
+                      Ver detalle →
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button
                           className="btn-ghost"
                           style={{ padding: '4px 6px', color: '#64748b' }}
-                          onClick={() => setDetalle(a)}
+                          onClick={() => abrirDetalle(a)}
                           title="Ver detalle">
                           <Eye size={13} />
                         </button>
@@ -324,27 +320,24 @@ export default function AccesosPage() {
             </div>
 
             {/* Acompañantes */}
-            {(() => {
-              const acomps = (detalle.ctrl_acceso_acomp ?? []).sort((a, b) => a.orden - b.orden)
-              return (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                    Acompañantes ({acomps.length})
-                  </div>
-                  {acomps.length === 0 ? (
-                    <div style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>Sin acompañantes registrados</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {acomps.map((ac, i) => (
-                        <div key={i} style={{ padding: '8px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, color: '#334155', fontWeight: 500 }}>
-                          {ac.nombre}
-                        </div>
-                      ))}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                Acompañantes {!loadingAcomps && `(${detalleAcomps.length})`}
+              </div>
+              {loadingAcomps ? (
+                <div style={{ fontSize: 13, color: '#94a3b8' }}>Cargando…</div>
+              ) : detalleAcomps.length === 0 ? (
+                <div style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>Sin acompañantes registrados</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {detalleAcomps.map((ac, i) => (
+                    <div key={i} style={{ padding: '8px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, color: '#334155', fontWeight: 500 }}>
+                      {ac.nombre}
                     </div>
-                  )}
+                  ))}
                 </div>
-              )
-            })()}
+              )}
+            </div>
 
             {/* Observaciones */}
             {detalle.observaciones && (
