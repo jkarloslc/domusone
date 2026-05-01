@@ -51,7 +51,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
         const list = data ?? []
         setEspacios(list)
         // Precargar "Campo de Golf" si existe
-        const campo = list.find((e: Espacio) => e.nombre.toLowerCase().includes('campo de golf'))
+        const campo = list.find((e: Espacio) => e.nombre.toLowerCase().includes('campo golf'))
         if (campo) setIdEspacio(campo.id)
       })
     dbGolf.from('cat_formas_juego').select('id, nombre').eq('activo', true).order('nombre')
