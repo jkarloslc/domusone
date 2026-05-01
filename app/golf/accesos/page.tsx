@@ -107,8 +107,7 @@ export default function AccesosPage() {
       .select('nombre, orden')
       .eq('id_acceso_fk', a.id)
       .order('orden', { ascending: true })
-    console.log('[acomps] id_acceso_fk:', a.id, '| data:', data, '| error:', aErr?.message)
-    setDetalleAcomps((data ?? []) as { nombre: string; orden: number }[])
+setDetalleAcomps((data ?? []) as { nombre: string; orden: number }[])
     setLoadingAcomps(false)
   }
 
