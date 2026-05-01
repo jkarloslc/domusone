@@ -173,6 +173,7 @@ export default function OrdenesPagoPage() {
                 <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {r.concepto ?? '—'}
                   {r.tipo_gasto && <span style={{ fontSize: 10, marginLeft: 6, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span>}
+                  {r.id_centro_costo_fk && !r.id_area_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#7c3aed', background: '#f5f3ff', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
                 </td>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap',
                   color: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? '#dc2626' : 'var(--text-secondary)',
@@ -876,6 +877,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const xmlDetailRef = useRef<HTMLInputElement>(null)
 
   const [ocsRel, setOcsRel]       = useState<any[]>([])
+  const [detLinesView, setDetLinesView] = useState<any[]>([])
   const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
   const [areaMap, setAreaMap]     = useState<Record<number, string>>({})
   const [frMap,  setFrMap]        = useState<Record<number, string>>({})
@@ -960,6 +962,8 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     dbComp.from('ordenes_pago_oc').select('*, ordenes_compra(folio, total)')
       .eq('id_op_fk', op.id)
       .then(({ data }) => setOcsRel(data ?? []))
+    dbComp.from('ordenes_pago_det').select('*').eq('id_op_fk', op.id).order('id')
+      .then(({ data }) => setDetLinesView(data ?? []))
     // Cargar catálogos para CC/Área/Frente
     import('@/lib/supabase').then(({ dbCfg }) => {
       Promise.all([
@@ -1054,11 +1058,25 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
         <tr><th>Almacén</th><td>${op._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td></tr>
         ${op.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${op.tipo_gasto}</td></tr>` : ''}
-        ${op.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td>${ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`}</td><th>Área</th><td>${op.id_area_fk ? (areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`) : '—'}</td></tr>` : ''}
-        ${op.id_frente_fk ? `<tr><th>Frente</th><td colspan="3">${frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`}</td></tr>` : ''}
+        ${op.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td colspan="3">${ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`}</td></tr>` : ''}
+        ${detLinesView.length === 0 && op.id_area_fk ? `<tr><th>Área</th><td>${areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`}</td><th>Frente</th><td>${op.id_frente_fk ? (frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`) : '—'}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(op.monto)}</td></tr>
       </table>
+      ${detLinesView.length > 0 ? `
+      <h3 style="font-size:13px;font-weight:700;color:#0D4F80;margin:18px 0 8px">Distribución por Área</h3>
+      <table>
+        <thead><tr><th>Descripción</th><th>Área</th><th>Frente</th><th style="text-align:right">Monto</th></tr></thead>
+        <tbody>
+          ${detLinesView.map((l: any) => `<tr>
+            <td>${l.descripcion ?? '—'}</td>
+            <td>${l.id_area_fk   ? (areaMap[l.id_area_fk]  ?? `#${l.id_area_fk}`)  : '—'}</td>
+            <td>${l.id_frente_fk ? (frMap[l.id_frente_fk]  ?? `#${l.id_frente_fk}`) : '—'}</td>
+            <td style="text-align:right;font-weight:600">${fmt(l.monto)}</td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot><tr><th colspan="3">Total distribución</th><th style="text-align:right">${fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}</th></tr></tfoot>
+      </table>` : ''}
       ${op.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${op.notas}</em></p>` : ''}
       <div class="firmas">
         <div class="firma">Elaboró</div>
@@ -1116,11 +1134,48 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               <DI label="Almacén"         value={op._almNombre} />
               <DI label="Vencimiento"     value={fmtFecha(op.fecha_vencimiento)} />
               {op.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`} />}
-              {op.id_area_fk        && <DI label="Área"             value={areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`} />}
-              {op.id_frente_fk      && <DI label="Frente"           value={frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`} />}
+              {op.id_area_fk && detLinesView.length === 0 && <DI label="Área"   value={areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`} />}
+              {op.id_frente_fk && detLinesView.length === 0 && <DI label="Frente" value={frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`} />}
               {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
               {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
             </div>
+            {detLinesView.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>
+                  Distribución por Área ({detLinesView.length} línea{detLinesView.length > 1 ? 's' : ''})
+                </div>
+                <div className="card" style={{ overflow: 'hidden' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Descripción</th>
+                        <th>Área</th>
+                        <th>Frente</th>
+                        <th style={{ textAlign: 'right' }}>Monto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detLinesView.map((l: any) => (
+                        <tr key={l.id}>
+                          <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.descripcion ?? '—'}</td>
+                          <td style={{ fontSize: 12 }}>{l.id_area_fk   ? (areaMap[l.id_area_fk] ?? `#${l.id_area_fk}`)   : '—'}</td>
+                          <td style={{ fontSize: 12 }}>{l.id_frente_fk ? (frMap[l.id_frente_fk]  ?? `#${l.id_frente_fk}`) : '—'}</td>
+                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(l.monto)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                        <td colSpan={3} style={{ fontSize: 11, color: 'var(--text-muted)', padding: '6px 12px' }}>Total distribución</td>
+                        <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums', padding: '6px 12px' }}>
+                          {fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
           </Sec>
 
           <Sec label="Instrucciones y respuestas (CXP)">
