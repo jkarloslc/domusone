@@ -7,6 +7,7 @@ import {
   Save, Loader, CreditCard,
 } from 'lucide-react'
 import Link from 'next/link'
+import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ────────────────────────────────────────────────────
 type Cuota = {
@@ -121,13 +122,19 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 540, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 17, fontWeight: 700 }}>Nueva Cuota</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={17} /></button>
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <ModalShell
+      modulo="golf-miembros"
+      titulo="Nueva Cuota"
+      onClose={onClose}
+      maxWidth={540}
+      footer={<>
+        <button className="btn-ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
+        </button>
+      </>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {configs.length > 0 && (
             <div>
               <label style={lbl}>Tipo de cuota <span style={{ fontWeight: 400, color: '#94a3b8' }}>(precarga datos)</span></label>
@@ -201,15 +208,8 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
             </div>
           </div>
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{error}</div>}
-        </div>
-        <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
-          </button>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -274,16 +274,24 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 560, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 style={{ fontSize: 17, fontWeight: 700 }}>Generación Masiva</h2>
-            <p style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Genera cuotas para todos los socios de una categoría</p>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={17} /></button>
-        </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <ModalShell
+      modulo="golf-miembros"
+      titulo="Generación Masiva"
+      subtitulo="Genera cuotas para todos los socios de una categoría"
+      onClose={onClose}
+      maxWidth={560}
+      footer={<>
+        <button className="btn-ghost" onClick={done ? onSaved : onClose}>{done ? 'Listo' : 'Cancelar'}</button>
+        {!done && preview.filter(p => !p.existente).length > 0 && (
+          <button onClick={handleGenerar} disabled={saving}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Zap size={13} />}
+            Generar {preview.filter(p => !p.existente).length} cuotas
+          </button>
+        )}
+      </>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {done ? (
             <div style={{ textAlign: 'center', padding: '32px 20px' }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
@@ -342,19 +350,8 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
               )}
             </>
           )}
-        </div>
-        <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button className="btn-ghost" onClick={done ? onSaved : onClose}>{done ? 'Listo' : 'Cancelar'}</button>
-          {!done && preview.filter(p => !p.existente).length > 0 && (
-            <button onClick={handleGenerar} disabled={saving}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
-              {saving ? <Loader size={13} className="animate-spin" /> : <Zap size={13} />}
-              Generar {preview.filter(p => !p.existente).length} cuotas
-            </button>
-          )}
-        </div>
       </div>
-    </div>
+    </ModalShell>
   )
 }
 
