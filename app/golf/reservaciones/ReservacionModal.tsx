@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { X, Save, Loader, Search, Car, UserCheck, UserX } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Socio = {
   id: number; numero_socio: string | null; nombre: string
@@ -32,16 +33,13 @@ export default function ReservacionModal({ fecha, onClose, onSaved }: Props) {
   const [espacios, setEspacios] = useState<Espacio[]>([])
   const [formas, setFormas]     = useState<FormaJuego[]>([])
 
-  // tipo de jugador
   const [esExterno, setEsExterno] = useState(false)
 
-  // búsqueda socio
   const [socioSearch, setSocioSearch]   = useState('')
   const [socioResults, setSocioResults] = useState<Socio[]>([])
   const [socioSelec, setSocioSelec]     = useState<Socio | null>(null)
   const [buscando, setBuscando]         = useState(false)
 
-  // externo
   const [nombreExterno, setNombreExterno]     = useState('')
   const [telefonoExterno, setTelefonoExterno] = useState('')
 
@@ -121,182 +119,175 @@ export default function ReservacionModal({ fecha, onClose, onSaved }: Props) {
     : ''
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 580, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+    <ModalShell
+      modulo="golf"
+      titulo="Nueva Reservación"
+      onClose={onClose}
+      maxWidth={580}
+      footer={<>
+        <button className="btn-ghost" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+          Guardar Reservación
+        </button>
+      </>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 600, color: '#1e293b' }}>Nueva Reservación</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}><X size={18} /></button>
+        {/* Toggle Socio / Visitante externo */}
+        <div>
+          <label style={lbl}>Tipo de jugador *</label>
+          <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <button onClick={() => switchTipo(false)} style={{
+              flex: 1, padding: '9px 0', fontSize: 13, fontWeight: !esExterno ? 600 : 400,
+              background: !esExterno ? '#eff6ff' : '#fff',
+              color: !esExterno ? '#1d4ed8' : '#94a3b8',
+              border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              borderRight: '1px solid #e2e8f0', transition: 'all 0.15s',
+            }}>
+              <UserCheck size={14} /> Socio
+            </button>
+            <button onClick={() => switchTipo(true)} style={{
+              flex: 1, padding: '9px 0', fontSize: 13, fontWeight: esExterno ? 600 : 400,
+              background: esExterno ? '#fff7ed' : '#fff',
+              color: esExterno ? '#c2410c' : '#94a3b8',
+              border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              transition: 'all 0.15s',
+            }}>
+              <UserX size={14} /> Visitante externo
+            </button>
+          </div>
         </div>
 
-        {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Toggle Socio / Visitante externo */}
+        {/* Sección Socio */}
+        {!esExterno && (
           <div>
-            <label style={lbl}>Tipo de jugador *</label>
-            <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-              <button onClick={() => switchTipo(false)} style={{
-                flex: 1, padding: '9px 0', fontSize: 13, fontWeight: !esExterno ? 600 : 400,
-                background: !esExterno ? '#eff6ff' : '#fff',
-                color: !esExterno ? '#1d4ed8' : '#94a3b8',
-                border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                borderRight: '1px solid #e2e8f0', transition: 'all 0.15s',
-              }}>
-                <UserCheck size={14} /> Socio
-              </button>
-              <button onClick={() => switchTipo(true)} style={{
-                flex: 1, padding: '9px 0', fontSize: 13, fontWeight: esExterno ? 600 : 400,
-                background: esExterno ? '#fff7ed' : '#fff',
-                color: esExterno ? '#c2410c' : '#94a3b8',
-                border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                transition: 'all 0.15s',
-              }}>
-                <UserX size={14} /> Visitante externo
-              </button>
-            </div>
-          </div>
-
-          {/* Sección Socio */}
-          {!esExterno && (
-            <div>
-              <label style={lbl}>Socio *</label>
-              {socioSelec ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#1d4ed8' }}>{nombreSocio}</div>
-                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
-                      {socioSelec.numero_socio && `#${socioSelec.numero_socio} · `}
-                      {socioSelec.cat_categorias_socios?.nombre}
-                    </div>
+            <label style={lbl}>Socio *</label>
+            {socioSelec ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1d4ed8' }}>{nombreSocio}</div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
+                    {socioSelec.numero_socio && `#${socioSelec.numero_socio} · `}
+                    {socioSelec.cat_categorias_socios?.nombre}
                   </div>
-                  <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>
                 </div>
-              ) : (
-                <div style={{ position: 'relative' }}>
-                  <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                  {buscando && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
-                  <input style={{ ...inp, paddingLeft: 30 }} placeholder="Buscar por nombre o número de socio…"
-                    value={socioSearch} onChange={e => setSocioSearch(e.target.value)} autoFocus />
-                  {socioResults.length > 0 && (
-                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
-                      {socioResults.map(s => {
-                        const nombre = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
-                        return (
-                          <button key={s.id} onClick={() => seleccionarSocio(s)}
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombre}</span>
-                            <span style={{ fontSize: 11, color: '#64748b' }}>{s.numero_socio && `#${s.numero_socio} · `}{s.cat_categorias_socios?.nombre}</span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Sección Visitante externo */}
-          {esExterno && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={lbl}>Nombre del visitante *</label>
-                <input style={inp} value={nombreExterno} onChange={e => setNombreExterno(e.target.value)}
-                  placeholder="Nombre completo" autoFocus />
+                <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>
               </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={lbl}>Teléfono</label>
-                <input style={inp} value={telefonoExterno} onChange={e => setTelefonoExterno(e.target.value)}
-                  placeholder="(55) 1234-5678" type="tel" />
-              </div>
-            </div>
-          )}
-
-          {/* Fecha, Hora, Espacio */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={lbl}>Fecha *</label>
-              <input style={inp} type="date" value={form.fecha_reservacion} onChange={e => set('fecha_reservacion', e.target.value)} />
-            </div>
-            <div>
-              <label style={lbl}>Hora *</label>
-              <select style={inp} value={form.hora_reservacion} onChange={e => set('hora_reservacion', e.target.value)}>
-                {HORAS.map(h => <option key={h} value={h}>{h}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={lbl}>Espacio Deportivo *</label>
-              <select style={inp} value={form.id_espacio_fk} onChange={e => set('id_espacio_fk', e.target.value ? Number(e.target.value) : '')}>
-                <option value="">— Seleccionar —</option>
-                {espacios.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={lbl}>Forma de Juego</label>
-              <select style={inp} value={form.id_forma_juego_fk} onChange={e => set('id_forma_juego_fk', e.target.value ? Number(e.target.value) : '')}>
-                <option value="">— Seleccionar —</option>
-                {formas.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Jugadores y Monto */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={lbl}>Núm. de Jugadores</label>
-              <select style={inp} value={form.num_jugadores} onChange={e => set('num_jugadores', Number(e.target.value))}>
-                {[1,2,3,4].map(n => <option key={n} value={n}>{n} jugador{n > 1 ? 'es' : ''}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={lbl}>Monto</label>
-              <input style={inp} type="number" min="0" step="0.01" value={form.monto}
-                onChange={e => set('monto', e.target.value ? Number(e.target.value) : '')} placeholder="0.00" />
-            </div>
-          </div>
-
-          {/* Carro de Golf */}
-          <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: form.carro_golf ? 12 : 0 }}>
-              <input type="checkbox" id="carro" checked={form.carro_golf} onChange={e => set('carro_golf', e.target.checked)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
-              <label htmlFor="carro" style={{ ...lbl, marginBottom: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Car size={14} style={{ color: '#64748b' }} /> Incluye carro de golf
-              </label>
-            </div>
-            {form.carro_golf && (
-              <div>
-                <label style={lbl}>Monto carro de golf</label>
-                <input style={inp} type="number" min="0" step="0.01" value={form.monto_carro_golf}
-                  onChange={e => set('monto_carro_golf', e.target.value ? Number(e.target.value) : '')} placeholder="0.00" />
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                {buscando && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+                <input style={{ ...inp, paddingLeft: 30 }} placeholder="Buscar por nombre o número de socio…"
+                  value={socioSearch} onChange={e => setSocioSearch(e.target.value)} autoFocus />
+                {socioResults.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4 }}>
+                    {socioResults.map(s => {
+                      const nombre = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
+                      return (
+                        <button key={s.id} onClick={() => seleccionarSocio(s)}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '9px 14px', background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{nombre}</span>
+                          <span style={{ fontSize: 11, color: '#64748b' }}>{s.numero_socio && `#${s.numero_socio} · `}{s.cat_categorias_socios?.nombre}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
+        )}
 
-          {/* Observaciones */}
-          <div>
-            <label style={lbl}>Observaciones</label>
-            <textarea style={{ ...inp, height: 68, resize: 'vertical' }} value={form.observaciones}
-              onChange={e => set('observaciones', e.target.value)} placeholder="Notas adicionales…" />
+        {/* Sección Visitante externo */}
+        {esExterno && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={lbl}>Nombre del visitante *</label>
+              <input style={inp} value={nombreExterno} onChange={e => setNombreExterno(e.target.value)}
+                placeholder="Nombre completo" autoFocus />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={lbl}>Teléfono</label>
+              <input style={inp} value={telefonoExterno} onChange={e => setTelefonoExterno(e.target.value)}
+                placeholder="(55) 1234-5678" type="tel" />
+            </div>
           </div>
+        )}
 
-          {error && (
-            <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>
+        {/* Fecha, Hora, Espacio */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={lbl}>Fecha *</label>
+            <input style={inp} type="date" value={form.fecha_reservacion} onChange={e => set('fecha_reservacion', e.target.value)} />
+          </div>
+          <div>
+            <label style={lbl}>Hora *</label>
+            <select style={inp} value={form.hora_reservacion} onChange={e => set('hora_reservacion', e.target.value)}>
+              {HORAS.map(h => <option key={h} value={h}>{h}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lbl}>Espacio Deportivo *</label>
+            <select style={inp} value={form.id_espacio_fk} onChange={e => set('id_espacio_fk', e.target.value ? Number(e.target.value) : '')}>
+              <option value="">— Seleccionar —</option>
+              {espacios.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lbl}>Forma de Juego</label>
+            <select style={inp} value={form.id_forma_juego_fk} onChange={e => set('id_forma_juego_fk', e.target.value ? Number(e.target.value) : '')}>
+              <option value="">— Seleccionar —</option>
+              {formas.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Jugadores y Monto */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={lbl}>Núm. de Jugadores</label>
+            <select style={inp} value={form.num_jugadores} onChange={e => set('num_jugadores', Number(e.target.value))}>
+              {[1,2,3,4].map(n => <option key={n} value={n}>{n} jugador{n > 1 ? 'es' : ''}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lbl}>Monto</label>
+            <input style={inp} type="number" min="0" step="0.01" value={form.monto}
+              onChange={e => set('monto', e.target.value ? Number(e.target.value) : '')} placeholder="0.00" />
+          </div>
+        </div>
+
+        {/* Carro de Golf */}
+        <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: form.carro_golf ? 12 : 0 }}>
+            <input type="checkbox" id="carro" checked={form.carro_golf} onChange={e => set('carro_golf', e.target.checked)} style={{ width: 16, height: 16, cursor: 'pointer' }} />
+            <label htmlFor="carro" style={{ ...lbl, marginBottom: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Car size={14} style={{ color: '#64748b' }} /> Incluye carro de golf
+            </label>
+          </div>
+          {form.carro_golf && (
+            <div>
+              <label style={lbl}>Monto carro de golf</label>
+              <input style={inp} type="number" min="0" step="0.01" value={form.monto_carro_golf}
+                onChange={e => set('monto_carro_golf', e.target.value ? Number(e.target.value) : '')} placeholder="0.00" />
+            </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-            Guardar Reservación
-          </button>
+        {/* Observaciones */}
+        <div>
+          <label style={lbl}>Observaciones</label>
+          <textarea style={{ ...inp, height: 68, resize: 'vertical' }} value={form.observaciones}
+            onChange={e => set('observaciones', e.target.value)} placeholder="Notas adicionales…" />
         </div>
+
+        {error && (
+          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>
+        )}
       </div>
-    </div>
+    </ModalShell>
   )
 }
