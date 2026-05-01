@@ -47,7 +47,13 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
   useEffect(() => {
     dbGolf.from('cat_espacios_deportivos').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setEspacios(data ?? []))
+      .then(({ data }) => {
+        const list = data ?? []
+        setEspacios(list)
+        // Precargar "Campo de Golf" si existe
+        const campo = list.find((e: Espacio) => e.nombre.toLowerCase().includes('campo de golf'))
+        if (campo) setIdEspacio(campo.id)
+      })
     dbGolf.from('cat_formas_juego').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setFormas(data ?? []))
   }, [])
@@ -298,7 +304,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           <label style={labelStyle}>Hoyo de Inicio</label>
           <select style={inputStyle} value={hoyoInicio} onChange={e => setHoyoInicio(e.target.value ? Number(e.target.value) : '')}>
             <option value="">—</option>
-            {Array.from({ length: 18 }, (_, i) => i + 1).map(h => (
+            {[1, 10].map(h => (
               <option key={h} value={h}>Hoyo {h}</option>
             ))}
           </select>
