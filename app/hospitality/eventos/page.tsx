@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbComp } from '@/lib/supabase'
+import { dbCtrl, dbComp, dbGolf } from '@/lib/supabase'
 import ModalShell from '@/components/ui/ModalShell'
 import {
   Plus, Star, MapPin, Calendar, Users, DollarSign,
@@ -43,6 +43,15 @@ type Ingreso = {
   forma_pago: string
   referencia: string | null
   notas: string | null
+  id_venta_pos_fk: number | null
+}
+type VentaPOS = {
+  id: number
+  folio_dia: number
+  fecha: string
+  nombre_cliente: string
+  total: number
+  status: string
 }
 
 type OP = {
@@ -72,6 +81,7 @@ const STATUSES    = ['Cotización', 'Confirmado', 'En curso', 'Realizado', 'Canc
 
 const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
 const fmtFecha = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+const fmtFolioVentaPos = (v: Pick<VentaPOS, 'id' | 'folio_dia'>) => `#${String(v.id).padStart(6, '0')} · Día ${v.folio_dia}`
 
 function sortEventosDesc(a: Evento, b: Evento) {
   const fecha = b.fecha_inicio.localeCompare(a.fecha_inicio)
@@ -119,8 +129,12 @@ export default function EventosPage() {
 
   // Ingresos
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
-  const [ingresoForm, setIngresoForm] = useState({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '' })
+  const [ingresoForm, setIngresoForm] = useState({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null as number | null })
   const [savingIngreso, setSavingIngreso] = useState(false)
+  const [busqVentaPOS, setBusqVentaPOS] = useState('')
+  const [ventasPOS, setVentasPOS] = useState<VentaPOS[]>([])
+  const [loadingVentasPOS, setLoadingVentasPOS] = useState(false)
+  const [ventaPosMap, setVentaPosMap] = useState<Record<number, VentaPOS>>({})
 
   // OPs
   const [ops,      setOps]      = useState<OP[]>([])
@@ -161,10 +175,24 @@ export default function EventosPage() {
   // ── Load ingresos y OPs del evento seleccionado ────────────
   const loadEventoDetalle = useCallback(async (evtId: number) => {
     const [{ data: ing }, { data: eops }] = await Promise.all([
-      dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas').eq('id_evento_fk', evtId).order('fecha_pago'),
+      dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas, id_venta_pos_fk').eq('id_evento_fk', evtId).order('fecha_pago'),
       dbCtrl.from('eventos_ops').select('id, id_op_fk').eq('id_evento_fk', evtId),
     ])
-    setIngresos((ing as unknown as Ingreso[]) ?? [])
+    const ingRows = (ing as unknown as Ingreso[]) ?? []
+    setIngresos(ingRows)
+
+    const ventaIds = Array.from(new Set(ingRows.map(i => i.id_venta_pos_fk).filter((v): v is number => !!v)))
+    if (ventaIds.length > 0) {
+      const { data: ventasData } = await dbGolf.from('ctrl_ventas')
+        .select('id, folio_dia, fecha, nombre_cliente, total, status')
+        .in('id', ventaIds)
+      const m: Record<number, VentaPOS> = {}
+      ;((ventasData as VentaPOS[]) ?? []).forEach(v => { m[v.id] = v })
+      setVentaPosMap(m)
+    } else {
+      setVentaPosMap({})
+    }
+
     const evOps = (eops as unknown as EventoOP[]) ?? []
     setEvtOps(evOps)
     if (evOps.length > 0) {
@@ -185,6 +213,10 @@ export default function EventosPage() {
     setIngresos([]); setOps([]); setEvtOps([])
     setActiveTab('info')
     setErr('')
+    setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
+    setBusqVentaPOS('')
+    setVentasPOS([])
+    setVentaPosMap({})
     setModal(true)
   }
 
@@ -208,6 +240,9 @@ export default function EventosPage() {
     })
     setActiveTab('info')
     setErr('')
+    setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
+    setBusqVentaPOS('')
+    setVentasPOS([])
     setModal(true)
     await loadEventoDetalle(ev.id)
   }
@@ -219,7 +254,7 @@ export default function EventosPage() {
     setViewOps([])
     setViewLoad(true)
     const [{ data: ing }, { data: eops }] = await Promise.all([
-      dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas').eq('id_evento_fk', ev.id),
+      dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas, id_venta_pos_fk').eq('id_evento_fk', ev.id),
       dbCtrl.from('eventos_ops').select('id, id_op_fk').eq('id_evento_fk', ev.id),
     ])
     setViewIng((ing as unknown as Ingreso[]) ?? [])
@@ -274,6 +309,61 @@ export default function EventosPage() {
     loadEventos()
   }
 
+  const mapFormaPagoPosToEvento = (n: string): string => {
+    const x = n.toLowerCase()
+    if (x.includes('efectivo')) return 'Efectivo'
+    if (x.includes('transfer')) return 'Transferencia'
+    if (x.includes('tarjeta')) return 'Tarjeta'
+    if (x.includes('cheque')) return 'Cheque'
+    return 'Otro'
+  }
+
+  const buscarVentasPOS = async () => {
+    if (!busqVentaPOS.trim()) return
+    setLoadingVentasPOS(true)
+    const t = busqVentaPOS.trim().toLowerCase()
+    const qNum = Number(t)
+
+    let q = dbGolf.from('ctrl_ventas')
+      .select('id, folio_dia, fecha, nombre_cliente, total, status')
+      .eq('status', 'PAGADA')
+      .order('fecha', { ascending: false })
+      .limit(20)
+
+    if (!Number.isNaN(qNum)) {
+      q = q.or(`id.eq.${qNum},folio_dia.eq.${qNum}`)
+    } else {
+      q = q.ilike('nombre_cliente', `%${t}%`)
+    }
+
+    const { data, error } = await q
+    if (error) console.error('Error buscando ventas POS:', error)
+    setVentasPOS((data as unknown as VentaPOS[]) ?? [])
+    setLoadingVentasPOS(false)
+  }
+
+  const seleccionarVentaPOS = async (venta: VentaPOS) => {
+    let forma = 'Otro'
+    const { data: pagos } = await dbGolf.from('ctrl_ventas_pagos')
+      .select('forma_nombre, monto')
+      .eq('id_venta_fk', venta.id)
+      .order('monto', { ascending: false })
+      .limit(1)
+    if (pagos && pagos.length > 0) {
+      forma = mapFormaPagoPosToEvento((pagos[0] as any).forma_nombre ?? '')
+    }
+
+    setIngresoForm(f => ({
+      ...f,
+      id_venta_pos_fk: venta.id,
+      descripcion: f.descripcion.trim() || `Ingreso por venta POS ${fmtFolioVentaPos(venta)}`,
+      monto: String(venta.total ?? 0),
+      fecha_pago: (venta.fecha ?? '').split('T')[0] || f.fecha_pago,
+      forma_pago: forma,
+      referencia: f.referencia || `POS ${fmtFolioVentaPos(venta)}`,
+    }))
+  }
+
   // ── Save ingreso ───────────────────────────────────────────
   const saveIngreso = async () => {
     if (!editEvt) return
@@ -288,10 +378,21 @@ export default function EventosPage() {
       forma_pago:   ingresoForm.forma_pago,
       referencia:   ingresoForm.referencia || null,
       notas:        ingresoForm.notas || null,
+      id_venta_pos_fk: ingresoForm.id_venta_pos_fk,
     })
-    if (error) { setErr(error.message); setSavingIngreso(false); return }
+    if (error) {
+      if (error.message?.includes('idx_eventos_ingresos_venta_pos_uniq')) {
+        setErr('Esta venta POS ya está asociada a otro ingreso.')
+      } else {
+        setErr(error.message)
+      }
+      setSavingIngreso(false)
+      return
+    }
     setSavingIngreso(false)
-    setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '' })
+    setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
+    setBusqVentaPOS('')
+    setVentasPOS([])
     await loadEventoDetalle(editEvt.id)
   }
 
@@ -630,6 +731,44 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
               {/* Formulario nuevo ingreso */}
               <div className="card" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#9333ea', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Registrar ingreso</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 10 }}>
+                  <input className="input" placeholder="Buscar venta POS por folio, día o cliente…"
+                    value={busqVentaPOS} onChange={e => setBusqVentaPOS(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && buscarVentasPOS()} style={{ fontSize: 12, width: '100%' }} />
+                  <button className="btn-primary" onClick={buscarVentasPOS} disabled={loadingVentasPOS} style={{ fontSize: 12, background: '#7e22ce' }}>
+                    {loadingVentasPOS ? '…' : 'Buscar POS'}
+                  </button>
+                </div>
+
+                {ventasPOS.length > 0 && (
+                  <div style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid #e9d5ff', borderRadius: 8, marginBottom: 10, background: '#fff' }}>
+                    {ventasPOS.map(v => (
+                      <button key={v.id}
+                        onClick={() => seleccionarVentaPOS(v)}
+                        style={{ width: '100%', textAlign: 'left', border: 'none', background: 'transparent', borderBottom: '1px solid #f3e8ff', padding: '7px 10px', cursor: 'pointer' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#7e22ce', fontFamily: 'monospace' }}>{fmtFolioVentaPos(v)}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a' }}>{fmt$(v.total)}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                          {v.nombre_cliente} · {new Date(v.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {ingresoForm.id_venta_pos_fk && (
+                  <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', border: '1px solid #ddd6fe', borderRadius: 8, background: '#f5f3ff' }}>
+                    <div style={{ fontSize: 12, color: '#6d28d9' }}>
+                      Venta POS asociada: <strong>#{String(ingresoForm.id_venta_pos_fk).padStart(6, '0')}</strong>
+                    </div>
+                    <button className="btn-ghost" onClick={() => setIngresoForm(f => ({ ...f, id_venta_pos_fk: null }))} style={{ fontSize: 11, color: '#6d28d9', padding: '2px 6px' }}>
+                      Quitar
+                    </button>
+                  </div>
+                )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div style={{ gridColumn: '1 / -1' }}>
                     <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>Descripción *</label>
@@ -673,7 +812,7 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                        {['Folio', 'Descripción', 'Fecha', 'Forma', 'Referencia', 'Monto', ''].map(h => (
+                        {['Folio', 'Venta POS', 'Descripción', 'Fecha', 'Forma', 'Referencia', 'Monto', ''].map(h => (
                           <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)' }}>{h}</th>
                         ))}
                       </tr>
@@ -682,6 +821,11 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
                       {ingresos.map((ing, i) => (
                         <tr key={ing.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                           <td style={{ padding: '8px 10px', fontWeight: 700, color: '#9333ea', fontFamily: 'monospace', fontSize: 10 }}>{ing.folio}</td>
+                          <td style={{ padding: '8px 10px', color: '#6d28d9', fontSize: 11, fontFamily: ing.id_venta_pos_fk ? 'monospace' : 'inherit' }}>
+                            {ing.id_venta_pos_fk
+                              ? (ventaPosMap[ing.id_venta_pos_fk] ? fmtFolioVentaPos(ventaPosMap[ing.id_venta_pos_fk]) : `#${String(ing.id_venta_pos_fk).padStart(6, '0')}`)
+                              : '—'}
+                          </td>
                           <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>{ing.descripcion}</td>
                           <td style={{ padding: '8px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{fmtFecha(ing.fecha_pago)}</td>
                           <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{ing.forma_pago}</td>
@@ -700,7 +844,7 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
                         </tr>
                       ))}
                       <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
-                        <td colSpan={5} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
+                        <td colSpan={6} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
                         <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</td>
                         <td></td>
                       </tr>
