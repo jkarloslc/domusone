@@ -1,4 +1,5 @@
 'use client'
+import ModalShell from '@/components/ui/ModalShell'
 import { useState, useEffect, useRef } from 'react'
 import { dbComp, dbCfg, supabase } from '@/lib/supabase'
 import { X, Save, Loader, Plus, Trash2, Upload, FileText, Image as ImageIcon, XCircle } from 'lucide-react'
@@ -191,24 +192,22 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 780, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 400 }}>
-              {isNew ? 'Nuevo Reembolso de Caja Chica' : `Editar ${reembolso.folio ?? '#' + reembolso.id}`}
-            </h2>
-            {fondo && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              Fondo: ${(fondo.monto_asignado ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} — {fondo.status}
-            </div>}
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-        </div>
-
-        {/* Body */}
-        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <ModalShell modulo="compras"
+      titulo={isNew ? 'Nuevo Reembolso de Caja Chica' : `Editar ${reembolso.folio ?? '#' + reembolso.id}`}
+      subtitulo={fondo ? `Fondo: $${(fondo.monto_asignado ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} — ${fondo.status}` : undefined}
+      onClose={onClose} maxWidth={780}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-secondary" onClick={() => handleSubmit('Borrador')} disabled={saving}>
+          Guardar borrador
+        </button>
+        <button className="btn-primary" onClick={() => handleSubmit('Pendiente Auth')} disabled={saving}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+          {saving ? 'Enviando…' : 'Enviar a autorización'}
+        </button>
+      </>}
+    >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13 }}>{error}</div>}
 
           {/* Datos generales */}
@@ -365,19 +364,6 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '14px 24px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-secondary" onClick={() => handleSubmit('Borrador')} disabled={saving}>
-            Guardar borrador
-          </button>
-          <button className="btn-primary" onClick={() => handleSubmit('Pendiente Auth')} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Enviando…' : 'Enviar a autorización'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
