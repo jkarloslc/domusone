@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Users, Clock, Filter } from 'lucide-react'
+import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Users, Clock, Filter, Eye } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 import Link from 'next/link'
 import AccesoModal from './AccesoModal'
 
@@ -16,7 +17,7 @@ type Acceso = {
   cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null; numero_tarjeta: string | null } | null
   cat_espacios_deportivos?: { nombre: string } | null
   cat_formas_juego?: { nombre: string } | null
-  ctrl_acceso_acomp?: { nombre: string; orden: number }[]
+  ctrl_acceso_acomp?: { nombre: string; orden: number; es_externo: boolean; origen_pago: string | null; id_familiar_fk: number | null }[]
 }
 
 type Espacio = { id: number; nombre: string }
@@ -31,7 +32,8 @@ export default function AccesosPage() {
   const [accesos, setAccesos]       = useState<Acceso[]>([])
   const [espacios, setEspacios]     = useState<Espacio[]>([])
   const [loading, setLoading]       = useState(true)
-  const [showModal, setShowModal]   = useState(false)
+  const [showModal, setShowModal]       = useState(false)
+  const [detalle, setDetalle]           = useState<Acceso | null>(null)
   const [registrandoSalida, setRegistrandoSalida] = useState<number | null>(null)
 
   // filtros
@@ -51,7 +53,7 @@ export default function AccesosPage() {
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, numero_tarjeta),
         cat_espacios_deportivos(nombre),
         cat_formas_juego(nombre),
-        ctrl_acceso_acomp(nombre, orden)
+        ctrl_acceso_acomp(nombre, orden, es_externo, origen_pago, id_familiar_fk)
       `)
       .gte('fecha_entrada', `${fecha}T00:00:00`)
       .lte('fecha_entrada', `${fecha}T23:59:59`)
@@ -181,7 +183,7 @@ export default function AccesosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                {['Socio', 'Espacio', 'Forma de Juego', 'Hoyo', 'Entrada', 'Salida', 'Acompañantes', ''].map(h => (
+                {['Socio', 'Espacio', 'Forma de Juego', 'Hoyo', 'Entrada', 'Salida', 'Acompañantes', 'Acciones'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -237,22 +239,47 @@ export default function AccesosPage() {
                         <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#16a34a' }}>En campo</span>
                       )}
                     </td>
-                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
-                      {acomps.length > 0
-                        ? acomps.map(ac => ac.nombre).join(', ')
-                        : <span style={{ color: '#cbd5e1' }}>—</span>}
+                    <td style={{ padding: '10px 14px', fontSize: 12, maxWidth: 200 }}>
+                      {acomps.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', borderRadius: 20, padding: '1px 8px', display: 'inline-block', width: 'fit-content' }}>
+                            {acomps.length} acomp.
+                          </span>
+                          {acomps.map((ac, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-secondary)' }}>
+                              {ac.es_externo
+                                ? <span style={{ color: '#d97706' }}>🎫</span>
+                                : ac.id_familiar_fk
+                                  ? <span style={{ color: '#2563eb' }}>👤</span>
+                                  : <span>·</span>}
+                              {ac.nombre}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ color: '#cbd5e1' }}>—</span>
+                      )}
                     </td>
                     <td style={{ padding: '10px 14px' }}>
-                      {enCampo && puedeEscribir && (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button
                           className="btn-ghost"
-                          style={{ padding: '4px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#dc2626', opacity: isSalida ? 0.5 : 1 }}
-                          onClick={() => registrarSalida(a.id)}
-                          disabled={isSalida}
-                          title="Registrar salida">
-                          <LogOut size={13} /> Salida
+                          style={{ padding: '4px 6px', color: '#64748b' }}
+                          onClick={() => setDetalle(a)}
+                          title="Ver detalle">
+                          <Eye size={13} />
                         </button>
-                      )}
+                        {enCampo && puedeEscribir && (
+                          <button
+                            className="btn-ghost"
+                            style={{ padding: '4px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#dc2626', opacity: isSalida ? 0.5 : 1 }}
+                            onClick={() => registrarSalida(a.id)}
+                            disabled={isSalida}
+                            title="Registrar salida">
+                            <LogOut size={13} /> Salida
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )
@@ -263,6 +290,85 @@ export default function AccesosPage() {
       </div>
 
       {showModal && <AccesoModal onClose={() => setShowModal(false)} onSaved={handleSaved} />}
+
+      {detalle && (
+        <ModalShell modulo="golf-accesos" titulo="Detalle de Salida al Campo" onClose={() => setDetalle(null)} maxWidth={520}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* Socio */}
+            <div style={{ padding: '12px 16px', background: '#eff6ff', borderRadius: 10, border: '1px solid #bfdbfe' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#1d4ed8' }}>
+                {detalle.cat_socios
+                  ? [detalle.cat_socios.nombre, detalle.cat_socios.apellido_paterno, detalle.cat_socios.apellido_materno].filter(Boolean).join(' ')
+                  : '—'}
+              </div>
+              {detalle.cat_socios?.numero_socio && (
+                <div style={{ fontSize: 12, color: '#3b82f6', marginTop: 2 }}>#{detalle.cat_socios.numero_socio}</div>
+              )}
+            </div>
+
+            {/* Info de la salida */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {[
+                { label: 'Espacio deportivo', value: detalle.cat_espacios_deportivos?.nombre ?? '—' },
+                { label: 'Forma de juego',    value: detalle.cat_formas_juego?.nombre ?? '—' },
+                { label: 'Hoyo de inicio',    value: detalle.hoyo_inicio ? `Hoyo ${detalle.hoyo_inicio}` : '—' },
+                { label: 'Entrada',           value: `${fmtFecha(detalle.fecha_entrada)} ${fmtHora(detalle.fecha_entrada)}` },
+                { label: 'Salida',            value: detalle.fecha_salida ? `${fmtFecha(detalle.fecha_salida)} ${fmtHora(detalle.fecha_salida)}` : '—' },
+                { label: 'Status',            value: detalle.fecha_salida ? 'Completado' : 'En campo' },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ padding: '10px 12px', background: 'var(--bg-muted, #f8fafc)', borderRadius: 8, border: '1px solid var(--border, #e2e8f0)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Acompañantes */}
+            {(() => {
+              const acomps = (detalle.ctrl_acceso_acomp ?? []).sort((a, b) => a.orden - b.orden)
+              return (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                    Acompañantes ({acomps.length})
+                  </div>
+                  {acomps.length === 0 ? (
+                    <div style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>Sin acompañantes registrados</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {acomps.map((ac, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: 13, color: '#334155', fontWeight: 500, flex: 1 }}>{ac.nombre}</span>
+                          {ac.es_externo ? (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a' }}>
+                              🎫 {ac.origen_pago === 'PASE' ? 'Pase' : 'Green Fee'}
+                            </span>
+                          ) : ac.id_familiar_fk ? (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
+                              👤 Familiar
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' }}>
+                              Invitado
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* Observaciones */}
+            {detalle.observaciones && (
+              <div style={{ padding: '10px 14px', background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a', fontSize: 13, color: '#78350f' }}>
+                <span style={{ fontWeight: 600 }}>Observaciones: </span>{detalle.observaciones}
+              </div>
+            )}
+          </div>
+        </ModalShell>
+      )}
     </div>
   )
 }
