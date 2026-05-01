@@ -204,9 +204,13 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     if (acompFiltrados.length > 0) {
       const { error: acompErr } = await dbGolf.from('ctrl_acceso_acomp').insert(
         acompFiltrados.map(a => ({
-          id_acceso_fk: acceso.id,
-          orden:        a.orden,
-          nombre:       a.nombre.trim(),
+          id_acceso_fk:   acceso.id,
+          orden:          a.orden,
+          nombre:         a.nombre.trim(),
+          id_familiar_fk: a.tipo === 'familiar' ? (a.id_familiar ?? null) : null,
+          es_externo:     a.tipo === 'externo',
+          origen_pago:    (a as any)._origen_pago ?? null,
+          id_pase_mov_fk: (a as any)._pase_mov_id ?? null,
         }))
       )
       if (acompErr) {
