@@ -185,7 +185,7 @@ export default function PasesPage() {
           { label: 'Socios con Pases', value: stats.socios,      color: '#d97706', bg: '#fffbeb' },
           { label: 'Disponibles',      value: stats.disponibles,  color: '#16a34a', bg: '#f0fdf4' },
           { label: 'Usados',           value: stats.usados,       color: '#2563eb', bg: '#eff6ff' },
-          { label: 'Lotes Vencidos',   value: stats.vencidos,     color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Asignaciones Vencidas', value: stats.vencidos, color: '#dc2626', bg: '#fef2f2' },
         ].map(card => (
           <div key={card.label} className="card" style={{ flex: '1 1 140px', maxWidth: 200, padding: '12px 16px', background: card.bg, border: `1px solid ${card.color}22` }}>
             <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{card.label}</div>
@@ -218,7 +218,7 @@ export default function PasesPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                {['', 'Socio', 'Categoría', 'Disponibles', 'Usados', 'Lotes'].map(h => (
+                {['', 'Socio', 'Categoría', 'Disponibles', 'Usados', 'Asignaciones'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -259,7 +259,7 @@ export default function PasesPage() {
                         {s.total_usados}
                       </td>
                       <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
-                        {s.pases.length} lote{s.pases.length !== 1 ? 's' : ''}
+                        {s.pases.length} asignación{s.pases.length !== 1 ? 'es' : ''}
                       </td>
                     </tr>
 
@@ -269,11 +269,11 @@ export default function PasesPage() {
                         <td colSpan={6} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
                           <div style={{ padding: '16px 20px 20px 48px', background: '#fafafa' }}>
 
-                            {/* Lotes */}
+                            {/* Asignaciones */}
                             <div style={{ marginBottom: 16 }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Lotes asignados</div>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Asignaciones</div>
                               {s.pases.length === 0 ? (
-                                <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Sin lotes</div>
+                                <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Sin asignaciones</div>
                               ) : (
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                   <thead>
