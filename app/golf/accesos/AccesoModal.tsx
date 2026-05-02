@@ -208,8 +208,8 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           orden:          a.orden,
           nombre:         a.nombre.trim(),
           id_familiar_fk: a.tipo === 'familiar' ? (a.id_familiar ?? null) : null,
-          es_externo:     a.tipo === 'externo',
-          origen_pago:    (a as any)._origen_pago ?? null,
+          es_externo:     a.tipo === 'externo' || a.tipo === 'libre',
+          origen_pago:    a.tipo === 'libre' ? 'GREEN_FEE' : ((a as any)._origen_pago ?? null),
           id_pase_mov_fk: (a as any)._pase_mov_id ?? null,
         }))
       )
@@ -334,7 +334,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
               )}
               {socioSelec && totalPasesDisp === 0 && acompanantes.some(a => a.tipo === 'externo') && (
                 <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', fontWeight: 600 }}>
-                  Sin pases — invitado como green fee
+                  Sin pases — se registrará como Green Fee
                 </span>
               )}
             </div>
@@ -369,8 +369,8 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                   </button>
                   <button
                     onClick={() => switchTipoAcomp(i, 'libre')}
-                    style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'libre' ? '#f8fafc' : '#fff', color: a.tipo === 'libre' ? '#475569' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    Otro
+                    style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'libre' ? '#f0fdf4' : '#fff', color: a.tipo === 'libre' ? '#16a34a' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    Green Fee
                   </button>
                 </div>
 
@@ -389,7 +389,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                 ) : (
                   <input
                     style={{ ...inputStyle, flex: 1, borderColor: a.tipo === 'externo' ? '#fde68a' : '#e2e8f0' }}
-                    placeholder={a.tipo === 'externo' ? `Nombre del invitado ${i + 1} (consumirá 1 pase)` : `Nombre del acompañante ${i + 1}`}
+                    placeholder={a.tipo === 'externo' ? `Nombre del invitado ${i + 1} (consumirá 1 pase)` : a.tipo === 'libre' ? `Nombre del visitante ${i + 1} (green fee)` : `Nombre del acompañante ${i + 1}`}
                     value={a.nombre}
                     onChange={e => setAcompLibre(i, e.target.value)}
                   />
