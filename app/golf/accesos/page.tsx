@@ -16,7 +16,6 @@ type Acceso = {
   id_socio_fk: number | null
   cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null; numero_tarjeta: string | null } | null
   cat_espacios_deportivos?: { nombre: string } | null
-  cat_formas_juego?: { nombre: string } | null
 }
 
 type Espacio = { id: number; nombre: string }
@@ -56,8 +55,7 @@ export default function AccesosPage() {
       .select(`
         id, fecha_entrada, fecha_salida, hoyo_inicio, observaciones, id_socio_fk,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, numero_tarjeta),
-        cat_espacios_deportivos(nombre),
-        cat_formas_juego(nombre)
+        cat_espacios_deportivos(nombre)
       `)
       .gte('fecha_entrada', new Date(`${fecha}T00:00:00`).toISOString())
       .lte('fecha_entrada', new Date(`${fecha}T23:59:59`).toISOString())
@@ -67,7 +65,9 @@ export default function AccesosPage() {
 
     const { data, error: qErr } = await q
     if (qErr) console.error('[AccesosPage] query error:', qErr.message)
-    const all = (data as unknown as Acceso[]) ?? []
+    // Deduplicar por id por si la join genera filas duplicadas
+    const raw = (data as unknown as Acceso[]) ?? []
+    const all = [...new Map(raw.map(a => [a.id, a])).values()]
 
     const activosArr     = all.filter(a => !a.fecha_salida)
     const completadosArr = all.filter(a =>  a.fecha_salida)
