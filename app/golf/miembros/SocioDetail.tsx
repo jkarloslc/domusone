@@ -82,16 +82,37 @@ function TabFamiliares({ socioId }: { socioId: number }) {
 
 // ── Tab Accesos ──────────────────────────────────────────────
 function TabAccesos({ socioId }: { socioId: number }) {
-  const [rows, setRows]     = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [rows, setRows]         = useState<any[]>([])
+  const [acomps, setAcomps]     = useState<Record<number, number>>({})
+  const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
-    dbGolf.from('ctrl_accesos')
-      .select('id, fecha, hora_entrada, hoyo_inicio, tipo_juego, num_acompanantes, created_at')
-      .eq('id_socio_fk', socioId)
-      .order('fecha', { ascending: false })
-      .limit(50)
-      .then(({ data }) => { setRows(data ?? []); setLoading(false) })
+    const load = async () => {
+      const { data } = await dbGolf
+        .from('ctrl_accesos')
+        .select('id, fecha_entrada, fecha_salida, hoyo_inicio, observaciones, cat_espacios_deportivos(nombre)')
+        .eq('id_socio_fk', socioId)
+        .order('fecha_entrada', { ascending: false })
+        .limit(50)
+      const list = data ?? []
+      setRows(list)
+
+      // Conteo de acompañantes por acceso
+      if (list.length > 0) {
+        const ids = list.map((r: any) => r.id)
+        const { data: aData } = await dbGolf
+          .from('ctrl_acceso_acomp')
+          .select('id_acceso_fk')
+          .in('id_acceso_fk', ids)
+        const map: Record<number, number> = {}
+        for (const a of (aData ?? [])) {
+          map[a.id_acceso_fk] = (map[a.id_acceso_fk] ?? 0) + 1
+        }
+        setAcomps(map)
+      }
+      setLoading(false)
+    }
+    load()
   }, [socioId])
 
   if (loading) return <Empty text="Cargando…" />
@@ -99,25 +120,35 @@ function TabAccesos({ socioId }: { socioId: number }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {rows.map(r => (
-        <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>
-              {r.fecha ? new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+      {rows.map(r => {
+        const entrada = new Date(r.fecha_entrada)
+        const numAcomp = acomps[r.id] ?? 0
+        return (
+          <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>
+                {entrada.toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+              </div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <span>{entrada.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
+                {r.hoyo_inicio  && <span>Hoyo {r.hoyo_inicio}</span>}
+                {r.cat_espacios_deportivos?.nombre && <span>{r.cat_espacios_deportivos.nombre}</span>}
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10 }}>
-              {r.hora_entrada && <span>{r.hora_entrada.slice(0,5)}</span>}
-              {r.hoyo_inicio  && <span>Hoyo {r.hoyo_inicio}</span>}
-              {r.tipo_juego   && <span>{r.tipo_juego}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {numAcomp > 0 && (
+                <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#2563eb' }}>
+                  +{numAcomp} acomp.
+                </span>
+              )}
+              {r.fecha_salida
+                ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#64748b', fontWeight: 500 }}>Completado</span>
+                : <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#16a34a', fontWeight: 600 }}>En campo</span>
+              }
             </div>
           </div>
-          {r.num_acompanantes > 0 && (
-            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#2563eb' }}>
-              +{r.num_acompanantes} acomp.
-            </span>
-          )}
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
