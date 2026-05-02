@@ -7,7 +7,6 @@ import ModalShell from '@/components/ui/ModalShell'
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_tarjeta: string | null; cat_categorias_socios?: { nombre: string } | null }
 type Familiar = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null }
 type Espacio = { id: number; nombre: string }
-type FormaJuego = { id: number; nombre: string }
 
 // Un acompañante puede ser familiar seleccionado, texto libre, o externo (consume pase)
 type Acomp = { tipo: 'familiar' | 'libre' | 'externo'; id_familiar?: number; nombre: string; _pase_mov_id?: number | null; _origen_pago?: string | null }
@@ -27,7 +26,6 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
   const [espacios, setEspacios]   = useState<Espacio[]>([])
-  const [formas, setFormas]       = useState<FormaJuego[]>([])
 
   // búsqueda de socio
   const [socioSearch, setSocioSearch]   = useState('')
@@ -40,8 +38,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
   // form
   const [idEspacio, setIdEspacio]   = useState<number | ''>('')
-  const [idForma, setIdForma]       = useState<number | ''>('')
-  const [hoyoInicio, setHoyoInicio] = useState<number | ''>('')
+  const [hoyoInicio, setHoyoInicio] = useState<number | ''>(1)
   const [observaciones, setObs]     = useState('')
   const [acompanantes, setAcomp]    = useState<Acomp[]>([])
 
@@ -50,12 +47,10 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       .then(({ data }) => {
         const list = data ?? []
         setEspacios(list)
-        // Precargar "Campo de Golf" si existe
+        // Precargar "Campo Golf" si existe
         const campo = list.find((e: Espacio) => e.nombre.toLowerCase().includes('campo golf'))
         if (campo) setIdEspacio(campo.id)
       })
-    dbGolf.from('cat_formas_juego').select('id, nombre').eq('activo', true).order('nombre')
-      .then(({ data }) => setFormas(data ?? []))
   }, [])
 
   // debounce búsqueda de socio
@@ -154,7 +149,6 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       .insert({
         id_socio_fk:       socioSelec.id,
         id_espacio_fk:     idEspacio || null,
-        id_forma_juego_fk: idForma   || null,
         hoyo_inicio:       hoyoInicio || null,
         observaciones:     observaciones || null,
         fecha_entrada:     new Date().toISOString(),
@@ -287,22 +281,13 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           )}
         </div>
 
-        {/* Espacio y Forma de juego */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>
-            <label style={labelStyle}>Espacio Deportivo *</label>
-            <select style={inputStyle} value={idEspacio} onChange={e => setIdEspacio(e.target.value ? Number(e.target.value) : '')}>
-              <option value="">— Seleccionar —</option>
-              {espacios.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Forma de Juego</label>
-            <select style={inputStyle} value={idForma} onChange={e => setIdForma(e.target.value ? Number(e.target.value) : '')}>
-              <option value="">— Seleccionar —</option>
-              {formas.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-            </select>
-          </div>
+        {/* Espacio Deportivo */}
+        <div>
+          <label style={labelStyle}>Espacio Deportivo *</label>
+          <select style={inputStyle} value={idEspacio} onChange={e => setIdEspacio(e.target.value ? Number(e.target.value) : '')}>
+            <option value="">— Seleccionar —</option>
+            {espacios.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+          </select>
         </div>
 
         {/* Hoyo de inicio */}
