@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Search, RefreshCw, Eye, Edit2, Trash2, Users, CheckCircle, XCircle, AlertCircle, ChevronLeft, Tag } from 'lucide-react'
+import { Plus, Search, RefreshCw, Eye, Edit2, Trash2, Users, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronsLeft, ChevronsRight, Tag } from 'lucide-react'
 import Link from 'next/link'
 import SocioModal from './SocioModal'
 import SocioDetail from './SocioDetail'
@@ -65,8 +65,7 @@ export default function MiembrosPage() {
     let q = dbGolf
       .from('cat_socios')
       .select('*, cat_categorias_socios(nombre)', { count: 'exact' })
-      .order('apellido_paterno', { ascending: true })
-      .order('nombre', { ascending: true })
+      .order('numero_socio', { ascending: true })
       .range(from, to)
 
     if (search.trim()) {
@@ -382,10 +381,16 @@ export default function MiembrosPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             fontSize: 12, color: 'var(--text-muted)',
           }}>
-            <span>Mostrando {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} de {total}</span>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <span>Mostrando {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} de {total} · Página {page + 1} de {totalPages}</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Primera página" disabled={page === 0} onClick={() => setPage(0)}>
+                <ChevronsLeft size={14} />
+              </button>
               <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: 12 }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Anterior</button>
               <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: 12 }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Siguiente →</button>
+              <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Última página" disabled={page >= totalPages - 1} onClick={() => setPage(totalPages - 1)}>
+                <ChevronsRight size={14} />
+              </button>
             </div>
           </div>
         )}
