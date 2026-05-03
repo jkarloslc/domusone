@@ -32,7 +32,7 @@ export default function AccesosPage() {
   const [loading, setLoading]       = useState(true)
   const [showModal, setShowModal]       = useState(false)
   const [detalle, setDetalle]           = useState<Acceso | null>(null)
-  const [detalleAcomps, setDetalleAcomps] = useState<{ nombre: string; orden: number }[]>([])
+  const [detalleAcomps, setDetalleAcomps] = useState<{ nombre: string; orden: number; es_externo: boolean; origen_pago: string | null }[]>([])
   const [loadingAcomps, setLoadingAcomps] = useState(false)
   const [registrandoSalida, setRegistrandoSalida] = useState<number | null>(null)
 
@@ -127,10 +127,10 @@ export default function AccesosPage() {
     setLoadingAcomps(true)
     const { data, error: aErr } = await dbGolf
       .from('ctrl_acceso_acomp')
-      .select('nombre, orden')
+      .select('nombre, orden, es_externo, origen_pago')
       .eq('id_acceso_fk', a.id)
       .order('orden', { ascending: true })
-setDetalleAcomps((data ?? []) as { nombre: string; orden: number }[])
+    setDetalleAcomps((data ?? []) as { nombre: string; orden: number; es_externo: boolean; origen_pago: string | null }[])
     setLoadingAcomps(false)
   }
 
@@ -360,11 +360,21 @@ setDetalleAcomps((data ?? []) as { nombre: string; orden: number }[])
                 <div style={{ fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>Sin acompañantes registrados</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {detalleAcomps.map((ac, i) => (
-                    <div key={i} style={{ padding: '8px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13, color: '#334155', fontWeight: 500 }}>
-                      {ac.nombre}
-                    </div>
-                  ))}
+                  {detalleAcomps.map((ac, i) => {
+                    const tipo = !ac.es_externo
+                      ? { label: 'Familiar',  bg: '#eff6ff', color: '#1d4ed8' }
+                      : ac.origen_pago === 'PASE'
+                        ? { label: 'Invitado · Pase',  bg: '#fffbeb', color: '#d97706' }
+                        : { label: 'Green Fee', bg: '#f0fdf4', color: '#16a34a' }
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: 13, color: '#334155', fontWeight: 500 }}>{ac.nombre}</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: tipo.bg, color: tipo.color, flexShrink: 0 }}>
+                          {tipo.label}
+                        </span>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
