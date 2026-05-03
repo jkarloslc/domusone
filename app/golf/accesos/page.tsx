@@ -14,7 +14,7 @@ type Acceso = {
   hoyo_inicio: number | null
   observaciones: string | null
   id_socio_fk: number | null
-  cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null; numero_tarjeta: string | null } | null
+  cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null; numero_tarjeta: string | null; cat_categorias_socios?: { nombre: string } | null } | null
   cat_espacios_deportivos?: { nombre: string } | null
 }
 
@@ -54,7 +54,7 @@ export default function AccesosPage() {
       .from('ctrl_accesos')
       .select(`
         id, fecha_entrada, fecha_salida, hoyo_inicio, observaciones, id_socio_fk,
-        cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, numero_tarjeta),
+        cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, numero_tarjeta, cat_categorias_socios(nombre)),
         cat_espacios_deportivos(nombre)
       `)
       .gte('fecha_entrada', new Date(`${fecha}T00:00:00`).toISOString())
@@ -321,9 +321,16 @@ setDetalleAcomps((data ?? []) as { nombre: string; orden: number }[])
                   ? [detalle.cat_socios.nombre, detalle.cat_socios.apellido_paterno, detalle.cat_socios.apellido_materno].filter(Boolean).join(' ')
                   : '—'}
               </div>
-              {detalle.cat_socios?.numero_socio && (
-                <div style={{ fontSize: 12, color: '#3b82f6', marginTop: 2 }}>#{detalle.cat_socios.numero_socio}</div>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                {detalle.cat_socios?.numero_socio && (
+                  <span style={{ fontSize: 12, color: '#3b82f6' }}>#{detalle.cat_socios.numero_socio}</span>
+                )}
+                {detalle.cat_socios?.cat_categorias_socios?.nombre && (
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#dbeafe', color: '#1d4ed8' }}>
+                    {detalle.cat_socios.cat_categorias_socios.nombre}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Info de la salida */}
