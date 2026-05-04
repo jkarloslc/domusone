@@ -224,7 +224,7 @@ export default function POSPage() {
       subtotal:    v.subtotal,
       iva:         v.iva,
       total:       v.total,
-      pagos:       pagos ?? [],
+      pagos:       (pagos ?? []).map((p: any) => ({ forma: p.forma_nombre, monto: p.monto })),
       items:       det ?? [],
     }
     const url = `/ticket-golf.html?data=${encodeURIComponent(JSON.stringify(ticketData))}`

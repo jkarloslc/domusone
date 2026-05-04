@@ -213,10 +213,14 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
   // ── Imprimir ticket ───────────────────────────────────────
   const abrirTicket = async (ventaId: number, folioDia: number, autoPrint = false) => {
     const { data: cfg } = await dbGolf.from('cfg_pos').select('*').single()
-    const pagos = formasPago.filter(f => [forma1, forma2].includes(f.id)).map(f => ({
-      forma: f.nombre,
-      monto: f.id === forma1 ? (parseFloat(monto1) || 0) : (parseFloat(monto2) || 0),
-    })).filter(p => p.monto > 0)
+    const nombreForma1 = formasPago.find(f => f.id === forma1)?.nombre ?? ''
+    const nombreForma2 = formasPago.find(f => f.id === forma2)?.nombre ?? ''
+    const pagos = [
+      { forma: nombreForma1, monto: parseFloat(monto1) || 0 },
+      ...(dosFormas && forma2 && parseFloat(monto2) > 0
+        ? [{ forma: nombreForma2, monto: parseFloat(monto2) || 0 }]
+        : []),
+    ].filter(p => p.monto > 0)
 
     const ticketData = {
       id:          ventaId,
