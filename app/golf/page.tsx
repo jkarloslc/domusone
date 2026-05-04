@@ -107,15 +107,6 @@ const MODULOS = [
     activo: false,
   },
   {
-    key: 'reportes',
-    label: 'Reportes',
-    desc: 'Salidas al campo, cobranza, estado de cuenta y más',
-    icon: FileText,
-    color: '#475569',
-    href: '/golf/reportes',
-    activo: true,
-  },
-  {
     key: 'catalogos',
     label: 'Catálogos',
     desc: 'Categorías, espacios deportivos, formas de juego y más',
