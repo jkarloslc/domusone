@@ -197,10 +197,10 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
 
     // Insert pagos
     const pagosInsert = [
-      { id_venta_fk: venta.id, id_forma_fk: null, forma_nombre: formasPago.find(f => f.id === forma1)?.nombre ?? '', monto: parseFloat(monto1) || 0 },
+      { id_venta_fk: venta.id, id_forma_fk: forma1 || null, forma_nombre: formasPago.find(f => f.id === forma1)?.nombre ?? '', monto: parseFloat(monto1) || 0 },
     ]
     if (dosFormas && forma2 && parseFloat(monto2) > 0) {
-      pagosInsert.push({ id_venta_fk: venta.id, id_forma_fk: null, forma_nombre: formasPago.find(f => f.id === forma2)?.nombre ?? '', monto: parseFloat(monto2) || 0 })
+      pagosInsert.push({ id_venta_fk: venta.id, id_forma_fk: forma2 || null, forma_nombre: formasPago.find(f => f.id === forma2)?.nombre ?? '', monto: parseFloat(monto2) || 0 })
     }
     const { error: e3 } = await dbGolf.from('ctrl_ventas_pagos').insert(pagosInsert)
     if (e3) { setError(e3.message); setSaving(false); return }

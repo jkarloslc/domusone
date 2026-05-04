@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbGolf, dbCtrl } from '@/lib/supabase'
+import { dbGolf, dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
@@ -160,18 +160,9 @@ export default function POSPage() {
       await dbGolf.from('cfg_pos').insert({ razon_social: 'Club de Golf Balvanera', leyenda_ticket: '¡Gracias por su visita!' })
     }
 
-    // Asegurar formas de pago
-    const { data: fpsCheck } = await dbGolf.from('cat_formas_pago_pos').select('id').limit(1)
-    if (!fpsCheck || fpsCheck.length === 0) {
-      await dbGolf.from('cat_formas_pago_pos').insert([
-        { nombre: 'Efectivo' }, { nombre: 'Tarjeta' }, { nombre: 'Transferencia' },
-        { nombre: 'Cargo a Cuenta' }, { nombre: 'Cortesía' },
-      ])
-    }
-
     const [{ data: prods }, { data: fps }, { data: cfg }] = await Promise.all([
       dbGolf.from('cat_productos_pos').select('*').order('nombre'),
-      dbGolf.from('cat_formas_pago_pos').select('*').order('id'),
+      dbCfg.from('formas_pago').select('id, nombre, activo').eq('activo', true).order('nombre'),
       dbGolf.from('cfg_pos').select('*').single(),
     ])
     setProductos((prods as Producto[]) ?? [])
