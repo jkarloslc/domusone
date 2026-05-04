@@ -1,6 +1,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- Reinicia IDs de ctrl_ventas y tablas relacionadas desde 1
--- CASCADE elimina registros dependientes (det, pagos) en el mismo paso
+-- Reinicia el contador de IDs de ctrl_ventas y ctrl_ventas_det desde 1
+-- No elimina ningún registro existente
 -- ─────────────────────────────────────────────────────────────────────────────
 
-TRUNCATE golf.ctrl_ventas RESTART IDENTITY CASCADE;
+SELECT setval('golf.ctrl_ventas_id_seq',     1, false);
+SELECT setval('golf.ctrl_ventas_det_id_seq', 1, false);
