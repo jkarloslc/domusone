@@ -19,7 +19,6 @@ type Cuota = {
 
 type FormaPago = { id: number; nombre: string }
 type PosCentro = { id: number; nombre: string; activo: boolean }
-type PosFormaPago = { id: number; nombre: string; activo: boolean }
 type PosCfg = { razon_social: string | null; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string | null }
 
 type Socio = {
@@ -119,24 +118,10 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const totalCobro    = Math.max(0, subtotalBruto - descExtra)
   const formaPagoNombre = formasPago.find(f => f.id === idFormaPago)?.nombre ?? ''
 
-  const detectarTipoTicket = (): 'PENSION' | 'MEMBRESIA' | null => {
-    const hayPension = cuotasSelec.some(c => c.tipo === 'PENSION_CARRITO')
-    const hayMembresia = cuotasSelec.some(c => c.tipo !== 'PENSION_CARRITO')
-    if (hayPension && hayMembresia) return null
-    return hayPension ? 'PENSION' : 'MEMBRESIA'
-  }
-
   const abrirTicketPOS = (payload: any, autoPrint = true) => {
     const encoded = encodeURIComponent(JSON.stringify(payload))
     const url = `/ticket-golf.html?data=${encoded}${autoPrint ? '&print=1' : ''}`
     window.open(url, '_blank', 'width=400,height=700')
-  }
-
-  const resolverFormaPagoPOS = (formasPos: PosFormaPago[]) => {
-    const objetivo = norm(formaPagoNombre)
-    return formasPos.find(f => norm(f.nombre) === objetivo)
-      ?? formasPos.find(f => norm(f.nombre).includes(objetivo) || objetivo.includes(norm(f.nombre)))
-      ?? formasPos[0]
   }
 
   // ── Guardar cobro ──────────────────────────────────────────
@@ -210,36 +195,20 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     setTicketErr('')
 
     try {
-      const tipoTicket = detectarTipoTicket()
-      if (!tipoTicket) {
-        setTicketErr('El cobro mezcla conceptos de membresía y pensión. Para ticket POS, cobra cada tipo por separado.')
-        setGenerandoTicket(false)
-        return
-      }
-
-      const [{ data: reciboDB, error: errRec }, { data: centros }, { data: formasPos }, { data: cfg }] = await Promise.all([
+      const [{ data: reciboDB, error: errRec }, { data: centros }, { data: cfg }] = await Promise.all([
         dbGolf.from('recibos_golf').select('id, folio, id_venta_pos_fk').eq('id', recibo.id).single(),
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
-        dbGolf.from('cat_formas_pago_pos').select('id, nombre, activo').eq('activo', true).order('id'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
       ])
-      if (errRec || !reciboDB) { throw new Error(errRec?.message ?? 'No se pudo leer el recibo para generar ticket') }
+      if (errRec || !reciboDB) throw new Error(errRec?.message ?? 'No se pudo leer el recibo para generar ticket')
 
       const centrosPos = (centros as PosCentro[]) ?? []
-      const formasPagoPos = (formasPos as PosFormaPago[]) ?? []
       if (centrosPos.length === 0) throw new Error('No hay centros de venta POS activos.')
-      if (formasPagoPos.length === 0) throw new Error('No hay formas de pago POS activas.')
 
-      const etiquetas = tipoTicket === 'PENSION'
-        ? ['pension', 'pensiones', 'carrito']
-        : ['membresia', 'membresias', 'cuota', 'cuotas', 'inscripcion']
-      const centroSel = centrosPos.find(c => etiquetas.some(k => norm(c.nombre).includes(k)))
-      if (!centroSel) {
-        throw new Error(`No encontré un centro POS para ${tipoTicket === 'PENSION' ? 'Pensiones' : 'Membresías'}. Configura uno con ese nombre.`)
-      }
-
-      const formaPos = resolverFormaPagoPOS(formasPagoPos)
-      if (!formaPos) throw new Error('No se pudo determinar la forma de pago POS.')
+      // Buscar centro "Membresías" — fallback al primero disponible
+      const centroSel = centrosPos.find(c =>
+        norm(c.nombre).includes('membresia') || norm(c.nombre).includes('membresias') || norm(c.nombre).includes('club')
+      ) ?? centrosPos[0]
 
       let ventaId = (reciboDB as { id_venta_pos_fk: number | null }).id_venta_pos_fk ?? null
       let folioDia = 0
@@ -308,22 +277,17 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
 
         const { error: errPag } = await dbGolf.from('ctrl_ventas_pagos').insert({
           id_venta_fk: ventaId,
-          id_forma_fk: formaPos.id,
-          forma_nombre: formaPos.nombre,
+          id_forma_fk: idFormaPago || null,
+          forma_nombre: formaPagoNombre,
           monto: totalCobro,
         })
         if (errPag) throw new Error(errPag.message)
 
-        const { error: errReciboLink } = await dbGolf.from('recibos_golf')
-          .update({ id_venta_pos_fk: ventaId })
-          .eq('id', recibo.id)
-        if (errReciboLink) throw new Error(errReciboLink.message)
+        const { error: errLink } = await dbGolf.from('recibos_golf').update({ id_venta_pos_fk: ventaId }).eq('id', recibo.id)
+        if (errLink) throw new Error(errLink.message)
         setIdVentaPos(ventaId)
       } else {
-        const { data: ventaExist } = await dbGolf.from('ctrl_ventas')
-          .select('folio_dia')
-          .eq('id', ventaId)
-          .single()
+        const { data: ventaExist } = await dbGolf.from('ctrl_ventas').select('folio_dia').eq('id', ventaId).single()
         folioDia = ((ventaExist as { folio_dia: number } | null)?.folio_dia) ?? 0
       }
 
@@ -360,7 +324,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         subtotal: subtotalBruto,
         iva: 0,
         total: totalCobro,
-        pagos: [{ forma: formaPos.nombre, monto: totalCobro }],
+        pagos: [{ forma: formaPagoNombre, monto: totalCobro }],
         items: itemsTicket,
       }
       abrirTicketPOS(ticketData, true)

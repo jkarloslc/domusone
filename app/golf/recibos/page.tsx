@@ -4,7 +4,7 @@ import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   RefreshCw, Search, Receipt, Printer, FileCheck,
-  XCircle, ChevronLeft, FileText, AlertTriangle,
+  XCircle, ChevronLeft, FileText, AlertTriangle, Loader,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -25,6 +25,8 @@ type Recibo = {
   folio_fiscal: string | null
   created_at: string
   id_socio_fk: number
+  id_venta_pos_fk: number | null
+  id_forma_pago_fk: number | null
   cat_socios: {
     nombre: string
     apellido_paterno: string | null
@@ -96,6 +98,9 @@ export default function RecibosPage() {
 
   const printRef = useRef<HTMLDivElement>(null)
 
+  const [generandoTicketDetalle, setGenerandoTicketDetalle] = useState(false)
+  const [ticketErrDetalle, setTicketErrDetalle] = useState('')
+
   // ── Carga ──────────────────────────────────────────────────
   const cargar = useCallback(async () => {
     setLoading(true)
@@ -104,6 +109,7 @@ export default function RecibosPage() {
         id, folio, fecha_recibo, subtotal, descuento, total,
         forma_pago_nombre, referencia_pago, observaciones,
         usuario_cobra, status, facturable, folio_fiscal, created_at, id_socio_fk,
+        id_venta_pos_fk, id_forma_pago_fk,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, email,
           cat_categorias_socios(nombre)),
         recibos_golf_det(id, concepto, tipo, periodo, monto_original, descuento, monto_final)
@@ -283,6 +289,110 @@ export default function RecibosPage() {
     win.document.close()
     win.focus()
     setTimeout(() => { win.print(); win.close() }, 400)
+  }
+
+  // ── Generar Ticket POS desde recibo ───────────────────────
+  const generarTicketDesdeRecibo = async (r: Recibo) => {
+    setGenerandoTicketDetalle(true)
+    setTicketErrDetalle('')
+    const normStr = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    try {
+      const [{ data: centros }, { data: cfg }] = await Promise.all([
+        dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
+        dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+      ])
+      const centrosPos = (centros as { id: number; nombre: string; activo: boolean }[]) ?? []
+      if (centrosPos.length === 0) throw new Error('No hay centros de venta POS activos.')
+      const centroSel = centrosPos.find(c =>
+        normStr(c.nombre).includes('membresia') || normStr(c.nombre).includes('membresias') || normStr(c.nombre).includes('club')
+      ) ?? centrosPos[0]
+
+      let ventaId = r.id_venta_pos_fk ?? null
+      let folioDia = 0
+      const fechaPagoStr = r.fecha_recibo
+      const fechaVentaIso = `${fechaPagoStr}T12:00:00`
+
+      if (!ventaId) {
+        const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
+          .select('folio_dia').eq('id_centro_fk', centroSel.id)
+          .gte('fecha', `${fechaPagoStr}T00:00:00`).lte('fecha', `${fechaPagoStr}T23:59:59`)
+          .order('folio_dia', { ascending: false }).limit(1)
+        folioDia = maxFolio && maxFolio.length > 0 ? ((maxFolio[0] as any).folio_dia + 1) : 1
+
+        const nombreSocio = nc(r.cat_socios)
+        const { data: ventaData, error: errVenta } = await dbGolf.from('ctrl_ventas').insert({
+          folio_dia: folioDia, id_centro_fk: centroSel.id, fecha: fechaVentaIso,
+          id_socio_fk: r.id_socio_fk, nombre_cliente: nombreSocio, es_socio: true,
+          subtotal: r.subtotal, descuento: r.descuento, iva: 0, total: r.total,
+          status: 'PAGADA', usuario_crea: authUser?.nombre ?? 'sistema',
+          notas: `Ticket POS regenerado desde recibo ${r.folio} (#${r.id})`,
+        }).select('id, folio_dia').single()
+        if (errVenta || !ventaData) throw new Error(errVenta?.message ?? 'No se pudo crear la venta POS')
+
+        ventaId = (ventaData as any).id
+        folioDia = (ventaData as any).folio_dia
+
+        const detInsert = r.recibos_golf_det.map(d => ({
+          id_venta_fk: ventaId!, id_producto_fk: null,
+          concepto: d.concepto, cantidad: 1,
+          precio_unitario: d.monto_final, descuento: 0, iva_pct: 0, iva: 0,
+          subtotal: d.monto_final, total: d.monto_final, notas: d.periodo ?? null,
+        }))
+        if (r.descuento > 0) {
+          detInsert.push({
+            id_venta_fk: ventaId!, id_producto_fk: null,
+            concepto: `Descuento adicional (${r.folio})`, cantidad: 1,
+            precio_unitario: -r.descuento, descuento: 0, iva_pct: 0, iva: 0,
+            subtotal: -r.descuento, total: -r.descuento, notas: null,
+          })
+        }
+        const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detInsert)
+        if (errDet) throw new Error(errDet.message)
+
+        const { error: errPag } = await dbGolf.from('ctrl_ventas_pagos').insert({
+          id_venta_fk: ventaId, id_forma_fk: r.id_forma_pago_fk || null,
+          forma_nombre: r.forma_pago_nombre ?? '', monto: r.total,
+        })
+        if (errPag) throw new Error(errPag.message)
+
+        await dbGolf.from('recibos_golf').update({ id_venta_pos_fk: ventaId }).eq('id', r.id)
+        // Actualizar el objeto local
+        setDetalle(prev => prev ? { ...prev, id_venta_pos_fk: ventaId } : prev)
+        cargar()
+      } else {
+        const { data: ventaExist } = await dbGolf.from('ctrl_ventas').select('folio_dia').eq('id', ventaId).single()
+        folioDia = (ventaExist as any)?.folio_dia ?? 0
+      }
+
+      const itemsTicket = r.recibos_golf_det.map(d => ({
+        concepto: d.concepto, cantidad: 1,
+        precio_unitario: d.monto_final, iva: 0, total: d.monto_final,
+      }))
+      if (r.descuento > 0) {
+        itemsTicket.push({ concepto: `Descuento adicional`, cantidad: 1, precio_unitario: -r.descuento, iva: 0, total: -r.descuento })
+      }
+
+      const ticketData = {
+        id: ventaId, folio_dia: folioDia || '—', fecha: fechaVentaIso,
+        cliente: nc(r.cat_socios), cajero: r.usuario_cobra ?? '—',
+        centro: centroSel.nombre,
+        razon_social: (cfg as any)?.razon_social ?? INSTITUCION.nombre,
+        municipio: (cfg as any)?.municipio ?? '',
+        direccion: (cfg as any)?.direccion ?? INSTITUCION.domicilio,
+        rfc: (cfg as any)?.rfc ?? INSTITUCION.rfc,
+        telefono: (cfg as any)?.telefono ?? '',
+        leyenda: (cfg as any)?.leyenda_ticket ?? `Cobro relacionado al recibo ${r.folio}.`,
+        subtotal: r.subtotal, iva: 0, total: r.total,
+        pagos: [{ forma: r.forma_pago_nombre ?? '—', monto: r.total }],
+        items: itemsTicket,
+      }
+      const encoded = encodeURIComponent(JSON.stringify(ticketData))
+      window.open(`/ticket-golf.html?data=${encoded}&print=1`, '_blank', 'width=400,height=700')
+    } catch (e: any) {
+      setTicketErrDetalle(e?.message ?? 'No se pudo generar el ticket POS')
+    } finally {
+      setGenerandoTicketDetalle(false)
+    }
   }
 
   // ── Render ─────────────────────────────────────────────────
@@ -533,12 +643,29 @@ export default function RecibosPage() {
                 </div>
               )}
             </div>
-            <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setDetalle(null)} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cerrar</button>
-              <button onClick={() => handlePrint(detalle)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
-                <Printer size={14} /> Imprimir
-              </button>
+            <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+              {ticketErrDetalle && (
+                <div style={{ marginBottom: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                  {ticketErrDetalle}
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button onClick={() => { setDetalle(null); setTicketErrDetalle('') }}
+                  style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                  Cerrar
+                </button>
+                {detalle.status === 'VIGENTE' && (
+                  <button onClick={() => generarTicketDesdeRecibo(detalle)} disabled={generandoTicketDetalle}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicketDetalle ? 0.6 : 1 }}>
+                    {generandoTicketDetalle ? <Loader size={14} /> : <Receipt size={14} />}
+                    {detalle.id_venta_pos_fk ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
+                  </button>
+                )}
+                <button onClick={() => handlePrint(detalle)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
+                  <Printer size={14} /> Imprimir
+                </button>
+              </div>
             </div>
           </div>
         </div>
