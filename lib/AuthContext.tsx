@@ -93,6 +93,7 @@ const ADMIN_MODULOS = [
   'tesoreria', 'ingresos', 'reportes', 'catalogos',
   'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
+  'golf-cuotas', 'golf-cxc', 'golf-recibos',
   // Hípico
   'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
   'hipico-contratos', 'hipico-cobranza', 'hipico-servicios',
@@ -102,7 +103,8 @@ const ADMIN_MODULOS = [
 // Incluye requisiciones y transferencias de Compras para flujo de solicitudes
 const GOLF_MODULOS = [
   'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
-  'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros', 'reportes',
+  'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
+  'golf-cuotas', 'golf-cxc', 'golf-recibos', 'reportes',
   'compras', 'requisiciones', 'transferencias',
 ]
 
