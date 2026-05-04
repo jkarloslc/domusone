@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbHip, dbCfg } from '@/lib/supabase'
+import { dbHip, dbCfg, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clock, Receipt, Zap, Printer } from 'lucide-react'
 import Link from 'next/link'
@@ -37,9 +37,25 @@ type Pago = {
   forma_pago: string
   referencia: string | null
   notas: string | null
+  id_venta_pos_fk: number | null
   created_at: string
   cat_arrendatarios?: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string }
 }
+type VentaPOS = {
+  id: number
+  folio_dia: number
+  fecha: string
+  nombre_cliente: string
+  subtotal: number
+  iva: number
+  total: number
+  usuario_crea: string | null
+  id_centro_fk: number
+}
+type VentaPOSDet = { concepto: string; cantidad: number; precio_unitario: number; iva: number; total: number }
+type VentaPOSPago = { forma_nombre: string; monto: number }
+type CentroPOS = { id: number; nombre: string; activo: boolean }
+type CfgPOS = { razon_social: string | null; municipio: string | null; direccion: string | null; rfc: string | null; telefono: string | null; leyenda_ticket: string | null }
 
 const EMPTY_CARGO = {
   id_arrendatario_fk: null as number | null,
@@ -57,6 +73,7 @@ const fmtNombreArr = (a?: { nombre: string; apellido_paterno: string | null; raz
 
 const fmtFecha = (d: string | null) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
+const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
   'Pendiente': { bg: '#fef9c3', color: '#ca8a04' },
@@ -244,6 +261,7 @@ export default function CobranzaPage() {
   const [pagePagos, setPagePagos]   = useState(0)
   const [filtroArrPagos, setFiltroArrPagos] = useState<number | ''>('')
   const [loadingPagos, setLoadingPagos] = useState(false)
+  const [generandoTicketPagoId, setGenerandoTicketPagoId] = useState<number | null>(null)
 
   // ── Catálogos ──
   const [arrendatarios, setArrendatarios] = useState<ArrendCat[]>([])
@@ -451,6 +469,182 @@ export default function CobranzaPage() {
   }, [pagePagos, filtroArrPagos])
 
   useEffect(() => { if (tab === 'recibos') fetchPagos() }, [fetchPagos, tab])
+
+  const abrirTicketPOS = (payload: any, autoPrint = true) => {
+    const encoded = encodeURIComponent(JSON.stringify(payload))
+    const url = `/ticket-golf.html?data=${encoded}${autoPrint ? '&print=1' : ''}`
+    window.open(url, '_blank', 'width=400,height=700')
+  }
+
+  const mapFormaPagoHipicoToPOS = (formas: { id: number; nombre: string }[], formaHipico: string) => {
+    const f = norm(formaHipico)
+    return formas.find(x => norm(x.nombre) === f)
+      ?? formas.find(x => norm(x.nombre).includes(f) || f.includes(norm(x.nombre)))
+      ?? formas[0]
+  }
+
+  const construirTicketDesdeVenta = async (ventaId: number) => {
+    const [{ data: venta, error: e1 }, { data: det }, { data: pagosVenta }, { data: cfg }, { data: centrosPos }] = await Promise.all([
+      dbGolf.from('ctrl_ventas').select('id, folio_dia, fecha, nombre_cliente, subtotal, iva, total, usuario_crea, id_centro_fk').eq('id', ventaId).single(),
+      dbGolf.from('ctrl_ventas_det').select('concepto, cantidad, precio_unitario, iva, total').eq('id_venta_fk', ventaId),
+      dbGolf.from('ctrl_ventas_pagos').select('forma_nombre, monto').eq('id_venta_fk', ventaId),
+      dbGolf.from('cfg_pos').select('razon_social, municipio, direccion, rfc, telefono, leyenda_ticket').single(),
+      dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true),
+    ])
+    if (e1 || !venta) throw new Error(e1?.message ?? 'No se pudo cargar la venta POS vinculada')
+
+    const v = venta as VentaPOS
+    const centro = ((centrosPos as CentroPOS[] | null) ?? []).find(c => c.id === v.id_centro_fk)
+    return {
+      id: v.id,
+      folio_dia: v.folio_dia,
+      fecha: v.fecha,
+      cliente: v.nombre_cliente,
+      cajero: v.usuario_crea ?? '—',
+      centro: centro?.nombre ?? '—',
+      razon_social: (cfg as CfgPOS | null)?.razon_social ?? 'Club de Golf Balvanera',
+      municipio: (cfg as CfgPOS | null)?.municipio ?? '',
+      direccion: (cfg as CfgPOS | null)?.direccion ?? '',
+      rfc: (cfg as CfgPOS | null)?.rfc ?? '',
+      telefono: (cfg as CfgPOS | null)?.telefono ?? '',
+      leyenda: (cfg as CfgPOS | null)?.leyenda_ticket ?? '¡Gracias por su visita!',
+      subtotal: v.subtotal,
+      iva: v.iva,
+      total: v.total,
+      pagos: ((pagosVenta as VentaPOSPago[] | null) ?? []).map(p => ({ forma: p.forma_nombre, monto: p.monto })),
+      items: (det as VentaPOSDet[]) ?? [],
+    }
+  }
+
+  const generarTicketPagoHipico = async (p: Pago) => {
+    setGenerandoTicketPagoId(p.id)
+    try {
+      if (p.id_venta_pos_fk) {
+        const payload = await construirTicketDesdeVenta(p.id_venta_pos_fk)
+        abrirTicketPOS(payload, true)
+        return
+      }
+
+      const [{ data: centrosPos }, { data: formasPos }, { data: cfgPos }, { data: detPago }] = await Promise.all([
+        dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
+        dbGolf.from('cat_formas_pago_pos').select('id, nombre').eq('activo', true).order('id'),
+        dbGolf.from('cfg_pos').select('razon_social, municipio, direccion, rfc, telefono, leyenda_ticket').single(),
+        dbHip.from('ctrl_pagos_det')
+          .select('monto, ctrl_cargos(descripcion)')
+          .eq('id_pago_fk', p.id),
+      ])
+
+      const centros = (centrosPos as CentroPOS[]) ?? []
+      const formas = (formasPos as { id: number; nombre: string }[]) ?? []
+      if (centros.length === 0) throw new Error('No hay centros POS activos.')
+      if (formas.length === 0) throw new Error('No hay formas de pago POS activas.')
+
+      const centroHipico = centros.find(c => {
+        const n = norm(c.nombre)
+        return n.includes('hipico') || n.includes('caballeriza')
+      })
+      if (!centroHipico) throw new Error('No encontré un centro POS llamado Hípico/Caballeriza.')
+
+      const formaSel = mapFormaPagoHipicoToPOS(formas, p.forma_pago)
+      if (!formaSel) throw new Error('No se pudo mapear forma de pago POS.')
+
+      const fechaPagoIso = `${p.fecha_pago}T12:00:00`
+      const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
+        .select('folio_dia')
+        .eq('id_centro_fk', centroHipico.id)
+        .gte('fecha', `${p.fecha_pago}T00:00:00`)
+        .lte('fecha', `${p.fecha_pago}T23:59:59`)
+        .order('folio_dia', { ascending: false })
+        .limit(1)
+      const folioDia = maxFolio && maxFolio.length > 0 ? ((maxFolio[0] as { folio_dia: number }).folio_dia + 1) : 1
+
+      const { data: venta, error: errVenta } = await dbGolf.from('ctrl_ventas').insert({
+        folio_dia: folioDia,
+        id_centro_fk: centroHipico.id,
+        fecha: fechaPagoIso,
+        id_socio_fk: null,
+        nombre_cliente: fmtNombreArr(p.cat_arrendatarios),
+        es_socio: false,
+        subtotal: p.monto_total,
+        descuento: 0,
+        iva: 0,
+        total: p.monto_total,
+        status: 'PAGADA',
+        usuario_crea: 'hipico-cobranza',
+        notas: `Ticket POS generado desde recibo hípico ${p.folio} (#${p.id})`,
+      }).select('id, folio_dia').single()
+      if (errVenta || !venta) throw new Error(errVenta?.message ?? 'No se pudo crear venta POS')
+
+      const ventaId = (venta as { id: number; folio_dia: number }).id
+      const ventaFolioDia = (venta as { id: number; folio_dia: number }).folio_dia
+      const detallePago = (detPago ?? []) as { monto: number; ctrl_cargos?: { descripcion: string } }[]
+      const detalleRows = (detallePago.length > 0 ? detallePago.map(d => ({
+        id_venta_fk: ventaId,
+        id_producto_fk: null,
+        concepto: d.ctrl_cargos?.descripcion ?? `Cobro Hípico ${p.folio}`,
+        cantidad: 1,
+        precio_unitario: d.monto,
+        descuento: 0,
+        iva_pct: 0,
+        iva: 0,
+        subtotal: d.monto,
+        total: d.monto,
+        notas: null,
+      })) : [{
+        id_venta_fk: ventaId,
+        id_producto_fk: null,
+        concepto: `Cobro Hípico ${p.folio}`,
+        cantidad: 1,
+        precio_unitario: p.monto_total,
+        descuento: 0,
+        iva_pct: 0,
+        iva: 0,
+        subtotal: p.monto_total,
+        total: p.monto_total,
+        notas: null,
+      }])
+      const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detalleRows)
+      if (errDet) throw new Error(errDet.message)
+
+      const { error: errPag } = await dbGolf.from('ctrl_ventas_pagos').insert({
+        id_venta_fk: ventaId,
+        id_forma_fk: formaSel.id,
+        forma_nombre: formaSel.nombre,
+        monto: p.monto_total,
+      })
+      if (errPag) throw new Error(errPag.message)
+
+      const { error: errLink } = await dbHip.from('ctrl_pagos').update({ id_venta_pos_fk: ventaId }).eq('id', p.id)
+      if (errLink) throw new Error(errLink.message)
+
+      setPagos(prev => prev.map(x => x.id === p.id ? { ...x, id_venta_pos_fk: ventaId } : x))
+
+      const payload = {
+        id: ventaId,
+        folio_dia: ventaFolioDia,
+        fecha: fechaPagoIso,
+        cliente: fmtNombreArr(p.cat_arrendatarios),
+        cajero: 'hipico-cobranza',
+        centro: centroHipico.nombre,
+        razon_social: (cfgPos as CfgPOS | null)?.razon_social ?? 'Club de Golf Balvanera',
+        municipio: (cfgPos as CfgPOS | null)?.municipio ?? '',
+        direccion: (cfgPos as CfgPOS | null)?.direccion ?? '',
+        rfc: (cfgPos as CfgPOS | null)?.rfc ?? '',
+        telefono: (cfgPos as CfgPOS | null)?.telefono ?? '',
+        leyenda: (cfgPos as CfgPOS | null)?.leyenda_ticket ?? '¡Gracias por su visita!',
+        subtotal: p.monto_total,
+        iva: 0,
+        total: p.monto_total,
+        pagos: [{ forma: formaSel.nombre, monto: p.monto_total }],
+        items: detalleRows.map(d => ({ concepto: d.concepto, cantidad: d.cantidad, precio_unitario: d.precio_unitario, iva: d.iva, total: d.total })),
+      }
+      abrirTicketPOS(payload, true)
+    } catch (e: any) {
+      alert(e?.message ?? 'No se pudo generar ticket POS')
+    } finally {
+      setGenerandoTicketPagoId(null)
+    }
+  }
 
   // ── Nuevo cargo ──
   const openNuevoCargo = () => { setFormCargo(EMPTY_CARGO); setErr(''); setShowCargo(true) }
@@ -759,16 +953,16 @@ export default function CobranzaPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                  {['Folio', 'Arrendatario', 'Fecha', 'Forma de Pago', 'Referencia', 'Total', ''].map(h => (
+                  {['Folio', 'Arrendatario', 'Fecha', 'Forma de Pago', 'Referencia', 'Total', 'Ticket POS', ''].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loadingPagos ? (
-                  <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                  <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
                 ) : pagos.length === 0 ? (
-                  <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin recibos</td></tr>
+                  <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin recibos</td></tr>
                 ) : pagos.map((p, i) => (
                   <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                     <td style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--gold-light)', fontFamily: 'monospace' }}>{p.folio}</td>
@@ -777,14 +971,28 @@ export default function CobranzaPage() {
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{p.forma_pago}</td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{p.referencia ?? '—'}</td>
                     <td style={{ padding: '10px 14px', fontWeight: 700, color: '#16a34a' }}>{fmt$(p.monto_total)}</td>
+                    <td style={{ padding: '10px 14px', color: p.id_venta_pos_fk ? '#15803d' : '#94a3b8', fontSize: 11, fontFamily: p.id_venta_pos_fk ? 'monospace' : 'inherit' }}>
+                      {p.id_venta_pos_fk ? `#${String(p.id_venta_pos_fk).padStart(6, '0')}` : 'Sin ticket'}
+                    </td>
                     <td style={{ padding: '10px 14px' }}>
-                      <button
-                        className="btn-ghost"
-                        title="Imprimir recibo"
-                        onClick={() => printReciboHipico(p, dbHip)}
-                        style={{ padding: '4px 8px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Printer size={13} /> Imprimir
-                      </button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          className="btn-ghost"
+                          title="Imprimir recibo"
+                          onClick={() => printReciboHipico(p, dbHip)}
+                          style={{ padding: '4px 8px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Printer size={13} /> Imprimir
+                        </button>
+                        <button
+                          className="btn-ghost"
+                          title="Generar/Reimprimir ticket POS"
+                          onClick={() => generarTicketPagoHipico(p)}
+                          disabled={generandoTicketPagoId === p.id}
+                          style={{ padding: '4px 8px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, color: '#0f766e', opacity: generandoTicketPagoId === p.id ? 0.6 : 1 }}>
+                          {generandoTicketPagoId === p.id ? '…' : <Receipt size={13} />}
+                          {p.id_venta_pos_fk ? 'Ticket POS' : 'Generar Ticket'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

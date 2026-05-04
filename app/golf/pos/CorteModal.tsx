@@ -1,10 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbGolf, dbCtrl, dbCfg } from '@/lib/supabase'
+import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Save, Loader, AlertTriangle, CheckCircle } from 'lucide-react'
 
 type FormaPagoResumen = { id_forma_fk: number; forma_nombre: string; monto: number }
+type CentroMap = { id_centro_ingreso_fk: number; activo: boolean }
+type CentroIngreso = { id: number }
 type Props = {
   idCentro: number
   nombreCentro: string
@@ -37,6 +39,21 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
   const hoyStr = hoy.toISOString().split('T')[0]
   const [f1, setF1] = useState(hoyStr)
   const [f2, setF2] = useState(hoyStr)
+
+  const mapFormasPago = (rows: FormaPagoResumen[]) => {
+    const mapped: Record<string, number> = {
+      monto_efectivo: 0, monto_transferencia: 0, monto_tarjeta: 0, monto_cheque: 0,
+    }
+    for (const fp of rows) {
+      const n = fp.forma_nombre.toLowerCase()
+      if (n.includes('efectivo')) mapped.monto_efectivo += fp.monto
+      else if (n.includes('tarjeta')) mapped.monto_tarjeta += fp.monto
+      else if (n.includes('transf')) mapped.monto_transferencia += fp.monto
+      else if (n.includes('cheque')) mapped.monto_cheque += fp.monto
+      else mapped.monto_efectivo += fp.monto
+    }
+    return mapped
+  }
 
   const cargarPreview = async () => {
     setLoading(true)
@@ -124,42 +141,47 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
       await dbGolf.from('ctrl_ventas').update({ id_corte_fk: corte.id }).in('id', ids)
     }
 
-    // 4. Crear recibo en módulo Ingresos (integración automática)
+    // 4. Crear recibo en módulo Ingresos (integración automática por mapeo explícito PV->CI)
     try {
-      // Buscar centro de ingreso "Golf" en cfg schema
-      const { data: centroIng } = await dbCfg.from('centros_ingreso')
-        .select('id').ilike('nombre', '%golf%').limit(1)
+      const { data: mapRow } = await dbGolf.from('pos_centros_ingreso_map')
+        .select('id_centro_ingreso_fk, activo')
+        .eq('id_centro_venta_fk', idCentro)
+        .eq('activo', true)
+        .maybeSingle()
 
-      if (centroIng && centroIng.length > 0) {
-        const fpagoMap: Record<string, number> = {}
-        for (const fp of formasPago) {
-          const n = fp.forma_nombre.toLowerCase()
-          if (n.includes('efectivo'))       fpagoMap['monto_efectivo'] = (fpagoMap['monto_efectivo'] ?? 0) + fp.monto
-          else if (n.includes('tarjeta'))   fpagoMap['monto_tarjeta']  = (fpagoMap['monto_tarjeta'] ?? 0) + fp.monto
-          else if (n.includes('transf'))    fpagoMap['monto_transferencia'] = (fpagoMap['monto_transferencia'] ?? 0) + fp.monto
-          else if (n.includes('cheque'))    fpagoMap['monto_cheque']   = (fpagoMap['monto_cheque'] ?? 0) + fp.monto
-          else                              fpagoMap['monto_efectivo'] = (fpagoMap['monto_efectivo'] ?? 0) + fp.monto
-        }
+      const row = mapRow as CentroMap | null
+      let idCentroIngreso = row?.id_centro_ingreso_fk ?? null
+      if (!idCentroIngreso) {
+        const { data: byId } = await dbCtrl.from('centros_ingreso')
+          .select('id')
+          .eq('id', idCentro)
+          .maybeSingle()
+        idCentroIngreso = (byId as CentroIngreso | null)?.id ?? null
+      }
+      if (!idCentroIngreso) {
+        throw new Error(`No hay mapeo activo para el centro de venta "${nombreCentro}"`)
+      }
 
-        const { data: recibo } = await dbCtrl.from('recibos_ingreso').insert({
-          fecha:               f2,
-          id_centro_ingreso_fk: centroIng[0].id,
-          descripcion:         `Corte POS Golf — ${nombreCentro} — ${f1} al ${f2}`,
-          monto_efectivo:      fpagoMap['monto_efectivo']      ?? 0,
-          monto_transferencia: fpagoMap['monto_transferencia'] ?? 0,
-          monto_tarjeta:       fpagoMap['monto_tarjeta']       ?? 0,
-          monto_cheque:        fpagoMap['monto_cheque']        ?? 0,
-          monto_total:         totalVentas,
-          status:              'Confirmado',
-          origen:              'POS_GOLF',
-          notas:               `Folio corte Golf: #${corte.id}`,
-          usuario_crea:        authUser?.nombre ?? 'sistema',
-        }).select('id').single()
+      const fpagoMap = mapFormasPago(formasPago)
+      const { data: recibo } = await dbCtrl.from('recibos_ingreso').insert({
+        fecha:               f2,
+        id_centro_ingreso_fk: idCentroIngreso,
+        descripcion:         `Corte POS Golf — ${nombreCentro} — ${f1} al ${f2}`,
+        monto_efectivo:      fpagoMap.monto_efectivo,
+        monto_transferencia: fpagoMap.monto_transferencia,
+        monto_tarjeta:       fpagoMap.monto_tarjeta,
+        monto_cheque:        fpagoMap.monto_cheque,
+        monto_total:         totalVentas,
+        status:              'Confirmado',
+        origen:              'POS_GOLF',
+        referencia_externa:  `golf.ctrl_cortes_caja:${corte.id}`,
+        notas:               `Folio corte Golf: #${corte.id}`,
+        usuario_crea:        authUser?.nombre ?? 'sistema',
+      }).select('id').single()
 
-        // Guardar FK en el corte
-        if (recibo) {
-          await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: recibo.id }).eq('id', corte.id)
-        }
+      // Guardar FK en el corte
+      if (recibo) {
+        await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: recibo.id }).eq('id', corte.id)
       }
     } catch (_) {
       // Integración con Ingresos es best-effort; no bloquea el corte
@@ -267,7 +289,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
           {/* Integración Ingresos */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, fontSize: 12, color: '#1d4ed8' }}>
             <CheckCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-            <span>Al confirmar, se generará automáticamente un <strong>recibo de ingreso</strong> en el módulo de Ingresos (centro Golf).</span>
+            <span>Al confirmar, se generará automáticamente un <strong>recibo de ingreso</strong> en el módulo de Ingresos según el mapeo POS configurado.</span>
           </div>
 
           {/* Notas */}
