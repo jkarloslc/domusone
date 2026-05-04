@@ -167,8 +167,8 @@ export default function ReporteGolfAccesos() {
           'cat_socios(numero_socio, nombre, apellido_paterno, apellido_materno, cat_categorias_socios(nombre)), ' +
           'cat_espacios_deportivos(nombre)'
         )
-        .gte('fecha_entrada', fechaDesde + 'T00:00:00')
-        .lte('fecha_entrada', fechaHasta + 'T23:59:59')
+        .gte('fecha_entrada', new Date(fechaDesde + 'T00:00:00').toISOString())
+        .lte('fecha_entrada', new Date(fechaHasta + 'T23:59:59').toISOString())
         .order('fecha_entrada', { ascending: false })
 
       if (socioIds !== null) q = q.in('id_socio_fk', socioIds)
