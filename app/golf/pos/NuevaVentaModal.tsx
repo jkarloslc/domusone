@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { dbGolf } from '@/lib/supabase'
+import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Search, Plus, Minus, Trash2, ShoppingCart, Loader, CheckCircle, Printer } from 'lucide-react'
 
@@ -67,7 +67,7 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
   useEffect(() => {
     Promise.all([
       dbGolf.from('cat_productos_pos').select('*').eq('activo', true).eq('id_centro_fk', idCentro).order('nombre'),
-      dbGolf.from('cat_formas_pago_pos').select('id, nombre').order('id'),
+      dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
     ]).then(([{ data: prods }, { data: fps }]) => {
       setProductos((prods as Producto[]) ?? [])
       const fps2 = (fps as FormaPago[]) ?? []
@@ -197,10 +197,10 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
 
     // Insert pagos
     const pagosInsert = [
-      { id_venta_fk: venta.id, id_forma_fk: forma1, forma_nombre: formasPago.find(f => f.id === forma1)?.nombre ?? '', monto: parseFloat(monto1) || 0 },
+      { id_venta_fk: venta.id, id_forma_fk: null, forma_nombre: formasPago.find(f => f.id === forma1)?.nombre ?? '', monto: parseFloat(monto1) || 0 },
     ]
     if (dosFormas && forma2 && parseFloat(monto2) > 0) {
-      pagosInsert.push({ id_venta_fk: venta.id, id_forma_fk: forma2, forma_nombre: formasPago.find(f => f.id === forma2)?.nombre ?? '', monto: parseFloat(monto2) || 0 })
+      pagosInsert.push({ id_venta_fk: venta.id, id_forma_fk: null, forma_nombre: formasPago.find(f => f.id === forma2)?.nombre ?? '', monto: parseFloat(monto2) || 0 })
     }
     const { error: e3 } = await dbGolf.from('ctrl_ventas_pagos').insert(pagosInsert)
     if (e3) { setError(e3.message); setSaving(false); return }
