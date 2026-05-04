@@ -82,7 +82,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
-      { label: 'Club',           href: '/golf',           icon: Flag          },
+      { label: 'Golf',           href: '/golf',           icon: Flag          },
       { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
       { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
     ]},
@@ -113,9 +113,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
-      { label: 'Club',           href: '/golf',           icon: Flag          },
+      { label: 'Golf',           href: '/golf',           icon: Flag          },
       { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
       { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      RPT('golf'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -138,9 +139,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       RPT('residencial'),
     ]},
     { section: 'Club', items: [
-      { label: 'Club',           href: '/golf',           icon: Flag          },
+      { label: 'Golf',           href: '/golf',           icon: Flag          },
       { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
       { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      RPT('golf'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -288,7 +290,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   usuariogolf: [
     { section: 'Club', items: [
-      { label: 'Club',           href: '/golf',           icon: Flag          },
+      { label: 'Golf',           href: '/golf',           icon: Flag          },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
