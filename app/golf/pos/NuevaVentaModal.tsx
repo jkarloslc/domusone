@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { dbGolf, dbCfg } from '@/lib/supabase'
+import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Search, Plus, Minus, Trash2, ShoppingCart, Loader, CheckCircle, Printer } from 'lucide-react'
 
@@ -67,7 +67,7 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
   useEffect(() => {
     Promise.all([
       dbGolf.from('cat_productos_pos').select('*').eq('activo', true).eq('id_centro_fk', idCentro).order('nombre'),
-      dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
+      dbGolf.from('cat_formas_pago_pos').select('id, nombre').order('id'),
     ]).then(([{ data: prods }, { data: fps }]) => {
       setProductos((prods as Producto[]) ?? [])
       const fps2 = (fps as FormaPago[]) ?? []
