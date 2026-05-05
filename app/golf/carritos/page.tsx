@@ -131,7 +131,10 @@ export default function CarritosPage() {
 
   // modales
   const [showCarrito, setShowCarrito]   = useState(false)
-  const [showPension, setShowPension]   = useState<{ idSocio: number; idCarrito: number; nombreSocio: string; descCarrito: string } | null>(null)
+  const [showPension, setShowPension]   = useState<{
+    idSocio: number; idCarrito: number; nombreSocio: string; descCarrito: string
+    idPension?: number; idSlotExistente?: number | null; montoMensualExistente?: number
+  } | null>(null)
   const [carritoNuevo, setCarritoNuevo] = useState<{ id: number; id_socio_fk: number } | null>(null)
 
   const [showCobrar, setShowCobrar]     = useState<{ cuotas: Cuota[]; nombreSocio: string; idSocio: number } | null>(null)
@@ -700,10 +703,18 @@ export default function CarritosPage() {
                                       {puedeEscribir && p.activo && (
                                         <button onClick={e => {
                                           e.stopPropagation()
-                                          setShowPension({ idSocio: p.id_socio_fk, idCarrito: idCar, nombreSocio: nc(p.cat_socios), descCarrito: carDesc2 })
+                                          setShowPension({
+                                            idSocio: p.id_socio_fk,
+                                            idCarrito: idCar,
+                                            nombreSocio: nc(p.cat_socios),
+                                            descCarrito: carDesc2,
+                                            idPension: p.id,
+                                            idSlotExistente: p.id_slot_fk,
+                                            montoMensualExistente: p.monto_mensual,
+                                          })
                                         }}
                                           style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#475569', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
-                                          <Plus size={12} /> Nueva cuota
+                                          <Plus size={12} /> Agregar cuotas
                                         </button>
                                       )}
                                       {puedeEscribir && (
@@ -1102,6 +1113,9 @@ export default function CarritosPage() {
           idCarrito={showPension.idCarrito}
           nombreSocio={showPension.nombreSocio}
           descripcionCarrito={showPension.descCarrito}
+          idPension={showPension.idPension}
+          idSlotExistente={showPension.idSlotExistente}
+          montoMensualExistente={showPension.montoMensualExistente}
           onClose={() => { setShowPension(null); setCarritoNuevo(null) }}
           onSaved={handlePensionSaved}
         />
