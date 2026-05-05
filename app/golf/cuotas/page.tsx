@@ -61,30 +61,65 @@ const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
 const inp = { width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' } as React.CSSProperties
 const lbl = { fontSize: 12, fontWeight: 600 as const, color: '#475569', marginBottom: 4, display: 'block' as const }
 
+// ── Helpers de periodo ────────────────────────────────────────
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+function addMeses(year: number, month: number, n: number) {
+  const t = year * 12 + (month - 1) + n
+  return { year: Math.floor(t / 12), month: (t % 12) + 1 }
+}
+function diffMeses(y1: number, m1: number, y2: number, m2: number) {
+  return (y2 * 12 + (m2 - 1)) - (y1 * 12 + (m1 - 1))
+}
+function periodoKey(y: number, m: number) { return `${y}-${String(m).padStart(2,'0')}` }
+function periodoLabel(y: number, m: number) { return `${MESES[m-1]} ${y}` }
+function fechaVenc(y: number, m: number, dia: number) {
+  return `${y}-${String(m).padStart(2,'0')}-${String(dia).padStart(2,'0')}`
+}
+
 // ── NuevaCuotaModal ──────────────────────────────────────────
 function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; onSaved: () => void; authUser: any }) {
+  const now = new Date()
+
   const [configs, setConfigs]         = useState<CuotaConfig[]>([])
+  const [loadingCfg, setLoadingCfg]   = useState(true)
+  const [showPicker, setShowPicker]   = useState(false)
+  const [pickerSearch, setPickerSearch] = useState('')
+
   const [socios, setSocios]           = useState<Socio[]>([])
   const [socioSearch, setSocioSearch] = useState('')
   const [socioSel, setSocioSel]       = useState<Socio | null>(null)
   const [configSel, setConfigSel]     = useState<CuotaConfig | null>(null)
-  const [form, setForm] = useState({
-    tipo: 'MENSUALIDAD',
-    concepto: '',
-    periodo: new Date().toISOString().slice(0, 7),
-    monto_original: '',
-    descuento: '0',
-    fecha_vencimiento: '',
-    observaciones: '',
-  })
+
+  // Datos de la cuota
+  const [tipo,       setTipo]       = useState('MENSUALIDAD')
+  const [concepto,   setConcepto]   = useState('')       // prefijo del concepto
+  const [monto,      setMonto]      = useState('')
+  const [descuento,  setDescuento]  = useState('0')
+  const [diaVenc,    setDiaVenc]    = useState('10')
+  const [obs,        setObs]        = useState('')
+
+  // Modalidad
+  const [modalidad,  setModalidad]  = useState<'UNICA' | 'RANGO'>('RANGO')
+
+  // Cuota única
+  const [periodoU,   setPeriodoU]   = useState(periodoKey(now.getFullYear(), now.getMonth() + 1))
+  const [fechaVencU, setFechaVencU] = useState('')
+
+  // Rango mensual
+  const [mesIni,  setMesIni]  = useState(now.getMonth() + 1)
+  const [anioIni, setAnioIni] = useState(now.getFullYear())
+  const [mesFin,  setMesFin]  = useState(now.getMonth() + 1)
+  const [anioFin, setAnioFin] = useState(now.getFullYear())
+
   const [saving, setSaving] = useState(false)
-  const [error, setError]   = useState('')
+  const [error,  setError]  = useState('')
 
   useEffect(() => {
-    dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true).order('nombre')
-      .then(({ data }) => setConfigs((data as CuotaConfig[]) ?? []))
+    dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true).order('tipo').order('nombre')
+      .then(({ data }) => { setConfigs((data as CuotaConfig[]) ?? []); setLoadingCfg(false) })
   }, [])
 
+  // Búsqueda de socios
   useEffect(() => {
     if (socioSearch.length < 2) { setSocios([]); return }
     const t = setTimeout(() => {
@@ -97,117 +132,381 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
     return () => clearTimeout(t)
   }, [socioSearch])
 
+  // Seleccionar tipo de cuota desde el picker
   const selectConfig = (c: CuotaConfig) => {
     setConfigSel(c)
-    setForm(f => ({
-      ...f, tipo: c.tipo, concepto: c.nombre, monto_original: String(c.monto),
-      fecha_vencimiento: c.tipo === 'MENSUALIDAD' ? `${f.periodo}-${String(c.dia_vencimiento).padStart(2, '0')}` : '',
-    }))
+    setTipo(c.tipo)
+    setConcepto(c.nombre)
+    setMonto(String(c.monto))
+    setDiaVenc(String(c.dia_vencimiento))
+    setShowPicker(false)
+    setPickerSearch('')
+    // Si es inscripción, cambiar a cuota única automáticamente
+    if (c.tipo === 'INSCRIPCION') setModalidad('UNICA')
+    else setModalidad('RANGO')
   }
 
+  const clearConfig = () => {
+    setConfigSel(null)
+    setTipo('MENSUALIDAD')
+    setConcepto('')
+    setMonto('')
+    setDescuento('0')
+    setDiaVenc('10')
+  }
+
+  // ── Preview de cuotas a generar ───────────────────────────
+  type Preview = { periodo: string; label: string; monto_original: number; descuento: number; monto_neto: number; fecha_vencimiento: string }
+
+  const preview = useMemo<Preview[]>(() => {
+    const m = parseFloat(monto) || 0
+    const d = parseFloat(descuento) || 0
+    const dia = parseInt(diaVenc) || 10
+    if (m <= 0) return []
+
+    if (modalidad === 'UNICA') {
+      if (!periodoU) return []
+      const [y, mo] = periodoU.split('-').map(Number)
+      const fv = fechaVencU || fechaVenc(y, mo, dia)
+      return [{ periodo: periodoU, label: periodoLabel(y, mo), monto_original: m, descuento: d, monto_neto: Math.max(0, m - d), fecha_vencimiento: fv }]
+    } else {
+      const diff = diffMeses(anioIni, mesIni, anioFin, mesFin)
+      if (diff < 0) return []
+      const rows: Preview[] = []
+      for (let i = 0; i <= diff; i++) {
+        const { year: y, month: mo } = addMeses(anioIni, mesIni, i)
+        rows.push({
+          periodo: periodoKey(y, mo),
+          label: periodoLabel(y, mo),
+          monto_original: m,
+          descuento: d,
+          monto_neto: Math.max(0, m - d),
+          fecha_vencimiento: fechaVenc(y, mo, dia),
+        })
+      }
+      return rows
+    }
+  }, [monto, descuento, diaVenc, modalidad, periodoU, fechaVencU, mesIni, anioIni, mesFin, anioFin])
+
+  const totalNeto = preview.reduce((a, r) => a + r.monto_neto, 0)
+
+  // Filtro del picker
+  const configsFiltradas = configs.filter(c => {
+    if (!pickerSearch.trim()) return true
+    const q = pickerSearch.toLowerCase()
+    return c.nombre.toLowerCase().includes(q) || (c.cat_categorias_socios?.nombre ?? '').toLowerCase().includes(q)
+  })
+
+  // ── Guardar ───────────────────────────────────────────────
   const handleSave = async () => {
-    if (!socioSel) { setError('Selecciona un socio'); return }
-    if (!form.concepto.trim()) { setError('El concepto es obligatorio'); return }
-    if (!form.monto_original || Number(form.monto_original) <= 0) { setError('El monto debe ser mayor a 0'); return }
+    if (!socioSel)          { setError('Selecciona un socio'); return }
+    if (!concepto.trim())   { setError('El concepto / tipo de cuota es obligatorio'); return }
+    if (preview.length === 0) { setError('No hay cuotas a generar. Revisa el monto y el período.'); return }
     setSaving(true); setError('')
-    const { error: err } = await dbGolf.from('cxc_golf').insert({
-      id_socio_fk: socioSel.id, tipo: form.tipo, concepto: form.concepto.trim(),
-      periodo: form.periodo || null, monto_original: Number(form.monto_original),
-      descuento: Number(form.descuento) || 0, status: 'PENDIENTE', fecha_emision: hoy,
-      fecha_vencimiento: form.fecha_vencimiento || null, observaciones: form.observaciones || null,
-      id_cuota_config_fk: configSel?.id ?? null, usuario_crea: authUser?.nombre ?? null,
-    })
+
+    const rows = preview.map(p => ({
+      id_socio_fk:       socioSel.id,
+      tipo,
+      // Concepto dinámico: si es rango y hay más de 1, agrega el mes al nombre
+      concepto:          preview.length > 1 ? `${concepto.trim()} — ${p.label}` : concepto.trim(),
+      periodo:           p.periodo,
+      monto_original:    p.monto_original,
+      descuento:         p.descuento,
+      // monto_final es GENERATED ALWAYS AS (monto_original - descuento) — NO incluir
+      saldo:             p.monto_neto,   // para cobros parciales
+      status:            'PENDIENTE',
+      fecha_emision:     hoy,
+      fecha_vencimiento: p.fecha_vencimiento || null,
+      observaciones:     obs || null,
+      id_cuota_config_fk: configSel?.id ?? null,
+      usuario_crea:      authUser?.nombre ?? null,
+    }))
+
+    const { error: err } = await dbGolf.from('cxc_golf').insert(rows)
     if (err) { setError(err.message); setSaving(false); return }
     onSaved()
   }
 
+  // ── Render ────────────────────────────────────────────────
   return (
     <ModalShell
       modulo="golf-miembros"
-      titulo="Nueva Cuota"
+      titulo="Asignar Cuotas"
+      subtitulo={socioSel ? nc(socioSel) : undefined}
       onClose={onClose}
-      maxWidth={540}
+      maxWidth={600}
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar
+        <button onClick={handleSave} disabled={saving || preview.length === 0 || !socioSel}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: (saving || preview.length === 0 || !socioSel) ? 0.6 : 1 }}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+          {preview.length > 1 ? `Generar ${preview.length} cuotas` : 'Guardar cuota'}
         </button>
       </>}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {configs.length > 0 && (
-            <div>
-              <label style={lbl}>Tipo de cuota <span style={{ fontWeight: 400, color: '#94a3b8' }}>(precarga datos)</span></label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {configs.map(c => (
-                  <button key={c.id} onClick={() => selectConfig(c)}
-                    style={{ padding: '5px 10px', fontSize: 11, fontWeight: 600, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: configSel?.id === c.id ? '#7c3aed' : '#e2e8f0', background: configSel?.id === c.id ? '#f5f3ff' : '#fff', color: configSel?.id === c.id ? '#7c3aed' : '#475569' }}>
-                    {c.nombre} {c.cat_categorias_socios ? `(${c.cat_categorias_socios.nombre})` : ''} · {fmt$(c.monto)}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+        {/* ── 1. Tipo de cuota (picker popup) ── */}
+        <div>
+          <label style={lbl}>Tipo de cuota</label>
+          <div style={{ position: 'relative' }}>
+            {configSel ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f5f3ff', border: '2px solid #7c3aed', borderRadius: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#7c3aed', color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    {TIPOS_LABEL[configSel.tipo] ?? configSel.tipo}
+                  </span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#3b0764' }}>{configSel.nombre}</div>
+                    {configSel.cat_categorias_socios && (
+                      <div style={{ fontSize: 11, color: '#7c3aed' }}>{configSel.cat_categorias_socios.nombre}</div>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed' }}>{fmt$(configSel.monto)}</span>
+                  <button onClick={() => { clearConfig(); setShowPicker(true) }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}>
+                    <X size={14} />
                   </button>
-                ))}
-              </div>
-            </div>
-          )}
-          <div>
-            <label style={lbl}>Socio *</label>
-            {socioSel ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: '#166534' }}>{nc(socioSel)}</span>
-                <button onClick={() => { setSocioSel(null); setSocioSearch('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={13} /></button>
+                </div>
               </div>
             ) : (
-              <div style={{ position: 'relative' }}>
-                <input style={inp} placeholder="Buscar por nombre o número…" value={socioSearch} onChange={e => setSocioSearch(e.target.value)} autoFocus />
-                {socios.length > 0 && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', zIndex: 10, maxHeight: 200, overflowY: 'auto' }}>
-                    {socios.map(s => (
-                      <div key={s.id} onClick={() => { setSocioSel(s); setSocioSearch(''); setSocios([]) }}
-                        style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid #f1f5f9' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
-                        {nc(s)}
-                      </div>
-                    ))}
+              <button onClick={() => setShowPicker(v => !v)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', fontSize: 13, border: '1px dashed #c4b5fd', borderRadius: 10, background: '#faf5ff', color: '#7c3aed', cursor: 'pointer', fontFamily: 'inherit' }}>
+                <span style={{ fontWeight: 500 }}>
+                  {loadingCfg ? 'Cargando tipos…' : '— Elegir tipo de cuota —'}
+                </span>
+                <ChevronDown size={14} style={{ transform: showPicker ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+              </button>
+            )}
+
+            {/* Picker popup */}
+            {showPicker && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.14)', zIndex: 50, overflow: 'hidden' }}>
+                {/* Buscador dentro del picker */}
+                <div style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ position: 'relative' }}>
+                    <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input
+                      autoFocus
+                      value={pickerSearch}
+                      onChange={e => setPickerSearch(e.target.value)}
+                      placeholder="Buscar tipo de cuota…"
+                      style={{ ...inp, padding: '6px 8px 6px 28px', fontSize: 12 }}
+                    />
                   </div>
-                )}
+                </div>
+                {/* Lista de configs */}
+                <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+                  {configsFiltradas.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', fontSize: 13, color: '#94a3b8' }}>Sin resultados</div>
+                  ) : (
+                    configsFiltradas.map(c => (
+                      <button key={c.id} onClick={() => selectConfig(c)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', border: 'none', borderBottom: '1px solid #f8fafc', background: '#fff', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#faf5ff'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: c.tipo === 'INSCRIPCION' ? '#fef3c7' : '#ede9fe', color: c.tipo === 'INSCRIPCION' ? '#92400e' : '#6d28d9', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                            {TIPOS_LABEL[c.tipo] ?? c.tipo}
+                          </span>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c.nombre}</div>
+                            {c.cat_categorias_socios && (
+                              <div style={{ fontSize: 11, color: '#64748b' }}>{c.cat_categorias_socios.nombre}</div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{fmt$(c.monto)}</div>
+                          <div style={{ fontSize: 10, color: '#94a3b8' }}>vence día {c.dia_vencimiento}</div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+                {/* Opción manual */}
+                <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9' }}>
+                  <button onClick={() => { clearConfig(); setShowPicker(false) }}
+                    style={{ width: '100%', padding: '7px 12px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#f8fafc', color: '#64748b', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Captura manual (sin precargar datos)
+                  </button>
+                </div>
               </div>
             )}
           </div>
-          <div>
-            <label style={lbl}>Tipo *</label>
-            <select style={inp} value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
-              <option value="INSCRIPCION">Inscripción</option>
-              <option value="MENSUALIDAD">Mensualidad</option>
-              <option value="PENSION_CARRITO">Pensión Carrito</option>
-            </select>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={lbl}>Concepto *</label>
-              <input style={inp} value={form.concepto} onChange={e => setForm(f => ({ ...f, concepto: e.target.value }))} placeholder="ej. Mensualidad Octubre 2026" />
+
+          {/* Campos editables del tipo */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px', gap: 8, marginTop: 10 }}>
+            <div>
+              <label style={{ ...lbl, marginBottom: 2 }}>Concepto / nombre *</label>
+              <input style={inp} value={concepto} onChange={e => setConcepto(e.target.value)} placeholder="ej. Mensualidad" />
             </div>
             <div>
-              <label style={lbl}>Periodo</label>
-              <input style={inp} type="month" value={form.periodo} onChange={e => setForm(f => ({ ...f, periodo: e.target.value }))} />
+              <label style={{ ...lbl, marginBottom: 2 }}>Monto *</label>
+              <input style={inp} type="number" min={0} step={0.01} value={monto} onChange={e => setMonto(e.target.value)} placeholder="0.00" />
             </div>
             <div>
-              <label style={lbl}>Fecha Vencimiento</label>
-              <input style={inp} type="date" value={form.fecha_vencimiento} onChange={e => setForm(f => ({ ...f, fecha_vencimiento: e.target.value }))} />
+              <label style={{ ...lbl, marginBottom: 2 }}>Descuento</label>
+              <input style={inp} type="number" min={0} step={0.01} value={descuento} onChange={e => setDescuento(e.target.value)} placeholder="0.00" />
             </div>
             <div>
-              <label style={lbl}>Monto *</label>
-              <input style={inp} type="number" value={form.monto_original} onChange={e => setForm(f => ({ ...f, monto_original: e.target.value }))} placeholder="0.00" />
-            </div>
-            <div>
-              <label style={lbl}>Descuento</label>
-              <input style={inp} type="number" value={form.descuento} onChange={e => setForm(f => ({ ...f, descuento: e.target.value }))} placeholder="0.00" />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={lbl}>Observaciones</label>
-              <input style={inp} value={form.observaciones} onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))} />
+              <label style={{ ...lbl, marginBottom: 2 }}>Día venc.</label>
+              <input style={inp} type="number" min={1} max={31} value={diaVenc} onChange={e => setDiaVenc(e.target.value)} />
             </div>
           </div>
-          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{error}</div>}
+
+          {/* Tipo (select) — solo manual */}
+          {!configSel && (
+            <div style={{ marginTop: 8 }}>
+              <label style={{ ...lbl, marginBottom: 2 }}>Categoría</label>
+              <select style={inp} value={tipo} onChange={e => setTipo(e.target.value)}>
+                <option value="MENSUALIDAD">Mensualidad</option>
+                <option value="INSCRIPCION">Inscripción</option>
+                <option value="PENSION_CARRITO">Pensión Carrito</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* ── 2. Socio ── */}
+        <div>
+          <label style={lbl}>Socio *</label>
+          {socioSel ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>{nc(socioSel)}</span>
+              <button onClick={() => { setSocioSel(null); setSocioSearch('') }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}>
+                <X size={13} />
+              </button>
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input style={{ ...inp, paddingLeft: 30 }} placeholder="Buscar por nombre o número de socio…"
+                value={socioSearch} onChange={e => setSocioSearch(e.target.value)} autoFocus={!!configSel} />
+              {socios.length > 0 && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.1)', zIndex: 20, maxHeight: 200, overflowY: 'auto' }}>
+                  {socios.map(s => (
+                    <div key={s.id} onClick={() => { setSocioSel(s); setSocioSearch(''); setSocios([]) }}
+                      style={{ padding: '9px 14px', cursor: 'pointer', fontSize: 13, borderBottom: '1px solid #f1f5f9' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
+                      {nc(s)}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── 3. Período ── */}
+        <div>
+          <label style={lbl}>Período a generar</label>
+
+          {/* Toggle Una / Rango */}
+          <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', marginBottom: 10 }}>
+            {(['UNICA', 'RANGO'] as const).map(m => (
+              <button key={m} onClick={() => setModalidad(m)}
+                style={{ flex: 1, padding: '8px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', borderRight: m === 'UNICA' ? '1px solid #e2e8f0' : 'none', background: modalidad === m ? '#f5f3ff' : '#fff', color: modalidad === m ? '#6d28d9' : '#94a3b8' }}>
+                {m === 'UNICA' ? 'Una sola cuota' : 'Rango mensual (varias cuotas)'}
+              </button>
+            ))}
+          </div>
+
+          {modalidad === 'UNICA' ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={{ ...lbl, marginBottom: 2 }}>Mes / año</label>
+                <input style={inp} type="month" value={periodoU} onChange={e => setPeriodoU(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ ...lbl, marginBottom: 2 }}>Fecha vencimiento</label>
+                <input style={inp} type="date" value={fechaVencU} onChange={e => setFechaVencU(e.target.value)} placeholder="Auto desde día venc." />
+                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2 }}>Vacío = día {diaVenc} del mes</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'end' }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Desde</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6 }}>
+                  <select style={inp} value={mesIni} onChange={e => {
+                    const m = Number(e.target.value); setMesIni(m)
+                    if (diffMeses(anioIni, m, anioFin, mesFin) < 0) { setMesFin(m); setAnioFin(anioIni) }
+                  }}>
+                    {MESES.map((mn, i) => <option key={i+1} value={i+1}>{mn}</option>)}
+                  </select>
+                  <input style={inp} type="number" value={anioIni} min={2020} max={2040}
+                    onChange={e => { const a = Number(e.target.value); setAnioIni(a); if (diffMeses(a, mesIni, anioFin, mesFin) < 0) setAnioFin(a) }} />
+                </div>
+              </div>
+              <div style={{ paddingBottom: 9, color: '#94a3b8', fontSize: 20, textAlign: 'center' }}>→</div>
+              <div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Hasta</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6 }}>
+                  <select style={inp} value={mesFin} onChange={e => setMesFin(Number(e.target.value))}>
+                    {MESES.map((mn, i) => <option key={i+1} value={i+1}>{mn}</option>)}
+                  </select>
+                  <input style={inp} type="number" value={anioFin} min={anioIni} max={2040}
+                    onChange={e => setAnioFin(Number(e.target.value))} />
+                </div>
+              </div>
+            </div>
+          )}
+          {modalidad === 'RANGO' && diffMeses(anioIni, mesIni, anioFin, mesFin) < 0 && (
+            <div style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>El mes final debe ser igual o posterior al inicial.</div>
+          )}
+        </div>
+
+        {/* ── Observaciones ── */}
+        <div>
+          <label style={lbl}>Observaciones</label>
+          <input style={inp} value={obs} onChange={e => setObs(e.target.value)} placeholder="Opcional…" />
+        </div>
+
+        {/* ── 4. Preview ── */}
+        {preview.length > 0 && (
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+              Vista previa — {preview.length} cuota{preview.length !== 1 ? 's' : ''}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 180, overflowY: 'auto' }}>
+              {preview.map(p => (
+                <div key={p.periodo} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: '#475569' }}>
+                  <div>
+                    <span style={{ fontWeight: 600, color: '#1e293b' }}>{p.label}</span>
+                    <span style={{ marginLeft: 10, color: '#94a3b8' }}>
+                      vence {new Date(p.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontWeight: 700, color: '#059669' }}>{fmt$(p.monto_neto)}</span>
+                    {p.descuento > 0 && <span style={{ marginLeft: 6, fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(p.monto_original)}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
+              <span style={{ color: '#1e293b' }}>Total a generar</span>
+              <span style={{ color: '#059669' }}>{fmt$(totalNeto)}</span>
+            </div>
+          </div>
+        )}
+
+        {preview.length === 0 && parseFloat(monto) > 0 && modalidad === 'RANGO' && diffMeses(anioIni, mesIni, anioFin, mesFin) < 0 && (
+          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+            El rango de meses no produce cuotas.
+          </div>
+        )}
+
+        {error && (
+          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+            {error}
+          </div>
+        )}
       </div>
     </ModalShell>
   )
