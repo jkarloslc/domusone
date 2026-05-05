@@ -156,22 +156,28 @@ export default function PensionModal({
     }
 
     // Generar cuotas en cxc_golf
-    const cuotasInsert = cuotas.map(c => ({
-      id_socio_fk:      idSocio,
-      tipo:             'PENSION_CARRITO',
-      id_pension_fk:    pensionId,
-      concepto:         `Pensión Carrito ${descripcionCarrito} — ${c.label}`,
-      periodo:          c.periodo,
-      monto_original:   form.monto_mensual,
-      descuento:        form.modalidad === 'ANUAL' ? (form.descuento / form.num_meses) : 0,
-      monto_final:      c.monto,
-      status:           'PENDIENTE',
-      fecha_emision:    new Date().toISOString().split('T')[0],
-      fecha_vencimiento: (() => {
-        const [y, m] = c.periodo.split('-').map(Number)
-        return new Date(y, m - 1, 10).toISOString().split('T')[0]
-      })(),
-    }))
+    // NOTA: monto_final es columna GENERATED ALWAYS AS (monto_original - descuento)
+    //       NO se puede incluir en el insert; la BD la calcula automáticamente.
+    const cuotasInsert = cuotas.map(c => {
+      const descPorCuota = form.modalidad === 'ANUAL' ? (form.descuento / form.num_meses) : 0
+      return {
+        id_socio_fk:      idSocio,
+        tipo:             'PENSION_CARRITO',
+        id_pension_fk:    pensionId,
+        concepto:         `Pensión Carrito ${descripcionCarrito} — ${c.label}`,
+        periodo:          c.periodo,
+        monto_original:   form.monto_mensual,
+        descuento:        descPorCuota,
+        // monto_final: omitido — columna generada (monto_original - descuento)
+        saldo:            c.monto,   // = monto_original - descuento (para cobros parciales)
+        status:           'PENDIENTE',
+        fecha_emision:    new Date().toISOString().split('T')[0],
+        fecha_vencimiento: (() => {
+          const [y, m] = c.periodo.split('-').map(Number)
+          return new Date(y, m - 1, 10).toISOString().split('T')[0]
+        })(),
+      }
+    })
 
     const { error: err2 } = await dbGolf.from('cxc_golf').insert(cuotasInsert)
     if (err2) { setError(err2.message); setSaving(false); return }
