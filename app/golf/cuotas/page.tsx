@@ -375,19 +375,28 @@ export default function CuotasGolfPage() {
 
   const fetchCuotas = useCallback(async () => {
     setLoading(true)
-    let q = dbGolf.from('cxc_golf')
-      .select(`id, id_socio_fk, concepto, periodo, monto_original, descuento, monto_final,
-        status, fecha_emision, fecha_vencimiento, fecha_pago, tipo,
-        cat_socios(nombre, apellido_paterno, apellido_materno, id_categoria_fk)`)
-      .order('fecha_vencimiento', { ascending: false })
-      .limit(600)
-    if (filtroStatus) q = q.eq('status', filtroStatus)
-    if (filtroTipo)   q = q.eq('tipo', filtroTipo)
-    const { data } = await q
-    const rows = (data as unknown as Cuota[]) ?? []
+    // Paginar hasta obtener TODOS los registros (PostgREST devuelve máx. 1000/página)
+    const PAGE = 1000
+    let allRows: Cuota[] = []
+    let from = 0
+    while (true) {
+      let q = dbGolf.from('cxc_golf')
+        .select(`id, id_socio_fk, concepto, periodo, monto_original, descuento, monto_final,
+          status, fecha_emision, fecha_vencimiento, fecha_pago, tipo,
+          cat_socios(nombre, apellido_paterno, apellido_materno, id_categoria_fk)`)
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1)
+      if (filtroStatus) q = q.eq('status', filtroStatus)
+      if (filtroTipo)   q = q.eq('tipo', filtroTipo)
+      const { data } = await q
+      if (!data || data.length === 0) break
+      allRows = [...allRows, ...(data as unknown as Cuota[])]
+      if (data.length < PAGE) break   // última página
+      from += PAGE
+    }
     const filtered = filtroCat
-      ? rows.filter(r => String(r.cat_socios?.id_categoria_fk) === filtroCat)
-      : rows
+      ? allRows.filter(r => String(r.cat_socios?.id_categoria_fk) === filtroCat)
+      : allRows
     setCuotas(filtered)
     setLoading(false)
   }, [filtroStatus, filtroTipo, filtroCat])
