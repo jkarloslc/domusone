@@ -52,6 +52,7 @@ type Cuota = {
   monto_original: number
   descuento: number
   monto_final: number
+  saldo: number          // saldo restante a pagar
   status: string
   fecha_emision: string
   fecha_vencimiento: string | null
@@ -177,10 +178,10 @@ export default function CarritosPage() {
     if (soloActivas) q = q.eq('activo', true)
     const { data: pData } = await q
 
-    // Cuotas pendientes por pensión
+    // Cuotas pendientes por pensión (incluye PAGO_PARCIAL)
     const { data: cxcData } = await dbGolf.from('cxc_golf')
-      .select('id_pension_fk, monto_final, status')
-      .eq('status', 'PENDIENTE')
+      .select('id_pension_fk, saldo, status')
+      .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .eq('tipo', 'PENSION_CARRITO')
 
     const pendPorPension: Record<number, { count: number; monto: number }> = {}
@@ -188,7 +189,7 @@ export default function CarritosPage() {
       if (!c.id_pension_fk) continue
       if (!pendPorPension[c.id_pension_fk]) pendPorPension[c.id_pension_fk] = { count: 0, monto: 0 }
       pendPorPension[c.id_pension_fk].count++
-      pendPorPension[c.id_pension_fk].monto += c.monto_final
+      pendPorPension[c.id_pension_fk].monto += c.saldo
     }
 
     const result: Pension[] = (pData ?? []).map((p: any) => ({
@@ -488,9 +489,9 @@ export default function CarritosPage() {
   // Cuotas pendientes del socio de una pensión
   const abrirCobro = async (pension: Pension) => {
     const { data } = await dbGolf.from('cxc_golf')
-      .select('id, concepto, periodo, monto_original, descuento, monto_final, status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo, id_socio_fk, cat_socios(nombre, apellido_paterno, apellido_materno)')
+      .select('id, concepto, periodo, monto_original, descuento, monto_final, saldo, status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo, id_socio_fk, cat_socios(nombre, apellido_paterno, apellido_materno)')
       .eq('id_socio_fk', pension.id_socio_fk)
-      .eq('status', 'PENDIENTE')
+      .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .order('fecha_vencimiento', { ascending: true })
     setShowCobrar({
       cuotas: (data as unknown as Cuota[]) ?? [],
@@ -662,7 +663,7 @@ export default function CarritosPage() {
                             {puedeEscribir && p.activo && p.pendientes > 0 && (
                               <button onClick={e => { e.stopPropagation(); abrirCobro(p) }}
                                 style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                <CreditCard size={12} /> Cobrar
+                                <CreditCard size={12} /> {p.monto_pendiente > 0 ? 'Cobrar' : 'Ver cuotas'}
                               </button>
                             )}
                           </td>

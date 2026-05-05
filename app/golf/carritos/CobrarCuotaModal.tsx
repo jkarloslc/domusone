@@ -12,6 +12,7 @@ type Cuota = {
   monto_original: number
   descuento: number
   monto_final: number
+  saldo: number          // saldo restante a pagar
   status: string
   fecha_vencimiento: string | null
   tipo: string
@@ -52,7 +53,7 @@ const TIPOS_LABEL: Record<string, string> = {
 const norm = (s: string) => s
   .toLowerCase()
   .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[̀-ͯ]/g, '')
 
 // ── Config de la institución (ajusta a tu realidad) ──────────
 const INSTITUCION = {
@@ -85,6 +86,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const [fechaPago, setFechaPago]       = useState(hoy)
   const [observaciones, setObservaciones] = useState('')
   const [facturable, setFacturable]     = useState(false)
+  const [montoParcialStr, setMontoParcialStr] = useState('')
 
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState('')
@@ -113,10 +115,15 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
 
   // ── Cálculos ───────────────────────────────────────────────
   const cuotasSelec   = cuotas.filter(c => seleccionadas.has(c.id))
-  const subtotalBruto = cuotasSelec.reduce((a, c) => a + c.monto_final, 0)
+  const subtotalBruto = cuotasSelec.reduce((a, c) => a + (c.saldo ?? c.monto_final), 0)
   const descExtra     = Math.min(parseFloat(descuentoExtra) || 0, subtotalBruto)
   const totalCobro    = Math.max(0, subtotalBruto - descExtra)
   const formaPagoNombre = formasPago.find(f => f.id === idFormaPago)?.nombre ?? ''
+
+  // Cobro parcial
+  const montoParcial  = Math.min(parseFloat(montoParcialStr) || totalCobro, totalCobro)
+  const saldoQuedara  = Math.max(0, parseFloat((totalCobro - montoParcial).toFixed(2)))
+  const esParcial     = saldoQuedara > 0
 
   const abrirTicketPOS = (payload: any, autoPrint = true) => {
     const encoded = encodeURIComponent(JSON.stringify(payload))
@@ -135,14 +142,14 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     const { data: folioData } = await dbGolf.rpc('next_folio_recibo', { anio })
     const folio = (folioData as string) ?? `RG-${anio}-?????`
 
-    // 2. Insertar recibo cabecera
+    // 2. Insertar recibo cabecera (total = monto parcial cobrado)
     const { data: reciboData, error: e1 } = await dbGolf.from('recibos_golf').insert({
       folio,
       id_socio_fk:      idSocio,
       fecha_recibo:     fechaPago,
       subtotal:         subtotalBruto,
       descuento:        descExtra,
-      total:            totalCobro,
+      total:            montoParcial,
       id_forma_pago_fk: idFormaPago,
       forma_pago_nombre: formaPagoNombre,
       referencia_pago:  referencia || null,
@@ -157,32 +164,52 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     const folioFinal = (reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).folio
     setIdVentaPos((reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).id_venta_pos_fk ?? null)
 
-    // 3. Insertar detalle del recibo
-    const detRows = cuotasSelec.map(c => ({
-      id_recibo_fk:  reciboId,
-      id_cuota_fk:   c.id,
-      concepto:      c.concepto,
-      tipo:          c.tipo,
-      periodo:       c.periodo,
-      monto_original: c.monto_original,
-      descuento:     c.descuento,
-      monto_final:   c.monto_final,
-    }))
+    // 3. Insertar detalle del recibo — monto aplicado por cuota (greedy)
+    let rem2 = montoParcial
+    const detRows = cuotasSelec.map(c => {
+      const cuotaSaldo = c.saldo ?? c.monto_final
+      const aplicar = Math.min(rem2, cuotaSaldo)
+      rem2 = parseFloat((rem2 - aplicar).toFixed(2))
+      return {
+        id_recibo_fk:   reciboId,
+        id_cuota_fk:    c.id,
+        concepto:       c.concepto,
+        tipo:           c.tipo,
+        periodo:        c.periodo,
+        monto_original: c.monto_original,
+        descuento:      c.descuento,
+        monto_final:    parseFloat(aplicar.toFixed(2)),
+      }
+    }).filter(d => d.monto_final > 0)
+
     const { error: e2 } = await dbGolf.from('recibos_golf_det').insert(detRows)
     if (e2) { setError(e2.message); setSaving(false); return }
 
-    // 4. Marcar cuotas como PAGADO y vincular al recibo
-    const { error: e3 } = await dbGolf.from('cxc_golf').update({
-      status:          'PAGADO',
-      fecha_pago:      fechaPago,
-      forma_pago:      formaPagoNombre,
-      referencia_pago: referencia || null,
-      observaciones:   observaciones || null,
-      usuario_cobra:   authUser?.nombre ?? null,
-      id_recibo_fk:    reciboId,
-    }).in('id', cuotasSelec.map(c => c.id))
-
-    if (e3) { setError(e3.message); setSaving(false); return }
+    // 4. Aplicar pago greedy a cuotas
+    let remaining = montoParcial
+    const updates: Promise<any>[] = []
+    for (const c of cuotasSelec) {
+      const cuotaSaldo = c.saldo ?? c.monto_final
+      const aplicar = Math.min(remaining, cuotaSaldo)
+      const nuevoSaldo = parseFloat((cuotaSaldo - aplicar).toFixed(2))
+      const nuevoStatus = nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL'
+      updates.push(
+        dbGolf.from('cxc_golf').update({
+          saldo:           nuevoSaldo,
+          status:          nuevoStatus,
+          fecha_pago:      nuevoStatus === 'PAGADO' ? fechaPago : null,
+          forma_pago:      formaPagoNombre,
+          referencia_pago: referencia || null,
+          observaciones:   observaciones || null,
+          usuario_cobra:   authUser?.nombre ?? null,
+          id_recibo_fk:    reciboId,
+        }).eq('id', c.id)
+      )
+      remaining = parseFloat((remaining - aplicar).toFixed(2))
+    }
+    const results = await Promise.all(updates)
+    const updateError = results.find(r => r.error)?.error
+    if (updateError) { setError(updateError.message); setSaving(false); return }
 
     setSaving(false)
     setTicketErr('')
@@ -238,10 +265,10 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           subtotal: subtotalBruto,
           descuento: descExtra,
           iva: 0,
-          total: totalCobro,
+          total: montoParcial,
           status: 'PAGADA',
           usuario_crea: authUser?.nombre ?? 'sistema',
-          notas: `Ticket POS generado desde recibo golf ${recibo.folio} (#${recibo.id})`,
+          notas: `Ticket POS generado desde recibo golf ${recibo.folio} (#${recibo.id})${esParcial ? ' [PAGO PARCIAL]' : ''}`,
         }).select('id, folio_dia').single()
         if (errVenta || !ventaData) throw new Error(errVenta?.message ?? 'No se pudo crear la venta POS')
 
@@ -253,12 +280,12 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           id_producto_fk: null,
           concepto: c.concepto,
           cantidad: 1,
-          precio_unitario: c.monto_final,
+          precio_unitario: c.saldo ?? c.monto_final,
           descuento: 0,
           iva_pct: 0,
           iva: 0,
-          subtotal: c.monto_final,
-          total: c.monto_final,
+          subtotal: c.saldo ?? c.monto_final,
+          total: c.saldo ?? c.monto_final,
           notas: c.periodo ?? null,
         }))
         if (descExtra > 0) {
@@ -283,7 +310,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           id_venta_fk: ventaId,
           id_forma_fk: idFormaPago || null,
           forma_nombre: formaPagoNombre,
-          monto: totalCobro,
+          monto: montoParcial,
         })
         if (errPag) throw new Error(errPag.message)
 
@@ -298,9 +325,9 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       const itemsTicket = cuotasSelec.map(c => ({
         concepto: c.concepto,
         cantidad: 1,
-        precio_unitario: c.monto_final,
+        precio_unitario: c.saldo ?? c.monto_final,
         iva: 0,
-        total: c.monto_final,
+        total: c.saldo ?? c.monto_final,
       }))
       if (descExtra > 0) {
         itemsTicket.push({
@@ -327,8 +354,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         leyenda: (cfg as PosCfg | null)?.leyenda_ticket ?? `Cobro relacionado al recibo ${recibo.folio}.`,
         subtotal: subtotalBruto,
         iva: 0,
-        total: totalCobro,
-        pagos: [{ forma: formaPagoNombre, monto: totalCobro }],
+        total: montoParcial,
+        pagos: [{ forma: formaPagoNombre, monto: montoParcial }],
         items: itemsTicket,
       }
       abrirTicketPOS(ticketData, true)
@@ -372,6 +399,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         .pago-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
         .pago-label { font-size: 10px; color: #15803d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
         .pago-val   { font-size: 14px; font-weight: 700; color: #15803d; }
+        .parcial-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px; color: #92400e; }
         .firma-area { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 48px; }
         .firma-line { border-top: 1px solid #1e293b; padding-top: 4px; font-size: 10px; color: #64748b; text-align: center; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
@@ -394,7 +422,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     return (
       <ModalShell modulo="golf-carritos" titulo="Cobro registrado" subtitulo={`Folio: ${recibo.folio}`} maxWidth={680} icono={CheckCircle} onClose={onSaved} footer={<>
         <div style={{ fontSize: 12, color: '#64748b' }}>
-          {cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} cobrada{cuotasSelec.length !== 1 ? 's' : ''} · {fmt$(totalCobro)}
+          {cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} cobrada{cuotasSelec.length !== 1 ? 's' : ''} · {fmt$(montoParcial)}
+          {esParcial && <span style={{ marginLeft: 6, color: '#d97706', fontWeight: 600 }}>PAGO PARCIAL</span>}
           {idVentaPos && <span style={{ marginLeft: 8, color: '#15803d', fontWeight: 600 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</span>}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
@@ -455,6 +484,13 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                 </div>
               </div>
 
+              {esParcial && (
+                <div className="parcial-box">
+                  <strong>PAGO PARCIAL:</strong> Se cobró {fmt$(montoParcial)} de {fmt$(totalCobro)} adeudado.
+                  Saldo pendiente: <strong>{fmt$(saldoQuedara)}</strong>. Las cuotas no liquidadas quedan en estado PAGO_PARCIAL.
+                </div>
+              )}
+
               <div className="section">
                 <div className="section-title">Detalle de Cuotas</div>
                 <table>
@@ -476,7 +512,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                         <td>{c.periodo ?? '—'}</td>
                         <td className="right">{fmt$(c.monto_original)}</td>
                         <td className="right">{c.descuento > 0 ? fmt$(c.descuento) : '—'}</td>
-                        <td className="right" style={{ fontWeight: 600 }}>{fmt$(c.monto_final)}</td>
+                        <td className="right" style={{ fontWeight: 600 }}>{fmt$(c.saldo ?? c.monto_final)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -484,7 +520,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
 
                 <div className="totales">
                   <div className="totales-row">
-                    <span>Subtotal</span>
+                    <span>Subtotal adeudado</span>
                     <span>{fmt$(subtotalBruto)}</span>
                   </div>
                   {descExtra > 0 && (
@@ -493,9 +529,15 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                       <span style={{ color: '#dc2626' }}>– {fmt$(descExtra)}</span>
                     </div>
                   )}
+                  {esParcial && (
+                    <div className="totales-row">
+                      <span>Saldo pendiente</span>
+                      <span style={{ color: '#d97706' }}>{fmt$(saldoQuedara)}</span>
+                    </div>
+                  )}
                   <div className="totales-row total">
-                    <span>TOTAL</span>
-                    <span>{fmt$(totalCobro)}</span>
+                    <span>{esParcial ? 'COBRADO AHORA' : 'TOTAL'}</span>
+                    <span>{fmt$(montoParcial)}</span>
                   </div>
                 </div>
               </div>
@@ -550,14 +592,17 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       <div>
         <div style={{ fontSize: 11, color: '#64748b' }}>{cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} · subtotal {fmt$(subtotalBruto)}</div>
         {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626' }}>– descuento {fmt$(descExtra)}</div>}
-        <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>{fmt$(totalCobro)}</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: esParcial ? '#d97706' : '#059669' }}>
+          {fmt$(montoParcial)}
+          {esParcial && <span style={{ fontSize: 12, marginLeft: 6, color: '#64748b' }}>de {fmt$(totalCobro)}</span>}
+        </div>
       </div>
       <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
         <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
         <button onClick={handleSave} disabled={saving || cuotasSelec.length === 0 || !idFormaPago}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || cuotasSelec.length === 0 || !idFormaPago) ? 0.6 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: esParcial ? '#d97706' : '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || cuotasSelec.length === 0 || !idFormaPago) ? 0.6 : 1 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
-          Registrar cobro
+          {esParcial ? 'Registrar pago parcial' : 'Registrar cobro'}
         </button>
       </div>
     </>}>
@@ -582,6 +627,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                   {cuotas.map((c, i) => {
                     const venc = vencida(c.fecha_vencimiento)
                     const sel  = seleccionadas.has(c.id)
+                    const isParcialCuota = c.status === 'PAGO_PARCIAL'
+                    const displaySaldo = c.saldo ?? c.monto_final
                     return (
                       <div key={c.id}
                         onClick={() => toggleCuota(c.id)}
@@ -602,11 +649,23 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                             <span style={{ padding: '1px 6px', borderRadius: 20, background: '#f1f5f9', color: '#475569', fontSize: 10, fontWeight: 600 }}>
                               {TIPOS_LABEL[c.tipo] ?? c.tipo}
                             </span>
+                            {isParcialCuota && (
+                              <span style={{ padding: '1px 6px', borderRadius: 20, background: '#fffbeb', color: '#d97706', fontSize: 10, fontWeight: 600 }}>
+                                Pago Parcial
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0, opacity: sel ? 1 : 0.4 }}>
-                          {c.descuento > 0 && <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>}
-                          <div style={{ fontSize: 14, fontWeight: 700, color: venc ? '#dc2626' : '#1e293b' }}>{fmt$(c.monto_final)}</div>
+                          {isParcialCuota && c.monto_final !== displaySaldo && (
+                            <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</div>
+                          )}
+                          {!isParcialCuota && c.descuento > 0 && (
+                            <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>
+                          )}
+                          <div style={{ fontSize: 14, fontWeight: 700, color: venc ? '#dc2626' : (isParcialCuota ? '#d97706' : '#1e293b') }}>
+                            {fmt$(displaySaldo)}
+                          </div>
                         </div>
                       </div>
                     )
@@ -656,6 +715,26 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                     value={referencia} onChange={e => setReferencia(e.target.value)} placeholder="Folio, transferencia, etc."
                   />
                 </div>
+              </div>
+
+              {/* Monto parcial */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>
+                  Monto a cobrar ahora
+                  {esParcial && <span style={{ marginLeft: 6, fontSize: 11, color: '#d97706', fontWeight: 600 }}>(PAGO PARCIAL)</span>}
+                </label>
+                <input
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 14, fontWeight: 700, border: `1px solid ${esParcial ? '#fbbf24' : '#e2e8f0'}`, borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                  type="number" min="0" step="0.01" max={totalCobro}
+                  value={montoParcialStr}
+                  onChange={e => setMontoParcialStr(e.target.value)}
+                  placeholder={fmt$(totalCobro)}
+                />
+                {esParcial && (
+                  <div style={{ marginTop: 6, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    ⚠ Quedará un saldo pendiente de <strong>{fmt$(saldoQuedara)}</strong>. Las cuotas no liquidadas quedarán en estado PAGO PARCIAL.
+                  </div>
+                )}
               </div>
 
               {/* Observaciones y facturable */}

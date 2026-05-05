@@ -81,10 +81,11 @@ const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDig
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
-  'Pendiente': { bg: '#fef9c3', color: '#ca8a04' },
-  'Pagado':    { bg: '#dcfce7', color: '#16a34a' },
-  'Vencido':   { bg: '#fee2e2', color: '#dc2626' },
-  'Cancelado': { bg: '#f8fafc', color: '#64748b' },
+  'Pendiente':    { bg: '#fef9c3', color: '#ca8a04' },
+  'Pagado':       { bg: '#dcfce7', color: '#16a34a' },
+  'Vencido':      { bg: '#fee2e2', color: '#dc2626' },
+  'Cancelado':    { bg: '#f8fafc', color: '#64748b' },
+  'Pago Parcial': { bg: '#fffbeb', color: '#d97706' },
 }
 
 // ── Institución ──────────────────────────────────────────────
@@ -300,6 +301,7 @@ export default function CobranzaPage() {
   const [savingPago, setSavingPago]       = useState(false)
   const [errPago, setErrPago]             = useState('')
   const [loadingCargosArr, setLoadingCargosArr] = useState(false)
+  const [montoParcialHip, setMontoParcialHip] = useState('')
 
   // ── Generar cargos mensuales ──
   type ContratoPrev = {
@@ -730,6 +732,7 @@ export default function CobranzaPage() {
     setReferencia('')
     setNotasPago('')
     setErrPago('')
+    setMontoParcialHip('')
     setShowCobrar(true)
   }
 
@@ -739,11 +742,12 @@ export default function CobranzaPage() {
       .from('ctrl_cargos')
       .select('*, cat_conceptos_cuota(nombre)')
       .eq('id_arrendatario_fk', idArr)
-      .in('status', ['Pendiente', 'Vencido'])
+      .in('status', ['Pendiente', 'Vencido', 'Pago Parcial'])
       .order('fecha_vencimiento', { ascending: true })
     setCargosArrendatario((data as Cargo[]) ?? [])
     // seleccionar todos por defecto
     setSelectedCargos(new Set(((data as Cargo[]) ?? []).map(c => c.id)))
+    setMontoParcialHip('')
     setLoadingCargosArr(false)
   }
 
@@ -758,6 +762,14 @@ export default function CobranzaPage() {
   const montoSeleccionado = cargosArrendatario
     .filter(c => selectedCargos.has(c.id))
     .reduce((s, c) => s + c.saldo, 0)
+
+  // Cobro parcial hípico
+  const montoParcialHipVal = Math.min(
+    parseFloat(montoParcialHip) || montoSeleccionado,
+    montoSeleccionado
+  )
+  const saldoQuedaraHip = Math.max(0, parseFloat((montoSeleccionado - montoParcialHipVal).toFixed(2)))
+  const esParcialHip    = saldoQuedaraHip > 0
 
   // Genera folio RH-YYYY-NNN
   const generarFolio = async (): Promise<string> => {
@@ -780,14 +792,14 @@ export default function CobranzaPage() {
 
     const folio = await generarFolio()
 
-    // 1. Insertar recibo
+    // 1. Insertar recibo (monto_total = monto parcial cobrado)
     const { data: pagoData, error: errPago1 } = await dbHip
       .from('ctrl_pagos')
       .insert({
         folio,
         id_arrendatario_fk: cobrarArr,
         fecha_pago: new Date().toISOString().split('T')[0],
-        monto_total: montoSeleccionado,
+        monto_total: montoParcialHipVal,
         forma_pago: formaPago,
         referencia: referencia || null,
         notas: notasPago || null,
@@ -803,13 +815,15 @@ export default function CobranzaPage() {
 
     const idPago = pagoData.id
 
-    // 2. Insertar detalle
+    // 2. Insertar detalle — monto aplicado por cargo (greedy)
     const cargosSeleccionados = cargosArrendatario.filter(c => selectedCargos.has(c.id))
-    const detalle = cargosSeleccionados.map(c => ({
-      id_pago_fk: idPago,
-      id_cargo_fk: c.id,
-      monto: c.saldo,
-    }))
+    let remDet = montoParcialHipVal
+    const detalle = cargosSeleccionados.map(c => {
+      const aplicar = Math.min(remDet, c.saldo)
+      remDet = parseFloat((remDet - aplicar).toFixed(2))
+      return { id_pago_fk: idPago, id_cargo_fk: c.id, monto: aplicar }
+    }).filter(d => d.monto > 0)
+
     const { error: errDet } = await dbHip.from('ctrl_pagos_det').insert(detalle)
     if (errDet) {
       setSavingPago(false)
@@ -817,9 +831,16 @@ export default function CobranzaPage() {
       return
     }
 
-    // 3. Marcar cargos como Pagado con saldo 0
+    // 3. Aplicar pago greedy a cargos — PAGADO si saldo=0, Pago Parcial si queda saldo
+    let remainingHip = montoParcialHipVal
     for (const c of cargosSeleccionados) {
-      await dbHip.from('ctrl_cargos').update({ status: 'Pagado', saldo: 0 }).eq('id', c.id)
+      const aplicar = Math.min(remainingHip, c.saldo)
+      const nuevoSaldo = parseFloat((c.saldo - aplicar).toFixed(2))
+      await dbHip.from('ctrl_cargos').update({
+        saldo:  nuevoSaldo,
+        status: nuevoSaldo === 0 ? 'Pagado' : 'Pago Parcial',
+      }).eq('id', c.id)
+      remainingHip = parseFloat((remainingHip - aplicar).toFixed(2))
     }
 
     setSavingPago(false)
@@ -916,7 +937,7 @@ export default function CobranzaPage() {
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
             <select className="input" value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPage(0) }} style={{ fontSize: 12 }}>
               <option value="">Todos los status</option>
-              {['Pendiente', 'Vencido', 'Pagado', 'Cancelado'].map(s => <option key={s}>{s}</option>)}
+              {['Pendiente', 'Vencido', 'Pago Parcial', 'Pagado', 'Cancelado'].map(s => <option key={s}>{s}</option>)}
             </select>
             <select className="input" value={filtroArr} onChange={e => { setFiltroArr(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ fontSize: 12, minWidth: 200 }}>
               <option value="">Todos los arrendatarios</option>
@@ -1386,13 +1407,15 @@ export default function CobranzaPage() {
           footer={
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {selectedCargos.size > 0 && (
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a', marginRight: 'auto' }}>
-                  Total: {fmt$(montoSeleccionado)}
+                <span style={{ fontSize: 13, fontWeight: 700, color: esParcialHip ? '#d97706' : '#16a34a', marginRight: 'auto' }}>
+                  Total: {fmt$(montoParcialHipVal)}
+                  {esParcialHip && <span style={{ fontSize: 11, color: '#64748b', marginLeft: 6 }}>(parcial de {fmt$(montoSeleccionado)})</span>}
                 </span>
               )}
               <button className="btn-ghost" onClick={() => setShowCobrar(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={handleCobrar} disabled={savingPago || selectedCargos.size === 0 || cobrarArr === ''}>
-                {savingPago ? 'Guardando…' : 'Emitir Recibo'}
+              <button className="btn-primary" onClick={handleCobrar} disabled={savingPago || selectedCargos.size === 0 || cobrarArr === ''}
+                style={{ background: esParcialHip ? '#d97706' : undefined }}>
+                {savingPago ? 'Guardando…' : (esParcialHip ? 'Emitir Recibo Parcial' : 'Emitir Recibo')}
               </button>
             </div>
           }
@@ -1467,6 +1490,29 @@ export default function CobranzaPage() {
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Referencia / Folio bancario</label>
               <input className="input" value={referencia} onChange={e => setReferencia(e.target.value)} placeholder="Opcional" style={{ width: '100%' }} />
             </div>
+
+            {/* Monto parcial */}
+            {selectedCargos.size > 0 && (
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+                  Monto a cobrar ahora
+                  {esParcialHip && <span style={{ marginLeft: 6, fontSize: 11, color: '#d97706', fontWeight: 600 }}>(PAGO PARCIAL)</span>}
+                </label>
+                <input
+                  className="input"
+                  type="number" min="0" step="0.01" max={montoSeleccionado}
+                  value={montoParcialHip}
+                  onChange={e => setMontoParcialHip(e.target.value)}
+                  placeholder={`${montoSeleccionado.toFixed(2)} (total)`}
+                  style={{ width: '100%', fontWeight: 700, border: esParcialHip ? '1px solid #fbbf24' : undefined }}
+                />
+                {esParcialHip && (
+                  <div style={{ marginTop: 6, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    ⚠ Quedará un saldo pendiente de <strong>{fmt$(saldoQuedaraHip)}</strong>. Los cargos no liquidados quedarán en estado Pago Parcial.
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Notas */}
             <div style={{ gridColumn: 'span 2' }}>
