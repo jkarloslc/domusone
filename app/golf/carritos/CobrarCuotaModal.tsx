@@ -205,10 +205,14 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       const centrosPos = (centros as PosCentro[]) ?? []
       if (centrosPos.length === 0) throw new Error('No hay centros de venta POS activos.')
 
-      // Buscar centro "Membresías" — fallback al primero disponible
-      const centroSel = centrosPos.find(c =>
-        norm(c.nombre).includes('membresia') || norm(c.nombre).includes('membresias') || norm(c.nombre).includes('club')
-      ) ?? centrosPos[0]
+      // Si las cuotas son de pensión carrito, buscar centro "Carritos/Pensiones"; si no, "Membresías"
+      const esPension = cuotas.some(c => c.tipo === 'PENSION_CARRITO')
+      const centroSel = centrosPos.find(c => {
+        const n = norm(c.nombre)
+        return esPension
+          ? (n.includes('carrito') || n.includes('pension') || n.includes('pensiones'))
+          : (n.includes('membresia') || n.includes('membresias') || n.includes('club'))
+      }) ?? centrosPos[0]
 
       let ventaId = (reciboDB as { id_venta_pos_fk: number | null }).id_venta_pos_fk ?? null
       let folioDia = 0
