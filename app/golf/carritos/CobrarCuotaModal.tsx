@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Save, Loader, CheckCircle, Printer, Receipt } from 'lucide-react'
+import { Save, Loader, CheckCircle, Printer, Receipt, Plus, Trash2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 type Cuota = {
@@ -80,10 +80,13 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       return next
     })
 
-  const [descuentoExtra, setDescuentoExtra] = useState('')   // descuento adicional en $ sobre el total
-  const [idFormaPago, setIdFormaPago]   = useState<number>(0)
-  const [referencia, setReferencia]     = useState('')
-  const [fechaPago, setFechaPago]       = useState(hoy)
+  type PagoLinea = { id_forma_pago_fk: number; forma_nombre: string; monto: string; referencia: string }
+
+  const [descuentoExtra, setDescuentoExtra] = useState('')
+  const [pagosLineas, setPagosLineas] = useState<PagoLinea[]>([
+    { id_forma_pago_fk: 0, forma_nombre: '', monto: '', referencia: '' }
+  ])
+  const [fechaPago, setFechaPago] = useState(hoy)
   const [observaciones, setObservaciones] = useState('')
   const [facturable, setFacturable]     = useState(false)
   const [montoParcialStr, setMontoParcialStr] = useState('')
@@ -107,7 +110,9 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     ]).then(([{ data: fps }, { data: soc }]) => {
       const fpsList = (fps as FormaPago[]) ?? []
       setFormasPago(fpsList)
-      if (fpsList.length) setIdFormaPago(fpsList[0].id)
+      if (fpsList.length) {
+        setPagosLineas([{ id_forma_pago_fk: fpsList[0].id, forma_nombre: fpsList[0].nombre, monto: '', referencia: '' }])
+      }
       setSocioInfo(soc as unknown as Socio)
       setLoadingInit(false)
     })
@@ -118,12 +123,36 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const subtotalBruto = cuotasSelec.reduce((a, c) => a + (c.saldo ?? c.monto_final), 0)
   const descExtra     = Math.min(parseFloat(descuentoExtra) || 0, subtotalBruto)
   const totalCobro    = Math.max(0, subtotalBruto - descExtra)
-  const formaPagoNombre = formasPago.find(f => f.id === idFormaPago)?.nombre ?? ''
 
   // Cobro parcial
   const montoParcial  = Math.min(parseFloat(montoParcialStr) || totalCobro, totalCobro)
   const saldoQuedara  = Math.max(0, parseFloat((totalCobro - montoParcial).toFixed(2)))
   const esParcial     = saldoQuedara > 0
+
+  // Multi-forma de pago
+  const pagosValidos    = pagosLineas.filter(p => p.id_forma_pago_fk > 0)
+  const totalDistribuido = pagosValidos.reduce((a, p) => a + (parseFloat(p.monto) || 0), 0)
+  const balancePagos    = parseFloat((montoParcial - totalDistribuido).toFixed(2))
+  // Para backward compat en header del recibo y POS
+  const idFormaPago     = pagosLineas[0]?.id_forma_pago_fk ?? 0
+  const formaPagoNombre = pagosLineas[0]?.forma_nombre ?? ''
+
+  const setPagoLinea = (i: number, partial: Partial<PagoLinea>) =>
+    setPagosLineas(ls => ls.map((l, j) => j !== i ? l : { ...l, ...partial }))
+
+  const agregarPagoLinea = () => {
+    const balance = parseFloat((montoParcial - totalDistribuido).toFixed(2))
+    const primera = formasPago[0]
+    setPagosLineas(ls => [...ls, {
+      id_forma_pago_fk: primera?.id ?? 0,
+      forma_nombre: primera?.nombre ?? '',
+      monto: balance > 0 ? balance.toFixed(2) : '',
+      referencia: '',
+    }])
+  }
+
+  const removerPagoLinea = (i: number) =>
+    setPagosLineas(ls => ls.length > 1 ? ls.filter((_, j) => j !== i) : ls)
 
   const abrirTicketPOS = (payload: any, autoPrint = true) => {
     const encoded = encodeURIComponent(JSON.stringify(payload))
@@ -134,7 +163,12 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   // ── Guardar cobro ──────────────────────────────────────────
   const handleSave = async () => {
     if (cuotasSelec.length === 0) { setError('No hay cuotas para cobrar'); return }
-    if (!idFormaPago) { setError('Selecciona forma de pago'); return }
+    const pagosOk = pagosLineas.filter(p => p.id_forma_pago_fk > 0 && parseFloat(p.monto) > 0)
+    if (pagosOk.length === 0) { setError('Agrega al menos una forma de pago con monto'); return }
+    if (Math.abs(balancePagos) > 0.01) {
+      setError(`La suma de los pagos (${fmt$(totalDistribuido)}) debe ser igual al monto a cobrar (${fmt$(montoParcial)})`)
+      return
+    }
     setSaving(true); setError('')
 
     // 1. Generar folio
@@ -142,20 +176,23 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     const { data: folioData } = await dbGolf.rpc('next_folio_recibo', { anio })
     const folio = (folioData as string) ?? `RG-${anio}-?????`
 
-    // 2. Insertar recibo cabecera (total = monto parcial cobrado)
+    // Formas de pago concatenadas para el header (backward compat)
+    const formasNombres = pagosOk.map(p => p.forma_nombre).join(' + ')
+
+    // 2. Insertar recibo cabecera
     const { data: reciboData, error: e1 } = await dbGolf.from('recibos_golf').insert({
       folio,
-      id_socio_fk:      idSocio,
-      fecha_recibo:     fechaPago,
-      subtotal:         subtotalBruto,
-      descuento:        descExtra,
-      total:            montoParcial,
-      id_forma_pago_fk: idFormaPago,
-      forma_pago_nombre: formaPagoNombre,
-      referencia_pago:  referencia || null,
-      observaciones:    observaciones || null,
-      usuario_cobra:    authUser?.nombre ?? 'sistema',
-      status:           'VIGENTE',
+      id_socio_fk:       idSocio,
+      fecha_recibo:      fechaPago,
+      subtotal:          subtotalBruto,
+      descuento:         descExtra,
+      total:             montoParcial,
+      id_forma_pago_fk:  pagosOk[0]?.id_forma_pago_fk ?? null,
+      forma_pago_nombre: formasNombres,
+      referencia_pago:   pagosOk[0]?.referencia || null,
+      observaciones:     observaciones || null,
+      usuario_cobra:     authUser?.nombre ?? 'sistema',
+      status:            'VIGENTE',
       facturable,
     }).select('id, folio, id_venta_pos_fk').single()
 
@@ -185,7 +222,19 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     const { error: e2 } = await dbGolf.from('recibos_golf_det').insert(detRows)
     if (e2) { setError(e2.message); setSaving(false); return }
 
-    // 4. Aplicar pago greedy a cuotas
+    // 4. Insertar formas de pago del recibo (tabla multi-pago)
+    const { error: ePagos } = await dbGolf.from('recibos_golf_pagos').insert(
+      pagosOk.map(p => ({
+        id_recibo_fk:     reciboId,
+        id_forma_pago_fk: p.id_forma_pago_fk,
+        forma_nombre:     p.forma_nombre,
+        monto:            parseFloat(p.monto),
+        referencia:       p.referencia || null,
+      }))
+    )
+    if (ePagos) { setError(ePagos.message); setSaving(false); return }
+
+    // 5. Aplicar pago greedy a cuotas
     let remaining = montoParcial
     const updates: Promise<any>[] = []
     for (const c of cuotasSelec) {
@@ -198,8 +247,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           saldo:           nuevoSaldo,
           status:          nuevoStatus,
           fecha_pago:      nuevoStatus === 'PAGADO' ? fechaPago : null,
-          forma_pago:      formaPagoNombre,
-          referencia_pago: referencia || null,
+          forma_pago:      formasNombres,
+          referencia_pago: pagosOk[0]?.referencia || null,
           observaciones:   observaciones || null,
           usuario_cobra:   authUser?.nombre ?? null,
           id_recibo_fk:    reciboId,
@@ -306,12 +355,16 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detInsert)
         if (errDet) throw new Error(errDet.message)
 
-        const { error: errPag } = await dbGolf.from('ctrl_ventas_pagos').insert({
-          id_venta_fk: ventaId,
-          id_forma_fk: idFormaPago || null,
-          forma_nombre: formaPagoNombre,
-          monto: montoParcial,
-        })
+        // Insertar todas las formas de pago en ctrl_ventas_pagos
+        const pagosVenta = pagosLineas.filter(p => p.id_forma_pago_fk > 0 && parseFloat(p.monto) > 0)
+        const { error: errPag } = await dbGolf.from('ctrl_ventas_pagos').insert(
+          pagosVenta.map(p => ({
+            id_venta_fk:  ventaId,
+            id_forma_fk:  p.id_forma_pago_fk || null,
+            forma_nombre: p.forma_nombre,
+            monto:        parseFloat(p.monto),
+          }))
+        )
         if (errPag) throw new Error(errPag.message)
 
         const { error: errLink } = await dbGolf.from('recibos_golf').update({ id_venta_pos_fk: ventaId }).eq('id', recibo.id)
@@ -355,7 +408,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         subtotal: subtotalBruto,
         iva: 0,
         total: montoParcial,
-        pagos: [{ forma: formaPagoNombre, monto: montoParcial }],
+        pagos: pagosLineas.filter(p => p.id_forma_pago_fk > 0 && parseFloat(p.monto) > 0).map(p => ({ forma: p.forma_nombre, monto: parseFloat(p.monto) })),
         items: itemsTicket,
       }
       abrirTicketPOS(ticketData, true)
@@ -542,21 +595,17 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                 </div>
               </div>
 
-              <div className="pago-box">
-                <div>
-                  <div className="pago-label">Forma de pago</div>
-                  <div className="pago-val">{formaPagoNombre}</div>
+              <div className="pago-box" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="pago-label">Formas de pago</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#15803d' }}>{authUser?.nombre ?? '—'}</div>
                 </div>
-                {referencia && (
-                  <div style={{ marginLeft: 32 }}>
-                    <div className="pago-label">Referencia</div>
-                    <div className="pago-val" style={{ fontSize: 12 }}>{referencia}</div>
+                {pagosLineas.filter(p => p.id_forma_pago_fk > 0 && parseFloat(p.monto) > 0).map((p, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                    <span><strong>{p.forma_nombre}</strong>{p.referencia ? ` · Ref: ${p.referencia}` : ''}</span>
+                    <span style={{ fontWeight: 700, color: '#15803d' }}>{fmt$(parseFloat(p.monto))}</span>
                   </div>
-                )}
-                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                  <div className="pago-label">Emitido por</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#15803d' }}>{authUser?.nombre ?? '—'}</div>
-                </div>
+                ))}
               </div>
 
               {ticketErr && (
@@ -599,7 +648,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       </div>
       <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
         <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-        <button onClick={handleSave} disabled={saving || cuotasSelec.length === 0 || !idFormaPago}
+        <button onClick={handleSave} disabled={saving || cuotasSelec.length === 0}
           style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: esParcial ? '#d97706' : '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || cuotasSelec.length === 0 || !idFormaPago) ? 0.6 : 1 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
           {esParcial ? 'Registrar pago parcial' : 'Registrar cobro'}
@@ -697,23 +746,55 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                 </div>
               </div>
 
-              {/* Forma de pago */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Forma de pago *</label>
-                  <select
-                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
-                    value={idFormaPago} onChange={e => setIdFormaPago(Number(e.target.value))}>
-                    <option value={0}>— Seleccionar —</option>
-                    {formasPago.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-                  </select>
+              {/* Formas de pago — multi-línea */}
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>Formas de pago *</span>
+                  <button onClick={agregarPagoLinea}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#059669', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>
+                    <Plus size={12} /> Agregar
+                  </button>
                 </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Referencia / No. operación</label>
-                  <input
-                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
-                    value={referencia} onChange={e => setReferencia(e.target.value)} placeholder="Folio, transferencia, etc."
-                  />
+                <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {pagosLineas.map((p, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 1fr 28px', gap: 6, alignItems: 'center' }}>
+                      <select
+                        style={{ padding: '7px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                        value={p.id_forma_pago_fk}
+                        onChange={e => {
+                          const sel = formasPago.find(f => f.id === Number(e.target.value))
+                          setPagoLinea(i, { id_forma_pago_fk: Number(e.target.value), forma_nombre: sel?.nombre ?? '' })
+                        }}>
+                        <option value={0}>— Forma —</option>
+                        {formasPago.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                      </select>
+                      <input
+                        style={{ padding: '7px 8px', fontSize: 13, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }}
+                        type="number" min="0" step="0.01"
+                        value={p.monto}
+                        placeholder={i === 0 && pagosLineas.length === 1 ? fmt$(montoParcial) : '0.00'}
+                        onChange={e => setPagoLinea(i, { monto: e.target.value })}
+                      />
+                      <input
+                        style={{ padding: '7px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                        value={p.referencia} placeholder="Referencia…"
+                        onChange={e => setPagoLinea(i, { referencia: e.target.value })}
+                      />
+                      <button onClick={() => removerPagoLinea(i)}
+                        style={{ padding: '4px', background: 'none', border: 'none', cursor: pagosLineas.length > 1 ? 'pointer' : 'default', color: pagosLineas.length > 1 ? '#dc2626' : '#cbd5e1' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {/* Balance */}
+                <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', background: Math.abs(balancePagos) < 0.01 ? '#f0fdf4' : '#fef2f2', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                  <span style={{ color: '#64748b' }}>
+                    {Math.abs(balancePagos) < 0.01 ? '✓ Suma cuadrada' : balancePagos > 0 ? `Falta distribuir` : `Exceso`}
+                  </span>
+                  <span style={{ fontWeight: 700, color: Math.abs(balancePagos) < 0.01 ? '#15803d' : '#dc2626' }}>
+                    {Math.abs(balancePagos) < 0.01 ? fmt$(montoParcial) : `${fmt$(Math.abs(balancePagos))}`}
+                  </span>
                 </div>
               </div>
 

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip, dbCfg, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clock, Receipt, Zap, Printer } from 'lucide-react'
+import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clock, Receipt, Zap, Printer, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -107,15 +107,22 @@ const printReciboHipico = async (pago: {
   cat_arrendatarios?: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string }
 }, dbHipRef: typeof import('@/lib/supabase').dbHip) => {
   // Cargar detalle de cargos cubiertos
-  const { data: detData } = await dbHipRef
-    .from('ctrl_pagos_det')
-    .select('monto, ctrl_cargos(descripcion, mes_aplicacion, id_concepto_fk)')
-    .eq('id_pago_fk', pago.id)
+  const [{ data: detData }, { data: formasData }] = await Promise.all([
+    dbHipRef
+      .from('ctrl_pagos_det')
+      .select('monto, ctrl_cargos(descripcion, mes_aplicacion, id_concepto_fk)')
+      .eq('id_pago_fk', pago.id),
+    dbHipRef
+      .from('ctrl_pagos_formas')
+      .select('forma_nombre, monto, referencia')
+      .eq('id_pago_fk', pago.id),
+  ])
 
   const det = (detData ?? []) as unknown as {
     monto: number
     ctrl_cargos?: { descripcion: string; mes_aplicacion: string | null }
   }[]
+  const formasList = (formasData as { forma_nombre: string; monto: number; referencia: string | null }[] | null) ?? []
 
   const fmtFechaLarga = (d: string) =>
     new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -212,16 +219,19 @@ const printReciboHipico = async (pago: {
       </div>
     </div>
 
-    <div class="pago-box">
-      <div>
-        <div class="pago-label">Forma de Pago</div>
-        <div class="pago-val">${pago.forma_pago}</div>
-      </div>
-      ${pago.referencia ? `
-      <div style="margin-left:24px">
-        <div class="pago-label">Referencia / Folio bancario</div>
-        <div class="pago-val" style="font-size:12px">${pago.referencia}</div>
-      </div>` : ''}
+    <div class="pago-box" style="flex-direction:column;align-items:stretch;gap:8px">
+      <div class="pago-label">Formas de Pago</div>
+      ${formasList.length > 0
+        ? formasList.map(f => `
+          <div style="display:flex;justify-content:space-between;font-size:13px">
+            <span><strong>${f.forma_nombre}</strong>${f.referencia ? ` &middot; Ref: ${f.referencia}` : ''}</span>
+            <span class="pago-val" style="font-size:13px">$${f.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+          </div>`).join('')
+        : `<div style="display:flex;justify-content:space-between;font-size:13px">
+            <span><strong>${pago.forma_pago}</strong>${pago.referencia ? ` &middot; Ref: ${pago.referencia}` : ''}</span>
+            <span class="pago-val" style="font-size:13px">$${pago.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+          </div>`
+      }
     </div>
 
     ${pago.notas ? `
@@ -295,8 +305,8 @@ export default function CobranzaPage() {
   const [cargosArrendatario, setCargosArrendatario] = useState<Cargo[]>([])
   const [selectedCargos, setSelectedCargos]         = useState<Set<number>>(new Set())
   const [formasPago, setFormasPago]       = useState<FormaPagoCat[]>([])
-  const [formaPago, setFormaPago]         = useState('')
-  const [referencia, setReferencia]       = useState('')
+  type PagoLineaHip = { id_forma_pago_fk: number; forma_nombre: string; monto: string; referencia: string }
+  const [pagosHip, setPagosHip]           = useState<PagoLineaHip[]>([{ id_forma_pago_fk: 0, forma_nombre: '', monto: '', referencia: '' }])
   const [notasPago, setNotasPago]         = useState('')
   const [savingPago, setSavingPago]       = useState(false)
   const [errPago, setErrPago]             = useState('')
@@ -421,7 +431,7 @@ export default function CobranzaPage() {
       .then(({ data }: any) => {
         const fps = data ?? []
         setFormasPago(fps)
-        if (fps.length > 0) setFormaPago(fps[0].nombre)
+        if (fps.length > 0) setPagosHip([{ id_forma_pago_fk: fps[0].id, forma_nombre: fps[0].nombre, monto: '', referencia: '' }])
       })
     dbHip.from('cat_conceptos_cuota').select('id, nombre, tipo, monto').eq('activo', true).order('nombre')
       .then(({ data }: any) => {
@@ -542,13 +552,14 @@ export default function CobranzaPage() {
         return
       }
 
-      const [{ data: centrosPos }, { data: formasPos }, { data: cfgPos }, { data: detPago }] = await Promise.all([
+      const [{ data: centrosPos }, { data: formasPos }, { data: cfgPos }, { data: detPago }, { data: formasRecibo }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
         dbGolf.from('cfg_pos').select('razon_social, municipio, direccion, rfc, telefono, leyenda_ticket').single(),
         dbHip.from('ctrl_pagos_det')
           .select('monto, ctrl_cargos(descripcion)')
           .eq('id_pago_fk', p.id),
+        dbHip.from('ctrl_pagos_formas').select('id_forma_fk, forma_nombre, monto').eq('id_pago_fk', p.id),
       ])
 
       const centros = (centrosPos as CentroPOS[]) ?? []
@@ -564,6 +575,7 @@ export default function CobranzaPage() {
 
       const formaSel = mapFormaPagoHipicoToPOS(formas, p.forma_pago)
       if (!formaSel) throw new Error('No se pudo mapear forma de pago POS.')
+      const formasReciboList = (formasRecibo as { id_forma_fk: number | null; forma_nombre: string; monto: number }[] | null) ?? []
 
       const fechaPagoIso = `${p.fecha_pago}T12:00:00`
       const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
@@ -623,12 +635,13 @@ export default function CobranzaPage() {
       const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detalleRows)
       if (errDet) throw new Error(errDet.message)
 
-      const { error: errPag } = await dbGolf.from('ctrl_ventas_pagos').insert({
-        id_venta_fk: ventaId,
-        id_forma_fk: formaSel.id,
-        forma_nombre: formaSel.nombre,
-        monto: p.monto_total,
-      })
+      const pagosTicketRows = formasReciboList.length > 0
+        ? formasReciboList.map(fr => {
+            const posFrm = mapFormaPagoHipicoToPOS(formas, fr.forma_nombre)
+            return { id_venta_fk: ventaId, id_forma_fk: posFrm?.id ?? null, forma_nombre: fr.forma_nombre, monto: fr.monto }
+          })
+        : [{ id_venta_fk: ventaId, id_forma_fk: formaSel.id, forma_nombre: formaSel.nombre, monto: p.monto_total }]
+      const { error: errPag } = await dbGolf.from('ctrl_ventas_pagos').insert(pagosTicketRows)
       if (errPag) throw new Error(errPag.message)
 
       const { error: errLink } = await dbHip.from('ctrl_pagos').update({ id_venta_pos_fk: ventaId }).eq('id', p.id)
@@ -653,7 +666,7 @@ export default function CobranzaPage() {
         subtotal: p.monto_total,
         iva: 0,
         total: p.monto_total,
-        pagos: [{ forma: formaSel.nombre, monto: p.monto_total }],
+        pagos: formasReciboList.length > 0 ? formasReciboList.map(fr => ({ forma: fr.forma_nombre, monto: fr.monto })) : [{ forma: formaSel.nombre, monto: p.monto_total }],
         items: detalleRows.map(d => ({ concepto: d.concepto, cantidad: d.cantidad, precio_unitario: d.precio_unitario, iva: d.iva, total: d.total })),
       }
       abrirTicketPOS(payload, true)
@@ -728,8 +741,7 @@ export default function CobranzaPage() {
     setCobrarArr('')
     setCargosArrendatario([])
     setSelectedCargos(new Set())
-    setFormaPago('Transferencia')
-    setReferencia('')
+    setPagosHip([{ id_forma_pago_fk: formasPago[0]?.id ?? 0, forma_nombre: formasPago[0]?.nombre ?? 'Transferencia', monto: '', referencia: '' }])
     setNotasPago('')
     setErrPago('')
     setMontoParcialHip('')
@@ -771,6 +783,23 @@ export default function CobranzaPage() {
   const saldoQuedaraHip = Math.max(0, parseFloat((montoSeleccionado - montoParcialHipVal).toFixed(2)))
   const esParcialHip    = saldoQuedaraHip > 0
 
+  // Multi-forma de pago Hípico
+  const pagosHipValidos     = pagosHip.filter(p => p.id_forma_pago_fk > 0)
+  const totalDistribuidoHip = pagosHipValidos.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0)
+  const balancePagosHip     = parseFloat((montoParcialHipVal - totalDistribuidoHip).toFixed(2))
+
+  const setPagoLineaHip = (i: number, partial: Partial<PagoLineaHip>) =>
+    setPagosHip(ls => ls.map((l, j) => j !== i ? l : { ...l, ...partial }))
+
+  const agregarPagoLineaHip = () => {
+    const bal = parseFloat((montoParcialHipVal - totalDistribuidoHip).toFixed(2))
+    const prim = formasPago[0]
+    setPagosHip(ls => [...ls, { id_forma_pago_fk: prim?.id ?? 0, forma_nombre: prim?.nombre ?? '', monto: bal > 0 ? bal.toFixed(2) : '', referencia: '' }])
+  }
+
+  const removerPagoLineaHip = (i: number) =>
+    setPagosHip(ls => ls.length > 1 ? ls.filter((_, j) => j !== i) : ls)
+
   // Genera folio RH-YYYY-NNN
   const generarFolio = async (): Promise<string> => {
     const anio = new Date().getFullYear()
@@ -788,6 +817,13 @@ export default function CobranzaPage() {
   const handleCobrar = async () => {
     if (cobrarArr === '') { setErrPago('Selecciona un arrendatario'); return }
     if (selectedCargos.size === 0) { setErrPago('Selecciona al menos un cargo'); return }
+    const pagosOkHip = pagosHip.filter(p => p.id_forma_pago_fk > 0 && parseFloat(p.monto) > 0)
+    if (pagosOkHip.length === 0) { setErrPago('Agrega al menos una forma de pago con monto'); return }
+    if (Math.abs(balancePagosHip) > 0.01) {
+      setErrPago(`La suma de los pagos ($${totalDistribuidoHip.toFixed(2)}) debe ser igual al monto a cobrar ($${montoParcialHipVal.toFixed(2)})`)
+      return
+    }
+    const formasNombresHip = pagosOkHip.map(p => p.forma_nombre).join(' + ')
     setSavingPago(true); setErrPago('')
 
     const folio = await generarFolio()
@@ -800,8 +836,8 @@ export default function CobranzaPage() {
         id_arrendatario_fk: cobrarArr,
         fecha_pago: new Date().toISOString().split('T')[0],
         monto_total: montoParcialHipVal,
-        forma_pago: formaPago,
-        referencia: referencia || null,
+        forma_pago: formasNombresHip,
+        referencia: pagosOkHip[0]?.referencia || null,
         notas: notasPago || null,
       })
       .select('id')
@@ -828,6 +864,22 @@ export default function CobranzaPage() {
     if (errDet) {
       setSavingPago(false)
       setErrPago(errDet.message)
+      return
+    }
+
+    // 2.5. Insertar formas de pago múltiples
+    const { error: errFormas } = await dbHip.from('ctrl_pagos_formas').insert(
+      pagosOkHip.map(p => ({
+        id_pago_fk:   idPago,
+        id_forma_fk:  p.id_forma_pago_fk,
+        forma_nombre: p.forma_nombre,
+        monto:        parseFloat(p.monto),
+        referencia:   p.referencia || null,
+      }))
+    )
+    if (errFormas) {
+      setSavingPago(false)
+      setErrPago(errFormas.message)
       return
     }
 
@@ -1477,18 +1529,55 @@ export default function CobranzaPage() {
               </div>
             )}
 
-            {/* Forma de pago */}
-            <div>
-              <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Forma de Pago</label>
-              <select className="input" value={formaPago} onChange={e => setFormaPago(e.target.value)} style={{ width: '100%' }}>
-                {formasPago.map(f => <option key={f.id} value={f.nombre}>{f.nombre}</option>)}
-              </select>
-            </div>
-
-            {/* Referencia */}
-            <div>
-              <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Referencia / Folio bancario</label>
-              <input className="input" value={referencia} onChange={e => setReferencia(e.target.value)} placeholder="Opcional" style={{ width: '100%' }} />
+            {/* Formas de pago — multi-línea */}
+            <div style={{ gridColumn: 'span 2' }}>
+              <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ padding: '8px 12px', background: 'var(--surface-800)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>Formas de pago *</span>
+                  <button onClick={agregarPagoLineaHip}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#b45309', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}>
+                    <Plus size={12} /> Agregar
+                  </button>
+                </div>
+                <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {pagosHip.map((p, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 1fr 28px', gap: 6, alignItems: 'center' }}>
+                      <select className="input"
+                        value={p.id_forma_pago_fk}
+                        onChange={e => {
+                          const sel = formasPago.find(f => f.id === Number(e.target.value))
+                          setPagoLineaHip(i, { id_forma_pago_fk: Number(e.target.value), forma_nombre: sel?.nombre ?? '' })
+                        }}>
+                        <option value={0}>— Forma —</option>
+                        {formasPago.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                      </select>
+                      <input className="input"
+                        type="number" min="0" step="0.01"
+                        value={p.monto}
+                        placeholder={i === 0 && pagosHip.length === 1 ? montoParcialHipVal.toFixed(2) : '0.00'}
+                        onChange={e => setPagoLineaHip(i, { monto: e.target.value })}
+                        style={{ textAlign: 'right', fontWeight: 600 }}
+                      />
+                      <input className="input"
+                        value={p.referencia} placeholder="Referencia…"
+                        onChange={e => setPagoLineaHip(i, { referencia: e.target.value })}
+                      />
+                      <button onClick={() => removerPagoLineaHip(i)}
+                        style={{ padding: '4px', background: 'none', border: 'none', cursor: pagosHip.length > 1 ? 'pointer' : 'default', color: pagosHip.length > 1 ? '#dc2626' : 'var(--border)' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', background: Math.abs(balancePagosHip) < 0.01 ? '#f0fdf4' : '#fef2f2', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                  <span style={{ color: '#64748b' }}>
+                    {Math.abs(balancePagosHip) < 0.01 ? '✓ Suma cuadrada' : balancePagosHip > 0 ? 'Falta distribuir' : 'Exceso'}
+                  </span>
+                  <span style={{ fontWeight: 700, color: Math.abs(balancePagosHip) < 0.01 ? '#15803d' : '#dc2626' }}>
+                    {Math.abs(balancePagosHip) < 0.01 ? fmt$(montoParcialHipVal) : fmt$(Math.abs(balancePagosHip))}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Monto parcial */}
