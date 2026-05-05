@@ -1,10 +1,10 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   ChevronLeft, Plus, Zap, Search, X, RefreshCw,
-  Save, Loader, CreditCard,
+  Save, Loader, CreditCard, ChevronDown, ChevronRight, Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
@@ -358,7 +358,8 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
 // ── Página principal ─────────────────────────────────────────
 export default function CuotasGolfPage() {
   const { canWrite, authUser } = useAuth()
-  const puedeEscribir = canWrite('golf-cxc')
+  const puedeEscribir  = canWrite('golf-cxc')
+  const esSuperAdmin   = authUser?.rol === 'superadmin'
 
   const [cuotas, setCuotas]             = useState<Cuota[]>([])
   const [categorias, setCategorias]     = useState<Categoria[]>([])
@@ -369,8 +370,8 @@ export default function CuotasGolfPage() {
   const [filtroCat, setFiltroCat]       = useState('')
   const [showNueva, setShowNueva]       = useState(false)
   const [showMasivo, setShowMasivo]     = useState(false)
-  const [pagina, setPagina]             = useState(1)
-  const PAGE_SIZE = 50
+  // grupos expandidos (socioId → bool); por defecto todos expandidos
+  const [expandidos, setExpandidos]     = useState<Record<number, boolean>>({})
 
   const fetchCuotas = useCallback(async () => {
     setLoading(true)
@@ -379,17 +380,14 @@ export default function CuotasGolfPage() {
         status, fecha_emision, fecha_vencimiento, fecha_pago, tipo,
         cat_socios(nombre, apellido_paterno, apellido_materno, id_categoria_fk)`)
       .order('fecha_vencimiento', { ascending: false })
-      .limit(300)
+      .limit(600)
     if (filtroStatus) q = q.eq('status', filtroStatus)
     if (filtroTipo)   q = q.eq('tipo', filtroTipo)
     const { data } = await q
     const rows = (data as unknown as Cuota[]) ?? []
-
-    // Filtro por categoría client-side
     const filtered = filtroCat
       ? rows.filter(r => String(r.cat_socios?.id_categoria_fk) === filtroCat)
       : rows
-
     setCuotas(filtered)
     setLoading(false)
   }, [filtroStatus, filtroTipo, filtroCat])
@@ -401,6 +399,14 @@ export default function CuotasGolfPage() {
       .then(({ data }) => setCategorias((data as Categoria[]) ?? []))
   }, [])
 
+  // ── Eliminar cuota (solo superadmin) ─────────────────────
+  const deleteCuota = async (id: number) => {
+    if (!confirm('¿Eliminar esta cuota? Esta acción no se puede deshacer.')) return
+    await dbGolf.from('cxc_golf').delete().eq('id', id)
+    fetchCuotas()
+  }
+
+  // ── Filtrado por búsqueda ─────────────────────────────────
   const cuotasF = cuotas.filter(c => {
     if (!busqueda.trim()) return true
     const q = busqueda.toLowerCase()
@@ -408,9 +414,29 @@ export default function CuotasGolfPage() {
     return nombre.includes(q) || c.concepto.toLowerCase().includes(q) || (c.periodo ?? '').includes(q)
   })
 
+  // ── Agrupación por socio ──────────────────────────────────
+  type SocioGroup = { socioId: number; nombre: string; cuotas: Cuota[]; totalPendiente: number; totalTotal: number }
+  const grupos = useMemo<SocioGroup[]>(() => {
+    const map = new Map<number, SocioGroup>()
+    for (const c of cuotasF) {
+      const sid = c.id_socio_fk
+      if (!map.has(sid)) {
+        const nombre = [c.cat_socios?.nombre, c.cat_socios?.apellido_paterno, c.cat_socios?.apellido_materno].filter(Boolean).join(' ') || '—'
+        map.set(sid, { socioId: sid, nombre, cuotas: [], totalPendiente: 0, totalTotal: 0 })
+      }
+      const g = map.get(sid)!
+      g.cuotas.push(c)
+      g.totalTotal += c.monto_final
+      if (c.status === 'PENDIENTE') g.totalPendiente += c.monto_final
+    }
+    return Array.from(map.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+  }, [cuotasF])
+
+  const toggleGrupo = (sid: number) =>
+    setExpandidos(prev => ({ ...prev, [sid]: !(prev[sid] ?? true) }))
+  const isExpanded = (sid: number) => expandidos[sid] ?? true
+
   const totalPendiente = cuotasF.filter(c => c.status === 'PENDIENTE').reduce((a, c) => a + c.monto_final, 0)
-  const totalPaginas   = Math.max(1, Math.ceil(cuotasF.length / PAGE_SIZE))
-  const cuotasPag      = cuotasF.slice((pagina - 1) * PAGE_SIZE, pagina * PAGE_SIZE)
 
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -457,128 +483,122 @@ export default function CuotasGolfPage() {
           <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
           <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
             placeholder="Socio, concepto, período…" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-          {busqueda && <button onClick={() => { setBusqueda(''); setPagina(1) }} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+          {busqueda && <button onClick={() => setBusqueda('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
         </div>
-        <select value={filtroCat} onChange={e => { setFiltroCat(e.target.value); setPagina(1) }}
+        <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)}
           style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todas las categorías</option>
           {categorias.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
         </select>
-        <select value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setPagina(1) }}
+        <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}
           style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los tipos</option>
           {TIPO_OPTS.filter(Boolean).map(t => <option key={t} value={t}>{TIPOS_LABEL[t]}</option>)}
         </select>
-        <select value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPagina(1) }}
+        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
           style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los status</option>
           {STATUS_OPTS.filter(Boolean).map(s => <option key={s} value={s}>{s === 'PENDIENTE' ? 'Pendiente' : s === 'PAGADO' ? 'Pagado' : 'Cancelado'}</option>)}
         </select>
         <span style={{ fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>
-          {cuotasF.length} registro{cuotasF.length !== 1 ? 's' : ''}
+          {grupos.length} socio{grupos.length !== 1 ? 's' : ''} · {cuotasF.length} cuota{cuotasF.length !== 1 ? 's' : ''}
           {totalPendiente > 0 && <span style={{ marginLeft: 8, color: '#d97706', fontWeight: 600 }}>· Pendiente: {fmt$(totalPendiente)}</span>}
         </span>
       </div>
 
-      {/* Tabla */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}><Loader size={18} className="animate-spin" /></div>
-        ) : cuotasF.length === 0 ? (
-          <div style={{ padding: '56px', textAlign: 'center', color: '#94a3b8' }}>
-            <CreditCard size={32} style={{ marginBottom: 10, opacity: 0.3 }} />
-            <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin cuotas</div>
-            <div style={{ fontSize: 12 }}>No hay registros con los filtros actuales</div>
-          </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                {['Socio', 'Concepto', 'Tipo', 'Período', 'Vencimiento', 'Monto', 'Status'].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {cuotasPag.map(c => {
-                const venc = vencida(c.fecha_vencimiento) && c.status === 'PENDIENTE'
-                const stKey = venc ? 'VENCIDA' : c.status
-                const st = STATUS_STYLE[stKey] ?? STATUS_STYLE.PENDIENTE
-                return (
-                  <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                    <td style={{ padding: '9px 14px', fontWeight: 500, color: '#1e293b', whiteSpace: 'nowrap' }}>
-                      {[c.cat_socios?.nombre, c.cat_socios?.apellido_paterno, c.cat_socios?.apellido_materno].filter(Boolean).join(' ') || '—'}
-                    </td>
-                    <td style={{ padding: '9px 14px', color: '#475569', maxWidth: 220 }}>{c.concepto}</td>
-                    <td style={{ padding: '9px 14px' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#475569' }}>
-                        {TIPOS_LABEL[c.tipo] ?? c.tipo}
-                      </span>
-                    </td>
-                    <td style={{ padding: '9px 14px', color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{c.periodo ?? '—'}</td>
-                    <td style={{ padding: '9px 14px', color: venc ? '#dc2626' : '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>
-                      {c.fecha_vencimiento ? new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                    </td>
-                    <td style={{ padding: '9px 14px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
-                      {fmt$(c.monto_final)}
-                      {c.descuento > 0 && <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4, textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</span>}
-                    </td>
-                    <td style={{ padding: '9px 14px' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: st.bg, color: st.color }}>
-                        {venc ? 'Vencida' : c.status === 'PENDIENTE' ? 'Pendiente' : c.status === 'PAGADO' ? 'Pagado' : 'Cancelado'}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {/* Vista agrupada por socio */}
+      {loading ? (
+        <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}><Loader size={18} className="animate-spin" /></div>
+      ) : grupos.length === 0 ? (
+        <div className="card" style={{ padding: '56px', textAlign: 'center', color: '#94a3b8' }}>
+          <CreditCard size={32} style={{ marginBottom: 10, opacity: 0.3 }} />
+          <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin cuotas</div>
+          <div style={{ fontSize: 12 }}>No hay registros con los filtros actuales</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {grupos.map(g => {
+            const exp = isExpanded(g.socioId)
+            return (
+              <div key={g.socioId} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                {/* Cabecera de grupo */}
+                <button
+                  onClick={() => toggleGrupo(g.socioId)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f8fafc', border: 'none', borderBottom: exp ? '1px solid #e2e8f0' : 'none', cursor: 'pointer', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {exp ? <ChevronDown size={14} style={{ color: '#94a3b8' }} /> : <ChevronRight size={14} style={{ color: '#94a3b8' }} />}
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8', background: '#e2e8f0', borderRadius: 20, padding: '1px 8px' }}>
+                      {g.cuotas.length} cuota{g.cuotas.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12 }}>
+                    {g.totalPendiente > 0 && (
+                      <span style={{ color: '#d97706', fontWeight: 600 }}>Pendiente: {fmt$(g.totalPendiente)}</span>
+                    )}
+                    <span style={{ color: '#64748b' }}>Total: {fmt$(g.totalTotal)}</span>
+                  </div>
+                </button>
 
-      {/* Paginación */}
-      {!loading && totalPaginas > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
-          <span style={{ fontSize: 12, color: '#94a3b8' }}>
-            Mostrando {(pagina - 1) * PAGE_SIZE + 1}–{Math.min(pagina * PAGE_SIZE, cuotasF.length)} de {cuotasF.length}
-          </span>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <button onClick={() => setPagina(1)} disabled={pagina === 1}
-              style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: pagina === 1 ? '#cbd5e1' : '#475569', cursor: pagina === 1 ? 'default' : 'pointer' }}>
-              «
-            </button>
-            <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}
-              style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: pagina === 1 ? '#cbd5e1' : '#475569', cursor: pagina === 1 ? 'default' : 'pointer' }}>
-              ‹ Anterior
-            </button>
-            {Array.from({ length: totalPaginas }, (_, i) => i + 1)
-              .filter(p => p === 1 || p === totalPaginas || Math.abs(p - pagina) <= 1)
-              .reduce<(number | '...')[]>((acc, p, i, arr) => {
-                if (i > 0 && (p as number) - (arr[i - 1] as number) > 1) acc.push('...')
-                acc.push(p)
-                return acc
-              }, [])
-              .map((p, i) =>
-                p === '...' ? (
-                  <span key={`ellipsis-${i}`} style={{ padding: '5px 8px', fontSize: 12, color: '#94a3b8' }}>…</span>
-                ) : (
-                  <button key={p} onClick={() => setPagina(p as number)}
-                    style={{ padding: '5px 10px', fontSize: 12, border: '1px solid', borderRadius: 6, cursor: 'pointer', borderColor: pagina === p ? '#2563eb' : '#e2e8f0', background: pagina === p ? '#2563eb' : '#fff', color: pagina === p ? '#fff' : '#475569', fontWeight: pagina === p ? 600 : 400 }}>
-                    {p}
-                  </button>
-                )
-              )}
-            <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}
-              style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: pagina === totalPaginas ? '#cbd5e1' : '#475569', cursor: pagina === totalPaginas ? 'default' : 'pointer' }}>
-              Siguiente ›
-            </button>
-            <button onClick={() => setPagina(totalPaginas)} disabled={pagina === totalPaginas}
-              style={{ padding: '5px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: pagina === totalPaginas ? '#cbd5e1' : '#475569', cursor: pagina === totalPaginas ? 'default' : 'pointer' }}>
-              »
-            </button>
-          </div>
+                {/* Tabla de cuotas del socio */}
+                {exp && (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: '#fafafa' }}>
+                        {['Concepto', 'Tipo', 'Período', 'Vencimiento', 'Monto', 'Status', ...(esSuperAdmin ? [''] : [])].map(h => (
+                          <th key={h} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {g.cuotas.map(c => {
+                        const venc = vencida(c.fecha_vencimiento) && c.status === 'PENDIENTE'
+                        const stKey = venc ? 'VENCIDA' : c.status
+                        const st = STATUS_STYLE[stKey] ?? STATUS_STYLE.PENDIENTE
+                        return (
+                          <tr key={c.id} style={{ borderTop: '1px solid #f1f5f9' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fafffe'}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                            <td style={{ padding: '8px 14px', color: '#475569', maxWidth: 220 }}>{c.concepto}</td>
+                            <td style={{ padding: '8px 14px' }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#475569' }}>
+                                {TIPOS_LABEL[c.tipo] ?? c.tipo}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px 14px', color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{c.periodo ?? '—'}</td>
+                            <td style={{ padding: '8px 14px', color: venc ? '#dc2626' : '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>
+                              {c.fecha_vencimiento ? new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                            </td>
+                            <td style={{ padding: '8px 14px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                              {fmt$(c.monto_final)}
+                              {c.descuento > 0 && <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4, textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</span>}
+                            </td>
+                            <td style={{ padding: '8px 14px' }}>
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: st.bg, color: st.color }}>
+                                {venc ? 'Vencida' : c.status === 'PENDIENTE' ? 'Pendiente' : c.status === 'PAGADO' ? 'Pagado' : 'Cancelado'}
+                              </span>
+                            </td>
+                            {esSuperAdmin && (
+                              <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                                <button
+                                  onClick={() => deleteCuota(c.id)}
+                                  title="Eliminar cuota"
+                                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 7px', fontSize: 11, border: '1px solid #fecaca', borderRadius: 6, background: '#fff', color: '#dc2626', cursor: 'pointer' }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fef2f2' }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff' }}>
+                                  <Trash2 size={12} />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 

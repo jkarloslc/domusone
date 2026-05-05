@@ -699,7 +699,7 @@ ${desglose.length > 0 ? `
                             style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                             <Printer size={11} /> {v.num_impresiones > 0 ? 'Reimprimir' : 'Ticket'}
                           </button>
-                          {!cancelada && puedeEscribir && (
+                          {!cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin') && (
                             <button onClick={() => cancelarVenta(v.id)}
                               style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                               <Ban size={11} /> Cancelar
