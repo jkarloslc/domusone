@@ -70,10 +70,10 @@ export default function FacturasPage() {
       </div>
 
       {/* Banner PAC */}
-      <div style={{ padding: '12px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <AlertTriangle size={15} style={{ color: '#d97706', flexShrink: 0 }} />
-        <span style={{ fontSize: 13, color: '#92400e' }}>
-          <strong>Modo simulación activo.</strong> El módulo está listo — cuando contrates tu PAC, conecta las credenciales en <code style={{ fontSize: 12, background: '#fef3c7', padding: '1px 4px', borderRadius: 3 }}>lib/pacService.ts</code> y cambia <code style={{ fontSize: 12, background: '#fef3c7', padding: '1px 4px', borderRadius: 3 }}>PAC_CONFIGURADO = true</code>.
+      <div style={{ padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 18 }}>🧪</span>
+        <span style={{ fontSize: 13, color: '#1e40af' }}>
+          <strong>Facturama Sandbox activo.</strong> Los CFDIs generados son de prueba y no tienen validez fiscal. Para producción: cambia la URL en <code style={{ fontSize: 12, background: '#dbeafe', padding: '1px 4px', borderRadius: 3 }}>app/api/pac/timbrar/route.ts</code> a <code style={{ fontSize: 12, background: '#dbeafe', padding: '1px 4px', borderRadius: 3 }}>api.facturama.mx</code>.
         </span>
       </div>
 

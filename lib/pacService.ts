@@ -77,11 +77,10 @@ export type ResultadoCancelacion = {
 //   })
 // ================================================================
 
-const PAC_CONFIGURADO = false  // ← Cambiar a true cuando se conecte el PAC
+const PAC_CONFIGURADO = true  // ← Facturama Sandbox activo
 
 export async function timbrarCFDI(datos: DatosFactura): Promise<ResultadoTimbrado> {
   if (!PAC_CONFIGURADO) {
-    // Modo simulación — genera un folio de prueba
     return {
       ok:           true,
       folio_fiscal: `SIMULADO-${Date.now()}`,
@@ -91,8 +90,6 @@ export async function timbrarCFDI(datos: DatosFactura): Promise<ResultadoTimbrad
     }
   }
 
-  // ── AQUÍ VA LA INTEGRACIÓN REAL DEL PAC ──────────────────
-  // Ejemplo genérico — reemplazar con la API del proveedor:
   try {
     const response = await fetch('/api/pac/timbrar', {
       method: 'POST',
@@ -100,13 +97,13 @@ export async function timbrarCFDI(datos: DatosFactura): Promise<ResultadoTimbrad
       body: JSON.stringify(datos),
     })
     const result = await response.json()
-    if (!response.ok) return { ok: false, error: result.message ?? 'Error del PAC' }
+    if (!response.ok) return { ok: false, error: result.error ?? 'Error del PAC' }
     return {
-      ok:           true,
-      folio_fiscal: result.uuid,
-      xml_cfdi:     result.xml,
-      pdf_url:      result.pdfUrl,
-      pac_respuesta: result,
+      ok:            true,
+      folio_fiscal:  result.folio_fiscal,
+      xml_cfdi:      result.xml_cfdi,
+      pdf_url:       result.pdf_url,
+      pac_respuesta: result.pac_respuesta,
     }
   } catch (err: any) {
     return { ok: false, error: err.message }
@@ -116,13 +113,12 @@ export async function timbrarCFDI(datos: DatosFactura): Promise<ResultadoTimbrad
 export async function cancelarCFDI(
   folio_fiscal: string,
   rfc_emisor: string,
-  motivo: string = '02'   // 01=Comprobante emitido con errores con relación, 02=sin relación
+  motivo: string = '02'
 ): Promise<ResultadoCancelacion> {
   if (!PAC_CONFIGURADO) {
     return { ok: true, acuse: `CANCELACION-SIMULADA-${folio_fiscal}` }
   }
 
-  // ── AQUÍ VA LA CANCELACIÓN REAL DEL PAC ──────────────────
   try {
     const response = await fetch('/api/pac/cancelar', {
       method: 'POST',
@@ -130,7 +126,7 @@ export async function cancelarCFDI(
       body: JSON.stringify({ folio_fiscal, rfc_emisor, motivo }),
     })
     const result = await response.json()
-    if (!response.ok) return { ok: false, error: result.message }
+    if (!response.ok) return { ok: false, error: result.error ?? 'Error al cancelar' }
     return { ok: true, acuse: result.acuse }
   } catch (err: any) {
     return { ok: false, error: err.message }
