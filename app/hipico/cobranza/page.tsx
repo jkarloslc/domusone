@@ -41,6 +41,11 @@ type Pago = {
   created_at: string
   cat_arrendatarios?: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string }
 }
+type DetCargoDet = {
+  monto: number
+  ctrl_cargos?: { descripcion: string; mes_aplicacion: string | null }
+}
+
 type VentaPOS = {
   id: number
   folio_dia: number
@@ -262,6 +267,16 @@ export default function CobranzaPage() {
   const [filtroArrPagos, setFiltroArrPagos] = useState<number | ''>('')
   const [loadingPagos, setLoadingPagos] = useState(false)
   const [generandoTicketPagoId, setGenerandoTicketPagoId] = useState<number | null>(null)
+
+  // ── Pago recién cobrado (success state) ──
+  const [pagoRecienCobrado, setPagoRecienCobrado] = useState<Pago | null>(null)
+  const [generandoTicketRecien, setGenerandoTicketRecien] = useState(false)
+
+  // ── Modal detalle de recibo ──
+  const [detalleRecibo, setDetalleRecibo] = useState<{ pago: Pago; det: DetCargoDet[] } | null>(null)
+  const [loadingDetalle, setLoadingDetalle] = useState(false)
+  const [generandoTicketDetalle, setGenerandoTicketDetalle] = useState(false)
+  const [ticketErrDetalle, setTicketErrDetalle] = useState('')
 
   // ── Catálogos ──
   const [arrendatarios, setArrendatarios] = useState<ArrendCat[]>([])
@@ -516,7 +531,7 @@ export default function CobranzaPage() {
     }
   }
 
-  const generarTicketPagoHipico = async (p: Pago) => {
+  const generarTicketPagoHipico = async (p: Pago, onLink?: (ventaId: number) => void) => {
     setGenerandoTicketPagoId(p.id)
     try {
       if (p.id_venta_pos_fk) {
@@ -527,7 +542,7 @@ export default function CobranzaPage() {
 
       const [{ data: centrosPos }, { data: formasPos }, { data: cfgPos }, { data: detPago }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
-        dbGolf.from('cat_formas_pago_pos').select('id, nombre').eq('activo', true).order('id'),
+        dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
         dbGolf.from('cfg_pos').select('razon_social, municipio, direccion, rfc, telefono, leyenda_ticket').single(),
         dbHip.from('ctrl_pagos_det')
           .select('monto, ctrl_cargos(descripcion)')
@@ -577,7 +592,7 @@ export default function CobranzaPage() {
 
       const ventaId = (venta as { id: number; folio_dia: number }).id
       const ventaFolioDia = (venta as { id: number; folio_dia: number }).folio_dia
-      const detallePago = (detPago ?? []) as { monto: number; ctrl_cargos?: { descripcion: string } }[]
+      const detallePago = (detPago ?? []) as unknown as { monto: number; ctrl_cargos?: { descripcion: string } }[]
       const detalleRows = (detallePago.length > 0 ? detallePago.map(d => ({
         id_venta_fk: ventaId,
         id_producto_fk: null,
@@ -618,6 +633,7 @@ export default function CobranzaPage() {
       if (errLink) throw new Error(errLink.message)
 
       setPagos(prev => prev.map(x => x.id === p.id ? { ...x, id_venta_pos_fk: ventaId } : x))
+      if (onLink) onLink(ventaId)
 
       const payload = {
         id: ventaId,
@@ -691,6 +707,18 @@ export default function CobranzaPage() {
         total_cargos: all.length,
       })
     })
+  }
+
+  // ── Abrir detalle de recibo ──
+  const abrirDetalleRecibo = async (p: Pago) => {
+    setLoadingDetalle(true)
+    setTicketErrDetalle('')
+    const { data: det } = await dbHip
+      .from('ctrl_pagos_det')
+      .select('monto, ctrl_cargos(descripcion, mes_aplicacion)')
+      .eq('id_pago_fk', p.id)
+    setDetalleRecibo({ pago: p, det: (det as unknown as DetCargoDet[]) ?? [] })
+    setLoadingDetalle(false)
   }
 
   // ── Modal cobrar ──
@@ -798,6 +826,14 @@ export default function CobranzaPage() {
     setShowCobrar(false)
     fetchCargos()
     if (tab === 'recibos') fetchPagos()
+
+    // Mostrar success state con folio + botón Ticket POS
+    const { data: pagoFull } = await dbHip
+      .from('ctrl_pagos')
+      .select('id, folio, id_arrendatario_fk, fecha_pago, monto_total, forma_pago, referencia, notas, id_venta_pos_fk, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona)')
+      .eq('id', idPago).single()
+    if (pagoFull) setPagoRecienCobrado(pagoFull as unknown as Pago)
+
     // refrescar KPIs
     dbHip.from('ctrl_cargos').select('status, monto, saldo').then(({ data }: any) => {
       const all = (data ?? []) as { status: string; monto: number; saldo: number }[]
@@ -965,7 +1001,12 @@ export default function CobranzaPage() {
                   <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin recibos</td></tr>
                 ) : pagos.map((p, i) => (
                   <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                    <td style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--gold-light)', fontFamily: 'monospace' }}>{p.folio}</td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <button onClick={() => abrirDetalleRecibo(p)}
+                        style={{ fontWeight: 700, color: 'var(--gold-light)', fontFamily: 'monospace', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: 13 }}>
+                        {p.folio}
+                      </button>
+                    </td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-primary)' }}>{fmtNombreArr(p.cat_arrendatarios)}</td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{fmtFecha(p.fecha_pago)}</td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{p.forma_pago}</td>
@@ -1165,6 +1206,178 @@ export default function CobranzaPage() {
             {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
           </div>
         </ModalShell>
+      )}
+
+      {/* ── Modal success: pago recién cobrado ── */}
+      {pagoRecienCobrado && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1020, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440, boxShadow: '0 24px 64px rgba(0,0,0,0.25)', padding: 32 }}>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>Cobro registrado</div>
+              <div style={{ fontFamily: 'monospace', fontSize: 20, fontWeight: 700, color: '#b45309', letterSpacing: 1 }}>{pagoRecienCobrado.folio}</div>
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
+                {fmtNombreArr(pagoRecienCobrado.cat_arrendatarios)} · {fmt$(pagoRecienCobrado.monto_total)}
+              </div>
+              {pagoRecienCobrado.id_venta_pos_fk && (
+                <div style={{ marginTop: 6, fontSize: 12, color: '#15803d', fontWeight: 600 }}>
+                  Ticket POS #{String(pagoRecienCobrado.id_venta_pos_fk).padStart(6, '0')}
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                onClick={async () => {
+                  setGenerandoTicketRecien(true)
+                  await generarTicketPagoHipico(pagoRecienCobrado, ventaId => {
+                    setPagoRecienCobrado(prev => prev ? { ...prev, id_venta_pos_fk: ventaId } : null)
+                  })
+                  setGenerandoTicketRecien(false)
+                }}
+                disabled={generandoTicketRecien}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 10, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicketRecien ? 0.6 : 1 }}>
+                <Receipt size={16} />
+                {generandoTicketRecien ? 'Generando…' : (pagoRecienCobrado.id_venta_pos_fk ? 'Reimprimir Ticket POS' : 'Generar Ticket POS')}
+              </button>
+              <button
+                onClick={() => printReciboHipico(pagoRecienCobrado, dbHip)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: 'none', borderRadius: 10, background: '#44200d', color: '#f5e6d3', cursor: 'pointer' }}>
+                <Printer size={16} /> Imprimir Recibo
+              </button>
+              <button
+                onClick={() => setPagoRecienCobrado(null)}
+                style={{ padding: '8px 18px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 10, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal detalle de recibo ── */}
+      {detalleRecibo && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1020, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 600, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.25)' }}>
+            {/* Header */}
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Receipt size={16} color="#b45309" />
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 17, color: '#44200d' }}>{detalleRecibo.pago.folio}</span>
+                  {detalleRecibo.pago.id_venta_pos_fk && (
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#ecfdf5', color: '#15803d', fontWeight: 600 }}>
+                      Ticket POS #{String(detalleRecibo.pago.id_venta_pos_fk).padStart(6, '0')}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
+                  {fmtFecha(detalleRecibo.pago.fecha_pago)} · {fmtNombreArr(detalleRecibo.pago.cat_arrendatarios)}
+                </div>
+              </div>
+              <button onClick={() => { setDetalleRecibo(null); setTicketErrDetalle('') }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 20, lineHeight: 1 }}>✕</button>
+            </div>
+
+            {/* Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+              {/* Info arrendatario */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px', marginBottom: 20, padding: '12px 16px', background: '#fdf6ec', borderRadius: 10, border: '1px solid #e8d5c0' }}>
+                <div>
+                  <div style={{ fontSize: 10, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Arrendatario</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1c0a00' }}>{fmtNombreArr(detalleRecibo.pago.cat_arrendatarios)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Forma de pago</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1c0a00' }}>{detalleRecibo.pago.forma_pago}</div>
+                </div>
+                {detalleRecibo.pago.referencia && (
+                  <div>
+                    <div style={{ fontSize: 10, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Referencia</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1c0a00' }}>{detalleRecibo.pago.referencia}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Cargos cubiertos */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cargos cubiertos</div>
+                {loadingDetalle ? (
+                  <div style={{ fontSize: 12, color: '#94a3b8', padding: '12px 0' }}>Cargando…</div>
+                ) : detalleRecibo.det.length === 0 ? (
+                  <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>Sin detalle disponible</div>
+                ) : (
+                  <div style={{ border: '1px solid #e8d5c0', borderRadius: 8, overflow: 'hidden' }}>
+                    {detalleRecibo.det.map((d, i) => {
+                      const fmtMes = (m: string | null) =>
+                        m ? new Date(m + 'T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : null
+                      return (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderBottom: i < detalleRecibo.det.length - 1 ? '1px solid #f1e6d8' : 'none' }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 500, color: '#1c0a00' }}>{d.ctrl_cargos?.descripcion ?? '—'}</div>
+                            {d.ctrl_cargos?.mes_aplicacion && (
+                              <div style={{ fontSize: 11, color: '#92400e' }}>{fmtMes(d.ctrl_cargos.mes_aplicacion)}</div>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#44200d' }}>{fmt$(d.monto)}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Total */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 17, fontWeight: 700, color: '#44200d', borderTop: '2px solid #d6b99a', paddingTop: 8, width: 220 }}>
+                  <span>TOTAL</span><span>{fmt$(detalleRecibo.pago.monto_total)}</span>
+                </div>
+              </div>
+
+              {detalleRecibo.pago.notas && (
+                <div style={{ padding: '8px 14px', background: '#fdf6ec', border: '1px solid #e8d5c0', borderRadius: 8, fontSize: 12, color: '#6b4c3b' }}>
+                  <strong>Notas:</strong> {detalleRecibo.pago.notas}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+              {ticketErrDetalle && (
+                <div style={{ marginBottom: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                  {ticketErrDetalle}
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button onClick={() => { setDetalleRecibo(null); setTicketErrDetalle('') }}
+                  style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                  Cerrar
+                </button>
+                <button onClick={() => printReciboHipico(detalleRecibo.pago, dbHip)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #d6b99a', borderRadius: 8, background: '#fdf6ec', color: '#44200d', cursor: 'pointer' }}>
+                  <Printer size={14} /> Imprimir Recibo
+                </button>
+                <button
+                  onClick={async () => {
+                    setGenerandoTicketDetalle(true)
+                    setTicketErrDetalle('')
+                    try {
+                      await generarTicketPagoHipico(detalleRecibo.pago, ventaId => {
+                        setDetalleRecibo(prev => prev ? { ...prev, pago: { ...prev.pago, id_venta_pos_fk: ventaId } } : null)
+                      })
+                    } catch (e: any) {
+                      setTicketErrDetalle(e?.message ?? 'No se pudo generar el ticket POS')
+                    }
+                    setGenerandoTicketDetalle(false)
+                  }}
+                  disabled={generandoTicketDetalle}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#44200d', color: '#f5e6d3', cursor: 'pointer', opacity: generandoTicketDetalle ? 0.6 : 1 }}>
+                  {generandoTicketDetalle ? <Receipt size={14} /> : <Receipt size={14} />}
+                  {detalleRecibo.pago.id_venta_pos_fk ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Modal cobrar ── */}
