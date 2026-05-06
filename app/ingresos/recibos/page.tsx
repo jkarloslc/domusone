@@ -36,6 +36,8 @@ const fmtFecha = (d: string) =>
   new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 const fmtFolioIng = (id: number) =>
   `ING-${new Date().getFullYear()}-${String(id).padStart(4, '0')}`
+const toLocalYmd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Confirmado: { bg: '#f0fdf4', color: '#15803d' },
@@ -60,7 +62,7 @@ function ReciboModal({
   authUser: any
 }) {
   const isView   = !!recibo
-  const today    = new Date().toISOString().slice(0, 10)
+  const today    = toLocalYmd(new Date())
 
   const [form, setForm] = useState({
     fecha:               recibo?.fecha ?? today,

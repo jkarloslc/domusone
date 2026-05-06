@@ -10,6 +10,9 @@ import { useRouter } from 'next/navigation'
 const fmt = (n: number) =>
   '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+const toLocalYmd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
 const fmtFecha = (d: string) =>
   new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
 
@@ -37,8 +40,9 @@ export default function IngresosPage() {
   })
 
   useEffect(() => {
-    const hoy   = new Date().toISOString().slice(0, 10)
-    const ini   = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)
+    const now = new Date()
+    const hoy = toLocalYmd(now)
+    const ini = toLocalYmd(new Date(now.getFullYear(), now.getMonth(), 1))
 
     Promise.all([
       dbCtrl.from('recibos_ingreso').select('monto_total').eq('status', 'Confirmado').eq('fecha', hoy),
