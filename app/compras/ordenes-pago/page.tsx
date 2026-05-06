@@ -1007,6 +1007,9 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         : opData.autorizado_por
           ? 'Autorizada'
           : 'En proceso'
+    const nombreElaboro = opData.created_by ?? opData.usuario_crea ?? 'Sin registro'
+    const nombreAutorizo = opData.autorizado_por
+      ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización' : opData.status === 'Rechazada' ? 'Rechazada' : 'Sin registro')
     // Cargar config de organización
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
@@ -1096,11 +1099,11 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
       </div>
       <div class="firmas">
         <div class="firma">
-          ${opData.created_by ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.created_by}</div>` : ''}
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreElaboro}</div>
           Elaboró
         </div>
         <div class="firma">
-          ${opData.autorizado_por ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.autorizado_por}</div>` : ''}
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo}</div>
           Autorizó
           ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
         </div>
