@@ -819,7 +819,7 @@ export default function CuotasGolfPage() {
         <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}><Loader size={18} className="animate-spin" /></div>
       ) : grupos.length === 0 ? (
         <div className="card" style={{ padding: '56px', textAlign: 'center', color: '#94a3b8' }}>
-          <CreditCard size={32} style={{ marginBottom: 10, opacity: 0.3 }} />
+          <CreditCard size={32} style={{ display: 'block', margin: '0 auto 10px', opacity: 0.3 }} />
           <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin cuotas</div>
           <div style={{ fontSize: 12 }}>No hay registros con los filtros actuales</div>
         </div>
