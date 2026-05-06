@@ -6,6 +6,7 @@ import {
   Plus, Star, MapPin, Calendar, Users, DollarSign,
   FileText, Trash2, Edit2, ChevronLeft, Receipt, ShoppingBag,
   Printer, X, Check, Eye, TrendingUp, TrendingDown,
+  Settings, ClipboardCheck,
 } from 'lucide-react'
 
 // ── Types ────────────────────────────────────────────────────
@@ -32,6 +33,24 @@ type Evento = {
   status: string
   cat_tipos_evento?: { nombre: string; color: string }
   cat_lugares?: { nombre: string }
+  // Ficha Maestra
+  objetivo?: string | null
+  riesgos_operativos?: string | null
+  montaje_carpas?: boolean; montaje_escenario?: boolean; montaje_pista_baile?: boolean
+  montaje_mesas_sillas?: boolean; montaje_iluminacion?: boolean; montaje_audio?: boolean
+  montaje_pantallas?: boolean; montaje_generador?: boolean; montaje_notas?: string | null
+  seg_guardias?: string | null; seg_control_accesos?: string | null
+  seg_paramedicos?: boolean; seg_ambulancia?: boolean; seg_valet_parking?: boolean
+  ayb_banquetero?: string | null; ayb_tipo_servicio?: string | null
+  ayb_num_comensales?: number | null; ayb_barra_libre?: boolean; ayb_permisos_sanitarios?: boolean
+  golf_tipo_torneo?: string | null; golf_num_jugadores?: number | null
+  golf_tee_times?: string | null; golf_caddies?: number | null; golf_carritos?: number | null
+  hip_tipo_evento?: string | null; hip_num_caballos?: number | null
+  hip_caballerizas?: string | null; hip_veterinario?: string | null; hip_trailers?: string | null
+  chk_contrato_firmado?: boolean; chk_anticipo_pagado?: boolean
+  chk_layout_autorizado?: boolean; chk_montaje_concluido?: boolean; chk_revision_final?: boolean
+  post_incidencias?: string | null; post_danos?: string | null
+  post_evaluacion?: string | null; post_conclusion?: string | null
 }
 
 type Ingreso = {
@@ -89,6 +108,28 @@ function sortEventosDesc(a: Evento, b: Evento) {
   return (b.hora_inicio ?? '').localeCompare(a.hora_inicio ?? '')
 }
 
+// ── Helper UI components ─────────────────────────────────────
+
+function FmSection({ title, color, children }: { title: string; color: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, fontWeight: 700, color, textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: 10, paddingBottom: 6, borderBottom: `2px solid ${color}33` }}>{title}</div>
+      {children}
+    </div>
+  )
+}
+function FmGrid2({ children }: { children: React.ReactNode }) {
+  return <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>{children}</div>
+}
+function FmFull({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ gridColumn: '1 / -1' }}>
+      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{label}</label>
+      {children}
+    </div>
+  )
+}
+
 // ── Component ────────────────────────────────────────────────
 
 export default function EventosPage() {
@@ -119,11 +160,27 @@ export default function EventosPage() {
   const blankForm = () => ({
     nombre: '', id_tipo_evento_fk: '' as number | '',
     id_lugar_fk: '' as number | '',
-    fecha_inicio: new Date().toISOString().split('T')[0],
+    fecha_inicio: new Date().toLocaleDateString('en-CA'),
     fecha_fin: '', hora_inicio: '', hora_fin: '',
     num_asistentes: '' as number | '', responsable: '',
     cliente_nombre: '', cliente_telefono: '', cliente_email: '',
     notas: '', status: 'Cotización',
+    // Ficha Maestra
+    objetivo: '', riesgos_operativos: '',
+    montaje_carpas: false, montaje_escenario: false, montaje_pista_baile: false,
+    montaje_mesas_sillas: false, montaje_iluminacion: false, montaje_audio: false,
+    montaje_pantallas: false, montaje_generador: false, montaje_notas: '',
+    seg_guardias: '', seg_control_accesos: '',
+    seg_paramedicos: false, seg_ambulancia: false, seg_valet_parking: false,
+    ayb_banquetero: '', ayb_tipo_servicio: '',
+    ayb_num_comensales: '' as number | '', ayb_barra_libre: false, ayb_permisos_sanitarios: false,
+    golf_tipo_torneo: '', golf_num_jugadores: '' as number | '',
+    golf_tee_times: '', golf_caddies: '' as number | '', golf_carritos: '' as number | '',
+    hip_tipo_evento: '', hip_num_caballos: '' as number | '',
+    hip_caballerizas: '', hip_veterinario: '', hip_trailers: '',
+    chk_contrato_firmado: false, chk_anticipo_pagado: false,
+    chk_layout_autorizado: false, chk_montaje_concluido: false, chk_revision_final: false,
+    post_incidencias: '', post_danos: '', post_evaluacion: '', post_conclusion: '',
   })
   const [form, setForm] = useState(blankForm())
 
@@ -162,7 +219,7 @@ export default function EventosPage() {
   const loadEventos = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('eventos')
-      .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
+      .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, objetivo, riesgos_operativos, montaje_carpas, montaje_escenario, montaje_pista_baile, montaje_mesas_sillas, montaje_iluminacion, montaje_audio, montaje_pantallas, montaje_generador, montaje_notas, seg_guardias, seg_control_accesos, seg_paramedicos, seg_ambulancia, seg_valet_parking, ayb_banquetero, ayb_tipo_servicio, ayb_num_comensales, ayb_barra_libre, ayb_permisos_sanitarios, golf_tipo_torneo, golf_num_jugadores, golf_tee_times, golf_caddies, golf_carritos, hip_tipo_evento, hip_num_caballos, hip_caballerizas, hip_veterinario, hip_trailers, chk_contrato_firmado, chk_anticipo_pagado, chk_layout_autorizado, chk_montaje_concluido, chk_revision_final, post_incidencias, post_danos, post_evaluacion, post_conclusion, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
       .order('fecha_inicio', { ascending: false })
     if (filtroStatus) q = q.eq('status', filtroStatus)
     const { data } = await q
@@ -237,6 +294,30 @@ export default function EventosPage() {
       cliente_email: ev.cliente_email ?? '',
       notas: ev.notas ?? '',
       status: ev.status,
+      // Ficha Maestra
+      objetivo: ev.objetivo ?? '', riesgos_operativos: ev.riesgos_operativos ?? '',
+      montaje_carpas: ev.montaje_carpas ?? false, montaje_escenario: ev.montaje_escenario ?? false,
+      montaje_pista_baile: ev.montaje_pista_baile ?? false, montaje_mesas_sillas: ev.montaje_mesas_sillas ?? false,
+      montaje_iluminacion: ev.montaje_iluminacion ?? false, montaje_audio: ev.montaje_audio ?? false,
+      montaje_pantallas: ev.montaje_pantallas ?? false, montaje_generador: ev.montaje_generador ?? false,
+      montaje_notas: ev.montaje_notas ?? '',
+      seg_guardias: ev.seg_guardias ?? '', seg_control_accesos: ev.seg_control_accesos ?? '',
+      seg_paramedicos: ev.seg_paramedicos ?? false, seg_ambulancia: ev.seg_ambulancia ?? false,
+      seg_valet_parking: ev.seg_valet_parking ?? false,
+      ayb_banquetero: ev.ayb_banquetero ?? '', ayb_tipo_servicio: ev.ayb_tipo_servicio ?? '',
+      ayb_num_comensales: ev.ayb_num_comensales ?? '', ayb_barra_libre: ev.ayb_barra_libre ?? false,
+      ayb_permisos_sanitarios: ev.ayb_permisos_sanitarios ?? false,
+      golf_tipo_torneo: ev.golf_tipo_torneo ?? '', golf_num_jugadores: ev.golf_num_jugadores ?? '',
+      golf_tee_times: ev.golf_tee_times ?? '', golf_caddies: ev.golf_caddies ?? '',
+      golf_carritos: ev.golf_carritos ?? '',
+      hip_tipo_evento: ev.hip_tipo_evento ?? '', hip_num_caballos: ev.hip_num_caballos ?? '',
+      hip_caballerizas: ev.hip_caballerizas ?? '', hip_veterinario: ev.hip_veterinario ?? '',
+      hip_trailers: ev.hip_trailers ?? '',
+      chk_contrato_firmado: ev.chk_contrato_firmado ?? false, chk_anticipo_pagado: ev.chk_anticipo_pagado ?? false,
+      chk_layout_autorizado: ev.chk_layout_autorizado ?? false, chk_montaje_concluido: ev.chk_montaje_concluido ?? false,
+      chk_revision_final: ev.chk_revision_final ?? false,
+      post_incidencias: ev.post_incidencias ?? '', post_danos: ev.post_danos ?? '',
+      post_evaluacion: ev.post_evaluacion ?? '', post_conclusion: ev.post_conclusion ?? '',
     })
     setActiveTab('info')
     setErr('')
@@ -289,6 +370,33 @@ export default function EventosPage() {
       cliente_email:       form.cliente_email || null,
       notas:               form.notas || null,
       status:              form.status,
+      // Ficha Maestra
+      objetivo:            form.objetivo || null,
+      riesgos_operativos:  form.riesgos_operativos || null,
+      montaje_carpas: form.montaje_carpas, montaje_escenario: form.montaje_escenario,
+      montaje_pista_baile: form.montaje_pista_baile, montaje_mesas_sillas: form.montaje_mesas_sillas,
+      montaje_iluminacion: form.montaje_iluminacion, montaje_audio: form.montaje_audio,
+      montaje_pantallas: form.montaje_pantallas, montaje_generador: form.montaje_generador,
+      montaje_notas: form.montaje_notas || null,
+      seg_guardias: form.seg_guardias || null, seg_control_accesos: form.seg_control_accesos || null,
+      seg_paramedicos: form.seg_paramedicos, seg_ambulancia: form.seg_ambulancia,
+      seg_valet_parking: form.seg_valet_parking,
+      ayb_banquetero: form.ayb_banquetero || null, ayb_tipo_servicio: form.ayb_tipo_servicio || null,
+      ayb_num_comensales: form.ayb_num_comensales || null,
+      ayb_barra_libre: form.ayb_barra_libre, ayb_permisos_sanitarios: form.ayb_permisos_sanitarios,
+      golf_tipo_torneo: form.golf_tipo_torneo || null,
+      golf_num_jugadores: form.golf_num_jugadores || null,
+      golf_tee_times: form.golf_tee_times || null,
+      golf_caddies: form.golf_caddies || null, golf_carritos: form.golf_carritos || null,
+      hip_tipo_evento: form.hip_tipo_evento || null,
+      hip_num_caballos: form.hip_num_caballos || null,
+      hip_caballerizas: form.hip_caballerizas || null,
+      hip_veterinario: form.hip_veterinario || null, hip_trailers: form.hip_trailers || null,
+      chk_contrato_firmado: form.chk_contrato_firmado, chk_anticipo_pagado: form.chk_anticipo_pagado,
+      chk_layout_autorizado: form.chk_layout_autorizado, chk_montaje_concluido: form.chk_montaje_concluido,
+      chk_revision_final: form.chk_revision_final,
+      post_incidencias: form.post_incidencias || null, post_danos: form.post_danos || null,
+      post_evaluacion: form.post_evaluacion || null, post_conclusion: form.post_conclusion || null,
     }
     if (editEvt) {
       const { error } = await dbCtrl.from('eventos').update(payload).eq('id', editEvt.id)
@@ -493,6 +601,200 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
   const confirmados     = eventos.filter(e => e.status === 'Confirmado' || e.status === 'En curso').length
   const realizados      = eventos.filter(e => e.status === 'Realizado').length
 
+  // ── Estilos helper para tabs Operación / Checklist ──────────
+  const lblSt: React.CSSProperties = { fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }
+  const inpSt: React.CSSProperties = { fontSize: 13, width: '100%' }
+  const taSt:  React.CSSProperties = { fontSize: 13, width: '100%', resize: 'vertical' as const }
+  const chkBadge = (checked: boolean, color: string): React.CSSProperties => ({
+    display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer',
+    padding: '5px 12px', border: '1px solid', borderColor: checked ? color : '#e2e8f0',
+    borderRadius: 8, background: checked ? color + '15' : '#fff',
+    color: checked ? color : '#475569', fontWeight: checked ? 600 : 400, userSelect: 'none',
+  })
+
+  // ── Imprimir Ficha Maestra ─────────────────────────────────
+  const printFichaMaestra = () => {
+    if (!viewEvt) return
+    const totalIng    = viewIng.reduce((s, i) => s + (i.monto ?? 0), 0)
+    const totalGastos = viewOps.reduce((s, o) => s + (o.monto ?? 0), 0)
+    const utilidad    = totalIng - totalGastos
+    const tipo        = viewEvt.cat_tipos_evento
+    const fmtD = (s?: string | null) => s ? new Date(s + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : '—'
+    const v    = (x: string | number | null | undefined) => x ?? '—'
+    const yn   = (x: boolean | null | undefined) => x ? '✓ Sí' : '✗ No'
+
+    const montItems: [string, boolean | undefined][] = [
+      ['Carpas', viewEvt.montaje_carpas], ['Escenario', viewEvt.montaje_escenario],
+      ['Pista de baile', viewEvt.montaje_pista_baile], ['Mesas y sillas', viewEvt.montaje_mesas_sillas],
+      ['Iluminación', viewEvt.montaje_iluminacion], ['Audio', viewEvt.montaje_audio],
+      ['Pantallas', viewEvt.montaje_pantallas], ['Generador', viewEvt.montaje_generador],
+    ]
+    const chkItems: [string, boolean | undefined][] = [
+      ['Contrato firmado', viewEvt.chk_contrato_firmado],
+      ['Pago de anticipo recibido', viewEvt.chk_anticipo_pagado],
+      ['Layout autorizado', viewEvt.chk_layout_autorizado],
+      ['Montaje concluido', viewEvt.chk_montaje_concluido],
+      ['Revisión final operativa', viewEvt.chk_revision_final],
+    ]
+    const win = window.open('', '_blank', 'width=900,height=1150')
+    if (!win) return
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Ficha Maestra — ${viewEvt.folio}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e1e1e; background: #fff; padding: 32px; }
+.header { background: linear-gradient(135deg, #7e22ce, #a855f7); color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 22px; }
+.header h1 { font-size: 20px; font-weight: 800; }
+.header .sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+.header .folio { font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 6px; font-family: monospace; }
+.sec { margin-bottom: 18px; page-break-inside: avoid; }
+.sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #7e22ce; border-bottom: 2px solid #e9d5ff; padding-bottom: 4px; margin-bottom: 10px; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #9333ea; display: block; margin-bottom: 2px; }
+.f span { font-size: 12px; }
+.full { grid-column: 1 / -1; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.badge { font-size: 10px; padding: 3px 10px; border-radius: 10px; font-weight: 600; }
+.by { background:#ecfdf5; color:#15803d; border:1px solid #bbf7d0; }
+.bn { background:#f9fafb; color:#94a3b8; border:1px solid #e2e8f0; }
+.chk { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; margin-bottom:4px; font-size:12px; }
+.chk.done { background:#faf5ff; border:1px solid #e9d5ff; }
+.chk.pend { background:#f9fafb; border:1px solid #e2e8f0; color:#94a3b8; }
+.kpis { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
+.kpi { padding:11px 14px; border-radius:8px; }
+.kpi .lbl { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px; }
+.kpi .val { font-size:18px; font-weight:800; }
+.tw { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-top:10px; }
+table { width:100%; border-collapse:collapse; font-size:11px; }
+th { background:#f8fafc; padding:6px 10px; text-align:left; font-weight:700; font-size:9px; text-transform:uppercase; letter-spacing:.05em; color:#64748b; }
+td { padding:5px 10px; border-top:1px solid #f1f5f9; }
+.sig td { height:52px; vertical-align:top; padding:5px 10px; color:#bbb; font-size:10px; }
+@media print { body { padding: 16px; } .sec { page-break-inside: avoid; } }
+</style></head><body>
+<div class="header">
+  <h1>Ficha Maestra de Evento</h1>
+  <div class="sub">Operación Integral · Planeación · Ejecución · Cierre</div>
+  <div class="folio">${viewEvt.folio} · ${viewEvt.status}${tipo ? ' · ' + tipo.nombre : ''}</div>
+</div>
+
+<div class="sec">
+  <div class="sec-title">Información General del Evento</div>
+  <div class="g2">
+    <div class="f full"><label>Nombre Oficial del Evento</label><span>${v(viewEvt.nombre)}</span></div>
+    <div class="f"><label>Tipo de Evento</label><span>${tipo?.nombre ?? '—'}</span></div>
+    <div class="f"><label>Lugar / Salón</label><span>${viewEvt.cat_lugares?.nombre ?? '—'}</span></div>
+    <div class="f"><label>Fecha</label><span>${fmtD(viewEvt.fecha_inicio)}${viewEvt.fecha_fin && viewEvt.fecha_fin !== viewEvt.fecha_inicio ? ' → ' + fmtD(viewEvt.fecha_fin) : ''}</span></div>
+    <div class="f"><label>Horario</label><span>${v(viewEvt.hora_inicio)}${viewEvt.hora_fin ? ' – ' + viewEvt.hora_fin : ''}</span></div>
+    <div class="f"><label>N° Estimado de Asistentes</label><span>${v(viewEvt.num_asistentes)}</span></div>
+    <div class="f"><label>Cliente / Contratante</label><span>${v(viewEvt.cliente_nombre)}</span></div>
+    <div class="f"><label>Contacto</label><span>${[viewEvt.cliente_telefono, viewEvt.cliente_email].filter(Boolean).join(' · ') || '—'}</span></div>
+    <div class="f"><label>Responsable Operativo</label><span>${v(viewEvt.responsable)}</span></div>
+    <div class="f"><label>Folio / Status</label><span>${viewEvt.folio} — ${viewEvt.status}</span></div>
+  </div>
+</div>
+${viewEvt.objetivo || viewEvt.riesgos_operativos ? `
+<div class="sec">
+  <div class="sec-title">Resumen Ejecutivo Operativo</div>
+  <div class="g2">
+    ${viewEvt.objetivo ? `<div class="f full"><label>Objetivo del Evento</label><span>${viewEvt.objetivo}</span></div>` : ''}
+    ${viewEvt.riesgos_operativos ? `<div class="f full"><label>Riesgos Operativos</label><span>${viewEvt.riesgos_operativos}</span></div>` : ''}
+  </div>
+</div>` : ''}
+<div class="sec">
+  <div class="sec-title">Infraestructura y Montajes</div>
+  <div class="badges">${montItems.map(([l, val]) => `<span class="badge ${val ? 'by' : 'bn'}">${val ? '✓' : '–'} ${l}</span>`).join('')}</div>
+  ${viewEvt.montaje_notas ? `<div class="f" style="margin-top:8px"><label>Notas de montaje</label><span>${viewEvt.montaje_notas}</span></div>` : ''}
+</div>
+<div class="sec">
+  <div class="sec-title">Seguridad y Control Operativo</div>
+  <div class="g2">
+    ${viewEvt.seg_guardias ? `<div class="f"><label>Guardias intramuros</label><span>${viewEvt.seg_guardias}</span></div>` : ''}
+    ${viewEvt.seg_control_accesos ? `<div class="f"><label>Control de accesos</label><span>${viewEvt.seg_control_accesos}</span></div>` : ''}
+  </div>
+  <div class="badges">
+    <span class="badge ${viewEvt.seg_paramedicos ? 'by' : 'bn'}">${yn(viewEvt.seg_paramedicos)} Paramédicos</span>
+    <span class="badge ${viewEvt.seg_ambulancia ? 'by' : 'bn'}">${yn(viewEvt.seg_ambulancia)} Ambulancia</span>
+    <span class="badge ${viewEvt.seg_valet_parking ? 'by' : 'bn'}">${yn(viewEvt.seg_valet_parking)} Valet Parking</span>
+  </div>
+</div>
+${viewEvt.ayb_banquetero || viewEvt.ayb_tipo_servicio || viewEvt.ayb_num_comensales ? `
+<div class="sec">
+  <div class="sec-title">Alimentos y Bebidas</div>
+  <div class="g2">
+    ${viewEvt.ayb_banquetero ? `<div class="f"><label>Banquetero</label><span>${viewEvt.ayb_banquetero}</span></div>` : ''}
+    ${viewEvt.ayb_tipo_servicio ? `<div class="f"><label>Tipo de servicio</label><span>${viewEvt.ayb_tipo_servicio}</span></div>` : ''}
+    ${viewEvt.ayb_num_comensales ? `<div class="f"><label>N° de comensales</label><span>${viewEvt.ayb_num_comensales}</span></div>` : ''}
+  </div>
+  <div class="badges">
+    <span class="badge ${viewEvt.ayb_barra_libre ? 'by' : 'bn'}">${yn(viewEvt.ayb_barra_libre)} Barra libre</span>
+    <span class="badge ${viewEvt.ayb_permisos_sanitarios ? 'by' : 'bn'}">${yn(viewEvt.ayb_permisos_sanitarios)} Permisos sanitarios</span>
+  </div>
+</div>` : ''}
+${viewEvt.golf_tipo_torneo || viewEvt.golf_num_jugadores ? `
+<div class="sec">
+  <div class="sec-title">Eventos de Golf</div>
+  <div class="g2">
+    ${viewEvt.golf_tipo_torneo ? `<div class="f"><label>Tipo de torneo</label><span>${viewEvt.golf_tipo_torneo}</span></div>` : ''}
+    ${viewEvt.golf_num_jugadores ? `<div class="f"><label>N° de jugadores</label><span>${viewEvt.golf_num_jugadores}</span></div>` : ''}
+    ${viewEvt.golf_tee_times ? `<div class="f"><label>Tee times</label><span>${viewEvt.golf_tee_times}</span></div>` : ''}
+    ${viewEvt.golf_caddies ? `<div class="f"><label>Caddies requeridos</label><span>${viewEvt.golf_caddies}</span></div>` : ''}
+    ${viewEvt.golf_carritos ? `<div class="f"><label>Carritos requeridos</label><span>${viewEvt.golf_carritos}</span></div>` : ''}
+  </div>
+</div>` : ''}
+${viewEvt.hip_tipo_evento || viewEvt.hip_num_caballos ? `
+<div class="sec">
+  <div class="sec-title">Eventos Ecuestres</div>
+  <div class="g2">
+    ${viewEvt.hip_tipo_evento ? `<div class="f"><label>Tipo de evento ecuestre</label><span>${viewEvt.hip_tipo_evento}</span></div>` : ''}
+    ${viewEvt.hip_num_caballos ? `<div class="f"><label>N° de caballos</label><span>${viewEvt.hip_num_caballos}</span></div>` : ''}
+    ${viewEvt.hip_caballerizas ? `<div class="f"><label>Caballerizas</label><span>${viewEvt.hip_caballerizas}</span></div>` : ''}
+    ${viewEvt.hip_veterinario ? `<div class="f"><label>Veterinario</label><span>${viewEvt.hip_veterinario}</span></div>` : ''}
+    ${viewEvt.hip_trailers ? `<div class="f"><label>Área de trailers</label><span>${viewEvt.hip_trailers}</span></div>` : ''}
+  </div>
+</div>` : ''}
+<div class="sec">
+  <div class="sec-title">Checklist Operativo</div>
+  ${chkItems.map(([l, val]) => `<div class="chk ${val ? 'done' : 'pend'}"><span style="font-size:14px">${val ? '✅' : '⬜'}</span><span>${l}</span>${val ? '<span style="margin-left:auto;font-size:10px;color:#7e22ce;font-weight:700">Completado</span>' : ''}</div>`).join('')}
+</div>
+<div class="sec">
+  <div class="sec-title">Información Financiera</div>
+  <div class="kpis">
+    <div class="kpi" style="background:#f0fdf4"><div class="lbl" style="color:#166534">Total Ingresos</div><div class="val" style="color:#16a34a">$${totalIng.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#64748b">${viewIng.length} pago(s)</div></div>
+    <div class="kpi" style="background:#fef2f2"><div class="lbl" style="color:#991b1b">Total Gastos</div><div class="val" style="color:#dc2626">$${totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#64748b">${viewOps.length} OP(s)</div></div>
+    <div class="kpi" style="background:${utilidad >= 0 ? '#eff6ff' : '#fef2f2'}"><div class="lbl" style="color:${utilidad >= 0 ? '#1e40af' : '#991b1b'}">Utilidad</div><div class="val" style="color:${utilidad >= 0 ? '#2563eb' : '#dc2626'}">$${utilidad.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div></div>
+  </div>
+  ${viewIng.length > 0 ? `<div class="tw"><table><thead><tr><th>Folio</th><th>Descripción</th><th>Forma de pago</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead><tbody>${viewIng.map(i => `<tr><td style="font-family:monospace;color:#7e22ce">${i.folio}</td><td>${i.descripcion}</td><td>${i.forma_pago}</td><td>${new Date(i.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX')}</td><td style="text-align:right;font-weight:600">$${i.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
+  ${viewOps.length > 0 ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Folio</th><th>Concepto</th><th>Proveedor</th><th>Status</th><th style="text-align:right">Monto</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${viewOps.map(o => `<tr><td style="font-family:monospace;color:#16a34a">${o.folio}</td><td>${o.concepto}</td><td>${o.id_proveedor_fk ? (provMap[o.id_proveedor_fk] ?? '—') : '—'}</td><td>${o.status}</td><td style="text-align:right;font-weight:600">$${o.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td style="text-align:right;color:${o.saldo > 0 ? '#dc2626' : '#16a34a'}">$${o.saldo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
+</div>
+${viewEvt.post_incidencias || viewEvt.post_evaluacion || viewEvt.post_conclusion ? `
+<div class="sec">
+  <div class="sec-title">Reporte Posterior al Evento</div>
+  <div class="g2">
+    ${viewEvt.post_incidencias ? `<div class="f full"><label>Incidencias Operativas</label><span>${viewEvt.post_incidencias}</span></div>` : ''}
+    ${viewEvt.post_danos ? `<div class="f full"><label>Daños o Afectaciones</label><span>${viewEvt.post_danos}</span></div>` : ''}
+    ${viewEvt.post_evaluacion ? `<div class="f"><label>Evaluación Operativa</label><span>${viewEvt.post_evaluacion}</span></div>` : ''}
+    ${viewEvt.post_conclusion ? `<div class="f full"><label>Conclusión Operativa</label><span>${viewEvt.post_conclusion}</span></div>` : ''}
+  </div>
+</div>` : ''}
+${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div><p style="font-size:12px;color:#475569">${viewEvt.notas}</p></div>` : ''}
+<div class="sec">
+  <div class="sec-title">Firmas de Responsabilidad</div>
+  <div class="tw"><table class="sig"><thead><tr><th>Área</th><th style="width:200px">Nombre</th><th style="width:160px">Firma</th><th style="width:110px">Fecha</th></tr></thead><tbody>
+    <tr><td>Cliente / Contratante</td><td></td><td></td><td></td></tr>
+    <tr><td>Comercial</td><td></td><td></td><td></td></tr>
+    <tr><td>Operaciones</td><td></td><td></td><td></td></tr>
+    <tr><td>Dirección</td><td></td><td></td><td></td></tr>
+  </tbody></table></div>
+</div>
+<div style="text-align:center;font-size:9px;color:#94a3b8;margin-top:20px;padding-top:10px;border-top:1px solid #e2e8f0">
+  Generado: ${new Date().toLocaleString('es-MX')} · Club Balvanera · Sistema Domusone
+</div>
+</body></html>`)
+    win.document.close()
+    setTimeout(() => { win.focus(); win.print() }, 400)
+  }
+
   // ── Render ─────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
@@ -617,12 +919,14 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
           onClose={() => setModal(false)}
           tabs={[
             { key: 'info',      label: 'Información', icon: Star },
+            { key: 'operacion', label: 'Operación',   icon: Settings },
+            { key: 'checklist', label: 'Checklist',   icon: ClipboardCheck },
             { key: 'ingresos',  label: 'Ingresos',    icon: DollarSign, badge: editEvt ? ingresos.length || undefined : undefined, disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
             { key: 'gastos',    label: 'Gastos / OPs', icon: ShoppingBag, badge: editEvt ? ops.length || undefined : undefined,    disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
           ]}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          footer={activeTab === 'info' ? (
+          footer={(['info','operacion','checklist'] as string[]).includes(activeTab) ? (
             <>
               <button className="btn-ghost" onClick={() => setModal(false)} style={{ fontSize: 13 }}>Cancelar</button>
               <button className="btn-primary" onClick={saveEvento} disabled={saving} style={{ fontSize: 13 }}>
@@ -720,6 +1024,203 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
                 <textarea className="input" value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))}
                   rows={3} style={{ fontSize: 13, width: '100%', resize: 'vertical' }} />
               </div>
+            </div>
+          )}
+
+          {/* ── TAB OPERACIÓN ── */}
+          {activeTab === 'operacion' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* Resumen Ejecutivo */}
+              <FmSection title="Resumen Ejecutivo" color="#7e22ce">
+                <FmGrid2>
+                  <FmFull label="Objetivo del evento">
+                    <textarea className="input" value={form.objetivo} onChange={e => setForm(f => ({ ...f, objetivo: e.target.value }))} rows={2} style={taSt} placeholder="Describir el objetivo principal del evento…" />
+                  </FmFull>
+                  <FmFull label="Riesgos operativos">
+                    <textarea className="input" value={form.riesgos_operativos} onChange={e => setForm(f => ({ ...f, riesgos_operativos: e.target.value }))} rows={2} style={taSt} placeholder="Posibles riesgos o contingencias…" />
+                  </FmFull>
+                </FmGrid2>
+              </FmSection>
+
+              {/* Infraestructura y Montajes */}
+              <FmSection title="Infraestructura y Montajes" color="#0f766e">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                  {([
+                    ['montaje_carpas','Carpas'], ['montaje_escenario','Escenario'],
+                    ['montaje_pista_baile','Pista de baile'], ['montaje_mesas_sillas','Mesas y sillas'],
+                    ['montaje_iluminacion','Iluminación'], ['montaje_audio','Audio'],
+                    ['montaje_pantallas','Pantallas'], ['montaje_generador','Generador eléctrico'],
+                  ] as [string, string][]).map(([k, label]) => (
+                    <label key={k} style={chkBadge((form as any)[k], '#0f766e')}>
+                      <input type="checkbox" checked={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#0f766e' }} />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                <div>
+                  <label style={lblSt}>Notas de montaje</label>
+                  <textarea className="input" value={form.montaje_notas} onChange={e => setForm(f => ({ ...f, montaje_notas: e.target.value }))} rows={2} style={taSt} />
+                </div>
+              </FmSection>
+
+              {/* Seguridad */}
+              <FmSection title="Seguridad y Control Operativo" color="#dc2626">
+                <FmGrid2>
+                  <div>
+                    <label style={lblSt}>Guardias intramuros</label>
+                    <input className="input" value={form.seg_guardias} onChange={e => setForm(f => ({ ...f, seg_guardias: e.target.value }))} placeholder="Ej: 4 guardias + supervisor" style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Control de accesos</label>
+                    <input className="input" value={form.seg_control_accesos} onChange={e => setForm(f => ({ ...f, seg_control_accesos: e.target.value }))} placeholder="Ej: Lista + pulseras" style={inpSt} />
+                  </div>
+                </FmGrid2>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+                  {([['seg_paramedicos','Paramédicos'],['seg_ambulancia','Ambulancia'],['seg_valet_parking','Valet Parking']] as [string, string][]).map(([k, label]) => (
+                    <label key={k} style={chkBadge((form as any)[k], '#dc2626')}>
+                      <input type="checkbox" checked={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#dc2626' }} />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </FmSection>
+
+              {/* Alimentos y Bebidas */}
+              <FmSection title="Alimentos y Bebidas" color="#d97706">
+                <FmGrid2>
+                  <div>
+                    <label style={lblSt}>Banquetero / Proveedor</label>
+                    <input className="input" value={form.ayb_banquetero} onChange={e => setForm(f => ({ ...f, ayb_banquetero: e.target.value }))} style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Tipo de servicio</label>
+                    <select className="input" value={form.ayb_tipo_servicio} onChange={e => setForm(f => ({ ...f, ayb_tipo_servicio: e.target.value }))} style={inpSt}>
+                      <option value="">— Seleccionar —</option>
+                      {['Buffet','Servido','Cócktail','Estaciones','Desayuno','Brunch','Box lunch'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lblSt}>N° de comensales</label>
+                    <input className="input" type="number" value={form.ayb_num_comensales} onChange={e => setForm(f => ({ ...f, ayb_num_comensales: e.target.value ? Number(e.target.value) : '' }))} style={inpSt} />
+                  </div>
+                </FmGrid2>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+                  {([['ayb_barra_libre','Barra libre'],['ayb_permisos_sanitarios','Permisos sanitarios']] as [string, string][]).map(([k, label]) => (
+                    <label key={k} style={chkBadge((form as any)[k], '#d97706')}>
+                      <input type="checkbox" checked={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#d97706' }} />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </FmSection>
+
+              {/* Golf */}
+              <FmSection title="Datos de Golf" color="#166534">
+                <FmGrid2>
+                  <div>
+                    <label style={lblSt}>Tipo de torneo</label>
+                    <input className="input" value={form.golf_tipo_torneo} onChange={e => setForm(f => ({ ...f, golf_tipo_torneo: e.target.value }))} placeholder="Medal, Stableford, Texas…" style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>N° de jugadores</label>
+                    <input className="input" type="number" value={form.golf_num_jugadores} onChange={e => setForm(f => ({ ...f, golf_num_jugadores: e.target.value ? Number(e.target.value) : '' }))} style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Tee times</label>
+                    <input className="input" value={form.golf_tee_times} onChange={e => setForm(f => ({ ...f, golf_tee_times: e.target.value }))} placeholder="Ej: 07:00 – 09:30" style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Caddies requeridos</label>
+                    <input className="input" type="number" value={form.golf_caddies} onChange={e => setForm(f => ({ ...f, golf_caddies: e.target.value ? Number(e.target.value) : '' }))} style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Carritos requeridos</label>
+                    <input className="input" type="number" value={form.golf_carritos} onChange={e => setForm(f => ({ ...f, golf_carritos: e.target.value ? Number(e.target.value) : '' }))} style={inpSt} />
+                  </div>
+                </FmGrid2>
+              </FmSection>
+
+              {/* Ecuestre */}
+              <FmSection title="Datos Ecuestres" color="#92400e">
+                <FmGrid2>
+                  <div>
+                    <label style={lblSt}>Tipo de evento ecuestre</label>
+                    <input className="input" value={form.hip_tipo_evento} onChange={e => setForm(f => ({ ...f, hip_tipo_evento: e.target.value }))} placeholder="Concurso, Doma, Polo…" style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>N° de caballos</label>
+                    <input className="input" type="number" value={form.hip_num_caballos} onChange={e => setForm(f => ({ ...f, hip_num_caballos: e.target.value ? Number(e.target.value) : '' }))} style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Caballerizas requeridas</label>
+                    <input className="input" value={form.hip_caballerizas} onChange={e => setForm(f => ({ ...f, hip_caballerizas: e.target.value }))} style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Veterinario</label>
+                    <input className="input" value={form.hip_veterinario} onChange={e => setForm(f => ({ ...f, hip_veterinario: e.target.value }))} style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Área de trailers</label>
+                    <input className="input" value={form.hip_trailers} onChange={e => setForm(f => ({ ...f, hip_trailers: e.target.value }))} style={inpSt} />
+                  </div>
+                </FmGrid2>
+              </FmSection>
+
+            </div>
+          )}
+
+          {/* ── TAB CHECKLIST ── */}
+          {activeTab === 'checklist' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* Checklist operativo */}
+              <FmSection title="Checklist Operativo" color="#7e22ce">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {([
+                    ['chk_contrato_firmado',  'Contrato firmado'],
+                    ['chk_anticipo_pagado',   'Pago de anticipo recibido'],
+                    ['chk_layout_autorizado', 'Layout autorizado'],
+                    ['chk_montaje_concluido', 'Montaje concluido'],
+                    ['chk_revision_final',    'Revisión final operativa'],
+                  ] as [string, string][]).map(([k, label]) => {
+                    const checked = !!(form as any)[k]
+                    return (
+                      <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: '1px solid', borderColor: checked ? '#7e22ce' : '#e2e8f0', background: checked ? '#faf5ff' : '#fff', cursor: 'pointer', userSelect: 'none' }}>
+                        <input type="checkbox" checked={checked} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#7e22ce', width: 16, height: 16, flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#7e22ce' : '#475569' }}>{label}</span>
+                        {checked && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#7e22ce', fontWeight: 700 }}>✓ Completado</span>}
+                      </label>
+                    )
+                  })}
+                </div>
+                <div style={{ marginTop: 10, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
+                  {['chk_contrato_firmado','chk_anticipo_pagado','chk_layout_autorizado','chk_montaje_concluido','chk_revision_final'].filter(k => (form as any)[k]).length}/5 ítems completados
+                </div>
+              </FmSection>
+
+              {/* Reporte Posterior */}
+              <FmSection title="Reporte Posterior al Evento" color="#0f766e">
+                <FmGrid2>
+                  <FmFull label="Incidencias operativas">
+                    <textarea className="input" value={form.post_incidencias} onChange={e => setForm(f => ({ ...f, post_incidencias: e.target.value }))} rows={3} style={taSt} placeholder="Describe incidencias ocurridas durante el evento…" />
+                  </FmFull>
+                  <FmFull label="Daños o afectaciones">
+                    <textarea className="input" value={form.post_danos} onChange={e => setForm(f => ({ ...f, post_danos: e.target.value }))} rows={2} style={taSt} placeholder="Daños a instalaciones, equipos, etc.…" />
+                  </FmFull>
+                  <div>
+                    <label style={lblSt}>Evaluación operativa</label>
+                    <select className="input" value={form.post_evaluacion} onChange={e => setForm(f => ({ ...f, post_evaluacion: e.target.value }))} style={inpSt}>
+                      <option value="">— Seleccionar —</option>
+                      {['Excelente','Buena','Regular','Deficiente'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <FmFull label="Conclusión operativa">
+                    <textarea className="input" value={form.post_conclusion} onChange={e => setForm(f => ({ ...f, post_conclusion: e.target.value }))} rows={3} style={taSt} placeholder="Resumen general y aprendizajes…" />
+                  </FmFull>
+                </FmGrid2>
+              </FmSection>
+
             </div>
           )}
 
@@ -965,7 +1466,14 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
             icono={Eye}
             onClose={() => setViewEvt(null)}
             maxWidth={760}
-            footer={<button className="btn-secondary" onClick={() => setViewEvt(null)}>Cerrar</button>}
+            footer={
+              <div style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button className="btn-primary" onClick={printFichaMaestra} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#7e22ce', fontSize: 13 }}>
+                  <Printer size={13} /> Imprimir Ficha Maestra
+                </button>
+                <button className="btn-secondary" onClick={() => setViewEvt(null)}>Cerrar</button>
+              </div>
+            }
           >
             <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
