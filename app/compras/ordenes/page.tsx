@@ -514,6 +514,9 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
     await dbComp.from('ordenes_pago').insert({
       folio, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
       id_almacen_fk: oc.id_almacen_entrega_fk ?? null,
+      id_centro_costo_fk: oc.id_centro_costo_fk ?? null,
+      id_area_fk: oc.id_area_fk ?? null,
+      id_frente_fk: oc.id_frente_fk ?? null,
       monto: oc.total, forma_pago: opForm.forma_pago,
       fecha_vencimiento: opForm.fecha_vencimiento || null,
       concepto: opForm.concepto, notas: opForm.notas || null, status: 'Pendiente Auth',
