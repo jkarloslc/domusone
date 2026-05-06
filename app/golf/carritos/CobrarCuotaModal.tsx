@@ -4,6 +4,7 @@ import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Save, Loader, CheckCircle, Printer, Receipt, Plus, Trash2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 type Cuota = {
   id: number
@@ -42,8 +43,9 @@ type Props = {
 }
 
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-const hoy  = new Date().toISOString().split('T')[0]
-const vencida = (f: string | null) => !!f && f < hoy
+// hoy como fecha local (no UTC) — se recalcula en tiempo de ejecución
+const hoyLocal = () => new Date().toLocaleDateString('en-CA')
+const vencida = (f: string | null) => !!f && f < hoyLocal()
 
 const TIPOS_LABEL: Record<string, string> = {
   INSCRIPCION:     'Inscripción',
@@ -298,8 +300,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
           .select('folio_dia')
           .eq('id_centro_fk', centroSel.id)
-          .gte('fecha', `${fechaPago}T00:00:00`)
-          .lte('fecha', `${fechaPago}T23:59:59`)
+          .gte('fecha', inicioDelDia(fechaPago))
+          .lte('fecha', finDelDia(fechaPago))
           .order('folio_dia', { ascending: false })
           .limit(1)
         folioDia = maxFolio && maxFolio.length > 0 ? ((maxFolio[0] as { folio_dia: number }).folio_dia + 1) : 1

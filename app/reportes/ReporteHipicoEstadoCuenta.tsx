@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { PrintBar } from './utils'
+import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 type Arrendatario = {
   id: number
@@ -81,8 +82,8 @@ export default function ReporteHipicoEstadoCuenta() {
       .from('ctrl_cargos')
       .select('id, descripcion, mes_aplicacion, monto, saldo, fecha_vencimiento, status, created_at')
       .eq('id_arrendatario_fk', idArr)
-      .gte('created_at', fechaDesde)
-      .lte('created_at', fechaHasta + 'T23:59:59')
+      .gte('created_at', inicioDelDia(fechaDesde))
+      .lte('created_at', finDelDia(fechaHasta))
       .order('created_at', { ascending: true })
 
     // Pagos del período

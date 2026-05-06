@@ -3,8 +3,10 @@ import { useState, useEffect } from 'react'
 import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Save, Loader, AlertTriangle, CheckCircle } from 'lucide-react'
+import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 type FormaPagoResumen = { id_forma_fk: number; forma_nombre: string; monto: number }
+type DetalleProd     = { concepto: string; cantidad: number; monto: number }
 type CentroMap = { id_centro_ingreso_fk: number; activo: boolean }
 type CentroIngreso = { id: number }
 type Props = {
@@ -25,18 +27,18 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
   const [success,    setSuccess]    = useState(false)
 
   // Datos del preview
-  const [numVentas,     setNumVentas]     = useState(0)
-  const [numCanceladas, setNumCanceladas] = useState(0)
-  const [totalVentas,   setTotalVentas]   = useState(0)
+  const [numVentas,      setNumVentas]      = useState(0)
+  const [numCanceladas,  setNumCanceladas]  = useState(0)
+  const [totalVentas,    setTotalVentas]    = useState(0)
   const [totalCancelado, setTotalCancelado] = useState(0)
-  const [formasPago,    setFormasPago]    = useState<FormaPagoResumen[]>([])
-  const [fechaInicio,   setFechaInicio]   = useState('')
-  const [fechaFin,      setFechaFin]      = useState('')
-  const [notas,         setNotas]         = useState('')
+  const [formasPago,     setFormasPago]     = useState<FormaPagoResumen[]>([])
+  const [detalleProd,    setDetalleProd]    = useState<DetalleProd[]>([])
+  const [fechaInicio,    setFechaInicio]    = useState('')
+  const [fechaFin,       setFechaFin]       = useState('')
+  const [notas,          setNotas]          = useState('')
 
-  // Rango default = hoy
-  const hoy = new Date()
-  const hoyStr = hoy.toISOString().split('T')[0]
+  // Rango default = HOY en zona horaria local (no UTC)
+  const hoyStr = fechaLocal()
   const [f1, setF1] = useState(hoyStr)
   const [f2, setF2] = useState(hoyStr)
 
@@ -57,18 +59,18 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
 
   const cargarPreview = async () => {
     setLoading(true)
-    // Ventas activas sin corte en el período
+    // Ventas sin corte en el período — usar límites en TZ local (no UTC crudo)
     const { data: ventasActivas } = await dbGolf.from('ctrl_ventas')
       .select('id, total, status')
       .eq('id_centro_fk', idCentro)
       .is('id_corte_fk', null)
-      .gte('fecha', f1 + 'T00:00:00')
-      .lte('fecha', f2 + 'T23:59:59')
+      .gte('fecha', inicioDelDia(f1))
+      .lte('fecha', finDelDia(f2))
 
-    const activas   = (ventasActivas ?? []).filter((v: any) => v.status === 'PAGADA')
+    const activas    = (ventasActivas ?? []).filter((v: any) => v.status === 'PAGADA')
     const canceladas = (ventasActivas ?? []).filter((v: any) => v.status === 'CANCELADA')
-    const totalAct  = activas.reduce((a: number, v: any) => a + (v.total ?? 0), 0)
-    const totalCanc = canceladas.reduce((a: number, v: any) => a + (v.total ?? 0), 0)
+    const totalAct   = activas.reduce((a: number, v: any) => a + (v.total ?? 0), 0)
+    const totalCanc  = canceladas.reduce((a: number, v: any) => a + (v.total ?? 0), 0)
 
     setNumVentas(activas.length)
     setNumCanceladas(canceladas.length)
@@ -77,21 +79,36 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
     setFechaInicio(f1)
     setFechaFin(f2)
 
-    // Desglose por forma de pago (solo ventas activas)
     if (activas.length > 0) {
       const ids = activas.map((v: any) => v.id)
+
+      // Desglose por forma de pago
       const { data: pagos } = await dbGolf.from('ctrl_ventas_pagos')
         .select('id_forma_fk, forma_nombre, monto')
         .in('id_venta_fk', ids)
-      const map: Record<string, { id_forma_fk: number; forma_nombre: string; monto: number }> = {}
+      const mapFP: Record<string, FormaPagoResumen> = {}
       for (const p of pagos ?? []) {
         const k = String(p.id_forma_fk)
-        if (!map[k]) map[k] = { id_forma_fk: p.id_forma_fk, forma_nombre: p.forma_nombre, monto: 0 }
-        map[k].monto += p.monto
+        if (!mapFP[k]) mapFP[k] = { id_forma_fk: p.id_forma_fk, forma_nombre: p.forma_nombre, monto: 0 }
+        mapFP[k].monto += p.monto
       }
-      setFormasPago(Object.values(map))
+      setFormasPago(Object.values(mapFP))
+
+      // Desglose por producto / servicio
+      const { data: dets } = await dbGolf.from('ctrl_ventas_det')
+        .select('concepto, cantidad, total')
+        .in('id_venta_fk', ids)
+      const mapProd: Record<string, DetalleProd> = {}
+      for (const d of dets ?? []) {
+        const k = (d.concepto ?? '').trim()
+        if (!mapProd[k]) mapProd[k] = { concepto: k, cantidad: 0, monto: 0 }
+        mapProd[k].cantidad += d.cantidad ?? 1
+        mapProd[k].monto    += d.total    ?? 0
+      }
+      setDetalleProd(Object.values(mapProd).sort((a, b) => b.monto - a.monto))
     } else {
       setFormasPago([])
+      setDetalleProd([])
     }
 
     setLoading(false)
@@ -107,8 +124,8 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
     const { data: corte, error: e1 } = await dbGolf.from('ctrl_cortes_caja').insert({
       id_centro_fk:    idCentro,
       centro_nombre:   nombreCentro,
-      fecha_inicio:    f1 + 'T00:00:00',
-      fecha_fin:       f2 + 'T23:59:59',
+      fecha_inicio:    inicioDelDia(f1),
+      fecha_fin:       finDelDia(f2),
       fecha_corte:     new Date().toISOString(),
       num_ventas:      numVentas,
       num_canceladas:  numCanceladas,
@@ -133,8 +150,8 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
       .select('id')
       .eq('id_centro_fk', idCentro)
       .is('id_corte_fk', null)
-      .gte('fecha', f1 + 'T00:00:00')
-      .lte('fecha', f2 + 'T23:59:59')
+      .gte('fecha', inicioDelDia(f1))
+      .lte('fecha', finDelDia(f2))
 
     if (ventasActivas && ventasActivas.length > 0) {
       const ids = ventasActivas.map((v: any) => v.id)
@@ -273,6 +290,45 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
                       <span style={{ color: '#1e293b' }}>Total neto</span>
                       <span style={{ color: '#059669' }}>{fmt$(totalVentas)}</span>
                     </div>
+                  </div>
+                </>
+              )}
+
+              {detalleProd.length > 0 && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, marginTop: 12 }}>
+                    Detalle de productos / servicios ({detalleProd.length})
+                  </div>
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#f1f5f9' }}>
+                          <th style={{ padding: '6px 10px', textAlign: 'left',  color: '#475569', fontWeight: 600 }}>Concepto</th>
+                          <th style={{ padding: '6px 8px',  textAlign: 'right', color: '#475569', fontWeight: 600, whiteSpace: 'nowrap' }}>Cant.</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right', color: '#475569', fontWeight: 600 }}>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detalleProd.map((d, i) => (
+                          <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '5px 10px', color: '#1e293b' }}>{d.concepto || '(sin concepto)'}</td>
+                            <td style={{ padding: '5px 8px',  color: '#64748b', textAlign: 'right' }}>{d.cantidad}</td>
+                            <td style={{ padding: '5px 10px', color: '#1e293b', fontWeight: 600, textAlign: 'right' }}>{fmt$(d.monto)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                          <td style={{ padding: '6px 10px', fontWeight: 700, color: '#1e293b' }}>Total</td>
+                          <td style={{ padding: '6px 8px',  fontWeight: 700, color: '#64748b', textAlign: 'right' }}>
+                            {detalleProd.reduce((a, d) => a + d.cantidad, 0)}
+                          </td>
+                          <td style={{ padding: '6px 10px', fontWeight: 700, color: '#059669', textAlign: 'right' }}>
+                            {fmt$(totalVentas)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
                 </>
               )}

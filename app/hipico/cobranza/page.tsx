@@ -6,6 +6,7 @@ import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clo
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
+import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 const PAGE_SIZE = 30
 
@@ -588,8 +589,8 @@ export default function CobranzaPage() {
       const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
         .select('folio_dia')
         .eq('id_centro_fk', centroHipico.id)
-        .gte('fecha', `${p.fecha_pago}T00:00:00`)
-        .lte('fecha', `${p.fecha_pago}T23:59:59`)
+        .gte('fecha', inicioDelDia(p.fecha_pago))
+        .lte('fecha', finDelDia(p.fecha_pago))
         .order('folio_dia', { ascending: false })
         .limit(1)
       const folioDia = maxFolio && maxFolio.length > 0 ? ((maxFolio[0] as { folio_dia: number }).folio_dia + 1) : 1
@@ -859,7 +860,7 @@ export default function CobranzaPage() {
       .insert({
         folio,
         id_arrendatario_fk: cobrarArr,
-        fecha_pago: new Date().toISOString().split('T')[0],
+        fecha_pago: fechaLocal(),
         monto_total: montoParcialHipVal,
         forma_pago: formasNombresHip,
         referencia: pagosOkHip[0]?.referencia || null,

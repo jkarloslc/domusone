@@ -7,6 +7,7 @@ import {
   ChevronRight, AlertTriangle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 // ── Helpers ────────────────────────────────────────────────────
 const fmt = (n: number) =>
@@ -29,14 +30,14 @@ const PERIODOS: { key: Periodo; label: string }[] = [
 
 function getRango(p: Periodo): { ini: string; fin: string } {
   const now  = new Date()
-  const hoy  = now.toISOString().slice(0, 10)
+  const hoy  = fechaLocal() // TZ local, no UTC
   if (p === 'hoy')    return { ini: hoy, fin: hoy }
   if (p === 'semana') {
     const d = new Date(now); d.setDate(d.getDate() - d.getDay())
-    return { ini: d.toISOString().slice(0, 10), fin: hoy }
+    return { ini: d.toLocaleDateString('en-CA'), fin: hoy }
   }
   if (p === 'mes') {
-    const ini = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+    const ini = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA')
     return { ini, fin: hoy }
   }
   return { ini: `${now.getFullYear()}-01-01`, fin: hoy }
@@ -118,7 +119,7 @@ export default function InicioPage() {
     // Egresos del período (OPs pagadas + en proceso)
     const egrQ = dbComp.from('ordenes_pago')
       .select('monto').neq('status', 'Cancelada')
-      .gte('created_at', ini + 'T00:00:00').lte('created_at', fin + 'T23:59:59')
+      .gte('created_at', inicioDelDia(ini)).lte('created_at', finDelDia(fin))
     // CXP pendiente
     const cxpQ = dbComp.from('ordenes_pago')
       .select('saldo, monto').neq('status', 'Cancelada').neq('status', 'Pagada')
@@ -156,7 +157,7 @@ export default function InicioPage() {
     const grafData = await Promise.all(meses.map(async m => {
       const [ig, eg] = await Promise.allSettled([
         dbCtrl.from('recibos_ingreso').select('monto_total').eq('status', 'Confirmado').gte('fecha', m.ini).lte('fecha', m.fin),
-        dbComp.from('ordenes_pago').select('monto').neq('status', 'Cancelada').gte('created_at', m.ini + 'T00:00:00').lte('created_at', m.fin + 'T23:59:59'),
+        dbComp.from('ordenes_pago').select('monto').neq('status', 'Cancelada').gte('created_at', inicioDelDia(m.ini)).lte('created_at', finDelDia(m.fin)),
       ])
       const ing = (ig.status === 'fulfilled' ? ig.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
       const egr = (eg.status === 'fulfilled' ? eg.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto ?? 0), 0)

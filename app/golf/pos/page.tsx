@@ -11,6 +11,7 @@ import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
 import CorteModal from './CorteModal'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
+import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number }
@@ -70,7 +71,7 @@ export default function POSPage() {
   const [busquedaV,      setBusquedaV]      = useState('')
   const [filtroStatus,   setFiltroStatus]   = useState('')
   const [filtroCentro,   setFiltroCentro]   = useState('')
-  const [filtroFecha,    setFiltroFecha]    = useState(new Date().toISOString().split('T')[0])
+  const [filtroFecha,    setFiltroFecha]    = useState(fechaLocal())
   const [expandidoV,     setExpandidoV]     = useState<number | null>(null)
 
   // Facturación POS
@@ -125,11 +126,11 @@ export default function POSPage() {
 
   // ── Stats del día ────────────────────────────────────────
   const fetchStats = useCallback(async () => {
-    const hoy = new Date().toISOString().split('T')[0]
+    const hoy = fechaLocal()
     const { data, error } = await dbGolf.from('ctrl_ventas')
       .select('id, total, status, id_corte_fk')
       .eq('status', 'PAGADA')
-      .gte('fecha', hoy + 'T00:00:00')
+      .gte('fecha', inicioDelDia(hoy))
     if (error) { console.error('[POS] fetchStats:', error); return }
     const rows = data ?? []
     setStatsHoy({
@@ -148,7 +149,7 @@ export default function POSPage() {
       .limit(200)
     if (filtroStatus)  q = q.eq('status', filtroStatus)
     if (filtroCentro)  q = q.eq('id_centro_fk', Number(filtroCentro))
-    if (filtroFecha)   q = q.gte('fecha', filtroFecha + 'T00:00:00').lte('fecha', filtroFecha + 'T23:59:59')
+    if (filtroFecha)   q = q.gte('fecha', inicioDelDia(filtroFecha)).lte('fecha', finDelDia(filtroFecha))
     const { data, error } = await q
     if (error) { console.error('[POS] fetchVentas:', error) }
     setVentas((data ?? []).map((v: any) => ({ ...v, cat_socios: null })) as Venta[])

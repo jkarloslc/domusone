@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
+import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Recibo = {
@@ -324,7 +325,7 @@ export default function RecibosPage() {
       if (!ventaId) {
         const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
           .select('folio_dia').eq('id_centro_fk', centroSel.id)
-          .gte('fecha', `${fechaPagoStr}T00:00:00`).lte('fecha', `${fechaPagoStr}T23:59:59`)
+          .gte('fecha', inicioDelDia(fechaPagoStr)).lte('fecha', finDelDia(fechaPagoStr))
           .order('folio_dia', { ascending: false }).limit(1)
         folioDia = maxFolio && maxFolio.length > 0 ? ((maxFolio[0] as any).folio_dia + 1) : 1
 

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbComp } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter } from 'lucide-react'
+import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 export default function ReporteTransferencias() {
   const [rows, setRows]         = useState<any[]>([])
@@ -34,8 +35,8 @@ export default function ReporteTransferencias() {
     if (filtroOrigen)  q = q.eq('id_almacen_origen',  Number(filtroOrigen))
     if (filtroDestino) q = q.eq('id_almacen_destino', Number(filtroDestino))
     if (filtroStatus)  q = q.eq('status', filtroStatus)
-    if (filtroDe)      q = q.gte('created_at', filtroDe + 'T00:00:00')
-    if (filtroA)       q = q.lte('created_at', filtroA  + 'T23:59:59')
+    if (filtroDe)      q = q.gte('created_at', inicioDelDia(filtroDe))
+    if (filtroA)       q = q.lte('created_at', finDelDia(filtroA))
 
     const { data } = await q
     setRows(data ?? [])

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Search, Plus, Minus, Trash2, ShoppingCart, Loader, CheckCircle, Printer } from 'lucide-react'
+import { fechaLocal, inicioDelDia } from '@/lib/dateUtils'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Producto = {
@@ -145,13 +146,13 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
     if (!canSave) return
     setSaving(true); setError('')
 
-    // Calcular folio_dia (MAX del día en el centro)
-    const hoy = new Date().toISOString().split('T')[0]
+    // Calcular folio_dia (MAX del día en el centro — usando TZ local)
+    const hoy = fechaLocal()
     const { data: maxFolio } = await dbGolf
       .from('ctrl_ventas')
       .select('folio_dia')
       .eq('id_centro_fk', idCentro)
-      .gte('fecha', hoy + 'T00:00:00')
+      .gte('fecha', inicioDelDia(hoy))
       .order('folio_dia', { ascending: false })
       .limit(1)
     const folioDia = maxFolio && maxFolio.length > 0 ? (maxFolio[0].folio_dia + 1) : 1

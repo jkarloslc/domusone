@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbComp } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, Search } from 'lucide-react'
+import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 export default function ReporteKardex() {
   const [rows, setRows]       = useState<any[]>([])
@@ -30,8 +31,8 @@ export default function ReporteKardex() {
     let q = dbComp.from('movimientos_inv').select('*').order('created_at', { ascending: false }).limit(500)
     if (filtroArt) q = q.eq('id_articulo_fk', Number(filtroArt))
     if (filtroAlm) q = q.eq('id_almacen_fk', Number(filtroAlm))
-    if (filtroDe)  q = q.gte('created_at', filtroDe + 'T00:00:00')
-    if (filtroA)   q = q.lte('created_at', filtroA + 'T23:59:59')
+    if (filtroDe)  q = q.gte('created_at', inicioDelDia(filtroDe))
+    if (filtroA)   q = q.lte('created_at', finDelDia(filtroA))
     const { data } = await q
     setRows(data ?? [])
 
