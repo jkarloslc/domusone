@@ -7,6 +7,7 @@ import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 type FormaPagoResumen = { id_forma_fk: number; forma_nombre: string; monto: number }
 type DetalleProd     = { concepto: string; cantidad: number; monto: number }
+type OperacionDia    = { id: number; folio_dia: number | null; fecha: string; nombre_cliente: string | null; status: string; total: number; usuario_crea: string | null }
 type CentroMap = { id_centro_ingreso_fk: number; activo: boolean }
 type CentroIngreso = { id: number }
 type Props = {
@@ -33,6 +34,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
   const [totalCancelado, setTotalCancelado] = useState(0)
   const [formasPago,     setFormasPago]     = useState<FormaPagoResumen[]>([])
   const [detalleProd,    setDetalleProd]    = useState<DetalleProd[]>([])
+  const [operacionesDia, setOperacionesDia] = useState<OperacionDia[]>([])
   const [fechaInicio,    setFechaInicio]    = useState('')
   const [fechaFin,       setFechaFin]       = useState('')
   const [notas,          setNotas]          = useState('')
@@ -61,7 +63,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
     setLoading(true)
     // Ventas sin corte en el período — usar límites en TZ local (no UTC crudo)
     const { data: ventasActivas } = await dbGolf.from('ctrl_ventas')
-      .select('id, total, status')
+      .select('id, folio_dia, fecha, nombre_cliente, status, total, usuario_crea')
       .eq('id_centro_fk', idCentro)
       .is('id_corte_fk', null)
       .gte('fecha', inicioDelDia(f1))
@@ -76,6 +78,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
     setNumCanceladas(canceladas.length)
     setTotalVentas(totalAct)
     setTotalCancelado(totalCanc)
+    setOperacionesDia(((ventasActivas ?? []) as OperacionDia[]).sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()))
     setFechaInicio(f1)
     setFechaFin(f2)
 
@@ -328,6 +331,51 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
                           </td>
                         </tr>
                       </tfoot>
+                    </table>
+                  </div>
+                </>
+              )}
+
+              {operacionesDia.length > 0 && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, marginTop: 12 }}>
+                    Detalle de operaciones del día ({operacionesDia.length})
+                  </div>
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#f1f5f9' }}>
+                          <th style={{ padding: '6px 10px', textAlign: 'left', color: '#475569', fontWeight: 600 }}>Folio</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left', color: '#475569', fontWeight: 600 }}>Hora</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left', color: '#475569', fontWeight: 600 }}>Cliente</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'center', color: '#475569', fontWeight: 600 }}>Status</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right', color: '#475569', fontWeight: 600 }}>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {operacionesDia.map((op) => (
+                          <tr key={op.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '5px 10px', color: '#1e293b', fontWeight: 600 }}>#{String(op.folio_dia ?? op.id).padStart(4, '0')}</td>
+                            <td style={{ padding: '5px 10px', color: '#64748b' }}>
+                              {new Date(op.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td style={{ padding: '5px 10px', color: '#1e293b' }}>{op.nombre_cliente ?? 'Publico General'}</td>
+                            <td style={{ padding: '5px 8px', textAlign: 'center' }}>
+                              <span style={{
+                                fontSize: 10,
+                                padding: '2px 7px',
+                                borderRadius: 20,
+                                background: op.status === 'PAGADA' ? '#dcfce7' : '#fef2f2',
+                                color: op.status === 'PAGADA' ? '#15803d' : '#dc2626',
+                                fontWeight: 700,
+                              }}>
+                                {op.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '5px 10px', color: '#1e293b', fontWeight: 600, textAlign: 'right' }}>{fmt$(op.total ?? 0)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
                     </table>
                   </div>
                 </>

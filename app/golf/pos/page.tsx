@@ -274,26 +274,81 @@ export default function POSPage() {
 
   // ── Imprimir corte de caja ────────────────────────────────
   const imprimirCorte = async (c: Corte) => {
-    // Cargar desglose de formas de pago
-    const { data: det } = await dbGolf.from('ctrl_cortes_caja_det')
-      .select('forma_nombre, monto').eq('id_corte_fk', c.id).order('monto', { ascending: false })
-    // Cargar cfg del POS
-    const { data: cfg } = await dbGolf.from('cfg_pos').select('*').single()
+    // Cargar datos base
+    const [{ data: det }, { data: cfg }, { data: ops }] = await Promise.all([
+      dbGolf.from('ctrl_cortes_caja_det')
+        .select('forma_nombre, monto')
+        .eq('id_corte_fk', c.id)
+        .order('monto', { ascending: false }),
+      dbGolf.from('cfg_pos').select('*').single(),
+      dbGolf.from('ctrl_ventas')
+        .select('id, folio_dia, fecha, nombre_cliente, status, total')
+        .eq('id_corte_fk', c.id)
+        .order('fecha', { ascending: true }),
+    ])
+
     const rs = (cfg as any)?.razon_social ?? 'Club de Golf Balvanera'
     const dir = (cfg as any)?.direccion ?? ''
     const tel = (cfg as any)?.telefono ?? ''
     const rfc = (cfg as any)?.rfc ?? ''
 
     const desglose = (det ?? []) as { forma_nombre: string; monto: number }[]
+    const operaciones = (ops ?? []) as { id: number; folio_dia: number | null; fecha: string; nombre_cliente: string | null; status: string; total: number }[]
+    const idsPagadas = operaciones.filter(o => o.status === 'PAGADA').map(o => o.id)
+
+    const { data: detOps } = idsPagadas.length > 0
+      ? await dbGolf.from('ctrl_ventas_det').select('concepto, cantidad, total').in('id_venta_fk', idsPagadas)
+      : { data: [] as any[] }
+
+    const mapProd: Record<string, { concepto: string; cantidad: number; monto: number }> = {}
+    for (const d of detOps ?? []) {
+      const concepto = (d.concepto ?? '').trim() || '(sin concepto)'
+      if (!mapProd[concepto]) mapProd[concepto] = { concepto, cantidad: 0, monto: 0 }
+      mapProd[concepto].cantidad += d.cantidad ?? 1
+      mapProd[concepto].monto += d.total ?? 0
+    }
+    const detalleProd = Object.values(mapProd).sort((a, b) => b.monto - a.monto)
+
     const fmt = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
     const fdt = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     const fd  = (d: string) => new Date(d).toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+    const hora = (d: string) => new Date(d).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+    const esc = (v: string | number | null | undefined) => String(v ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
 
     const filasDesglose = desglose.map(f => `
       <tr>
-        <td>${f.forma_nombre}</td>
+        <td>${esc(f.forma_nombre)}</td>
         <td class="right">${fmt(f.monto)}</td>
       </tr>`).join('')
+
+    const filasProductos = detalleProd.map((d) => `
+      <tr>
+        <td>${esc(d.concepto)}</td>
+        <td class="right">${d.cantidad}</td>
+        <td class="right">${fmt(d.monto)}</td>
+      </tr>`).join('')
+
+    const filasOps = operaciones.map((o) => `
+      <tr>
+        <td>#${String(o.folio_dia ?? o.id).padStart(4, '0')}</td>
+        <td>${hora(o.fecha)}</td>
+        <td>${esc(o.nombre_cliente ?? 'Publico General')}</td>
+        <td class="right">
+          <span class="status-badge ${o.status === 'PAGADA' ? 'status-ok' : 'status-cancel'}">${esc(o.status)}</span>
+        </td>
+        <td class="right">${fmt(o.total ?? 0)}</td>
+      </tr>`).join('')
+
+    const cantProd = detalleProd.reduce((a, d) => a + d.cantidad, 0)
+    const totalProd = detalleProd.reduce((a, d) => a + d.monto, 0)
+    const totalOps = operaciones.reduce((a, o) => a + (o.total ?? 0), 0)
+    const totalOpsPagadas = operaciones.filter(o => o.status === 'PAGADA').reduce((a, o) => a + (o.total ?? 0), 0)
+    const totalOpsCanceladas = operaciones.filter(o => o.status === 'CANCELADA').reduce((a, o) => a + (o.total ?? 0), 0)
 
     const html = `<!DOCTYPE html>
 <html lang="es">
@@ -330,6 +385,9 @@ export default function POSPage() {
   .meta-label { color:#94a3b8; min-width:80px; }
   .meta-value { font-weight:600; color:#1e293b; }
   .recibo-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; background:#dcfce7; color:#15803d; margin-top:4px; }
+  .status-badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:700; }
+  .status-ok { background:#dcfce7; color:#15803d; }
+  .status-cancel { background:#fef2f2; color:#dc2626; }
   .footer { margin-top:24px; border-top:1px solid #e2e8f0; padding-top:12px; text-align:center; font-size:10px; color:#94a3b8; }
   .no-print { margin-bottom:16px; }
   @media print { .no-print { display:none; } }
@@ -342,10 +400,10 @@ export default function POSPage() {
 
 <div class="header">
   <div class="club">
-    <h1>${rs}</h1>
-    <div class="club-sub">${dir}</div>
-    ${tel ? `<div class="club-sub">Tel. ${tel}</div>` : ''}
-    ${rfc ? `<div class="club-sub">RFC: ${rfc}</div>` : ''}
+    <h1>${esc(rs)}</h1>
+    <div class="club-sub">${esc(dir)}</div>
+    ${tel ? `<div class="club-sub">Tel. ${esc(tel)}</div>` : ''}
+    ${rfc ? `<div class="club-sub">RFC: ${esc(rfc)}</div>` : ''}
   </div>
   <div class="folio">
     <div class="folio-label">Corte de Caja</div>
@@ -356,11 +414,11 @@ export default function POSPage() {
 </div>
 
 <div class="meta">
-  <div class="meta-item"><span class="meta-label">Centro:</span><span class="meta-value">${c.centro_nombre}</span></div>
-  <div class="meta-item"><span class="meta-label">Cajero:</span><span class="meta-value">${c.usuario ?? '—'}</span></div>
+  <div class="meta-item"><span class="meta-label">Centro:</span><span class="meta-value">${esc(c.centro_nombre)}</span></div>
+  <div class="meta-item"><span class="meta-label">Cajero:</span><span class="meta-value">${esc(c.usuario ?? '—')}</span></div>
   <div class="meta-item"><span class="meta-label">Período:</span><span class="meta-value">${fd(c.fecha_inicio)} — ${fd(c.fecha_fin)}</span></div>
   <div class="meta-item"><span class="meta-label">Fecha corte:</span><span class="meta-value">${fdt(c.fecha_corte)}</span></div>
-  ${c.notas ? `<div class="meta-item" style="grid-column:1/-1"><span class="meta-label">Notas:</span><span class="meta-value">${c.notas}</span></div>` : ''}
+  ${c.notas ? `<div class="meta-item" style="grid-column:1/-1"><span class="meta-label">Notas:</span><span class="meta-value">${esc(c.notas)}</span></div>` : ''}
 </div>
 
 <div class="kpi-grid">
@@ -380,8 +438,28 @@ ${desglose.length > 0 ? `
   </tbody>
 </table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin desglose de formas de pago registrado.</p>'}
 
+<h2>Detalle de Servicios / Productos Cobrados</h2>
+${detalleProd.length > 0 ? `
+<table>
+  <thead><tr><th>Concepto</th><th class="right">Cantidad</th><th class="right">Total</th></tr></thead>
+  <tbody>
+    ${filasProductos}
+    <tr class="total-row"><td class="bold">TOTAL COBRADO</td><td class="right bold">${cantProd}</td><td class="right bold">${fmt(totalProd)}</td></tr>
+  </tbody>
+</table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin conceptos cobrados en este corte.</p>'}
+
+<h2>Detalle de Operaciones del Día</h2>
+${operaciones.length > 0 ? `
+<table>
+  <thead><tr><th>Folio</th><th>Hora</th><th>Cliente</th><th class="right">Status</th><th class="right">Total</th></tr></thead>
+  <tbody>
+    ${filasOps}
+    <tr class="total-row"><td class="bold">OPERACIONES</td><td></td><td class="right bold">${operaciones.length}</td><td class="right bold">Pagadas ${fmt(totalOpsPagadas)}${totalOpsCanceladas > 0 ? ` · Canceladas ${fmt(totalOpsCanceladas)}` : ''}</td><td class="right bold">${fmt(totalOps)}</td></tr>
+  </tbody>
+</table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin operaciones registradas en este corte.</p>'}
+
 <div class="footer">
-  Corte generado el ${fdt(c.fecha_corte)} · ${rs}
+  Corte generado el ${fdt(c.fecha_corte)} · ${esc(rs)}
   <br/>Este documento es el comprobante oficial del cierre de caja.
 </div>
 </body>
