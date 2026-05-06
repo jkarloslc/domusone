@@ -516,7 +516,7 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
       id_almacen_fk: oc.id_almacen_entrega_fk ?? null,
       monto: oc.total, forma_pago: opForm.forma_pago,
       fecha_vencimiento: opForm.fecha_vencimiento || null,
-      concepto: opForm.concepto, notas: opForm.notas || null, status: 'Pendiente',
+      concepto: opForm.concepto, notas: opForm.notas || null, status: 'Pendiente Auth',
     })
     setSavingOP(false); setCreandoOP(false)
     dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle().then(({ data }) => setOP(data))
