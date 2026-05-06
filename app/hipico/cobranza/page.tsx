@@ -2,9 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip, dbCfg, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clock, Receipt, Zap, Printer, Trash2 } from 'lucide-react'
+import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clock, Receipt, Zap, Printer, Trash2, FileCheck } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
+import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 
 const PAGE_SIZE = 30
 
@@ -38,6 +39,7 @@ type Pago = {
   referencia: string | null
   notas: string | null
   id_venta_pos_fk: number | null
+  folio_fiscal: string | null
   created_at: string
   cat_arrendatarios?: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string }
 }
@@ -288,6 +290,11 @@ export default function CobranzaPage() {
   const [loadingDetalle, setLoadingDetalle] = useState(false)
   const [generandoTicketDetalle, setGenerandoTicketDetalle] = useState(false)
   const [ticketErrDetalle, setTicketErrDetalle] = useState('')
+
+  // ── Facturación Hípico ──
+  const [facturandoHip,  setFacturandoHip]  = useState<Pago | null>(null)
+  const [receptorHip,    setReceptorHip]    = useState<any>({})
+  const [conceptosHip,   setConceptosHip]   = useState<{ descripcion: string; importe: number }[]>([])
 
   // ── Catálogos ──
   const [arrendatarios, setArrendatarios] = useState<ArrendCat[]>([])
@@ -724,6 +731,24 @@ export default function CobranzaPage() {
     })
   }
 
+  // ── Abrir facturación hípico ──
+  const abrirFacturarHip = async (p: Pago) => {
+    const { data: det } = await dbHip
+      .from('ctrl_pagos_det')
+      .select('monto, ctrl_cargos(descripcion)')
+      .eq('id_pago_fk', p.id)
+
+    const detList = (det ?? []) as { monto: number; ctrl_cargos?: { descripcion: string } }[]
+    const conceptos = detList.length
+      ? detList.map(d => ({ descripcion: d.ctrl_cargos?.descripcion ?? `Cobro Hípico ${p.folio}`, importe: d.monto }))
+      : [{ descripcion: `Cobro Hípico ${p.folio}`, importe: p.monto_total }]
+    setConceptosHip(conceptos)
+
+    const nombreArr = fmtNombreArr(p.cat_arrendatarios)
+    setReceptorHip({ razon_social: nombreArr, email: '' })
+    setFacturandoHip(p)
+  }
+
   // ── Abrir detalle de recibo ──
   const abrirDetalleRecibo = async (p: Pago) => {
     setLoadingDetalle(true)
@@ -1062,7 +1087,7 @@ export default function CobranzaPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                  {['Folio', 'Arrendatario', 'Fecha', 'Forma de Pago', 'Referencia', 'Total', 'Ticket POS', ''].map(h => (
+                  {['Folio', 'Arrendatario', 'Fecha', 'Forma de Pago', 'Referencia', 'Total', 'Ticket POS', 'Factura', ''].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr>
@@ -1087,6 +1112,16 @@ export default function CobranzaPage() {
                     <td style={{ padding: '10px 14px', fontWeight: 700, color: '#16a34a' }}>{fmt$(p.monto_total)}</td>
                     <td style={{ padding: '10px 14px', color: p.id_venta_pos_fk ? '#15803d' : '#94a3b8', fontSize: 11, fontFamily: p.id_venta_pos_fk ? 'monospace' : 'inherit' }}>
                       {p.id_venta_pos_fk ? `#${String(p.id_venta_pos_fk).padStart(6, '0')}` : 'Sin ticket'}
+                    </td>
+                    {/* Factura */}
+                    <td style={{ padding: '10px 14px' }}>
+                      {p.folio_fiscal
+                        ? <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#ede9fe', color: '#7c3aed', fontWeight: 700 }}>Facturada</span>
+                        : <button onClick={() => abrirFacturarHip(p)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                            <FileCheck size={11} /> Facturar
+                          </button>
+                      }
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -1612,6 +1647,24 @@ export default function CobranzaPage() {
             {errPago && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{errPago}</div>}
           </div>
         </ModalShell>
+      )}
+
+      {/* ── Modal Facturar Hípico ── */}
+      {facturandoHip && (
+        <FacturaUniversalModal
+          titulo={`Facturar Recibo ${facturandoHip.folio}`}
+          folio={facturandoHip.folio}
+          total={facturandoHip.monto_total}
+          fecha={facturandoHip.fecha_pago}
+          conceptos={conceptosHip}
+          receptorInit={receptorHip}
+          formaPagoStr={facturandoHip.forma_pago}
+          onClose={() => setFacturandoHip(null)}
+          onSaved={() => { setFacturandoHip(null); fetchPagos() }}
+          saveFactura={async (folio_fiscal) => {
+            await dbHip.from('ctrl_pagos').update({ folio_fiscal }).eq('id', facturandoHip.id)
+          }}
+        />
       )}
     </div>
   )

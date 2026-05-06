@@ -7,6 +7,7 @@ import {
   XCircle, ChevronLeft, FileText, AlertTriangle, Loader,
 } from 'lucide-react'
 import Link from 'next/link'
+import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Recibo = {
@@ -93,8 +94,7 @@ export default function RecibosPage() {
 
   // Modal facturar
   const [facturando, setFacturando]   = useState<Recibo | null>(null)
-  const [folioFiscal, setFolioFiscal] = useState('')
-  const [savingFact, setSavingFact]   = useState(false)
+  const [receptorFact, setReceptorFact] = useState<any>({})
 
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -174,17 +174,26 @@ export default function RecibosPage() {
     cargar()
   }
 
-  // ── Marcar facturado ───────────────────────────────────────
-  const handleFacturar = async () => {
-    if (!facturando || !folioFiscal.trim()) return
-    setSavingFact(true)
-    await dbGolf.from('recibos_golf').update({
-      folio_fiscal: folioFiscal.trim(),
-    }).eq('id', facturando.id)
-    setSavingFact(false)
-    setFacturando(null)
-    setFolioFiscal('')
-    cargar()
+  // ── Abrir modal de facturación ─────────────────────────────
+  const abrirFacturar = async (r: Recibo) => {
+    // Cargar datos fiscales del socio
+    const { data: soc } = await dbGolf
+      .from('cat_socios')
+      .select('rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal, nombre, apellido_paterno, apellido_materno, email')
+      .eq('id', r.id_socio_fk)
+      .single()
+    const nombreCompleto = soc
+      ? [soc.nombre, soc.apellido_paterno, soc.apellido_materno].filter(Boolean).join(' ')
+      : ''
+    setReceptorFact({
+      rfc:            (soc as any)?.rfc               ?? '',
+      razon_social:   (soc as any)?.razon_social_fiscal || nombreCompleto,
+      cp:             (soc as any)?.cp_fiscal          ?? '',
+      regimen_fiscal: (soc as any)?.regimen_fiscal     ?? '626',
+      uso_cfdi:       (soc as any)?.uso_cfdi           ?? 'G03',
+      email:          (soc as any)?.email_fiscal       || (soc as any)?.email || '',
+    })
+    setFacturando(r)
   }
 
   // ── Imprimir recibo ────────────────────────────────────────
@@ -539,9 +548,9 @@ export default function RecibosPage() {
                         <Printer size={13} />
                       </button>
                       {!cancelado && r.facturable && !r.folio_fiscal && (
-                        <button onClick={() => { setFacturando(r); setFolioFiscal('') }} title="Capturar folio fiscal"
-                          style={{ padding: '5px 8px', border: '1px solid #ddd6fe', borderRadius: 6, background: '#f5f3ff', cursor: 'pointer', color: '#7c3aed', display: 'flex', alignItems: 'center' }}>
-                          <FileCheck size={13} />
+                        <button onClick={() => abrirFacturar(r)} title="Generar CFDI"
+                          style={{ padding: '5px 8px', border: '1px solid #ddd6fe', borderRadius: 6, background: '#f5f3ff', cursor: 'pointer', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
+                          <FileCheck size={13} /> Facturar
                         </button>
                       )}
                       {!cancelado && (
@@ -702,31 +711,23 @@ export default function RecibosPage() {
 
       {/* ── Modal Facturar ─────────────────────────────────────── */}
       {facturando && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1010, padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 420, boxShadow: '0 20px 50px rgba(0,0,0,0.25)', padding: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <div style={{ background: '#ede9fe', borderRadius: 8, padding: 8 }}><FileCheck size={20} color="#7c3aed" /></div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>Capturar folio fiscal</div>
-                <div style={{ fontSize: 12, color: '#64748b' }}>{facturando.folio} · {nc(facturando.cat_socios)}</div>
-              </div>
-            </div>
-            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-              Ingresa el UUID o folio fiscal emitido por el SAT para vincular la factura a este recibo.
-            </p>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>UUID / Folio fiscal *</label>
-            <input
-              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #ddd6fe', borderRadius: 8, fontFamily: 'inherit', outline: 'none', marginBottom: 20 }}
-              value={folioFiscal} onChange={e => setFolioFiscal(e.target.value)} placeholder="Ej: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" autoFocus />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setFacturando(null)} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={handleFacturar} disabled={savingFact || !folioFiscal.trim()}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: (savingFact || !folioFiscal.trim()) ? 0.6 : 1 }}>
-                <FileCheck size={14} /> {savingFact ? 'Guardando…' : 'Guardar folio'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <FacturaUniversalModal
+          titulo={`Facturar Recibo ${facturando.folio}`}
+          folio={facturando.folio}
+          total={facturando.total}
+          fecha={facturando.fecha_recibo}
+          conceptos={facturando.recibos_golf_det.map(d => ({
+            descripcion: d.concepto,
+            importe:     d.monto_final,
+          }))}
+          receptorInit={receptorFact}
+          formaPagoStr={facturando.forma_pago_nombre ?? ''}
+          onClose={() => setFacturando(null)}
+          onSaved={() => { setFacturando(null); cargar() }}
+          saveFactura={async (folio_fiscal) => {
+            await dbGolf.from('recibos_golf').update({ folio_fiscal }).eq('id', facturando.id)
+          }}
+        />
       )}
 
     </div>

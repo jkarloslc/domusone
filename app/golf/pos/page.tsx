@@ -5,11 +5,12 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
   ChevronDown, ChevronRight, Scissors, Settings, History,
-  Printer, Ban, AlertCircle, Store, Save, Loader, FileText, Receipt,
+  Printer, Ban, AlertCircle, Store, Save, Loader, FileText, Receipt, FileCheck,
 } from 'lucide-react'
 import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
 import CorteModal from './CorteModal'
+import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number }
@@ -71,6 +72,11 @@ export default function POSPage() {
   const [filtroCentro,   setFiltroCentro]   = useState('')
   const [filtroFecha,    setFiltroFecha]    = useState(new Date().toISOString().split('T')[0])
   const [expandidoV,     setExpandidoV]     = useState<number | null>(null)
+
+  // Facturación POS
+  const [facturandoPOS,   setFacturandoPOS]   = useState<Venta | null>(null)
+  const [receptorPOS,     setReceptorPOS]     = useState<any>({})
+  const [conceptosPOS,    setConceptosPOS]    = useState<{ descripcion: string; importe: number }[]>([])
 
   // Cortes
   const [cortes,         setCortes]         = useState<Corte[]>([])
@@ -191,6 +197,39 @@ export default function POSPage() {
   useEffect(() => { if (tab === 'ventas') fetchVentas() }, [tab, fetchVentas])
   useEffect(() => { if (tab === 'cortes') fetchCortes() }, [tab, fetchCortes])
   useEffect(() => { if (tab === 'config') fetchConfig() }, [tab, fetchConfig])
+
+  // ── Abrir facturación de venta POS ────────────────────────
+  const abrirFacturarPOS = async (v: Venta) => {
+    // Cargar detalle de la venta y datos fiscales del socio si aplica
+    const [{ data: det }, { data: pagos }] = await Promise.all([
+      dbGolf.from('ctrl_ventas_det').select('concepto, total').eq('id_venta_fk', v.id),
+      dbGolf.from('ctrl_ventas_pagos').select('forma_nombre').eq('id_venta_fk', v.id).limit(1),
+    ])
+    const conceptos = ((det ?? []) as { concepto: string; total: number }[])
+      .filter(d => d.total > 0)
+      .map(d => ({ descripcion: d.concepto, importe: d.total }))
+    setConceptosPOS(conceptos.length ? conceptos : [{ descripcion: `Venta POS #${v.folio_dia}`, importe: v.total }])
+
+    let receptor: any = { razon_social: v.nombre_cliente }
+    if (v.cat_socios) {
+      const { data: soc } = await dbGolf.from('cat_socios')
+        .select('rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal, email')
+        .eq('nombre', v.cat_socios.nombre).limit(1).maybeSingle()
+      if (soc) {
+        receptor = {
+          rfc:            (soc as any).rfc ?? '',
+          razon_social:   (soc as any).razon_social_fiscal || v.nombre_cliente,
+          cp:             (soc as any).cp_fiscal ?? '',
+          regimen_fiscal: (soc as any).regimen_fiscal ?? '626',
+          uso_cfdi:       (soc as any).uso_cfdi ?? 'G03',
+          email:          (soc as any).email_fiscal || (soc as any).email || '',
+        }
+      }
+    }
+    const primeraPago = ((pagos ?? []) as { forma_nombre: string }[])[0]?.forma_nombre ?? ''
+    setReceptorPOS({ ...receptor, _formaPago: primeraPago })
+    setFacturandoPOS(v)
+  }
 
   // ── Cancelar venta ────────────────────────────────────────
   const cancelarVenta = async (id: number) => {
@@ -699,6 +738,15 @@ ${desglose.length > 0 ? `
                             style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                             <Printer size={11} /> {v.num_impresiones > 0 ? 'Reimprimir' : 'Ticket'}
                           </button>
+                          {!cancelada && !(v as any).folio_fiscal && (
+                            <button onClick={() => abrirFacturarPOS(v)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                              <FileCheck size={11} /> Facturar
+                            </button>
+                          )}
+                          {(v as any).folio_fiscal && (
+                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#ede9fe', color: '#7c3aed', fontWeight: 700 }}>Facturada</span>
+                          )}
                           {!cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin') && (
                             <button onClick={() => cancelarVenta(v.id)}
                               style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
@@ -1055,6 +1103,24 @@ ${desglose.length > 0 ? `
           nombreCentro={centroActivo.nombre}
           onClose={() => setShowCorte(false)}
           onSaved={() => { fetchStats(); if (tab === 'cortes') fetchCortes() }}
+        />
+      )}
+
+      {/* ── Modal Facturar Venta POS ── */}
+      {facturandoPOS && (
+        <FacturaUniversalModal
+          titulo={`Facturar Venta #${facturandoPOS.folio_dia}`}
+          folio={`POS-${facturandoPOS.folio_dia}`}
+          total={facturandoPOS.total}
+          fecha={facturandoPOS.fecha.split('T')[0]}
+          conceptos={conceptosPOS}
+          receptorInit={receptorPOS}
+          formaPagoStr={receptorPOS._formaPago ?? ''}
+          onClose={() => setFacturandoPOS(null)}
+          onSaved={() => { setFacturandoPOS(null); fetchVentas() }}
+          saveFactura={async (folio_fiscal) => {
+            await dbGolf.from('ctrl_ventas').update({ folio_fiscal }).eq('id', facturandoPOS.id)
+          }}
         />
       )}
     </div>

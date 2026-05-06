@@ -41,6 +41,10 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
     cp:                      (propietario as any)?.cp ?? '',
     pertenece_asociacion:    (propietario as any)?.pertenece_asociacion ?? false,
     activo:                  propietario?.activo ?? true,
+    // Datos fiscales SAT
+    regimen_fiscal:          (propietario as any)?.regimen_fiscal ?? '626',
+    uso_cfdi:                (propietario as any)?.uso_cfdi       ?? 'G03',
+    email_fiscal:            (propietario as any)?.email_fiscal   ?? '',
   })
 
   const [telefonos, setTelefonos] = useState<Tel[]>([{ tipo: 'Celular', numero: '' }])
@@ -94,6 +98,9 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
       cp:                   form.cp.trim() || null,
       pertenece_asociacion: form.pertenece_asociacion,
       activo:               form.activo,
+      regimen_fiscal:       (form as any).regimen_fiscal || null,
+      uso_cfdi:             (form as any).uso_cfdi       || null,
+      email_fiscal:         (form as any).email_fiscal?.trim() || null,
     }
 
     let propId = propietario?.id
@@ -299,13 +306,48 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
           {/* TAB 2 — Fiscal */}
           {tab === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ padding: '10px 14px', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
+                Estos datos se usan para pre-llenar la factura CFDI. El RFC y Razón Social deben coincidir con la constancia de situación fiscal.
+              </div>
               <Row2>
-                <Field label="RFC"><input className="input" value={form.rfc} onChange={set('rfc')} placeholder="XAXX010101000" style={{ fontFamily: 'monospace' }} /></Field>
-                <Field label="CURP"><input className="input" value={form.curp} onChange={set('curp')} placeholder="XAXX010101HXXXXXX00" style={{ fontFamily: 'monospace' }} /></Field>
+                <Field label="RFC">
+                  <input className="input" value={form.rfc} onChange={set('rfc')}
+                    placeholder="XAXX010101000" style={{ fontFamily: 'monospace', textTransform: 'uppercase' }} />
+                </Field>
+                <Field label="CURP">
+                  <input className="input" value={form.curp} onChange={set('curp')}
+                    placeholder="XAXX010101HXXXXXX00" style={{ fontFamily: 'monospace', textTransform: 'uppercase' }} />
+                </Field>
               </Row2>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
-                Los datos fiscales específicos por lote (régimen fiscal, uso CFDI) se gestionan en el módulo de Lotes.
-              </p>
+              <Row2>
+                <Field label="Código Postal (CFDI)">
+                  <input className="input" value={form.cp} onChange={set('cp')} placeholder="76001" maxLength={5} />
+                </Field>
+                <Field label="Régimen Fiscal SAT">
+                  <select className="select" value={(form as any).regimen_fiscal} onChange={set('regimen_fiscal')}>
+                    <option value="601">601 — General de Ley Personas Morales</option>
+                    <option value="603">603 — Personas Morales sin Fines de Lucro</option>
+                    <option value="612">612 — Personas Físicas con Act. Empresariales</option>
+                    <option value="626">626 — Simplificado de Confianza (RESICO)</option>
+                    <option value="621">621 — Incorporación Fiscal</option>
+                  </select>
+                </Field>
+              </Row2>
+              <Row2>
+                <Field label="Uso CFDI por defecto">
+                  <select className="select" value={(form as any).uso_cfdi} onChange={set('uso_cfdi')}>
+                    <option value="G01">G01 — Adquisición de mercancías</option>
+                    <option value="G03">G03 — Gastos en general</option>
+                    <option value="CP01">CP01 — Pagos</option>
+                    <option value="D10">D10 — Servicios educativos</option>
+                    <option value="S01">S01 — Sin efectos fiscales</option>
+                  </select>
+                </Field>
+                <Field label="Correo para facturas">
+                  <input className="input" type="email" value={(form as any).email_fiscal}
+                    onChange={set('email_fiscal')} placeholder="facturacion@ejemplo.com" />
+                </Field>
+              </Row2>
             </div>
           )}
 

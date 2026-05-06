@@ -22,6 +22,12 @@ export type Socio = {
   observaciones: string | null
   identificacion_url: string | null
   created_at: string
+  // Datos fiscales SAT
+  razon_social_fiscal: string | null
+  cp_fiscal: string | null
+  regimen_fiscal: string | null
+  uso_cfdi: string | null
+  email_fiscal: string | null
   // joins
   cat_categorias_socios?: { nombre: string } | null
 }
@@ -87,7 +93,22 @@ type Props = {
   onSaved: () => void
 }
 
-const TABS = ['Datos Personales', 'Membresía', 'Familiares', 'Identificación', 'Contratos', 'Notas']
+const TABS = ['Datos Personales', 'Membresía', 'Familiares', 'Identificación', 'Contratos', 'Notas', 'Datos Fiscales']
+
+const REGIMENES_FISCALES_SAT = [
+  { clave: '601', desc: 'General de Ley Personas Morales' },
+  { clave: '603', desc: 'Personas Morales sin Fines de Lucro' },
+  { clave: '612', desc: 'Personas Físicas con Actividades Empresariales' },
+  { clave: '626', desc: 'Simplificado de Confianza (RESICO)' },
+  { clave: '621', desc: 'Incorporación Fiscal' },
+]
+const USOS_CFDI_SAT = [
+  { clave: 'G01', desc: 'Adquisición de mercancias' },
+  { clave: 'G03', desc: 'Gastos en general' },
+  { clave: 'CP01', desc: 'Pagos' },
+  { clave: 'D10', desc: 'Pagos por servicios educativos' },
+  { clave: 'S01', desc: 'Sin efectos fiscales' },
+]
 
 export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const isNew = !socio
@@ -141,6 +162,12 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     numero_tarjeta:    socio?.numero_tarjeta    ?? '',
     activo:            socio?.activo            ?? true,
     observaciones:     socio?.observaciones     ?? '',
+    // Datos fiscales SAT
+    razon_social_fiscal: (socio as any)?.razon_social_fiscal ?? '',
+    cp_fiscal:           (socio as any)?.cp_fiscal           ?? '',
+    regimen_fiscal:      (socio as any)?.regimen_fiscal      ?? '626',
+    uso_cfdi:            (socio as any)?.uso_cfdi            ?? 'G03',
+    email_fiscal:        (socio as any)?.email_fiscal        ?? '',
   })
 
   const set    = (k: keyof typeof form, v: any)   => setForm(f => ({ ...f, [k]: v }))
@@ -211,10 +238,16 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       fecha_vencimiento:  form.fecha_vencimiento || null,
       rfc:                form.rfc               || null,
       curp:               form.curp              || null,
-      numero_tarjeta:     form.numero_tarjeta    || null,
-      activo:             form.activo,
-      observaciones:      form.observaciones     || null,
-      identificacion_url: idUrl,
+      numero_tarjeta:      form.numero_tarjeta        || null,
+      activo:              form.activo,
+      observaciones:       form.observaciones         || null,
+      identificacion_url:  idUrl,
+      // Datos fiscales SAT
+      razon_social_fiscal: form.razon_social_fiscal   || null,
+      cp_fiscal:           form.cp_fiscal             || null,
+      regimen_fiscal:      form.regimen_fiscal        || null,
+      uso_cfdi:            form.uso_cfdi              || null,
+      email_fiscal:        form.email_fiscal          || null,
     }
     const { error: err } = isNew
       ? await dbGolf.from('cat_socios').insert(payload)
@@ -819,6 +852,53 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                 onChange={e => set('observaciones', e.target.value)}
                 placeholder="Notas internas del socio…"
               />
+            </div>
+          )}
+
+          {/* ── Tab 6: Datos Fiscales ── */}
+          {tab === 6 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ padding: '10px 14px', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
+                Estos datos se utilizan para pre-llenar el formulario de facturación CFDI al emitir recibos.
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>RFC</label>
+                  <input style={{ ...inputStyle, fontFamily: 'monospace', textTransform: 'uppercase' }}
+                    value={form.rfc} onChange={e => set('rfc', e.target.value.toUpperCase())}
+                    placeholder="XAXX010101000" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Código Postal (CFDI)</label>
+                  <input style={inputStyle} type="text" maxLength={5}
+                    value={form.cp_fiscal} onChange={e => set('cp_fiscal', e.target.value)}
+                    placeholder="76001" />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={labelStyle}>Nombre / Razón Social Fiscal</label>
+                  <input style={inputStyle}
+                    value={form.razon_social_fiscal} onChange={e => set('razon_social_fiscal', e.target.value)}
+                    placeholder="Igual a nombre del socio si no hay razón social diferente" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Régimen Fiscal SAT</label>
+                  <select style={inputStyle} value={form.regimen_fiscal} onChange={e => set('regimen_fiscal', e.target.value)}>
+                    {REGIMENES_FISCALES_SAT.map(r => <option key={r.clave} value={r.clave}>{r.clave} — {r.desc}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={labelStyle}>Uso CFDI por defecto</label>
+                  <select style={inputStyle} value={form.uso_cfdi} onChange={e => set('uso_cfdi', e.target.value)}>
+                    {USOS_CFDI_SAT.map(u => <option key={u.clave} value={u.clave}>{u.clave} — {u.desc}</option>)}
+                  </select>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={labelStyle}>Correo electrónico para envío de facturas</label>
+                  <input style={inputStyle} type="email"
+                    value={form.email_fiscal} onChange={e => set('email_fiscal', e.target.value)}
+                    placeholder="facturacion@ejemplo.com" />
+                </div>
+              </div>
             </div>
           )}
 
