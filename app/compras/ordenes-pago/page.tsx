@@ -859,6 +859,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [detLinesView, setDetLinesView] = useState<any[]>([])
   const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
   const [areaMap, setAreaMap]     = useState<Record<number, string>>({})
+  const [areaCcMap, setAreaCcMap] = useState<Record<number, number>>({})
   const [frMap,  setFrMap]        = useState<Record<number, string>>({})
   const [abonos, setAbonos]       = useState<any[]>([])
   const [loadingAbonos, setLoadingAbonos] = useState(true)
@@ -947,13 +948,14 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     import('@/lib/supabase').then(({ dbCfg }) => {
       Promise.all([
         dbCfg.from('centros_costo').select('id, nombre'),
-        dbCfg.from('areas').select('id, nombre'),
+        dbCfg.from('areas').select('id, nombre, id_centro_costo_fk'),
         dbCfg.from('frentes').select('id, nombre'),
       ]).then(([{ data: cc }, { data: ar }, { data: fr }]) => {
         const cm: Record<number, string> = {}; (cc ?? []).forEach((r: any) => { cm[r.id] = r.nombre })
         const am: Record<number, string> = {}; (ar ?? []).forEach((r: any) => { am[r.id] = r.nombre })
+        const acm: Record<number, number> = {}; (ar ?? []).forEach((r: any) => { if (r.id_centro_costo_fk) acm[r.id] = r.id_centro_costo_fk })
         const fm: Record<number, string> = {}; (fr ?? []).forEach((r: any) => { fm[r.id] = r.nombre })
-        setCcMap(cm); setAreaMap(am); setFrMap(fm)
+        setCcMap(cm); setAreaMap(am); setAreaCcMap(acm); setFrMap(fm)
       })
     })
 
@@ -991,6 +993,20 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     // Fresh fetch para asegurar campos actualizados (autorizado_por, referencia_pago, etc.)
     const { data: freshOP } = await dbComp.from('ordenes_pago').select('*').eq('id', op.id).single()
     const opData = freshOP ? { ...op, ...freshOP } : op
+    const areaIdCabecera = opData.id_area_fk ?? null
+    const areaIdDet = detLinesView.find((l: any) => !!l.id_area_fk)?.id_area_fk ?? null
+    const areaForCC = areaIdCabecera ?? areaIdDet
+    const centroCostoId = opData.id_centro_costo_fk ?? (areaForCC ? areaCcMap[areaForCC] : null)
+    const centroCostoNombre = centroCostoId ? (ccMap[centroCostoId] ?? `#${centroCostoId}`) : 'Sin asignar'
+    const areaNombre = opData.id_area_fk ? (areaMap[opData.id_area_fk] ?? `#${opData.id_area_fk}`) : '—'
+    const frenteNombre = opData.id_frente_fk ? (frMap[opData.id_frente_fk] ?? `#${opData.id_frente_fk}`) : '—'
+    const estadoAut = opData.status === 'Pendiente Auth'
+      ? 'Pendiente de autorización'
+      : opData.status === 'Rechazada'
+        ? 'Rechazada'
+        : opData.autorizado_por
+          ? 'Autorizada'
+          : 'En proceso'
     // Cargar config de organización
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
@@ -1045,8 +1061,8 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
         <tr><th>Almacén</th><td>${opData._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
         ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
-        ${opData.id_centro_costo_fk ? `<tr><th>Centro de Costo</th><td colspan="3">${ccMap[opData.id_centro_costo_fk] ?? `#${opData.id_centro_costo_fk}`}</td></tr>` : ''}
-        ${detLinesView.length === 0 && opData.id_area_fk ? `<tr><th>Área</th><td>${areaMap[opData.id_area_fk] ?? `#${opData.id_area_fk}`}</td><th>Frente</th><td>${opData.id_frente_fk ? (frMap[opData.id_frente_fk] ?? `#${opData.id_frente_fk}`) : '—'}</td></tr>` : ''}
+        <tr><th>Centro de Costo</th><td colspan="3">${centroCostoNombre}</td></tr>
+        ${detLinesView.length === 0 ? `<tr><th>Área</th><td>${areaNombre}</td><th>Frente</th><td>${frenteNombre}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
@@ -1065,18 +1081,19 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tfoot><tr><th colspan="3">Total distribución</th><th style="text-align:right">${fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}</th></tr></tfoot>
       </table>` : ''}
       ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
-      ${(opData.autorizado_por || opData.fecha_autorizacion || opData.instrucciones_pago || opData.referencia_pago) ? `
       <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
         <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
           Autorización y Control de Pago
         </div>
         <table style="margin:0">
+          <tr><th>Estatus</th><td>${estadoAut}</td></tr>
           ${opData.autorizado_por     ? `<tr><th>Autorizado por</th><td>${opData.autorizado_por}</td></tr>` : ''}
           ${opData.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
           ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
           ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
+          ${!opData.autorizado_por && !opData.fecha_autorizacion && !opData.referencia_pago && !opData.instrucciones_pago ? `<tr><th>Detalle</th><td>Sin datos adicionales de autorización/pago.</td></tr>` : ''}
         </table>
-      </div>` : ''}
+      </div>
       <div class="firmas">
         <div class="firma">
           ${opData.created_by ? `<div style="margin-bottom:2px;font-weight:600;color:#1e293b">${opData.created_by}</div>` : ''}
