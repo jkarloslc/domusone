@@ -87,6 +87,11 @@ function BarChart({ datos }: { datos: { label: string; ing: number; egr: number 
   )
 }
 
+const SECCION_LABEL: Record<string, string> = {
+  golf: 'Golf', cuotas: 'Cuotas Residencial',
+  rentas_espacios: 'Renta de Espacios', caballerizas: 'Caballerizas', otro: 'Otro',
+}
+
 // ── Página ─────────────────────────────────────────────────────
 export default function InicioPage() {
   const router  = useRouter()
@@ -100,22 +105,54 @@ export default function InicioPage() {
   const [ultRecibos, setUltRecibos]   = useState<any[]>([])
   const [ultOps, setUltOps]           = useState<any[]>([])
   const [centrosMap, setCentrosMap]   = useState<Record<number, string>>({})
+  const [centros, setCentros]         = useState<{id: number; nombre: string; tipo: string|null}[]>([])
+  const [filtroTipo, setFiltroTipo]   = useState('')   // '' = todas las secciones
+  const [filtroCentro, setFiltroCentro] = useState('') // '' = todos los CC
   const [refreshing, setRefreshing]   = useState(false)
+
+  // Centros disponibles según sección seleccionada
+  const centrosFiltrados = filtroTipo ? centros.filter(c => c.tipo === filtroTipo) : centros
+
+  // Secciones únicas con datos en la lista de centros
+  const secciones = Array.from(new Set(centros.map(c => c.tipo).filter(Boolean))) as string[]
+
+  // Al cambiar sección, limpiar centro si ya no aplica
+  const handleTipoChange = (tipo: string) => {
+    setFiltroTipo(tipo)
+    if (tipo) {
+      const still = centros.filter(c => c.tipo === tipo).some(c => String(c.id) === filtroCentro)
+      if (!still) setFiltroCentro('')
+    }
+  }
+
+  // Helper: construye filtro de centro sobre una query de recibos_ingreso
+  const applyIngresosFilter = (q: any, csLocal: {id:number; tipo:string|null}[]) => {
+    if (filtroCentro) return q.eq('id_centro_ingreso_fk', Number(filtroCentro))
+    if (filtroTipo) {
+      const ids = csLocal.filter(c => c.tipo === filtroTipo).map(c => c.id)
+      if (ids.length) return q.in('id_centro_ingreso_fk', ids)
+    }
+    return q
+  }
 
   const loadAll = useCallback(async () => {
     setRefreshing(true)
     const { ini, fin } = getRango(periodo)
 
-    // Centros de ingreso
-    const { data: cs } = await dbCfg.from('centros_ingreso').select('id, nombre')
+    // Centros de ingreso (con tipo para filtrado por sección)
+    const { data: cs } = await dbCfg.from('centros_ingreso').select('id, nombre, tipo').eq('activo', true).order('nombre')
+    const csArr = (cs as any[]) ?? []
     const cmap: Record<number, string> = {}
-    ;((cs as any[]) ?? []).forEach((c: any) => { cmap[c.id] = c.nombre })
+    csArr.forEach((c: any) => { cmap[c.id] = c.nombre })
     setCentrosMap(cmap)
+    setCentros(csArr)
 
-    // Ingresos del período
-    const ingQ = dbCtrl.from('recibos_ingreso')
+    // Ingresos del período (con filtro sección/CC)
+    let ingQ = dbCtrl.from('recibos_ingreso')
       .select('monto_total').eq('status', 'Confirmado')
       .gte('fecha', ini).lte('fecha', fin)
+    ingQ = applyIngresosFilter(ingQ, csArr)
+
     // Egresos del período (OPs pagadas + en proceso)
     const egrQ = dbComp.from('ordenes_pago')
       .select('monto').neq('status', 'Cancelada')
@@ -125,10 +162,11 @@ export default function InicioPage() {
       .select('saldo, monto').neq('status', 'Cancelada').neq('status', 'Pagada')
     // Saldo bancos
     const banQ = dbCfg.from('cuentas_bancarias').select('saldo').eq('activo', true)
-    // Últimos recibos
-    const ultIngQ = dbCtrl.from('recibos_ingreso')
+    // Últimos recibos (con filtro sección/CC)
+    let ultIngQ = dbCtrl.from('recibos_ingreso')
       .select('id, folio, fecha, monto_total, status, id_centro_ingreso_fk')
-      .order('created_at', { ascending: false }).limit(5)
+      .order('created_at', { ascending: false }).limit(8)
+    ultIngQ = applyIngresosFilter(ultIngQ, csArr)
     // Últimas OPs pendientes
     const ultOpQ = dbComp.from('ordenes_pago')
       .select('id, folio, concepto, monto, saldo, status, fecha_vencimiento')
@@ -152,11 +190,13 @@ export default function InicioPage() {
     setUltRecibos(ultIngR.status === 'fulfilled' ? (ultIngR.value.data ?? []) : [])
     setUltOps(ultOpR.status   === 'fulfilled' ? (ultOpR.value.data  ?? []) : [])
 
-    // Gráfica últimos 6 meses
+    // Gráfica últimos 6 meses (con filtro sección/CC)
     const meses = getUltimosMeses()
     const grafData = await Promise.all(meses.map(async m => {
+      let igQ = dbCtrl.from('recibos_ingreso').select('monto_total').eq('status', 'Confirmado').gte('fecha', m.ini).lte('fecha', m.fin)
+      igQ = applyIngresosFilter(igQ, csArr)
       const [ig, eg] = await Promise.allSettled([
-        dbCtrl.from('recibos_ingreso').select('monto_total').eq('status', 'Confirmado').gte('fecha', m.ini).lte('fecha', m.fin),
+        igQ,
         dbComp.from('ordenes_pago').select('monto').neq('status', 'Cancelada').gte('created_at', inicioDelDia(m.ini)).lte('created_at', finDelDia(m.fin)),
       ])
       const ing = (ig.status === 'fulfilled' ? ig.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
@@ -166,7 +206,8 @@ export default function InicioPage() {
     setGrafica(grafData)
     setLoading(false)
     setRefreshing(false)
-  }, [periodo])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [periodo, filtroTipo, filtroCentro])
 
   useEffect(() => { setLoading(true); loadAll() }, [loadAll])
 
@@ -187,9 +228,52 @@ export default function InicioPage() {
             <span className="page-eyebrow-label">Panorama</span>
           </div>
           <h1 className="page-title-xl" style={{ fontSize: 30 }}>Dashboard Financiero</h1>
-          <p className="page-subtitle">Ingresos y egresos de la operación de Balvanera</p>
+          <p className="page-subtitle">
+            Ingresos y egresos de la operación de Balvanera
+            {filtroTipo && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: 'var(--blue)', background: '#eff6ff', padding: '2px 8px', borderRadius: 10 }}>
+              {SECCION_LABEL[filtroTipo] ?? filtroTipo}{filtroCentro && centros.find(c => String(c.id) === filtroCentro) ? ` · ${centros.find(c => String(c.id) === filtroCentro)!.nombre}` : ''}
+            </span>}
+            {!filtroTipo && filtroCentro && centros.find(c => String(c.id) === filtroCentro) && (
+              <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: 'var(--blue)', background: '#eff6ff', padding: '2px 8px', borderRadius: 10 }}>
+                {centros.find(c => String(c.id) === filtroCentro)!.nombre}
+              </span>
+            )}
+          </p>
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          {/* Filtros Sección / CC */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <select
+              value={filtroTipo}
+              onChange={e => handleTipoChange(e.target.value)}
+              style={{ fontSize: 12, padding: '5px 10px', borderRadius: 7, border: '1px solid #e2e8f0',
+                background: filtroTipo ? '#eff6ff' : '#f8fafc', color: filtroTipo ? 'var(--blue)' : 'var(--text-secondary)',
+                cursor: 'pointer', minWidth: 150 }}>
+              <option value="">Todas las secciones</option>
+              {secciones.map(s => (
+                <option key={s} value={s}>{SECCION_LABEL[s] ?? s}</option>
+              ))}
+            </select>
+            <select
+              value={filtroCentro}
+              onChange={e => setFiltroCentro(e.target.value)}
+              style={{ fontSize: 12, padding: '5px 10px', borderRadius: 7, border: '1px solid #e2e8f0',
+                background: filtroCentro ? '#eff6ff' : '#f8fafc', color: filtroCentro ? 'var(--blue)' : 'var(--text-secondary)',
+                cursor: 'pointer', minWidth: 160 }}>
+              <option value="">Todos los CC</option>
+              {centrosFiltrados.map(c => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </select>
+            {(filtroTipo || filtroCentro) && (
+              <button onClick={() => { setFiltroTipo(''); setFiltroCentro('') }}
+                title="Limpiar filtros"
+                style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e8f0',
+                  background: '#fff', color: '#94a3b8', cursor: 'pointer', lineHeight: 1 }}>
+                ✕
+              </button>
+            )}
+          </div>
           {/* Selector de período */}
           <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 9, padding: 3, gap: 2 }}>
             {PERIODOS.map(p => (
