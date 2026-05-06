@@ -109,9 +109,17 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
   const totalPasesDisp = pasesDisponibles.reduce((a, p) => a + (p.cantidad_disponible ?? 0), 0)
 
+  // Si el socio tiene pases disponibles, los acompañantes libres se marcan por defecto como invitados.
+  useEffect(() => {
+    if (totalPasesDisp <= 0) return
+    setAcomp(prev => prev.map(a => a.tipo === 'libre' ? { ...a, tipo: 'externo' } : a))
+  }, [totalPasesDisp])
+
   // gestión de acompañantes
   const addAcomp = () => {
-    if (acompanantes.length < 5) setAcomp(a => [...a, { tipo: 'libre', nombre: '' }])
+    if (acompanantes.length < 5) {
+      setAcomp(a => [...a, { tipo: totalPasesDisp > 0 ? 'externo' : 'libre', nombre: '' }])
+    }
   }
 
   const removeAcomp = (i: number) => setAcomp(a => a.filter((_, idx) => idx !== i))
