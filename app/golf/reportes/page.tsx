@@ -5,6 +5,7 @@ import Link from 'next/link'
 import ReporteGolfAccesos      from '@/app/reportes/ReporteGolfAccesos'
 import ReporteGolfEstadoCuenta from '@/app/reportes/ReporteGolfEstadoCuenta'
 import ReporteGolfCobranza     from '@/app/reportes/ReporteGolfCobranza'
+import ReporteHipicoServicios  from '@/app/reportes/ReporteHipicoServicios'
 
 const REPORTES = [
   {
@@ -30,6 +31,14 @@ const REPORTES = [
     icon:  FileText,
     color: '#7c3aed',
     bg:    '#f5f3ff',
+  },
+  {
+    key:   'caballos-servicios',
+    label: 'Caballos y Servicios',
+    desc:  'Desglose por caballo y tipo de servicio, con filtros por fechas, caballo y tipo',
+    icon:  BarChart2,
+    color: '#92400e',
+    bg:    '#fff7ed',
   },
 ]
 
@@ -120,6 +129,7 @@ export default function GolfReportesPage() {
       {activo === 'accesos'       && <ReporteGolfAccesos />}
       {activo === 'cobranza'      && <ReporteGolfCobranza />}
       {activo === 'estado-cuenta' && <ReporteGolfEstadoCuenta />}
+      {activo === 'caballos-servicios' && <ReporteHipicoServicios />}
     </div>
   )
 }

@@ -102,6 +102,7 @@ const GRUPOS = [
       { id: 'golf-estado-cuenta', label: 'Estado de Cuenta',    icon: FileText,  desc: 'Cuotas y recibos por socio en un período' },
       { id: 'golf-cobranza',      label: 'Cobranza / CXC',      icon: Wallet,    desc: 'Cuotas por categoría, tipo y status con resumen y detalle' },
       { id: 'golf-accesos',       label: 'Salidas al Campo',     icon: MapPin,    desc: 'Registro de rondas por socio, espacio y forma de juego' },
+      { id: 'golf-caballos-servicios', label: 'Caballos y Servicios', icon: BarChart3, desc: 'Desglose por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
     ],
   },
   {
@@ -229,6 +230,7 @@ function ReportesContent() {
       {active === 'golf-estado-cuenta' && <ReporteGolfEstadoCuenta />}
       {active === 'golf-cobranza'      && <ReporteGolfCobranza />}
       {active === 'golf-accesos'       && <ReporteGolfAccesos />}
+      {active === 'golf-caballos-servicios' && <ReporteHipicoServicios />}
 
       {/* Reportes hípico */}
       {active === 'hipico-estado-cuenta' && <ReporteHipicoEstadoCuenta />}
