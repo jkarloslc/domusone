@@ -173,7 +173,7 @@ export default function ReporteGolfAccesos() {
 
       if (socioIds !== null) q = q.in('id_socio_fk', socioIds)
       if (filtroSocio !== '') q = q.eq('id_socio_fk', filtroSocio)
-      if (filtroEspacio !== '') q = q.eq('id_espacio_deportivo_fk', filtroEspacio)
+      if (filtroEspacio !== '') q = q.eq('id_espacio_fk', filtroEspacio)
 
       const { data: accesosData, error: accErr } = await q
       if (accErr) throw accErr
