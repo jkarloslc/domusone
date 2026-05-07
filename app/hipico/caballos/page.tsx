@@ -68,6 +68,8 @@ export default function CaballosPage() {
   const [page, setPage]         = useState(0)
   const [search, setSearch]     = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const [filtroStatus, setFiltroStatus] = useState('')
+  const [filtroArr, setFiltroArr] = useState<number | ''>('')
   const [loading, setLoading]   = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -78,6 +80,7 @@ export default function CaballosPage() {
   const [saving, setSaving]     = useState(false)
   const [form, setForm]         = useState<typeof EMPTY>(EMPTY)
   const [err, setErr]           = useState('')
+  const [kpis, setKpis] = useState({ activos: 0, bajasTemporales: 0, dadosBaja: 0, sinCaballeriza: 0 })
 
   const [arrendatarios, setArrendatarios] = useState<ArrendCat[]>([])
   const [caballerizas, setCaballerizas]   = useState<CaballoCat[]>([])
@@ -98,14 +101,33 @@ export default function CaballosPage() {
       .select('*, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), cat_caballerizas(clave, nombre)', { count: 'exact' })
       .order('nombre', { ascending: true })
       .range(from, to)
+    let kpiQ = dbHip
+      .from('cat_caballos')
+      .select('status, id_caballeriza_fk')
     if (search.trim()) {
       q = q.or(`nombre.ilike.%${search}%,raza.ilike.%${search}%,registro.ilike.%${search}%,chip.ilike.%${search}%`)
+      kpiQ = kpiQ.or(`nombre.ilike.%${search}%,raza.ilike.%${search}%,registro.ilike.%${search}%,chip.ilike.%${search}%`)
     }
-    const { data, count } = await q
+    if (filtroStatus) {
+      q = q.eq('status', filtroStatus)
+      kpiQ = kpiQ.eq('status', filtroStatus)
+    }
+    if (filtroArr !== '') {
+      q = q.eq('id_arrendatario_fk', filtroArr)
+      kpiQ = kpiQ.eq('id_arrendatario_fk', filtroArr)
+    }
+    const [{ data, count }, { data: kpiData }] = await Promise.all([q, kpiQ])
     setItems((data as Caballo[]) ?? [])
     setTotal(count ?? 0)
+    const all = (kpiData ?? []) as { status: string; id_caballeriza_fk: number | null }[]
+    setKpis({
+      activos: all.filter(x => x.status === 'Activo').length,
+      bajasTemporales: all.filter(x => x.status === 'Baja temporal').length,
+      dadosBaja: all.filter(x => x.status === 'Dado de baja').length,
+      sinCaballeriza: all.filter(x => !x.id_caballeriza_fk).length,
+    })
     setLoading(false)
-  }, [page, search])
+  }, [page, search, filtroStatus, filtroArr])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
@@ -198,26 +220,53 @@ export default function CaballosPage() {
 
   return (
     <div style={{ padding: '24px 28px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-          <ChevronLeft size={14} /> Hípico
-        </Link>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Caballos</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input className="input" placeholder="Buscar nombre, raza…" value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
-              style={{ paddingLeft: 30, width: 200, fontSize: 12 }} />
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
+              <ChevronLeft size={14} /> Hípico
+            </Link>
           </div>
+          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Caballos</h1>
+          <p className="page-subtitle">Expediente operativo de caballos, asignaciones y estatus</p>
+        </div>
+        <div className="page-header-actions">
           <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
           {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nuevo</button>}
         </div>
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
-        {total} caballo{total !== 1 ? 's' : ''} registrado{total !== 1 ? 's' : ''}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
+        {[
+          { label: 'Total', value: total, color: '#1d4ed8', bg: '#eff6ff' },
+          { label: 'Activos', value: kpis.activos, color: '#15803d', bg: '#f0fdf4' },
+          { label: 'Baja temporal', value: kpis.bajasTemporales, color: '#ca8a04', bg: '#fefce8' },
+          { label: 'Dados de baja', value: kpis.dadosBaja, color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Sin caballeriza', value: kpis.sinCaballeriza, color: '#7c3aed', bg: '#f5f3ff' },
+        ].map(k => (
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative' }}>
+          <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input className="input" placeholder="Buscar nombre, raza…" value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
+            style={{ paddingLeft: 30, width: 220, fontSize: 12 }} />
+        </div>
+        <select className="input" value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPage(0) }} style={{ fontSize: 12, width: 160 }}>
+          <option value="">Todos los status</option>
+          {['Activo', 'Baja temporal', 'Dado de baja'].map(s => <option key={s}>{s}</option>)}
+        </select>
+        <select className="input" value={filtroArr} onChange={e => { setFiltroArr(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ fontSize: 12, minWidth: 220 }}>
+          <option value="">Todos los arrendatarios</option>
+          {arrendatarios.map(a => <option key={a.id} value={a.id}>{fmtNombreArr(a)}</option>)}
+        </select>
       </div>
 
       <div className="card" style={{ overflow: 'hidden', padding: 0 }}>

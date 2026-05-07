@@ -53,6 +53,7 @@ export default function CaballerizasPage() {
   const [saving, setSaving]     = useState(false)
   const [form, setForm]         = useState<Omit<Caballeriza, 'id' | 'created_at'>>(EMPTY)
   const [err, setErr]           = useState('')
+  const [kpis, setKpis] = useState({ libres: 0, rentadas: 0, ocupadas: 0, mantenimiento: 0 })
 
   const naturalSort = (a: string, b: string) =>
     a.localeCompare(b, 'es', { numeric: true, sensitivity: 'base' })
@@ -70,6 +71,12 @@ export default function CaballerizasPage() {
     const sorted = ((data as Caballeriza[]) ?? []).sort((a, b) => naturalSort(a.clave, b.clave))
     setTotal(sorted.length)
     setItems(sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE))
+    setKpis({
+      libres: sorted.filter(x => x.status === 'Libre').length,
+      rentadas: sorted.filter(x => x.status === 'Rentada').length,
+      ocupadas: sorted.filter(x => x.status === 'Ocupada').length,
+      mantenimiento: sorted.filter(x => x.status === 'Mantenimiento').length,
+    })
     setLoading(false)
   }, [page, search, filtroStatus])
 
@@ -125,30 +132,49 @@ export default function CaballerizasPage() {
 
   return (
     <div style={{ padding: '24px 28px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-          <ChevronLeft size={14} /> Hípico
-        </Link>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Caballerizas</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input className="input" placeholder="Buscar clave o sección…" value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
-              style={{ paddingLeft: 30, width: 200, fontSize: 12 }} />
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
+              <ChevronLeft size={14} /> Hípico
+            </Link>
           </div>
-          <select className="input" value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPage(0) }} style={{ width: 150, fontSize: 12 }}>
-            <option value="">Todos los status</option>
-            {STATUSES.map(s => <option key={s}>{s}</option>)}
-          </select>
+          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Caballerizas</h1>
+          <p className="page-subtitle">Disponibilidad, secciones y control de estatus de boxes</p>
+        </div>
+        <div className="page-header-actions">
           <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
           {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nueva</button>}
         </div>
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
-        {total} caballeriza{total !== 1 ? 's' : ''} registrada{total !== 1 ? 's' : ''}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
+        {[
+          { label: 'Total', value: total, color: '#1d4ed8', bg: '#eff6ff' },
+          { label: 'Libres', value: kpis.libres, color: '#16a34a', bg: '#f0fdf4' },
+          { label: 'Rentadas', value: kpis.rentadas, color: '#1d4ed8', bg: '#eff6ff' },
+          { label: 'Ocupadas', value: kpis.ocupadas, color: '#b45309', bg: '#fffbeb' },
+          { label: 'Mantenimiento', value: kpis.mantenimiento, color: '#7c3aed', bg: '#f5f3ff' },
+        ].map(k => (
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative' }}>
+          <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input className="input" placeholder="Buscar clave o sección…" value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
+            style={{ paddingLeft: 30, width: 220, fontSize: 12 }} />
+        </div>
+        <select className="input" value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPage(0) }} style={{ width: 170, fontSize: 12 }}>
+          <option value="">Todos los status</option>
+          {STATUSES.map(s => <option key={s}>{s}</option>)}
+        </select>
       </div>
 
       <div className="card" style={{ overflow: 'hidden', padding: 0 }}>

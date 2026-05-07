@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, Edit2, Trash2, ChevronLeft, Eye } from 'lucide-react'
+import { Plus, RefreshCw, Edit2, Trash2, ChevronLeft, Eye, Search } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -83,7 +83,11 @@ export default function ServiciosPage() {
   const [items, setItems]       = useState<Servicio[]>([])
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
+  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
+  const [filtroCaballo, setFiltroCaballo] = useState<number | ''>('')
+  const [filtroArr, setFiltroArr] = useState<number | ''>('')
   const [loading, setLoading]   = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -92,6 +96,7 @@ export default function ServiciosPage() {
   const [saving, setSaving]     = useState(false)
   const [form, setForm]         = useState<typeof EMPTY>(EMPTY)
   const [err, setErr]           = useState('')
+  const [kpis, setKpis] = useState({ costoTotal: 0, facturables: 0, montoFacturable: 0 })
 
   const [caballos, setCaballos]       = useState<CaballoCat[]>([])
   const [arrendatarios, setArrendatarios] = useState<ArrendCat[]>([])
@@ -131,12 +136,35 @@ export default function ServiciosPage() {
       .select('*, cat_caballos(nombre), cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), cat_tipos_servicio(nombre)', { count: 'exact' })
       .order('fecha', { ascending: false })
       .range(from, to)
+    let kpiQ = dbHip
+      .from('ctrl_servicios')
+      .select('costo, cobrar_arrendatario')
+    if (search.trim()) {
+      q = q.or(`descripcion.ilike.%${search}%,proveedor.ilike.%${search}%`)
+      kpiQ = kpiQ.or(`descripcion.ilike.%${search}%,proveedor.ilike.%${search}%`)
+    }
     if (filtroTipo) q = q.eq('tipo', filtroTipo)
-    const { data, count } = await q
+    if (filtroTipo) kpiQ = kpiQ.eq('tipo', filtroTipo)
+    if (filtroCaballo !== '') {
+      q = q.eq('id_caballo_fk', filtroCaballo)
+      kpiQ = kpiQ.eq('id_caballo_fk', filtroCaballo)
+    }
+    if (filtroArr !== '') {
+      q = q.eq('id_arrendatario_fk', filtroArr)
+      kpiQ = kpiQ.eq('id_arrendatario_fk', filtroArr)
+    }
+    const [{ data, count }, { data: kpiData }] = await Promise.all([q, kpiQ])
     setItems((data as Servicio[]) ?? [])
     setTotal(count ?? 0)
+    const all = (kpiData ?? []) as { costo: number | null; cobrar_arrendatario: boolean }[]
+    const facturables = all.filter(x => x.cobrar_arrendatario)
+    setKpis({
+      costoTotal: all.reduce((s, x) => s + Number(x.costo ?? 0), 0),
+      facturables: facturables.length,
+      montoFacturable: facturables.reduce((s, x) => s + Number(x.costo ?? 0), 0),
+    })
     setLoading(false)
-  }, [page, filtroTipo])
+  }, [page, search, filtroTipo, filtroCaballo, filtroArr])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
@@ -206,24 +234,63 @@ export default function ServiciosPage() {
 
   return (
     <div style={{ padding: '24px 28px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-          <ChevronLeft size={14} /> Hípico
-        </Link>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Bitácora de Servicios</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <select className="input" value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setPage(0) }} style={{ fontSize: 12 }}>
-            <option value="">Todos los tipos</option>
-            {['veterinario', 'herraje', 'alimento', 'otro'].map(t => (
-              <option key={t} value={t}>{TIPO_ICON[t]} {t.charAt(0).toUpperCase() + t.slice(1)}</option>
-            ))}
-          </select>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
+              <ChevronLeft size={14} /> Hípico
+            </Link>
+          </div>
+          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Bitácora de Servicios</h1>
+          <p className="page-subtitle">Control de servicios por caballo con seguimiento de costo y facturación</p>
+        </div>
+        <div className="page-header-actions">
           <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
           {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Registrar</button>}
         </div>
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>{total} registro{total !== 1 ? 's' : ''}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
+        {[
+          { label: 'Servicios', value: total.toString(), color: '#1d4ed8', bg: '#eff6ff' },
+          { label: 'Costo total', value: fmt$(kpis.costoTotal), color: '#2563eb', bg: '#eff6ff' },
+          { label: 'Facturables', value: kpis.facturables.toString(), color: '#b45309', bg: '#fffbeb' },
+          { label: 'Monto facturable', value: fmt$(kpis.montoFacturable), color: '#b45309', bg: '#fffbeb' },
+        ].map(k => (
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative' }}>
+          <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            className="input"
+            placeholder="Buscar descripción o proveedor…"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
+            style={{ paddingLeft: 30, width: 240, fontSize: 12 }}
+          />
+        </div>
+        <select className="input" value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setPage(0) }} style={{ fontSize: 12 }}>
+          <option value="">Todos los tipos</option>
+          {['veterinario', 'herraje', 'alimento', 'otro'].map(t => (
+            <option key={t} value={t}>{TIPO_ICON[t]} {t.charAt(0).toUpperCase() + t.slice(1)}</option>
+          ))}
+        </select>
+        <select className="input" value={filtroCaballo} onChange={e => { setFiltroCaballo(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ minWidth: 190, fontSize: 12 }}>
+          <option value="">Todos los caballos</option>
+          {caballos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
+        <select className="input" value={filtroArr} onChange={e => { setFiltroArr(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ minWidth: 220, fontSize: 12 }}>
+          <option value="">Todos los arrendatarios</option>
+          {arrendatarios.map(a => <option key={a.id} value={a.id}>{fmtNombreArr(a)}</option>)}
+        </select>
+      </div>
 
       <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

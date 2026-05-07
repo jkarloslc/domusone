@@ -48,6 +48,8 @@ export default function ArrendatariosPage() {
   const [page, setPage]             = useState(0)
   const [search, setSearch]         = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState('')
+  const [filtroActivo, setFiltroActivo] = useState('')
   const [loading, setLoading]       = useState(true)
   const [deleting, setDeleting]     = useState<number | null>(null)
   const [showModal, setShowModal]   = useState(false)
@@ -56,6 +58,7 @@ export default function ArrendatariosPage() {
   const [saving, setSaving]         = useState(false)
   const [form, setForm]             = useState<Omit<Arrendatario, 'id' | 'created_at'>>(EMPTY)
   const [err, setErr]               = useState('')
+  const [kpis, setKpis] = useState({ activos: 0, inactivos: 0, morales: 0, fisicas: 0 })
 
   const fetchItems = useCallback(async () => {
     setLoading(true)
@@ -67,14 +70,34 @@ export default function ArrendatariosPage() {
       .order('apellido_paterno', { ascending: true })
       .order('nombre', { ascending: true })
       .range(from, to)
+    let kpiQ = dbHip
+      .from('cat_arrendatarios')
+      .select('activo, tipo_persona')
     if (search.trim()) {
       q = q.or(`nombre.ilike.%${search}%,apellido_paterno.ilike.%${search}%,razon_social.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`)
+      kpiQ = kpiQ.or(`nombre.ilike.%${search}%,apellido_paterno.ilike.%${search}%,razon_social.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`)
     }
-    const { data, count } = await q
+    if (filtroTipo) {
+      q = q.eq('tipo_persona', filtroTipo)
+      kpiQ = kpiQ.eq('tipo_persona', filtroTipo)
+    }
+    if (filtroActivo) {
+      const esActivo = filtroActivo === 'true'
+      q = q.eq('activo', esActivo)
+      kpiQ = kpiQ.eq('activo', esActivo)
+    }
+    const [{ data, count }, { data: kpiData }] = await Promise.all([q, kpiQ])
     setItems((data as Arrendatario[]) ?? [])
     setTotal(count ?? 0)
+    const all = (kpiData ?? []) as { activo: boolean; tipo_persona: string }[]
+    setKpis({
+      activos: all.filter(x => x.activo).length,
+      inactivos: all.filter(x => !x.activo).length,
+      morales: all.filter(x => x.tipo_persona === 'Moral').length,
+      fisicas: all.filter(x => x.tipo_persona !== 'Moral').length,
+    })
     setLoading(false)
-  }, [page, search])
+  }, [page, search, filtroTipo, filtroActivo])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
@@ -141,30 +164,57 @@ export default function ArrendatariosPage() {
 
   return (
     <div style={{ padding: '24px 28px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-          <ChevronLeft size={14} /> Hípico
-        </Link>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Arrendatarios</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input
-              className="input" placeholder="Buscar..." value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
-              style={{ paddingLeft: 30, width: 200, fontSize: 12 }}
-            />
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
+              <ChevronLeft size={14} /> Hípico
+            </Link>
           </div>
+          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Arrendatarios</h1>
+          <p className="page-subtitle">Padrón de arrendatarios con información fiscal y contacto</p>
+        </div>
+        <div className="page-header-actions">
           <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
           {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nuevo</button>}
         </div>
       </div>
 
-      {/* Stats */}
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
-        {total} arrendatario{total !== 1 ? 's' : ''} en total
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
+        {[
+          { label: 'Total', value: total, color: '#1d4ed8', bg: '#eff6ff' },
+          { label: 'Activos', value: kpis.activos, color: '#15803d', bg: '#f0fdf4' },
+          { label: 'Inactivos', value: kpis.inactivos, color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Persona Física', value: kpis.fisicas, color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Persona Moral', value: kpis.morales, color: '#a16207', bg: '#fefce8' },
+        ].map(k => (
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative' }}>
+          <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            className="input" placeholder="Buscar..." value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
+            style={{ paddingLeft: 30, width: 220, fontSize: 12 }}
+          />
+        </div>
+        <select className="input" value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setPage(0) }} style={{ width: 170, fontSize: 12 }}>
+          <option value="">Todos los tipos</option>
+          <option value="Física">Persona Física</option>
+          <option value="Moral">Persona Moral</option>
+        </select>
+        <select className="input" value={filtroActivo} onChange={e => { setFiltroActivo(e.target.value); setPage(0) }} style={{ width: 150, fontSize: 12 }}>
+          <option value="">Todos</option>
+          <option value="true">Activos</option>
+          <option value="false">Inactivos</option>
+        </select>
       </div>
 
       {/* Tabla */}

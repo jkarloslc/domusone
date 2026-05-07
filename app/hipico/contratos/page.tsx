@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, Edit2, Trash2, Eye, ChevronLeft } from 'lucide-react'
+import { Plus, RefreshCw, Edit2, Trash2, Eye, ChevronLeft, Search } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -59,6 +59,10 @@ export default function ContratosPage() {
   const [items, setItems]       = useState<Contrato[]>([])
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
+  const [search, setSearch]     = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [filtroStatus, setFiltroStatus] = useState('')
+  const [filtroArr, setFiltroArr] = useState<number | ''>('')
   const [loading, setLoading]   = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -67,6 +71,7 @@ export default function ContratosPage() {
   const [saving, setSaving]     = useState(false)
   const [form, setForm]         = useState<typeof EMPTY>(EMPTY)
   const [err, setErr]           = useState('')
+  const [kpis, setKpis] = useState({ vigentes: 0, vencidos: 0, cancelados: 0, rentaTotal: 0 })
 
   const [arrendatarios, setArrendatarios] = useState<ArrendCat[]>([])
   const [caballerizas, setCaballerizas]   = useState<CabCat[]>([])
@@ -82,15 +87,38 @@ export default function ContratosPage() {
     setLoading(true)
     const from = page * PAGE_SIZE
     const to   = from + PAGE_SIZE - 1
-    const { data, count } = await dbHip
+    let q = dbHip
       .from('ctrl_contratos')
       .select('*, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), cat_caballerizas(clave, nombre)', { count: 'exact' })
       .order('fecha_inicio', { ascending: false })
       .range(from, to)
+    let kpiQ = dbHip
+      .from('ctrl_contratos')
+      .select('status, renta_mensual')
+    if (search.trim()) {
+      q = q.or(`folio.ilike.%${search}%,notas.ilike.%${search}%`)
+      kpiQ = kpiQ.or(`folio.ilike.%${search}%,notas.ilike.%${search}%`)
+    }
+    if (filtroStatus) {
+      q = q.eq('status', filtroStatus)
+      kpiQ = kpiQ.eq('status', filtroStatus)
+    }
+    if (filtroArr !== '') {
+      q = q.eq('id_arrendatario_fk', filtroArr)
+      kpiQ = kpiQ.eq('id_arrendatario_fk', filtroArr)
+    }
+    const [{ data, count }, { data: kpiData }] = await Promise.all([q, kpiQ])
     setItems((data as Contrato[]) ?? [])
     setTotal(count ?? 0)
+    const all = (kpiData ?? []) as { status: string; renta_mensual: number }[]
+    setKpis({
+      vigentes: all.filter(x => x.status === 'Vigente').length,
+      vencidos: all.filter(x => x.status === 'Vencido').length,
+      cancelados: all.filter(x => x.status === 'Cancelado').length,
+      rentaTotal: all.reduce((s, x) => s + Number(x.renta_mensual ?? 0), 0),
+    })
     setLoading(false)
-  }, [page])
+  }, [page, search, filtroStatus, filtroArr])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
@@ -158,19 +186,57 @@ export default function ContratosPage() {
 
   return (
     <div style={{ padding: '24px 28px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-          <ChevronLeft size={14} /> Hípico
-        </Link>
-        <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Contratos de Arrendamiento</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
+              <ChevronLeft size={14} /> Hípico
+            </Link>
+          </div>
+          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Contratos de Arrendamiento</h1>
+          <p className="page-subtitle">Gestión de vigencias, renta mensual y relación arrendatario-caballeriza</p>
+        </div>
+        <div className="page-header-actions">
           <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
           {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nuevo</button>}
         </div>
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
-        {total} contrato{total !== 1 ? 's' : ''}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
+        {[
+          { label: 'Total', value: total.toString(), color: '#1d4ed8', bg: '#eff6ff' },
+          { label: 'Vigentes', value: kpis.vigentes.toString(), color: '#15803d', bg: '#f0fdf4' },
+          { label: 'Vencidos', value: kpis.vencidos.toString(), color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Cancelados', value: kpis.cancelados.toString(), color: '#64748b', bg: '#f8fafc' },
+          { label: 'Renta mensual', value: fmt$(kpis.rentaTotal), color: '#7c3aed', bg: '#f5f3ff' },
+        ].map(k => (
+          <div key={k.label} className="card" style={{ padding: '12px 14px', background: k.bg }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{k.label}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: k.color }}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative' }}>
+          <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            className="input"
+            placeholder="Buscar folio o notas…"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
+            style={{ paddingLeft: 30, width: 220, fontSize: 12 }}
+          />
+        </div>
+        <select className="input" value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPage(0) }} style={{ width: 170, fontSize: 12 }}>
+          <option value="">Todos los status</option>
+          {['Vigente', 'Vencido', 'Cancelado', 'En negociación'].map(s => <option key={s}>{s}</option>)}
+        </select>
+        <select className="input" value={filtroArr} onChange={e => { setFiltroArr(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ minWidth: 220, fontSize: 12 }}>
+          <option value="">Todos los arrendatarios</option>
+          {arrendatarios.map(a => <option key={a.id} value={a.id}>{fmtNombreArr(a)}</option>)}
+        </select>
       </div>
 
       <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
