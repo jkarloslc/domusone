@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, Edit2, Trash2, ChevronLeft } from 'lucide-react'
+import { Plus, RefreshCw, Edit2, Trash2, ChevronLeft, Eye } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -62,6 +62,19 @@ const fmtNombreArr = (a?: { nombre: string; apellido_paterno: string | null; raz
 const fmt$ = (v: number | null) => v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
 const fmtFecha = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 
+const toFormFromServicio = (s: Servicio) => ({
+  id_caballo_fk: s.id_caballo_fk,
+  id_arrendatario_fk: s.id_arrendatario_fk,
+  id_tipo_servicio_fk: s.id_tipo_servicio_fk ?? null,
+  tipo: s.tipo,
+  descripcion: s.descripcion ?? '',
+  fecha: s.fecha,
+  proveedor: s.proveedor ?? '',
+  costo: s.costo ?? null,
+  cobrar_arrendatario: s.cobrar_arrendatario,
+  notas: s.notas ?? '',
+})
+
 export default function ServiciosPage() {
   const { canWrite, canDelete } = useAuth()
   const puedeEscribir = canWrite('hipico-servicios')
@@ -74,6 +87,8 @@ export default function ServiciosPage() {
   const [loading, setLoading]   = useState(true)
   const [deleting, setDeleting] = useState<number | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [modalMode, setModalMode] = useState<'create' | 'view' | 'edit'>('create')
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [saving, setSaving]     = useState(false)
   const [form, setForm]         = useState<typeof EMPTY>(EMPTY)
   const [err, setErr]           = useState('')
@@ -105,7 +120,6 @@ export default function ServiciosPage() {
   // Filtrar tipos por el tipo seleccionado en el form
   useEffect(() => {
     setTiposFiltrados(tiposServ.filter(t => t.tipo === form.tipo))
-    setForm(f => ({ ...f, id_tipo_servicio_fk: null }))
   }, [form.tipo, tiposServ])
 
   const fetchItems = useCallback(async () => {
@@ -126,9 +140,32 @@ export default function ServiciosPage() {
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
-  const openNew = () => { setForm(EMPTY); setErr(''); setShowModal(true) }
+  const openNew = () => {
+    setForm(EMPTY)
+    setErr('')
+    setEditingId(null)
+    setModalMode('create')
+    setShowModal(true)
+  }
+
+  const openView = (s: Servicio) => {
+    setForm(toFormFromServicio(s))
+    setErr('')
+    setEditingId(s.id)
+    setModalMode('view')
+    setShowModal(true)
+  }
+
+  const openEdit = (s: Servicio) => {
+    setForm(toFormFromServicio(s))
+    setErr('')
+    setEditingId(s.id)
+    setModalMode('edit')
+    setShowModal(true)
+  }
 
   const handleSave = async () => {
+    if (modalMode === 'view') return
     if (!form.id_caballo_fk)         { setErr('Selecciona un caballo'); return }
     if (!form.id_arrendatario_fk)    { setErr('Selecciona un arrendatario'); return }
     if (!form.descripcion.trim())    { setErr('La descripción es obligatoria'); return }
@@ -145,10 +182,14 @@ export default function ServiciosPage() {
       cobrar_arrendatario: form.cobrar_arrendatario,
       notas: form.notas || null,
     }
-    const { error } = await dbHip.from('ctrl_servicios').insert(payload)
+    const { error } = modalMode === 'edit' && editingId
+      ? await dbHip.from('ctrl_servicios').update(payload).eq('id', editingId)
+      : await dbHip.from('ctrl_servicios').insert(payload)
     setSaving(false)
     if (error) { setErr(error.message); return }
     setShowModal(false)
+    setModalMode('create')
+    setEditingId(null)
     fetchItems()
   }
 
@@ -161,6 +202,7 @@ export default function ServiciosPage() {
   }
 
   const totalPags = Math.ceil(total / PAGE_SIZE)
+  const readOnly = modalMode === 'view'
 
   return (
     <div style={{ padding: '24px 28px' }}>
@@ -213,11 +255,21 @@ export default function ServiciosPage() {
                   <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{s.proveedor ?? '—'}</td>
                   <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>{fmt$(s.costo)}</td>
                   <td style={{ padding: '10px 14px' }}>
-                    {puedeEliminar && (
-                      <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} disabled={deleting === s.id} onClick={() => handleDelete(s.id)}>
-                        <Trash2 size={13} />
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openView(s)} title="Consultar">
+                        <Eye size={13} />
                       </button>
-                    )}
+                      {puedeEscribir && (
+                        <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => openEdit(s)} title="Editar">
+                          <Edit2 size={13} />
+                        </button>
+                      )}
+                      {puedeEliminar && (
+                        <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} disabled={deleting === s.id} onClick={() => handleDelete(s.id)} title="Eliminar">
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )
@@ -236,12 +288,19 @@ export default function ServiciosPage() {
 
       {/* Modal */}
       {showModal && (
-        <ModalShell modulo="hipico" titulo="Registrar Servicio" onClose={() => setShowModal(false)} maxWidth={580}
+        <ModalShell modulo="hipico" titulo={modalMode === 'edit' ? 'Editar Servicio' : modalMode === 'view' ? 'Consulta de Servicio' : 'Registrar Servicio'} onClose={() => setShowModal(false)} maxWidth={580}
           footer={
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-ghost" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</button>
-            </div>
+            modalMode === 'view' ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-ghost" onClick={() => setShowModal(false)}>Cerrar</button>
+                {puedeEscribir && <button className="btn-primary" onClick={() => setModalMode('edit')}>Editar</button>}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-ghost" onClick={() => setShowModal(false)}>Cancelar</button>
+                <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Guardando…' : modalMode === 'edit' ? 'Guardar cambios' : 'Guardar'}</button>
+              </div>
+            )
           }
         >
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -252,12 +311,14 @@ export default function ServiciosPage() {
                 {['veterinario', 'herraje', 'alimento', 'otro'].map(t => {
                   const tc = TIPO_COLOR[t]
                   return (
-                    <button key={t} onClick={() => setForm(f => ({ ...f, tipo: t }))}
+                    <button key={t} onClick={() => setForm(f => ({ ...f, tipo: t, id_tipo_servicio_fk: null }))}
+                      disabled={readOnly}
                       style={{
                         flex: 1, padding: '8px 4px', borderRadius: 8, border: `1px solid ${form.tipo === t ? tc.color : 'var(--border)'}`,
-                        background: form.tipo === t ? tc.bg : 'var(--surface-800)', cursor: 'pointer',
+                        background: form.tipo === t ? tc.bg : 'var(--surface-800)', cursor: readOnly ? 'default' : 'pointer',
                         fontSize: 12, color: form.tipo === t ? tc.color : 'var(--text-muted)',
                         fontWeight: form.tipo === t ? 600 : 400,
+                        opacity: readOnly ? 0.8 : 1,
                       }}>
                       {TIPO_ICON[t]}<br />{t.charAt(0).toUpperCase() + t.slice(1)}
                     </button>
@@ -269,7 +330,7 @@ export default function ServiciosPage() {
             {/* Caballo */}
             <div style={{ gridColumn: 'span 2' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Caballo *</label>
-              <select className="input" value={form.id_caballo_fk ?? ''} onChange={e => setForm(f => ({ ...f, id_caballo_fk: e.target.value ? Number(e.target.value) : null }))} style={{ width: '100%' }}>
+              <select className="input" disabled={readOnly} value={form.id_caballo_fk ?? ''} onChange={e => setForm(f => ({ ...f, id_caballo_fk: e.target.value ? Number(e.target.value) : null }))} style={{ width: '100%' }}>
                 <option value="">— Seleccionar —</option>
                 {caballos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
@@ -278,7 +339,7 @@ export default function ServiciosPage() {
             {/* Arrendatario */}
             <div style={{ gridColumn: 'span 2' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Arrendatario *</label>
-              <select className="input" value={form.id_arrendatario_fk ?? ''} onChange={e => setForm(f => ({ ...f, id_arrendatario_fk: e.target.value ? Number(e.target.value) : null }))} style={{ width: '100%' }}>
+              <select className="input" disabled={readOnly} value={form.id_arrendatario_fk ?? ''} onChange={e => setForm(f => ({ ...f, id_arrendatario_fk: e.target.value ? Number(e.target.value) : null }))} style={{ width: '100%' }}>
                 <option value="">— Seleccionar —</option>
                 {arrendatarios.map(a => <option key={a.id} value={a.id}>{fmtNombreArr(a)}</option>)}
               </select>
@@ -288,7 +349,7 @@ export default function ServiciosPage() {
             {tiposFiltrados.length > 0 && (
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Tipo específico</label>
-                <select className="input" value={form.id_tipo_servicio_fk ?? ''} onChange={e => {
+                <select className="input" disabled={readOnly} value={form.id_tipo_servicio_fk ?? ''} onChange={e => {
                   const ts = tiposServ.find(t => t.id === Number(e.target.value))
                   setForm(f => ({ ...f, id_tipo_servicio_fk: e.target.value ? Number(e.target.value) : null, descripcion: ts?.nombre ?? f.descripcion }))
                 }} style={{ width: '100%' }}>
@@ -301,31 +362,31 @@ export default function ServiciosPage() {
             {/* Descripción */}
             <div style={{ gridColumn: 'span 2' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Descripción *</label>
-              <input className="input" value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} style={{ width: '100%' }} />
+              <input className="input" disabled={readOnly} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} style={{ width: '100%' }} />
             </div>
 
             <div style={{ gridColumn: 'span 1' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Fecha</label>
-              <input className="input" type="date" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} style={{ width: '100%' }} />
+              <input className="input" disabled={readOnly} type="date" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} style={{ width: '100%' }} />
             </div>
             <div style={{ gridColumn: 'span 1' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Proveedor / Médico</label>
-              <input className="input" value={form.proveedor} onChange={e => setForm(f => ({ ...f, proveedor: e.target.value }))} style={{ width: '100%' }} />
+              <input className="input" disabled={readOnly} value={form.proveedor} onChange={e => setForm(f => ({ ...f, proveedor: e.target.value }))} style={{ width: '100%' }} />
             </div>
 
             <div style={{ gridColumn: 'span 1' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Costo</label>
-              <input className="input" type="number" value={form.costo ?? ''} onChange={e => setForm(f => ({ ...f, costo: e.target.value === '' ? null : Number(e.target.value) }))} style={{ width: '100%' }} />
+              <input className="input" disabled={readOnly} type="number" value={form.costo ?? ''} onChange={e => setForm(f => ({ ...f, costo: e.target.value === '' ? null : Number(e.target.value) }))} style={{ width: '100%' }} />
             </div>
 
             <div style={{ gridColumn: 'span 1', display: 'flex', alignItems: 'center', gap: 8, marginTop: 20 }}>
-              <input type="checkbox" id="cobrar-arrendatario" checked={form.cobrar_arrendatario} onChange={e => setForm(f => ({ ...f, cobrar_arrendatario: e.target.checked }))} />
+              <input type="checkbox" disabled={readOnly} id="cobrar-arrendatario" checked={form.cobrar_arrendatario} onChange={e => setForm(f => ({ ...f, cobrar_arrendatario: e.target.checked }))} />
               <label htmlFor="cobrar-arrendatario" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Cobrar al arrendatario</label>
             </div>
 
             <div style={{ gridColumn: 'span 2' }}>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notas</label>
-              <textarea className="input" rows={2} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} style={{ resize: 'vertical', width: '100%' }} />
+              <textarea className="input" disabled={readOnly} rows={2} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} style={{ resize: 'vertical', width: '100%' }} />
             </div>
 
             {err && <div style={{ gridColumn: 'span 2', fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
