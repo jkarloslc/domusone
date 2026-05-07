@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbComp, dbGolf } from '@/lib/supabase'
+import { supabase, dbCtrl, dbComp, dbGolf } from '@/lib/supabase'
 import ModalShell from '@/components/ui/ModalShell'
 import {
   Plus, Star, MapPin, Calendar, Users, DollarSign,
@@ -98,10 +98,42 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 
 const FORMAS_PAGO = ['Efectivo', 'Transferencia', 'Tarjeta', 'Cheque', 'Otro']
 const STATUSES    = ['Cotización', 'Confirmado', 'En curso', 'Realizado', 'Cancelado']
+const CHECKLIST_BUCKET = 'eventos-checklist-operativo'
+const CHECKLIST_ITEMS = [
+  ['chk_contrato_firmado', 'Contrato firmado'],
+  ['chk_anticipo_pagado', 'Pago de anticipo recibido'],
+  ['chk_layout_autorizado', 'Layout autorizado'],
+  ['chk_montaje_concluido', 'Montaje concluido'],
+  ['chk_revision_final', 'Revisión final operativa'],
+] as const
+
+type ChecklistKey = typeof CHECKLIST_ITEMS[number][0]
+
+const emptyChecklistFiles = (): Record<ChecklistKey, string | null> => ({
+  chk_contrato_firmado: null,
+  chk_anticipo_pagado: null,
+  chk_layout_autorizado: null,
+  chk_montaje_concluido: null,
+  chk_revision_final: null,
+})
+const emptyChecklistLoading = (): Record<ChecklistKey, boolean> => ({
+  chk_contrato_firmado: false,
+  chk_anticipo_pagado: false,
+  chk_layout_autorizado: false,
+  chk_montaje_concluido: false,
+  chk_revision_final: false,
+})
 
 const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
 const fmtFecha = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 const fmtFolioVentaPos = (v: Pick<VentaPOS, 'id' | 'folio_dia'>) => `#${String(v.id).padStart(6, '0')} · Día ${v.folio_dia}`
+const checklistPath = (idEvento: number, key: ChecklistKey) => `${idEvento}/${key}`
+
+function isChecklistFile(file: File) {
+  const t = (file.type || '').toLowerCase()
+  const n = file.name.toLowerCase()
+  return t === 'application/pdf' || t === 'image/jpeg' || n.endsWith('.pdf') || n.endsWith('.jpg') || n.endsWith('.jpeg')
+}
 
 function sortEventosDesc(a: Evento, b: Evento) {
   const fecha = b.fecha_inicio.localeCompare(a.fecha_inicio)
@@ -185,6 +217,9 @@ export default function EventosPage() {
     post_incidencias: '', post_danos: '', post_evaluacion: '', post_conclusion: '',
   })
   const [form, setForm] = useState(blankForm())
+  const [checklistFiles, setChecklistFiles] = useState<Record<ChecklistKey, string | null>>(emptyChecklistFiles())
+  const [checklistLoading, setChecklistLoading] = useState<Record<ChecklistKey, boolean>>(emptyChecklistLoading())
+  const [loadingChecklistFiles, setLoadingChecklistFiles] = useState(false)
 
   // Ingresos
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
@@ -265,6 +300,76 @@ export default function EventosPage() {
     }
   }, [])
 
+  const loadChecklistFiles = useCallback(async (evtId: number) => {
+    setLoadingChecklistFiles(true)
+    const nextFiles = emptyChecklistFiles()
+    const nextChecked: Partial<Record<ChecklistKey, boolean>> = {}
+
+    await Promise.all(CHECKLIST_ITEMS.map(async ([k]) => {
+      const { data, error } = await supabase.storage.from(CHECKLIST_BUCKET).createSignedUrl(checklistPath(evtId, k), 60 * 60 * 24 * 7)
+      if (!error && data?.signedUrl) {
+        nextFiles[k] = data.signedUrl
+        nextChecked[k] = true
+      } else {
+        nextChecked[k] = false
+      }
+    }))
+
+    setChecklistFiles(nextFiles)
+    setForm(prev => ({ ...prev, ...nextChecked }))
+    setLoadingChecklistFiles(false)
+  }, [])
+
+  const setChecklistBusy = (key: ChecklistKey, busy: boolean) => {
+    setChecklistLoading(prev => ({ ...prev, [key]: busy }))
+  }
+
+  const subirChecklist = async (key: ChecklistKey, file: File) => {
+    if (!editEvt) { setErr('Guarda el evento primero para habilitar adjuntos del checklist.'); return }
+    if (!isChecklistFile(file)) { setErr('Solo se permiten archivos PDF o JPG/JPEG.'); return }
+
+    setChecklistBusy(key, true)
+    setErr('')
+    const path = checklistPath(editEvt.id, key)
+
+    const { error: upErr } = await supabase.storage.from(CHECKLIST_BUCKET).upload(path, file, {
+      upsert: true,
+      contentType: file.type || undefined,
+    })
+    if (upErr) {
+      setErr(`No se pudo subir el archivo (${file.name}): ${upErr.message}`)
+      setChecklistBusy(key, false)
+      return
+    }
+
+    const { data: signed, error: signErr } = await supabase.storage.from(CHECKLIST_BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7)
+    if (signErr || !signed?.signedUrl) {
+      setErr(`El archivo se subió, pero no se pudo generar enlace: ${signErr?.message ?? 'sin detalle'}`)
+      setChecklistBusy(key, false)
+      return
+    }
+
+    setChecklistFiles(prev => ({ ...prev, [key]: signed.signedUrl }))
+    setForm(prev => ({ ...prev, [key]: true }))
+    setChecklistBusy(key, false)
+  }
+
+  const borrarChecklist = async (key: ChecklistKey) => {
+    if (!editEvt) return
+    setChecklistBusy(key, true)
+    setErr('')
+    const path = checklistPath(editEvt.id, key)
+    const { error } = await supabase.storage.from(CHECKLIST_BUCKET).remove([path])
+    if (error) {
+      setErr(`No se pudo eliminar el archivo: ${error.message}`)
+      setChecklistBusy(key, false)
+      return
+    }
+    setChecklistFiles(prev => ({ ...prev, [key]: null }))
+    setForm(prev => ({ ...prev, [key]: false }))
+    setChecklistBusy(key, false)
+  }
+
   // ── Open modal ─────────────────────────────────────────────
   const openNew = () => {
     setEditEvt(null)
@@ -276,6 +381,9 @@ export default function EventosPage() {
     setBusqVentaPOS('')
     setVentasPOS([])
     setVentaPosMap({})
+    setChecklistFiles(emptyChecklistFiles())
+    setChecklistLoading(emptyChecklistLoading())
+    setLoadingChecklistFiles(false)
     setModal(true)
   }
 
@@ -327,8 +435,12 @@ export default function EventosPage() {
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
     setBusqVentaPOS('')
     setVentasPOS([])
+    setChecklistFiles(emptyChecklistFiles())
+    setChecklistLoading(emptyChecklistLoading())
+    setLoadingChecklistFiles(false)
     setModal(true)
     await loadEventoDetalle(ev.id)
+    await loadChecklistFiles(ev.id)
   }
 
   // ── Open consulta (read-only) ──────────────────────────────
@@ -1189,25 +1301,54 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               {/* Checklist operativo */}
               <FmSection title="Checklist Operativo" color="#7e22ce">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {([
-                    ['chk_contrato_firmado',  'Contrato firmado'],
-                    ['chk_anticipo_pagado',   'Pago de anticipo recibido'],
-                    ['chk_layout_autorizado', 'Layout autorizado'],
-                    ['chk_montaje_concluido', 'Montaje concluido'],
-                    ['chk_revision_final',    'Revisión final operativa'],
-                  ] as [string, string][]).map(([k, label]) => {
-                    const checked = !!(form as any)[k]
+                  {CHECKLIST_ITEMS.map(([k, label]) => {
+                    const hasFile = !!checklistFiles[k]
+                    const busy = checklistLoading[k]
                     return (
-                      <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: '1px solid', borderColor: checked ? '#7e22ce' : '#e2e8f0', background: checked ? '#faf5ff' : '#fff', cursor: 'pointer', userSelect: 'none' }}>
-                        <input type="checkbox" checked={checked} onChange={e => setForm(f => ({ ...f, [k]: e.target.checked }))} style={{ accentColor: '#7e22ce', width: 16, height: 16, flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#7e22ce' : '#475569' }}>{label}</span>
-                        {checked && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#7e22ce', fontWeight: 700 }}>✓ Completado</span>}
-                      </label>
+                      <div key={k} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid', borderColor: hasFile ? '#7e22ce' : '#e2e8f0', background: hasFile ? '#faf5ff' : '#fff' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: hasFile ? 600 : 400, color: hasFile ? '#7e22ce' : '#475569' }}>{label}</span>
+                          {hasFile && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#7e22ce', fontWeight: 700 }}>✓ Archivo cargado</span>}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"
+                            disabled={!editEvt || busy || saving}
+                            onChange={async e => {
+                              const f = e.target.files?.[0]
+                              if (f) await subirChecklist(k, f)
+                              e.currentTarget.value = ''
+                            }}
+                            style={{ fontSize: 12 }}
+                          />
+                          {hasFile && checklistFiles[k] && (
+                            <a href={checklistFiles[k] ?? '#'} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#6d28d9', textDecoration: 'none', fontWeight: 600 }}>
+                              Ver archivo
+                            </a>
+                          )}
+                          {hasFile && (
+                            <button
+                              type="button"
+                              className="btn-ghost"
+                              onClick={() => borrarChecklist(k)}
+                              disabled={busy || saving}
+                              style={{ fontSize: 11, color: '#7e22ce', padding: '4px 8px' }}
+                            >
+                              Eliminar
+                            </button>
+                          )}
+                          {busy && <span style={{ fontSize: 11, color: '#7e22ce' }}>Procesando…</span>}
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
                 <div style={{ marginTop: 10, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
-                  {['chk_contrato_firmado','chk_anticipo_pagado','chk_layout_autorizado','chk_montaje_concluido','chk_revision_final'].filter(k => (form as any)[k]).length}/5 ítems completados
+                  {!editEvt
+                    ? 'Guarda primero el evento para habilitar la carga de PDF/JPG en el checklist.'
+                    : `${CHECKLIST_ITEMS.filter(([k]) => !!checklistFiles[k]).length}/5 archivos cargados`}
+                  {loadingChecklistFiles && editEvt && ' · Cargando adjuntos…'}
                 </div>
               </FmSection>
 
