@@ -4,9 +4,10 @@ import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Receipt, ChevronLeft, ChevronRight,
-  X, Save, Loader, Calendar, Eye, Ban, Layers, DollarSign
+  Save, Loader, Calendar, Eye, Ban, Layers, DollarSign, Printer
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = {
@@ -38,6 +39,15 @@ const fmtFolioIng = (id: number) =>
   `ING-${new Date().getFullYear()}-${String(id).padStart(4, '0')}`
 const toLocalYmd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const fmtFechaLarga = (d: string) =>
+  new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
+const escapeHtml = (v: string | number | null | undefined) =>
+  String(v ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Confirmado: { bg: '#f0fdf4', color: '#15803d' },
@@ -80,6 +90,7 @@ function ReciboModal({
   const [loadingSecs, setLoadingSecs] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [printing, setPrinting] = useState(false)
   const [cancelMotivo, setCancelMotivo] = useState('')
   const [showCancel, setShowCancel] = useState(false)
   const [error, setError]         = useState('')
@@ -226,6 +237,140 @@ function ReciboModal({
     onSaved()
   }
 
+  const handlePrint = async () => {
+    if (!recibo) return
+    setPrinting(true)
+    setError('')
+    try {
+      let orgNombre = 'Organización'
+      let orgSubtitulo = ''
+      let orgLogo = ''
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor')
+        .in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((row: any) => {
+        if (row.clave === 'org_nombre') orgNombre = row.valor ?? orgNombre
+        if (row.clave === 'org_subtitulo') orgSubtitulo = row.valor ?? ''
+        if (row.clave === 'org_logo_url') orgLogo = row.valor ?? ''
+      })
+
+      const [secRes, frenteRes] = await Promise.all([
+        dbCtrl.from('recibos_ingreso_secciones')
+          .select('nombre_seccion, monto')
+          .eq('id_recibo_fk', recibo.id)
+          .order('nombre_seccion'),
+        dbCtrl.from('recibos_ingreso_frentes')
+          .select('nombre_frente, monto')
+          .eq('id_recibo_fk', recibo.id)
+          .order('nombre_frente'),
+      ])
+      const secs = (secRes.data ?? []) as { nombre_seccion: string; monto: number }[]
+      const frentes = (frenteRes.data ?? []) as { nombre_frente: string; monto: number }[]
+
+      const formas = [
+        { nombre: 'Efectivo', monto: recibo.monto_efectivo ?? 0 },
+        { nombre: 'Transferencia', monto: recibo.monto_transferencia ?? 0 },
+        { nombre: 'Tarjeta', monto: recibo.monto_tarjeta ?? 0 },
+        { nombre: 'Cheque', monto: recibo.monto_cheque ?? 0 },
+      ].filter(f => f.monto > 0)
+
+      const centroNombre = centroSel?.nombre ?? 'Sin centro'
+      const desgloseRows = esSecciones
+        ? secs.map(s => `<tr><td>${escapeHtml(s.nombre_seccion)}</td><td style="text-align:right">${fmt(s.monto)}</td></tr>`).join('')
+        : esFrente
+          ? frentes.map(f => `<tr><td>${escapeHtml(f.nombre_frente)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
+          : ''
+      const desgloseLabel = esSecciones ? 'Desglose por Sección' : esFrente ? 'Desglose por Frente' : ''
+      const formasRows = formas.length > 0
+        ? formas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
+        : '<tr><td colspan="2">Captura por desglose</td></tr>'
+      const logoHtml = orgLogo
+        ? `<img src="${escapeHtml(orgLogo)}" style="height:52px;max-width:160px;object-fit:contain;" />`
+        : '<div style="width:52px;height:52px;border-radius:8px;background:#e2e8f0;color:#64748b;display:flex;align-items:center;justify-content:center;font-weight:700">ORG</div>'
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Recibo ${escapeHtml(recibo.folio ?? `#${recibo.id}`)}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 34px; font-size: 12px; color: #1e293b; }
+        .org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0f766e; margin-bottom:18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #0f766e; margin:0 0 2px; }
+        .org-sub { font-size: 11px; color: #64748b; }
+        .doc-title { font-size: 14px; font-weight: 700; color: #0f766e; margin-bottom: 3px; }
+        .meta { font-size: 11px; color: #64748b; }
+        .section { margin-bottom: 16px; }
+        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: #0f766e; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 10px; }
+        th { background: #f0fdfa; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: left; }
+        .total { background: #ecfeff; font-weight: 700; color: #0f766e; }
+        .firmas { display: flex; gap: 60px; margin-top: 52px; }
+        .firma { border-top: 1px solid #0f172a; width: 190px; padding-top: 6px; text-align: center; font-size: 11px; color: #64748b; }
+        @page { margin: 1.2cm; }
+      </style></head><body>
+        <div class="org-header">
+          ${logoHtml}
+          <div>
+            <div class="org-nombre">${escapeHtml(orgNombre)}</div>
+            ${orgSubtitulo ? `<div class="org-sub">${escapeHtml(orgSubtitulo)}</div>` : ''}
+          </div>
+          <div style="margin-left:auto;text-align:right">
+            <div class="doc-title">Recibo de Ingreso</div>
+            <div class="meta">Folio: <strong>${escapeHtml(recibo.folio ?? `#${recibo.id}`)}</strong></div>
+            <div class="meta">Fecha: ${escapeHtml(fmtFechaLarga(recibo.fecha))}</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <table>
+            <tr><th>Centro de Ingreso</th><td>${escapeHtml(centroNombre)}</td><th>Status</th><td>${escapeHtml(recibo.status)}</td></tr>
+            <tr><th>Descripción</th><td colspan="3">${escapeHtml(recibo.descripcion ?? '—')}</td></tr>
+            <tr><th>Registrado por</th><td>${escapeHtml(recibo.usuario_crea ?? '—')}</td><th>Fecha registro</th><td>${escapeHtml(fmtFechaLarga(recibo.created_at.slice(0, 10)))}</td></tr>
+            ${recibo.notas ? `<tr><th>Notas</th><td colspan="3">${escapeHtml(recibo.notas)}</td></tr>` : ''}
+          </table>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Formas de Cobro</div>
+          <table>
+            <thead><tr><th>Forma</th><th style="text-align:right">Monto</th></tr></thead>
+            <tbody>${formasRows}</tbody>
+            <tfoot><tr><th class="total">Total</th><th class="total" style="text-align:right">${fmt(recibo.monto_total ?? 0)}</th></tr></tfoot>
+          </table>
+        </div>
+
+        ${desgloseRows ? `
+          <div class="section">
+            <div class="section-title">${desgloseLabel}</div>
+            <table>
+              <thead><tr><th>${esSecciones ? 'Sección' : 'Frente'}</th><th style="text-align:right">Monto</th></tr></thead>
+              <tbody>${desgloseRows}</tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        <div class="firmas">
+          <div class="firma">Elaboró</div>
+          <div class="firma">Recibió</div>
+        </div>
+      </body></html>`
+
+      const iframe = document.createElement('iframe')
+      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+      document.body.appendChild(iframe)
+      iframe.contentDocument!.open()
+      iframe.contentDocument!.write(html)
+      iframe.contentDocument!.close()
+      setTimeout(() => {
+        iframe.contentWindow!.focus()
+        iframe.contentWindow!.print()
+        setTimeout(() => document.body.removeChild(iframe), 2000)
+      }, 280)
+    } catch (e: any) {
+      setError(e?.message ?? 'No se pudo imprimir el recibo')
+    } finally {
+      setPrinting(false)
+    }
+  }
+
   const numInput = (label: string, key: string, val: number) => (
     <div>
       <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>{label}</label>
@@ -240,32 +385,53 @@ function ReciboModal({
   )
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 600, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-
-        {/* Cabecera */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
+    <ModalShell
+      modulo="ingresos"
+      titulo={isView ? (recibo!.folio ?? `Recibo #${recibo!.id}`) : 'Nuevo Recibo de Ingreso'}
+      subtitulo={isView ? `${fmtFecha(form.fecha)} · ${centroSel?.nombre ?? 'Sin centro'}` : 'Captura manual de ingresos'}
+      onClose={onClose}
+      maxWidth={600}
+      footer={
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Receipt size={16} style={{ color: '#059669' }} />
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
-                {isView ? recibo!.folio ?? `Recibo #${recibo!.id}` : 'Nuevo Recibo de Ingreso'}
-              </h2>
-            </div>
-            {isView && (
-              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                background: STATUS_STYLE[recibo!.status]?.bg ?? '#f8fafc',
-                color: STATUS_STYLE[recibo!.status]?.color ?? '#64748b',
-                marginTop: 4, display: 'inline-block' }}>
-                {recibo!.status}
-              </span>
+            {isView && recibo!.status === 'Confirmado' && !showCancel && (
+              <button onClick={() => setShowCancel(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                <Ban size={13} /> Cancelar recibo
+              </button>
             )}
           </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {isView && (
+              <button className="btn-secondary" onClick={handlePrint} disabled={printing} style={{ fontSize: 12 }}>
+                {printing ? <Loader size={14} className="animate-spin" /> : <Printer size={14} />}
+                Imprimir
+              </button>
+            )}
+            <button className="btn-secondary" onClick={onClose}>
+              {isView ? 'Cerrar' : 'Cancelar'}
+            </button>
+            {!isView && (
+              <button className="btn-primary" onClick={handleSave} disabled={saving}>
+                {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+                Guardar Recibo
+              </button>
+            )}
+          </div>
         </div>
-
-        {/* Cuerpo */}
-        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {isView && (
+          <div>
+            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+              background: STATUS_STYLE[recibo!.status]?.bg ?? '#f8fafc',
+              color: STATUS_STYLE[recibo!.status]?.color ?? '#64748b',
+              display: 'inline-block' }}>
+              {recibo!.status}
+            </span>
+          </div>
+        )}
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', borderRadius: 6, fontSize: 12, color: '#dc2626' }}>{error}</div>}
 
           {/* Fecha + Centro */}
@@ -423,32 +589,8 @@ function ReciboModal({
               </div>
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-          <div>
-            {isView && recibo!.status === 'Confirmado' && !showCancel && (
-              <button onClick={() => setShowCancel(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
-                <Ban size={13} /> Cancelar recibo
-              </button>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn-secondary" onClick={onClose}>
-              {isView ? 'Cerrar' : 'Cancelar'}
-            </button>
-            {!isView && (
-              <button className="btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-                Guardar Recibo
-              </button>
-            )}
-          </div>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   )
 }
 
