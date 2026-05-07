@@ -110,7 +110,7 @@ const GRUPOS = [
     color: '#92400e',
     reportes: [
       { id: 'hipico-estado-cuenta', label: 'Estado de Cuenta', icon: FileText,  desc: 'Cargos y pagos por arrendatario en un período' },
-      { id: 'hipico-servicios',     label: 'Servicios por Caballo', icon: BarChart3, desc: 'Bitácora de veterinario, herrajes y alimentos por caballo, arrendatario y tipo' },
+      { id: 'hipico-servicios',     label: 'Servicios por Caballo', icon: BarChart3, desc: 'Desglose jerárquico por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
     ],
   },
   {
