@@ -25,6 +25,7 @@ type Evento = {
   hora_inicio: string | null
   hora_fin: string | null
   num_asistentes: number | null
+  precio_pactado: number | null
   responsable: string | null
   cliente_nombre: string | null
   cliente_telefono: string | null
@@ -163,6 +164,7 @@ export default function EventosPage() {
     fecha_inicio: new Date().toLocaleDateString('en-CA'),
     fecha_fin: '', hora_inicio: '', hora_fin: '',
     num_asistentes: '' as number | '', responsable: '',
+    precio_pactado: '' as number | '',
     cliente_nombre: '', cliente_telefono: '', cliente_email: '',
     notas: '', status: 'Cotización',
     // Ficha Maestra
@@ -219,7 +221,7 @@ export default function EventosPage() {
   const loadEventos = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('eventos')
-      .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, objetivo, riesgos_operativos, montaje_carpas, montaje_escenario, montaje_pista_baile, montaje_mesas_sillas, montaje_iluminacion, montaje_audio, montaje_pantallas, montaje_generador, montaje_notas, seg_guardias, seg_control_accesos, seg_paramedicos, seg_ambulancia, seg_valet_parking, ayb_banquetero, ayb_tipo_servicio, ayb_num_comensales, ayb_barra_libre, ayb_permisos_sanitarios, golf_tipo_torneo, golf_num_jugadores, golf_tee_times, golf_caddies, golf_carritos, hip_tipo_evento, hip_num_caballos, hip_caballerizas, hip_veterinario, hip_trailers, chk_contrato_firmado, chk_anticipo_pagado, chk_layout_autorizado, chk_montaje_concluido, chk_revision_final, post_incidencias, post_danos, post_evaluacion, post_conclusion, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
+      .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, precio_pactado, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, objetivo, riesgos_operativos, montaje_carpas, montaje_escenario, montaje_pista_baile, montaje_mesas_sillas, montaje_iluminacion, montaje_audio, montaje_pantallas, montaje_generador, montaje_notas, seg_guardias, seg_control_accesos, seg_paramedicos, seg_ambulancia, seg_valet_parking, ayb_banquetero, ayb_tipo_servicio, ayb_num_comensales, ayb_barra_libre, ayb_permisos_sanitarios, golf_tipo_torneo, golf_num_jugadores, golf_tee_times, golf_caddies, golf_carritos, hip_tipo_evento, hip_num_caballos, hip_caballerizas, hip_veterinario, hip_trailers, chk_contrato_firmado, chk_anticipo_pagado, chk_layout_autorizado, chk_montaje_concluido, chk_revision_final, post_incidencias, post_danos, post_evaluacion, post_conclusion, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
       .order('fecha_inicio', { ascending: false })
     if (filtroStatus) q = q.eq('status', filtroStatus)
     const { data } = await q
@@ -288,6 +290,7 @@ export default function EventosPage() {
       hora_inicio: ev.hora_inicio ?? '',
       hora_fin: ev.hora_fin ?? '',
       num_asistentes: ev.num_asistentes ?? '',
+      precio_pactado: ev.precio_pactado ?? '',
       responsable: ev.responsable ?? '',
       cliente_nombre: ev.cliente_nombre ?? '',
       cliente_telefono: ev.cliente_telefono ?? '',
@@ -364,6 +367,7 @@ export default function EventosPage() {
       hora_inicio:         form.hora_inicio || null,
       hora_fin:            form.hora_fin || null,
       num_asistentes:      form.num_asistentes || null,
+      precio_pactado:      form.precio_pactado === '' ? null : form.precio_pactado,
       responsable:         form.responsable || null,
       cliente_nombre:      form.cliente_nombre || null,
       cliente_telefono:    form.cliente_telefono || null,
@@ -857,7 +861,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                {['Folio', 'Nombre', 'Tipo', 'Lugar', 'Fecha inicio', 'Cliente', 'Status', ''].map(h => (
+                {['Folio', 'Nombre', 'Tipo', 'Lugar', 'Fecha inicio', 'Cliente', 'Precio pactado', 'Status', ''].map(h => (
                   <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
                 ))}
               </tr>
@@ -884,6 +888,9 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     </td>
                     <td style={{ padding: '9px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 12 }}>{fmtFecha(ev.fecha_inicio)}</td>
                     <td style={{ padding: '9px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>{ev.cliente_nombre ?? '—'}</td>
+                    <td style={{ padding: '9px 12px', color: ev.precio_pactado != null ? '#1d4ed8' : 'var(--text-muted)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap' }}>
+                      {ev.precio_pactado != null ? fmt$(ev.precio_pactado) : '—'}
+                    </td>
                     <td style={{ padding: '9px 12px' }}>
                       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{ev.status}</span>
                     </td>
@@ -986,6 +993,10 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>N° de asistentes</label>
                   <input className="input" type="number" value={form.num_asistentes} onChange={e => setForm(f => ({ ...f, num_asistentes: e.target.value ? Number(e.target.value) : '' }))} style={{ fontSize: 13, width: '100%' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Precio pactado</label>
+                  <input className="input" type="number" min="0" step="0.01" value={form.precio_pactado} onChange={e => setForm(f => ({ ...f, precio_pactado: e.target.value ? Number(e.target.value) : '' }))} style={{ fontSize: 13, width: '100%' }} />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
@@ -1503,6 +1514,11 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     <span style={{ color: 'var(--text-muted)' }}>· <Users size={11} style={{ display: 'inline', verticalAlign: 'middle' }} /> {viewEvt.num_asistentes}</span>
                   )}
                 </div>
+                {viewEvt.precio_pactado != null && (
+                  <div style={{ gridColumn: '1 / -1', fontSize: 12, color: 'var(--text-muted)' }}>
+                    <strong style={{ color: 'var(--text-secondary)' }}>Precio pactado:</strong> {fmt$(viewEvt.precio_pactado)}
+                  </div>
+                )}
                 {viewEvt.cliente_nombre && (
                   <div style={{ gridColumn: '1 / -1', fontSize: 12, color: 'var(--text-muted)' }}>
                     <strong style={{ color: 'var(--text-secondary)' }}>Cliente:</strong> {viewEvt.cliente_nombre}
