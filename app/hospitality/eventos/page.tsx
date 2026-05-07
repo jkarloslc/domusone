@@ -691,6 +691,7 @@ td { padding:5px 10px; border-top:1px solid #f1f5f9; }
     <div class="f"><label>Fecha</label><span>${fmtD(viewEvt.fecha_inicio)}${viewEvt.fecha_fin && viewEvt.fecha_fin !== viewEvt.fecha_inicio ? ' → ' + fmtD(viewEvt.fecha_fin) : ''}</span></div>
     <div class="f"><label>Horario</label><span>${v(viewEvt.hora_inicio)}${viewEvt.hora_fin ? ' – ' + viewEvt.hora_fin : ''}</span></div>
     <div class="f"><label>N° Estimado de Asistentes</label><span>${v(viewEvt.num_asistentes)}</span></div>
+    <div class="f"><label>Precio Pactado</label><span>${viewEvt.precio_pactado != null ? fmt$(viewEvt.precio_pactado) : '—'}</span></div>
     <div class="f"><label>Cliente / Contratante</label><span>${v(viewEvt.cliente_nombre)}</span></div>
     <div class="f"><label>Contacto</label><span>${[viewEvt.cliente_telefono, viewEvt.cliente_email].filter(Boolean).join(' · ') || '—'}</span></div>
     <div class="f"><label>Responsable Operativo</label><span>${v(viewEvt.responsable)}</span></div>
