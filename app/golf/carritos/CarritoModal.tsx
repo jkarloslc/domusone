@@ -97,18 +97,30 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
       })
   }, [])
 
-  // Buscar socio con debounce
+  // Buscar socio con debounce — búsqueda multi-palabra
   useEffect(() => {
     if (socioInicial || !isNew) return
-    if (socioSearch.trim().length < 2) { setSocioResults([]); return }
+    const trimmed = socioSearch.trim()
+    if (trimmed.length < 2) { setSocioResults([]); return }
     const t = setTimeout(async () => {
       setBuscando(true)
+      // Dividir en palabras para soportar "Murua Pagola", "Luis Murua", etc.
+      const words = trimmed.toLowerCase().split(/\s+/).filter(Boolean)
+      const first = words[0]
+      // Consulta con la primera palabra en todos los campos de nombre
       const { data } = await dbGolf.from('cat_socios')
         .select('id, numero_socio, nombre, apellido_paterno, apellido_materno')
         .eq('activo', true)
-        .or(`nombre.ilike.%${socioSearch}%,apellido_paterno.ilike.%${socioSearch}%,numero_socio.ilike.%${socioSearch}%`)
-        .limit(8)
-      setSocioResults((data as Socio[]) ?? [])
+        .or(`nombre.ilike.%${first}%,apellido_paterno.ilike.%${first}%,apellido_materno.ilike.%${first}%,numero_socio.ilike.%${first}%`)
+        .limit(60)
+      // Filtrar client-side: todas las palabras deben aparecer en el nombre completo
+      const todos = (data as Socio[]) ?? []
+      const filtered = words.length === 1 ? todos : todos.filter(s => {
+        const full = [s.nombre, s.apellido_paterno, s.apellido_materno]
+          .filter(Boolean).join(' ').toLowerCase()
+        return words.every(w => full.includes(w) || (s.numero_socio ?? '').toLowerCase().includes(w))
+      })
+      setSocioResults(filtered.slice(0, 8))
       setBuscando(false)
     }, 300)
     return () => clearTimeout(t)
