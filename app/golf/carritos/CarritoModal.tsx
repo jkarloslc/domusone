@@ -1,17 +1,18 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
-import { Save, Loader, Search, X } from 'lucide-react'
+import { Save, Loader, Search, X, Users } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null }
-type Carrito = { id: number; id_socio_fk: number; marca: string | null; modelo: string | null; anio: number | null; color: string | null; numero_serie: string | null; placa: string | null; tipo: string; activo: boolean; observaciones: string | null }
+type Familiar = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null }
+type Carrito = { id: number; id_socio_fk: number; id_familiar_fk?: number | null; marca: string | null; modelo: string | null; anio: number | null; color: string | null; numero_serie: string | null; placa: string | null; tipo: string; activo: boolean; observaciones: string | null }
 
 type Props = {
   carrito?: Carrito | null
   socioInicial?: Socio | null
   onClose: () => void
-  onSaved: (carrito: { id: number; id_socio_fk: number }) => void
+  onSaved: (carrito: { id: number; id_socio_fk: number; id_familiar_fk?: number | null }) => void
 }
 
 const inputStyle = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }
@@ -31,6 +32,10 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
   const [socioSelec, setSocioSelec]     = useState<Socio | null>(socioInicial ?? null)
   const [buscando, setBuscando]         = useState(false)
 
+  // Familiar
+  const [familiares, setFamiliares]   = useState<Familiar[]>([])
+  const [familiarId, setFamiliarId]   = useState<number | null>(carrito?.id_familiar_fk ?? null)
+
   const [form, setForm] = useState({
     marca:        carrito?.marca        ?? '',
     modelo:       carrito?.modelo       ?? '',
@@ -43,6 +48,7 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
   })
   const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }))
 
+  // Buscar socio con debounce
   useEffect(() => {
     if (socioInicial || !isNew) return
     if (socioSearch.trim().length < 2) { setSocioResults([]); return }
@@ -59,12 +65,25 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
     return () => clearTimeout(t)
   }, [socioSearch])
 
+  // Cargar familiares cuando se selecciona socio
+  useEffect(() => {
+    const idSocio = socioSelec?.id ?? (isNew ? null : carrito?.id_socio_fk)
+    if (!idSocio) { setFamiliares([]); return }
+    dbGolf.from('cat_familiares')
+      .select('id, nombre, apellido_paterno, apellido_materno, parentesco')
+      .eq('id_socio_fk', idSocio)
+      .eq('activo', true)
+      .order('nombre')
+      .then(({ data }) => setFamiliares((data as Familiar[]) ?? []))
+  }, [socioSelec])
+
   const handleSave = async () => {
     if (!socioSelec && isNew) { setError('Selecciona el socio propietario'); return }
     setSaving(true); setError('')
 
     const payload = {
-      id_socio_fk:   isNew ? socioSelec!.id : carrito!.id_socio_fk,
+      id_socio_fk:    isNew ? socioSelec!.id : carrito!.id_socio_fk,
+      id_familiar_fk: familiarId ?? null,
       marca:         form.marca         || null,
       modelo:        form.modelo        || null,
       anio:          form.anio          ? Number(form.anio) : null,
@@ -76,11 +95,11 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
     }
 
     const { data, error: err } = isNew
-      ? await dbGolf.from('cat_carritos').insert(payload).select('id, id_socio_fk').single()
-      : await dbGolf.from('cat_carritos').update(payload).eq('id', carrito!.id).select('id, id_socio_fk').single()
+      ? await dbGolf.from('cat_carritos').insert(payload).select('id, id_socio_fk, id_familiar_fk').single()
+      : await dbGolf.from('cat_carritos').update(payload).eq('id', carrito!.id).select('id, id_socio_fk, id_familiar_fk').single()
 
     if (err || !data) { setError(err?.message ?? 'Error al guardar'); setSaving(false); return }
-    onSaved(data as { id: number; id_socio_fk: number })
+    onSaved(data as { id: number; id_socio_fk: number; id_familiar_fk?: number | null })
   }
 
   return (
@@ -103,7 +122,7 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#065f46' }}>{nc(socioSelec)}</div>
                     {socioSelec.numero_socio && <div style={{ fontSize: 11, color: '#6b7280' }}>#{socioSelec.numero_socio}</div>}
                   </div>
-                  {!socioInicial && <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>}
+                  {!socioInicial && <button onClick={() => { setSocioSelec(null); setFamiliarId(null) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>}
                 </div>
               ) : (
                 <div style={{ position: 'relative' }}>
@@ -123,6 +142,39 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Familiar (opcional) — se muestra si hay socio seleccionado y tiene familiares */}
+          {(socioSelec || (!isNew && carrito)) && (
+            <div>
+              <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Users size={12} style={{ color: '#7c3aed' }} />
+                Familiar (opcional)
+              </label>
+              {familiares.length === 0 ? (
+                <div style={{ fontSize: 12, color: '#94a3b8', padding: '8px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  Este socio no tiene familiares registrados
+                </div>
+              ) : (
+                <select
+                  style={inputStyle}
+                  value={familiarId ?? ''}
+                  onChange={e => setFamiliarId(e.target.value ? Number(e.target.value) : null)}
+                >
+                  <option value="">— Carrito del socio titular —</option>
+                  {familiares.map(f => (
+                    <option key={f.id} value={f.id}>
+                      {nc(f)}{f.parentesco ? ` (${f.parentesco})` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {familiarId && (
+                <div style={{ fontSize: 11, color: '#7c3aed', marginTop: 4 }}>
+                  La cuota se cargará al socio titular. El familiar queda registrado para identificar el carrito.
                 </div>
               )}
             </div>

@@ -11,6 +11,9 @@ type Props = {
   idCarrito: number
   nombreSocio: string
   descripcionCarrito: string
+  // Familiar opcional — la cuota se carga al titular pero queda vinculada al familiar
+  idFamiliar?: number | null
+  nombreFamiliar?: string | null
   // Cuando se pasa idPension → modo "agregar cuotas" (no crea nueva pensión, no pide slot)
   idPension?: number
   idSlotExistente?: number | null
@@ -42,6 +45,7 @@ function diffMeses(y1: number, m1: number, y2: number, m2: number): number {
 
 export default function PensionModal({
   idSocio, idCarrito, nombreSocio, descripcionCarrito,
+  idFamiliar, nombreFamiliar,
   idPension, idSlotExistente, montoMensualExistente,
   onClose, onSaved,
 }: Props) {
@@ -141,12 +145,13 @@ export default function PensionModal({
       const { data: pension, error: err1 } = await dbGolf
         .from('ctrl_pensiones')
         .insert({
-          id_socio_fk:   idSocio,
-          id_carrito_fk: idCarrito,
-          id_slot_fk:    form.id_slot_fk,
-          fecha_inicio:  form.fecha_inicio,
-          monto_mensual: form.monto_mensual,
-          observaciones: form.observaciones || null,
+          id_socio_fk:    idSocio,
+          id_carrito_fk:  idCarrito,
+          id_slot_fk:     form.id_slot_fk,
+          id_familiar_fk: idFamiliar ?? null,
+          fecha_inicio:   form.fecha_inicio,
+          monto_mensual:  form.monto_mensual,
+          observaciones:  form.observaciones || null,
         })
         .select('id')
         .single()
@@ -158,13 +163,15 @@ export default function PensionModal({
     // Generar cuotas en cxc_golf
     // NOTA: monto_final es columna GENERATED ALWAYS AS (monto_original - descuento)
     //       NO se puede incluir en el insert; la BD la calcula automáticamente.
+    const familiarSufijo = nombreFamiliar ? ` · Familiar: ${nombreFamiliar}` : ''
     const cuotasInsert = cuotas.map(c => {
       const descPorCuota = form.modalidad === 'ANUAL' ? (form.descuento / form.num_meses) : 0
       return {
         id_socio_fk:      idSocio,
+        id_familiar_fk:   idFamiliar ?? null,
         tipo:             'PENSION_CARRITO',
         id_pension_fk:    pensionId,
-        concepto:         `Pensión Carrito ${descripcionCarrito} — ${c.label}`,
+        concepto:         `Pensión Carrito ${descripcionCarrito}${familiarSufijo} — ${c.label}`,
         periodo:          c.periodo,
         monto_original:   form.monto_mensual,
         descuento:        descPorCuota,
@@ -192,7 +199,7 @@ export default function PensionModal({
     <ModalShell
       modulo="golf-carritos"
       titulo={titulo}
-      subtitulo={`${nombreSocio} · ${descripcionCarrito}`}
+      subtitulo={`${nombreSocio}${nombreFamiliar ? ` · Familiar: ${nombreFamiliar}` : ''} · ${descripcionCarrito}`}
       maxWidth={560}
       onClose={onClose}
       footer={<>

@@ -32,12 +32,14 @@ type Pension = {
   id_socio_fk: number
   id_carrito_fk: number
   id_slot_fk: number | null
+  id_familiar_fk: number | null
   fecha_inicio: string
   fecha_fin: string | null
   monto_mensual: number
   activo: boolean
   observaciones: string | null
   cat_socios: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null } | null
+  cat_familiares: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null } | null
   cat_carritos: { marca: string | null; modelo: string | null; tipo: string; color: string | null; placa: string | null } | null
   cat_slots: { numero: string } | null
   pendientes: number    // cuotas pendientes (calculado)
@@ -134,9 +136,10 @@ export default function CarritosPage() {
   const [showCarrito, setShowCarrito]   = useState(false)
   const [showPension, setShowPension]   = useState<{
     idSocio: number; idCarrito: number; nombreSocio: string; descCarrito: string
+    idFamiliar?: number | null; nombreFamiliar?: string | null
     idPension?: number; idSlotExistente?: number | null; montoMensualExistente?: number
   } | null>(null)
-  const [carritoNuevo, setCarritoNuevo] = useState<{ id: number; id_socio_fk: number } | null>(null)
+  const [carritoNuevo, setCarritoNuevo] = useState<{ id: number; id_socio_fk: number; id_familiar_fk?: number | null } | null>(null)
 
   const [showCobrar, setShowCobrar]     = useState<{ cuotas: Cuota[]; nombreSocio: string; idSocio: number } | null>(null)
 
@@ -170,8 +173,9 @@ export default function CarritosPage() {
   const fetchPensiones = useCallback(async () => {
     setLoadingP(true)
     let q = dbGolf.from('ctrl_pensiones')
-      .select(`id, id_socio_fk, id_carrito_fk, id_slot_fk, fecha_inicio, fecha_fin, monto_mensual, activo, observaciones,
+      .select(`id, id_socio_fk, id_carrito_fk, id_slot_fk, id_familiar_fk, fecha_inicio, fecha_fin, monto_mensual, activo, observaciones,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio),
+        cat_familiares(nombre, apellido_paterno, apellido_materno, parentesco),
         cat_carritos(marca, modelo, tipo, color, placa),
         cat_slots(numero)`)
       .order('created_at', { ascending: false })
@@ -474,7 +478,7 @@ export default function CarritosPage() {
   }
 
   // Tras crear carrito, abrir modal de pensión
-  const handleCarritoSaved = (c: { id: number; id_socio_fk: number }) => {
+  const handleCarritoSaved = (c: { id: number; id_socio_fk: number; id_familiar_fk?: number | null }) => {
     setShowCarrito(false)
     setCarritoNuevo(c)
     fetchPensiones()
@@ -631,6 +635,11 @@ export default function CarritosPage() {
                           <td style={{ padding: '10px 14px' }}>
                             <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nc(p.cat_socios)}</div>
                             {p.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{p.cat_socios.numero_socio}</div>}
+                            {p.cat_familiares && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#f3e8ff', color: '#7c3aed', fontWeight: 600, marginTop: 2 }}>
+                                👤 {nc(p.cat_familiares)}{p.cat_familiares.parentesco ? ` · ${p.cat_familiares.parentesco}` : ''}
+                              </span>
+                            )}
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             <div style={{ color: 'var(--text-secondary)' }}>{carDesc}</div>
@@ -709,6 +718,8 @@ export default function CarritosPage() {
                                             idCarrito: idCar,
                                             nombreSocio: nc(p.cat_socios),
                                             descCarrito: carDesc2,
+                                            idFamiliar: p.id_familiar_fk ?? null,
+                                            nombreFamiliar: p.cat_familiares ? nc(p.cat_familiares) : null,
                                             idPension: p.id,
                                             idSlotExistente: p.id_slot_fk,
                                             montoMensualExistente: p.monto_mensual,
@@ -1094,11 +1105,25 @@ export default function CarritosPage() {
                 Después
               </button>
               <button onClick={async () => {
-                const { data: s } = await dbGolf.from('cat_socios').select('nombre, apellido_paterno, apellido_materno').eq('id', carritoNuevo.id_socio_fk).single()
-                const { data: c } = await dbGolf.from('cat_carritos').select('marca, modelo').eq('id', carritoNuevo.id).single()
+                const [{ data: s }, { data: c }] = await Promise.all([
+                  dbGolf.from('cat_socios').select('nombre, apellido_paterno, apellido_materno').eq('id', carritoNuevo.id_socio_fk).single(),
+                  dbGolf.from('cat_carritos').select('marca, modelo').eq('id', carritoNuevo.id).single(),
+                ])
                 const nombreS = s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : ''
                 const descC = c ? [c.marca, c.modelo].filter(Boolean).join(' ') || 'Carrito' : 'Carrito'
-                setShowPension({ idSocio: carritoNuevo.id_socio_fk, idCarrito: carritoNuevo.id, nombreSocio: nombreS, descCarrito: descC })
+                let nombreF: string | null = null
+                if (carritoNuevo.id_familiar_fk) {
+                  const { data: f } = await dbGolf.from('cat_familiares').select('nombre, apellido_paterno, apellido_materno').eq('id', carritoNuevo.id_familiar_fk).single()
+                  if (f) nombreF = [f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ')
+                }
+                setShowPension({
+                  idSocio: carritoNuevo.id_socio_fk,
+                  idCarrito: carritoNuevo.id,
+                  nombreSocio: nombreS,
+                  descCarrito: descC,
+                  idFamiliar: carritoNuevo.id_familiar_fk ?? null,
+                  nombreFamiliar: nombreF,
+                })
               }}
                 style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
                 Asignar Pensión
@@ -1114,6 +1139,8 @@ export default function CarritosPage() {
           idCarrito={showPension.idCarrito}
           nombreSocio={showPension.nombreSocio}
           descripcionCarrito={showPension.descCarrito}
+          idFamiliar={showPension.idFamiliar}
+          nombreFamiliar={showPension.nombreFamiliar}
           idPension={showPension.idPension}
           idSlotExistente={showPension.idSlotExistente}
           montoMensualExistente={showPension.montoMensualExistente}
