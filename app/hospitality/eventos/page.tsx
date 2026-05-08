@@ -188,6 +188,7 @@ export default function EventosPage() {
   const [viewIng,  setViewIng]  = useState<Ingreso[]>([])
   const [viewOps,  setViewOps]  = useState<OP[]>([])
   const [viewLoad, setViewLoad] = useState(false)
+  const [viewChecklist, setViewChecklist] = useState<Record<ChecklistKey, boolean>>(emptyChecklistLoading())
 
   // Formulario
   const blankForm = () => ({
@@ -320,6 +321,15 @@ export default function EventosPage() {
     setLoadingChecklistFiles(false)
   }, [])
 
+  const fetchChecklistStatus = useCallback(async (evtId: number) => {
+    const status = emptyChecklistLoading()
+    await Promise.all(CHECKLIST_ITEMS.map(async ([k]) => {
+      const { data, error } = await supabase.storage.from(CHECKLIST_BUCKET).createSignedUrl(checklistPath(evtId, k), 60)
+      status[k] = !error && !!data?.signedUrl
+    }))
+    return status
+  }, [])
+
   const setChecklistBusy = (key: ChecklistKey, busy: boolean) => {
     setChecklistLoading(prev => ({ ...prev, [key]: busy }))
   }
@@ -448,11 +458,14 @@ export default function EventosPage() {
     setViewEvt(ev)
     setViewIng([])
     setViewOps([])
+    setViewChecklist(emptyChecklistLoading())
     setViewLoad(true)
-    const [{ data: ing }, { data: eops }] = await Promise.all([
+    const [{ data: ing }, { data: eops }, checklistStatus] = await Promise.all([
       dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas, id_venta_pos_fk').eq('id_evento_fk', ev.id),
       dbCtrl.from('eventos_ops').select('id, id_op_fk').eq('id_evento_fk', ev.id),
+      fetchChecklistStatus(ev.id),
     ])
+    setViewChecklist(checklistStatus)
     setViewIng((ing as unknown as Ingreso[]) ?? [])
     const evOps = (eops as unknown as EventoOP[]) ?? []
     if (evOps.length > 0) {
@@ -746,11 +759,11 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
       ['Pantallas', viewEvt.montaje_pantallas], ['Generador', viewEvt.montaje_generador],
     ]
     const chkItems: [string, boolean | undefined][] = [
-      ['Contrato firmado', viewEvt.chk_contrato_firmado],
-      ['Pago de anticipo recibido', viewEvt.chk_anticipo_pagado],
-      ['Layout autorizado', viewEvt.chk_layout_autorizado],
-      ['Montaje concluido', viewEvt.chk_montaje_concluido],
-      ['Revisión final operativa', viewEvt.chk_revision_final],
+      ['Contrato firmado', viewChecklist.chk_contrato_firmado],
+      ['Pago de anticipo recibido', viewChecklist.chk_anticipo_pagado],
+      ['Layout autorizado', viewChecklist.chk_layout_autorizado],
+      ['Montaje concluido', viewChecklist.chk_montaje_concluido],
+      ['Revisión final operativa', viewChecklist.chk_revision_final],
     ]
     const win = window.open('', '_blank', 'width=900,height=1150')
     if (!win) return
@@ -872,7 +885,7 @@ ${viewEvt.hip_tipo_evento || viewEvt.hip_num_caballos ? `
 </div>` : ''}
 <div class="sec">
   <div class="sec-title">Checklist Operativo</div>
-  ${chkItems.map(([l, val]) => `<div class="chk ${val ? 'done' : 'pend'}"><span style="font-size:14px">${val ? '✅' : '⬜'}</span><span>${l}</span>${val ? '<span style="margin-left:auto;font-size:10px;color:#7e22ce;font-weight:700">Completado</span>' : ''}</div>`).join('')}
+  ${chkItems.map(([l, val]) => `<div class="chk ${val ? 'done' : 'pend'}"><span style="font-size:14px">${val ? '☑' : '☐'}</span><span>${l}</span>${val ? '<span style="margin-left:auto;font-size:10px;color:#7e22ce;font-weight:700">Completado</span>' : ''}</div>`).join('')}
 </div>
 <div class="sec">
   <div class="sec-title">Información Financiera</div>
