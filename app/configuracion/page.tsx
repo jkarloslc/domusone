@@ -11,6 +11,8 @@ const GRUPOS: Record<string, string> = {
   apariencia:   'Apariencia',
   sistema:      'Sistema',
   correo:       'Servidor de Correo (SMTP)',
+  fiscal:       'Datos Fiscales del Emisor (CFDI)',
+  pac:          'PAC — Proveedor Autorizado de Certificación',
 }
 
 export default function ConfiguracionPage() {
