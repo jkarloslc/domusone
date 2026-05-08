@@ -18,7 +18,7 @@ export type ReceptorPreFill = {
   email?:          string
 }
 
-type Concepto = { descripcion: string; importe: number }
+type Concepto = { descripcion: string; importe: number; tasa_iva?: number }
 
 export type Props = {
   titulo:         string       // e.g. "Facturar Recibo RG-2026-001"
@@ -72,6 +72,11 @@ export default function FacturaUniversalModal({
   const [emailEnviado, setEmailEnviado] = useState(false)
   const [resultado, setResultado] = useState<{ folio_fiscal: string; pdf_url?: string }>()
 
+  // Tasas IVA por renglón (0 = exento, 0.16 = gravado)
+  const [tasas, setTasas] = useState<number[]>(() =>
+    conceptos.map(c => c.tasa_iva ?? 0)
+  )
+
   // Datos del emisor (desde cfg.configuracion)
   const [emisor, setEmisor] = useState({ rfc: '', razon_social: '', regimen_fiscal: '626' })
 
@@ -98,6 +103,12 @@ export default function FacturaUniversalModal({
 
   const setR = (k: keyof typeof receptor, v: string) => setReceptor(r => ({ ...r, [k]: v }))
   const setC = (k: keyof typeof cfdi,     v: string) => setCfdi(c => ({ ...c, [k]: v }))
+
+  // Totales dinámicos según tasas por renglón
+  const subtotalCalc = conceptos.reduce((s, c) => s + c.importe, 0)
+  const ivaCalc      = conceptos.reduce((s, c, i) =>
+    s + Math.round(c.importe * (tasas[i] ?? 0) * 100) / 100, 0)
+  const totalCalc    = subtotalCalc + ivaCalc
 
   // Cargar emisor desde cfg.configuracion
   useEffect(() => {
@@ -138,16 +149,19 @@ export default function FacturaUniversalModal({
       forma_pago:            cfdi.forma_pago,
       moneda:                'MXN',
       tipo_cambio:           1,
-      conceptos: conceptos.map(c => ({
-        cantidad:          1,
-        unidad:            'E48',
-        clave_prod_serv:   cfdi.clave_prod_serv,
-        descripcion:       c.descripcion || cfdi.descripcion,
-        precio_unitario:   c.importe,
-        importe:           c.importe,
-        objeto_imp:        '02',
-        tasa_iva:          0,
-      })),
+      conceptos: conceptos.map((c, i) => {
+        const tiva = tasas[i] ?? 0
+        return {
+          cantidad:          1,
+          unidad:            'E48',
+          clave_prod_serv:   cfdi.clave_prod_serv,
+          descripcion:       c.descripcion || cfdi.descripcion,
+          precio_unitario:   c.importe,
+          importe:           c.importe,
+          objeto_imp:        tiva > 0 ? '02' : '01',
+          tasa_iva:          tiva,
+        }
+      }),
     }
 
     const res = await timbrarCFDI(datosFactura)
@@ -351,20 +365,40 @@ export default function FacturaUniversalModal({
               </div>
             </div>
 
-            {/* Resumen conceptos */}
+            {/* Conceptos con selector de IVA por renglón */}
             <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ padding: '8px 12px', background: '#f8fafc', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Conceptos a facturar
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 90px', padding: '8px 12px', background: '#f8fafc', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', gap: 8 }}>
+                <span>Concepto</span><span style={{ textAlign: 'right' }}>Importe</span><span style={{ textAlign: 'center' }}>IVA</span>
               </div>
               {conceptos.map((c, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderTop: '1px solid #f1f5f9', fontSize: 12 }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 90px', padding: '8px 12px', borderTop: '1px solid #f1f5f9', fontSize: 12, gap: 8, alignItems: 'center' }}>
                   <span style={{ color: '#475569' }}>{c.descripcion}</span>
-                  <span style={{ fontWeight: 700, color: '#1e293b' }}>{fmt$(c.importe)}</span>
+                  <span style={{ fontWeight: 700, color: '#1e293b', textAlign: 'right' }}>{fmt$(c.importe)}</span>
+                  <select
+                    value={String(tasas[i] ?? 0)}
+                    onChange={e => setTasas(t => t.map((v, j) => j === i ? Number(e.target.value) : v))}
+                    style={{ fontSize: 11, padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center' }}>
+                    <option value="0">0 % Exento</option>
+                    <option value="0.16">16 %</option>
+                  </select>
                 </div>
               ))}
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', borderTop: '2px solid #e2e8f0', fontSize: 13, fontWeight: 700, color: '#7c3aed', background: '#faf5ff' }}>
-                <span>Total</span>
-                <span>{fmt$(total)}</span>
+              {/* Totales */}
+              <div style={{ borderTop: '2px solid #e2e8f0', background: '#faf5ff' }}>
+                {ivaCalc > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', fontSize: 12, color: '#64748b' }}>
+                    <span>Subtotal</span><span>{fmt$(subtotalCalc)}</span>
+                  </div>
+                )}
+                {ivaCalc > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px 8px', fontSize: 12, color: '#64748b' }}>
+                    <span>IVA 16 %</span><span>{fmt$(ivaCalc)}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', borderTop: ivaCalc > 0 ? '1px solid #e2e8f0' : undefined, fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>
+                  <span>Total</span>
+                  <span>{fmt$(totalCalc)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -384,7 +418,12 @@ export default function FacturaUniversalModal({
               <div><span style={{ color: '#94a3b8' }}>Método pago: </span><strong>{cfdi.metodo_pago}</strong></div>
               <div><span style={{ color: '#94a3b8' }}>Forma pago: </span><strong>{cfdi.forma_pago}</strong></div>
               <div><span style={{ color: '#94a3b8' }}>Folio interno: </span><strong>{folio}</strong></div>
-              <div><span style={{ color: '#94a3b8' }}>Total: </span><strong style={{ color: '#7c3aed' }}>{fmt$(total)}</strong></div>
+              <div><span style={{ color: '#94a3b8' }}>Subtotal: </span><strong>{fmt$(subtotalCalc)}</strong></div>
+              <div><span style={{ color: '#94a3b8' }}>IVA{ivaCalc > 0 ? ' 16 %' : ' (Exento)'}: </span><strong>{fmt$(ivaCalc)}</strong></div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <span style={{ color: '#94a3b8' }}>Total: </span>
+                <strong style={{ color: '#7c3aed', fontSize: 14 }}>{fmt$(totalCalc)}</strong>
+              </div>
             </div>
 
             {!emisor.rfc && (

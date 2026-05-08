@@ -46,6 +46,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
     forma_pago:     '03',
     descripcion:    'Cuota de mantenimiento y servicios residenciales',
     clave_prod_serv:'80101601',
+    tasa_iva:       '0',   // '0' = Exento/No objeto | '0.16' = 16 %
   })
 
   // Config del emisor
@@ -88,9 +89,10 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
     setReciboResults([])
   }
 
-  // Calcular IVA y totales
+  // Calcular IVA y totales (dinámico)
+  const tasaIva  = Number(cfdi.tasa_iva)        // 0 ó 0.16
   const subtotal = montoFacturar
-  const iva      = 0  // Cuotas de mantenimiento generalmente exentas
+  const iva      = Math.round(subtotal * tasaIva * 100) / 100
   const total    = subtotal + iva
 
   const handleTimbrar = async () => {
@@ -114,8 +116,8 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
       descripcion:     cfdi.descripcion,
       precio_unitario: subtotal,
       importe:         subtotal,
-      objeto_imp:      '01',  // No objeto de impuesto para cuotas de mantenimiento
-      tasa_iva:        0,
+      objeto_imp:      tasaIva > 0 ? '02' : '01',
+      tasa_iva:        tasaIva,
     }]
 
     const datosFactura: DatosFactura = {
@@ -376,6 +378,33 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                 <label className="label">Descripción del Concepto</label>
                 <input className="input" value={cfdi.descripcion} onChange={e => setCfdi(c => ({ ...c, descripcion: e.target.value }))} />
               </div>
+              <div>
+                <label className="label">Tasa IVA</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[
+                    { valor: '0',    label: '0 % — Exento / No objeto' },
+                    { valor: '0.16', label: '16 % — Gravado'           },
+                  ].map(op => (
+                    <button key={op.valor} type="button"
+                      onClick={() => setCfdi(c => ({ ...c, tasa_iva: op.valor }))}
+                      style={{
+                        flex: 1, padding: '9px 12px', borderRadius: 8, cursor: 'pointer',
+                        fontFamily: 'var(--font-body)', fontSize: 13,
+                        border: `1px solid ${cfdi.tasa_iva === op.valor ? 'var(--blue)' : '#e2e8f0'}`,
+                        background: cfdi.tasa_iva === op.valor ? 'var(--blue-pale)' : '#fff',
+                        color: cfdi.tasa_iva === op.valor ? 'var(--blue)' : 'var(--text-secondary)',
+                        fontWeight: cfdi.tasa_iva === op.valor ? 600 : 400,
+                      }}>
+                      {op.label}
+                    </button>
+                  ))}
+                </div>
+                {tasaIva > 0 && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#64748b' }}>
+                    IVA estimado: <strong>{fmt(iva)}</strong> · Total: <strong style={{ color: 'var(--blue)' }}>{fmt(total)}</strong>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -392,9 +421,9 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                   ['Método de Pago',     cfdi.metodo_pago],
                   ['Forma de Pago',      cfdi.forma_pago],
                   ['Serie',              cfdi.serie],
-                  ['Subtotal',           fmt(subtotal)],
-                  ['IVA',                fmt(iva)],
-                  ['Total a Facturar',   fmt(total)],
+                  ['Subtotal',                                fmt(subtotal)],
+                  [`IVA (${tasaIva > 0 ? '16 %' : 'Exento'})`, fmt(iva)],
+                  ['Total a Facturar',                         fmt(total)],
                 ].map(([l, v]) => (
                   <div key={l} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #f1f5f9' }}>
                     <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{l}</span>
