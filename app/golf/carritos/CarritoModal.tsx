@@ -6,7 +6,7 @@ import ModalShell from '@/components/ui/ModalShell'
 
 type Socio    = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null }
 type Familiar = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null }
-type Carrito  = { id: number; id_socio_fk: number; id_familiar_fk?: number | null; marca: string | null; modelo: string | null; anio: number | null; color: string | null; numero_serie: string | null; placa: string | null; tipo: string; activo: boolean; observaciones: string | null }
+type Carrito  = { id: number; id_socio_fk: number; id_familiar_fk?: number | null; marca: string | null; modelo: string | null; anio: number | null; color: string | null; numero_serie: string | null; placa: string | null; tipo: string; con_cargador: boolean; activo: boolean; observaciones: string | null }
 
 type BateriaRow = {
   _key:        string   // clave local para React (no va a BD)
@@ -65,7 +65,7 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
     placa:         carrito?.placa         ?? '',
     tipo:          carrito?.tipo          ?? 'ELECTRICO',
     observaciones: carrito?.observaciones ?? '',
-    con_cargador:  (carrito as any)?.con_cargador ?? false,
+    con_cargador:  carrito?.con_cargador ?? false,
   })
   const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }))
 

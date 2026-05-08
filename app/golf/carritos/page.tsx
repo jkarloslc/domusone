@@ -74,6 +74,22 @@ type Bateria = {
   numero_serie: string | null
 }
 
+type CarritoFull = {
+  id: number
+  id_socio_fk: number
+  id_familiar_fk: number | null
+  marca: string | null
+  modelo: string | null
+  anio: number | null
+  color: string | null
+  numero_serie: string | null
+  placa: string | null
+  tipo: string
+  con_cargador: boolean
+  activo: boolean
+  observaciones: string | null
+}
+
 const hoy = new Date().toISOString().split('T')[0]
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null } | null) =>
@@ -142,6 +158,8 @@ export default function CarritosPage() {
 
   // modales
   const [showCarrito, setShowCarrito]   = useState(false)
+  const [editCarrito, setEditCarrito]   = useState<CarritoFull | null>(null)
+  const [loadingEdit, setLoadingEdit]   = useState(false)
   const [showPension, setShowPension]   = useState<{
     idSocio: number; idCarrito: number; nombreSocio: string; descCarrito: string
     idFamiliar?: number | null; nombreFamiliar?: string | null
@@ -502,6 +520,17 @@ export default function CarritosPage() {
     fetchConfig()
   }
 
+  // Abrir modal de edición de carrito
+  const abrirEditCarrito = async (idCarrito: number) => {
+    setLoadingEdit(true)
+    const { data } = await dbGolf.from('cat_carritos')
+      .select('id, id_socio_fk, id_familiar_fk, marca, modelo, anio, color, numero_serie, placa, tipo, con_cargador, activo, observaciones')
+      .eq('id', idCarrito)
+      .single()
+    setLoadingEdit(false)
+    if (data) setEditCarrito(data as CarritoFull)
+  }
+
   // Tras crear carrito, abrir modal de pensión
   const handleCarritoSaved = (c: { id: number; id_socio_fk: number; id_familiar_fk?: number | null }) => {
     setShowCarrito(false)
@@ -704,12 +733,21 @@ export default function CarritosPage() {
                             </span>
                           </td>
                           <td style={{ padding: '10px 14px' }}>
-                            {puedeEscribir && p.activo && p.pendientes > 0 && (
-                              <button onClick={e => { e.stopPropagation(); abrirCobro(p) }}
-                                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                <CreditCard size={12} /> {p.monto_pendiente > 0 ? 'Cobrar' : 'Ver cuotas'}
-                              </button>
-                            )}
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                              {puedeEscribir && (
+                                <button onClick={e => { e.stopPropagation(); abrirEditCarrito(p.id_carrito_fk) }}
+                                  disabled={loadingEdit}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                  {loadingEdit ? <Loader size={12} /> : <Settings size={12} />} Editar
+                                </button>
+                              )}
+                              {puedeEscribir && p.activo && p.pendientes > 0 && (
+                                <button onClick={e => { e.stopPropagation(); abrirCobro(p) }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                  <CreditCard size={12} /> {p.monto_pendiente > 0 ? 'Cobrar' : 'Ver cuotas'}
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
 
@@ -745,6 +783,13 @@ export default function CarritosPage() {
                                       {p.observaciones && <span style={{ marginLeft: 8, fontStyle: 'italic' }}>{p.observaciones}</span>}
                                     </div>
                                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                                      {puedeEscribir && (
+                                        <button onClick={e => { e.stopPropagation(); abrirEditCarrito(idCar) }}
+                                          disabled={loadingEdit}
+                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                          {loadingEdit ? <Loader size={12} /> : <Settings size={12} />} Editar carrito
+                                        </button>
+                                      )}
                                       {puedeEscribir && p.activo && (
                                         <button onClick={e => {
                                           e.stopPropagation()
@@ -1172,6 +1217,14 @@ export default function CarritosPage() {
       {/* Modales */}
       {showCarrito && (
         <CarritoModal onClose={() => setShowCarrito(false)} onSaved={handleCarritoSaved} />
+      )}
+
+      {editCarrito && (
+        <CarritoModal
+          carrito={editCarrito}
+          onClose={() => setEditCarrito(null)}
+          onSaved={() => { setEditCarrito(null); fetchPensiones() }}
+        />
       )}
 
       {carritoNuevo && !showPension && (
