@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbCtrl, dbCat, dbCfg, supabase } from '@/lib/supabase'
+import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { X, Save, Loader, Search, FileText, CheckCircle } from 'lucide-react'
 import {
   timbrarCFDI, USOS_CFDI, FORMAS_PAGO_SAT, METODOS_PAGO,
@@ -27,7 +27,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
   const [recibo, setRecibo]         = useState<any>(reciboInicial ?? null)
 
   // Montos
-  const [montoFacturar, setMontoFacturar] = useState<number>(reciboInicial?.monto ?? 0)
+  const [montoFacturar, setMontoFacturar] = useState<number>(reciboInicial?.monto_total ?? 0)
   const [parcial, setParcial]       = useState(false)
 
   // Datos receptor
@@ -70,38 +70,22 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
   useEffect(() => {
     if (reciboInicial || reciboSearch.length < 2) { setReciboResults([]); return }
     const timer = setTimeout(() => {
-      dbCtrl.from('recibos').select('*')
+      dbCtrl.from('recibos_ingreso')
+        .select('id, folio, fecha, descripcion, monto_total, status, folio_fiscal')
         .ilike('folio', `%${reciboSearch}%`)
-        .eq('activo', true).limit(8)
+        .eq('status', 'Confirmado')
+        .is('folio_fiscal', null)
+        .limit(8)
         .then(({ data }) => setReciboResults(data ?? []))
     }, 300)
     return () => clearTimeout(timer)
   }, [reciboSearch, reciboInicial])
 
-  const seleccionarRecibo = async (r: any) => {
+  const seleccionarRecibo = (r: any) => {
     setRecibo(r)
-    setMontoFacturar(r.monto)
+    setMontoFacturar(r.monto_total ?? 0)
     setReciboSearch(r.folio ?? `#${r.id}`)
     setReciboResults([])
-
-    // Pre-llenar datos del receptor si el recibo tiene RFC
-    if (r.rfc_factura) {
-      setReceptor(prev => ({
-        ...prev,
-        rfc:          r.rfc_factura,
-        razon_social: r.razon_social_factura ?? '',
-      }))
-    } else if (r.id_lote_fk) {
-      // Buscar lote y propietario principal
-      const { data: lote } = await dbCat.from('lotes').select('rfc_para_factura, razon_social_para_factura').eq('id', r.id_lote_fk).single()
-      if (lote?.rfc_para_factura) {
-        setReceptor(prev => ({
-          ...prev,
-          rfc:          lote.rfc_para_factura,
-          razon_social: lote.razon_social_para_factura ?? '',
-        }))
-      }
-    }
   }
 
   // Calcular IVA y totales
@@ -163,7 +147,6 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
     // Guardar en BD
     const { error: dbErr } = await dbCtrl.from('facturas').insert({
       id_recibo_fk:          recibo.id,
-      id_lote_fk:            recibo.id_lote_fk,
       folio_fiscal:          resultado.folio_fiscal,
       folio_interno:         folioInterno,
       serie:                 cfdi.serie,
@@ -189,8 +172,8 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
 
     if (dbErr) { setError(dbErr.message); setSaving(false); return }
 
-    // Actualizar folio_fiscal en el recibo
-    await dbCtrl.from('recibos').update({ folio_fiscal: resultado.folio_fiscal }).eq('id', recibo.id)
+    // Actualizar folio_fiscal en el recibo de ingreso
+    await dbCtrl.from('recibos_ingreso').update({ folio_fiscal: resultado.folio_fiscal }).eq('id', recibo.id)
 
     setSaving(false)
     onSaved()
@@ -274,7 +257,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                             onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                             <span style={{ fontWeight: 600, color: 'var(--blue)' }}>{r.folio ?? `#${r.id}`}</span>
-                            <span style={{ fontSize: 12, color: '#64748b' }}>{fmt(r.monto)} · {new Date(r.fecha_recibo).toLocaleDateString('es-MX')}</span>
+                            <span style={{ fontSize: 12, color: '#64748b' }}>{fmt(r.monto_total ?? 0)} · {new Date(r.fecha).toLocaleDateString('es-MX')}</span>
                           </button>
                         ))}
                       </div>
@@ -290,9 +273,9 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                       {[
                         ['Folio',       recibo.folio ?? `#${recibo.id}`],
-                        ['Fecha',       new Date(recibo.fecha_recibo).toLocaleDateString('es-MX')],
-                        ['Propietario', recibo.propietario ?? '—'],
-                        ['Monto total', fmt(recibo.monto)],
+                        ['Fecha',       new Date(recibo.fecha).toLocaleDateString('es-MX')],
+                        ['Descripción', recibo.descripcion ?? '—'],
+                        ['Monto total', fmt(recibo.monto_total ?? 0)],
                       ].map(([l, v]) => (
                         <div key={l}>
                           <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{l}</span>
@@ -306,9 +289,9 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                   <div>
                     <label className="label">Monto a Facturar</label>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                      <button onClick={() => { setParcial(false); setMontoFacturar(recibo.monto) }}
+                      <button onClick={() => { setParcial(false); setMontoFacturar(recibo.monto_total ?? 0) }}
                         style={{ flex: 1, padding: '8px', borderRadius: 7, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13, border: `1px solid ${!parcial ? 'var(--blue)' : '#e2e8f0'}`, background: !parcial ? 'var(--blue-pale)' : '#fff', color: !parcial ? 'var(--blue)' : 'var(--text-secondary)', fontWeight: !parcial ? 600 : 400 }}>
-                        Completo — {fmt(recibo.monto)}
+                        Completo — {fmt(recibo.monto_total ?? 0)}
                       </button>
                       <button onClick={() => setParcial(true)}
                         style={{ flex: 1, padding: '8px', borderRadius: 7, cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13, border: `1px solid ${parcial ? 'var(--blue)' : '#e2e8f0'}`, background: parcial ? 'var(--blue-pale)' : '#fff', color: parcial ? 'var(--blue)' : 'var(--text-secondary)', fontWeight: parcial ? 600 : 400 }}>
@@ -316,9 +299,9 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                       </button>
                     </div>
                     {parcial && (
-                      <input className="input" type="number" step="0.01" min="0.01" max={recibo.monto}
+                      <input className="input" type="number" step="0.01" min="0.01" max={recibo.monto_total}
                         value={montoFacturar} onChange={e => setMontoFacturar(Number(e.target.value))}
-                        placeholder={`Máximo ${fmt(recibo.monto)}`} />
+                        placeholder={`Máximo ${fmt(recibo.monto_total ?? 0)}`} />
                     )}
                   </div>
                 </>

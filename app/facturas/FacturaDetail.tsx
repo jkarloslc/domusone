@@ -100,10 +100,19 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
                 <button className="btn-secondary" onClick={handleImprimir} style={{ fontSize: 12 }}>
                   <Printer size={13} /> {f.pdf_url ? 'PDF' : 'Imprimir'}
                 </button>
-                {f.pdf_url && (
-                  <a href={f.pdf_url} download className="btn-secondary" style={{ fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {f.xml_cfdi && (
+                  <button className="btn-secondary" style={{ fontSize: 12 }}
+                    onClick={() => {
+                      const blob = new Blob([f.xml_cfdi], { type: 'application/xml' })
+                      const url  = URL.createObjectURL(blob)
+                      const a    = document.createElement('a')
+                      a.href     = url
+                      a.download = `${f.serie}${f.folio_interno}.xml`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }}>
                     <Download size={13} /> XML
-                  </a>
+                  </button>
                 )}
                 <button className="btn-secondary" onClick={() => setShowEmail(e => !e)} style={{ fontSize: 12 }}>
                   <Mail size={13} /> Enviar

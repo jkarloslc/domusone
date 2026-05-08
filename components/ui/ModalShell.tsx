@@ -5,7 +5,7 @@ import React from 'react'
 // ── Paletas por módulo ────────────────────────────────────────
 export type ModalModulo =
   | 'residencial' | 'lotes' | 'propietarios' | 'contratos' | 'escrituras'
-  | 'cobranza' | 'facturas' | 'accesos' | 'incidencias' | 'comunicados'
+  | 'cobranza' | 'facturas' | 'facturacion' | 'accesos' | 'incidencias' | 'comunicados'
   | 'mantenimiento' | 'proyectos'
   | 'compras' | 'proveedores' | 'articulos' | 'almacenes'
   | 'tesoreria' | 'ingresos'
@@ -32,6 +32,7 @@ export const MODAL_PALETTES: Record<ModalModulo, Palette> = {
   // Cobranza / Facturas — índigo
   cobranza:     { from: '#312e81', to: '#4f46e5', accent: '#4f46e5' },
   facturas:     { from: '#312e81', to: '#6366f1', accent: '#6366f1' },
+  facturacion:  { from: '#312e81', to: '#7c3aed', accent: '#7c3aed' },
 
   // Mantenimiento / Proyectos — violeta
   mantenimiento: { from: '#4c1d95', to: '#7c3aed', accent: '#7c3aed' },
@@ -67,7 +68,8 @@ export const MODAL_PALETTES: Record<ModalModulo, Palette> = {
 type Tab = {
   key: string
   label: string
-  icon?: React.ComponentType<{ size?: number; style?: React.CSSProperties }>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon?: React.ComponentType<any>
   badge?: React.ReactNode
   disabled?: boolean
   disabledHint?: string
@@ -77,7 +79,8 @@ type Props = {
   modulo: ModalModulo
   titulo: string
   subtitulo?: string
-  icono?: React.ComponentType<{ size?: number; style?: React.CSSProperties }>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icono?: React.ComponentType<any>
   maxWidth?: number
   onClose: () => void
   children: React.ReactNode
