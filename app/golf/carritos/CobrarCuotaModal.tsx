@@ -88,7 +88,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const [pagosLineas, setPagosLineas] = useState<PagoLinea[]>([
     { id_forma_pago_fk: 0, forma_nombre: '', monto: '', referencia: '' }
   ])
-  const [fechaPago, setFechaPago] = useState(hoy)
+  const [fechaPago, setFechaPago] = useState(hoyLocal)
   const [observaciones, setObservaciones] = useState('')
   const [facturable, setFacturable]     = useState(false)
   const [montoParcialStr, setMontoParcialStr] = useState('')
@@ -238,7 +238,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
 
     // 5. Aplicar pago greedy a cuotas
     let remaining = montoParcial
-    const updates: Promise<any>[] = []
+    const updates: PromiseLike<any>[] = []
     for (const c of cuotasSelec) {
       const cuotaSaldo = c.saldo ?? c.monto_final
       const aplicar = Math.min(remaining, cuotaSaldo)
@@ -254,7 +254,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           observaciones:   observaciones || null,
           usuario_cobra:   authUser?.nombre ?? null,
           id_recibo_fk:    reciboId,
-        }).eq('id', c.id)
+        }).eq('id', c.id).select('id')
       )
       remaining = parseFloat((remaining - aplicar).toFixed(2))
     }
