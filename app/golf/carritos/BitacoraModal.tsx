@@ -5,11 +5,12 @@ import { useAuth } from '@/lib/AuthContext'
 import { Save, Loader } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
-type TipoEvento = 'SALIDA_TALLER' | 'REGRESO_TALLER' | 'PRESTAMO_TERCERO' | 'INCIDENCIA'
+type TipoEvento = 'SALIDA_TALLER' | 'REGRESO_TALLER' | 'PRESTAMO_TERCERO' | 'INCIDENCIA' | 'SALIDA_DEFINITIVA'
 
 type Props = {
   idCarrito: number
   idPension: number | null
+  idSlot: number | null
   idSocio: number | null
   nombreSocio: string
   descCarrito: string
@@ -17,11 +18,12 @@ type Props = {
   onSaved: () => void
 }
 
-const TIPOS: { value: TipoEvento; label: string; color: string; bg: string }[] = [
-  { value: 'SALIDA_TALLER',    label: '🔧 Salida a Taller',    color: '#d97706', bg: '#fffbeb' },
-  { value: 'REGRESO_TALLER',   label: '✅ Regreso de Taller',   color: '#15803d', bg: '#f0fdf4' },
-  { value: 'PRESTAMO_TERCERO', label: '🤝 Préstamo a Tercero',  color: '#2563eb', bg: '#eff6ff' },
-  { value: 'INCIDENCIA',       label: '⚠️ Incidencia',          color: '#dc2626', bg: '#fef2f2' },
+const TIPOS: { value: TipoEvento; label: string; color: string; bg: string; full?: boolean }[] = [
+  { value: 'SALIDA_TALLER',      label: '🔧 Salida a Taller',    color: '#d97706', bg: '#fffbeb' },
+  { value: 'REGRESO_TALLER',     label: '✅ Regreso de Taller',   color: '#15803d', bg: '#f0fdf4' },
+  { value: 'PRESTAMO_TERCERO',   label: '🤝 Préstamo a Tercero',  color: '#2563eb', bg: '#eff6ff' },
+  { value: 'INCIDENCIA',         label: '⚠️ Incidencia',          color: '#dc2626', bg: '#fef2f2' },
+  { value: 'SALIDA_DEFINITIVA',  label: '🚗 Salida Definitiva',   color: '#7c3aed', bg: '#f5f3ff', full: true },
 ]
 
 const inp: React.CSSProperties = {
@@ -32,7 +34,7 @@ const inp: React.CSSProperties = {
 }
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
 
-export default function BitacoraModal({ idCarrito, idPension, idSocio, nombreSocio, descCarrito, onClose, onSaved }: Props) {
+export default function BitacoraModal({ idCarrito, idPension, idSlot, idSocio, nombreSocio, descCarrito, onClose, onSaved }: Props) {
   const { authUser } = useAuth()
 
   const [tipo, setTipo]                   = useState<TipoEvento>('SALIDA_TALLER')
@@ -51,7 +53,10 @@ export default function BitacoraModal({ idCarrito, idPension, idSocio, nombreSoc
 
   const handleSave = async () => {
     if (!descripcion.trim()) { setError('La descripción es obligatoria'); return }
+    if (tipo === 'SALIDA_DEFINITIVA' && !idPension) { setError('No hay pensión activa asociada a este carrito'); return }
     setSaving(true); setError('')
+
+    const hoyISO = new Date().toISOString().split('T')[0]
 
     const payload: Record<string, unknown> = {
       id_carrito_fk:    idCarrito,
@@ -78,8 +83,26 @@ export default function BitacoraModal({ idCarrito, idPension, idSocio, nombreSoc
       payload.nivel_urgencia = urgencia
     }
 
+    // 1. Insertar entrada de bitácora
     const { error: err } = await dbGolf.from('bitacora_carritos').insert(payload)
     if (err) { setError(err.message); setSaving(false); return }
+
+    // 2. Salida definitiva: liberar slot + cerrar pensión + cancelar cuotas pendientes
+    if (tipo === 'SALIDA_DEFINITIVA' && idPension) {
+      // Cerrar pensión y liberar slot
+      const { error: errP } = await dbGolf.from('ctrl_pensiones')
+        .update({ activo: false, fecha_fin: hoyISO, id_slot_fk: null })
+        .eq('id', idPension)
+      if (errP) { setError('Bitácora guardada pero error al cerrar pensión: ' + errP.message); setSaving(false); return }
+
+      // Cancelar cuotas pendientes (saldo → 0, status → CANCELADO)
+      const { error: errC } = await dbGolf.from('cxc_golf')
+        .update({ saldo: 0, status: 'CANCELADO' })
+        .eq('id_pension_fk', idPension)
+        .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+      if (errC) { setError('Pensión cerrada pero error al cancelar cuotas: ' + errC.message); setSaving(false); return }
+    }
+
     onSaved()
   }
 
@@ -94,9 +117,9 @@ export default function BitacoraModal({ idCarrito, idPension, idSocio, nombreSoc
         <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer', fontFamily: 'inherit' }}>
           Cancelar
         </button>
-        <button onClick={handleSave} disabled={saving || !descripcion.trim()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', opacity: (saving || !descripcion.trim()) ? 0.6 : 1 }}>
+        <button onClick={handleSave} disabled={saving || !descripcion.trim()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: tipo === 'SALIDA_DEFINITIVA' ? '#7c3aed' : '#059669', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', opacity: (saving || !descripcion.trim()) ? 0.6 : 1 }}>
           {saving ? <Loader size={14} /> : <Save size={14} />}
-          Guardar Registro
+          {tipo === 'SALIDA_DEFINITIVA' ? 'Confirmar Salida Definitiva' : 'Guardar Registro'}
         </button>
       </>}
     >
@@ -113,12 +136,32 @@ export default function BitacoraModal({ idCarrito, idPension, idSocio, nombreSoc
                 background: tipo === t.value ? t.bg : '#fff',
                 color: tipo === t.value ? t.color : '#64748b',
                 cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
+                gridColumn: t.full ? '1 / -1' : undefined,
               }}>
                 {t.label}
               </button>
             ))}
           </div>
         </div>
+
+        {/* Panel de advertencia — Salida Definitiva */}
+        {tipo === 'SALIDA_DEFINITIVA' && (
+          <div style={{ padding: '14px 16px', background: '#f5f3ff', border: '2px solid #c4b5fd', borderRadius: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+              <span style={{ fontSize: 22, lineHeight: 1 }}>⚠️</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#6d28d9', marginBottom: 6 }}>
+                  Esta acción realizará los siguientes cambios de forma permanente:
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#5b21b6', lineHeight: 1.8 }}>
+                  <li>La <strong>pensión quedará cerrada</strong> (inactiva) con fecha de salida hoy.</li>
+                  <li>El <strong>slot asignado será liberado</strong> para un nuevo carrito.</li>
+                  <li>Todas las <strong>cuotas pendientes / parciales serán canceladas</strong> con saldo $0.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Descripción */}
         <div>

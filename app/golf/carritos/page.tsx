@@ -176,7 +176,7 @@ export default function CarritosPage() {
   // ── Baterías (lazy por carrito) ───────────────────────────
   const [baterias, setBateriasMap]      = useState<Record<number, Bateria[]>>({})
   const [loadingBateria, setLoadingBateria] = useState<Record<number, boolean>>({})
-  const [showBitacora, setShowBitacora] = useState<{ idCarrito: number; idPension: number | null; idSocio: number | null; nombreSocio: string; descCarrito: string } | null>(null)
+  const [showBitacora, setShowBitacora] = useState<{ idCarrito: number; idPension: number | null; idSlot: number | null; idSocio: number | null; nombreSocio: string; descCarrito: string } | null>(null)
 
   // ── Recibos ───────────────────────────────────────────────
   const [recibos, setRecibos]           = useState<ReciboCarrito[]>([])
@@ -812,7 +812,7 @@ export default function CarritosPage() {
                                       {puedeEscribir && (
                                         <button onClick={e => {
                                           e.stopPropagation()
-                                          setShowBitacora({ idCarrito: idCar, idPension: p.id, idSocio: p.id_socio_fk, nombreSocio: nc(p.cat_socios), descCarrito: carDesc2 })
+                                          setShowBitacora({ idCarrito: idCar, idPension: p.id, idSlot: p.id_slot_fk, idSocio: p.id_socio_fk, nombreSocio: nc(p.cat_socios), descCarrito: carDesc2 })
                                         }}
                                           style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#1e293b', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                                           <BookOpen size={12} /> Nuevo registro
@@ -1297,13 +1297,16 @@ export default function CarritosPage() {
         <BitacoraModal
           idCarrito={showBitacora.idCarrito}
           idPension={showBitacora.idPension}
+          idSlot={showBitacora.idSlot}
           idSocio={showBitacora.idSocio}
           nombreSocio={showBitacora.nombreSocio}
           descCarrito={showBitacora.descCarrito}
           onClose={() => setShowBitacora(null)}
           onSaved={() => {
+            const idCar = showBitacora.idCarrito
             setShowBitacora(null)
-            fetchBitacora(showBitacora.idCarrito)
+            fetchBitacora(idCar)
+            fetchPensiones()   // refresca tabla (la pensión puede haber cerrado)
           }}
         />
       )}
