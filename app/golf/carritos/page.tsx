@@ -40,7 +40,7 @@ type Pension = {
   observaciones: string | null
   cat_socios: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null } | null
   cat_familiares: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null } | null
-  cat_carritos: { marca: string | null; modelo: string | null; tipo: string; color: string | null; placa: string | null } | null
+  cat_carritos: { marca: string | null; modelo: string | null; tipo: string; color: string | null; placa: string | null; con_cargador: boolean } | null
   cat_slots: { numero: string } | null
   pendientes: number    // cuotas pendientes (calculado)
   monto_pendiente: number
@@ -188,7 +188,7 @@ export default function CarritosPage() {
       .select(`id, id_socio_fk, id_carrito_fk, id_slot_fk, id_familiar_fk, fecha_inicio, fecha_fin, monto_mensual, activo, observaciones,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio),
         cat_familiares(nombre, apellido_paterno, apellido_materno, parentesco),
-        cat_carritos(marca, modelo, tipo, color, placa),
+        cat_carritos(marca, modelo, tipo, color, placa, con_cargador),
         cat_slots(numero)`)
       .order('created_at', { ascending: false })
     if (soloActivas) q = q.eq('activo', true)
@@ -671,11 +671,18 @@ export default function CarritosPage() {
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             <div style={{ color: 'var(--text-secondary)' }}>{carDesc}</div>
-                            {p.cat_carritos?.tipo && (
-                              <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: p.cat_carritos.tipo === 'ELECTRICO' ? '#eff6ff' : '#fffbeb', color: p.cat_carritos.tipo === 'ELECTRICO' ? '#1d4ed8' : '#92400e', fontWeight: 600 }}>
-                                {p.cat_carritos.tipo === 'ELECTRICO' ? '⚡ Eléctrico' : '⛽ Combustión'}
-                              </span>
-                            )}
+                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 2 }}>
+                              {p.cat_carritos?.tipo && (
+                                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: p.cat_carritos.tipo === 'ELECTRICO' ? '#eff6ff' : '#fffbeb', color: p.cat_carritos.tipo === 'ELECTRICO' ? '#1d4ed8' : '#92400e', fontWeight: 600 }}>
+                                  {p.cat_carritos.tipo === 'ELECTRICO' ? '⚡ Eléctrico' : '⛽ Combustión'}
+                                </span>
+                              )}
+                              {p.cat_carritos?.con_cargador && (
+                                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', fontWeight: 600 }}>
+                                  🔌 Cargador
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
                             {p.cat_slots ? `Cajón ${p.cat_slots.numero}` : '—'}

@@ -65,6 +65,7 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
     placa:         carrito?.placa         ?? '',
     tipo:          carrito?.tipo          ?? 'ELECTRICO',
     observaciones: carrito?.observaciones ?? '',
+    con_cargador:  (carrito as any)?.con_cargador ?? false,
   })
   const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }))
 
@@ -149,6 +150,7 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
       numero_serie:   form.numero_serie  || null,
       placa:          form.placa         || null,
       tipo:           form.tipo,
+      con_cargador:   form.con_cargador,
       observaciones:  form.observaciones || null,
     }
 
@@ -348,6 +350,24 @@ export default function CarritoModal({ carrito, socioInicial, onClose, onSaved }
             <input style={inputStyle} value={form.placa} onChange={e => set('placa', e.target.value)} />
           </div>
         </div>
+
+        {/* ── Con cargador (solo eléctrico) ── */}
+        {isElectrico && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', padding: '10px 14px', background: form.con_cargador ? '#eff6ff' : '#f8fafc', border: `1px solid ${form.con_cargador ? '#bfdbfe' : '#e2e8f0'}`, borderRadius: 8, transition: 'all 0.15s' }}>
+            <input
+              type="checkbox"
+              checked={form.con_cargador}
+              onChange={e => set('con_cargador', e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: '#2563eb', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 13, fontWeight: 600, color: form.con_cargador ? '#1d4ed8' : '#475569' }}>
+              Con cargador incluido
+            </span>
+            {form.con_cargador && (
+              <span style={{ fontSize: 11, color: '#60a5fa', marginLeft: 2 }}>🔌 Sí</span>
+            )}
+          </label>
+        )}
 
         {/* ── Observaciones ── */}
         <div>
