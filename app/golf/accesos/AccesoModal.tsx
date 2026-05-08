@@ -8,8 +8,8 @@ type Socio = { id: number; numero_socio: string | null; nombre: string; apellido
 type Familiar = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null }
 type Espacio = { id: number; nombre: string }
 
-// Un acompañante puede ser familiar seleccionado, texto libre, o externo (consume pase)
-type Acomp = { tipo: 'familiar' | 'libre' | 'externo'; id_familiar?: number; nombre: string; _pase_mov_id?: number | null; _origen_pago?: string | null }
+// Un acompañante puede ser familiar, visitante Green Fee, invitado por pase o intercambio
+type Acomp = { tipo: 'familiar' | 'libre' | 'externo' | 'intercambio'; id_familiar?: number; nombre: string; _pase_mov_id?: number | null; _origen_pago?: string | null }
 
 type Props = { onClose: () => void; onSaved: () => void }
 
@@ -135,12 +135,12 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
   const setAcompLibre = (i: number, v: string) => {
     setAcomp(a => a.map((x, idx) => idx === i
-      ? { tipo: 'libre', nombre: v }
+      ? { ...x, nombre: v }
       : x
     ))
   }
 
-  const switchTipoAcomp = (i: number, tipo: 'familiar' | 'libre' | 'externo') => {
+  const switchTipoAcomp = (i: number, tipo: 'familiar' | 'libre' | 'externo' | 'intercambio') => {
     setAcomp(a => a.map((x, idx) => idx === i
       ? { tipo, nombre: '' }
       : x
@@ -210,8 +210,12 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           orden:          a.orden,
           nombre:         a.nombre.trim(),
           id_familiar_fk: a.tipo === 'familiar' ? (a.id_familiar ?? null) : null,
-          es_externo:     a.tipo === 'externo' || a.tipo === 'libre',
-          origen_pago:    a.tipo === 'libre' ? 'GREEN_FEE' : ((a as any)._origen_pago ?? null),
+          es_externo:     a.tipo === 'externo' || a.tipo === 'libre' || a.tipo === 'intercambio',
+          origen_pago:    a.tipo === 'libre'
+            ? 'GREEN_FEE'
+            : a.tipo === 'intercambio'
+              ? 'INTERCAMBIO'
+              : ((a as any)._origen_pago ?? null),
           id_pase_mov_fk: (a as any)._pase_mov_id ?? null,
         }))
       )
@@ -365,6 +369,11 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                     style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'libre' ? '#f0fdf4' : '#fff', color: a.tipo === 'libre' ? '#16a34a' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     Green Fee
                   </button>
+                  <button
+                    onClick={() => switchTipoAcomp(i, 'intercambio')}
+                    style={{ padding: '7px 11px', fontSize: 12, fontWeight: 600, background: a.tipo === 'intercambio' ? '#fdf4ff' : '#fff', color: a.tipo === 'intercambio' ? '#a21caf' : '#94a3b8', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    Intercambio
+                  </button>
                 </div>
 
                 {a.tipo === 'familiar' && familiares.length > 0 ? (
@@ -382,7 +391,13 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                 ) : (
                   <input
                     style={{ ...inputStyle, flex: 1, borderColor: a.tipo === 'externo' ? '#fde68a' : '#e2e8f0' }}
-                    placeholder={a.tipo === 'externo' ? `Nombre del invitado ${i + 1} (consumirá 1 pase)` : a.tipo === 'libre' ? `Nombre del visitante ${i + 1} (green fee)` : `Nombre del acompañante ${i + 1}`}
+                    placeholder={a.tipo === 'externo'
+                      ? `Nombre del invitado ${i + 1} (consumirá 1 pase)`
+                      : a.tipo === 'libre'
+                        ? `Nombre del visitante ${i + 1} (green fee)`
+                        : a.tipo === 'intercambio'
+                          ? `Nombre del visitante ${i + 1} (intercambio)`
+                          : `Nombre del acompañante ${i + 1}`}
                     value={a.nombre}
                     onChange={e => setAcompLibre(i, e.target.value)}
                   />

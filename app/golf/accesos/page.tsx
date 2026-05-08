@@ -365,6 +365,8 @@ export default function AccesosPage() {
                       ? { label: 'Familiar',  bg: '#eff6ff', color: '#1d4ed8' }
                       : ac.origen_pago === 'PASE'
                         ? { label: 'Invitado · Pase',  bg: '#fffbeb', color: '#d97706' }
+                        : ac.origen_pago === 'INTERCAMBIO'
+                          ? { label: 'Intercambio', bg: '#fdf4ff', color: '#a21caf' }
                         : { label: 'Green Fee', bg: '#f0fdf4', color: '#16a34a' }
                     return (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>

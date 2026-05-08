@@ -41,7 +41,7 @@ type Acomp = {
   id_acceso_fk: number
   nombre: string
   es_externo: boolean
-  origen_pago: 'PASE' | 'GREEN_FEE' | null
+  origen_pago: 'PASE' | 'GREEN_FEE' | 'INTERCAMBIO' | null
 }
 
 // ---------------------------------------------------------------------------
@@ -65,9 +65,10 @@ function fmtHora(d: string): string {
   return new Date(d).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
 }
 
-function tipoAcomp(a: Acomp): 'Familiar' | 'Invitado · Pase' | 'Green Fee' {
+function tipoAcomp(a: Acomp): 'Familiar' | 'Invitado · Pase' | 'Green Fee' | 'Intercambio' {
   if (!a.es_externo) return 'Familiar'
   if (a.origen_pago === 'GREEN_FEE') return 'Green Fee'
+  if (a.origen_pago === 'INTERCAMBIO') return 'Intercambio'
   return 'Invitado · Pase'
 }
 
@@ -75,6 +76,7 @@ const BADGE_COLORS: Record<string, { bg: string; color: string }> = {
   'Familiar':       { bg: '#eff6ff', color: '#1d4ed8' },
   'Invitado · Pase':{ bg: '#fffbeb', color: '#d97706' },
   'Green Fee':      { bg: '#f0fdf4', color: '#16a34a' },
+  'Intercambio':    { bg: '#fdf4ff', color: '#a21caf' },
 }
 
 // ---------------------------------------------------------------------------
