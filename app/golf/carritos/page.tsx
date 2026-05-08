@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, BookOpen, Receipt, FileText, Printer, Loader, XCircle } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, BookOpen, Receipt, FileText, Printer, Loader, XCircle, Battery } from 'lucide-react'
 import Link from 'next/link'
 import CarritoModal from './CarritoModal'
 import PensionModal from './PensionModal'
@@ -65,6 +65,14 @@ type Cuota = {
 }
 
 type Slot = { id: number; numero: string }
+
+type Bateria = {
+  id: number
+  tipo: string | null
+  marca: string | null
+  anio: number | null
+  numero_serie: string | null
+}
 
 const hoy = new Date().toISOString().split('T')[0]
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
@@ -146,6 +154,10 @@ export default function CarritosPage() {
   // ── Bitácora ──────────────────────────────────────────────
   const [bitacora, setBitacora]         = useState<Record<number, BitacoraEntry[]>>({})
   const [loadingBit, setLoadingBit]     = useState<Record<number, boolean>>({})
+
+  // ── Baterías (lazy por carrito) ───────────────────────────
+  const [baterias, setBateriasMap]      = useState<Record<number, Bateria[]>>({})
+  const [loadingBateria, setLoadingBateria] = useState<Record<number, boolean>>({})
   const [showBitacora, setShowBitacora] = useState<{ idCarrito: number; idPension: number | null; idSocio: number | null; nombreSocio: string; descCarrito: string } | null>(null)
 
   // ── Recibos ───────────────────────────────────────────────
@@ -221,6 +233,19 @@ export default function CarritosPage() {
     const { data: sl } = await dbGolf.from('cat_slots').select('id, numero').eq('activo', true).order('numero')
     setSlots(sl ?? [])
   }, [])
+
+  const fetchBaterias = async (idCarrito: number) => {
+    if (baterias[idCarrito]) return  // ya cargadas
+    setLoadingBateria(prev => ({ ...prev, [idCarrito]: true }))
+    const { data } = await dbGolf
+      .from('baterias_carritos')
+      .select('id, tipo, marca, anio, numero_serie')
+      .eq('id_carrito_fk', idCarrito)
+      .eq('activo', true)
+      .order('id')
+    setBateriasMap(prev => ({ ...prev, [idCarrito]: (data as Bateria[]) ?? [] }))
+    setLoadingBateria(prev => ({ ...prev, [idCarrito]: false }))
+  }
 
   const fetchBitacora = async (idCarrito: number) => {
     setLoadingBit(prev => ({ ...prev, [idCarrito]: true }))
@@ -624,7 +649,10 @@ export default function CarritosPage() {
                           onClick={() => {
                             const next = abierto ? null : p.id
                             setExpandido(next)
-                            if (next && !bitacora[p.id_carrito_fk]) fetchBitacora(p.id_carrito_fk)
+                            if (next) {
+                              if (!bitacora[p.id_carrito_fk]) fetchBitacora(p.id_carrito_fk)
+                              if (p.cat_carritos?.tipo === 'ELECTRICO') fetchBaterias(p.id_carrito_fk)
+                            }
                           }}
                           style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', opacity: p.activo ? 1 : 0.55, transition: 'background 0.1s', background: abierto ? '#f0fdf4' : '' }}
                           onMouseEnter={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)' }}
@@ -740,6 +768,52 @@ export default function CarritosPage() {
                                       )}
                                     </div>
                                   </div>
+
+                                  {/* Baterías (solo carrito eléctrico) */}
+                                  {p.cat_carritos?.tipo === 'ELECTRICO' && (() => {
+                                    const batList = baterias[idCar]
+                                    const loadingB2 = loadingBateria[idCar]
+                                    return (
+                                      <div style={{ marginBottom: 16 }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: '#1d4ed8', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                          <Battery size={12} /> Baterías
+                                          {loadingB2 && <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: 11 }}>Cargando…</span>}
+                                          {!loadingB2 && batList && <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: 11 }}>({batList.length} registrada{batList.length !== 1 ? 's' : ''})</span>}
+                                        </div>
+                                        {!loadingB2 && batList && batList.length === 0 && (
+                                          <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic', paddingLeft: 4 }}>Sin baterías registradas.</div>
+                                        )}
+                                        {!loadingB2 && batList && batList.length > 0 && (
+                                          <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #bfdbfe', overflow: 'hidden' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                              <thead>
+                                                <tr style={{ background: '#eff6ff', borderBottom: '1px solid #bfdbfe' }}>
+                                                  {['#', 'Tipo', 'Marca', 'Año', 'No. de Serie'].map(h => (
+                                                    <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                                                  ))}
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {batList.map((b, bi) => (
+                                                  <tr key={b.id} style={{ borderBottom: bi < batList.length - 1 ? '1px solid #f1f5f9' : 'none', background: bi % 2 === 0 ? '#fff' : '#fafafa' }}>
+                                                    <td style={{ padding: '6px 10px', color: '#94a3b8', fontWeight: 600 }}>{bi + 1}</td>
+                                                    <td style={{ padding: '6px 10px' }}>
+                                                      <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 20, background: '#dbeafe', color: '#1d4ed8', fontWeight: 600 }}>
+                                                        {b.tipo ?? '—'}
+                                                      </span>
+                                                    </td>
+                                                    <td style={{ padding: '6px 10px', color: '#374151' }}>{b.marca ?? '—'}</td>
+                                                    <td style={{ padding: '6px 10px', color: '#374151' }}>{b.anio ?? '—'}</td>
+                                                    <td style={{ padding: '6px 10px', color: '#374151', fontFamily: 'monospace', fontSize: 11 }}>{b.numero_serie ?? '—'}</td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  })()}
 
                                   {/* Bitácora — tabla */}
                                   <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
