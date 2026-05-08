@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
-  Car, Lock, BookOpen, CreditCard, Receipt, FileText, ChevronRight,
+  Car, Lock, BookOpen, CreditCard, Receipt, FileText, ChevronRight, ArrowRightLeft,
 } from 'lucide-react'
 import DashLayout from '@/components/layout/DashLayout'
 
@@ -105,6 +105,15 @@ const MODULOS = [
     color: '#64748b',
     href: '/golf/casilleros',
     activo: false,
+  },
+  {
+    key: 'intercambios',
+    label: 'Intercambios',
+    desc: 'Cartas de intercambio para socios y catálogo de clubes convenio',
+    icon: ArrowRightLeft,
+    color: '#2563eb',
+    href: '/golf/intercambios',
+    activo: true,
   },
   {
     key: 'catalogos',

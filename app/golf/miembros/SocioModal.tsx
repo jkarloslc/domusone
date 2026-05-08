@@ -19,6 +19,7 @@ export type Socio = {
   curp: string | null
   numero_tarjeta: string | null
   activo: boolean
+  derecho_intercambios?: boolean
   observaciones: string | null
   identificacion_url: string | null
   created_at: string
@@ -160,8 +161,9 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     rfc:               socio?.rfc               ?? '',
     curp:              socio?.curp              ?? '',
     numero_tarjeta:    socio?.numero_tarjeta    ?? '',
-    activo:            socio?.activo            ?? true,
-    observaciones:     socio?.observaciones     ?? '',
+    activo:                 socio?.activo                ?? true,
+    derecho_intercambios:   socio?.derecho_intercambios  ?? false,
+    observaciones:          socio?.observaciones         ?? '',
     // Datos fiscales SAT
     razon_social_fiscal: (socio as any)?.razon_social_fiscal ?? '',
     cp_fiscal:           (socio as any)?.cp_fiscal           ?? '',
@@ -239,8 +241,9 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       rfc:                form.rfc               || null,
       curp:               form.curp              || null,
       numero_tarjeta:      form.numero_tarjeta        || null,
-      activo:              form.activo,
-      observaciones:       form.observaciones         || null,
+      activo:               form.activo,
+      derecho_intercambios: (form as any).derecho_intercambios ?? false,
+      observaciones:        form.observaciones         || null,
       identificacion_url:  idUrl,
       // Datos fiscales SAT
       razon_social_fiscal: form.razon_social_fiscal   || null,
@@ -515,10 +518,21 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                   <label style={labelStyle}>Vencimiento</label>
                   <input style={inputStyle} type="date" value={form.fecha_vencimiento} onChange={e => set('fecha_vencimiento', e.target.value)} />
                 </div>
-                <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <input type="checkbox" id="activo" checked={form.activo} onChange={e => set('activo', e.target.checked)}
-                    style={{ width: 16, height: 16, cursor: 'pointer' }} />
-                  <label htmlFor="activo" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer' }}>Socio activo</label>
+                <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input type="checkbox" id="activo" checked={form.activo} onChange={e => set('activo', e.target.checked)}
+                      style={{ width: 16, height: 16, cursor: 'pointer' }} />
+                    <label htmlFor="activo" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer' }}>Socio activo</label>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input type="checkbox" id="derecho_intercambios"
+                      checked={(form as any).derecho_intercambios ?? false}
+                      onChange={e => set('derecho_intercambios' as any, e.target.checked)}
+                      style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#2563eb' }} />
+                    <label htmlFor="derecho_intercambios" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer', color: '#2563eb' }}>
+                      Derecho a intercambios
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
