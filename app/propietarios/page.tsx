@@ -33,9 +33,12 @@ export default function PropietariosPage() {
       .order('apellido_paterno', { ascending: true })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (debouncedSearch) q = q.or(
-      `nombre.ilike.%${debouncedSearch}%,apellido_paterno.ilike.%${debouncedSearch}%,rfc.ilike.%${debouncedSearch}%`
-    )
+    if (debouncedSearch) {
+      const words = debouncedSearch.trim().split(/\s+/).filter(Boolean)
+      for (const w of words) {
+        q = (q as any).or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,rfc.ilike.%${w}%`)
+      }
+    }
 
     const { data, count, error } = await q
     if (!error) { setPropietarios(data as Propietario[]); setTotal(count ?? 0) }

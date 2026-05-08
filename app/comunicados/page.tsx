@@ -338,10 +338,13 @@ function EnvioModal({ comunicado, authUser, onClose }:
     clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(async () => {
       setSearching(true)
-      const { data } = await dbCat.from('propietarios')
+      const words = search.trim().split(/\s+/).filter(Boolean)
+      let qb: any = dbCat.from('propietarios')
         .select('id, nombre, apellido_paterno, apellido_materno')
-        .or(`nombre.ilike.%${search}%,apellido_paterno.ilike.%${search}%`)
-        .limit(8)
+      for (const w of words) {
+        qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%`)
+      }
+      const { data } = await qb.limit(8)
       setResults(data ?? [])
       setSearching(false)
     }, 300)

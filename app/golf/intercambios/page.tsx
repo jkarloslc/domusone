@@ -114,11 +114,14 @@ function CartaModal({
     setBusqueda(q)
     if (q.length < 2) { setOpciones([]); return }
     setBuscando(true)
-    const { data } = await dbGolf.from('cat_socios')
+    const words = q.trim().split(/\s+/).filter(Boolean)
+    let qb: any = dbGolf.from('cat_socios')
       .select('id, numero_socio, nombre, apellido_paterno, activo, derecho_intercambios')
       .eq('activo', true)
-      .or(`nombre.ilike.%${q}%,apellido_paterno.ilike.%${q}%,numero_socio.ilike.%${q}%`)
-      .order('apellido_paterno').limit(15)
+    for (const w of words) {
+      qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%,numero_socio.ilike.%${w}%`)
+    }
+    const { data } = await qb.order('apellido_paterno').limit(15)
     setOpciones((data as Socio[]) ?? [])
     setBuscando(false)
   }, [])

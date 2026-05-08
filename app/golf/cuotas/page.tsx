@@ -122,12 +122,16 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
   // Búsqueda de socios
   useEffect(() => {
     if (socioSearch.length < 2) { setSocios([]); return }
-    const t = setTimeout(() => {
-      dbGolf.from('cat_socios')
+    const t = setTimeout(async () => {
+      const words = socioSearch.trim().split(/\s+/).filter(Boolean)
+      let qb: any = dbGolf.from('cat_socios')
         .select('id, nombre, apellido_paterno, apellido_materno, id_categoria_fk')
-        .or(`nombre.ilike.%${socioSearch}%,apellido_paterno.ilike.%${socioSearch}%,numero_socio.ilike.%${socioSearch}%`)
-        .eq('activo', true).limit(8)
-        .then(({ data }) => setSocios((data as unknown as Socio[]) ?? []))
+        .eq('activo', true)
+      for (const w of words) {
+        qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%,numero_socio.ilike.%${w}%`)
+      }
+      const { data } = await qb.limit(8)
+      setSocios((data as unknown as Socio[]) ?? [])
     }, 300)
     return () => clearTimeout(t)
   }, [socioSearch])

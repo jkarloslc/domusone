@@ -69,9 +69,10 @@ export default function MiembrosPage() {
       .range(from, to)
 
     if (search.trim()) {
-      q = q.or(
-        `nombre.ilike.%${search}%,apellido_paterno.ilike.%${search}%,apellido_materno.ilike.%${search}%,numero_socio.ilike.%${search}%,email.ilike.%${search}%`
-      )
+      const words = search.trim().split(/\s+/).filter(Boolean)
+      for (const w of words) {
+        q = (q as any).or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%,numero_socio.ilike.%${w}%,email.ilike.%${w}%`)
+      }
     }
     if (filtroCat !== '') {
       q = q.eq('id_categoria_fk', filtroCat)

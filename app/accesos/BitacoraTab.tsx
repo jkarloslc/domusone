@@ -165,10 +165,12 @@ function RegistrarAccesoModal({ onClose, onSaved }: { onClose: () => void; onSav
 
   useEffect(() => {
     if (visitSearch.length < 2) { setVisitantes([]); return }
-    dbCat.from('visitantes').select('id, nombre, apellido_paterno, tipo_visitante')
-      .or(`nombre.ilike.%${visitSearch}%,apellido_paterno.ilike.%${visitSearch}%`)
-      .eq('activo', true).limit(8)
-      .then(({ data }) => setVisitantes(data as Visitante[] ?? []))
+    const words = visitSearch.trim().split(/\s+/).filter(Boolean)
+    let qb: any = dbCat.from('visitantes').select('id, nombre, apellido_paterno, tipo_visitante').eq('activo', true)
+    for (const w of words) {
+      qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%`)
+    }
+    qb.limit(8).then(({ data }: { data: Visitante[] | null }) => setVisitantes(data ?? []))
   }, [visitSearch])
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>

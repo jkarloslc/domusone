@@ -22,7 +22,12 @@ export default function VisitantesTab() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCat.from('visitantes').select('*', { count: 'exact' }).order('nombre')
-    if (debouncedSearch) q = q.or(`nombre.ilike.%${debouncedSearch}%,apellido_paterno.ilike.%${debouncedSearch}%`)
+    if (debouncedSearch) {
+      const words = debouncedSearch.trim().split(/\s+/).filter(Boolean)
+      for (const w of words) {
+        q = (q as any).or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%`)
+      }
+    }
     const { data, count } = await q
     setVisitantes(data as Visitante[] ?? [])
     setTotal(count ?? 0)

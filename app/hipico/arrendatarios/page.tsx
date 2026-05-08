@@ -74,8 +74,11 @@ export default function ArrendatariosPage() {
       .from('cat_arrendatarios')
       .select('activo, tipo_persona')
     if (search.trim()) {
-      q = q.or(`nombre.ilike.%${search}%,apellido_paterno.ilike.%${search}%,razon_social.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`)
-      kpiQ = kpiQ.or(`nombre.ilike.%${search}%,apellido_paterno.ilike.%${search}%,razon_social.ilike.%${search}%,email.ilike.%${search}%,telefono.ilike.%${search}%`)
+      const words = search.trim().split(/\s+/).filter(Boolean)
+      for (const w of words) {
+        q = (q as any).or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,razon_social.ilike.%${w}%,email.ilike.%${w}%,telefono.ilike.%${w}%`)
+        kpiQ = (kpiQ as any).or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,razon_social.ilike.%${w}%,email.ilike.%${w}%,telefono.ilike.%${w}%`)
+      }
     }
     if (filtroTipo) {
       q = q.eq('tipo_persona', filtroTipo)

@@ -224,12 +224,14 @@ function TransferirPropietarioModal({
 
   useEffect(() => {
     if (propSearch.length < 2) { setPropResults([]); return }
-    dbCat.from('propietarios')
+    const words = propSearch.trim().split(/\s+/).filter(Boolean)
+    let qb: any = dbCat.from('propietarios')
       .select('id, nombre, apellido_paterno, apellido_materno, rfc')
-      .or(`nombre.ilike.%${propSearch}%,apellido_paterno.ilike.%${propSearch}%,rfc.ilike.%${propSearch}%`)
       .eq('activo', true)
-      .limit(8)
-      .then(({ data }) => setPropResults(data ?? []))
+    for (const w of words) {
+      qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%,rfc.ilike.%${w}%`)
+    }
+    qb.limit(8).then(({ data }: { data: any[] | null }) => setPropResults(data ?? []))
   }, [propSearch])
 
   const handleTransfer = async () => {

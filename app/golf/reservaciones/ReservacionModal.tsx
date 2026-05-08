@@ -67,12 +67,15 @@ export default function ReservacionModal({ fecha, onClose, onSaved }: Props) {
     if (esExterno || socioSearch.trim().length < 2) { setSocioResults([]); return }
     const t = setTimeout(async () => {
       setBuscando(true)
-      const { data } = await dbGolf
+      const words = socioSearch.trim().split(/\s+/).filter(Boolean)
+      let qb: any = dbGolf
         .from('cat_socios')
         .select('id, numero_socio, nombre, apellido_paterno, apellido_materno, cat_categorias_socios(nombre)')
         .eq('activo', true)
-        .or(`nombre.ilike.%${socioSearch}%,apellido_paterno.ilike.%${socioSearch}%,numero_socio.ilike.%${socioSearch}%`)
-        .limit(8)
+      for (const w of words) {
+        qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%,numero_socio.ilike.%${w}%`)
+      }
+      const { data } = await qb.limit(8)
       setSocioResults((data as unknown as Socio[]) ?? [])
       setBuscando(false)
     }, 300)
