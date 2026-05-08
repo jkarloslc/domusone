@@ -1,12 +1,12 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, dbCtrl, dbComp, dbGolf } from '@/lib/supabase'
 import ModalShell from '@/components/ui/ModalShell'
 import {
   Plus, Star, MapPin, Calendar, Users, DollarSign,
   FileText, Trash2, Edit2, ChevronLeft, Receipt, ShoppingBag,
   Printer, X, Check, Eye, TrendingUp, TrendingDown,
-  Settings, ClipboardCheck,
+  Settings, ClipboardCheck, Upload, Loader, ExternalLink,
 } from 'lucide-react'
 
 // ── Types ────────────────────────────────────────────────────
@@ -221,6 +221,13 @@ export default function EventosPage() {
   const [checklistFiles, setChecklistFiles] = useState<Record<ChecklistKey, string | null>>(emptyChecklistFiles())
   const [checklistLoading, setChecklistLoading] = useState<Record<ChecklistKey, boolean>>(emptyChecklistLoading())
   const [loadingChecklistFiles, setLoadingChecklistFiles] = useState(false)
+  const checklistInputRefs = useRef<Record<ChecklistKey, HTMLInputElement | null>>({
+    chk_contrato_firmado: null,
+    chk_anticipo_pagado: null,
+    chk_layout_autorizado: null,
+    chk_montaje_concluido: null,
+    chk_revision_final: null,
+  })
 
   // Ingresos
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
@@ -1318,41 +1325,65 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     const hasFile = !!checklistFiles[k]
                     const busy = checklistLoading[k]
                     return (
-                      <div key={k} style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid', borderColor: hasFile ? '#7e22ce' : '#e2e8f0', background: hasFile ? '#faf5ff' : '#fff' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 13, fontWeight: hasFile ? 600 : 400, color: hasFile ? '#7e22ce' : '#475569' }}>{label}</span>
-                          {hasFile && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#7e22ce', fontWeight: 700 }}>✓ Archivo cargado</span>}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"
-                            disabled={!editEvt || busy || saving}
-                            onChange={async e => {
-                              const f = e.target.files?.[0]
-                              if (f) await subirChecklist(k, f)
-                              e.currentTarget.value = ''
-                            }}
-                            style={{ fontSize: 12 }}
-                          />
-                          {hasFile && checklistFiles[k] && (
-                            <a href={checklistFiles[k] ?? '#'} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#6d28d9', textDecoration: 'none', fontWeight: 600 }}>
-                              Ver archivo
+                      <div key={k} style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff' }}>
+                        <label className="label">{label}</label>
+                        <input
+                          ref={el => { checklistInputRefs.current[k] = el }}
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"
+                          style={{ display: 'none' }}
+                          disabled={!editEvt || busy || saving}
+                          onChange={async e => {
+                            const f = e.target.files?.[0]
+                            if (f) await subirChecklist(k, f)
+                            e.currentTarget.value = ''
+                          }}
+                        />
+                        {hasFile ? (
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <a
+                              href={checklistFiles[k] ?? '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                fontSize: 12,
+                                color: 'var(--blue)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '5px 10px',
+                                background: '#eff6ff',
+                                border: '1px solid #bfdbfe',
+                                borderRadius: 6,
+                                textDecoration: 'none',
+                                flex: 1,
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <ExternalLink size={11} /> Ver archivo
                             </a>
-                          )}
-                          {hasFile && (
                             <button
                               type="button"
                               className="btn-ghost"
+                              style={{ padding: '5px 8px', color: '#dc2626' }}
                               onClick={() => borrarChecklist(k)}
                               disabled={busy || saving}
-                              style={{ fontSize: 11, color: '#7e22ce', padding: '4px 8px' }}
                             >
-                              Eliminar
+                              <Trash2 size={12} />
                             </button>
-                          )}
-                          {busy && <span style={{ fontSize: 11, color: '#7e22ce' }}>Procesando…</span>}
-                        </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            style={{ fontSize: 11, width: '100%' }}
+                            onClick={() => checklistInputRefs.current[k]?.click()}
+                            disabled={!editEvt || busy || saving}
+                          >
+                            {busy ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+                            {busy ? 'Subiendo…' : 'Adjuntar PDF/JPG'}
+                          </button>
+                        )}
                       </div>
                     )
                   })}
