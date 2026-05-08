@@ -42,6 +42,7 @@ type Acomp = {
   nombre: string
   es_externo: boolean
   origen_pago: 'PASE' | 'GREEN_FEE' | 'INTERCAMBIO' | null
+  club_origen: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -199,7 +200,7 @@ export default function ReporteGolfAccesos() {
         const ids = rows.map(r => r.id)
         const { data: acompsData, error: acompErr } = await (dbGolf as any)
           .from('ctrl_acceso_acomp')
-          .select('id_acceso_fk, nombre, es_externo, origen_pago')
+          .select('id_acceso_fk, nombre, es_externo, origen_pago, club_origen')
           .in('id_acceso_fk', ids)
 
         if (acompErr) throw acompErr
@@ -580,6 +581,17 @@ export default function ReporteGolfAccesos() {
                                       }}>
                                         {tipo}
                                       </span>
+                                      {tipo === 'Intercambio' && ac.club_origen && (
+                                        <span style={{
+                                          fontSize: 9,
+                                          opacity: 0.85,
+                                          borderLeft: `1px solid ${bc.color}`,
+                                          paddingLeft: 4,
+                                          marginLeft: 2,
+                                        }}>
+                                          {ac.club_origen}
+                                        </span>
+                                      )}
                                     </span>
                                   )
                                 })}

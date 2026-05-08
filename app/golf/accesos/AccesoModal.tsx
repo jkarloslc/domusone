@@ -9,7 +9,14 @@ type Familiar = { id: number; nombre: string; apellido_paterno: string | null; a
 type Espacio = { id: number; nombre: string }
 
 // Un acompañante puede ser familiar, visitante Green Fee, invitado por pase o intercambio
-type Acomp = { tipo: 'familiar' | 'libre' | 'externo' | 'intercambio'; id_familiar?: number; nombre: string; _pase_mov_id?: number | null; _origen_pago?: string | null }
+type Acomp = {
+  tipo: 'familiar' | 'libre' | 'externo' | 'intercambio'
+  id_familiar?: number
+  nombre: string
+  club_origen?: string
+  _pase_mov_id?: number | null
+  _origen_pago?: string | null
+}
 
 type Props = { onClose: () => void; onSaved: () => void }
 
@@ -140,9 +147,16 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     ))
   }
 
+  const setAcompClubOrigen = (i: number, v: string) => {
+    setAcomp(a => a.map((x, idx) => idx === i
+      ? { ...x, club_origen: v }
+      : x
+    ))
+  }
+
   const switchTipoAcomp = (i: number, tipo: 'familiar' | 'libre' | 'externo' | 'intercambio') => {
     setAcomp(a => a.map((x, idx) => idx === i
-      ? { tipo, nombre: '' }
+      ? { tipo, nombre: '', club_origen: tipo === 'intercambio' ? x.club_origen ?? '' : '' }
       : x
     ))
   }
@@ -211,6 +225,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           nombre:         a.nombre.trim(),
           id_familiar_fk: a.tipo === 'familiar' ? (a.id_familiar ?? null) : null,
           es_externo:     a.tipo === 'externo' || a.tipo === 'libre' || a.tipo === 'intercambio',
+          club_origen:    a.tipo === 'intercambio' ? (a.club_origen?.trim() || null) : null,
           origen_pago:    a.tipo === 'libre'
             ? 'GREEN_FEE'
             : a.tipo === 'intercambio'
@@ -388,6 +403,21 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                       </option>
                     ))}
                   </select>
+                ) : a.tipo === 'intercambio' ? (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <input
+                      style={{ ...inputStyle, borderColor: '#f5d0fe' }}
+                      placeholder={`Nombre del visitante ${i + 1} (intercambio)`}
+                      value={a.nombre}
+                      onChange={e => setAcompLibre(i, e.target.value)}
+                    />
+                    <input
+                      style={{ ...inputStyle, borderColor: '#f5d0fe' }}
+                      placeholder="Club origen"
+                      value={a.club_origen ?? ''}
+                      onChange={e => setAcompClubOrigen(i, e.target.value)}
+                    />
+                  </div>
                 ) : (
                   <input
                     style={{ ...inputStyle, flex: 1, borderColor: a.tipo === 'externo' ? '#fde68a' : '#e2e8f0' }}
@@ -395,9 +425,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                       ? `Nombre del invitado ${i + 1} (consumirá 1 pase)`
                       : a.tipo === 'libre'
                         ? `Nombre del visitante ${i + 1} (green fee)`
-                        : a.tipo === 'intercambio'
-                          ? `Nombre del visitante ${i + 1} (intercambio)`
-                          : `Nombre del acompañante ${i + 1}`}
+                        : `Nombre del acompañante ${i + 1}`}
                     value={a.nombre}
                     onChange={e => setAcompLibre(i, e.target.value)}
                   />
