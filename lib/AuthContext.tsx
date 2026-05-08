@@ -93,7 +93,7 @@ const ADMIN_MODULOS = [
   'tesoreria', 'ingresos', 'reportes', 'catalogos',
   'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
-  'golf-cuotas', 'golf-cxc', 'golf-recibos',
+  'golf-cuotas', 'golf-cxc', 'golf-recibos', 'golf-intercambios', 'golf-catalogos',
   // Hípico
   'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
   'hipico-contratos', 'hipico-cobranza', 'hipico-servicios',
@@ -104,8 +104,8 @@ const ADMIN_MODULOS = [
 const GOLF_MODULOS = [
   'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
-  'golf-cuotas', 'golf-cxc', 'golf-recibos', 'reportes',
-  'compras', 'requisiciones', 'transferencias',
+  'golf-cuotas', 'golf-cxc', 'golf-recibos', 'golf-intercambios', 'golf-catalogos',
+  'reportes', 'compras', 'requisiciones', 'transferencias',
 ]
 
 // Módulos Hípico para rol dedicado
