@@ -51,15 +51,74 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
   const handleEnviarCorreo = async () => {
     if (!correoEnvio.trim()) { setMsg('Ingresa un correo válido'); return }
     setEnviando(true); setMsg('')
-    // El envío real se implementa con el PAC o con un servicio de email (SendGrid, Resend, etc.)
-    // Por ahora registramos el intento en BD
-    await dbCtrl.from('facturas').update({
-      correo_enviado_a: correoEnvio.trim(),
-      fecha_envio:      new Date().toISOString(),
-    }).eq('id', f.id)
-    setMsg('✓ Factura marcada como enviada a ' + correoEnvio)
+
+    // ── Construir adjuntos ────────────────────────────────────────
+    const adjuntos: Array<{ filename: string; content: string; encoding?: 'base64'; contentType: string }> = []
+
+    // XML del CFDI
+    if (f.xml_cfdi) {
+      adjuntos.push({
+        filename:    `${f.serie ?? 'A'}${f.folio_interno ?? f.id}.xml`,
+        content:     f.xml_cfdi,
+        contentType: 'application/xml',
+      })
+    }
+
+    // PDF — puede ser data URL base64 o URL HTTP
+    if (f.pdf_url) {
+      const match = (f.pdf_url as string).match(/^data:([^;]+);base64,(.+)$/)
+      if (match) {
+        adjuntos.push({
+          filename:    `${f.serie ?? 'A'}${f.folio_interno ?? f.id}.pdf`,
+          content:     match[2],
+          encoding:    'base64',
+          contentType: 'application/pdf',
+        })
+      }
+    }
+
+    const html = `
+      <p>Estimado cliente,</p>
+      <p>Adjuntamos su factura electrónica con los siguientes datos:</p>
+      <table style="border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Folio fiscal (UUID):</td><td><strong style="font-family:monospace">${f.folio_fiscal}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Folio interno:</td><td><strong>${f.serie ?? ''}${f.folio_interno ?? ''}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Receptor:</td><td>${f.razon_social_receptor ?? ''} (${f.rfc_receptor ?? ''})</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Total:</td><td><strong>$${Number(f.total ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Fecha emisión:</td><td>${f.fecha_emision ? new Date(f.fecha_emision).toLocaleDateString('es-MX') : ''}</td></tr>
+      </table>
+      <p style="margin-top:16px">Los archivos XML y PDF de la factura se encuentran adjuntos a este correo.</p>
+      <p>Para cualquier aclaración, comuníquese con administración.</p>
+      <p style="color:#64748b;font-size:12px">${f.razon_social_emisor ?? ''} · RFC: ${f.rfc_emisor ?? ''}</p>
+    `
+
+    try {
+      const res = await fetch('/api/send-email', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to:      correoEnvio.trim(),
+          subject: `Factura ${f.serie ?? ''}${f.folio_interno ?? ''} — ${f.razon_social_emisor ?? ''}`,
+          html,
+          adjuntos,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Error al enviar')
+
+      // Registrar el envío en BD
+      await dbCtrl.from('facturas').update({
+        correo_enviado_a: correoEnvio.trim(),
+        fecha_envio:      new Date().toISOString(),
+      }).eq('id', f.id)
+
+      setMsg('✓ Factura enviada a ' + correoEnvio)
+      setShowEmail(false)
+    } catch (err: any) {
+      setMsg('Error: ' + err.message)
+    }
+
     setEnviando(false)
-    setShowEmail(false)
   }
 
   const handleImprimir = () => {

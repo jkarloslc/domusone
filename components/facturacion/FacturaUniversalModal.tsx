@@ -70,7 +70,7 @@ export default function FacturaUniversalModal({
   const [error, setError] = useState('')
   const [enviandoEmail, setEnviandoEmail] = useState(false)
   const [emailEnviado, setEmailEnviado] = useState(false)
-  const [resultado, setResultado] = useState<{ folio_fiscal: string; pdf_url?: string }>()
+  const [resultado, setResultado] = useState<{ folio_fiscal: string; pdf_url?: string; xml_cfdi?: string }>()
 
   // Tasas IVA por renglón (0 = exento, 0.16 = gravado)
   const [tasas, setTasas] = useState<number[]>(() =>
@@ -180,35 +180,62 @@ export default function FacturaUniversalModal({
       return
     }
 
-    setResultado({ folio_fiscal: res.folio_fiscal!, pdf_url: res.pdf_url })
+    setResultado({ folio_fiscal: res.folio_fiscal!, pdf_url: res.pdf_url, xml_cfdi: res.xml_cfdi })
     setSaving(false)
     setPaso(4)
   }
 
-  // ── Enviar email ───────────────────────────────────────────────
+  // ── Enviar email con adjuntos ──────────────────────────────────
   const handleEnviarEmail = async () => {
     if (!receptor.email || !resultado) return
     setEnviandoEmail(true)
+
+    // Adjuntos: XML + PDF si están disponibles
+    const adjuntos: Array<{ filename: string; content: string; encoding?: 'base64'; contentType: string }> = []
+
+    if (resultado.xml_cfdi) {
+      adjuntos.push({
+        filename:    `${folio}.xml`,
+        content:     resultado.xml_cfdi,
+        contentType: 'application/xml',
+      })
+    }
+
+    if (resultado.pdf_url) {
+      const match = resultado.pdf_url.match(/^data:([^;]+);base64,(.+)$/)
+      if (match) {
+        adjuntos.push({
+          filename:    `${folio}.pdf`,
+          content:     match[2],
+          encoding:    'base64',
+          contentType: 'application/pdf',
+        })
+      }
+    }
+
+    const html = `
+      <p>Estimado cliente,</p>
+      <p>Adjuntamos su factura electrónica con los siguientes datos:</p>
+      <table style="border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Folio fiscal (UUID):</td><td><strong style="font-family:monospace">${resultado.folio_fiscal}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Recibo:</td><td><strong>${folio}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Total:</td><td><strong>${fmt$(totalCalc)}</strong></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#64748b">Fecha:</td><td>${fecha}</td></tr>
+      </table>
+      <p style="margin-top:16px">Los archivos XML y PDF se encuentran adjuntos a este correo.</p>
+      <p>Para cualquier aclaración, comuníquese con administración.</p>
+      <p style="color:#64748b;font-size:12px">${emisor.razon_social} · RFC: ${emisor.rfc}</p>
+    `
+
     try {
       await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to:      receptor.email,
-          subject: `Factura ${resultado.folio_fiscal} — ${folio}`,
-          html: `
-            <p>Estimado cliente,</p>
-            <p>Adjuntamos la factura electrónica con los siguientes datos:</p>
-            <ul>
-              <li><strong>Folio fiscal (UUID):</strong> ${resultado.folio_fiscal}</li>
-              <li><strong>Recibo:</strong> ${folio}</li>
-              <li><strong>Monto:</strong> ${fmt$(total)}</li>
-              <li><strong>Fecha:</strong> ${fecha}</li>
-            </ul>
-            ${resultado.pdf_url ? `<p><a href="${resultado.pdf_url}">Descargar PDF de la factura</a></p>` : ''}
-            <p>Para cualquier aclaración, comuníquese con administración.</p>
-            <p><em>${emisor.razon_social}</em></p>
-          `,
+          subject: `Factura ${folio} — ${emisor.razon_social}`,
+          html,
+          adjuntos,
         }),
       })
       setEmailEnviado(true)

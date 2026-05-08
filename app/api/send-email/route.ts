@@ -18,14 +18,29 @@ async function getSmtpConfig() {
   return cfg
 }
 
+// Convierte un data URL (data:...;base64,XXX) al contenido base64 puro
+function dataUrlToBase64(dataUrl: string): { base64: string; mimeType: string } | null {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/)
+  if (!match) return null
+  return { mimeType: match[1], base64: match[2] }
+}
+
+type Adjunto = {
+  filename:    string
+  content:     string   // texto plano (XML) o base64 (PDF)
+  encoding?:   'base64'
+  contentType: string
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { to, subject, html, text } = body as {
-      to: string | string[]
-      subject: string
-      html: string
-      text?: string
+    const { to, subject, html, text, adjuntos } = body as {
+      to:        string | string[]
+      subject:   string
+      html:      string
+      text?:     string
+      adjuntos?: Adjunto[]
     }
 
     if (!to || !subject || !html) {
@@ -44,22 +59,27 @@ export async function POST(req: NextRequest) {
       host:   cfg.smtp_host,
       port:   Number(cfg.smtp_port) || 587,
       secure: cfg.smtp_secure === 'true',
-      auth: {
-        user: cfg.smtp_user,
-        pass: cfg.smtp_pass,
-      },
-      tls: { rejectUnauthorized: false },
+      auth: { user: cfg.smtp_user, pass: cfg.smtp_pass },
+      tls:  { rejectUnauthorized: false },
     })
 
     const fromName  = cfg.smtp_from_name  || 'DomusOne'
     const fromEmail = cfg.smtp_from_email || cfg.smtp_user
+
+    // Construir adjuntos para nodemailer
+    const attachments = (adjuntos ?? []).map((a: Adjunto) => ({
+      filename:    a.filename,
+      content:     Buffer.from(a.content, a.encoding === 'base64' ? 'base64' : 'utf-8'),
+      contentType: a.contentType,
+    }))
 
     const info = await transporter.sendMail({
       from:    `"${fromName}" <${fromEmail}>`,
       to:      Array.isArray(to) ? to.join(', ') : to,
       subject,
       html,
-      text: text ?? html.replace(/<[^>]+>/g, ''),
+      text:    text ?? html.replace(/<[^>]+>/g, ''),
+      attachments,
     })
 
     return NextResponse.json({ ok: true, messageId: info.messageId })
