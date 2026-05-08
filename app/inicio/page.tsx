@@ -2,8 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import {
-  TrendingUp, TrendingDown, DollarSign, Scale,
-  Receipt, FileText, Calendar, RefreshCw, Building2,
+  TrendingUp, TrendingDown, Scale,
+  Receipt, FileText, RefreshCw, Building2,
   ChevronRight, AlertTriangle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -29,30 +29,27 @@ const PERIODOS: { key: Periodo; label: string }[] = [
 ]
 
 function getRango(p: Periodo): { ini: string; fin: string } {
-  const now  = new Date()
-  const hoy  = fechaLocal() // TZ local, no UTC
+  const now = new Date()
+  const hoy = fechaLocal()
   if (p === 'hoy')    return { ini: hoy, fin: hoy }
   if (p === 'semana') {
     const d = new Date(now); d.setDate(d.getDate() - d.getDay())
     return { ini: d.toLocaleDateString('en-CA'), fin: hoy }
   }
   if (p === 'mes') {
-    const ini = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA')
-    return { ini, fin: hoy }
+    return { ini: new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA'), fin: hoy }
   }
   return { ini: `${now.getFullYear()}-01-01`, fin: hoy }
 }
 
-// Últimos 6 meses para la gráfica
-function getUltimosMeses(): { label: string; key: string; ini: string; fin: string }[] {
+function getUltimosMeses(): { label: string; ini: string; fin: string }[] {
   const result = []
   const now = new Date()
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const d   = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const fin = new Date(d.getFullYear(), d.getMonth() + 1, 0)
     result.push({
       label: d.toLocaleDateString('es-MX', { month: 'short' }),
-      key:   d.toISOString().slice(0, 7),
       ini:   d.toISOString().slice(0, 10),
       fin:   fin.toISOString().slice(0, 10),
     })
@@ -67,18 +64,13 @@ function BarChart({ datos }: { datos: { label: string; ing: number; egr: number 
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 110, padding: '0 4px' }}>
       {datos.map((d, i) => (
         <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-          {/* Barras */}
           <div style={{ width: '100%', display: 'flex', gap: 2, alignItems: 'flex-end', height: 88 }}>
-            <div style={{
-              flex: 1, background: '#059669', borderRadius: '3px 3px 0 0',
-              height: `${(d.ing / max) * 100}%`, minHeight: d.ing > 0 ? 3 : 0,
-              transition: 'height 0.3s ease',
-            }} title={`Ingresos: ${fmt(d.ing)}`} />
-            <div style={{
-              flex: 1, background: '#dc2626', borderRadius: '3px 3px 0 0',
-              height: `${(d.egr / max) * 100}%`, minHeight: d.egr > 0 ? 3 : 0,
-              transition: 'height 0.3s ease',
-            }} title={`Egresos: ${fmt(d.egr)}`} />
+            <div style={{ flex: 1, background: '#059669', borderRadius: '3px 3px 0 0',
+              height: `${(d.ing / max) * 100}%`, minHeight: d.ing > 0 ? 3 : 0, transition: 'height 0.3s ease' }}
+              title={`Ingresos: ${fmt(d.ing)}`} />
+            <div style={{ flex: 1, background: '#dc2626', borderRadius: '3px 3px 0 0',
+              height: `${(d.egr / max) * 100}%`, minHeight: d.egr > 0 ? 3 : 0, transition: 'height 0.3s ease' }}
+              title={`Egresos: ${fmt(d.egr)}`} />
           </div>
           <span style={{ fontSize: 10, color: '#94a3b8', textTransform: 'capitalize' }}>{d.label}</span>
         </div>
@@ -87,140 +79,238 @@ function BarChart({ datos }: { datos: { label: string; ing: number; egr: number 
   )
 }
 
-const SECCION_LABEL: Record<string, string> = {
-  golf: 'Golf', cuotas: 'Cuotas Residencial',
-  rentas_espacios: 'Renta de Espacios', caballerizas: 'Caballerizas', otro: 'Otro',
-}
+// ── Tipos catálogo ──────────────────────────────────────────────
+type CentroIng  = { id: number; nombre: string; tipo: string | null; tipo_desglose: string }
+type Seccion    = { id: number; nombre: string }
+type CentroCosto = { id: number; nombre: string }
+type Area       = { id: number; nombre: string; id_centro_costo_fk: number }
 
 // ── Página ─────────────────────────────────────────────────────
 export default function InicioPage() {
-  const router  = useRouter()
+  const router = useRouter()
+
+  // período
   const [periodo, setPeriodo] = useState<Periodo>('mes')
-  const [loading, setLoading] = useState(true)
+
+  // loading
+  const [loading,    setLoading]    = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // datos
   const [stats, setStats] = useState({
-    ingresos: 0, egresos: 0, balance: 0,
-    cxp: 0, saldoBancos: 0, cuentas: 0,
+    ingresos: 0, egresos: 0, balance: 0, cxp: 0, saldoBancos: 0, cuentas: 0,
   })
-  const [grafica, setGrafica] = useState<{ label: string; ing: number; egr: number }[]>([])
-  const [ultRecibos, setUltRecibos]   = useState<any[]>([])
-  const [ultOps, setUltOps]           = useState<any[]>([])
-  const [centrosMap, setCentrosMap]   = useState<Record<number, string>>({})
-  const [centros, setCentros]         = useState<{id: number; nombre: string; tipo: string|null}[]>([])
-  const [filtroTipo, setFiltroTipo]   = useState('')   // '' = todas las secciones
-  const [filtroCentro, setFiltroCentro] = useState('') // '' = todos los CC
-  const [refreshing, setRefreshing]   = useState(false)
+  const [grafica,    setGrafica]    = useState<{ label: string; ing: number; egr: number }[]>([])
+  const [ultRecibos, setUltRecibos] = useState<any[]>([])
+  const [ultOps,     setUltOps]     = useState<any[]>([])
 
-  // Centros disponibles según sección seleccionada
-  const centrosFiltrados = filtroTipo ? centros.filter(c => c.tipo === filtroTipo) : centros
+  // catálogos
+  const [centrosMap,   setCentrosMap]   = useState<Record<number, string>>({})
+  const [centrosIng,   setCentrosIng]   = useState<CentroIng[]>([])
+  const [secciones,    setSecciones]    = useState<Seccion[]>([])
+  const [centrosCosto, setCentrosCosto] = useState<CentroCosto[]>([])
+  const [areas,        setAreas]        = useState<Area[]>([])
 
-  // Secciones únicas con datos en la lista de centros
-  const secciones = Array.from(new Set(centros.map(c => c.tipo).filter(Boolean))) as string[]
+  // filtros INGRESOS
+  const [filtroCentroIng, setFiltroCentroIng] = useState('')
+  const [filtroSeccion,   setFiltroSeccion]   = useState('')
 
-  // Al cambiar sección, limpiar centro si ya no aplica
-  const handleTipoChange = (tipo: string) => {
-    setFiltroTipo(tipo)
-    if (tipo) {
-      const still = centros.filter(c => c.tipo === tipo).some(c => String(c.id) === filtroCentro)
-      if (!still) setFiltroCentro('')
-    }
-  }
+  // filtros EGRESOS
+  const [filtroCC,   setFiltroCC]   = useState('')
+  const [filtroArea, setFiltroArea] = useState('')
 
-  // Helper: construye filtro de centro sobre una query de recibos_ingreso
-  const applyIngresosFilter = (q: any, csLocal: {id:number; tipo:string|null}[]) => {
-    if (filtroCentro) return q.eq('id_centro_ingreso_fk', Number(filtroCentro))
-    if (filtroTipo) {
-      const ids = csLocal.filter(c => c.tipo === filtroTipo).map(c => c.id)
-      if (ids.length) return q.in('id_centro_ingreso_fk', ids)
-    }
+  // ── derivados ─────────────────────────────────────────────
+  const centroIngSel = centrosIng.find(c => String(c.id) === filtroCentroIng)
+  const esSecciones  = centroIngSel?.tipo_desglose === 'secciones'
+  const areasFiltradas = filtroCC
+    ? areas.filter(a => a.id_centro_costo_fk === Number(filtroCC))
+    : areas
+  const hayFiltroIng = !!(filtroCentroIng || filtroSeccion)
+  const hayFiltroEgr = !!(filtroCC || filtroArea)
+
+  // badges descriptivos para el subtitle
+  const badgeIng = filtroSeccion
+    ? `${centroIngSel?.nombre ?? ''} › ${secciones.find(s => String(s.id) === filtroSeccion)?.nombre ?? ''}`
+    : centroIngSel?.nombre ?? ''
+  const ccSel    = centrosCosto.find(c => String(c.id) === filtroCC)
+  const arSel    = areas.find(a => String(a.id) === filtroArea)
+  const badgeEgr = arSel ? `${ccSel?.nombre ?? ''} › ${arSel.nombre}` : ccSel?.nombre ?? ''
+
+  // ── Carga catálogos UNA VEZ ───────────────────────────────
+  useEffect(() => {
+    Promise.all([
+      dbCfg.from('centros_ingreso').select('id, nombre, tipo, tipo_desglose').eq('activo', true).order('nombre'),
+      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+    ]).then(([ci, sec, cc, ar]) => {
+      const csArr = (ci.data as any[]) ?? []
+      const cmap: Record<number, string> = {}
+      csArr.forEach((c: any) => { cmap[c.id] = c.nombre })
+      setCentrosMap(cmap)
+      setCentrosIng(csArr)
+      setSecciones((sec.data as any[]) ?? [])
+      setCentrosCosto((cc.data as any[]) ?? [])
+      setAreas((ar.data as any[]) ?? [])
+    })
+  }, [])
+
+  // ── Query helpers (memoizados por filtros activos) ────────
+  const applyIngQ = useCallback((q: any) => {
+    if (filtroCentroIng) return q.eq('id_centro_ingreso_fk', Number(filtroCentroIng))
     return q
-  }
+  }, [filtroCentroIng])
 
+  const applyEgrQ = useCallback((q: any) => {
+    if (filtroCC)   q = q.eq('id_centro_costo_fk', Number(filtroCC))
+    if (filtroArea) q = q.eq('id_area_fk', Number(filtroArea))
+    return q
+  }, [filtroCC, filtroArea])
+
+  // ── Carga de datos (reactiva a filtros + período) ─────────
   const loadAll = useCallback(async () => {
     setRefreshing(true)
     const { ini, fin } = getRango(periodo)
 
-    // Centros de ingreso (con tipo para filtrado por sección)
-    const { data: cs } = await dbCfg.from('centros_ingreso').select('id, nombre, tipo').eq('activo', true).order('nombre')
-    const csArr = (cs as any[]) ?? []
-    const cmap: Record<number, string> = {}
-    csArr.forEach((c: any) => { cmap[c.id] = c.nombre })
-    setCentrosMap(cmap)
-    setCentros(csArr)
+    // ── INGRESOS ─────────────────────────────────────────────
+    // Cuando hay filtro de sección, se consulta la tabla hija con monto parcial por sección
+    let ingPromise: Promise<any>
+    let ultIngPromise: Promise<any>
 
-    // Ingresos del período (con filtro sección/CC)
-    let ingQ = dbCtrl.from('recibos_ingreso')
-      .select('monto_total').eq('status', 'Confirmado')
-      .gte('fecha', ini).lte('fecha', fin)
-    ingQ = applyIngresosFilter(ingQ, csArr)
+    if (filtroSeccion) {
+      ingPromise = (dbCtrl.from('recibos_ingreso_secciones') as any)
+        .select('monto, recibos_ingreso!inner(status, fecha)')
+        .eq('id_seccion_fk', Number(filtroSeccion))
+        .eq('recibos_ingreso.status', 'Confirmado')
+        .gte('recibos_ingreso.fecha', ini)
+        .lte('recibos_ingreso.fecha', fin)
+      ultIngPromise = (dbCtrl.from('recibos_ingreso_secciones') as any)
+        .select('monto, recibos_ingreso!inner(id, folio, fecha, status, id_centro_ingreso_fk)')
+        .eq('id_seccion_fk', Number(filtroSeccion))
+        .eq('recibos_ingreso.status', 'Confirmado')
+        .order('id', { ascending: false })
+        .limit(8)
+    } else {
+      const iq = applyIngQ(
+        dbCtrl.from('recibos_ingreso')
+          .select('monto_total').eq('status', 'Confirmado')
+          .gte('fecha', ini).lte('fecha', fin)
+      )
+      ingPromise = iq
+      const uiq = applyIngQ(
+        dbCtrl.from('recibos_ingreso')
+          .select('id, folio, fecha, monto_total, status, id_centro_ingreso_fk')
+          .eq('status', 'Confirmado')
+          .order('created_at', { ascending: false }).limit(8)
+      )
+      ultIngPromise = uiq
+    }
 
-    // Egresos del período (OPs pagadas + en proceso)
-    const egrQ = dbComp.from('ordenes_pago')
-      .select('monto').neq('status', 'Cancelada')
-      .gte('created_at', inicioDelDia(ini)).lte('created_at', finDelDia(fin))
-    // CXP pendiente
-    const cxpQ = dbComp.from('ordenes_pago')
-      .select('saldo, monto').neq('status', 'Cancelada').neq('status', 'Pagada')
-    // Saldo bancos
+    // ── EGRESOS ──────────────────────────────────────────────
+    const egrQ = applyEgrQ(
+      dbComp.from('ordenes_pago')
+        .select('monto').neq('status', 'Cancelada')
+        .gte('created_at', inicioDelDia(ini)).lte('created_at', finDelDia(fin))
+    )
+    const cxpQ = applyEgrQ(
+      dbComp.from('ordenes_pago')
+        .select('saldo, monto').neq('status', 'Cancelada').neq('status', 'Pagada')
+    )
+    const ultOpQ = applyEgrQ(
+      dbComp.from('ordenes_pago')
+        .select('id, folio, concepto, monto, saldo, status, fecha_vencimiento')
+        .in('status', ['Pendiente', 'Pendiente Auth', 'Autorizada'])
+    ).order('created_at', { ascending: false }).limit(5)
+
     const banQ = dbCfg.from('cuentas_bancarias').select('saldo').eq('activo', true)
-    // Últimos recibos (con filtro sección/CC)
-    let ultIngQ = dbCtrl.from('recibos_ingreso')
-      .select('id, folio, fecha, monto_total, status, id_centro_ingreso_fk')
-      .order('created_at', { ascending: false }).limit(8)
-    ultIngQ = applyIngresosFilter(ultIngQ, csArr)
-    // Últimas OPs pendientes
-    const ultOpQ = dbComp.from('ordenes_pago')
-      .select('id, folio, concepto, monto, saldo, status, fecha_vencimiento')
-      .in('status', ['Pendiente', 'Pendiente Auth', 'Autorizada'])
-      .order('created_at', { ascending: false }).limit(5)
 
     const [ingR, egrR, cxpR, banR, ultIngR, ultOpR] = await Promise.allSettled([
-      ingQ, egrQ, cxpQ, banQ, ultIngQ, ultOpQ
+      ingPromise, egrQ, cxpQ, banQ, ultIngPromise, ultOpQ,
     ])
 
-    const ingresos = (ingR.status === 'fulfilled' ? ingR.value.data ?? [] : [])
-      .reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
-    const egresos  = (egrR.status === 'fulfilled' ? egrR.value.data ?? [] : [])
-      .reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
-    const cxp      = (cxpR.status === 'fulfilled' ? cxpR.value.data ?? [] : [])
-      .reduce((a: number, r: any) => a + (r.saldo ?? r.monto ?? 0), 0)
-    const saldos   = (banR.status === 'fulfilled' ? banR.value.data ?? [] : [])
+    // calcular ingresos según tipo de query usada
+    const ingData = ingR.status === 'fulfilled' ? ingR.value.data ?? [] : []
+    const ingresos = filtroSeccion
+      ? ingData.reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
+      : ingData.reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
+
+    const egresos     = (egrR.status === 'fulfilled' ? egrR.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
+    const cxp         = (cxpR.status === 'fulfilled' ? cxpR.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.saldo ?? r.monto ?? 0), 0)
+    const saldos      = banR.status === 'fulfilled' ? banR.value.data ?? [] : []
     const saldoBancos = saldos.reduce((a: number, c: any) => a + (c.saldo ?? 0), 0)
 
     setStats({ ingresos, egresos, balance: ingresos - egresos, cxp, saldoBancos, cuentas: saldos.length })
-    setUltRecibos(ultIngR.status === 'fulfilled' ? (ultIngR.value.data ?? []) : [])
-    setUltOps(ultOpR.status   === 'fulfilled' ? (ultOpR.value.data  ?? []) : [])
 
-    // Gráfica últimos 6 meses (con filtro sección/CC)
+    // normalizar últimos recibos (shape distinto cuando viene de secciones)
+    if (ultIngR.status === 'fulfilled') {
+      const raw = ultIngR.value.data ?? []
+      setUltRecibos(filtroSeccion
+        ? raw.map((s: any) => ({
+            id:                  s.recibos_ingreso?.id,
+            folio:               s.recibos_ingreso?.folio,
+            fecha:               s.recibos_ingreso?.fecha,
+            monto_total:         s.monto,
+            id_centro_ingreso_fk: s.recibos_ingreso?.id_centro_ingreso_fk,
+          }))
+        : raw
+      )
+    }
+    setUltOps(ultOpR.status === 'fulfilled' ? (ultOpR.value.data ?? []) : [])
+
+    // ── GRÁFICA últimos 6 meses ───────────────────────────────
     const meses = getUltimosMeses()
     const grafData = await Promise.all(meses.map(async m => {
-      let igQ = dbCtrl.from('recibos_ingreso').select('monto_total').eq('status', 'Confirmado').gte('fecha', m.ini).lte('fecha', m.fin)
-      igQ = applyIngresosFilter(igQ, csArr)
-      const [ig, eg] = await Promise.allSettled([
-        igQ,
-        dbComp.from('ordenes_pago').select('monto').neq('status', 'Cancelada').gte('created_at', inicioDelDia(m.ini)).lte('created_at', finDelDia(m.fin)),
-      ])
-      const ing = (ig.status === 'fulfilled' ? ig.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
-      const egr = (eg.status === 'fulfilled' ? eg.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
+      let igP: Promise<any>
+      if (filtroSeccion) {
+        igP = (dbCtrl.from('recibos_ingreso_secciones') as any)
+          .select('monto, recibos_ingreso!inner(status, fecha)')
+          .eq('id_seccion_fk', Number(filtroSeccion))
+          .eq('recibos_ingreso.status', 'Confirmado')
+          .gte('recibos_ingreso.fecha', m.ini)
+          .lte('recibos_ingreso.fecha', m.fin)
+      } else {
+        igP = applyIngQ(
+          dbCtrl.from('recibos_ingreso').select('monto_total')
+            .eq('status', 'Confirmado').gte('fecha', m.ini).lte('fecha', m.fin)
+        )
+      }
+      const egP = applyEgrQ(
+        dbComp.from('ordenes_pago').select('monto').neq('status', 'Cancelada')
+          .gte('created_at', inicioDelDia(m.ini)).lte('created_at', finDelDia(m.fin))
+      )
+      const [ig, eg] = await Promise.allSettled([igP, egP])
+      const iData = ig.status === 'fulfilled' ? ig.value.data ?? [] : []
+      const ing   = filtroSeccion
+        ? iData.reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
+        : iData.reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
+      const egr   = (eg.status === 'fulfilled' ? eg.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
       return { label: m.label, ing, egr }
     }))
     setGrafica(grafData)
     setLoading(false)
     setRefreshing(false)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodo, filtroTipo, filtroCentro])
+  }, [periodo, filtroCentroIng, filtroSeccion, filtroCC, filtroArea])
 
   useEffect(() => { setLoading(true); loadAll() }, [loadAll])
 
   const isPositive = stats.balance >= 0
 
-  const CENTRO_COLOR: Record<string, string> = {
-    golf: '#059669', cuotas: '#2563eb', rentas_espacios: '#7c3aed', caballerizas: '#d97706', otro: '#64748b',
-  }
+  // ── Estilos compartidos para selects de filtro ────────────
+  const selStyle = (active: boolean, color: { border: string; bg: string; text: string }) => ({
+    fontSize: 11, padding: '4px 8px', borderRadius: 6,
+    border: `1px solid ${color.border}`,
+    background: active ? color.bg : '#f8fafc',
+    color: active ? color.text : 'var(--text-secondary)',
+    cursor: 'pointer' as const,
+  })
+  const ING = { border: '#bbf7d0', bg: '#f0fdf4', text: '#15803d' }
+  const EGR = { border: '#fecaca', bg: '#fef2f2', text: '#dc2626' }
 
   return (
     <div style={{ padding: '28px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────────────── */}
       <div className="page-header">
         <div className="page-header-left" style={{ display: 'block' }}>
           <div className="page-eyebrow">
@@ -228,102 +318,143 @@ export default function InicioPage() {
             <span className="page-eyebrow-label">Panorama</span>
           </div>
           <h1 className="page-title-xl" style={{ fontSize: 30 }}>Dashboard Financiero</h1>
-          <p className="page-subtitle">
-            Ingresos y egresos de la operación de Balvanera
-            {filtroTipo && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: 'var(--blue)', background: '#eff6ff', padding: '2px 8px', borderRadius: 10 }}>
-              {SECCION_LABEL[filtroTipo] ?? filtroTipo}{filtroCentro && centros.find(c => String(c.id) === filtroCentro) ? ` · ${centros.find(c => String(c.id) === filtroCentro)!.nombre}` : ''}
-            </span>}
-            {!filtroTipo && filtroCentro && centros.find(c => String(c.id) === filtroCentro) && (
-              <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: 'var(--blue)', background: '#eff6ff', padding: '2px 8px', borderRadius: 10 }}>
-                {centros.find(c => String(c.id) === filtroCentro)!.nombre}
+          <p className="page-subtitle" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+            Ingresos y egresos · Balvanera
+            {hayFiltroIng && (
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', background: '#f0fdf4',
+                padding: '2px 8px', borderRadius: 10, border: '1px solid #bbf7d0' }}>
+                ⬆ {badgeIng}
+              </span>
+            )}
+            {hayFiltroEgr && (
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2',
+                padding: '2px 8px', borderRadius: 10, border: '1px solid #fecaca' }}>
+                ⬇ {badgeEgr}
               </span>
             )}
           </p>
         </div>
-        <div className="page-header-actions" style={{ flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          {/* Filtros Sección / CC */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <select
-              value={filtroTipo}
-              onChange={e => handleTipoChange(e.target.value)}
-              style={{ fontSize: 12, padding: '5px 10px', borderRadius: 7, border: '1px solid #e2e8f0',
-                background: filtroTipo ? '#eff6ff' : '#f8fafc', color: filtroTipo ? 'var(--blue)' : 'var(--text-secondary)',
-                cursor: 'pointer', minWidth: 150 }}>
-              <option value="">Todas las secciones</option>
-              {secciones.map(s => (
-                <option key={s} value={s}>{SECCION_LABEL[s] ?? s}</option>
-              ))}
-            </select>
-            <select
-              value={filtroCentro}
-              onChange={e => setFiltroCentro(e.target.value)}
-              style={{ fontSize: 12, padding: '5px 10px', borderRadius: 7, border: '1px solid #e2e8f0',
-                background: filtroCentro ? '#eff6ff' : '#f8fafc', color: filtroCentro ? 'var(--blue)' : 'var(--text-secondary)',
-                cursor: 'pointer', minWidth: 160 }}>
-              <option value="">Todos los CC</option>
-              {centrosFiltrados.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre}</option>
-              ))}
-            </select>
-            {(filtroTipo || filtroCentro) && (
-              <button onClick={() => { setFiltroTipo(''); setFiltroCentro('') }}
-                title="Limpiar filtros"
-                style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e8f0',
-                  background: '#fff', color: '#94a3b8', cursor: 'pointer', lineHeight: 1 }}>
-                ✕
-              </button>
-            )}
+
+        <div className="page-header-actions" style={{ flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
+
+          {/* ── Filtro INGRESOS ─────────────────────────── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+              textTransform: 'uppercase', color: '#059669', paddingLeft: 2 }}>
+              Ingresos
+            </span>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <select value={filtroCentroIng}
+                onChange={e => { setFiltroCentroIng(e.target.value); setFiltroSeccion('') }}
+                style={{ ...selStyle(!!filtroCentroIng, ING), minWidth: 148 }}>
+                <option value="">Todos los centros</option>
+                {centrosIng.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+              {esSecciones && (
+                <select value={filtroSeccion}
+                  onChange={e => setFiltroSeccion(e.target.value)}
+                  style={{ ...selStyle(!!filtroSeccion, ING), minWidth: 130 }}>
+                  <option value="">Todas las secciones</option>
+                  {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select>
+              )}
+              {hayFiltroIng && (
+                <button onClick={() => { setFiltroCentroIng(''); setFiltroSeccion('') }}
+                  title="Limpiar filtro ingresos"
+                  style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #bbf7d0',
+                    background: '#f0fdf4', color: '#16a34a', cursor: 'pointer', fontSize: 10,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
-          {/* Selector de período */}
-          <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 9, padding: 3, gap: 2 }}>
-            {PERIODOS.map(p => (
-              <button key={p.key} onClick={() => setPeriodo(p.key)}
-                style={{
-                  padding: '6px 12px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 500,
-                  background: periodo === p.key ? '#fff' : 'transparent',
-                  color: periodo === p.key ? 'var(--blue)' : 'var(--text-muted)',
-                  boxShadow: periodo === p.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                  transition: 'all 0.15s',
-                }}>
-                {p.label}
-              </button>
-            ))}
+
+          {/* ── Filtro EGRESOS ──────────────────────────── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+              textTransform: 'uppercase', color: '#dc2626', paddingLeft: 2 }}>
+              Egresos
+            </span>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <select value={filtroCC}
+                onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}
+                style={{ ...selStyle(!!filtroCC, EGR), minWidth: 148 }}>
+                <option value="">Todos los CC</option>
+                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+              {filtroCC && (
+                <select value={filtroArea}
+                  onChange={e => setFiltroArea(e.target.value)}
+                  style={{ ...selStyle(!!filtroArea, EGR), minWidth: 130 }}>
+                  <option value="">Todas las áreas</option>
+                  {areasFiltradas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                </select>
+              )}
+              {hayFiltroEgr && (
+                <button onClick={() => { setFiltroCC(''); setFiltroArea('') }}
+                  title="Limpiar filtro egresos"
+                  style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #fecaca',
+                    background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontSize: 10,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
-          <button className="btn-ghost" onClick={loadAll} title="Actualizar">
+
+          {/* ── Período ─────────────────────────────────── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+              textTransform: 'uppercase', color: 'var(--text-muted)', paddingLeft: 2 }}>
+              Período
+            </span>
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 9, padding: 3, gap: 2 }}>
+              {PERIODOS.map(p => (
+                <button key={p.key} onClick={() => setPeriodo(p.key)}
+                  style={{ padding: '5px 10px', borderRadius: 7, border: 'none', cursor: 'pointer',
+                    fontSize: 11, fontWeight: 500,
+                    background: periodo === p.key ? '#fff' : 'transparent',
+                    color: periodo === p.key ? 'var(--blue)' : 'var(--text-muted)',
+                    boxShadow: periodo === p.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                    transition: 'all 0.15s' }}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button className="btn-ghost" onClick={loadAll} title="Actualizar" style={{ alignSelf: 'flex-end', marginBottom: 2 }}>
             <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {/* KPIs principales */}
+      {/* ── KPIs principales ───────────────────────────────── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         {[
-          { label: 'Ingresos',      value: fmtK(stats.ingresos), color: '#059669', bg: '#f0fdf4', icon: TrendingUp,   onClick: () => router.push('/ingresos/recibos') },
-          { label: 'Egresos',       value: fmtK(stats.egresos),  color: '#dc2626', bg: '#fef2f2', icon: TrendingDown, onClick: () => router.push('/compras/ordenes-pago') },
+          { label: 'Ingresos',      value: fmtK(stats.ingresos),  color: '#059669', bg: '#f0fdf4', icon: TrendingUp,   onClick: () => router.push('/ingresos/recibos') },
+          { label: 'Egresos',       value: fmtK(stats.egresos),   color: '#dc2626', bg: '#fef2f2', icon: TrendingDown, onClick: () => router.push('/compras/ordenes-pago') },
           { label: 'Balance neto',  value: fmtK(Math.abs(stats.balance)), color: isPositive ? '#059669' : '#dc2626', bg: isPositive ? '#f0fdf4' : '#fef2f2', icon: Scale, onClick: undefined },
-          { label: 'CXP pendiente', value: fmtK(stats.cxp),      color: '#d97706', bg: '#fffbeb', icon: FileText,     onClick: () => router.push('/tesoreria/cxp') },
-          { label: 'Saldo bancos',  value: fmtK(stats.saldoBancos), color: '#0f766e', bg: '#f0fdf4', icon: Building2, onClick: () => router.push('/tesoreria/cuentas-bancarias') },
+          { label: 'CXP pendiente', value: fmtK(stats.cxp),       color: '#d97706', bg: '#fffbeb', icon: FileText,     onClick: () => router.push('/tesoreria/cxp') },
+          { label: 'Saldo bancos',  value: fmtK(stats.saldoBancos), color: '#0f766e', bg: '#f0fdf4', icon: Building2,  onClick: () => router.push('/tesoreria/cuentas-bancarias') },
         ].map(s => {
           const Icon = s.icon
           return (
-            <div key={s.label}
-              onClick={s.onClick}
-              className="card"
-              style={{
-                padding: '14px 18px', background: s.bg,
-                display: 'flex', alignItems: 'center', gap: 12,
-                cursor: s.onClick ? 'pointer' : 'default',
-                transition: 'transform 0.1s',
-                flex: '1 1 180px', maxWidth: 260,
-              }}
+            <div key={s.label} onClick={s.onClick} className="card"
+              style={{ padding: '14px 18px', background: s.bg, display: 'flex', alignItems: 'center', gap: 12,
+                cursor: s.onClick ? 'pointer' : 'default', transition: 'transform 0.1s',
+                flex: '1 1 180px', maxWidth: 260 }}
               onMouseEnter={e => { if (s.onClick) (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}
             >
-              <div style={{ width: 36, height: 36, borderRadius: 9, background: s.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: s.color + '20',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Icon size={16} style={{ color: s.color }} />
               </div>
               <div>
-                <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontWeight: 700, color: s.color, fontVariantNumeric: 'tabular-nums' }}>
+                <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontWeight: 700,
+                  color: s.color, fontVariantNumeric: 'tabular-nums' }}>
                   {loading ? '—' : (s.label === 'Balance neto' && !isPositive ? '-' : '') + s.value}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
@@ -333,14 +464,14 @@ export default function InicioPage() {
         })}
       </div>
 
-      {/* Gráfica + Resumen */}
+      {/* ── Gráfica + Resumen período ───────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14, marginBottom: 20 }}>
 
-        {/* Gráfica últimos 6 meses */}
         <div className="card" style={{ padding: '20px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+                textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
                 Últimos 6 meses
               </div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Ingresos vs Egresos</div>
@@ -363,66 +494,84 @@ export default function InicioPage() {
           )}
         </div>
 
-        {/* Balance del período */}
         <div className="card" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+              textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16 }}>
               Período seleccionado
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f0fdf4', borderRadius: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '10px 12px', background: '#f0fdf4', borderRadius: 8 }}>
                 <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>⬆ Ingresos</span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#059669', fontVariantNumeric: 'tabular-nums' }}>
                   {loading ? '—' : fmt(stats.ingresos)}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#fef2f2', borderRadius: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '10px 12px', background: '#fef2f2', borderRadius: 8 }}>
                 <span style={{ fontSize: 12, color: '#dc2626', fontWeight: 600 }}>⬇ Egresos</span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
                   {loading ? '—' : fmt(stats.egresos)}
                 </span>
               </div>
               <div style={{ height: 1, background: '#e2e8f0' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', borderRadius: 8,
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '10px 12px', borderRadius: 8,
                 background: isPositive ? '#f0fdf4' : '#fef2f2',
                 border: `1px solid ${isPositive ? '#bbf7d0' : '#fecaca'}` }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: isPositive ? '#15803d' : '#dc2626' }}>= Balance</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: isPositive ? '#059669' : '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
+                <span style={{ fontSize: 16, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
+                  color: isPositive ? '#059669' : '#dc2626' }}>
                   {loading ? '—' : (isPositive ? '' : '-') + fmt(Math.abs(stats.balance))}
                 </span>
               </div>
             </div>
           </div>
-          <button onClick={() => router.push('/ingresos/recibos')} className="btn-primary" style={{ width: '100%', marginTop: 16, justifyContent: 'center' }}>
+          <button onClick={() => router.push('/ingresos/recibos')} className="btn-primary"
+            style={{ width: '100%', marginTop: 16, justifyContent: 'center' }}>
             <Receipt size={13} /> Nuevo Recibo
           </button>
         </div>
       </div>
 
-      {/* Últimos movimientos */}
+      {/* ── Últimos movimientos ────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
 
-        {/* Últimos ingresos */}
+        {/* Últimos recibos */}
         <div className="card" style={{ padding: '18px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>Últimos Recibos de Ingreso</div>
-            <button onClick={() => router.push('/ingresos/recibos')} style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>
+              Últimos Recibos{filtroSeccion ? ` — ${secciones.find(s => String(s.id) === filtroSeccion)?.nombre ?? ''}` : ''}
+            </div>
+            <button onClick={() => router.push('/ingresos/recibos')}
+              style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
               Ver todos <ChevronRight size={11} />
             </button>
           </div>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
+              <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto' }} />
+            </div>
           ) : ultRecibos.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: 12 }}>Sin recibos capturados aún</div>
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: 12 }}>
+              Sin recibos en el período
+            </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {ultRecibos.map((r: any) => (
-                <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: '#f8fafc', borderRadius: 6 }}>
+                <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'center', padding: '7px 10px', background: '#f8fafc', borderRadius: 6 }}>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{centrosMap[r.id_centro_ingreso_fk] ?? '—'} · {fmtFecha(r.fecha)}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                      {centrosMap[r.id_centro_ingreso_fk] ?? '—'} · {r.fecha ? fmtFecha(r.fecha) : '—'}
+                    </div>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#059669', fontVariantNumeric: 'tabular-nums' }}>{fmt(r.monto_total ?? 0)}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#059669', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt(r.monto_total ?? 0)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -433,19 +582,27 @@ export default function InicioPage() {
         <div className="card" style={{ padding: '18px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>OP's Pendientes de Pago</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>OP's Pendientes</div>
               {ultOps.length > 0 && (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: '#fef2f2', color: '#dc2626' }}>{ultOps.length}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px',
+                  borderRadius: 20, background: '#fef2f2', color: '#dc2626' }}>
+                  {ultOps.length}
+                </span>
               )}
             </div>
-            <button onClick={() => router.push('/compras/ordenes-pago')} style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <button onClick={() => router.push('/compras/ordenes-pago')}
+              style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
               Ver todas <ChevronRight size={11} />
             </button>
           </div>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
+              <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto' }} />
+            </div>
           ) : ultOps.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 20, color: '#15803d', fontSize: 12, background: '#f0fdf4', borderRadius: 8 }}>
+            <div style={{ textAlign: 'center', padding: 20, color: '#15803d', fontSize: 12,
+              background: '#f0fdf4', borderRadius: 8 }}>
               ✓ Sin órdenes de pago pendientes
             </div>
           ) : (
@@ -453,15 +610,24 @@ export default function InicioPage() {
               {ultOps.map((op: any) => {
                 const vencida = op.fecha_vencimiento && new Date(op.fecha_vencimiento) < new Date()
                 return (
-                  <div key={op.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: vencida ? '#fef2f2' : '#f8fafc', borderRadius: 6, border: vencida ? '1px solid #fecaca' : 'none' }}>
+                  <div key={op.id}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '7px 10px', borderRadius: 6,
+                      background: vencida ? '#fef2f2' : '#f8fafc',
+                      border: vencida ? '1px solid #fecaca' : 'none' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                         <span style={{ fontSize: 12, fontWeight: 600 }}>{op.folio ?? `#${op.id}`}</span>
                         {vencida && <AlertTriangle size={11} style={{ color: '#dc2626' }} />}
                       </div>
-                      <div style={{ fontSize: 11, color: '#94a3b8', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', maxWidth: 160,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {op.concepto ?? '—'}
+                      </div>
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>{fmt(op.saldo ?? op.monto ?? 0)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
+                      {fmt(op.saldo ?? op.monto ?? 0)}
+                    </span>
                   </div>
                 )
               })}
