@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Users, Clock, Filter, Eye } from 'lucide-react'
+import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Users, Clock, Filter, Eye, Printer } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import Link from 'next/link'
 import AccesoModal from './AccesoModal'
@@ -132,6 +132,34 @@ export default function AccesosPage() {
       .order('orden', { ascending: true })
     setDetalleAcomps((data ?? []) as { nombre: string; orden: number; es_externo: boolean; origen_pago: string | null; club_origen: string | null }[])
     setLoadingAcomps(false)
+  }
+
+  const abrirTicketDetalle = async (a: Acceso, acomps: typeof detalleAcomps, autoPrint = false) => {
+    const { data: cfg } = await dbGolf.from('cfg_pos').select('*').single()
+    const socio = a.cat_socios
+    const ticketData = {
+      id:            a.id,
+      fecha_entrada: a.fecha_entrada,
+      socio:         socio ? [socio.nombre, socio.apellido_paterno, socio.apellido_materno].filter(Boolean).join(' ') : '—',
+      numero_socio:  socio?.numero_socio ?? null,
+      categoria:     socio?.cat_categorias_socios?.nombre ?? null,
+      espacio:       a.cat_espacios_deportivos?.nombre ?? '—',
+      hoyo_inicio:   a.hoyo_inicio ?? null,
+      observaciones: a.observaciones ?? null,
+      razon_social:  cfg?.razon_social ?? 'Club de Golf',
+      municipio:     cfg?.municipio ?? '',
+      direccion:     cfg?.direccion ?? '',
+      rfc:           cfg?.rfc ?? '',
+      telefono:      cfg?.telefono ?? '',
+      leyenda:       cfg?.leyenda_ticket ?? '¡Buen juego!',
+      acompanantes: acomps.map(ac => ({
+        nombre:     ac.nombre,
+        tipo:       !ac.es_externo ? 'familiar' : ac.origen_pago === 'PASE' ? 'externo' : ac.origen_pago === 'INTERCAMBIO' ? 'intercambio' : 'libre',
+        club_origen: ac.club_origen ?? null,
+      })),
+    }
+    const encoded = encodeURIComponent(JSON.stringify(ticketData))
+    window.open(`/ticket-acceso.html?data=${encoded}${autoPrint ? '&print=1' : ''}`, '_blank', 'width=400,height=700')
   }
 
   const esHoy = fecha === localToday()
@@ -311,7 +339,19 @@ export default function AccesosPage() {
       {showModal && <AccesoModal onClose={() => setShowModal(false)} onSaved={handleSaved} />}
 
       {detalle && (
-        <ModalShell modulo="golf-accesos" titulo="Detalle de Salida al Campo" onClose={() => setDetalle(null)} maxWidth={520}>
+        <ModalShell modulo="golf-accesos" titulo="Detalle de Salida al Campo" onClose={() => setDetalle(null)} maxWidth={520}
+          footer={<>
+            <button className="btn-ghost" onClick={() => setDetalle(null)}>Cerrar</button>
+            <button className="btn-ghost" onClick={() => abrirTicketDetalle(detalle, detalleAcomps, false)}
+              style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Printer size={13} /> Ver Ticket
+            </button>
+            <button className="btn-primary" onClick={() => abrirTicketDetalle(detalle, detalleAcomps, true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Printer size={13} /> Reimprimir Ticket
+            </button>
+          </>}
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Socio */}
