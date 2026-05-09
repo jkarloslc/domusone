@@ -377,7 +377,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       zIndex: 1000, padding: 20,
     }}>
       <div style={{
-        background: '#fff', borderRadius: 20, width: '100%', maxWidth: 780,
+        background: '#fff', borderRadius: 20, width: '100%', maxWidth: 920,
         maxHeight: '92vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 24px 80px rgba(0,0,0,0.22)',
       }}>
@@ -411,8 +411,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
               const active   = tab === i
               return (
                 <button key={t} onClick={() => !disabled && setTab(i)} style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '8px 16px', fontSize: 12, fontWeight: active ? 700 : 500,
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '8px 11px', fontSize: 11.5, fontWeight: active ? 700 : 500,
                   border: 'none', fontFamily: 'inherit', whiteSpace: 'nowrap',
                   borderRadius: '8px 8px 0 0',
                   cursor: disabled ? 'not-allowed' : 'pointer',
