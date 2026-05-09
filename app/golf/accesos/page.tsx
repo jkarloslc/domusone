@@ -159,7 +159,7 @@ export default function AccesosPage() {
           </button>
           {puedeEscribir && (
             <button className="btn-primary" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Plus size={14} /> Registrar Entrada
+              <Plus size={14} /> Registrar Salida
             </button>
           )}
         </div>
