@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, ChevronRight, X, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import ReservacionModal from './ReservacionModal'
 
@@ -19,6 +19,9 @@ type Reservacion = {
   es_externo: boolean
   nombre_externo: string | null
   telefono_externo: string | null
+  id_socio_fk: number | null
+  id_espacio_fk: number | null
+  id_forma_juego_fk: number | null
   cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null } | null
   cat_espacios_deportivos?: { nombre: string } | null
   cat_formas_juego?: { nombre: string } | null
@@ -47,6 +50,7 @@ export default function ReservacionesPage() {
   const [espacios, setEspacios]           = useState<Espacio[]>([])
   const [loading, setLoading]             = useState(true)
   const [showModal, setShowModal]         = useState(false)
+  const [editReservacion, setEditReservacion] = useState<Reservacion | null>(null)
   const [cancelando, setCancelando]       = useState<number | null>(null)
 
   const hoy = new Date().toISOString().split('T')[0]
@@ -64,6 +68,7 @@ export default function ReservacionesPage() {
         id, fecha_reservacion, hora_reservacion, num_jugadores,
         carro_golf, monto, monto_carro_golf, observaciones, cancelado,
         es_externo, nombre_externo, telefono_externo,
+        id_socio_fk, id_espacio_fk, id_forma_juego_fk,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio),
         cat_espacios_deportivos(nombre),
         cat_formas_juego(nombre)
@@ -250,11 +255,18 @@ export default function ReservacionesPage() {
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       {!r.cancelado && puedeEscribir && (
-                        <button className="btn-ghost"
-                          style={{ padding: '4px 10px', fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 5, opacity: cancelando === r.id ? 0.5 : 1 }}
-                          onClick={() => cancelar(r.id)} disabled={cancelando === r.id}>
-                          <X size={13} /> Cancelar
-                        </button>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <button className="btn-ghost"
+                            style={{ padding: '4px 10px', fontSize: 12, color: '#2563eb', display: 'flex', alignItems: 'center', gap: 5 }}
+                            onClick={() => setEditReservacion(r)}>
+                            <Pencil size={13} /> Editar
+                          </button>
+                          <button className="btn-ghost"
+                            style={{ padding: '4px 10px', fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 5, opacity: cancelando === r.id ? 0.5 : 1 }}
+                            onClick={() => cancelar(r.id)} disabled={cancelando === r.id}>
+                            <X size={13} /> Cancelar
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -265,7 +277,18 @@ export default function ReservacionesPage() {
         </div>
       </div>
 
-      {showModal && <ReservacionModal fecha={fecha} onClose={() => setShowModal(false)} onSaved={handleSaved} />}
+      {showModal && (
+        <ReservacionModal fecha={fecha} onClose={() => setShowModal(false)} onSaved={handleSaved} />
+      )}
+
+      {editReservacion && (
+        <ReservacionModal
+          fecha={editReservacion.fecha_reservacion}
+          reservacion={editReservacion}
+          onClose={() => setEditReservacion(null)}
+          onSaved={() => { setEditReservacion(null); fetchReservaciones() }}
+        />
+      )}
     </div>
   )
 }

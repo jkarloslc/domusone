@@ -12,7 +12,30 @@ type Socio = {
 type Espacio    = { id: number; nombre: string }
 type FormaJuego = { id: number; nombre: string }
 
-type Props = { fecha: string; onClose: () => void; onSaved: () => void }
+type ReservacionEdit = {
+  id: number
+  fecha_reservacion: string
+  hora_reservacion: string
+  num_jugadores: number
+  carro_golf: boolean
+  monto: number | null
+  monto_carro_golf: number | null
+  observaciones: string | null
+  es_externo: boolean
+  nombre_externo: string | null
+  telefono_externo: string | null
+  id_socio_fk: number | null
+  id_espacio_fk: number | null
+  id_forma_juego_fk: number | null
+  cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null } | null
+}
+
+type Props = {
+  fecha: string
+  reservacion?: ReservacionEdit   // si se pasa → modo edición
+  onClose: () => void
+  onSaved: () => void
+}
 
 const inp: React.CSSProperties = {
   width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
@@ -27,7 +50,9 @@ const HORAS = Array.from({ length: 79 }, (_, i) => {
   return `${h}:${m}`
 })
 
-export default function ReservacionModal({ fecha, onClose, onSaved }: Props) {
+export default function ReservacionModal({ fecha, reservacion, onClose, onSaved }: Props) {
+  const isEdit = !!reservacion
+
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState('')
   const [espacios, setEspacios] = useState<Espacio[]>([])
@@ -55,6 +80,36 @@ export default function ReservacionModal({ fecha, onClose, onSaved }: Props) {
     observaciones:     '',
   })
   const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }))
+
+  // Precarga datos cuando es edición
+  useEffect(() => {
+    if (!reservacion) return
+    setForm({
+      fecha_reservacion: reservacion.fecha_reservacion,
+      hora_reservacion:  reservacion.hora_reservacion,
+      id_espacio_fk:     reservacion.id_espacio_fk ?? '',
+      id_forma_juego_fk: reservacion.id_forma_juego_fk ?? '',
+      num_jugadores:     reservacion.num_jugadores,
+      carro_golf:        reservacion.carro_golf,
+      monto:             reservacion.monto ?? '',
+      monto_carro_golf:  reservacion.monto_carro_golf ?? '',
+      observaciones:     reservacion.observaciones ?? '',
+    })
+    setEsExterno(reservacion.es_externo)
+    if (reservacion.es_externo) {
+      setNombreExterno(reservacion.nombre_externo ?? '')
+      setTelefonoExterno(reservacion.telefono_externo ?? '')
+    } else if (reservacion.cat_socios && reservacion.id_socio_fk) {
+      setSocioSelec({
+        id:               reservacion.id_socio_fk,
+        nombre:           reservacion.cat_socios.nombre,
+        apellido_paterno: reservacion.cat_socios.apellido_paterno,
+        apellido_materno: reservacion.cat_socios.apellido_materno,
+        numero_socio:     reservacion.cat_socios.numero_socio,
+        cat_categorias_socios: null,
+      })
+    }
+  }, []) // solo al montar
 
   useEffect(() => {
     dbGolf.from('cat_espacios_deportivos').select('id, nombre').eq('activo', true).order('nombre')
@@ -92,12 +147,12 @@ export default function ReservacionModal({ fecha, onClose, onSaved }: Props) {
   }
 
   const handleSave = async () => {
-    if (!esExterno && !socioSelec)        { setError('Selecciona un socio'); return }
+    if (!esExterno && !socioSelec)          { setError('Selecciona un socio'); return }
     if (esExterno && !nombreExterno.trim()) { setError('Ingresa el nombre del visitante'); return }
-    if (!form.id_espacio_fk)              { setError('Selecciona el espacio deportivo'); return }
+    if (!form.id_espacio_fk)               { setError('Selecciona el espacio deportivo'); return }
     setSaving(true); setError('')
 
-    const { error: err } = await dbGolf.from('ctrl_reservaciones').insert({
+    const payload = {
       id_socio_fk:        esExterno ? null : socioSelec!.id,
       es_externo:         esExterno,
       nombre_externo:     esExterno ? nombreExterno.trim() : null,
@@ -111,7 +166,11 @@ export default function ReservacionModal({ fecha, onClose, onSaved }: Props) {
       monto:              form.monto || null,
       monto_carro_golf:   form.carro_golf ? (form.monto_carro_golf || null) : null,
       observaciones:      form.observaciones || null,
-    })
+    }
+
+    const { error: err } = isEdit
+      ? await dbGolf.from('ctrl_reservaciones').update(payload).eq('id', reservacion!.id)
+      : await dbGolf.from('ctrl_reservaciones').insert(payload)
 
     if (err) { setError(err.message); setSaving(false); return }
     onSaved()
@@ -124,14 +183,15 @@ export default function ReservacionModal({ fecha, onClose, onSaved }: Props) {
   return (
     <ModalShell
       modulo="golf"
-      titulo="Nueva Reservación"
+      titulo={isEdit ? 'Editar Reservación' : 'Nueva Reservación'}
+      subtitulo={isEdit ? `${reservacion!.fecha_reservacion} · ${reservacion!.hora_reservacion.slice(0, 5)}` : undefined}
       onClose={onClose}
       maxWidth={580}
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
         <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-          Guardar Reservación
+          {isEdit ? 'Guardar Cambios' : 'Guardar Reservación'}
         </button>
       </>}
     >
