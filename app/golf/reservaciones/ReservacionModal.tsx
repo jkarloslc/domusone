@@ -312,9 +312,8 @@ export default function ReservacionModal({ fecha, reservacion, onClose, onSaved 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={lbl}>Núm. de Jugadores</label>
-            <select style={inp} value={form.num_jugadores} onChange={e => set('num_jugadores', Number(e.target.value))}>
-              {[1,2,3,4].map(n => <option key={n} value={n}>{n} jugador{n > 1 ? 'es' : ''}</option>)}
-            </select>
+            <input style={inp} type="number" min={1} max={99} value={form.num_jugadores}
+              onChange={e => set('num_jugadores', Math.max(1, parseInt(e.target.value) || 1))} />
           </div>
           <div>
             <label style={lbl}>Monto</label>
