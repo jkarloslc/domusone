@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbGolf } from '@/lib/supabase'
-import { X, Save, Loader, Plus, Trash2, Search, Users } from 'lucide-react'
+import { dbGolf, dbCfg } from '@/lib/supabase'
+import { X, Save, Loader, Plus, Trash2, Search, Users, CheckCircle, Printer } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_tarjeta: string | null; cat_categorias_socios?: { nombre: string } | null }
@@ -33,6 +33,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
   const [espacios, setEspacios]   = useState<Espacio[]>([])
+  const [success, setSuccess]     = useState<{ id: number } | null>(null)
 
   // búsqueda de socio
   const [socioSearch, setSocioSearch]   = useState('')
@@ -245,10 +246,65 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       }
     }
 
-    onSaved()
+    setSuccess({ id: acceso.id })
+    setSaving(false)
+  }
+
+  const abrirTicket = async (autoPrint = false) => {
+    if (!success) return
+    const { data: cfg } = await dbGolf.from('cfg_pos').select('*').single()
+    const ticketData = {
+      id:           success.id,
+      fecha_entrada: new Date().toISOString(),
+      socio:        socioSelec ? nombreCompleto(socioSelec) : '—',
+      numero_socio: socioSelec?.numero_socio ?? null,
+      categoria:    socioSelec?.cat_categorias_socios?.nombre ?? null,
+      espacio:      espacios.find(e => e.id === idEspacio)?.nombre ?? '—',
+      hoyo_inicio:  hoyoInicio || null,
+      observaciones: observaciones || null,
+      razon_social:  cfg?.razon_social ?? 'Club de Golf',
+      municipio:     cfg?.municipio ?? '',
+      direccion:     cfg?.direccion ?? '',
+      rfc:           cfg?.rfc ?? '',
+      telefono:      cfg?.telefono ?? '',
+      leyenda:       cfg?.leyenda_ticket ?? '¡Buen juego!',
+      acompanantes: acompanantes
+        .filter(a => a.nombre.trim())
+        .map(a => ({ nombre: a.nombre.trim(), tipo: a.tipo, club_origen: a.club_origen ?? null })),
+    }
+    const encoded = encodeURIComponent(JSON.stringify(ticketData))
+    const url = `/ticket-acceso.html?data=${encoded}${autoPrint ? '&print=1' : ''}`
+    window.open(url, '_blank', 'width=400,height=700')
   }
 
   const socioNombre = socioSelec ? nombreCompleto(socioSelec) : ''
+
+  if (success) return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: '40px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+        <CheckCircle size={52} color="#059669" style={{ margin: '0 auto 16px' }} />
+        <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>¡Salida registrada!</div>
+        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>
+          {socioNombre && <span style={{ fontWeight: 600, color: '#1e293b' }}>{socioNombre}</span>}
+        </div>
+        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 24 }}>Folio #{String(success.id).padStart(6, '0')}</div>
+        <div style={{ display: 'flex', gap: 10, flexDirection: 'column' }}>
+          <button onClick={() => abrirTicket(true)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', background: '#059669', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            <Printer size={15} /> Imprimir Ticket
+          </button>
+          <button onClick={() => abrirTicket(false)}
+            style={{ padding: '8px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
+            Ver Ticket
+          </button>
+          <button onClick={onSaved}
+            style={{ padding: '8px', background: '#fff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <ModalShell
@@ -260,7 +316,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
         <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-          Registrar Entrada
+          Registrar Salida
         </button>
       </>}
     >
