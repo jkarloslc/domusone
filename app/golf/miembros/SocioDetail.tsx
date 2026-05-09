@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
-import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users } from 'lucide-react'
+import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt } from 'lucide-react'
 import type { Socio } from './SocioModal'
 
 type Props = { socio: Socio; onClose: () => void; onEdit: () => void }
@@ -19,11 +19,13 @@ const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
 )
 
 const TABS = [
-  { key: 'info',       label: 'Información',      icon: FileText     },
-  { key: 'familiares', label: 'Familiares',        icon: Users        },
-  { key: 'accesos',    label: 'Accesos al Campo',  icon: MapPin       },
-  { key: 'pos',        label: 'Compras POS',       icon: ShoppingCart },
-  { key: 'cuotas',     label: 'Cuotas',            icon: CreditCard   },
+  { key: 'info',       label: 'Información',      icon: FileText      },
+  { key: 'familiares', label: 'Familiares',        icon: Users         },
+  { key: 'accesos',    label: 'Accesos al Campo',  icon: MapPin        },
+  { key: 'pos',        label: 'Compras POS',       icon: ShoppingCart  },
+  { key: 'cuotas',     label: 'Cuotas',            icon: CreditCard    },
+  { key: 'notas',      label: 'Notas',             icon: NotebookText  },
+  { key: 'fiscal',     label: 'Datos Fiscales',    icon: Receipt       },
 ]
 
 // ── Tab Familiares ────────────────────────────────────────────
@@ -348,7 +350,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           </div>
 
           {/* Tabs pill style sobre fondo azul */}
-          <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 1 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {TABS.map(t => {
               const Icon = t.icon
               const active = tab === t.key
@@ -403,6 +405,39 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           {tab === 'accesos'    && <TabAccesos   socioId={socio.id} />}
           {tab === 'pos'        && <TabPOS        socioId={socio.id} />}
           {tab === 'cuotas'     && <TabCuotas     socioId={socio.id} />}
+
+          {/* ── Notas ── */}
+          {tab === 'notas' && (
+            <div>
+              <div style={{ marginBottom: 10, fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Observaciones internas</div>
+              {socio.observaciones ? (
+                <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }}>
+                  {socio.observaciones}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
+                  <NotebookText size={28} style={{ color: '#cbd5e1', margin: '0 auto 8px' }} />
+                  <div style={{ fontSize: 13, color: '#94a3b8' }}>Sin notas registradas</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Datos Fiscales ── */}
+          {tab === 'fiscal' && (
+            <div>
+              <div style={{ marginBottom: 6, padding: '10px 14px', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
+                Datos utilizados para pre-llenar el formulario CFDI al emitir recibos.
+              </div>
+              <Row label="RFC"                value={socio.rfc} />
+              <Row label="CURP"               value={socio.curp} />
+              <Row label="Razón Social Fiscal" value={socio.razon_social_fiscal} />
+              <Row label="C.P. Fiscal"        value={socio.cp_fiscal} />
+              <Row label="Régimen Fiscal"     value={socio.regimen_fiscal} />
+              <Row label="Uso CFDI"           value={socio.uso_cfdi} />
+              <Row label="Email Fiscal"       value={socio.email_fiscal} />
+            </div>
+          )}
         </div>
 
         <div style={{ padding: '12px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>
