@@ -368,7 +368,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' as const }
 
   // Footer: ocultar guardar en tabs Familiares (2), Identificación (3) y Contratos (4)
-  const showSaveBtn = tab !== 2 && tab !== 4
+  const showSaveBtn = tab !== 2 && tab !== 3 && tab !== 4
 
   return (
     <div style={{
@@ -405,7 +405,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
           </div>
 
           {/* Tabs pill style */}
-          <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {TABS.map((t, i) => {
               const disabled = isTabDisabled(i)
               const active   = tab === i
