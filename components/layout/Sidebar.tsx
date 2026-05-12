@@ -19,6 +19,7 @@ const HorseIcon = ({ size = 15 }: { size?: number }) => (
 type Rol =
   | 'superadmin'
   | 'admin'
+  | 'admin_lector'
   | 'usuarioadmin'
   | 'usuariomantto'
   | 'atencion_residentes'
@@ -43,6 +44,7 @@ type NavSection = { section: string; items: NavItem[] }
 const ROL_LABEL: Record<Rol, string> = {
   superadmin:          'Super Administrador',
   admin:               'Administrador',
+  admin_lector:        'Admin Solo Lectura',
   usuarioadmin:        'Administrador (Op.)',
   usuariomantto:       'Administrador (Mant.)',
   atencion_residentes: 'Atención a Residentes',
@@ -104,6 +106,37 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   admin: [
+    { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
+      RPT('residencial'),
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
+    ]},
+    { section: 'Club', items: [
+      { label: 'Golf',           href: '/golf',           icon: Flag          },
+      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
+      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      RPT('golf'),
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+      RPT('compras'),
+    ]},
+    { section: 'Finanzas', items: [
+      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      RPT('tesoreria'),
+    ]},
+    { section: 'Sistema', items: [
+      { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
+    ]},
+  ],
+
+  // ── Admin Solo Lectura: mismo menú que admin ──────────────
+  admin_lector: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
