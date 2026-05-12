@@ -471,15 +471,28 @@ ${operaciones.length > 0 ? `
 
   const mapFormasPago = (rows: { forma_nombre: string; monto: number }[]) => {
     const mapped: Record<string, number> = {
-      monto_efectivo: 0, monto_transferencia: 0, monto_tarjeta: 0, monto_cheque: 0,
+      monto_efectivo: 0, monto_transferencia: 0,
+      monto_tarjeta: 0, monto_tarjeta_debito: 0, monto_tarjeta_credito: 0,
+      monto_cheque: 0,
     }
     for (const fp of rows) {
       const n = fp.forma_nombre.toLowerCase()
-      if (n.includes('efectivo')) mapped.monto_efectivo += fp.monto
-      else if (n.includes('tarjeta')) mapped.monto_tarjeta += fp.monto
-      else if (n.includes('transf')) mapped.monto_transferencia += fp.monto
-      else if (n.includes('cheque')) mapped.monto_cheque += fp.monto
-      else mapped.monto_efectivo += fp.monto
+      if (n.includes('efectivo')) {
+        mapped.monto_efectivo += fp.monto
+      } else if (n.includes('tarjeta') || n.includes('tdc') || n.includes('tdd')) {
+        if (n.includes('cr') || n.includes('cré')) {
+          mapped.monto_tarjeta_credito += fp.monto
+        } else {
+          mapped.monto_tarjeta_debito += fp.monto
+        }
+        mapped.monto_tarjeta += fp.monto
+      } else if (n.includes('transf')) {
+        mapped.monto_transferencia += fp.monto
+      } else if (n.includes('cheque')) {
+        mapped.monto_cheque += fp.monto
+      } else {
+        mapped.monto_efectivo += fp.monto
+      }
     }
     return mapped
   }
@@ -525,7 +538,9 @@ ${operaciones.length > 0 ? `
         descripcion:          `Corte POS Golf — ${c.centro_nombre} — ${f1} al ${f2}`,
         monto_efectivo:       fpagoMap.monto_efectivo,
         monto_transferencia:  fpagoMap.monto_transferencia,
-        monto_tarjeta:        fpagoMap.monto_tarjeta,
+        monto_tarjeta_debito:  fpagoMap.monto_tarjeta_debito,
+        monto_tarjeta_credito: fpagoMap.monto_tarjeta_credito,
+        monto_tarjeta:         fpagoMap.monto_tarjeta,
         monto_cheque:         fpagoMap.monto_cheque,
         monto_total:          c.total_neto,
         status:               'Confirmado',

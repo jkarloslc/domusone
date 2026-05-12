@@ -11,7 +11,8 @@ type Recibo = {
   id: number; folio: string | null; fecha: string; status: string
   id_centro_ingreso_fk: number | null; descripcion: string | null
   monto_efectivo: number; monto_transferencia: number
-  monto_tarjeta: number; monto_cheque: number; monto_total: number
+  monto_tarjeta: number; monto_tarjeta_debito: number; monto_tarjeta_credito: number
+  monto_cheque: number; monto_total: number
   origen: string | null
 }
 
@@ -52,7 +53,7 @@ export default function ReporteIngresos() {
     setLoading(true)
     const [{ data: rs }, { data: cs }] = await Promise.all([
       dbCtrl.from('recibos_ingreso')
-        .select('id, folio, fecha, status, id_centro_ingreso_fk, descripcion, monto_efectivo, monto_transferencia, monto_tarjeta, monto_cheque, monto_total, origen')
+        .select('id, folio, fecha, status, id_centro_ingreso_fk, descripcion, monto_efectivo, monto_transferencia, monto_tarjeta, monto_tarjeta_debito, monto_tarjeta_credito, monto_cheque, monto_total, origen')
         .order('fecha', { ascending: false }),
       dbCfg.from('centros_ingreso').select('id, nombre, tipo').order('nombre'),
     ])
@@ -109,7 +110,10 @@ export default function ReporteIngresos() {
     const parts = []
     if (r.monto_efectivo      > 0) parts.push(`Eft ${fmt(r.monto_efectivo)}`)
     if (r.monto_transferencia > 0) parts.push(`Trf ${fmt(r.monto_transferencia)}`)
-    if (r.monto_tarjeta       > 0) parts.push(`Tdc ${fmt(r.monto_tarjeta)}`)
+    const tdb = r.monto_tarjeta_debito  > 0 ? r.monto_tarjeta_debito  : r.monto_tarjeta_credito === 0 ? r.monto_tarjeta : 0
+    const tcr = r.monto_tarjeta_credito > 0 ? r.monto_tarjeta_credito : 0
+    if (tdb > 0) parts.push(`TDb ${fmt(tdb)}`)
+    if (tcr > 0) parts.push(`TCr ${fmt(tcr)}`)
     if (r.monto_cheque        > 0) parts.push(`Chq ${fmt(r.monto_cheque)}`)
     return parts.join(' · ') || '—'
   }
@@ -161,8 +165,15 @@ export default function ReporteIngresos() {
           <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(recibos.reduce((s, r) => s + Number(r.monto_transferencia ?? 0), 0))}</div>
         </div>
         <div className="card" style={{ padding: '14px 20px', flex: '1 1 140px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>T. Débito/Crédito</div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(recibos.reduce((s, r) => s + Number(r.monto_tarjeta ?? 0), 0))}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>T. Débito</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(recibos.reduce((s, r) => {
+            const v = r.monto_tarjeta_debito > 0 ? r.monto_tarjeta_debito : r.monto_tarjeta_credito === 0 ? r.monto_tarjeta : 0
+            return s + Number(v ?? 0)
+          }, 0))}</div>
+        </div>
+        <div className="card" style={{ padding: '14px 20px', flex: '1 1 140px' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>T. Crédito</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(recibos.reduce((s, r) => s + Number(r.monto_tarjeta_credito ?? 0), 0))}</div>
         </div>
       </div>
 
