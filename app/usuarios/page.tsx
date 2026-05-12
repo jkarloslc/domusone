@@ -10,6 +10,7 @@ type Usuario = { id: string; nombre: string; rol: string; activo: boolean; creat
 const ROLES = [
   { value: 'superadmin',          label: 'Super Administrador',     desc: 'Acceso total incluyendo Usuarios, Config y eliminación de registros' },
   { value: 'admin',               label: 'Administrador',           desc: 'Acceso completo a todos los módulos operativos. Sin acceso a Usuarios ni Config.' },
+  { value: 'admin_lector',        label: 'Admin Solo Lectura',      desc: 'Igual que Administrador pero solo puede consultar. Sin crear, editar, eliminar ni autorizar.' },
   { value: 'usuarioadmin',        label: 'Administrador (Op.)',     desc: 'Igual que Admin sin acceso a Mantenimiento' },
   { value: 'usuariomantto',       label: 'Administrador (Mant.)',   desc: 'Igual que Admin sin acceso a Tesorería' },
   { value: 'fraccionamiento',     label: 'Fraccionamiento',         desc: 'Acceso amplio operativo: residencial, compras, tesorería, reportes' },

@@ -6,6 +6,7 @@ import type { User } from '@supabase/supabase-js'
 type Rol =
   | 'superadmin'
   | 'admin'
+  | 'admin_lector'
   | 'usuarioadmin'
   | 'usuariomantto'
   | 'atencion_residentes'
@@ -34,6 +35,7 @@ export function getHomeRouteByRole(rol?: Rol): string {
   switch (rol) {
     case 'superadmin':
     case 'admin':
+    case 'admin_lector':
     case 'usuarioadmin':
     case 'usuariomantto':
     case 'fraccionamiento':
@@ -129,6 +131,7 @@ const USUARIOMANTTO_MODULOS = ADMIN_MODULOS.filter(m => m !== 'tesoreria')
 const LEER: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
   admin:               ADMIN_MODULOS,
+  admin_lector:        ADMIN_MODULOS,   // igual que admin, solo lectura
   usuarioadmin:        USUARIOADMIN_MODULOS,
   usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -155,6 +158,7 @@ const LEER: Record<Rol, string[] | '*'> = {
 const ESCRIBIR: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
   admin:               ADMIN_MODULOS,
+  admin_lector:        [],              // sin escritura
   usuarioadmin:        USUARIOADMIN_MODULOS,
   usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -273,7 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!authUser) return false
     const r = authUser.rol
     // superadmin / admin / fraccionamiento: acceso total
-    if (r === 'superadmin' || r === 'admin' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento') return 'all'
+    if (r === 'superadmin' || r === 'admin' || r === 'admin_lector' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento') return 'all'
     if (r === 'compras' || r === 'compras_supervisor') return 'compras'
     if (r === 'almacen') {
       // almacen ve sus módulos + caja chica
