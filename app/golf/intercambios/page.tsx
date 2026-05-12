@@ -8,7 +8,6 @@ import {
   Loader, ChevronLeft, AlertTriangle, Check
 } from 'lucide-react'
 import Link from 'next/link'
-import DashLayout from '@/components/layout/DashLayout'
 import { fechaLocal } from '@/lib/dateUtils'
 
 // ── Tipos ──────────────────────────────────────────────────────
@@ -727,8 +726,7 @@ export default function IntercambiosPage() {
   const tdStyle: React.CSSProperties = { padding: '9px 12px', fontSize: 13 }
 
   return (
-    <DashLayout modulo="golf">
-      <div style={{ padding: '28px 36px', animation: 'fadeIn 0.3s ease-out' }}>
+    <div style={{ padding: '28px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
         {/* Header */}
         <div className="page-header">
@@ -975,7 +973,6 @@ export default function IntercambiosPage() {
             </div>
           </>
         )}
-      </div>
 
       {/* Modales */}
       {showCartaModal && (
@@ -993,6 +990,6 @@ export default function IntercambiosPage() {
           onSaved={() => { setShowClubModal(false); fetchClubes() }}
         />
       )}
-    </DashLayout>
+    </div>
   )
 }

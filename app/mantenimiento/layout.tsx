@@ -1,5 +1,3 @@
-import DashLayout from '@/components/layout/DashLayout'
-
-export default function MantenimientoLayout({ children }: { children: React.ReactNode }) {
-  return <DashLayout>{children}</DashLayout>
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
 }

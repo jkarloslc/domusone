@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ConfigProvider } from '@/lib/ConfigContext'
 import { AuthProvider } from '@/lib/AuthContext'
+import RootDashWrapper from '@/components/layout/RootDashWrapper'
 
 export const metadata: Metadata = {
   title: 'DomusOne',
@@ -20,7 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthProvider>
           <ConfigProvider>
-            {children}
+            <RootDashWrapper>
+              {children}
+            </RootDashWrapper>
           </ConfigProvider>
         </AuthProvider>
       </body>
