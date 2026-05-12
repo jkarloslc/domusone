@@ -32,6 +32,80 @@ por permisos del sistema de archivos montado. Si el push falla con "index.lock e
 
 ---
 
+## Sistema de Roles — Regla crítica al agregar o modificar roles
+
+El sistema de autorización está dividido en **DOS archivos independientes** que deben actualizarse **siempre juntos**. Olvidar uno causa que el rol funcione a medias (bug vivido con `admin_lector`).
+
+### Archivo 1 — `lib/AuthContext.tsx`
+Controla **qué puede hacer** el usuario (permisos funcionales):
+
+| Elemento | Qué define |
+|---|---|
+| `type Rol` | Lista de valores válidos — agregar el nuevo rol aquí |
+| `getHomeRouteByRole()` | Ruta inicial al hacer login |
+| `LEER: Record<Rol, …>` | Módulos visibles en sidebar (`can()`) |
+| `ESCRIBIR: Record<Rol, …>` | Módulos donde aparecen botones Nuevo/Editar (`canWrite()`) |
+| `ROLES_DELETE` | Roles que pueden eliminar registros |
+| `ROLES_AUTH` | Roles que pueden autorizar documentos (Req, OC, Transferencias) |
+| `canCompras()` | Nivel de acceso al hub de Compras: `'all' \| 'compras' \| 'almacen' \| 'seguridad' \| 'solicitante' \| false` |
+
+### Archivo 2 — `components/layout/Sidebar.tsx`
+Controla **qué ve** el usuario en el menú lateral (estructura visual):
+
+| Elemento | Qué define |
+|---|---|
+| `type Rol` | **Copia local** del tipo — debe coincidir con AuthContext |
+| `ROL_LABEL` | Texto que aparece bajo el avatar del usuario |
+| `NAV_POR_ROL: Record<Rol, NavSection[]>` | Secciones y enlaces del sidebar por rol |
+
+> ⚠️ **Si el rol no existe en `NAV_POR_ROL`, `sections` queda `[]` y el usuario solo ve Inicio** — aunque `LEER` esté correctamente configurado en AuthContext.
+
+### Archivo 3 — `app/usuarios/page.tsx`
+Array `ROLES` — aparece en el selector del modal de creación/edición de usuarios. Agregar entrada con `value`, `label` y `desc`.
+
+### Archivo 4 — Migration SQL
+```sql
+-- supabase/migrations/YYYYMMDDHHMMSS_rol_nuevo.sql
+ALTER TABLE cfg.usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check;
+ALTER TABLE cfg.usuarios ADD CONSTRAINT usuarios_rol_check CHECK (
+  rol IN ('superadmin', 'admin', 'admin_lector', ... 'nuevo_rol')
+);
+```
+
+### Checklist al agregar un nuevo rol
+
+- [ ] `lib/AuthContext.tsx` → `type Rol`, `getHomeRouteByRole`, `LEER`, `ESCRIBIR`, `canCompras` (si aplica), `ROLES_DELETE` / `ROLES_AUTH` (si aplica)
+- [ ] `components/layout/Sidebar.tsx` → `type Rol`, `ROL_LABEL`, `NAV_POR_ROL`
+- [ ] `app/usuarios/page.tsx` → array `ROLES`
+- [ ] Migration SQL → CHECK constraint en `cfg.usuarios`
+
+### Roles existentes (2026-05-11)
+
+| Valor | Label | Acceso |
+|---|---|---|
+| `superadmin` | Super Administrador | Total (incluye Usuarios, Config, eliminar) |
+| `admin` | Administrador | Todo operativo, sin Usuarios/Config |
+| `admin_lector` | Admin Solo Lectura | Igual que admin, sin escritura/eliminar/autorizar |
+| `usuarioadmin` | Administrador (Op.) | Admin sin Mantenimiento |
+| `usuariomantto` | Administrador (Mant.) | Admin sin Tesorería |
+| `fraccionamiento` | Fraccionamiento | Residencial + Compras + Tesorería + Reportes |
+| `atencion_residentes` | Atención a Residentes | Residencial, incidencias, mantenimiento |
+| `cobranza` | Cobranza | Lotes, propietarios, cobranza, facturas |
+| `tesoreria` | Tesorería | Tesorería, ingresos, reportes |
+| `ingresos` | Ingresos | Módulo ingresos + reportes |
+| `compras` | Compras | Req, cot, OC, OP, proveedores, artículos |
+| `compras_supervisor` | Supervisor de Compras | Compras + autorización |
+| `almacen` | Almacén | Recepciones, transferencias, artículos |
+| `usuario_solicitante` | Solicitante | Solo crea requisiciones y transferencias |
+| `mantenimiento` | Mantenimiento | Órdenes de trabajo, vehículos |
+| `vigilancia` | Vigilancia | Accesos, incidencias |
+| `seguridad` | Seguridad | Accesos, incidencias, requisiciones |
+| `usuariogolf` | Operador Golf | Módulo Golf completo + req/transf |
+| `usuariohipico` | Operador Hípico | Módulo Hípico completo + req/transf |
+| `usuariohospitality` | Operador Hospitality | Módulo Hospitality + req/transf |
+
+---
+
 ## Módulos principales
 
 ### Tesorería (`/app/tesoreria/`)
