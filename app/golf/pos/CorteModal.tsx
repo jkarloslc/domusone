@@ -48,7 +48,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
     const mapped: Record<string, number> = {
       monto_efectivo: 0, monto_transferencia: 0,
       monto_tarjeta: 0, monto_tarjeta_debito: 0, monto_tarjeta_credito: 0,
-      monto_cheque: 0,
+      monto_cheque: 0, monto_deposito: 0,
     }
     for (const fp of rows) {
       const n = fp.forma_nombre.toLowerCase()
@@ -66,6 +66,8 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
         mapped.monto_transferencia += fp.monto
       } else if (n.includes('cheque')) {
         mapped.monto_cheque += fp.monto
+      } else if (n.includes('dep') || n.includes('ventanilla')) {
+        mapped.monto_deposito += fp.monto
       } else {
         mapped.monto_efectivo += fp.monto
       }
@@ -207,6 +209,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
         monto_tarjeta_credito: fpagoMap.monto_tarjeta_credito,
         monto_tarjeta:         fpagoMap.monto_tarjeta,
         monto_cheque:          fpagoMap.monto_cheque,
+        monto_deposito:        fpagoMap.monto_deposito,
         monto_total:         totalVentas,
         status:              'Confirmado',
         origen:              'POS_GOLF',

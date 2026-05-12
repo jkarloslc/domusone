@@ -24,7 +24,7 @@ type Recibo = {
   descripcion: string | null
   monto_efectivo: number; monto_transferencia: number
   monto_tarjeta: number; monto_tarjeta_debito: number; monto_tarjeta_credito: number
-  monto_cheque: number; monto_total: number
+  monto_cheque: number; monto_deposito: number; monto_total: number
   status: string; origen: string; notas: string | null
   usuario_crea: string | null; usuario_cancela: string | null
   fecha_cancela: string | null; motivo_cancelacion: string | null
@@ -85,7 +85,8 @@ function ReciboModal({
                           ? (recibo?.monto_tarjeta_debito ?? 0)
                           : (recibo?.monto_tarjeta_credito ?? 0) === 0 ? (recibo?.monto_tarjeta ?? 0) : 0,
     monto_tarjeta_credito: recibo?.monto_tarjeta_credito ?? 0,
-    monto_cheque:          recibo?.monto_cheque ?? 0,
+    monto_cheque:          recibo?.monto_cheque    ?? 0,
+    monto_deposito:        recibo?.monto_deposito  ?? 0,
     notas:               recibo?.notas ?? '',
     status:              recibo?.status ?? 'Confirmado',
   })
@@ -173,7 +174,7 @@ function ReciboModal({
     setFrenteRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
 
   // Total calculado
-  const totalUnico   = form.monto_efectivo + form.monto_transferencia + form.monto_tarjeta_debito + form.monto_tarjeta_credito + form.monto_cheque
+  const totalUnico   = form.monto_efectivo + form.monto_transferencia + form.monto_tarjeta_debito + form.monto_tarjeta_credito + form.monto_cheque + form.monto_deposito
   const totalSecs    = secRows.reduce((a, r) => a + (r.monto || 0), 0)
   const totalFrentes = frenteRows.reduce((a, r) => a + (r.monto || 0), 0)
   const totalFinal   = esSecciones ? totalSecs : esFrente ? totalFrentes : totalUnico
@@ -194,6 +195,7 @@ function ReciboModal({
       monto_tarjeta_credito: usaDesglose ? 0 : form.monto_tarjeta_credito,
       monto_tarjeta:         usaDesglose ? 0 : (form.monto_tarjeta_debito + form.monto_tarjeta_credito),
       monto_cheque:          usaDesglose ? 0 : form.monto_cheque,
+      monto_deposito:        usaDesglose ? 0 : form.monto_deposito,
       monto_total:         totalFinal,
       status:              form.status,
       notas:               form.notas || null,
@@ -280,6 +282,7 @@ function ReciboModal({
             : (recibo.monto_tarjeta_credito ?? 0) === 0 ? (recibo.monto_tarjeta ?? 0) : 0 },
         { nombre: 'Tarjeta Crédito', monto: recibo.monto_tarjeta_credito ?? 0 },
         { nombre: 'Cheque', monto: recibo.monto_cheque ?? 0 },
+        { nombre: 'Depósito Ventanilla', monto: recibo.monto_deposito ?? 0 },
       ].filter(f => f.monto > 0)
 
       const centroNombre = centroSel?.nombre ?? 'Sin centro'
@@ -557,6 +560,7 @@ function ReciboModal({
                 {numInput('Tarjeta Débito', 'monto_tarjeta_debito', form.monto_tarjeta_debito)}
                 {numInput('Tarjeta Crédito', 'monto_tarjeta_credito', form.monto_tarjeta_credito)}
                 {numInput('Cheque', 'monto_cheque', form.monto_cheque)}
+                {numInput('Depósito Ventanilla', 'monto_deposito', form.monto_deposito)}
               </div>
               <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>Total</span>
@@ -735,6 +739,7 @@ export default function RecibosIngresoPage() {
                 <th style={{ textAlign: 'right' }}>Transf.</th>
                 <th style={{ textAlign: 'right' }}>T.Déb</th>
                 <th style={{ textAlign: 'right' }}>T.Cré</th>
+                <th style={{ textAlign: 'right' }}>Dep.Ven</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
                 <th>Status</th>
                 <th style={{ width: 60 }}></th>
@@ -742,11 +747,11 @@ export default function RecibosIngresoPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 48 }}>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 48 }}>
                   <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
                 </td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                   <Receipt size={32} style={{ margin: '0 auto 12px', opacity: 0.2 }} />
                   <div style={{ fontSize: 14 }}>Sin recibos de ingreso</div>
                   <div style={{ fontSize: 12, marginTop: 4 }}>
@@ -783,6 +788,7 @@ export default function RecibosIngresoPage() {
                       {(() => { const v = r.monto_tarjeta_debito > 0 ? r.monto_tarjeta_debito : r.monto_tarjeta_credito === 0 ? r.monto_tarjeta : 0; return v > 0 ? fmt(v) : '—' })()}
                     </td>
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{r.monto_tarjeta_credito > 0 ? fmt(r.monto_tarjeta_credito) : '—'}</td>
+                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{r.monto_deposito > 0 ? fmt(r.monto_deposito) : '—'}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: esCancelado ? '#94a3b8' : '#059669' }}>
                       {fmt(r.monto_total ?? 0)}
                     </td>
