@@ -17,6 +17,7 @@ export type DatosFactura = {
   rfc_emisor:           string
   razon_social_emisor:  string
   regimen_fiscal:       string   // ej. '626' (RESICO), '601' (General Ley)
+  cp_emisor?:           string   // C.P. fiscal del emisor (LugarExpedicion SAT)
 
   // Receptor (propietario / cliente)
   rfc_receptor:         string

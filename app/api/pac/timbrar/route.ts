@@ -11,15 +11,16 @@ async function getPacConfig() {
   const { data } = await db
     .from('configuracion')
     .select('clave, valor')
-    .in('clave', ['pac_url', 'pac_user', 'pac_pass'])
+    .in('clave', ['pac_url', 'pac_user', 'pac_pass', 'org_cp_fiscal'])
 
   const cfg: Record<string, string> = {}
   ;(data ?? []).forEach((r: any) => { cfg[r.clave] = r.valor ?? '' })
 
   return {
-    url:  cfg.pac_url  || 'https://apisandbox.facturama.mx',
-    user: cfg.pac_user || 'domusonetest',
-    pass: cfg.pac_pass || 'domusonetest',
+    url:      cfg.pac_url      || 'https://apisandbox.facturama.mx',
+    user:     cfg.pac_user     || 'domusonetest',
+    pass:     cfg.pac_pass     || 'domusonetest',
+    cp_fiscal: cfg.org_cp_fiscal || '',
   }
 }
 
@@ -31,13 +32,17 @@ export async function POST(req: NextRequest) {
     const authHeader = 'Basic ' + Buffer.from(`${pac.user}:${pac.pass}`).toString('base64')
 
     // ── Construir payload CFDI 4.0 para Facturama ─────────────
+    // ExpeditionPlace = LugarExpedicion (C.P. fiscal del emisor) — campo obligatorio SAT
+    const cpExpedicion = datos.cp_emisor || pac.cp_fiscal || '76900'
+
     const payload = {
+      ExpeditionPlace: cpExpedicion,
       Receiver: {
         Rfc:          datos.rfc_receptor,
         Name:         datos.razon_social_receptor,
         CfdiUse:      datos.uso_cfdi,
         FiscalRegime: datos.regimen_fiscal_receptor ?? '616',
-        TaxZipCode:   datos.cp_receptor ?? '76000',
+        TaxZipCode:   datos.cp_receptor ?? cpExpedicion,
       },
       CfdiType:      'I',   // Ingreso
       PaymentForm:   datos.forma_pago,

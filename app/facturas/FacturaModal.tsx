@@ -50,12 +50,12 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
   })
 
   // Config del emisor
-  const [emisor, setEmisor] = useState({ rfc: '', razon_social: '', regimen_fiscal: '626' })
+  const [emisor, setEmisor] = useState({ rfc: '', razon_social: '', regimen_fiscal: '626', cp: '' })
 
   useEffect(() => {
     // Cargar datos del emisor desde cfg.configuracion
     dbCfg.from('configuracion').select('clave, valor')
-      .in('clave', ['org_rfc', 'org_nombre', 'org_regimen_fiscal'])
+      .in('clave', ['org_rfc', 'org_nombre', 'org_regimen_fiscal', 'org_cp_fiscal'])
       .then(({ data }) => {
         const map: Record<string, string> = {}
         ;(data ?? []).forEach((r: any) => { map[r.clave] = r.valor ?? '' })
@@ -63,6 +63,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
           rfc:             map['org_rfc'] ?? '',
           razon_social:    map['org_nombre'] ?? '',
           regimen_fiscal:  map['org_regimen_fiscal'] ?? '626',
+          cp:              map['org_cp_fiscal'] ?? '',
         })
       })
   }, [])
@@ -124,6 +125,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
       rfc_emisor:            emisor.rfc,
       razon_social_emisor:   emisor.razon_social,
       regimen_fiscal:        emisor.regimen_fiscal,
+      cp_emisor:             emisor.cp || undefined,
       rfc_receptor:          receptor.rfc.toUpperCase().trim(),
       razon_social_receptor: receptor.razon_social.trim(),
       uso_cfdi:              receptor.uso_cfdi,
