@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // ── Leer credenciales PAC desde cfg.configuracion ─────────────
+// IMPORTANTE: usamos la service role key para saltarnos RLS en cfg.configuracion
 async function getPacConfig() {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
   const db = supabase.schema('cfg' as any)
   const { data } = await db
@@ -17,7 +18,7 @@ async function getPacConfig() {
   ;(data ?? []).forEach((r: any) => { cfg[r.clave] = r.valor ?? '' })
 
   return {
-    url:  cfg.pac_url  || 'https://apisandbox.facturama.mx',
+    url:  (cfg.pac_url  || 'https://apisandbox.facturama.mx').replace(/\/$/, ''),
     user: cfg.pac_user || 'domusonetest',
     pass: cfg.pac_pass || 'domusonetest',
   }

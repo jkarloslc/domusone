@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // ── Leer credenciales PAC desde cfg.configuracion ─────────────
+// IMPORTANTE: usamos la service role key para saltarnos RLS en cfg.configuracion
+// (la anon key sin sesión autenticada no puede leer esa tabla)
 async function getPacConfig() {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
   const db = supabase.schema('cfg' as any)
   const { data } = await db
@@ -17,7 +19,8 @@ async function getPacConfig() {
   ;(data ?? []).forEach((r: any) => { cfg[r.clave] = r.valor ?? '' })
 
   return {
-    url:      cfg.pac_url      || 'https://apisandbox.facturama.mx',
+    // Normalizamos URL: quitamos trailing slash para evitar URLs dobles como '.mx//3/cfdis'
+    url:      (cfg.pac_url || 'https://apisandbox.facturama.mx').replace(/\/$/, ''),
     user:     cfg.pac_user     || 'domusonetest',
     pass:     cfg.pac_pass     || 'domusonetest',
     cp_fiscal: cfg.org_cp_fiscal || '',
@@ -94,13 +97,17 @@ export async function POST(req: NextRequest) {
       body:    JSON.stringify(payload),
     })
 
-    const pacResp = await res.json()
+    // Facturama puede responder con HTML (ej. error 500 de servidor) en lugar de JSON.
+    // Parseamos con seguridad para evitar que un throw aquí cause un 500 sin detalle.
+    let pacResp: any = null
+    const rawText = await res.text()
+    try { pacResp = JSON.parse(rawText) } catch { pacResp = { _raw: rawText } }
 
     if (!res.ok) {
       const msg = pacResp?.ModelState
         ? Object.values(pacResp.ModelState).flat().join('; ')
-        : pacResp?.Message ?? JSON.stringify(pacResp)
-      return NextResponse.json({ error: msg }, { status: 400 })
+        : pacResp?.Message ?? pacResp?._raw ?? JSON.stringify(pacResp)
+      return NextResponse.json({ error: msg, http_status: res.status }, { status: 400 })
     }
 
     const cfdiId = pacResp.Id
