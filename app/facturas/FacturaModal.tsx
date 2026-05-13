@@ -4,7 +4,8 @@ import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { X, Save, Loader, Search, FileText, CheckCircle } from 'lucide-react'
 import {
   timbrarCFDI, USOS_CFDI, FORMAS_PAGO_SAT, METODOS_PAGO,
-  REGIMENES_FISCALES, type DatosFactura, type ConceptoFactura
+  REGIMENES_FISCALES, RFC_PUBLICO_GENERAL, DATOS_PUBLICO_GENERAL,
+  type DatosFactura, type ConceptoFactura
 } from '@/lib/pacService'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -186,6 +187,23 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
   const setR = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setReceptor(r => ({ ...r, [k]: e.target.value }))
 
+  // Auto-rellena cuando se detecta el RFC de Público en General
+  const handleRfcReceptor = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rfc = e.target.value.toUpperCase()
+    if (rfc === RFC_PUBLICO_GENERAL) {
+      setReceptor(r => ({
+        ...r,
+        rfc,
+        razon_social:   DATOS_PUBLICO_GENERAL.razon_social,
+        regimen_fiscal: DATOS_PUBLICO_GENERAL.regimen_fiscal,
+        uso_cfdi:       DATOS_PUBLICO_GENERAL.uso_cfdi,
+        cp:             DATOS_PUBLICO_GENERAL.cp,
+      }))
+    } else {
+      setReceptor(r => ({ ...r, rfc }))
+    }
+  }
+
   return (
     <ModalShell modulo="facturas" titulo="Modal" onClose={onClose} maxWidth={620}
       footer={<>
@@ -319,8 +337,13 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10 }}>
                 <div>
                   <label className="label">RFC Receptor *</label>
-                  <input className="input" value={receptor.rfc} onChange={setR('rfc')}
+                  <input className="input" value={receptor.rfc} onChange={handleRfcReceptor}
                     placeholder="XAXX010101000" style={{ fontFamily: 'monospace', textTransform: 'uppercase' }} />
+                  {receptor.rfc.toUpperCase() === RFC_PUBLICO_GENERAL && (
+                    <div style={{ marginTop: 4, fontSize: 11, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      ⚡ Público en General — régimen, uso CFDI y razón social pre-llenados
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="label">Razón Social *</label>

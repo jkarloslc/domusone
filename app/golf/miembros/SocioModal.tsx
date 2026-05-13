@@ -99,9 +99,12 @@ const TABS = ['Datos Personales', 'Membresía', 'Familiares', 'Identificación',
 const REGIMENES_FISCALES_SAT = [
   { clave: '601', desc: 'General de Ley Personas Morales' },
   { clave: '603', desc: 'Personas Morales sin Fines de Lucro' },
+  { clave: '605', desc: 'Sueldos y Salarios e Ingresos Asimilados' },
   { clave: '612', desc: 'Personas Físicas con Actividades Empresariales' },
-  { clave: '626', desc: 'Simplificado de Confianza (RESICO)' },
+  { clave: '616', desc: 'Sin obligaciones fiscales' },
   { clave: '621', desc: 'Incorporación Fiscal' },
+  { clave: '625', desc: 'Actividades Empresariales con Ingresos a través de Plataformas' },
+  { clave: '626', desc: 'Simplificado de Confianza (RESICO)' },
 ]
 const USOS_CFDI_SAT = [
   { clave: 'G01', desc: 'Adquisición de mercancias' },
