@@ -90,6 +90,10 @@ export async function POST(req: NextRequest) {
       })),
     }
 
+    // ── Debug: confirmar qué credenciales y URL se están usando ──
+    console.log('[PAC/timbrar] url:', pac.url, '| user:', pac.user, '| cp_fiscal:', pac.cp_fiscal)
+    console.log('[PAC/timbrar] payload:', JSON.stringify(payload, null, 2))
+
     // ── Llamar al PAC ──────────────────────────────────────────
     const res = await fetch(`${pac.url}/3/cfdis`, {
       method:  'POST',
@@ -101,13 +105,25 @@ export async function POST(req: NextRequest) {
     // Parseamos con seguridad para evitar que un throw aquí cause un 500 sin detalle.
     let pacResp: any = null
     const rawText = await res.text()
+    console.log('[PAC/timbrar] http_status:', res.status, '| raw_response:', rawText.substring(0, 500))
     try { pacResp = JSON.parse(rawText) } catch { pacResp = { _raw: rawText } }
 
     if (!res.ok) {
-      const msg = pacResp?.ModelState
-        ? Object.values(pacResp.ModelState).flat().join('; ')
-        : pacResp?.Message ?? pacResp?._raw ?? JSON.stringify(pacResp)
-      return NextResponse.json({ error: msg, http_status: res.status }, { status: 400 })
+      // Extraer mensaje de error de cualquier formato que use Facturama
+      let msg: string
+      if (pacResp?.ModelState) {
+        msg = Object.values(pacResp.ModelState).flat().join('; ')
+      } else if (pacResp?.Message) {
+        msg = pacResp.Message
+      } else if (pacResp?._raw) {
+        msg = pacResp._raw
+      } else {
+        msg = JSON.stringify(pacResp)
+      }
+      // Siempre incluir el status HTTP para ayudar al diagnóstico
+      const fullMsg = `[${res.status}] ${msg || 'Sin detalle del PAC'}`
+      console.error('[PAC/timbrar] error:', fullMsg)
+      return NextResponse.json({ error: fullMsg, http_status: res.status }, { status: 400 })
     }
 
     const cfdiId = pacResp.Id

@@ -144,82 +144,91 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
 
     setSaving(true); setError('')
 
-    // Construir folio interno
-    const { count } = await dbCtrl.from('facturas').select('id', { count: 'exact', head: true })
-    const folioNum = (count ?? 0) + 1
-    const folioInterno = String(folioNum).padStart(5, '0')
+    try {
+      // Construir folio interno
+      const { count } = await dbCtrl.from('facturas').select('id', { count: 'exact', head: true })
+      const folioNum = (count ?? 0) + 1
+      const folioInterno = String(folioNum).padStart(5, '0')
 
-    const conceptos: ConceptoFactura[] = [{
-      cantidad:        1,
-      unidad:          'E48',
-      clave_prod_serv: cfdi.clave_prod_serv,
-      descripcion:     cfdi.descripcion,
-      precio_unitario: subtotal,
-      importe:         subtotal,
-      objeto_imp:      tasaIva > 0 ? '02' : '01',
-      tasa_iva:        tasaIva,
-    }]
+      const conceptos: ConceptoFactura[] = [{
+        cantidad:        1,
+        unidad:          'E48',
+        clave_prod_serv: cfdi.clave_prod_serv,
+        descripcion:     cfdi.descripcion,
+        precio_unitario: subtotal,
+        importe:         subtotal,
+        objeto_imp:      tasaIva > 0 ? '02' : '01',
+        tasa_iva:        tasaIva,
+      }]
 
-    const datosFactura: DatosFactura = {
-      rfc_emisor:            emisor.rfc,
-      razon_social_emisor:   emisor.razon_social,
-      regimen_fiscal:        emisor.regimen_fiscal,
-      cp_emisor:             emisor.cp || undefined,
-      rfc_receptor:          receptor.rfc.toUpperCase().trim(),
-      razon_social_receptor: receptor.razon_social.trim(),
-      uso_cfdi:              receptor.uso_cfdi,
-      regimen_fiscal_receptor: receptor.regimen_fiscal,
-      cp_receptor:           receptor.cp || undefined,
-      serie:                 cfdi.serie,
-      folio_interno:         folioInterno,
-      metodo_pago:           cfdi.metodo_pago,
-      forma_pago:            cfdi.forma_pago,
-      moneda:                'MXN',
-      tipo_cambio:           1,
-      conceptos,
-    }
+      const datosFactura: DatosFactura = {
+        rfc_emisor:            emisor.rfc,
+        razon_social_emisor:   emisor.razon_social,
+        regimen_fiscal:        emisor.regimen_fiscal,
+        cp_emisor:             emisor.cp || undefined,
+        rfc_receptor:          receptor.rfc.toUpperCase().trim(),
+        razon_social_receptor: receptor.razon_social.trim(),
+        uso_cfdi:              receptor.uso_cfdi,
+        regimen_fiscal_receptor: receptor.regimen_fiscal,
+        cp_receptor:           receptor.cp || undefined,
+        serie:                 cfdi.serie,
+        folio_interno:         folioInterno,
+        metodo_pago:           cfdi.metodo_pago,
+        forma_pago:            cfdi.forma_pago,
+        moneda:                'MXN',
+        tipo_cambio:           1,
+        conceptos,
+      }
 
-    const resultado = await timbrarCFDI(datosFactura)
+      const resultado = await timbrarCFDI(datosFactura)
+      console.log('[FacturaModal] resultado PAC:', resultado)
 
-    if (!resultado.ok) {
-      setError('Error del PAC: ' + resultado.error)
+      if (!resultado.ok) {
+        const msg = resultado.error || 'Error desconocido del PAC. Revisa la consola del servidor.'
+        setError('Error del PAC: ' + msg)
+        setSaving(false)
+        return
+      }
+
+      // Guardar en BD
+      const { error: dbErr } = await dbCtrl.from('facturas').insert({
+        id_recibo_fk:          recibo.id,
+        folio_fiscal:          resultado.folio_fiscal,
+        folio_interno:         folioInterno,
+        serie:                 cfdi.serie,
+        numero:                folioNum,
+        rfc_emisor:            emisor.rfc,
+        razon_social_emisor:   emisor.razon_social,
+        regimen_fiscal:        emisor.regimen_fiscal,
+        rfc_receptor:          receptor.rfc.toUpperCase().trim(),
+        razon_social_receptor: receptor.razon_social.trim(),
+        uso_cfdi:              receptor.uso_cfdi,
+        metodo_pago:           cfdi.metodo_pago,
+        forma_pago:            cfdi.forma_pago,
+        subtotal,
+        iva,
+        total,
+        moneda:                'MXN',
+        tipo_cambio:           1,
+        status:                resultado.folio_fiscal?.startsWith('SIMULADO') ? 'Simulada' : 'Vigente',
+        xml_cfdi:              resultado.xml_cfdi,
+        pdf_url:               resultado.pdf_url,
+        pac_respuesta:         resultado.pac_respuesta,
+      })
+
+      if (dbErr) { setError('Error al guardar en BD: ' + dbErr.message); setSaving(false); return }
+
+      // Actualizar folio_fiscal en el recibo de ingreso
+      await dbCtrl.from('recibos_ingreso').update({ folio_fiscal: resultado.folio_fiscal }).eq('id', recibo.id)
+
       setSaving(false)
-      return
+      onSaved()
+
+    } catch (err: any) {
+      console.error('[FacturaModal] excepción en handleTimbrar:', err)
+      setError('Error inesperado: ' + (err?.message ?? String(err)))
+      setSaving(false)
     }
-
-    // Guardar en BD
-    const { error: dbErr } = await dbCtrl.from('facturas').insert({
-      id_recibo_fk:          recibo.id,
-      folio_fiscal:          resultado.folio_fiscal,
-      folio_interno:         folioInterno,
-      serie:                 cfdi.serie,
-      numero:                folioNum,
-      rfc_emisor:            emisor.rfc,
-      razon_social_emisor:   emisor.razon_social,
-      regimen_fiscal:        emisor.regimen_fiscal,
-      rfc_receptor:          receptor.rfc.toUpperCase().trim(),
-      razon_social_receptor: receptor.razon_social.trim(),
-      uso_cfdi:              receptor.uso_cfdi,
-      metodo_pago:           cfdi.metodo_pago,
-      forma_pago:            cfdi.forma_pago,
-      subtotal,
-      iva,
-      total,
-      moneda:                'MXN',
-      tipo_cambio:           1,
-      status:                resultado.folio_fiscal?.startsWith('SIMULADO') ? 'Simulada' : 'Vigente',
-      xml_cfdi:              resultado.xml_cfdi,
-      pdf_url:               resultado.pdf_url,
-      pac_respuesta:         resultado.pac_respuesta,
-    })
-
-    if (dbErr) { setError(dbErr.message); setSaving(false); return }
-
-    // Actualizar folio_fiscal en el recibo de ingreso
-    await dbCtrl.from('recibos_ingreso').update({ folio_fiscal: resultado.folio_fiscal }).eq('id', recibo.id)
-
-    setSaving(false)
-    onSaved()
   }
 
   const setR = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
