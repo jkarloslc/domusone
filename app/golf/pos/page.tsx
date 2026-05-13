@@ -24,10 +24,10 @@ type CentroIngresoMap = {
 }
 type Venta = {
   id: number; folio_dia: number; fecha: string; nombre_cliente: string
-  es_socio: boolean; total: number; subtotal: number; iva: number
+  es_socio: boolean; id_socio_fk: number | null
+  total: number; subtotal: number; iva: number
   status: string; id_centro_fk: number; usuario_crea: string | null
   num_impresiones: number; id_corte_fk: number | null; facturada: boolean
-  cat_socios: { nombre: string; apellido_paterno: string | null } | null
 }
 type Corte = {
   id: number; id_centro_fk: number; centro_nombre: string; fecha_corte: string
@@ -144,7 +144,7 @@ export default function POSPage() {
   const fetchVentas = useCallback(async () => {
     setLoadingV(true)
     let q = dbGolf.from('ctrl_ventas')
-      .select('id, folio_dia, fecha, nombre_cliente, es_socio, total, subtotal, iva, status, id_centro_fk, usuario_crea, num_impresiones, id_corte_fk, facturada')
+      .select('id, folio_dia, fecha, nombre_cliente, es_socio, id_socio_fk, total, subtotal, iva, status, id_centro_fk, usuario_crea, num_impresiones, id_corte_fk, facturada')
       .order('fecha', { ascending: false })
       .limit(200)
     if (filtroStatus)  q = q.eq('status', filtroStatus)
@@ -152,7 +152,7 @@ export default function POSPage() {
     if (filtroFecha)   q = q.gte('fecha', inicioDelDia(filtroFecha)).lte('fecha', finDelDia(filtroFecha))
     const { data, error } = await q
     if (error) { console.error('[POS] fetchVentas:', error) }
-    setVentas((data ?? []).map((v: any) => ({ ...v, cat_socios: null })) as Venta[])
+    setVentas((data ?? []) as Venta[])
     setLoadingV(false)
   }, [filtroStatus, filtroCentro, filtroFecha])
 
@@ -212,18 +212,20 @@ export default function POSPage() {
     setConceptosPOS(conceptos.length ? conceptos : [{ descripcion: `Venta POS #${v.folio_dia}`, importe: v.total }])
 
     let receptor: any = { razon_social: v.nombre_cliente }
-    if (v.cat_socios) {
+    if (v.id_socio_fk) {
       const { data: soc } = await dbGolf.from('cat_socios')
-        .select('rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal, email')
-        .eq('nombre', v.cat_socios.nombre).limit(1).maybeSingle()
+        .select('rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal, email, nombre, apellido_paterno, apellido_materno')
+        .eq('id', v.id_socio_fk)
+        .maybeSingle()
       if (soc) {
+        const nombreCompleto = [(soc as any).nombre, (soc as any).apellido_paterno, (soc as any).apellido_materno].filter(Boolean).join(' ')
         receptor = {
-          rfc:            (soc as any).rfc ?? '',
-          razon_social:   (soc as any).razon_social_fiscal || v.nombre_cliente,
-          cp:             (soc as any).cp_fiscal ?? '',
+          rfc:            (soc as any).rfc            ?? '',
+          razon_social:   (soc as any).razon_social_fiscal || nombreCompleto || v.nombre_cliente,
+          cp:             (soc as any).cp_fiscal      ?? '',
           regimen_fiscal: (soc as any).regimen_fiscal ?? '626',
-          uso_cfdi:       (soc as any).uso_cfdi ?? 'G03',
-          email:          (soc as any).email_fiscal || (soc as any).email || '',
+          uso_cfdi:       (soc as any).uso_cfdi       ?? 'G03',
+          email:          (soc as any).email_fiscal   || (soc as any).email || '',
         }
       }
     }
