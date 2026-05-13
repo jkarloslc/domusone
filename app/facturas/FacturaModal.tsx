@@ -1,7 +1,7 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { dbCtrl, dbCfg } from '@/lib/supabase'
-import { X, Save, Loader, Search, FileText, CheckCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { dbCtrl, dbCfg, dbGolf } from '@/lib/supabase'
+import { X, Save, Loader, Search, FileText, CheckCircle, UserSearch } from 'lucide-react'
 import {
   timbrarCFDI, USOS_CFDI, FORMAS_PAGO_SAT, METODOS_PAGO,
   REGIMENES_FISCALES, RFC_PUBLICO_GENERAL, DATOS_PUBLICO_GENERAL,
@@ -39,6 +39,12 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
     regimen_fiscal:   '626',
     cp:               '',
   })
+
+  // Búsqueda de socio para prellenar datos fiscales
+  const [socioSearch, setSocioSearch]       = useState('')
+  const [socioResults, setSocioResults]     = useState<any[]>([])
+  const [socioFiscalMsg, setSocioFiscalMsg] = useState('')   // confirmación al precargar
+  const socioSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Datos CFDI
   const [cfdi, setCfdi] = useState({
@@ -89,6 +95,38 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
     setMontoFacturar(r.monto_total ?? 0)
     setReciboSearch(r.folio ?? `#${r.id}`)
     setReciboResults([])
+  }
+
+  // Búsqueda de socios para precargar datos fiscales (paso 2)
+  useEffect(() => {
+    if (socioSearch.length < 2) { setSocioResults([]); return }
+    if (socioSearchTimer.current) clearTimeout(socioSearchTimer.current)
+    socioSearchTimer.current = setTimeout(async () => {
+      const words = socioSearch.trim().split(/\s+/).filter(Boolean)
+      let qb: any = dbGolf.from('cat_socios')
+        .select('id, nombre, apellido_paterno, apellido_materno, numero_socio, rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi')
+        .eq('activo', true)
+      for (const w of words) {
+        qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%,numero_socio.ilike.%${w}%`)
+      }
+      const { data } = await qb.order('apellido_paterno').limit(8)
+      setSocioResults(data ?? [])
+    }, 300)
+  }, [socioSearch])
+
+  const precargarFiscalSocio = (s: any) => {
+    const nombreCompleto = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
+    setReceptor(r => ({
+      ...r,
+      rfc:            s.rfc            || r.rfc,
+      razon_social:   s.razon_social_fiscal || nombreCompleto,
+      regimen_fiscal: s.regimen_fiscal || '626',
+      uso_cfdi:       s.uso_cfdi       || 'G03',
+      cp:             s.cp_fiscal      || r.cp,
+    }))
+    setSocioFiscalMsg(`✓ Datos fiscales de ${nombreCompleto} precargados`)
+    setSocioSearch('')
+    setSocioResults([])
   }
 
   // Calcular IVA y totales (dinámico)
@@ -334,6 +372,45 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
           {/* PASO 2 — Receptor */}
           {paso === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+              {/* ── Buscador de socio para precargar fiscal ── */}
+              <div style={{ padding: '12px 14px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8 }}>
+                <label className="label" style={{ color: '#0369a1', display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
+                  <UserSearch size={13} /> Precargar datos fiscales de un Socio (opcional)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input className="input" placeholder="Busca por nombre o número de socio…"
+                    value={socioSearch}
+                    onChange={e => { setSocioSearch(e.target.value); setSocioFiscalMsg('') }}
+                    style={{ paddingLeft: 32 }} />
+                  <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+                </div>
+                {socioResults.length > 0 && (
+                  <div className="card" style={{ marginTop: 4, padding: '4px 0' }}>
+                    {socioResults.map(s => {
+                      const nombre = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
+                      return (
+                        <button key={s.id} onClick={() => precargarFiscalSocio(s)}
+                          style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                          <div>
+                            <span style={{ fontWeight: 600, fontSize: 13 }}>{nombre}</span>
+                            {s.numero_socio && <span style={{ marginLeft: 8, fontSize: 11, color: '#64748b' }}>#{s.numero_socio}</span>}
+                          </div>
+                          <span style={{ fontSize: 11, color: s.rfc ? '#15803d' : '#94a3b8', fontFamily: 'monospace' }}>
+                            {s.rfc || 'Sin RFC'}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                {socioFiscalMsg && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#15803d', fontWeight: 500 }}>{socioFiscalMsg}</div>
+                )}
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 10 }}>
                 <div>
                   <label className="label">RFC Receptor *</label>
