@@ -35,8 +35,19 @@ export async function POST(req: NextRequest) {
     // ExpeditionPlace = LugarExpedicion (C.P. fiscal del emisor) — campo obligatorio SAT
     const cpExpedicion = datos.cp_emisor || pac.cp_fiscal || '76900'
 
+    // ── GlobalInformation — obligatorio cuando RFC = XAXX010101000 ──
+    // SAT CFDI 4.0: factura global requiere Periodicidad, Meses y Año
+    const esPublicoGeneral = datos.rfc_receptor === 'XAXX010101000'
+    const ahora = new Date()
+    const globalInfo = esPublicoGeneral ? {
+      Periodicity: '04',                                        // 04 = Mensual
+      Months:      String(ahora.getMonth() + 1).padStart(2, '0'),  // '01'–'12'
+      Year:        ahora.getFullYear(),
+    } : undefined
+
     const payload = {
       ExpeditionPlace: cpExpedicion,
+      ...(globalInfo ? { GlobalInformation: globalInfo } : {}),
       Receiver: {
         Rfc:          datos.rfc_receptor,
         Name:         datos.razon_social_receptor,
