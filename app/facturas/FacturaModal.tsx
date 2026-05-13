@@ -41,7 +41,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
 
   // Datos CFDI
   const [cfdi, setCfdi] = useState({
-    serie:          'A',
+    serie:          '',   // Dejar vacío si no hay serie registrada en Facturama
     metodo_pago:    'PUE',
     forma_pago:     '03',
     descripcion:    'Cuota de mantenimiento y servicios residenciales',

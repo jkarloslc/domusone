@@ -48,7 +48,9 @@ export async function POST(req: NextRequest) {
       PaymentForm:   datos.forma_pago,
       PaymentMethod: datos.metodo_pago,
       Currency:      datos.moneda ?? 'MXN',
-      Serie:         datos.serie,
+      // Serie es opcional en CFDI 4.0; solo se envía si está configurada
+      // en Facturama como sucursal (de lo contrario el PAC rechaza la petición)
+      ...(datos.serie ? { Serie: datos.serie } : {}),
       Folio:         datos.folio_interno,
       Exportation:   '01',  // No aplica
       Items: datos.conceptos.map((c: any) => ({
