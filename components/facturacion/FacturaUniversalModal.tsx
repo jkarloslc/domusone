@@ -72,10 +72,8 @@ export default function FacturaUniversalModal({
   const [emailEnviado, setEmailEnviado] = useState(false)
   const [resultado, setResultado] = useState<{ folio_fiscal: string; pdf_url?: string; xml_cfdi?: string }>()
 
-  // Tasas IVA por renglón (0 = exento, 0.16 = gravado)
-  const [tasas, setTasas] = useState<number[]>(() =>
-    conceptos.map(c => c.tasa_iva ?? 0)
-  )
+  // Tasas IVA fijas desde el catálogo — no editables en el modal
+  const tasas = conceptos.map(c => c.tasa_iva ?? 0)
 
   // Datos del emisor (desde cfg.configuracion)
   const [emisor, setEmisor] = useState({ rfc: '', razon_social: '', regimen_fiscal: '626' })
@@ -392,38 +390,43 @@ export default function FacturaUniversalModal({
               </div>
             </div>
 
-            {/* Conceptos con selector de IVA por renglón */}
+            {/* Conceptos — IVA fijo desde el catálogo, solo lectura */}
             <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 90px', padding: '8px 12px', background: '#f8fafc', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', gap: 8 }}>
-                <span>Concepto</span><span style={{ textAlign: 'right' }}>Importe</span><span style={{ textAlign: 'center' }}>IVA</span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 80px', padding: '8px 12px', background: '#f8fafc', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', gap: 8 }}>
+                <span>Concepto</span><span style={{ textAlign: 'right' }}>Base</span><span style={{ textAlign: 'center' }}>IVA</span>
               </div>
-              {conceptos.map((c, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 90px', padding: '8px 12px', borderTop: '1px solid #f1f5f9', fontSize: 12, gap: 8, alignItems: 'center' }}>
-                  <span style={{ color: '#475569' }}>{c.descripcion}</span>
-                  <span style={{ fontWeight: 700, color: '#1e293b', textAlign: 'right' }}>{fmt$(c.importe)}</span>
-                  <select
-                    value={String(tasas[i] ?? 0)}
-                    onChange={e => setTasas(t => t.map((v, j) => j === i ? Number(e.target.value) : v))}
-                    style={{ fontSize: 11, padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'center' }}>
-                    <option value="0">0 % Exento</option>
-                    <option value="0.16">16 %</option>
-                  </select>
-                </div>
-              ))}
+              {conceptos.map((c, i) => {
+                const tiva = tasas[i] ?? 0
+                return (
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 110px 80px', padding: '8px 12px', borderTop: '1px solid #f1f5f9', fontSize: 12, gap: 8, alignItems: 'center' }}>
+                    <span style={{ color: '#475569' }}>{c.descripcion}</span>
+                    <span style={{ fontWeight: 700, color: '#1e293b', textAlign: 'right' }}>{fmt$(c.importe)}</span>
+                    <span style={{ textAlign: 'center' }}>
+                      <span style={{
+                        display: 'inline-block', padding: '2px 7px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+                        background: tiva > 0 ? '#ecfdf5' : '#f1f5f9',
+                        color:      tiva > 0 ? '#065f46' : '#64748b',
+                      }}>
+                        {tiva > 0 ? `${Math.round(tiva * 100)} %` : 'Exento'}
+                      </span>
+                    </span>
+                  </div>
+                )
+              })}
               {/* Totales */}
               <div style={{ borderTop: '2px solid #e2e8f0', background: '#faf5ff' }}>
                 {ivaCalc > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', fontSize: 12, color: '#64748b' }}>
-                    <span>Subtotal</span><span>{fmt$(subtotalCalc)}</span>
+                    <span>Subtotal (base)</span><span>{fmt$(subtotalCalc)}</span>
                   </div>
                 )}
                 {ivaCalc > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 12px 8px', fontSize: 12, color: '#64748b' }}>
-                    <span>IVA 16 %</span><span>{fmt$(ivaCalc)}</span>
+                    <span>IVA incluido</span><span>{fmt$(ivaCalc)}</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', borderTop: ivaCalc > 0 ? '1px solid #e2e8f0' : undefined, fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>
-                  <span>Total</span>
+                  <span>Total a facturar</span>
                   <span>{fmt$(totalCalc)}</span>
                 </div>
               </div>
@@ -446,7 +449,7 @@ export default function FacturaUniversalModal({
               <div><span style={{ color: '#94a3b8' }}>Forma pago: </span><strong>{cfdi.forma_pago}</strong></div>
               <div><span style={{ color: '#94a3b8' }}>Folio interno: </span><strong>{folio}</strong></div>
               <div><span style={{ color: '#94a3b8' }}>Subtotal: </span><strong>{fmt$(subtotalCalc)}</strong></div>
-              <div><span style={{ color: '#94a3b8' }}>IVA{ivaCalc > 0 ? ' 16 %' : ' (Exento)'}: </span><strong>{fmt$(ivaCalc)}</strong></div>
+              <div><span style={{ color: '#94a3b8' }}>IVA{ivaCalc > 0 ? ' incluido' : ' (Exento)'}: </span><strong>{fmt$(ivaCalc)}</strong></div>
               <div style={{ gridColumn: 'span 2' }}>
                 <span style={{ color: '#94a3b8' }}>Total: </span>
                 <strong style={{ color: '#7c3aed', fontSize: 14 }}>{fmt$(totalCalc)}</strong>
