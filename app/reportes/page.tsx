@@ -31,6 +31,8 @@ import ReporteGolfEstadoCuenta from './ReporteGolfEstadoCuenta'
 import ReporteGolfCobranza from './ReporteGolfCobranza'
 import ReporteGolfAccesos from './ReporteGolfAccesos'
 import ReporteHospitalityEventos from './ReporteHospitalityEventos'
+import ReporteOPsPorProveedor from './ReporteOPsPorProveedor'
+import ReporteEstadoCuentaProveedor from './ReporteEstadoCuentaProveedor'
 
 const GRUPOS = [
   {
@@ -92,6 +94,8 @@ const GRUPOS = [
       { id: 'antiguedad-op-cc',  label: 'Antigüedad de OPs por CC / Área', icon: Clock,  desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
       { id: 'kardex',            label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
       { id: 'transferencias',  label: 'Transferencias',             icon: Package,      desc: 'Movimientos entre almacenes con filtros por origen, destino y fecha' },
+      { id: 'ops-por-proveedor',        label: 'OPs por Proveedor',              icon: FileText,     desc: 'Órdenes de pago agrupadas por proveedor con totales y saldos pendientes' },
+      { id: 'estado-cuenta-proveedor',  label: 'Estado de Cuenta — Proveedor',   icon: Building2,    desc: 'Movimientos individuales, saldo acumulado y datos bancarios de un proveedor' },
     ],
   },
   {
@@ -224,7 +228,9 @@ function ReportesContent() {
       {active === 'cxp'              && <ReporteCXP />}
       {active === 'kardex'           && <ReporteKardex />}
       {active === 'transferencias'        && <ReporteTransferencias />}
-      {active === 'compras-por-proveedor' && <ReporteComprasPorProveedor />}
+      {active === 'compras-por-proveedor'       && <ReporteComprasPorProveedor />}
+      {active === 'ops-por-proveedor'           && <ReporteOPsPorProveedor />}
+      {active === 'estado-cuenta-proveedor'     && <ReporteEstadoCuentaProveedor />}
 
       {/* Reportes golf */}
       {active === 'golf-estado-cuenta' && <ReporteGolfEstadoCuenta />}
