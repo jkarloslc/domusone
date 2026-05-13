@@ -91,7 +91,11 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Debug: confirmar qué credenciales y URL se están usando ──
-    console.log('[PAC/timbrar] url:', pac.url, '| user:', pac.user, '| cp_fiscal:', pac.cp_fiscal)
+    console.log('[PAC/timbrar] url:', pac.url, '| user:', pac.user,
+      '| pass_len:', pac.pass.length,
+      '| pass_first:', pac.pass[0] ?? '(vacío)',
+      '| pass_last:', pac.pass[pac.pass.length - 1] ?? '(vacío)',
+      '| cp_fiscal:', pac.cp_fiscal)
     console.log('[PAC/timbrar] payload:', JSON.stringify(payload, null, 2))
 
     // ── Llamar al PAC ──────────────────────────────────────────
