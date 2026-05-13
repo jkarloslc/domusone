@@ -67,27 +67,36 @@ export async function POST(req: NextRequest) {
       ...(datos.serie ? { Serie: datos.serie } : {}),
       Folio:         datos.folio_interno,
       Exportation:   '01',  // No aplica
-      Items: datos.conceptos.map((c: any) => ({
-        ProductCode:          c.clave_prod_serv,
-        IdentificationNumber: datos.folio_interno,
-        Description:          c.descripcion,
-        Unit:                 'E48',
-        UnitCode:             'E48',
-        UnitPrice:            c.precio_unitario,
-        Quantity:             c.cantidad,
-        Subtotal:             c.importe,
-        TaxObject:            c.objeto_imp ?? '01',
-        Total:                c.importe,
-        ...(c.objeto_imp === '02' && c.tasa_iva > 0 ? {
-          Taxes: [{
-            Total:       c.importe * c.tasa_iva,
-            Name:        'IVA',
-            Base:        c.importe,
-            Rate:        c.tasa_iva,
-            IsRetention: false,
-          }]
-        } : {})
-      })),
+      Items: datos.conceptos.map((c: any) => {
+        const conIva   = c.objeto_imp === '02' && c.tasa_iva > 0
+        // Redondear a 6 decimales para cumplir reglas SAT / Facturama
+        const r6 = (n: number) => Math.round(n * 1_000_000) / 1_000_000
+        const taxTotal = conIva ? r6(c.importe * c.tasa_iva) : 0
+        // Total del concepto = Subtotal + IVA  (si no hay IVA, igual al Subtotal)
+        const itemTotal = r6(c.importe + taxTotal)
+
+        return {
+          ProductCode:          c.clave_prod_serv,
+          IdentificationNumber: datos.folio_interno,
+          Description:          c.descripcion,
+          Unit:                 'E48',
+          UnitCode:             'E48',
+          UnitPrice:            c.precio_unitario,
+          Quantity:             c.cantidad,
+          Subtotal:             c.importe,
+          TaxObject:            c.objeto_imp ?? '01',
+          Total:                itemTotal,
+          ...(conIva ? {
+            Taxes: [{
+              Total:       taxTotal,
+              Name:        'IVA',
+              Base:        c.importe,
+              Rate:        c.tasa_iva,
+              IsRetention: false,
+            }]
+          } : {})
+        }
+      }),
     }
 
     // ── Debug: confirmar qué credenciales y URL se están usando ──
