@@ -26,9 +26,15 @@ const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigit
 const nc = (s: Socio) => [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
 
 function calcLinea(l: LineaVenta) {
-  const subtotal = l.precio_unitario * l.cantidad
-  const iva      = l.aplica_iva ? subtotal * (l.iva_pct / 100) : 0
-  const total    = subtotal + iva
+  // precio_unitario = precio FINAL que paga el cliente (IVA ya incluido cuando aplica_iva=true)
+  // El IVA se desglosa hacia adentro para efectos de CFDI; nunca se suma por fuera.
+  const total = Math.round(l.precio_unitario * l.cantidad * 100) / 100
+  if (!l.aplica_iva || l.iva_pct === 0) {
+    return { subtotal: total, iva: 0, total }
+  }
+  const factor   = 1 + l.iva_pct / 100                            // e.g. 1.16
+  const subtotal = Math.round((total / factor) * 100) / 100       // base sin IVA
+  const iva      = Math.round((total - subtotal) * 100) / 100     // IVA incluido
   return { subtotal, iva, total }
 }
 
@@ -343,7 +349,7 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
                     <div style={{ fontSize: 13, fontWeight: 800, color: '#059669' }}>{fmt$(p.precio)}</div>
                     <div style={{ fontSize: 9, color: '#94a3b8', marginTop: 2 }}>
                       {p.tipo === 'PRODUCTO' ? '📦 Producto' : '⚡ Servicio'}
-                      {p.aplica_iva ? ` +IVA` : ''}
+                      {p.aplica_iva ? ` (IVA inc.)` : ''}
                     </div>
                   </button>
                 ))}
@@ -425,7 +431,7 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{fmt$(c.total)}</div>
-                        {l.aplica_iva && c.iva > 0 && <div style={{ fontSize: 9, color: '#94a3b8' }}>IVA {fmt$(c.iva)}</div>}
+                        {l.aplica_iva && c.iva > 0 && <div style={{ fontSize: 9, color: '#94a3b8' }}>IVA inc. {fmt$(c.iva)}</div>}
                         <button onClick={() => quitarLinea(i)} style={{ marginTop: 2, background: 'none', border: 'none', cursor: 'pointer', color: '#fca5a5' }}><Trash2 size={12} /></button>
                       </div>
                     </div>

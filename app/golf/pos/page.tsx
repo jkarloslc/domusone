@@ -203,13 +203,19 @@ export default function POSPage() {
   const abrirFacturarPOS = async (v: Venta) => {
     // Cargar detalle de la venta y datos fiscales del socio si aplica
     const [{ data: det }, { data: pagos }] = await Promise.all([
-      dbGolf.from('ctrl_ventas_det').select('concepto, total').eq('id_venta_fk', v.id),
+      dbGolf.from('ctrl_ventas_det').select('concepto, subtotal, iva, iva_pct, total').eq('id_venta_fk', v.id),
       dbGolf.from('ctrl_ventas_pagos').select('forma_nombre').eq('id_venta_fk', v.id).limit(1),
     ])
-    const conceptos = ((det ?? []) as { concepto: string; total: number }[])
+    // Para el CFDI: importe = subtotal (base sin IVA); el PAC agrega la tasa encima.
+    // Si no aplica IVA (iva = 0), importe = total y tasa = 0.
+    const conceptos = ((det ?? []) as { concepto: string; subtotal: number; iva: number; iva_pct: number; total: number }[])
       .filter(d => d.total > 0)
-      .map(d => ({ descripcion: d.concepto, importe: d.total }))
-    setConceptosPOS(conceptos.length ? conceptos : [{ descripcion: `Venta POS #${v.folio_dia}`, importe: v.total }])
+      .map(d => ({
+        descripcion: d.concepto,
+        importe:     d.subtotal,                                          // base sin IVA
+        tasa_iva:    d.iva > 0 && d.iva_pct > 0 ? d.iva_pct / 100 : 0,  // 0.16 ó 0
+      }))
+    setConceptosPOS(conceptos.length ? conceptos : [{ descripcion: `Venta POS #${v.folio_dia}`, importe: v.total, tasa_iva: 0 }])
 
     let receptor: any = { razon_social: v.nombre_cliente }
     if (v.id_socio_fk) {
@@ -1103,7 +1109,7 @@ ${operaciones.length > 0 ? `
                       {([
                         { k: 'nombre',      label: 'Nombre *',    type: 'text'   },
                         { k: 'sku',         label: 'SKU / Clave', type: 'text'   },
-                        { k: 'precio',      label: 'Precio',      type: 'number' },
+                        { k: 'precio',      label: 'Precio al cliente',  type: 'number' },
                         { k: 'costo',       label: 'Costo',       type: 'number' },
                         { k: 'iva_pct',     label: '% IVA',       type: 'number' },
                       ] as { k: keyof Producto; label: string; type: string }[]).map(f => (
@@ -1134,7 +1140,7 @@ ${operaciones.length > 0 ? `
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
                         <input type="checkbox" checked={editingProd.aplica_iva ?? true} onChange={e => setEditingProd(p => ({ ...p, aplica_iva: e.target.checked }))} />
-                        Aplica IVA
+                        IVA incluido en precio (desglose en factura)
                       </label>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
                         <input type="checkbox" checked={editingProd.activo ?? true} onChange={e => setEditingProd(p => ({ ...p, activo: e.target.checked }))} />
@@ -1166,7 +1172,7 @@ ${operaciones.length > 0 ? `
                             <span style={{ padding: '1px 5px', borderRadius: 10, background: p.tipo === 'PRODUCTO' ? '#eff6ff' : '#ecfdf5', color: p.tipo === 'PRODUCTO' ? '#1d4ed8' : '#065f46', fontWeight: 600 }}>
                               {p.tipo === 'PRODUCTO' ? '📦' : '⚡'} {p.tipo === 'PRODUCTO' ? 'Producto' : 'Servicio'}
                             </span>
-                            {p.aplica_iva && <span>+IVA {p.iva_pct}%</span>}
+                            {p.aplica_iva && <span>IVA {p.iva_pct}% inc.</span>}
                           </div>
                         </div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#059669', flexShrink: 0 }}>{fmt$(p.precio)}</div>
