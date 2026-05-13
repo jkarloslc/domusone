@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
   ChevronDown, ChevronRight, Scissors, Settings, History,
-  Printer, Ban, AlertCircle, Store, Save, Loader, FileText, Receipt, FileCheck,
+  Printer, Ban, AlertCircle, Store, Save, Loader, FileText, Receipt, FileCheck, Package,
 } from 'lucide-react'
 import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
@@ -45,7 +45,7 @@ type Producto = {
 type FormaPago = { id: number; nombre: string; activo: boolean }
 type CfgPos = { id: number; razon_social: string; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string }
 
-type Tab = 'pos' | 'ventas' | 'cortes' | 'config'
+type Tab = 'pos' | 'ventas' | 'cortes' | 'catalogo' | 'config'
 
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 const fmtDT = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -195,9 +195,9 @@ export default function POSPage() {
   }, [])
 
   useEffect(() => { fetchStats() }, [fetchStats])
-  useEffect(() => { if (tab === 'ventas') fetchVentas() }, [tab, fetchVentas])
-  useEffect(() => { if (tab === 'cortes') fetchCortes() }, [tab, fetchCortes])
-  useEffect(() => { if (tab === 'config') fetchConfig() }, [tab, fetchConfig])
+  useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
+  useEffect(() => { if (tab === 'cortes')   fetchCortes() }, [tab, fetchCortes])
+  useEffect(() => { if (tab === 'config' || tab === 'catalogo') fetchConfig() }, [tab, fetchConfig])
 
   // ── Abrir facturación de venta POS ────────────────────────
   const abrirFacturarPOS = async (v: Venta) => {
@@ -648,10 +648,11 @@ ${operaciones.length > 0 ? `
   })
 
   const TABS: { key: Tab; label: string; icon: any }[] = [
-    { key: 'pos',     label: 'Punto de Venta', icon: ShoppingCart },
-    { key: 'ventas',  label: 'Historial',      icon: History      },
-    { key: 'cortes',  label: 'Cortes de Caja', icon: Scissors     },
-    { key: 'config',  label: 'Configuración',  icon: Settings     },
+    { key: 'pos',      label: 'Punto de Venta', icon: ShoppingCart },
+    { key: 'ventas',   label: 'Historial',      icon: History      },
+    { key: 'cortes',   label: 'Cortes de Caja', icon: Scissors     },
+    { key: 'catalogo', label: 'Catálogo',        icon: Package      },
+    { key: 'config',   label: 'Configuración',  icon: Settings     },
   ]
 
   return (
@@ -993,6 +994,131 @@ ${operaciones.length > 0 ? `
         </>
       )}
 
+      {/* ── TAB: CATÁLOGO ────────────────────────────────── */}
+      {tab === 'catalogo' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {loadingCfg ? (
+            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Cargando…</div>
+          ) : (
+            <div className="card" style={{ padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Productos y Servicios</div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{productos.length} registros · el precio es el monto final cobrado al cliente</div>
+                </div>
+                {puedeEscribir && (
+                  <button onClick={() => setEditingProd({ tipo: 'SERVICIO', aplica_iva: true, iva_pct: 16, activo: true, precio: 0, costo: 0, id_centro_fk: centros[0]?.id ?? null })}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
+                    <Plus size={13} /> Nuevo producto / servicio
+                  </button>
+                )}
+              </div>
+
+              {/* Form edición */}
+              {editingProd && (
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>
+                    {editingProd.id ? 'Editar producto / servicio' : 'Nuevo producto / servicio'}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+                    {([
+                      { k: 'nombre',  label: 'Nombre *',         type: 'text'   },
+                      { k: 'sku',     label: 'SKU / Clave',      type: 'text'   },
+                      { k: 'precio',  label: 'Precio al cliente', type: 'number' },
+                      { k: 'costo',   label: 'Costo',            type: 'number' },
+                      { k: 'iva_pct', label: '% IVA',            type: 'number' },
+                    ] as { k: keyof Producto; label: string; type: string }[]).map(f => (
+                      <div key={f.k}>
+                        <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>{f.label}</label>
+                        <input type={f.type} value={(editingProd[f.k] as any) ?? ''}
+                          onChange={e => setEditingProd(p => ({ ...p, [f.k]: f.type === 'number' ? (parseFloat(e.target.value) || 0) : e.target.value }))}
+                          style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                      </div>
+                    ))}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Tipo</label>
+                      <select value={editingProd.tipo ?? 'SERVICIO'} onChange={e => setEditingProd(p => ({ ...p, tipo: e.target.value }))}
+                        style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
+                        <option value="SERVICIO">Servicio</option>
+                        <option value="PRODUCTO">Producto</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Centro de Venta</label>
+                      <select value={editingProd.id_centro_fk ?? ''} onChange={e => setEditingProd(p => ({ ...p, id_centro_fk: e.target.value ? Number(e.target.value) : null }))}
+                        style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
+                        <option value="">— Todos —</option>
+                        {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={editingProd.aplica_iva ?? true} onChange={e => setEditingProd(p => ({ ...p, aplica_iva: e.target.checked }))} />
+                      IVA incluido en precio (desglose en factura)
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={editingProd.activo ?? true} onChange={e => setEditingProd(p => ({ ...p, activo: e.target.checked }))} />
+                      Activo
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                    <button onClick={guardarProducto} disabled={savingProd}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
+                      {savingProd ? <Loader size={12} /> : <Save size={12} />} Guardar
+                    </button>
+                    <button onClick={() => setEditingProd(null)}
+                      style={{ padding: '7px 12px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Lista */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {productos.map(p => {
+                  const centro = centros.find(c => c.id === p.id_centro_fk)
+                  return (
+                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', border: '1px solid #f1f5f9', borderRadius: 8, background: p.activo ? '#fff' : '#f8fafc', opacity: p.activo ? 1 : 0.55 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{p.nombre}</div>
+                        <div style={{ fontSize: 11, color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+                          {p.sku && <span style={{ fontFamily: 'monospace' }}>{p.sku}</span>}
+                          {centro && <span>📍 {centro.nombre}</span>}
+                          <span style={{ padding: '1px 7px', borderRadius: 10, background: p.tipo === 'PRODUCTO' ? '#eff6ff' : '#ecfdf5', color: p.tipo === 'PRODUCTO' ? '#1d4ed8' : '#065f46', fontWeight: 600 }}>
+                            {p.tipo === 'PRODUCTO' ? '📦 Producto' : '⚡ Servicio'}
+                          </span>
+                          {p.aplica_iva
+                            ? <span style={{ padding: '1px 7px', borderRadius: 10, background: '#ecfdf5', color: '#065f46', fontWeight: 600 }}>IVA {p.iva_pct}% inc.</span>
+                            : <span style={{ padding: '1px 7px', borderRadius: 10, background: '#f1f5f9', color: '#64748b' }}>Exento</span>}
+                          {!p.activo && <span style={{ color: '#dc2626', fontWeight: 600 }}>Inactivo</span>}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#059669' }}>{fmt$(p.precio)}</div>
+                        {p.costo > 0 && <div style={{ fontSize: 10, color: '#94a3b8' }}>Costo {fmt$(p.costo)}</div>}
+                      </div>
+                      {puedeEscribir && (
+                        <button onClick={() => { setEditingProd(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                          style={{ fontSize: 11, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>
+                          Editar
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+                {productos.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8', fontSize: 13 }}>
+                    Sin productos configurados. Usa el botón "Nuevo producto / servicio" para agregar.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── TAB: CONFIGURACIÓN ───────────────────────────── */}
       {tab === 'config' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -1087,107 +1213,6 @@ ${operaciones.length > 0 ? `
                 </div>
               </div>
 
-              {/* Productos */}
-              <div className="card" style={{ padding: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Productos y Servicios ({productos.length})</div>
-                  {puedeEscribir && (
-                    <button onClick={() => setEditingProd({ tipo: 'SERVICIO', aplica_iva: true, iva_pct: 16, activo: true, precio: 0, costo: 0, id_centro_fk: centros[0]?.id ?? null })}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
-                      <Plus size={13} /> Nuevo
-                    </button>
-                  )}
-                </div>
-
-                {/* Form edición */}
-                {editingProd && (
-                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, marginBottom: 16 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>
-                      {editingProd.id ? 'Editar producto' : 'Nuevo producto / servicio'}
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
-                      {([
-                        { k: 'nombre',      label: 'Nombre *',    type: 'text'   },
-                        { k: 'sku',         label: 'SKU / Clave', type: 'text'   },
-                        { k: 'precio',      label: 'Precio al cliente',  type: 'number' },
-                        { k: 'costo',       label: 'Costo',       type: 'number' },
-                        { k: 'iva_pct',     label: '% IVA',       type: 'number' },
-                      ] as { k: keyof Producto; label: string; type: string }[]).map(f => (
-                        <div key={f.k}>
-                          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>{f.label}</label>
-                          <input type={f.type} value={(editingProd[f.k] as any) ?? ''}
-                            onChange={e => setEditingProd(p => ({ ...p, [f.k]: f.type === 'number' ? (parseFloat(e.target.value) || 0) : e.target.value }))}
-                            style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
-                        </div>
-                      ))}
-                      <div>
-                        <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Tipo</label>
-                        <select value={editingProd.tipo ?? 'SERVICIO'} onChange={e => setEditingProd(p => ({ ...p, tipo: e.target.value }))}
-                          style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
-                          <option value="SERVICIO">Servicio</option>
-                          <option value="PRODUCTO">Producto</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Centro de Venta</label>
-                        <select value={editingProd.id_centro_fk ?? ''} onChange={e => setEditingProd(p => ({ ...p, id_centro_fk: e.target.value ? Number(e.target.value) : null }))}
-                          style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
-                          <option value="">— Todos —</option>
-                          {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
-                        <input type="checkbox" checked={editingProd.aplica_iva ?? true} onChange={e => setEditingProd(p => ({ ...p, aplica_iva: e.target.checked }))} />
-                        IVA incluido en precio (desglose en factura)
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
-                        <input type="checkbox" checked={editingProd.activo ?? true} onChange={e => setEditingProd(p => ({ ...p, activo: e.target.checked }))} />
-                        Activo
-                      </label>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                      <button onClick={guardarProducto} disabled={savingProd}
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
-                        {savingProd ? <Loader size={12} /> : <Save size={12} />} Guardar
-                      </button>
-                      <button onClick={() => setEditingProd(null)}
-                        style={{ padding: '7px 12px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Lista de productos */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {productos.map(p => {
-                    const centro = centros.find(c => c.id === p.id_centro_fk)
-                    return (
-                      <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', border: '1px solid #f1f5f9', borderRadius: 8, background: p.activo ? '#fff' : '#f8fafc', opacity: p.activo ? 1 : 0.6 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{p.nombre}</div>
-                          <div style={{ fontSize: 11, color: '#64748b', display: 'flex', gap: 8, marginTop: 1 }}>
-                            {p.sku && <span>{p.sku}</span>}
-                            {centro && <span>{centro.nombre}</span>}
-                            <span style={{ padding: '1px 5px', borderRadius: 10, background: p.tipo === 'PRODUCTO' ? '#eff6ff' : '#ecfdf5', color: p.tipo === 'PRODUCTO' ? '#1d4ed8' : '#065f46', fontWeight: 600 }}>
-                              {p.tipo === 'PRODUCTO' ? '📦' : '⚡'} {p.tipo === 'PRODUCTO' ? 'Producto' : 'Servicio'}
-                            </span>
-                            {p.aplica_iva && <span>IVA {p.iva_pct}% inc.</span>}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#059669', flexShrink: 0 }}>{fmt$(p.precio)}</div>
-                        {puedeEscribir && (
-                          <button onClick={() => setEditingProd(p)}
-                            style={{ fontSize: 11, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}>
-                            Editar
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
-                  {productos.length === 0 && <div style={{ color: '#94a3b8', fontSize: 13, padding: '16px 0', textAlign: 'center' }}>Sin productos configurados. Agrega el primero.</div>}
-                </div>
-              </div>
             </>
           )}
         </div>
