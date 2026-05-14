@@ -6,6 +6,7 @@ import {
   ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
   ChevronDown, ChevronRight, Scissors, Settings, History,
   Printer, Ban, AlertCircle, Store, Save, Loader, FileText, Receipt, FileCheck, Package,
+  CreditCard, Pencil, Trash2, CheckCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
@@ -45,7 +46,8 @@ type Producto = {
 type FormaPago = { id: number; nombre: string; activo: boolean }
 type CfgPos = { id: number; razon_social: string; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string }
 
-type Tab = 'pos' | 'ventas' | 'cortes' | 'catalogo' | 'config'
+type Tab = 'pos' | 'ventas' | 'cortes' | 'catalogo' | 'config' | 'mesa'
+type LineaPago = { id_forma_fk: number | null; forma_nombre: string; monto: string }
 
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 const fmtDT = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -99,6 +101,16 @@ export default function POSPage() {
 
   // Cortes — acciones
   const [generandoRecibo, setGenerandoRecibo] = useState<number | null>(null)
+
+  // Mesa de Control
+  const [ventasMesa,    setVentasMesa]    = useState<Venta[]>([])
+  const [loadingMesa,   setLoadingMesa]   = useState(false)
+  const [fechaMesa,     setFechaMesa]     = useState(fechaLocal())
+  const [editandoPagos, setEditandoPagos] = useState<number | null>(null)  // id de venta
+  const [pagosEdit,     setPagosEdit]     = useState<LineaPago[]>([])
+  const [savingPagos,   setSavingPagos]   = useState(false)
+  const [errorPagos,    setErrorPagos]    = useState('')
+  const [formasMesa,    setFormasMesa]    = useState<FormaPago[]>([])
 
   // Stats del día
   const [statsHoy, setStatsHoy] = useState({ ventas: 0, total: 0, pendCorte: 0 })
@@ -156,6 +168,23 @@ export default function POSPage() {
     setLoadingV(false)
   }, [filtroStatus, filtroCentro, filtroFecha])
 
+  // ── Fetch ventas Mesa de Control ─────────────────────────
+  const fetchVentasMesa = useCallback(async () => {
+    setLoadingMesa(true)
+    const [{ data: vs }, { data: fps }] = await Promise.all([
+      dbGolf.from('ctrl_ventas')
+        .select('id, folio_dia, fecha, nombre_cliente, es_socio, id_socio_fk, total, subtotal, iva, status, id_centro_fk, usuario_crea, num_impresiones, id_corte_fk, facturada')
+        .gte('fecha', inicioDelDia(fechaMesa))
+        .lte('fecha', finDelDia(fechaMesa))
+        .order('fecha', { ascending: false })
+        .limit(300),
+      dbCfg.from('formas_pago').select('id, nombre, activo').eq('activo', true).order('nombre'),
+    ])
+    setVentasMesa((vs ?? []) as Venta[])
+    setFormasMesa((fps ?? []) as FormaPago[])
+    setLoadingMesa(false)
+  }, [fechaMesa])
+
   // ── Fetch cortes ─────────────────────────────────────────
   const fetchCortes = useCallback(async () => {
     setLoadingC(true)
@@ -198,6 +227,7 @@ export default function POSPage() {
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
   useEffect(() => { if (tab === 'cortes')   fetchCortes() }, [tab, fetchCortes])
   useEffect(() => { if (tab === 'config' || tab === 'catalogo') fetchConfig() }, [tab, fetchConfig])
+  useEffect(() => { if (tab === 'mesa')     fetchVentasMesa() }, [tab, fetchVentasMesa])
 
   // ── Abrir facturación de venta POS ────────────────────────
   const abrirFacturarPOS = async (v: Venta) => {
@@ -245,6 +275,48 @@ export default function POSPage() {
     if (!confirm('¿Cancelar esta venta?')) return
     await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', id)
     fetchVentas(); fetchStats()
+  }
+
+  // ── Mesa de Control: abrir editor de pagos ────────────────
+  const abrirEditarPagos = async (v: Venta) => {
+    setErrorPagos('')
+    const { data } = await dbGolf.from('ctrl_ventas_pagos')
+      .select('id_forma_fk, forma_nombre, monto')
+      .eq('id_venta_fk', v.id)
+      .order('monto', { ascending: false })
+    const lineas: LineaPago[] = (data ?? []).map((p: any) => ({
+      id_forma_fk: p.id_forma_fk ?? null,
+      forma_nombre: p.forma_nombre ?? '',
+      monto: String(p.monto ?? ''),
+    }))
+    if (lineas.length === 0) lineas.push({ id_forma_fk: null, forma_nombre: '', monto: String(v.total) })
+    setPagosEdit(lineas)
+    setEditandoPagos(v.id)
+  }
+
+  const guardarPagos = async (v: Venta) => {
+    setErrorPagos('')
+    const lineasValidas = pagosEdit.filter(l => l.forma_nombre && parseFloat(l.monto) > 0)
+    if (!lineasValidas.length) { setErrorPagos('Agrega al menos una forma de pago con monto'); return }
+    const sumaTotal = lineasValidas.reduce((a, l) => a + parseFloat(l.monto), 0)
+    const diff = Math.abs(sumaTotal - v.total)
+    if (diff > 0.01) {
+      setErrorPagos(`La suma de pagos (${fmt$(sumaTotal)}) no coincide con el total de la venta (${fmt$(v.total)})`)
+      return
+    }
+    setSavingPagos(true)
+    await dbGolf.from('ctrl_ventas_pagos').delete().eq('id_venta_fk', v.id)
+    await dbGolf.from('ctrl_ventas_pagos').insert(
+      lineasValidas.map(l => ({
+        id_venta_fk:  v.id,
+        id_forma_fk:  l.id_forma_fk ?? null,
+        forma_nombre: l.forma_nombre,
+        monto:        parseFloat(l.monto),
+      }))
+    )
+    setSavingPagos(false)
+    setEditandoPagos(null)
+    setPagosEdit([])
   }
 
   // ── Reimprimir ticket ─────────────────────────────────────
@@ -647,12 +719,15 @@ ${operaciones.length > 0 ? `
     return v.nombre_cliente.toLowerCase().includes(q) || String(v.id).includes(q) || String(v.folio_dia).includes(q)
   })
 
+  const esAdminMesa = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+
   const TABS: { key: Tab; label: string; icon: any }[] = [
-    { key: 'pos',      label: 'Punto de Venta', icon: ShoppingCart },
-    { key: 'ventas',   label: 'Historial',      icon: History      },
-    { key: 'cortes',   label: 'Cortes de Caja', icon: Scissors     },
-    { key: 'catalogo', label: 'Catálogo',        icon: Package      },
-    { key: 'config',   label: 'Configuración',  icon: Settings     },
+    { key: 'pos',      label: 'Punto de Venta',   icon: ShoppingCart },
+    { key: 'ventas',   label: 'Historial',         icon: History      },
+    { key: 'mesa',     label: 'Mesa de Control',   icon: CreditCard   },
+    { key: 'cortes',   label: 'Cortes de Caja',   icon: Scissors     },
+    { key: 'catalogo', label: 'Catálogo',          icon: Package      },
+    { key: 'config',   label: 'Configuración',     icon: Settings     },
   ]
 
   return (
@@ -873,6 +948,196 @@ ${operaciones.length > 0 ? `
                 </span>
               </div>
             </div>
+          )}
+        </>
+      )}
+
+      {/* ── TAB: MESA DE CONTROL ─────────────────────────── */}
+      {tab === 'mesa' && (
+        <>
+          {/* Encabezado */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+            <input type="date" value={fechaMesa} onChange={e => { setFechaMesa(e.target.value); setEditandoPagos(null) }}
+              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            <button className="btn-ghost" onClick={fetchVentasMesa} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <RefreshCw size={12} className={loadingMesa ? 'animate-spin' : ''} /> Actualizar
+            </button>
+            <div style={{ flex: 1 }} />
+            {!esAdminMesa && (
+              <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, background: '#fef9ec', border: '1px solid #fcd34d', color: '#92400e', fontWeight: 600 }}>
+                Solo lectura — la edición requiere rol Admin o Superadmin
+              </span>
+            )}
+          </div>
+
+          {loadingMesa ? (
+            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}><Loader size={20} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+          ) : ventasMesa.length === 0 ? (
+            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
+              <CreditCard size={32} style={{ margin: '0 auto 10px' }} />
+              <div style={{ fontWeight: 500 }}>Sin ventas registradas en esta fecha</div>
+            </div>
+          ) : (
+            <>
+              {/* Resumen del día */}
+              <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                {[
+                  { label: 'Total ventas', value: fmt$(ventasMesa.filter(v => v.status === 'PAGADA').reduce((a, v) => a + v.total, 0)), color: '#059669', bg: '#ecfdf5' },
+                  { label: 'Transacciones', value: ventasMesa.filter(v => v.status === 'PAGADA').length, color: '#2563eb', bg: '#eff6ff' },
+                  { label: 'Por cortar', value: ventasMesa.filter(v => v.status === 'PAGADA' && !v.id_corte_fk).length, color: '#d97706', bg: '#fffbeb' },
+                  { label: 'Canceladas', value: ventasMesa.filter(v => v.status === 'CANCELADA').length, color: '#dc2626', bg: '#fef2f2' },
+                ].map(s => (
+                  <div key={s.label} className="card" style={{ flex: '1 1 130px', maxWidth: 180, padding: '10px 14px', background: s.bg, border: `1px solid ${s.color}22` }}>
+                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 3 }}>{s.label}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tabla de ventas */}
+              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                        {['Folio', 'Cliente', 'Centro', 'Hora', 'Total', 'Formas de Pago', 'Estado', esAdminMesa ? 'Acción' : ''].filter(Boolean).map(h => (
+                          <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ventasMesa.map(v => {
+                        const centro    = centros.find(c => c.id === v.id_centro_fk)
+                        const cancelada = v.status === 'CANCELADA'
+                        const cortada   = !!v.id_corte_fk
+                        const editando  = editandoPagos === v.id
+                        const puedeEditar = esAdminMesa && !cancelada && !cortada
+
+                        return (
+                          <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9', opacity: cancelada ? 0.55 : 1, background: editando ? '#f0fdf4' : undefined }}>
+                            {/* Folio */}
+                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                              <div style={{ fontWeight: 700, fontSize: 12, fontFamily: 'monospace', color: '#2563eb' }}>
+                                #{String(v.folio_dia).padStart(4, '0')}
+                              </div>
+                              <div style={{ fontSize: 10, color: '#94a3b8' }}>ID {v.id}</div>
+                            </td>
+                            {/* Cliente */}
+                            <td style={{ padding: '10px 14px' }}>
+                              <div style={{ fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</div>
+                              {v.es_socio && <div style={{ fontSize: 10, color: '#059669', fontWeight: 600 }}>Socio</div>}
+                            </td>
+                            {/* Centro */}
+                            <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569', whiteSpace: 'nowrap' }}>
+                              {centro?.nombre ?? `#${v.id_centro_fk}`}
+                            </td>
+                            {/* Hora */}
+                            <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>
+                              {new Date(v.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            {/* Total */}
+                            <td style={{ padding: '10px 14px', fontWeight: 700, color: cancelada ? '#94a3b8' : '#059669', whiteSpace: 'nowrap', fontSize: 14 }}>
+                              {fmt$(v.total)}
+                            </td>
+                            {/* Formas de pago + editor */}
+                            <td style={{ padding: '10px 14px', minWidth: 340 }}>
+                              {!editando ? (
+                                <PagosVenta idVenta={v.id} />
+                              ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                  {pagosEdit.map((lp, i) => (
+                                    <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                      <select
+                                        value={lp.id_forma_fk ?? ''}
+                                        onChange={e => {
+                                          const fp = formasMesa.find(f => f.id === Number(e.target.value))
+                                          setPagosEdit(prev => prev.map((x, j) => j === i ? { ...x, id_forma_fk: fp?.id ?? null, forma_nombre: fp?.nombre ?? '' } : x))
+                                        }}
+                                        style={{ flex: 2, padding: '5px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
+                                        <option value="">— Forma de pago —</option>
+                                        {formasMesa.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                                      </select>
+                                      <input type="number" min="0" step="0.01"
+                                        value={lp.monto}
+                                        onChange={e => setPagosEdit(prev => prev.map((x, j) => j === i ? { ...x, monto: e.target.value } : x))}
+                                        placeholder="Monto"
+                                        style={{ flex: 1, padding: '5px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none', minWidth: 80 }} />
+                                      {pagosEdit.length > 1 && (
+                                        <button onClick={() => setPagosEdit(prev => prev.filter((_, j) => j !== i))}
+                                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 2, flexShrink: 0 }}>
+                                          <Trash2 size={13} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {/* Suma vs total */}
+                                  {(() => {
+                                    const suma = pagosEdit.reduce((a, l) => a + (parseFloat(l.monto) || 0), 0)
+                                    const diff = Math.abs(suma - v.total)
+                                    return (
+                                      <div style={{ fontSize: 11, color: diff > 0.01 ? '#dc2626' : '#059669', fontWeight: 600 }}>
+                                        Suma: {fmt$(suma)} / Total: {fmt$(v.total)}
+                                        {diff > 0.01 ? ` — diferencia: ${fmt$(diff)}` : ' ✓'}
+                                      </div>
+                                    )
+                                  })()}
+                                  {errorPagos && <div style={{ fontSize: 11, color: '#dc2626' }}>{errorPagos}</div>}
+                                  {/* Acciones del editor */}
+                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                    <button onClick={() => setPagosEdit(prev => [...prev, { id_forma_fk: null, forma_nombre: '', monto: '' }])}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '4px 8px', border: '1px dashed #a7f3d0', borderRadius: 6, background: '#f0fdf4', color: '#059669', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                      <Plus size={11} /> Agregar línea
+                                    </button>
+                                    <button onClick={() => guardarPagos(v)} disabled={savingPagos}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 12px', border: 'none', borderRadius: 6, background: '#059669', color: '#fff', cursor: 'pointer', opacity: savingPagos ? 0.6 : 1 }}>
+                                      {savingPagos ? <Loader size={11} className="animate-spin" /> : <CheckCircle size={11} />}
+                                      {savingPagos ? 'Guardando…' : 'Guardar'}
+                                    </button>
+                                    <button onClick={() => { setEditandoPagos(null); setPagosEdit([]); setErrorPagos('') }}
+                                      style={{ fontSize: 11, padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: '#64748b', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                            {/* Estado */}
+                            <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, display: 'inline-block',
+                                  background: cancelada ? '#f8fafc' : '#ecfdf5', color: cancelada ? '#64748b' : '#15803d' }}>
+                                  {v.status}
+                                </span>
+                                {!cancelada && (
+                                  <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 20, fontWeight: 600, display: 'inline-block',
+                                    background: cortada ? '#f0fdf4' : '#fffbeb', color: cortada ? '#15803d' : '#d97706' }}>
+                                    {cortada ? `✓ Cortada #${v.id_corte_fk}` : '⏳ Por cortar'}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            {/* Botón editar */}
+                            {esAdminMesa && (
+                              <td style={{ padding: '10px 14px' }}>
+                                {puedeEditar && !editando && (
+                                  <button onClick={() => abrirEditarPagos(v)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', border: '1px solid #bfdbfe', borderRadius: 6, background: '#eff6ff', color: '#2563eb', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    <Pencil size={11} /> Editar pagos
+                                  </button>
+                                )}
+                                {cortada && !cancelada && (
+                                  <span style={{ fontSize: 10, color: '#94a3b8', fontStyle: 'italic' }}>Cortada — no editable</span>
+                                )}
+                              </td>
+                            )}
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
         </>
       )}
@@ -1253,6 +1518,26 @@ ${operaciones.length > 0 ? `
           }}
         />
       )}
+    </div>
+  )
+}
+
+// ── Subcomponente: muestra formas de pago de una venta (solo lectura) ──
+function PagosVenta({ idVenta }: { idVenta: number }) {
+  const [pagos, setPagos] = useState<{ forma_nombre: string; monto: number }[]>([])
+  const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+  useEffect(() => {
+    dbGolf.from('ctrl_ventas_pagos').select('forma_nombre, monto').eq('id_venta_fk', idVenta)
+      .then(({ data }) => setPagos((data ?? []) as { forma_nombre: string; monto: number }[]))
+  }, [idVenta])
+  if (!pagos.length) return <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin pagos registrados</span>
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+      {pagos.map((p, i) => (
+        <span key={i} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', border: '1px solid #a7f3d0', color: '#065f46', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {p.forma_nombre} · {fmt$(p.monto)}
+        </span>
+      ))}
     </div>
   )
 }
