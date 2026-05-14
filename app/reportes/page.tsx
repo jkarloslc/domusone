@@ -33,6 +33,7 @@ import ReporteGolfAccesos from './ReporteGolfAccesos'
 import ReporteHospitalityEventos from './ReporteHospitalityEventos'
 import ReporteOPsPorProveedor from './ReporteOPsPorProveedor'
 import ReporteEstadoCuentaProveedor from './ReporteEstadoCuentaProveedor'
+import ReportePagosAplicados from './ReportePagosAplicados'
 
 const GRUPOS = [
   {
@@ -68,6 +69,7 @@ const GRUPOS = [
       { id: 'cxp',                  label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
       { id: 'ordenes-pago-cc',      label: 'Órdenes de Pago por CC / Área', icon: Wallet, desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
       { id: 'antiguedad-op-cc',     label: 'Antigüedad de OPs por CC / Área', icon: Clock, desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
+      { id: 'pagos-aplicados',      label: 'Pagos Aplicados',                 icon: Wallet, desc: 'Abonos registrados por proveedor, cuenta bancaria y rango de fechas' },
     ],
   },
   {
@@ -210,7 +212,8 @@ function ReportesContent() {
       {active === 'programas-mantenimiento' && <ReporteProgramasMantenimiento />}
 
       {/* Reportes tesorería */}
-      {active === 'estado-cuenta' && <ReporteEstadoCuenta />}
+      {active === 'estado-cuenta'    && <ReporteEstadoCuenta />}
+      {active === 'pagos-aplicados'  && <ReportePagosAplicados />}
 
       {/* Reportes compras */}
       {/* Reportes ingresos */}
