@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { PrintBar } from './utils'
-import { RefreshCw, FileSpreadsheet, LayoutList, BarChart2 } from 'lucide-react'
+import { RefreshCw, FileSpreadsheet, LayoutList, BarChart2, PieChart } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 const fmt  = (n: number) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
@@ -11,15 +11,18 @@ const fmtF = (s: string | null) => {
   const d = new Date(s)
   return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+const pct = (val: number, total: number) =>
+  total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%'
 
-type Tab = 'articulos' | 'detalle'
+type Tab = 'resumen' | 'articulos' | 'detalle'
 
 export default function ReporteGolfVentasHistoricas() {
-  const [ventas,   setVentas]   = useState<any[]>([])
-  const [dets,     setDets]     = useState<any[]>([])
-  const [centros,  setCentros]  = useState<any[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [tab,      setTab]      = useState<Tab>('articulos')
+  const [ventas,  setVentas]  = useState<any[]>([])
+  const [dets,    setDets]    = useState<any[]>([])
+  const [pagos,   setPagos]   = useState<any[]>([])
+  const [centros, setCentros] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [tab,     setTab]     = useState<Tab>('resumen')
 
   // Filtros
   const [filtroCentro,   setFiltroCentro]   = useState('')
@@ -30,15 +33,14 @@ export default function ReporteGolfVentasHistoricas() {
   const fetchData = useCallback(async () => {
     setLoading(true)
 
-    // Centros de venta
     const { data: centrosData } = await dbGolf
       .from('cat_centros_venta')
       .select('id, nombre')
       .order('orden')
 
-    // Ventas cortadas (id_corte_fk NOT NULL) y status PAGADA
+    // Ventas cortadas PAGADA
     let q = dbGolf.from('ctrl_ventas')
-      .select('id, folio_dia, fecha, nombre_cliente, es_socio, total, subtotal, iva, id_centro_fk, usuario_crea')
+      .select('id, folio_dia, fecha, nombre_cliente, total, subtotal, iva, id_centro_fk, usuario_crea')
       .not('id_corte_fk', 'is', null)
       .eq('status', 'PAGADA')
       .order('fecha', { ascending: false })
@@ -48,44 +50,51 @@ export default function ReporteGolfVentasHistoricas() {
     if (filtroA)      q = (q as any).lte('fecha', filtroA  + 'T23:59:59')
 
     const { data: ventasData } = await q
-
     const ids = (ventasData ?? []).map((v: any) => v.id)
 
-    // Detalles de esas ventas
     let detsData: any[] = []
+    let pagosData: any[] = []
+
     if (ids.length > 0) {
-      const { data } = await dbGolf.from('ctrl_ventas_det')
-        .select('id, id_venta_fk, id_producto_fk, concepto, cantidad, precio_unitario, iva, subtotal, total')
-        .in('id_venta_fk', ids)
-      detsData = data ?? []
+      const [{ data: d }, { data: p }] = await Promise.all([
+        dbGolf.from('ctrl_ventas_det')
+          .select('id, id_venta_fk, id_producto_fk, concepto, cantidad, precio_unitario, iva, subtotal, total')
+          .in('id_venta_fk', ids),
+        dbGolf.from('ctrl_ventas_pagos')
+          .select('id, id_venta_fk, forma_nombre, monto')
+          .in('id_venta_fk', ids),
+      ])
+      detsData  = d  ?? []
+      pagosData = p  ?? []
     }
 
     setCentros(centrosData ?? [])
     setVentas(ventasData ?? [])
     setDets(detsData)
+    setPagos(pagosData)
     setLoading(false)
   }, [filtroCentro, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  // Lookup map centros
+  // Maps
   const centroMap = useMemo(() =>
     Object.fromEntries(centros.map(c => [c.id, c.nombre])), [centros])
 
-  // Enriquecer dets con datos de venta
   const ventaMap = useMemo(() =>
     Object.fromEntries(ventas.map(v => [v.id, v])), [ventas])
 
+  // Dets enriquecidos
   const enrichedDets = useMemo(() => dets.map(d => ({
     ...d,
-    fecha:         ventaMap[d.id_venta_fk]?.fecha ?? null,
+    fecha:          ventaMap[d.id_venta_fk]?.fecha          ?? null,
     nombre_cliente: ventaMap[d.id_venta_fk]?.nombre_cliente ?? '—',
-    folio_dia:     ventaMap[d.id_venta_fk]?.folio_dia ?? '—',
-    id_centro_fk:  ventaMap[d.id_venta_fk]?.id_centro_fk ?? null,
-    centro_nombre: centroMap[ventaMap[d.id_venta_fk]?.id_centro_fk] ?? '—',
+    folio_dia:      ventaMap[d.id_venta_fk]?.folio_dia      ?? '—',
+    id_centro_fk:   ventaMap[d.id_venta_fk]?.id_centro_fk   ?? null,
+    centro_nombre:  centroMap[ventaMap[d.id_venta_fk]?.id_centro_fk] ?? '—',
   })), [dets, ventaMap, centroMap])
 
-  // Artículos únicos para el filtro (del histórico cargado — todos los centros)
+  // Artículos únicos para el filtro
   const articulosUnicos = useMemo(() => {
     const map = new Map<number, string>()
     dets.forEach(d => { if (d.id_producto_fk) map.set(d.id_producto_fk, d.concepto) })
@@ -94,13 +103,22 @@ export default function ReporteGolfVentasHistoricas() {
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
   }, [dets])
 
-  // Filtrado final (solo por artículo, el resto se aplica en el fetch)
+  // Filtrado de líneas por artículo
   const filtered = useMemo(() => filtroArticulo
     ? enrichedDets.filter(d => String(d.id_producto_fk) === filtroArticulo)
     : enrichedDets,
   [enrichedDets, filtroArticulo])
 
-  // ── Agrupado por artículo ───────────────────────────────────
+  // IDs de ventas activas (según filtro artículo)
+  const filteredVentaIds = useMemo(() =>
+    new Set(filtered.map(d => d.id_venta_fk)), [filtered])
+
+  // Pagos de las ventas activas
+  const filteredPagos = useMemo(() =>
+    pagos.filter(p => filteredVentaIds.has(p.id_venta_fk)),
+  [pagos, filteredVentaIds])
+
+  // ── Agrupado por artículo ────────────────────────────────
   const porArticulo = useMemo(() => {
     const map = new Map<string, { nombre: string; cantidad: number; subtotal: number; iva: number; total: number }>()
     filtered.forEach(d => {
@@ -117,38 +135,54 @@ export default function ReporteGolfVentasHistoricas() {
     return Array.from(map.values()).sort((a, b) => b.total - a.total)
   }, [filtered])
 
-  // ── KPIs ────────────────────────────────────────────────────
-  const totalVentas    = useMemo(() => filtered.reduce((s, d) => s + (d.total ?? 0), 0), [filtered])
-  const totalCantidad  = useMemo(() => filtered.reduce((s, d) => s + (d.cantidad ?? 0), 0), [filtered])
-  const numTickets     = useMemo(() => new Set(filtered.map(d => d.id_venta_fk)).size, [filtered])
-  const ticketPromedio = numTickets > 0
-    ? ventas.filter(v => new Set(filtered.map(d => d.id_venta_fk)).has(v.id))
-             .reduce((s, v) => s + (v.total ?? 0), 0) / numTickets
-    : 0
+  // ── Agrupado por forma de pago ───────────────────────────
+  const porFormaPago = useMemo(() => {
+    const map = new Map<string, { nombre: string; transacciones: number; monto: number }>()
+    filteredPagos.forEach(p => {
+      const key = p.forma_nombre ?? 'Sin especificar'
+      const cur = map.get(key) ?? { nombre: key, transacciones: 0, monto: 0 }
+      map.set(key, { nombre: key, transacciones: cur.transacciones + 1, monto: cur.monto + (p.monto ?? 0) })
+    })
+    return Array.from(map.values()).sort((a, b) => b.monto - a.monto)
+  }, [filteredPagos])
 
-  // ── Export Excel ────────────────────────────────────────────
+  // ── KPIs ─────────────────────────────────────────────────
+  const totalVentas   = useMemo(() => filtered.reduce((s, d) => s + (d.total ?? 0), 0), [filtered])
+  const totalCantidad = useMemo(() => filtered.reduce((s, d) => s + (d.cantidad ?? 0), 0), [filtered])
+  const numTickets    = useMemo(() => filteredVentaIds.size, [filteredVentaIds])
+  const totalPagado   = useMemo(() => filteredPagos.reduce((s, p) => s + (p.monto ?? 0), 0), [filteredPagos])
+  const ticketPromedio = numTickets > 0 ? totalPagado / numTickets : 0
+
+  // ── Export Excel ─────────────────────────────────────────
   const exportXLSX = () => {
-    // Hoja 1: Por artículo
+    const wsFP = XLSX.utils.json_to_sheet(porFormaPago.map(f => ({
+      'Forma de Pago':   f.nombre,
+      'Transacciones':   f.transacciones,
+      'Monto':           f.monto,
+      '% del Total':     pct(f.monto, totalPagado),
+    })))
+    wsFP['!cols'] = [{ wch: 24 }, { wch: 14 }, { wch: 16 }, { wch: 12 }]
+
     const wsArt = XLSX.utils.json_to_sheet(porArticulo.map(a => ({
       'Artículo / Servicio': a.nombre,
-      Cantidad:              a.cantidad,
-      Subtotal:              a.subtotal,
-      IVA:                   a.iva,
-      Total:                 a.total,
+      'Cantidad':            a.cantidad,
+      'Subtotal':            a.subtotal,
+      'IVA':                 a.iva,
+      'Total':               a.total,
+      '% del Total':         pct(a.total, totalVentas),
     })))
-    wsArt['!cols'] = [{ wch: 36 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 14 }]
+    wsArt['!cols'] = [{ wch: 36 }, { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 12 }]
 
-    // Hoja 2: Detalle
     const wsDetalle = XLSX.utils.json_to_sheet(filtered.map(d => ({
-      Fecha:       d.fecha ? new Date(d.fecha).toLocaleDateString('es-MX') : '',
-      Centro:      d.centro_nombre,
-      Folio:       d.folio_dia,
-      Cliente:     d.nombre_cliente,
-      Artículo:    d.concepto,
-      Cantidad:    d.cantidad,
-      'P. Unit.':  d.precio_unitario,
-      IVA:         d.iva,
-      Total:       d.total,
+      'Fecha':      d.fecha ? new Date(d.fecha).toLocaleDateString('es-MX') : '',
+      'Centro':     d.centro_nombre,
+      'Folio':      d.folio_dia,
+      'Cliente':    d.nombre_cliente,
+      'Artículo':   d.concepto,
+      'Cantidad':   d.cantidad,
+      'P. Unit.':   d.precio_unitario,
+      'IVA':        d.iva,
+      'Total':      d.total,
     })))
     wsDetalle['!cols'] = [
       { wch: 12 }, { wch: 20 }, { wch: 8 }, { wch: 28 },
@@ -156,6 +190,7 @@ export default function ReporteGolfVentasHistoricas() {
     ]
 
     const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, wsFP,      'Formas de Pago')
     XLSX.utils.book_append_sheet(wb, wsArt,     'Por Artículo')
     XLSX.utils.book_append_sheet(wb, wsDetalle, 'Detalle')
     XLSX.writeFile(wb, `Golf-Ventas-Historicas_${new Date().toISOString().slice(0,10)}.xlsx`)
@@ -168,15 +203,79 @@ export default function ReporteGolfVentasHistoricas() {
   }
   const inputStyle: React.CSSProperties = { ...selStyle, width: 130 }
 
+  const GOLD = '#b8952a'
+  const GOLD_PALE = '#fefce8'
+  const GOLD_BORDER = '#fde68a'
+  const GOLD_DARK = '#92400e'
+
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: 'articulos', label: 'Por Artículo',  icon: <BarChart2  size={13} /> },
+    { key: 'resumen',   label: 'Resumen',        icon: <PieChart   size={13} /> },
+    { key: 'articulos', label: 'Por Artículo',   icon: <BarChart2  size={13} /> },
     { key: 'detalle',   label: 'Detalle líneas', icon: <LayoutList size={13} /> },
   ]
+
+  // ── Sub-tabla reutilizable para el resumen ───────────────
+  const SummaryTable = ({
+    title, headers, rows, footer, accentColor = GOLD,
+  }: {
+    title: string
+    headers: string[]
+    rows: React.ReactNode[][]
+    footer: React.ReactNode[]
+    accentColor?: string
+  }) => (
+    <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: accentColor,
+        textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+        {title}
+      </div>
+      <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              {headers.map((h, i) => (
+                <th key={h} style={{ padding: '8px 12px',
+                  textAlign: i === 0 ? 'left' : 'right',
+                  fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
+                  textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, ri) => (
+              <tr key={ri} style={{ borderBottom: '1px solid #f1f5f9', background: ri % 2 === 0 ? '#fff' : '#fafafa' }}>
+                {row.map((cell, ci) => (
+                  <td key={ci} style={{ padding: '8px 12px', textAlign: ci === 0 ? 'left' : 'right',
+                    fontVariantNumeric: 'tabular-nums' }}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr style={{ background: GOLD_PALE, borderTop: `2px solid ${GOLD_BORDER}` }}>
+              {footer.map((cell, ci) => (
+                <td key={ci} style={{ padding: '8px 12px', textAlign: ci === 0 ? 'left' : 'right',
+                  fontWeight: 700, color: GOLD_DARK, fontVariantNumeric: 'tabular-nums' }}>
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  )
 
   return (
     <div>
       {/* Filtros */}
-      <div className="card" style={{ padding: '14px 18px', marginBottom: 18, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
+      <div className="card" style={{ padding: '14px 18px', marginBottom: 18,
+        display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
+
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Centro de Venta</div>
           <select style={{ ...selStyle, width: 200 }} value={filtroCentro} onChange={e => setFiltroCentro(e.target.value)}>
@@ -212,13 +311,14 @@ export default function ReporteGolfVentasHistoricas() {
       {/* KPIs */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Total Ventas',       value: fmt(totalVentas),              color: '#b8952a', bg: '#fefce8' },
-          { label: 'Unidades Vendidas',  value: totalCantidad.toString(),       color: 'var(--blue)', bg: 'var(--blue-pale)' },
-          { label: 'Tickets',            value: numTickets.toString(),          color: '#7c3aed', bg: '#f5f3ff' },
-          { label: 'Ticket Promedio',    value: fmt(ticketPromedio),            color: '#0f766e', bg: '#f0fdfa' },
+          { label: 'Total Ventas',      value: fmt(totalVentas),   color: GOLD,         bg: GOLD_PALE },
+          { label: 'Unidades Vendidas', value: totalCantidad.toLocaleString('es-MX'), color: 'var(--blue)', bg: 'var(--blue-pale)' },
+          { label: 'Tickets',           value: numTickets.toString(), color: '#7c3aed', bg: '#f5f3ff' },
+          { label: 'Ticket Promedio',   value: fmt(ticketPromedio), color: '#0f766e',   bg: '#f0fdfa' },
         ].map(k => (
           <div key={k.label} className="card" style={{ padding: '14px 20px', background: k.bg, flex: '1 1 150px', maxWidth: 220 }}>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
+            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
+              color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
           </div>
         ))}
@@ -231,19 +331,20 @@ export default function ReporteGolfVentasHistoricas() {
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px',
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 13,
               fontFamily: 'var(--font-body)', fontWeight: tab === t.key ? 600 : 400,
-              color: tab === t.key ? '#b8952a' : 'var(--text-muted)',
-              borderBottom: tab === t.key ? '2px solid #b8952a' : '2px solid transparent', marginBottom: -1 }}>
+              color: tab === t.key ? GOLD : 'var(--text-muted)',
+              borderBottom: tab === t.key ? `2px solid ${GOLD}` : '2px solid transparent', marginBottom: -1 }}>
             {t.icon}{t.label}
           </button>
         ))}
       </div>
 
-      {/* Tabla */}
+      {/* Contenido */}
       <div className="card" style={{ overflow: 'hidden' }} id="reporte-print-area">
-        <div style={{ padding: '14px 18px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ padding: '14px 18px 10px', display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <PrintBar
             title="Golf-Ventas-Historicas"
-            count={tab === 'articulos' ? porArticulo.length : filtered.length}
+            count={tab === 'resumen' ? numTickets : tab === 'articulos' ? porArticulo.length : filtered.length}
             reportTitle="Ventas Históricas POS — Golf"
           />
           <button className="btn-secondary" onClick={exportXLSX} style={{ fontSize: 12 }}>
@@ -255,13 +356,56 @@ export default function ReporteGolfVentasHistoricas() {
           <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)', fontSize: 13 }}>Cargando…</div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)', fontSize: 13 }}>Sin registros con los filtros seleccionados</div>
+        ) : tab === 'resumen' ? (
+
+          /* ── RESUMEN ──────────────────────────────────────── */
+          <div style={{ padding: '4px 18px 20px', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+
+            {/* Formas de pago */}
+            <SummaryTable
+              title="Formas de Pago"
+              headers={['Forma de Pago', 'Transacciones', 'Monto', '%']}
+              rows={porFormaPago.map(f => [
+                <span key="n" style={{ fontWeight: 500 }}>{f.nombre}</span>,
+                <span key="t" style={{ color: 'var(--text-secondary)' }}>{f.transacciones}</span>,
+                <span key="m" style={{ fontWeight: 600, color: GOLD }}>{fmt(f.monto)}</span>,
+                <span key="p" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{pct(f.monto, totalPagado)}</span>,
+              ])}
+              footer={[
+                `Total (${porFormaPago.length} formas)`,
+                filteredPagos.length,
+                fmt(totalPagado),
+                '100%',
+              ]}
+            />
+
+            {/* Productos / Servicios */}
+            <SummaryTable
+              title="Productos y Servicios"
+              headers={['Artículo / Servicio', 'Cant.', 'Total', '%']}
+              rows={porArticulo.map(a => [
+                <span key="n" style={{ fontWeight: 500 }}>{a.nombre}</span>,
+                <span key="c" style={{ color: 'var(--text-secondary)' }}>{a.cantidad.toLocaleString('es-MX')}</span>,
+                <span key="t" style={{ fontWeight: 600, color: GOLD }}>{fmt(a.total)}</span>,
+                <span key="p" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{pct(a.total, totalVentas)}</span>,
+              ])}
+              footer={[
+                `Total (${porArticulo.length} artículos)`,
+                totalCantidad.toLocaleString('es-MX'),
+                fmt(totalVentas),
+                '100%',
+              ]}
+            />
+          </div>
+
         ) : tab === 'articulos' ? (
-          /* ── Vista por artículo ─────────────────────────────── */
+
+          /* ── POR ARTÍCULO ─────────────────────────────────── */
           <div style={{ overflowX: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  {['Artículo / Servicio', 'Cantidad', 'Subtotal', 'IVA', 'Total'].map((h, i) => (
+                  {['Artículo / Servicio', 'Cantidad', 'Subtotal', 'IVA', 'Total', '%'].map((h, i) => (
                     <th key={h} style={{ padding: '9px 14px', textAlign: i === 0 ? 'left' : 'right',
                       fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
                       textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
@@ -277,27 +421,31 @@ export default function ReporteGolfVentasHistoricas() {
                     <td style={{ padding: '9px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{a.cantidad.toLocaleString('es-MX')}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{fmt(a.subtotal)}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)', fontSize: 12 }}>{fmt(a.iva)}</td>
-                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#b8952a', fontVariantNumeric: 'tabular-nums' }}>{fmt(a.total)}</td>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(a.total)}</td>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{pct(a.total, totalVentas)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#fefce8', borderTop: '2px solid #fde68a' }}>
-                  <td style={{ padding: '9px 14px', fontWeight: 700, color: '#92400e' }}>Total ({porArticulo.length} artículos)</td>
-                  <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#92400e', fontVariantNumeric: 'tabular-nums' }}>{totalCantidad.toLocaleString('es-MX')}</td>
+                <tr style={{ background: GOLD_PALE, borderTop: `2px solid ${GOLD_BORDER}` }}>
+                  <td style={{ padding: '9px 14px', fontWeight: 700, color: GOLD_DARK }}>Total ({porArticulo.length} artículos)</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: GOLD_DARK, fontVariantNumeric: 'tabular-nums' }}>{totalCantidad.toLocaleString('es-MX')}</td>
                   <td colSpan={2} />
-                  <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#b8952a', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalVentas)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(totalVentas)}</td>
+                  <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: GOLD_DARK }}>100%</td>
                 </tr>
               </tfoot>
             </table>
           </div>
+
         ) : (
-          /* ── Vista detalle líneas ───────────────────────────── */
+
+          /* ── DETALLE LÍNEAS ───────────────────────────────── */
           <div style={{ overflowX: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  {['Fecha', 'Centro', 'Folio', 'Cliente', 'Artículo / Servicio', 'Cant.', 'P. Unit.', 'Total'].map((h, i) => (
+                  {['Fecha', 'Centro', 'Folio', 'Cliente', 'Artículo / Servicio', 'Cant.', 'P. Unit.', 'Total'].map(h => (
                     <th key={h} style={{ padding: '9px 12px',
                       textAlign: ['Cant.', 'P. Unit.', 'Total'].includes(h) ? 'right' : 'left',
                       fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
@@ -317,14 +465,16 @@ export default function ReporteGolfVentasHistoricas() {
                     <td style={{ padding: '8px 12px', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }} title={d.concepto}>{d.concepto}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{d.cantidad}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)', fontSize: 12 }}>{fmt(d.precio_unitario ?? 0)}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: '#b8952a', fontVariantNumeric: 'tabular-nums' }}>{fmt(d.total ?? 0)}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(d.total ?? 0)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#fefce8', borderTop: '2px solid #fde68a' }}>
-                  <td colSpan={7} style={{ padding: '9px 12px', fontWeight: 700, color: '#92400e' }}>Total ({filtered.length} líneas · {numTickets} tickets)</td>
-                  <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#b8952a', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalVentas)}</td>
+                <tr style={{ background: GOLD_PALE, borderTop: `2px solid ${GOLD_BORDER}` }}>
+                  <td colSpan={7} style={{ padding: '9px 12px', fontWeight: 700, color: GOLD_DARK }}>
+                    Total ({filtered.length} líneas · {numTickets} tickets)
+                  </td>
+                  <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(totalVentas)}</td>
                 </tr>
               </tfoot>
             </table>
