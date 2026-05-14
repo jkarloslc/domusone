@@ -89,7 +89,7 @@ export default function ReporteGolfVentasHistoricas() {
     ...d,
     fecha:          ventaMap[d.id_venta_fk]?.fecha          ?? null,
     nombre_cliente: ventaMap[d.id_venta_fk]?.nombre_cliente ?? '—',
-    folio_dia:      ventaMap[d.id_venta_fk]?.folio_dia      ?? '—',
+    folio:          ventaMap[d.id_venta_fk]?.id             ?? d.id_venta_fk,
     id_centro_fk:   ventaMap[d.id_venta_fk]?.id_centro_fk   ?? null,
     centro_nombre:  centroMap[ventaMap[d.id_venta_fk]?.id_centro_fk] ?? '—',
   })), [dets, ventaMap, centroMap])
@@ -176,7 +176,7 @@ export default function ReporteGolfVentasHistoricas() {
     const wsDetalle = XLSX.utils.json_to_sheet(filtered.map(d => ({
       'Fecha':      d.fecha ? new Date(d.fecha).toLocaleDateString('es-MX') : '',
       'Centro':     d.centro_nombre,
-      'Folio':      d.folio_dia,
+      'Folio':      d.folio,
       'Cliente':    d.nombre_cliente,
       'Artículo':   d.concepto,
       'Cantidad':   d.cantidad,
@@ -460,7 +460,7 @@ export default function ReporteGolfVentasHistoricas() {
                   <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(d.fecha)}</td>
                     <td style={{ padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap' }}>{d.centro_nombre}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)' }}>{d.folio_dia}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'center', fontSize: 12, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>#{String(d.folio).padStart(5, '0')}</td>
                     <td style={{ padding: '8px 12px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.nombre_cliente}>{d.nombre_cliente}</td>
                     <td style={{ padding: '8px 12px', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }} title={d.concepto}>{d.concepto}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{d.cantidad}</td>
