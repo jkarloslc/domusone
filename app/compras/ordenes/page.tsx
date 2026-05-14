@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  Plus, Search, RefreshCw, Eye, Save, Loader,
+  Plus, Search, RefreshCw, Eye, Save, Loader, Pencil,
   ArrowLeft, CheckCircle, XCircle, Printer, Trash2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -129,7 +129,10 @@ export default function OrdenesPage() {
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtFecha(r.fecha_entrega_est)}</td>
                 <td style={{ textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt(r.total)}</td>
                 <td><StatusBadge status={r.status} /></td>
-                <td>
+                <td style={{ display: 'flex', gap: 2 }}>
+                  {canWrite('ordenes') && r.status === 'Borrador' && (
+                    <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal({ ...r, _provNombre: provMap[r.id_proveedor_fk] })}><Pencil size={13} /></button>
+                  )}
                   <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail({ ...r, _provNombre: provMap[r.id_proveedor_fk] })}><Eye size={13} /></button>
                 </td>
               </tr>
@@ -139,7 +142,8 @@ export default function OrdenesPage() {
       </div>
 
       {modal !== null && <OCModal row={modal === 'new' ? null : modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}
-      {detail && <OCDetail oc={detail} canAuth={canAuth} onClose={() => { setDetail(null); fetchData() }} onAuth={handleAuth} />}
+      {detail && <OCDetail oc={detail} canAuth={canAuth} onClose={() => { setDetail(null); fetchData() }} onAuth={handleAuth}
+        onEdit={canWrite('ordenes') && detail.status === 'Borrador' ? () => { const d = detail; setDetail(null); setModal(d) } : undefined} />}
     </div>
   )
 }
@@ -187,10 +191,28 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       .then(({ data }) => setRelAF(data ?? []))
     ;(async () => {
       const { data: rfqsConOC } = await dbComp.from('ordenes_compra').select('id_rfq_fk').not('id_rfq_fk', 'is', null)
-      const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk))
+      // Al editar, excluir el RFQ de la propia OC del filtro de "ya usadas"
+      const propioRFQ = row?.id_rfq_fk
+      const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk).filter((id: any) => id !== propioRFQ))
       const { data } = await dbComp.from('rfq').select('id, folio, proveedor_ganador').eq('status', 'Cerrada')
       setRFQs((data ?? []).filter((r: any) => !rfqsUsadas.has(r.id)))
     })()
+    if (!isNew) {
+      dbComp.from('ordenes_compra_det').select('*').eq('id_oc_fk', row.id).then(({ data }) => {
+        if (data?.length) {
+          setDet(data.map((d: any) => ({
+            id_articulo_fk:  d.id_articulo_fk ?? null,
+            descripcion:     d.descripcion,
+            cantidad:        d.cantidad.toString(),
+            unidad:          d.unidad,
+            precio_unitario: d.precio_unitario.toString(),
+            tasa_iva:        d.tasa_iva?.toString() ?? '0',
+          })))
+          setArtSearches(new Array(data.length).fill(''))
+          setArtOptions(new Array(data.length).fill([]))
+        }
+      })
+    }
   }, [])
 
   const aplicarRFQ = async (rfqId: string) => {
@@ -284,10 +306,8 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     const detValidos = det.filter(d => d.descripcion && Number(d.precio_unitario) > 0)
     if (!detValidos.length) { setError('Agrega al menos un producto con precio'); return }
     setSaving(true); setError('')
-    const { count } = await dbComp.from('ordenes_compra').select('id', { count: 'exact', head: true })
-    const folio = folioGen('OC', (count ?? 0) + 1)
-    const { data: oc, error: err } = await dbComp.from('ordenes_compra').insert({
-      folio,
+
+    const campos = {
       id_proveedor_fk:       Number(form.id_proveedor_fk),
       id_rfq_fk:             form.id_rfq_fk ? Number(form.id_rfq_fk) : null,
       fecha_entrega_est:     form.fecha_entrega_est || null,
@@ -298,8 +318,29 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       id_frente_fk:          form.id_frente_fk ? Number(form.id_frente_fk) : null,
       notas:                 form.notas.trim() || null,
       subtotal, iva, total: subtotal + iva,
-      status:     enviar ? 'Pendiente Auth' : 'Borrador',
-      created_by: authUser?.nombre ?? null,
+      status:                enviar ? 'Pendiente Auth' : 'Borrador',
+    }
+
+    if (!isNew) {
+      const { error: err } = await dbComp.from('ordenes_compra').update(campos).eq('id', row.id)
+      if (err) { setError(err.message); setSaving(false); return }
+      await dbComp.from('ordenes_compra_det').delete().eq('id_oc_fk', row.id)
+      await dbComp.from('ordenes_compra_det').insert(
+        detValidos.map(d => ({
+          id_oc_fk: row.id, descripcion: d.descripcion.trim(),
+          cantidad: Number(d.cantidad), unidad: d.unidad,
+          precio_unitario: Number(d.precio_unitario), tasa_iva: Number(d.tasa_iva),
+          id_articulo_fk: d.id_articulo_fk ?? null,
+        }))
+      )
+      setSaving(false); onSaved()
+      return
+    }
+
+    const { count } = await dbComp.from('ordenes_compra').select('id', { count: 'exact', head: true })
+    const folio = folioGen('OC', (count ?? 0) + 1)
+    const { data: oc, error: err } = await dbComp.from('ordenes_compra').insert({
+      folio, ...campos, created_by: authUser?.nombre ?? null,
     }).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
     await dbComp.from('ordenes_compra_det').insert(
@@ -307,13 +348,14 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
         id_oc_fk: oc.id, descripcion: d.descripcion.trim(),
         cantidad: Number(d.cantidad), unidad: d.unidad,
         precio_unitario: Number(d.precio_unitario), tasa_iva: Number(d.tasa_iva),
+        id_articulo_fk: d.id_articulo_fk ?? null,
       }))
     )
     setSaving(false); onSaved()
   }
 
   return (
-    <ModalShell modulo="compras" titulo="Nueva Orden de Compra" onClose={onClose} maxWidth={720}
+    <ModalShell modulo="compras" titulo={isNew ? 'Nueva Orden de Compra' : `Editar OC ${row.folio}`} onClose={onClose} maxWidth={720}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Cancelar</button>
         <button className="btn-secondary" onClick={() => handleSave(false)} disabled={saving}><Save size={13} /> Borrador</button>
@@ -472,7 +514,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   )
 }
 
-function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean; onClose: () => void; onAuth: (id: number, ap: boolean, c: string) => void }) {
+function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: boolean; onClose: () => void; onAuth: (id: number, ap: boolean, c: string) => void; onEdit?: () => void }) {
   const [det, setDet]       = useState<any[]>([])
   const [op, setOP]         = useState<any | null>(null)
   const [almMap, setAlmMap] = useState<Record<number, string>>({})
@@ -605,6 +647,11 @@ function OCDetail({ oc, canAuth, onClose, onAuth }: { oc: any; canAuth: boolean;
       onClose={onClose} maxWidth={660}
       footer={<>
         <StatusBadge status={oc.status} />
+        {onEdit && (
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
+            <Pencil size={13} /> Editar OC
+          </button>
+        )}
         <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirOP}>
           <Printer size={13} /> Imprimir OC
         </button>
