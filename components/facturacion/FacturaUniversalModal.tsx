@@ -21,16 +21,17 @@ export type ReceptorPreFill = {
 type Concepto = { descripcion: string; importe: number; tasa_iva?: number }
 
 export type Props = {
-  titulo:         string       // e.g. "Facturar Recibo RG-2026-001"
-  folio:          string       // folio interno del recibo
-  total:          number
-  fecha:          string       // YYYY-MM-DD
-  conceptos:      Concepto[]
-  receptorInit?:  ReceptorPreFill
-  formaPagoStr?:  string       // nombre de la forma de pago (para mapear al SAT)
-  onClose:        () => void
-  onSaved:        (folio_fiscal: string) => void
-  saveFactura:    (folio_fiscal: string, xml?: string, pdf_url?: string) => Promise<void>
+  titulo:            string       // e.g. "Facturar Recibo RG-2026-001"
+  folio:             string       // folio interno del recibo
+  total:             number
+  fecha:             string       // YYYY-MM-DD
+  conceptos:         Concepto[]
+  receptorInit?:     ReceptorPreFill
+  genericRfcPrefill?: ReceptorPreFill  // datos para el botón "Público en General"
+  formaPagoStr?:     string       // nombre de la forma de pago (para mapear al SAT)
+  onClose:           () => void
+  onSaved:           (folio_fiscal: string) => void
+  saveFactura:       (folio_fiscal: string, xml?: string, pdf_url?: string, pac_cfdi_id?: string) => Promise<void>
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ const PASOS = ['Receptor', 'Comprobante', 'Confirmar', 'Emitida']
 
 export default function FacturaUniversalModal({
   titulo, folio, total, fecha, conceptos,
-  receptorInit = {}, formaPagoStr = '',
+  receptorInit = {}, genericRfcPrefill, formaPagoStr = '',
   onClose, onSaved, saveFactura,
 }: Props) {
   const [paso, setPaso] = useState(1)
@@ -70,7 +71,7 @@ export default function FacturaUniversalModal({
   const [error, setError] = useState('')
   const [enviandoEmail, setEnviandoEmail] = useState(false)
   const [emailEnviado, setEmailEnviado] = useState(false)
-  const [resultado, setResultado] = useState<{ folio_fiscal: string; pdf_url?: string; xml_cfdi?: string }>()
+  const [resultado, setResultado] = useState<{ folio_fiscal: string; pdf_url?: string; xml_cfdi?: string; pac_cfdi_id?: string }>()
 
   // Tasas IVA fijas desde el catálogo — no editables en el modal
   const tasas = conceptos.map(c => c.tasa_iva ?? 0)
@@ -171,14 +172,14 @@ export default function FacturaUniversalModal({
 
     // Guardar folio_fiscal en la BD
     try {
-      await saveFactura(res.folio_fiscal!, res.xml_cfdi, res.pdf_url)
+      await saveFactura(res.folio_fiscal!, res.xml_cfdi, res.pdf_url, res.pac_cfdi_id)
     } catch (e: any) {
       setError('Factura timbrada pero no se pudo guardar el folio: ' + e.message)
       setSaving(false)
       return
     }
 
-    setResultado({ folio_fiscal: res.folio_fiscal!, pdf_url: res.pdf_url, xml_cfdi: res.xml_cfdi })
+    setResultado({ folio_fiscal: res.folio_fiscal!, pdf_url: res.pdf_url, xml_cfdi: res.xml_cfdi, pac_cfdi_id: res.pac_cfdi_id })
     setSaving(false)
     setPaso(4)
   }
@@ -226,7 +227,7 @@ export default function FacturaUniversalModal({
     `
 
     try {
-      await fetch('/api/send-email', {
+      const res = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -236,6 +237,12 @@ export default function FacturaUniversalModal({
           adjuntos,
         }),
       })
+      const resJson = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(`Error al enviar correo: ${resJson.error ?? res.statusText}`)
+        setEnviandoEmail(false)
+        return
+      }
       setEmailEnviado(true)
     } catch (e: any) {
       setError('No se pudo enviar el correo: ' + e?.message)
@@ -319,6 +326,21 @@ export default function FacturaUniversalModal({
         {paso === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>Datos del Receptor (Quien recibe la factura)</div>
+
+            {genericRfcPrefill && (
+              <button
+                onClick={() => setReceptor({
+                  rfc:            'XAXX010101000',
+                  razon_social:   'PUBLICO EN GENERAL',
+                  cp:             genericRfcPrefill.cp ?? '',
+                  regimen_fiscal: '616',
+                  uso_cfdi:       'S01',
+                  email:          '',
+                })}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 12, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#065f46', cursor: 'pointer', alignSelf: 'flex-start' }}>
+                Usar RFC Genérico (Público en General)
+              </button>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div style={{ gridColumn: 'span 2' }}>

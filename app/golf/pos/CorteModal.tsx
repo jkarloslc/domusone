@@ -7,7 +7,7 @@ import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 type FormaPagoResumen = { id_forma_fk: number; forma_nombre: string; monto: number }
 type DetalleProd     = { concepto: string; cantidad: number; monto: number }
-type OperacionDia    = { id: number; folio_dia: number | null; fecha: string; nombre_cliente: string | null; status: string; total: number; usuario_crea: string | null }
+type OperacionDia    = { id: number; folio_dia: number | null; fecha: string; nombre_cliente: string | null; status: string; total: number; usuario_crea: string | null; facturada: boolean }
 type CentroMap = { id_centro_ingreso_fk: number; activo: boolean }
 type CentroIngreso = { id: number }
 type Props = {
@@ -30,6 +30,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
   // Datos del preview
   const [numVentas,      setNumVentas]      = useState(0)
   const [numCanceladas,  setNumCanceladas]  = useState(0)
+  const [numSinFacturar, setNumSinFacturar] = useState(0)
   const [totalVentas,    setTotalVentas]    = useState(0)
   const [totalCancelado, setTotalCancelado] = useState(0)
   const [formasPago,     setFormasPago]     = useState<FormaPagoResumen[]>([])
@@ -79,7 +80,7 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
     setLoading(true)
     // Ventas sin corte en el período — usar límites en TZ local (no UTC crudo)
     const { data: ventasActivas } = await dbGolf.from('ctrl_ventas')
-      .select('id, folio_dia, fecha, nombre_cliente, status, total, usuario_crea')
+      .select('id, folio_dia, fecha, nombre_cliente, status, total, usuario_crea, facturada')
       .eq('id_centro_fk', idCentro)
       .is('id_corte_fk', null)
       .gte('fecha', inicioDelDia(f1))
@@ -89,6 +90,9 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
     const canceladas = (ventasActivas ?? []).filter((v: any) => v.status === 'CANCELADA')
     const totalAct   = activas.reduce((a: number, v: any) => a + (v.total ?? 0), 0)
     const totalCanc  = canceladas.reduce((a: number, v: any) => a + (v.total ?? 0), 0)
+
+    const sinFacturar = activas.filter((v: any) => !v.facturada)
+    setNumSinFacturar(sinFacturar.length)
 
     setNumVentas(activas.length)
     setNumCanceladas(canceladas.length)
@@ -406,6 +410,14 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
                   No hay ventas pendientes de corte en este período
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Warning facturas pendientes */}
+          {numSinFacturar > 0 && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span><strong>{numSinFacturar} venta{numSinFacturar > 1 ? 's' : ''} sin facturar.</strong> Considera facturarlas antes del corte o continúa si el negocio no requiere facturación por operación.</span>
             </div>
           )}
 

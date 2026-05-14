@@ -154,6 +154,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       folio_fiscal:  pacResp.Complement?.TaxStamp?.Uuid ?? pacResp.Id,
+      pac_cfdi_id:   cfdiId,   // ID interno Facturama para re-descargar
       xml_cfdi:      xmlText,
       pdf_url:       pdfUrl,
       pac_respuesta: pacResp,

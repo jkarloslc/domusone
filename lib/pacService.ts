@@ -52,6 +52,7 @@ export type ConceptoFactura = {
 export type ResultadoTimbrado = {
   ok:           boolean
   folio_fiscal?: string      // UUID del SAT
+  pac_cfdi_id?: string       // ID interno del PAC (Facturama) para re-descargar
   xml_cfdi?:    string       // XML timbrado completo
   pdf_url?:     string       // URL del PDF generado
   pac_respuesta?: any        // Respuesta raw del PAC
@@ -102,6 +103,7 @@ export async function timbrarCFDI(datos: DatosFactura): Promise<ResultadoTimbrad
     return {
       ok:            true,
       folio_fiscal:  result.folio_fiscal,
+      pac_cfdi_id:   result.pac_cfdi_id,
       xml_cfdi:      result.xml_cfdi,
       pdf_url:       result.pdf_url,
       pac_respuesta: result.pac_respuesta,

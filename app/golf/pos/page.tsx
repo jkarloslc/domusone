@@ -28,7 +28,8 @@ type Venta = {
   es_socio: boolean; id_socio_fk: number | null
   total: number; subtotal: number; iva: number
   status: string; id_centro_fk: number; usuario_crea: string | null
-  num_impresiones: number; id_corte_fk: number | null; facturada: boolean
+  num_impresiones: number; id_corte_fk: number | null
+  facturada: boolean; folio_fiscal: string | null; pac_cfdi_id: string | null
 }
 type Corte = {
   id: number; id_centro_fk: number; centro_nombre: string; fecha_corte: string
@@ -46,7 +47,7 @@ type Producto = {
 type FormaPago = { id: number; nombre: string; activo: boolean }
 type CfgPos = { id: number; razon_social: string; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string }
 
-type Tab = 'pos' | 'ventas' | 'cortes' | 'catalogo' | 'config' | 'mesa'
+type Tab = 'pos' | 'ventas' | 'cortes' | 'catalogo' | 'config' | 'mesa' | 'facturas'
 type LineaPago = { id_forma_fk: number | null; forma_nombre: string; monto: string }
 
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
@@ -80,6 +81,13 @@ export default function POSPage() {
   const [facturandoPOS,   setFacturandoPOS]   = useState<Venta | null>(null)
   const [receptorPOS,     setReceptorPOS]     = useState<any>({})
   const [conceptosPOS,    setConceptosPOS]    = useState<{ descripcion: string; importe: number }[]>([])
+  const [genericRfcData,  setGenericRfcData]  = useState<any>(null)
+
+  // Tab Facturas
+  const [facturas,   setFacturas]   = useState<any[]>([])
+  const [loadingF,   setLoadingF]   = useState(false)
+  const [fechaFact,  setFechaFact]  = useState(fechaLocal())
+  const [reenvEmail, setReenvEmail] = useState<number | null>(null)  // id de venta
 
   // Cortes
   const [cortes,         setCortes]         = useState<Corte[]>([])
@@ -156,7 +164,7 @@ export default function POSPage() {
   const fetchVentas = useCallback(async () => {
     setLoadingV(true)
     let q = dbGolf.from('ctrl_ventas')
-      .select('id, folio_dia, fecha, nombre_cliente, es_socio, id_socio_fk, total, subtotal, iva, status, id_centro_fk, usuario_crea, num_impresiones, id_corte_fk, facturada')
+      .select('id, folio_dia, fecha, nombre_cliente, es_socio, id_socio_fk, total, subtotal, iva, status, id_centro_fk, usuario_crea, num_impresiones, id_corte_fk, facturada, folio_fiscal, pac_cfdi_id')
       .order('fecha', { ascending: false })
       .limit(200)
     if (filtroStatus)  q = q.eq('status', filtroStatus)
@@ -173,7 +181,7 @@ export default function POSPage() {
     setLoadingMesa(true)
     const [{ data: vs }, { data: fps }] = await Promise.all([
       dbGolf.from('ctrl_ventas')
-        .select('id, folio_dia, fecha, nombre_cliente, es_socio, id_socio_fk, total, subtotal, iva, status, id_centro_fk, usuario_crea, num_impresiones, id_corte_fk, facturada')
+        .select('id, folio_dia, fecha, nombre_cliente, es_socio, id_socio_fk, total, subtotal, iva, status, id_centro_fk, usuario_crea, num_impresiones, id_corte_fk, facturada, folio_fiscal, pac_cfdi_id')
         .gte('fecha', inicioDelDia(fechaMesa))
         .lte('fecha', finDelDia(fechaMesa))
         .order('fecha', { ascending: false })
@@ -223,11 +231,31 @@ export default function POSPage() {
     setLoadingCfg(false)
   }, [])
 
+  // ── Fetch facturas emitidas ──────────────────────────────
+  const fetchFacturas = useCallback(async () => {
+    setLoadingF(true)
+    const { data } = await dbGolf.from('ctrl_ventas')
+      .select('id, folio_dia, fecha, nombre_cliente, total, folio_fiscal, pac_cfdi_id, id_centro_fk')
+      .eq('facturada', true)
+      .gte('fecha', inicioDelDia(fechaFact))
+      .lte('fecha', finDelDia(fechaFact))
+      .order('fecha', { ascending: false })
+    const ids = (data ?? []).map((v: any) => v.id)
+    const { data: cfdis } = ids.length > 0
+      ? await dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', ids)
+      : { data: [] as any[] }
+    const cfdiMap: Record<number, any> = {}
+    for (const c of cfdis ?? []) cfdiMap[c.id_venta_fk] = c
+    setFacturas((data ?? []).map((v: any) => ({ ...v, _cfdi: cfdiMap[v.id] ?? null })))
+    setLoadingF(false)
+  }, [fechaFact])
+
   useEffect(() => { fetchStats() }, [fetchStats])
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
   useEffect(() => { if (tab === 'cortes')   fetchCortes() }, [tab, fetchCortes])
   useEffect(() => { if (tab === 'config' || tab === 'catalogo') fetchConfig() }, [tab, fetchConfig])
   useEffect(() => { if (tab === 'mesa')     fetchVentasMesa() }, [tab, fetchVentasMesa])
+  useEffect(() => { if (tab === 'facturas') fetchFacturas() }, [tab, fetchFacturas])
 
   // ── Abrir facturación de venta POS ────────────────────────
   const abrirFacturarPOS = async (v: Venta) => {
@@ -246,6 +274,11 @@ export default function POSPage() {
         tasa_iva:    d.iva > 0 && d.iva_pct > 0 ? d.iva_pct / 100 : 0,  // 0.16 ó 0
       }))
     setConceptosPOS(conceptos.length ? conceptos : [{ descripcion: `Venta POS #${v.folio_dia}`, importe: v.total, tasa_iva: 0 }])
+
+    // Cargar CP fiscal de la org para RFC genérico
+    const { data: cfgOrg } = await dbCfg.from('configuracion').select('clave,valor').in('clave', ['org_cp_fiscal'])
+    const cpOrg = ((cfgOrg ?? []) as { clave: string; valor: string }[]).find(r => r.clave === 'org_cp_fiscal')?.valor ?? ''
+    setGenericRfcData({ rfc: 'XAXX010101000', razon_social: 'PUBLICO EN GENERAL', cp: cpOrg, regimen_fiscal: '616', uso_cfdi: 'S01', email: '' })
 
     let receptor: any = { razon_social: v.nombre_cliente }
     if (v.id_socio_fk) {
@@ -275,6 +308,24 @@ export default function POSPage() {
     if (!confirm('¿Cancelar esta venta?')) return
     await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', id)
     fetchVentas(); fetchStats()
+  }
+
+  // ── Reenviar email de factura ─────────────────────────────
+  const reenviarEmailFactura = async (v: any) => {
+    const cfdi = v._cfdi
+    if (!cfdi?.receptor_email) { alert('Sin email registrado para esta factura'); return }
+    setReenvEmail(v.id)
+    const adjuntos: any[] = []
+    if (cfdi.xml_cfdi) adjuntos.push({ filename: `${v.folio_fiscal}.xml`, content: cfdi.xml_cfdi, contentType: 'application/xml' })
+    if (cfdi.pdf_b64) adjuntos.push({ filename: `${v.folio_fiscal}.pdf`, content: cfdi.pdf_b64, encoding: 'base64', contentType: 'application/pdf' })
+    const res = await fetch('/api/send-email', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: cfdi.receptor_email, subject: `Factura — ${v.folio_fiscal}`, html: `<p>Adjunto su factura ${v.folio_fiscal}</p>`, adjuntos })
+    })
+    setReenvEmail(null)
+    if (!res.ok) { alert('Error al reenviar el correo'); return }
+    await dbGolf.from('ctrl_ventas_cfdi').update({ enviado_email: true, fecha_envio: new Date().toISOString() }).eq('id_venta_fk', v.id)
+    fetchFacturas()
   }
 
   // ── Mesa de Control: abrir editor de pagos ────────────────
@@ -722,12 +773,13 @@ ${operaciones.length > 0 ? `
   const esAdminMesa = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
 
   const TABS: { key: Tab; label: string; icon: any }[] = [
-    { key: 'pos',      label: 'Punto de Venta',   icon: ShoppingCart },
-    { key: 'ventas',   label: 'Historial',         icon: History      },
-    { key: 'mesa',     label: 'Mesa de Control',   icon: CreditCard   },
-    { key: 'cortes',   label: 'Cortes de Caja',   icon: Scissors     },
-    { key: 'catalogo', label: 'Catálogo',          icon: Package      },
-    { key: 'config',   label: 'Configuración',     icon: Settings     },
+    { key: 'pos',       label: 'Punto de Venta',   icon: ShoppingCart },
+    { key: 'ventas',    label: 'Historial',         icon: History      },
+    { key: 'mesa',      label: 'Mesa de Control',   icon: CreditCard   },
+    { key: 'facturas',  label: 'Facturas',          icon: FileCheck    },
+    { key: 'cortes',    label: 'Cortes de Caja',   icon: Scissors     },
+    { key: 'catalogo',  label: 'Catálogo',          icon: Package      },
+    { key: 'config',    label: 'Configuración',     icon: Settings     },
   ]
 
   return (
@@ -919,13 +971,13 @@ ${operaciones.length > 0 ? `
                             style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                             <Printer size={11} /> {v.num_impresiones > 0 ? 'Reimprimir' : 'Ticket'}
                           </button>
-                          {!cancelada && !(v as any).folio_fiscal && (
+                          {!cancelada && !v.facturada && (
                             <button onClick={() => abrirFacturarPOS(v)}
                               style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
                               <FileCheck size={11} /> Facturar
                             </button>
                           )}
-                          {(v as any).folio_fiscal && (
+                          {v.facturada && (
                             <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#ede9fe', color: '#7c3aed', fontWeight: 700 }}>Facturada</span>
                           )}
                           {!cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin') && (
@@ -1138,6 +1190,105 @@ ${operaciones.length > 0 ? `
                 </div>
               </div>
             </>
+          )}
+        </>
+      )}
+
+      {/* ── TAB: FACTURAS ────────────────────────────────── */}
+      {tab === 'facturas' && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+            <input type="date" value={fechaFact} onChange={e => setFechaFact(e.target.value)}
+              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            <button className="btn-ghost" onClick={fetchFacturas} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <RefreshCw size={12} className={loadingF ? 'animate-spin' : ''} /> Actualizar
+            </button>
+          </div>
+
+          {loadingF ? (
+            <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}><Loader size={20} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+          ) : facturas.length === 0 ? (
+            <div className="card" style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
+              <FileCheck size={32} style={{ margin: '0 auto 10px' }} />
+              <div style={{ fontWeight: 500 }}>Sin facturas emitidas en esta fecha</div>
+            </div>
+          ) : (
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                      {['Folio', 'Cliente', 'Centro', 'UUID / Folio Fiscal', 'Fecha', 'Total', 'Receptor', 'Enviado', 'Acciones'].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {facturas.map(v => {
+                      const cfdi = v._cfdi
+                      const centro = centros.find(c => c.id === v.id_centro_fk)
+                      return (
+                        <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                            <div style={{ fontWeight: 700, fontFamily: 'monospace', color: '#2563eb' }}>#{String(v.folio_dia).padStart(4, '0')}</div>
+                            <div style={{ fontSize: 10, color: '#94a3b8' }}>ID {v.id}</div>
+                          </td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</td>
+                          <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>{centro?.nombre ?? `#${v.id_centro_fk}`}</td>
+                          <td style={{ padding: '10px 14px', maxWidth: 220 }}>
+                            <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>{v.folio_fiscal ?? '—'}</div>
+                          </td>
+                          <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>{fmtDT(v.fecha)}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>{fmt$(v.total)}</td>
+                          <td style={{ padding: '10px 14px', fontSize: 12 }}>
+                            {cfdi ? (
+                              <div>
+                                <div style={{ fontWeight: 600, color: '#1e293b' }}>{cfdi.receptor_rfc ?? '—'}</div>
+                                <div style={{ fontSize: 11, color: '#64748b' }}>{cfdi.receptor_email ?? 'Sin email'}</div>
+                              </div>
+                            ) : <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Sin datos</span>}
+                          </td>
+                          <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                            {cfdi?.enviado_email
+                              ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>Enviado</span>
+                              : <span style={{ fontSize: 11, color: '#94a3b8' }}>—</span>}
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                              {cfdi?.pdf_b64 && (
+                                <a href={`data:application/pdf;base64,${cfdi.pdf_b64}`} target="_blank" rel="noreferrer"
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                                  <FileCheck size={11} /> PDF
+                                </a>
+                              )}
+                              {cfdi?.xml_cfdi && (
+                                <button onClick={() => {
+                                  const blob = new Blob([cfdi.xml_cfdi], { type: 'application/xml' })
+                                  const url = URL.createObjectURL(blob)
+                                  const a = document.createElement('a')
+                                  a.href = url; a.download = `${v.folio_fiscal}.xml`; a.click()
+                                  URL.revokeObjectURL(url)
+                                }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                  XML
+                                </button>
+                              )}
+                              {cfdi?.receptor_email && (
+                                <button onClick={() => reenviarEmailFactura(v)} disabled={reenvEmail === v.id}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#065f46', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: reenvEmail === v.id ? 0.6 : 1 }}>
+                                  {reenvEmail === v.id ? <Loader size={11} className="animate-spin" /> : null}
+                                  Reenviar
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </>
       )}
@@ -1510,11 +1661,29 @@ ${operaciones.length > 0 ? `
           fecha={facturandoPOS.fecha.split('T')[0]}
           conceptos={conceptosPOS}
           receptorInit={receptorPOS}
+          genericRfcPrefill={genericRfcData}
           formaPagoStr={receptorPOS._formaPago ?? ''}
           onClose={() => setFacturandoPOS(null)}
-          onSaved={() => { setFacturandoPOS(null); fetchVentas() }}
-          saveFactura={async (folio_fiscal) => {
-            await dbGolf.from('ctrl_ventas').update({ folio_fiscal }).eq('id', facturandoPOS.id)
+          onSaved={() => { setFacturandoPOS(null); fetchVentas(); if (tab === 'facturas') fetchFacturas() }}
+          saveFactura={async (folio_fiscal, xml, pdf_url, pac_cfdi_id) => {
+            await dbGolf.from('ctrl_ventas').update({
+              folio_fiscal,
+              facturada:   true,
+              pac_cfdi_id: pac_cfdi_id ?? null,
+            }).eq('id', facturandoPOS!.id)
+            const pdf_b64 = pdf_url?.replace(/^data:[^;]+;base64,/, '') ?? null
+            await dbGolf.from('ctrl_ventas_cfdi').upsert({
+              id_venta_fk:     facturandoPOS!.id,
+              folio_fiscal,
+              pac_cfdi_id:     pac_cfdi_id ?? null,
+              xml_cfdi:        xml ?? null,
+              pdf_b64,
+              receptor_rfc:    receptorPOS.rfc ?? null,
+              receptor_nombre: receptorPOS.razon_social ?? null,
+              receptor_email:  receptorPOS.email ?? null,
+              fecha_timbrado:  new Date().toISOString(),
+              usuario_timbra:  authUser?.nombre ?? null,
+            }, { onConflict: 'id_venta_fk' })
           }}
         />
       )}
