@@ -103,11 +103,13 @@ export default function ReporteGolfVentasHistoricas() {
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
   }, [dets])
 
-  // Filtrado de líneas por artículo
-  const filtered = useMemo(() => filtroArticulo
-    ? enrichedDets.filter(d => String(d.id_producto_fk) === filtroArticulo)
-    : enrichedDets,
-  [enrichedDets, filtroArticulo])
+  // Filtrado de líneas por artículo, ordenado por folio consecutivo
+  const filtered = useMemo(() => {
+    const base = filtroArticulo
+      ? enrichedDets.filter(d => String(d.id_producto_fk) === filtroArticulo)
+      : enrichedDets
+    return [...base].sort((a, b) => (a.folio ?? 0) - (b.folio ?? 0))
+  }, [enrichedDets, filtroArticulo])
 
   // IDs de ventas activas (según filtro artículo)
   const filteredVentaIds = useMemo(() =>
