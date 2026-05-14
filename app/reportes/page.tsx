@@ -1,6 +1,7 @@
 'use client'
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useAuth } from '@/lib/AuthContext'
 import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star } from 'lucide-react'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
@@ -37,7 +38,8 @@ import ReportePagosAplicados from './ReportePagosAplicados'
 
 const GRUPOS = [
   {
-    slug:  'residencial',
+    slug:   'residencial',
+    modulo: 'lotes',
     label: 'Residencial',
     color: 'var(--blue)',
     reportes: [
@@ -52,7 +54,8 @@ const GRUPOS = [
     ],
   },
   {
-    slug:  'mantenimiento',
+    slug:   'mantenimiento',
+    modulo: 'mantenimiento',
     label: 'Mantenimiento',
     color: '#7c3aed',
     reportes: [
@@ -61,7 +64,8 @@ const GRUPOS = [
     ],
   },
   {
-    slug:  'tesoreria',
+    slug:   'tesoreria',
+    modulo: 'tesoreria',
     label: 'Tesorería',
     color: '#0f766e',
     reportes: [
@@ -73,7 +77,8 @@ const GRUPOS = [
     ],
   },
   {
-    slug:  'ingresos',
+    slug:   'ingresos',
+    modulo: 'ingresos',
     label: 'Ingresos',
     color: '#059669',
     reportes: [
@@ -82,7 +87,8 @@ const GRUPOS = [
     ],
   },
   {
-    slug:  'compras',
+    slug:   'compras',
+    modulo: 'compras',
     label: 'Compras e Inventarios',
     color: '#059669',
     reportes: [
@@ -101,7 +107,8 @@ const GRUPOS = [
     ],
   },
   {
-    slug:  'golf',
+    slug:   'golf',
+    modulo: 'golf',
     label: 'Club Golf',
     color: '#b8952a',
     reportes: [
@@ -112,7 +119,8 @@ const GRUPOS = [
     ],
   },
   {
-    slug:  'hipico',
+    slug:   'hipico',
+    modulo: 'hipico',
     label: 'Hípico',
     color: '#92400e',
     reportes: [
@@ -121,7 +129,8 @@ const GRUPOS = [
     ],
   },
   {
-    slug:  'hospitality',
+    slug:   'hospitality',
+    modulo: 'hospitality',
     label: 'Hospitality',
     color: '#9333ea',
     reportes: [
@@ -137,11 +146,15 @@ function ReportesContent() {
   const grupoParam    = searchParams.get('grupo')
   const [active, setActive] = useState<string | null>(null)
   const current  = ALL.find(r => r.id === active)
+  const { can }   = useAuth()
 
-  // Si viene ?grupo= filtramos; si no, mostramos todos
+  // Solo grupos cuyo módulo el usuario puede ver
+  const gruposPermitidos = GRUPOS.filter(g => can(g.modulo))
+
+  // Si viene ?grupo= filtramos además por slug
   const gruposVisibles = grupoParam
-    ? GRUPOS.filter(g => g.slug === grupoParam)
-    : GRUPOS
+    ? gruposPermitidos.filter(g => g.slug === grupoParam)
+    : gruposPermitidos
   const grupoActivo = gruposVisibles[0]
 
   const handleBack = () => setActive(null)
