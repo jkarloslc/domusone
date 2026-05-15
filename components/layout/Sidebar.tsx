@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, Truck, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark, MessageSquare,
-  Flag, Star, DollarSign, MessageCircle,
+  Flag, Star, DollarSign, MessageCircle, LayoutDashboard,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -74,6 +74,10 @@ const RPT = (grupo: string): NavItem => ({
 const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   superadmin: [
+    { section: 'Dashboards', items: [
+      { label: 'Vista Ejecutiva',      href: '/dashboards/ejecutivo',  icon: LayoutDashboard },
+      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+    ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
@@ -106,6 +110,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   admin: [
+    { section: 'Dashboards', items: [
+      { label: 'Vista Ejecutiva',      href: '/dashboards/ejecutivo',  icon: LayoutDashboard },
+      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+    ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
@@ -137,6 +145,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   // ── Admin Solo Lectura: mismo menú que admin ──────────────
   admin_lector: [
+    { section: 'Dashboards', items: [
+      { label: 'Vista Ejecutiva',      href: '/dashboards/ejecutivo',  icon: LayoutDashboard },
+      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+    ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
@@ -167,6 +179,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   usuarioadmin: [
+    { section: 'Dashboards', items: [
+      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+    ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
@@ -193,6 +208,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   usuariomantto: [
+    { section: 'Dashboards', items: [
+      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+    ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
@@ -272,6 +290,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   fraccionamiento: [
+    { section: 'Dashboards', items: [
+      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+    ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
@@ -291,6 +312,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   tesoreria: [
+    { section: 'Dashboards', items: [
+      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+    ]},
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       RPT('tesoreria'),
@@ -316,6 +340,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   ingresos: [
+    { section: 'Dashboards', items: [
+      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+    ]},
     { section: 'Finanzas', items: [
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       RPT('ingresos'),
@@ -405,25 +432,23 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       {/* Nav con secciones */}
       <nav style={{ flex: 1, padding: '10px 8px', overflowY: 'auto' }}>
 
-        {/* Inicio — solo para roles con acceso general */}
-        {rol !== 'usuario_solicitante' && rol !== 'usuariogolf' && rol !== 'usuariohipico' && rol !== 'usuariohospitality' && (
-          <Link
-            href="/inicio"
-            onClick={onClose}
-            className="nav-item"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 10px', borderRadius: 6, marginBottom: 2,
-              fontSize: 13, color: pathname === '/inicio' ? '#E8CA75' : 'rgba(255,255,255,0.7)',
-              background: pathname === '/inicio' ? 'rgba(196,160,72,0.15)' : 'transparent',
-              borderLeft: pathname === '/inicio' ? '2px solid #C4A048' : '2px solid transparent',
-              textDecoration: 'none', transition: 'all 0.15s',
-            }}
-          >
-            <Home size={15} />
-            <span>Inicio</span>
-          </Link>
-        )}
+        {/* Inicio — portal universal para todos los roles */}
+        <Link
+          href="/inicio"
+          onClick={onClose}
+          className="nav-item"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 10px', borderRadius: 6, marginBottom: 2,
+            fontSize: 13, color: pathname === '/inicio' ? '#E8CA75' : 'rgba(255,255,255,0.7)',
+            background: pathname === '/inicio' ? 'rgba(196,160,72,0.15)' : 'transparent',
+            borderLeft: pathname === '/inicio' ? '2px solid #C4A048' : '2px solid transparent',
+            textDecoration: 'none', transition: 'all 0.15s',
+          }}
+        >
+          <Home size={15} />
+          <span>Inicio</span>
+        </Link>
 
         {/* Secciones por rol */}
         {sections.map(sec => (
