@@ -97,10 +97,12 @@ export default function POSPage() {
   // Config
   const [productos,      setProductos]      = useState<Producto[]>([])
   const [formasPago,     setFormasPago]     = useState<FormaPago[]>([])
-  const [cfgPos,         setCfgPos]         = useState<CfgPos | null>(null)
-  const [loadingCfg,     setLoadingCfg]     = useState(false)
-  const [savingCfg,      setSavingCfg]      = useState(false)
-  const [cfgForm,        setCfgForm]        = useState<Partial<CfgPos>>({})
+  const [cfgPos,            setCfgPos]            = useState<CfgPos | null>(null)
+  const [loadingCfg,        setLoadingCfg]        = useState(false)
+  const [savingCfg,         setSavingCfg]         = useState(false)
+  const [cfgForm,           setCfgForm]           = useState<Partial<CfgPos>>({})
+  const [exigirFacturacion, setExigirFacturacion] = useState(false)
+  const [savingToggle,      setSavingToggle]      = useState(false)
   const [editingProd,    setEditingProd]    = useState<Partial<Producto> | null>(null)
   const [savingProd,     setSavingProd]     = useState(false)
   const [nuevoCentroNom, setNuevoCentroNom] = useState('')
@@ -215,13 +217,16 @@ export default function POSPage() {
       await dbGolf.from('cfg_pos').insert({ razon_social: 'Club de Golf Balvanera', leyenda_ticket: '¡Gracias por su visita!' })
     }
 
-    const [{ data: prods }, { data: fps }, { data: cfg }, { data: cis }, { data: maps }] = await Promise.all([
+    const [{ data: prods }, { data: fps }, { data: cfg }, { data: cis }, { data: maps }, { data: cfgClaves }] = await Promise.all([
       dbGolf.from('cat_productos_pos').select('*').order('nombre'),
       dbCfg.from('formas_pago').select('id, nombre, activo').eq('activo', true).order('nombre'),
       dbGolf.from('cfg_pos').select('*').single(),
       dbCfg.from('centros_ingreso').select('id, nombre, activo').eq('activo', true).order('nombre'),
       dbGolf.from('pos_centros_ingreso_map').select('id, id_centro_venta_fk, id_centro_ingreso_fk, activo'),
+      dbCfg.from('configuracion').select('clave, valor').eq('clave', 'pos_exigir_facturacion_corte'),
     ])
+    const toggleVal = (cfgClaves ?? []).find((r: any) => r.clave === 'pos_exigir_facturacion_corte')?.valor
+    setExigirFacturacion(toggleVal === 'true')
     setProductos((prods as Producto[]) ?? [])
     setFormasPago((fps as FormaPago[]) ?? [])
     setCentrosIngreso((cis as CentroIngreso[]) ?? [])
@@ -797,6 +802,18 @@ ${operaciones.length > 0 ? `
     await dbGolf.from('cfg_pos').update({ ...cfgForm, updated_at: new Date().toISOString() }).eq('id', cfgPos?.id ?? 1)
     setSavingCfg(false)
     fetchConfig()
+  }
+
+  const toggleExigirFacturacion = async (nuevoValor: boolean) => {
+    setSavingToggle(true)
+    setExigirFacturacion(nuevoValor)   // optimistic update
+    const { data: existe } = await dbCfg.from('configuracion').select('id').eq('clave', 'pos_exigir_facturacion_corte').maybeSingle()
+    if (existe) {
+      await dbCfg.from('configuracion').update({ valor: nuevoValor ? 'true' : 'false' }).eq('clave', 'pos_exigir_facturacion_corte')
+    } else {
+      await dbCfg.from('configuracion').insert({ clave: 'pos_exigir_facturacion_corte', valor: nuevoValor ? 'true' : 'false', descripcion: 'POS: exigir que todas las ventas estén facturadas antes de cerrar el corte de caja' })
+    }
+    setSavingToggle(false)
   }
 
   const guardarMapCentroIngreso = async (idCentroVenta: number, idCentroIngreso: number | null) => {
@@ -1726,6 +1743,53 @@ ${operaciones.length > 0 ? `
                 </div>
               </div>
 
+              {/* Reglas de Corte de Caja */}
+              <div className="card" style={{ padding: 20, maxWidth: 600 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>Reglas del Corte de Caja</div>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+                  Controla qué validaciones se aplican al momento de cerrar un corte.
+                </div>
+
+                {/* Toggle: exigir facturación */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, padding: '14px 16px', border: `1px solid ${exigirFacturacion ? '#a7f3d0' : '#e2e8f0'}`, borderRadius: 10, background: exigirFacturacion ? '#f0fdf4' : '#fafafa', transition: 'all 0.2s' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 3 }}>
+                      Exigir que todas las ventas estén facturadas
+                    </div>
+                    <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>
+                      {exigirFacturacion
+                        ? '🔒 Activo — el corte queda bloqueado si hay ventas sin factura emitida.'
+                        : '⚡ Inactivo (modo bypass) — el corte permite ventas sin facturar. Útil durante operación paralela con ERP anterior.'}
+                    </div>
+                    {!exigirFacturacion && (
+                      <div style={{ marginTop: 6, fontSize: 11, padding: '3px 10px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 20, color: '#92400e', fontWeight: 600, display: 'inline-block' }}>
+                        Modo producción paralela / bypass activo
+                      </div>
+                    )}
+                  </div>
+                  {/* Switch */}
+                  <button
+                    onClick={() => toggleExigirFacturacion(!exigirFacturacion)}
+                    disabled={savingToggle}
+                    style={{
+                      flexShrink: 0, width: 48, height: 26, borderRadius: 13,
+                      background: exigirFacturacion ? '#059669' : '#cbd5e1',
+                      border: 'none', cursor: savingToggle ? 'wait' : 'pointer',
+                      position: 'relative', transition: 'background 0.2s', opacity: savingToggle ? 0.6 : 1,
+                    }}
+                    title={exigirFacturacion ? 'Desactivar validación' : 'Activar validación'}
+                  >
+                    <span style={{
+                      position: 'absolute', top: 3,
+                      left: exigirFacturacion ? 25 : 3,
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: '#fff', transition: 'left 0.2s',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                    }} />
+                  </button>
+                </div>
+              </div>
+
             </>
           )}
         </div>
@@ -1744,6 +1808,7 @@ ${operaciones.length > 0 ? `
         <CorteModal
           idCentro={centroActivo.id}
           nombreCentro={centroActivo.nombre}
+          exigirFacturacion={exigirFacturacion}
           onClose={() => setShowCorte(false)}
           onSaved={() => { fetchStats(); if (tab === 'cortes') fetchCortes() }}
         />

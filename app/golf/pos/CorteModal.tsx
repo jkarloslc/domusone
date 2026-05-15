@@ -13,13 +13,14 @@ type CentroIngreso = { id: number }
 type Props = {
   idCentro: number
   nombreCentro: string
+  exigirFacturacion?: boolean
   onClose: () => void
   onSaved: () => void
 }
 
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 
-export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }: Props) {
+export default function CorteModal({ idCentro, nombreCentro, exigirFacturacion = false, onClose, onSaved }: Props) {
   const { authUser } = useAuth()
 
   const [loading,    setLoading]    = useState(true)
@@ -413,11 +414,21 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
             </div>
           )}
 
-          {/* Warning facturas pendientes */}
+          {/* Validación de facturas pendientes */}
           {numSinFacturar > 0 && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px', borderRadius: 8, fontSize: 12,
+              background: exigirFacturacion ? '#fef2f2' : '#fffbeb',
+              border:     exigirFacturacion ? '1px solid #fecaca' : '1px solid #fcd34d',
+              color:      exigirFacturacion ? '#dc2626' : '#92400e',
+            }}>
               <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-              <span><strong>{numSinFacturar} venta{numSinFacturar > 1 ? 's' : ''} sin facturar.</strong> Considera facturarlas antes del corte o continúa si el negocio no requiere facturación por operación.</span>
+              <div>
+                <strong>{numSinFacturar} venta{numSinFacturar > 1 ? 's' : ''} sin facturar.</strong>
+                {exigirFacturacion
+                  ? ' El corte está bloqueado hasta que todas las ventas tengan factura emitida (Configuración → Reglas del Corte).'
+                  : ' Modo bypass activo — puedes continuar sin facturar (Configuración → Reglas del Corte).'}
+              </div>
             </div>
           )}
 
@@ -440,8 +451,9 @@ export default function CorteModal({ idCentro, nombreCentro, onClose, onSaved }:
 
         <div style={{ padding: '14px 22px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-          <button onClick={handleCorte} disabled={saving || loading || numVentas === 0}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || loading || numVentas === 0) ? 0.5 : 1 }}>
+          <button onClick={handleCorte}
+            disabled={saving || loading || numVentas === 0 || (exigirFacturacion && numSinFacturar > 0)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || loading || numVentas === 0 || (exigirFacturacion && numSinFacturar > 0)) ? 0.5 : 1 }}>
             {saving ? <Loader size={14} /> : <Save size={14} />}
             Confirmar Corte
           </button>
