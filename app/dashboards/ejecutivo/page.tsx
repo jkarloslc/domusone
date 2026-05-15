@@ -4,7 +4,7 @@ import { dbCtrl, dbComp, dbGolf, dbHip, dbCfg } from '@/lib/supabase'
 import {
   TrendingUp, TrendingDown, Scale, AlertTriangle,
   ShoppingCart, Clock, Flag, Activity, RefreshCw,
-  ChevronRight, LayoutDashboard,
+  ChevronRight, LayoutDashboard, Star, CalendarDays,
 } from 'lucide-react'
 import Link from 'next/link'
 import { fechaLocal } from '@/lib/dateUtils'
@@ -50,6 +50,13 @@ export default function VistaEjecutivaPage() {
   // Bloque 3 — Este mes
   const [mesStats, setMesStats] = useState({ ingresos: 0, egresos: 0, cxp: 0 })
 
+  // Hospitality
+  const [hosp, setHosp] = useState<{
+    eventosActivos: number
+    proximoEvento: string | null
+    ingresosMes: number
+  }>({ eventosActivos: 0, proximoEvento: null, ingresosMes: 0 })
+
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -65,6 +72,7 @@ export default function VistaEjecutivaPage() {
       golfR, caballR,
       opsAlertaR, ocCntR, ocMontoR, opsPendR,
       recMesR, egrMesR, cxpR,
+      hospEventosR, hospIngresosR,
     ] = await Promise.allSettled([
       dbCfg.from('centros_ingreso').select('id, nombre').eq('activo', true),
       dbCtrl.from('recibos_ingreso').select('monto_total, id_centro_ingreso_fk')
@@ -92,6 +100,14 @@ export default function VistaEjecutivaPage() {
         .neq('status', 'Cancelada').gte('created_at', `${mesIni}T00:00:00`),
       dbComp.from('ordenes_pago').select('saldo, monto')
         .neq('status', 'Cancelada').neq('status', 'Pagada'),
+      // Hospitality
+      dbCtrl.from('eventos').select('id, nombre, fecha_inicio, status')
+        .in('status', ['Confirmado', 'En curso'])
+        .gte('fecha_inicio', mesIni)
+        .order('fecha_inicio')
+        .limit(20),
+      dbCtrl.from('eventos_ingresos').select('monto')
+        .gte('fecha_pago', mesIni),
     ])
 
     // Mapa centros
@@ -163,6 +179,17 @@ export default function VistaEjecutivaPage() {
     const egrMes = egrMesR.status === 'fulfilled' ? (egrMesR.value.data ?? []).reduce((a: number, r: any) => a + (r.monto ?? 0), 0) : 0
     const cxp    = cxpR.status    === 'fulfilled' ? (cxpR.value.data ?? []).reduce((a: number, r: any) => a + (r.saldo ?? r.monto ?? 0), 0) : 0
     setMesStats({ ingresos: ingMes, egresos: egrMes, cxp })
+
+    // Hospitality
+    const hospEventos = hospEventosR.status === 'fulfilled' ? hospEventosR.value.data ?? [] : []
+    const hospIngs    = hospIngresosR.status === 'fulfilled' ? hospIngresosR.value.data ?? [] : []
+    const proxEvento  = (hospEventos as any[]).find((e: any) => e.status === 'En curso') ??
+                        (hospEventos as any[])[0] ?? null
+    setHosp({
+      eventosActivos: hospEventos.length,
+      proximoEvento:  proxEvento ? proxEvento.nombre : null,
+      ingresosMes:    (hospIngs as any[]).reduce((a: number, r: any) => a + (r.monto ?? 0), 0),
+    })
 
     setLoading(false)
     setRefreshing(false)
@@ -310,6 +337,50 @@ export default function VistaEjecutivaPage() {
               <div style={{ fontSize: 11, color: opsAlerta > 0 ? '#dc2626' : 'var(--text-muted)', marginTop: 2 }}>
                 {opsAlerta > 0 ? 'con alerta · ver en Compras' : 'Sin vencidos'}
               </div>
+            </div>
+          </Link>
+
+          {/* Hospitality */}
+          <Link href="/hospitality" style={{ textDecoration: 'none' }}>
+            <div className="card" style={{ padding: '16px 18px', cursor: 'pointer', transition: 'transform 0.1s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fdf4ff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Star size={13} style={{ color: '#a855f7' }} />
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Hospitality</span>
+                </div>
+                <ChevronRight size={13} style={{ color: '#94a3b8' }} />
+              </div>
+              {loading ? (
+                <div style={{ fontSize: 26, fontFamily: 'var(--font-display)', fontWeight: 700 }}>—</div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 26, fontFamily: 'var(--font-display)', fontWeight: 700,
+                    color: '#a855f7', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmtK(hosp.ingresosMes)}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                    ingresos del mes
+                  </div>
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f3e8ff' }}>
+                    <div style={{ fontSize: 11, color: '#a855f7', fontWeight: 600 }}>
+                      <CalendarDays size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                      {hosp.eventosActivos} evento{hosp.eventosActivos !== 1 ? 's' : ''} este mes
+                    </div>
+                    {hosp.proximoEvento && (
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        title={hosp.proximoEvento}>
+                        {hosp.proximoEvento}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </Link>
 

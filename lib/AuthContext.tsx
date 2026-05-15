@@ -142,7 +142,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   compras:             ['compras', 'reportes'],
   compras_supervisor:  ['compras', 'reportes'],
   almacen:             ['compras', 'reportes'],
-  mantenimiento:       ['lotes', 'propietarios', 'mantenimiento', 'reportes'],
+  mantenimiento:       ['lotes', 'propietarios', 'mantenimiento', 'reportes', 'dashboards'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'comunicados', 'reportes',

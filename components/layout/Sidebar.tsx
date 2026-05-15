@@ -75,8 +75,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   superadmin: [
     { section: 'Dashboards', items: [
-      { label: 'Vista Ejecutiva',      href: '/dashboards/ejecutivo',  icon: LayoutDashboard },
-      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',   icon: LayoutDashboard },
+      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',  icon: LayoutDashboard },
+      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento',icon: LayoutDashboard },
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
@@ -111,8 +112,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   admin: [
     { section: 'Dashboards', items: [
-      { label: 'Vista Ejecutiva',      href: '/dashboards/ejecutivo',  icon: LayoutDashboard },
-      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',    icon: LayoutDashboard },
+      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
+      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
@@ -146,8 +148,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   // ── Admin Solo Lectura: mismo menú que admin ──────────────
   admin_lector: [
     { section: 'Dashboards', items: [
-      { label: 'Vista Ejecutiva',      href: '/dashboards/ejecutivo',  icon: LayoutDashboard },
-      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',    icon: LayoutDashboard },
+      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
+      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
@@ -209,7 +212,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   usuariomantto: [
     { section: 'Dashboards', items: [
-      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
+      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
@@ -279,6 +283,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   mantenimiento: [
+    { section: 'Dashboards', items: [
+      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
+    ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
