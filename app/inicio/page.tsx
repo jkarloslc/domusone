@@ -178,7 +178,7 @@ export default function InicioPage() {
   const [loadingP,   setLoadingP]   = useState(true)
 
   const rol     = (authUser?.rol ?? 'vigilancia') as Rol
-  const nombre  = authUser?.nombre?.split(' ')[0] ?? ''
+  const nombre  = authUser?.nombre ?? ''
   const accesos = ACCESOS[rol] ?? []
 
   useEffect(() => {
