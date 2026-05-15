@@ -52,10 +52,11 @@ export default function VistaEjecutivaPage() {
 
   // Hospitality
   const [hosp, setHosp] = useState<{
-    eventosActivos: number
+    eventosRealizados: number
+    eventosPorAtender: number
     proximoEvento: string | null
     ingresosMes: number
-  }>({ eventosActivos: 0, proximoEvento: null, ingresosMes: 0 })
+  }>({ eventosRealizados: 0, eventosPorAtender: 0, proximoEvento: null, ingresosMes: 0 })
 
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -103,11 +104,11 @@ export default function VistaEjecutivaPage() {
         .neq('status', 'Cancelada').neq('status', 'Pagada'),
       // Hospitality
       dbCtrl.from('eventos').select('id, nombre, fecha_inicio, status')
-        .in('status', ['Confirmado', 'En curso'])
+        .in('status', ['Realizado', 'Confirmado', 'En curso'])
         .gte('fecha_inicio', mesIni)
         .lte('fecha_inicio', mesFin)
         .order('fecha_inicio')
-        .limit(20),
+        .limit(50),
       dbCtrl.from('eventos_ingresos').select('monto')
         .gte('fecha_pago', mesIni)
         .lte('fecha_pago', mesFin),
@@ -184,14 +185,16 @@ export default function VistaEjecutivaPage() {
     setMesStats({ ingresos: ingMes, egresos: egrMes, cxp })
 
     // Hospitality
-    const hospEventos = hospEventosR.status === 'fulfilled' ? hospEventosR.value.data ?? [] : []
-    const hospIngs    = hospIngresosR.status === 'fulfilled' ? hospIngresosR.value.data ?? [] : []
-    const proxEvento  = (hospEventos as any[]).find((e: any) => e.status === 'En curso') ??
-                        (hospEventos as any[])[0] ?? null
+    const hospEventos   = hospEventosR.status === 'fulfilled' ? (hospEventosR.value.data ?? []) as any[] : []
+    const hospIngs      = hospIngresosR.status === 'fulfilled' ? (hospIngresosR.value.data ?? []) as any[] : []
+    const realizados    = hospEventos.filter((e: any) => e.status === 'Realizado').length
+    const porAtender    = hospEventos.filter((e: any) => e.status === 'Confirmado' && e.fecha_inicio >= hoy).length
+    const proxEvento    = hospEventos.find((e: any) => e.status === 'Confirmado' && e.fecha_inicio >= hoy) ?? null
     setHosp({
-      eventosActivos: hospEventos.length,
-      proximoEvento:  proxEvento ? proxEvento.nombre : null,
-      ingresosMes:    (hospIngs as any[]).reduce((a: number, r: any) => a + (r.monto ?? 0), 0),
+      eventosRealizados: realizados,
+      eventosPorAtender: porAtender,
+      proximoEvento:     proxEvento ? proxEvento.nombre : null,
+      ingresosMes:       hospIngs.reduce((a: number, r: any) => a + (r.monto ?? 0), 0),
     })
 
     setLoading(false)
@@ -369,16 +372,32 @@ export default function VistaEjecutivaPage() {
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                     ingresos del mes
                   </div>
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f3e8ff' }}>
-                    <div style={{ fontSize: 11, color: '#a855f7', fontWeight: 600 }}>
-                      <CalendarDays size={10} style={{ marginRight: 4, verticalAlign: 'middle' }} />
-                      {hosp.eventosActivos} evento{hosp.eventosActivos !== 1 ? 's' : ''} este mes
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f3e8ff',
+                    display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <CalendarDays size={10} />
+                        Realizados este mes
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#16a34a' }}>
+                        {hosp.eventosRealizados}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <CalendarDays size={10} />
+                        Por atender
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700,
+                        color: hosp.eventosPorAtender > 0 ? '#a855f7' : 'var(--text-muted)' }}>
+                        {hosp.eventosPorAtender}
+                      </span>
                     </div>
                     {hosp.proximoEvento && (
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3,
+                      <div style={{ fontSize: 10, color: '#a855f7', marginTop: 1,
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         title={hosp.proximoEvento}>
-                        {hosp.proximoEvento}
+                        ↳ {hosp.proximoEvento}
                       </div>
                     )}
                   </div>
