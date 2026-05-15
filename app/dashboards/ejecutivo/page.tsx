@@ -73,9 +73,10 @@ export default function VistaEjecutivaPage() {
         .eq('status', 'Confirmado').gte('fecha', semActIni).lte('fecha', semActFin),
       dbCtrl.from('recibos_ingreso').select('monto_total, id_centro_ingreso_fk')
         .eq('status', 'Confirmado').gte('fecha', semAntIni).lte('fecha', semAntFin),
-      dbGolf.from('accesos').select('id', { count: 'exact', head: true })
-        .gte('fecha_entrada', `${hoy}T00:00:00`).lte('fecha_entrada', `${hoy}T23:59:59`),
-      dbHip.from('caballerizas').select('status').eq('activo', true),
+      dbGolf.from('ctrl_accesos').select('id', { count: 'exact', head: true })
+        .gte('fecha_entrada', new Date(`${hoy}T00:00:00`).toISOString())
+        .lte('fecha_entrada', new Date(`${hoy}T23:59:59`).toISOString()),
+      dbHip.from('cat_caballerizas').select('status'),
       dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })
         .in('status', ['Pendiente', 'Pendiente Auth']).lt('fecha_vencimiento', hoy),
       dbComp.from('ordenes_compra').select('id', { count: 'exact', head: true })
