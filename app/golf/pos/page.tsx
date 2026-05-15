@@ -6,7 +6,7 @@ import {
   ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
   ChevronDown, ChevronRight, Scissors, Settings, History,
   Printer, Ban, AlertCircle, Store, Save, Loader, FileText, Receipt, FileCheck, Package,
-  CreditCard, Pencil, Trash2, CheckCircle,
+  CreditCard, Pencil, Trash2, CheckCircle, Send,
 } from 'lucide-react'
 import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
@@ -84,10 +84,11 @@ export default function POSPage() {
   const [genericRfcData,  setGenericRfcData]  = useState<any>(null)
 
   // Tab Facturas
-  const [facturas,   setFacturas]   = useState<any[]>([])
-  const [loadingF,   setLoadingF]   = useState(false)
-  const [fechaFact,  setFechaFact]  = useState(fechaLocal())
-  const [reenvEmail, setReenvEmail] = useState<number | null>(null)  // id de venta
+  const [facturas,      setFacturas]      = useState<any[]>([])
+  const [loadingF,      setLoadingF]      = useState(false)
+  const [fechaFact,     setFechaFact]     = useState(fechaLocal())
+  const [reenvEmail,    setReenvEmail]    = useState<number | null>(null)
+  const [descargando,   setDescargando]   = useState<string | null>(null)  // 'id-pdf' | 'id-xml'
 
   // Cortes
   const [cortes,         setCortes]         = useState<Corte[]>([])
@@ -234,18 +235,30 @@ export default function POSPage() {
   // ── Fetch facturas emitidas ──────────────────────────────
   const fetchFacturas = useCallback(async () => {
     setLoadingF(true)
-    const { data } = await dbGolf.from('ctrl_ventas')
+    // Fallback: si la columna facturada no existe aún (migración pendiente),
+    // buscamos por folio_fiscal not null como alternativa
+    let { data, error } = await dbGolf.from('ctrl_ventas')
       .select('id, folio_dia, fecha, nombre_cliente, total, folio_fiscal, pac_cfdi_id, id_centro_fk')
       .eq('facturada', true)
       .gte('fecha', inicioDelDia(fechaFact))
       .lte('fecha', finDelDia(fechaFact))
       .order('fecha', { ascending: false })
+    // Si la columna facturada no existe, hacer fallback por folio_fiscal
+    if (error) {
+      ;({ data } = await dbGolf.from('ctrl_ventas')
+        .select('id, folio_dia, fecha, nombre_cliente, total, folio_fiscal, pac_cfdi_id, id_centro_fk')
+        .not('folio_fiscal', 'is', null)
+        .gte('fecha', inicioDelDia(fechaFact))
+        .lte('fecha', finDelDia(fechaFact))
+        .order('fecha', { ascending: false }))
+    }
     const ids = (data ?? []).map((v: any) => v.id)
-    const { data: cfdis } = ids.length > 0
-      ? await dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', ids)
-      : { data: [] as any[] }
-    const cfdiMap: Record<number, any> = {}
-    for (const c of cfdis ?? []) cfdiMap[c.id_venta_fk] = c
+    // ctrl_ventas_cfdi puede no existir aún — ignorar error silenciosamente
+    let cfdiMap: Record<number, any> = {}
+    if (ids.length > 0) {
+      const { data: cfdis } = await dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', ids)
+      for (const c of cfdis ?? []) cfdiMap[c.id_venta_fk] = c
+    }
     setFacturas((data ?? []).map((v: any) => ({ ...v, _cfdi: cfdiMap[v.id] ?? null })))
     setLoadingF(false)
   }, [fechaFact])
@@ -310,21 +323,77 @@ export default function POSPage() {
     fetchVentas(); fetchStats()
   }
 
+  // ── Descargar PDF o XML desde Facturama (por pac_cfdi_id) ────
+  const descargarDesdePAC = async (v: any, format: 'pdf' | 'xml') => {
+    const cfdiId = v._cfdi?.pac_cfdi_id ?? v.pac_cfdi_id
+    if (!cfdiId) { alert('No hay ID de Facturama para esta factura'); return }
+    const key = `${v.id}-${format}`
+    setDescargando(key)
+    try {
+      const res = await fetch(`/api/pac/descargar?cfdiId=${encodeURIComponent(cfdiId)}&format=${format}`)
+      const json = await res.json()
+      if (!res.ok) { alert(`Error: ${json.error}`); return }
+      if (format === 'xml') {
+        const blob = new Blob([json.content], { type: 'application/xml' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a'); a.href = url; a.download = `${v.folio_fiscal ?? cfdiId}.xml`; a.click()
+        URL.revokeObjectURL(url)
+      } else {
+        // Facturama devuelve base64 para PDF
+        const pdfData = json.content.startsWith('data:') ? json.content : `data:application/pdf;base64,${json.content}`
+        const a = document.createElement('a'); a.href = pdfData; a.download = `${v.folio_fiscal ?? cfdiId}.pdf`; a.click()
+      }
+    } finally {
+      setDescargando(null)
+    }
+  }
+
   // ── Reenviar email de factura ─────────────────────────────
   const reenviarEmailFactura = async (v: any) => {
     const cfdi = v._cfdi
-    if (!cfdi?.receptor_email) { alert('Sin email registrado para esta factura'); return }
+    const emailDest = cfdi?.receptor_email
+    if (!emailDest) { alert('Sin email registrado para esta factura'); return }
     setReenvEmail(v.id)
+
+    // Intentar obtener XML y PDF: primero desde BD, si no hay re-descarga del PAC
+    let xmlContent = cfdi?.xml_cfdi ?? null
+    let pdfContent = cfdi?.pdf_b64  ?? null
+    const cfdiId   = cfdi?.pac_cfdi_id ?? v.pac_cfdi_id
+
+    if ((!xmlContent || !pdfContent) && cfdiId) {
+      const [xmlRes, pdfRes] = await Promise.all([
+        !xmlContent ? fetch(`/api/pac/descargar?cfdiId=${encodeURIComponent(cfdiId)}&format=xml`) : Promise.resolve(null),
+        !pdfContent ? fetch(`/api/pac/descargar?cfdiId=${encodeURIComponent(cfdiId)}&format=pdf`) : Promise.resolve(null),
+      ])
+      if (xmlRes && xmlRes.ok) { const j = await xmlRes.json(); xmlContent = j.content }
+      if (pdfRes && pdfRes.ok) { const j = await pdfRes.json(); pdfContent = j.content }
+    }
+
     const adjuntos: any[] = []
-    if (cfdi.xml_cfdi) adjuntos.push({ filename: `${v.folio_fiscal}.xml`, content: cfdi.xml_cfdi, contentType: 'application/xml' })
-    if (cfdi.pdf_b64) adjuntos.push({ filename: `${v.folio_fiscal}.pdf`, content: cfdi.pdf_b64, encoding: 'base64', contentType: 'application/pdf' })
+    if (xmlContent) adjuntos.push({ filename: `${v.folio_fiscal}.xml`, content: xmlContent, contentType: 'application/xml' })
+    if (pdfContent) adjuntos.push({ filename: `${v.folio_fiscal}.pdf`, content: pdfContent, encoding: 'base64', contentType: 'application/pdf' })
+
+    const html = `
+      <p>Estimado cliente,</p>
+      <p>Adjuntamos su comprobante fiscal con folio <strong style="font-family:monospace">${v.folio_fiscal}</strong>.</p>
+      <table style="border-collapse:collapse;font-size:13px;margin-top:8px">
+        <tr><td style="padding:3px 12px 3px 0;color:#64748b">Venta #:</td><td><strong>${String(v.folio_dia).padStart(4,'0')}</strong></td></tr>
+        <tr><td style="padding:3px 12px 3px 0;color:#64748b">Total:</td><td><strong>${fmt$(v.total)}</strong></td></tr>
+      </table>
+      <p style="margin-top:12px;color:#64748b;font-size:12px">Los archivos XML y PDF se encuentran adjuntos.</p>
+    `
+
     const res = await fetch('/api/send-email', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: cfdi.receptor_email, subject: `Factura — ${v.folio_fiscal}`, html: `<p>Adjunto su factura ${v.folio_fiscal}</p>`, adjuntos })
+      body: JSON.stringify({ to: emailDest, subject: `Factura ${v.folio_fiscal}`, html, adjuntos }),
     })
+    const resJson = await res.json()
     setReenvEmail(null)
-    if (!res.ok) { alert('Error al reenviar el correo'); return }
-    await dbGolf.from('ctrl_ventas_cfdi').update({ enviado_email: true, fecha_envio: new Date().toISOString() }).eq('id_venta_fk', v.id)
+    if (!res.ok) { alert(`Error al enviar: ${resJson.error ?? 'sin detalle'}`); return }
+    // Actualizar ctrl_ventas_cfdi si existe
+    try {
+      await dbGolf.from('ctrl_ventas_cfdi').update({ enviado_email: true, fecha_envio: new Date().toISOString() }).eq('id_venta_fk', v.id)
+    } catch (_) { /* tabla puede no existir aún */ }
     fetchFacturas()
   }
 
@@ -1254,33 +1323,61 @@ ${operaciones.length > 0 ? `
                               : <span style={{ fontSize: 11, color: '#94a3b8' }}>—</span>}
                           </td>
                           <td style={{ padding: '10px 14px' }}>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
-                              {cfdi?.pdf_b64 && (
-                                <a href={`data:application/pdf;base64,${cfdi.pdf_b64}`} target="_blank" rel="noreferrer"
-                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                                  <FileCheck size={11} /> PDF
-                                </a>
-                              )}
-                              {cfdi?.xml_cfdi && (
-                                <button onClick={() => {
-                                  const blob = new Blob([cfdi.xml_cfdi], { type: 'application/xml' })
-                                  const url = URL.createObjectURL(blob)
-                                  const a = document.createElement('a')
-                                  a.href = url; a.download = `${v.folio_fiscal}.xml`; a.click()
-                                  URL.revokeObjectURL(url)
-                                }}
-                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                  XML
-                                </button>
-                              )}
-                              {cfdi?.receptor_email && (
-                                <button onClick={() => reenviarEmailFactura(v)} disabled={reenvEmail === v.id}
-                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#065f46', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: reenvEmail === v.id ? 0.6 : 1 }}>
-                                  {reenvEmail === v.id ? <Loader size={11} className="animate-spin" /> : null}
-                                  Reenviar
-                                </button>
-                              )}
-                            </div>
+                            {(() => {
+                              // Botones disponibles si hay pac_cfdi_id (preferido) o folio_fiscal
+                              const tienePAC    = !!(v._cfdi?.pac_cfdi_id ?? v.pac_cfdi_id)
+                              const tienePdfBD  = !!v._cfdi?.pdf_b64
+                              const tieneXmlBD  = !!v._cfdi?.xml_cfdi
+                              const emailDest   = v._cfdi?.receptor_email
+                              const keyPdf      = `${v.id}-pdf`
+                              const keyXml      = `${v.id}-xml`
+                              return (
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                                  {/* PDF: desde BD si existe, si no re-descarga de Facturama */}
+                                  {tienePdfBD ? (
+                                    <a href={`data:application/pdf;base64,${v._cfdi.pdf_b64}`}
+                                      download={`${v.folio_fiscal ?? 'factura'}.pdf`}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                                      <FileCheck size={11} /> PDF
+                                    </a>
+                                  ) : tienePAC ? (
+                                    <button onClick={() => descargarDesdePAC(v, 'pdf')} disabled={descargando === keyPdf}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: descargando === keyPdf ? 0.6 : 1 }}>
+                                      {descargando === keyPdf ? <Loader size={11} className="animate-spin" /> : <FileCheck size={11} />} PDF
+                                    </button>
+                                  ) : null}
+                                  {/* XML: desde BD si existe, si no re-descarga de Facturama */}
+                                  {tieneXmlBD ? (
+                                    <button onClick={() => {
+                                      const blob = new Blob([v._cfdi.xml_cfdi], { type: 'application/xml' })
+                                      const url = URL.createObjectURL(blob)
+                                      const a = document.createElement('a'); a.href = url; a.download = `${v.folio_fiscal ?? 'cfdi'}.xml`; a.click()
+                                      URL.revokeObjectURL(url)
+                                    }}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                      XML
+                                    </button>
+                                  ) : tienePAC ? (
+                                    <button onClick={() => descargarDesdePAC(v, 'xml')} disabled={descargando === keyXml}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: descargando === keyXml ? 0.6 : 1 }}>
+                                      {descargando === keyXml ? <Loader size={11} className="animate-spin" /> : null} XML
+                                    </button>
+                                  ) : null}
+                                  {/* Reenviar email */}
+                                  {(emailDest || tienePAC) && (
+                                    <button onClick={() => reenviarEmailFactura(v)} disabled={reenvEmail === v.id}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#065f46', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: reenvEmail === v.id ? 0.6 : 1 }}>
+                                      {reenvEmail === v.id ? <Loader size={11} className="animate-spin" /> : <Send size={11} />}
+                                      Reenviar
+                                    </button>
+                                  )}
+                                  {/* Sin datos del PAC — solo mostrar UUID */}
+                                  {!tienePAC && !tienePdfBD && !tieneXmlBD && (
+                                    <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin ID PAC</span>
+                                  )}
+                                </div>
+                              )
+                            })()}
                           </td>
                         </tr>
                       )
