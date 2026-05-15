@@ -63,8 +63,9 @@ export default function VistaEjecutivaPage() {
   const loadAll = useCallback(async () => {
     setRefreshing(true)
     const { semActIni, semActFin, semAntIni, semAntFin } = getRangoSemana()
-    const now  = new Date()
+    const now    = new Date()
     const mesIni = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+    const mesFin = new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('en-CA')
 
     const [
       centrosR, recHoyR,
@@ -104,10 +105,12 @@ export default function VistaEjecutivaPage() {
       dbCtrl.from('eventos').select('id, nombre, fecha_inicio, status')
         .in('status', ['Confirmado', 'En curso'])
         .gte('fecha_inicio', mesIni)
+        .lte('fecha_inicio', mesFin)
         .order('fecha_inicio')
         .limit(20),
       dbCtrl.from('eventos_ingresos').select('monto')
-        .gte('fecha_pago', mesIni),
+        .gte('fecha_pago', mesIni)
+        .lte('fecha_pago', mesFin),
     ])
 
     // Mapa centros
