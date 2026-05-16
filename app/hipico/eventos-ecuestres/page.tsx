@@ -787,8 +787,8 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
 </table>
 <div class="firma">
   <div class="firma-line">Elaboró</div>
-  <div class="firma-line">Coordinador de Operaciones</div>
-  <div class="firma-line">Vo. Bo. Dirección</div>
+  <div class="firma-line">Hípico</div>
+  <div class="firma-line">Vo. Bo. Dirección Operaciones</div>
 </div>
 </body></html>`)
     win.document.close()
