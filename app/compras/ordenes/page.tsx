@@ -25,6 +25,7 @@ export default function OrdenesPage() {
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
   const [filterArea, setFilterArea] = useState('')
+  const [filterProv, setFilterProv] = useState('')
   const [ccFiltros, setCcFiltros] = useState<{ id: number; nombre: string }[]>([])
   const [areaFiltros, setAreaFiltros] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,6 +40,7 @@ export default function OrdenesPage() {
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
+    if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
     if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
@@ -47,7 +49,7 @@ export default function OrdenesPage() {
     ;(provs ?? []).forEach((p: any) => { m[p.id] = p.nombre })
     setProvMap(m)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterArea])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterArea, filterProv])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -101,6 +103,13 @@ export default function OrdenesPage() {
             {areaFiltros
               .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
               .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          </select>
+          <select className="select" style={{ width: 220 }} value={filterProv}
+            onChange={e => { setFilterProv(e.target.value); setPage(0) }}>
+            <option value="">Todos los proveedores</option>
+            {Object.entries(provMap).sort((a, b) => a[1].localeCompare(b[1])).map(([id, nombre]) => (
+              <option key={id} value={id}>{nombre}</option>
+            ))}
           </select>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
