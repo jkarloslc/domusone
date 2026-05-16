@@ -701,6 +701,93 @@ export default function EventosPage() {
     loadEventoDetalle(editEvt.id)
   }
 
+  const printPersonal = () => {
+    if (!editEvt) return
+    const totalComp = personal.reduce((s, p) => s + (p.compensacion ?? 0), 0)
+    const lugar     = editEvt.cat_lugares?.nombre ?? ''
+    const fmtD = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+    const win = window.open('', '_blank', 'width=800,height=1050')
+    if (!win) return
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Personal Operativo — ${editEvt.folio}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; padding: 36px; color: #1e1e1e; background: #fff; font-size: 13px; }
+.header { background: linear-gradient(135deg, #15803d, #22c55e); color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 22px; }
+.header h1 { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
+.header .sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+.header .folio { font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 8px; font-family: monospace; letter-spacing: .05em; }
+.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; padding: 14px 16px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0; }
+.meta .f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #16a34a; display: block; margin-bottom: 2px; }
+.meta .f span { font-size: 12px; }
+.notes-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; }
+.notes-box .lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #16a34a; margin-bottom: 6px; }
+.notes-box p { font-size: 12px; color: #374151; white-space: pre-wrap; }
+.sec-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #16a34a; border-bottom: 2px solid #bbf7d0; padding-bottom: 4px; margin-bottom: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: #f0fdf4; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #166534; border-bottom: 2px solid #bbf7d0; }
+td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; }
+tr:last-child td { border-bottom: none; }
+.tr-total { background: #f0fdf4; font-weight: 700; }
+.tr-total td { border-top: 2px solid #bbf7d0; font-weight: 700; }
+.num { text-align: right; }
+.firma { margin-top: 44px; display: flex; gap: 40px; }
+.firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 10px; color: #888; text-align: center; }
+@media print { body { padding: 20px; } }
+</style></head><body>
+<div class="header">
+  <h1>Personal Operativo — ${editEvt.nombre}</h1>
+  <div class="sub">Club Balvanera · Golf — Torneos</div>
+  <div class="folio">${editEvt.folio} &nbsp;·&nbsp; ${editEvt.status}</div>
+</div>
+<div class="meta">
+  <div class="f"><label>Evento</label><span>${editEvt.nombre}</span></div>
+  <div class="f"><label>Folio</label><span>${editEvt.folio}</span></div>
+  <div class="f"><label>Fecha de inicio</label><span>${fmtD(editEvt.fecha_inicio)}</span></div>
+  ${lugar ? `<div class="f"><label>Lugar</label><span>${lugar}</span></div>` : ''}
+  ${editEvt.responsable ? `<div class="f"><label>Responsable</label><span>${editEvt.responsable}</span></div>` : ''}
+</div>
+${form.justificacion_gasto_personal || form.notas_personal ? `
+<div class="notes-box">
+  ${form.justificacion_gasto_personal ? `<div class="lbl">Justificación de Gasto de Personal</div><p>${form.justificacion_gasto_personal}</p>` : ''}
+  ${form.notas_personal ? `<div class="lbl" style="margin-top:${form.justificacion_gasto_personal ? '12px' : '0'}">Notas de Personal</div><p>${form.notas_personal}</p>` : ''}
+</div>` : ''}
+<div class="sec-title">Personal Asignado (${personal.length} empleado${personal.length !== 1 ? 's' : ''})</div>
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Nombre del Empleado</th>
+      <th>Día</th>
+      <th>Turno</th>
+      <th class="num">Compensación</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${personal.map((p, i) => `
+    <tr>
+      <td style="color:#9ca3af;font-size:10px">${i + 1}</td>
+      <td style="font-weight:600">${p.nombre_empleado}</td>
+      <td>${fmtD(p.dia)}</td>
+      <td>${p.turno ?? '—'}</td>
+      <td class="num" style="font-weight:600;color:#16a34a">${'$' + (p.compensacion ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+    </tr>`).join('')}
+    <tr class="tr-total">
+      <td colspan="4" style="text-align:right;padding-right:10px;font-size:11px;color:#166534;letter-spacing:.05em">TOTAL COMPENSACIONES</td>
+      <td class="num" style="color:#15803d;font-size:14px">${'$' + totalComp.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+    </tr>
+  </tbody>
+</table>
+<div class="firma">
+  <div class="firma-line">Elaboró</div>
+  <div class="firma-line">Coordinador de Operaciones</div>
+  <div class="firma-line">Vo. Bo. Dirección</div>
+</div>
+</body></html>`)
+    win.document.close()
+    setTimeout(() => win.print(), 400)
+  }
+
   // ── Buscar OPs para vincular ───────────────────────────────
   const buscarOPs = async () => {
     if (!busqOP.trim()) return
@@ -1811,8 +1898,15 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
 
               {/* Tabla de empleados */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-                  Personal asignado ({personal.length})
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    Personal asignado ({personal.length})
+                  </div>
+                  {personal.length > 0 && (
+                    <button className="btn-ghost" onClick={printPersonal} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, padding: '4px 10px' }}>
+                      <Printer size={12} /> Imprimir
+                    </button>
+                  )}
                 </div>
                 {personal.length === 0 ? (
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>Sin personal registrado</div>
