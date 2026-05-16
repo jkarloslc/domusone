@@ -23,3 +23,9 @@ ALTER TABLE ctrl.eventos_personal ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "allow_all_authenticated" ON ctrl.eventos_personal
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Grants
+GRANT ALL ON ctrl.eventos_personal TO authenticated;
+GRANT ALL ON ctrl.eventos_personal TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE ctrl.eventos_personal_id_seq TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE ctrl.eventos_personal_id_seq TO service_role;
