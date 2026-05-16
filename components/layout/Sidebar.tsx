@@ -394,14 +394,18 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   usuariohospitality: [
     { section: 'Hospitality', items: [
-      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      { label: 'Hospitality',       href: '/hospitality',             icon: Star      },
       RPT('hospitality'),
     ]},
+    { section: 'Club', items: [
+      { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag      },
+      { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon },
+    ]},
     { section: 'Compras', items: [
-      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+      { label: 'Compras',           href: '/compras',                 icon: ShoppingCart },
     ]},
     { section: 'Comunicación', items: [
-      { label: 'Chat',           href: '/tablero',        icon: MessageCircle },
+      { label: 'Chat',              href: '/tablero',                 icon: MessageCircle },
     ]},
   ],
 }
