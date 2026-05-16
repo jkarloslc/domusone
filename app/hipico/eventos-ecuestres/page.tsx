@@ -61,6 +61,16 @@ type Evento = {
   chk_layout_autorizado?: boolean; chk_montaje_concluido?: boolean; chk_revision_final?: boolean
   post_incidencias?: string | null; post_danos?: string | null
   post_evaluacion?: string | null; post_conclusion?: string | null
+  justificacion_gasto_personal?: string | null
+  notas_personal?: string | null
+}
+
+type PersonalItem = {
+  id: number
+  nombre_empleado: string
+  dia: string
+  turno: string | null
+  compensacion: number
 }
 
 type Ingreso = {
@@ -225,6 +235,7 @@ export default function EventosPage() {
     chk_contrato_firmado: false, chk_anticipo_pagado: false,
     chk_layout_autorizado: false, chk_montaje_concluido: false, chk_revision_final: false,
     post_incidencias: '', post_danos: '', post_evaluacion: '', post_conclusion: '',
+    justificacion_gasto_personal: '', notas_personal: '',
   })
   const [form, setForm] = useState(blankForm())
   const [checklistFiles, setChecklistFiles] = useState<Record<ChecklistKey, string | null>>(emptyChecklistFiles())
@@ -255,6 +266,11 @@ export default function EventosPage() {
   const [loadingOps, setLoadingOps] = useState(false)
   const [provMap,  setProvMap]  = useState<Record<number, string>>({})
 
+  // Personal Operativo
+  const [personal, setPersonal] = useState<PersonalItem[]>([])
+  const [personalForm, setPersonalForm] = useState({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
+  const [savingPersonal, setSavingPersonal] = useState(false)
+
   // ── Load catálogos ─────────────────────────────────────────
   useEffect(() => {
     dbCtrl.from('cat_tipos_evento').select('id, nombre, color').eq('activo', true).order('nombre')
@@ -273,7 +289,7 @@ export default function EventosPage() {
   const loadEventos = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('eventos')
-      .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, precio_pactado, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, objetivo, riesgos_operativos, montaje_carpas, montaje_escenario, montaje_pista_baile, montaje_mesas_sillas, montaje_iluminacion, montaje_audio, montaje_pantallas, montaje_generador, montaje_notas, seg_guardias, seg_control_accesos, seg_paramedicos, seg_ambulancia, seg_valet_parking, ayb_banquetero, ayb_tipo_servicio, ayb_num_comensales, ayb_barra_libre, ayb_permisos_sanitarios, golf_tipo_torneo, golf_num_jugadores, golf_tee_times, golf_caddies, golf_carritos, hip_tipo_evento, hip_num_caballos, hip_caballerizas, hip_veterinario, hip_trailers, chk_contrato_firmado, chk_anticipo_pagado, chk_layout_autorizado, chk_montaje_concluido, chk_revision_final, post_incidencias, post_danos, post_evaluacion, post_conclusion, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
+      .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, precio_pactado, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, objetivo, riesgos_operativos, montaje_carpas, montaje_escenario, montaje_pista_baile, montaje_mesas_sillas, montaje_iluminacion, montaje_audio, montaje_pantallas, montaje_generador, montaje_notas, seg_guardias, seg_control_accesos, seg_paramedicos, seg_ambulancia, seg_valet_parking, ayb_banquetero, ayb_tipo_servicio, ayb_num_comensales, ayb_barra_libre, ayb_permisos_sanitarios, golf_tipo_torneo, golf_num_jugadores, golf_tee_times, golf_caddies, golf_carritos, hip_tipo_evento, hip_num_caballos, hip_caballerizas, hip_veterinario, hip_trailers, chk_contrato_firmado, chk_anticipo_pagado, chk_layout_autorizado, chk_montaje_concluido, chk_revision_final, post_incidencias, post_danos, post_evaluacion, post_conclusion, justificacion_gasto_personal, notas_personal, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
       .eq('modulo', MODULE)
       .order('fecha_inicio', { ascending: false })
     if (filtroStatus) q = q.eq('status', filtroStatus)
@@ -286,10 +302,12 @@ export default function EventosPage() {
 
   // ── Load ingresos y OPs del evento seleccionado ────────────
   const loadEventoDetalle = useCallback(async (evtId: number) => {
-    const [{ data: ing }, { data: eops }] = await Promise.all([
+    const [{ data: ing }, { data: eops }, { data: pers }] = await Promise.all([
       dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas, id_venta_pos_fk').eq('id_evento_fk', evtId).order('fecha_pago'),
       dbCtrl.from('eventos_ops').select('id, id_op_fk').eq('id_evento_fk', evtId),
+      dbCtrl.from('eventos_personal').select('id, nombre_empleado, dia, turno, compensacion').eq('id_evento_fk', evtId).order('dia').order('created_at'),
     ])
+    setPersonal((pers as unknown as PersonalItem[]) ?? [])
     const ingRows = (ing as unknown as Ingreso[]) ?? []
     setIngresos(ingRows)
 
@@ -402,6 +420,8 @@ export default function EventosPage() {
     setEditEvt(null)
     setForm(blankForm())
     setIngresos([]); setOps([]); setEvtOps([])
+    setPersonal([])
+    setPersonalForm({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
     setActiveTab('info')
     setErr('')
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
@@ -456,7 +476,11 @@ export default function EventosPage() {
       chk_revision_final: ev.chk_revision_final ?? false,
       post_incidencias: ev.post_incidencias ?? '', post_danos: ev.post_danos ?? '',
       post_evaluacion: ev.post_evaluacion ?? '', post_conclusion: ev.post_conclusion ?? '',
+      justificacion_gasto_personal: ev.justificacion_gasto_personal ?? '',
+      notas_personal: ev.notas_personal ?? '',
     })
+    setPersonal([])
+    setPersonalForm({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
     setActiveTab('info')
     setErr('')
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
@@ -543,6 +567,8 @@ export default function EventosPage() {
       chk_revision_final: form.chk_revision_final,
       post_incidencias: form.post_incidencias || null, post_danos: form.post_danos || null,
       post_evaluacion: form.post_evaluacion || null, post_conclusion: form.post_conclusion || null,
+      justificacion_gasto_personal: form.justificacion_gasto_personal || null,
+      notas_personal: form.notas_personal || null,
       modulo: MODULE,
     }
     if (editEvt) {
@@ -654,6 +680,31 @@ export default function EventosPage() {
   const deleteIngreso = async (id: number) => {
     if (!editEvt) return
     await dbCtrl.from('eventos_ingresos').delete().eq('id', id)
+    loadEventoDetalle(editEvt.id)
+  }
+
+  // ── Personal Operativo ─────────────────────────────────────
+  const savePersonal = async () => {
+    if (!editEvt) return
+    if (!personalForm.nombre_empleado.trim()) { setErr('El nombre del empleado es obligatorio'); return }
+    if (!personalForm.dia) { setErr('La fecha es obligatoria'); return }
+    setSavingPersonal(true); setErr('')
+    const { error } = await dbCtrl.from('eventos_personal').insert({
+      id_evento_fk:    editEvt.id,
+      nombre_empleado: personalForm.nombre_empleado.trim(),
+      dia:             personalForm.dia,
+      turno:           personalForm.turno || null,
+      compensacion:    personalForm.compensacion ? Number(personalForm.compensacion) : 0,
+    })
+    if (error) { setErr(error.message); setSavingPersonal(false); return }
+    setSavingPersonal(false)
+    setPersonalForm({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
+    await loadEventoDetalle(editEvt.id)
+  }
+
+  const deletePersonal = async (id: number) => {
+    if (!editEvt) return
+    await dbCtrl.from('eventos_personal').delete().eq('id', id)
     loadEventoDetalle(editEvt.id)
   }
 
@@ -1074,6 +1125,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             { key: 'checklist', label: 'Checklist',   icon: ClipboardCheck },
             { key: 'ingresos',  label: 'Ingresos',    icon: DollarSign, badge: editEvt ? ingresos.length || undefined : undefined, disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
             { key: 'gastos',    label: 'Gastos / OPs', icon: ShoppingBag, badge: editEvt ? ops.length || undefined : undefined,    disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
+            { key: 'personal',  label: 'Personal Op.', icon: Users, badge: editEvt ? personal.length || undefined : undefined,    disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
           ]}
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -1089,6 +1141,14 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               {editEvt && (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Total ingresos: <strong style={{ color: '#7c3aed' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</strong>
+                </div>
+              )}
+            </>
+          ) : activeTab === 'personal' ? (
+            <>
+              {editEvt && personal.length > 0 && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  Total compensaciones: <strong style={{ color: '#7c3aed' }}>{fmt$(personal.reduce((s, p) => s + (p.compensacion ?? 0), 0))}</strong>
                 </div>
               )}
             </>
@@ -1678,6 +1738,125 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   </table>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── TAB PERSONAL OPERATIVO ── */}
+          {activeTab === 'personal' && editEvt && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Justificación y notas */}
+              <div className="card" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Justificación y Notas de Personal</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Justificación de Gasto de Personal Operativo</label>
+                    <textarea className="input" rows={3} style={{ fontSize: 13, width: '100%', resize: 'vertical' }}
+                      value={form.justificacion_gasto_personal ?? ''}
+                      onChange={e => setForm(f => ({ ...f, justificacion_gasto_personal: e.target.value }))}
+                      placeholder="Describir la justificación del gasto de personal para este evento…"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notas de Personal</label>
+                    <textarea className="input" rows={2} style={{ fontSize: 13, width: '100%', resize: 'vertical' }}
+                      value={form.notas_personal ?? ''}
+                      onChange={e => setForm(f => ({ ...f, notas_personal: e.target.value }))}
+                      placeholder="Notas adicionales sobre el personal asignado…"
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button className="btn-primary" onClick={saveEvento} disabled={saving} style={{ fontSize: 12, background: '#7c3aed' }}>
+                      {saving ? 'Guardando…' : 'Guardar notas'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Formulario para agregar empleado */}
+              <div className="card" style={{ background: '#faf5ff', border: '1px solid #ddd6fe' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Agregar Empleado</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nombre del Empleado *</label>
+                    <input className="input" style={{ fontSize: 13, width: '100%' }}
+                      value={personalForm.nombre_empleado}
+                      onChange={e => setPersonalForm(f => ({ ...f, nombre_empleado: e.target.value }))}
+                      placeholder="Nombre completo…"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Día *</label>
+                    <input className="input" type="date" style={{ fontSize: 13, width: '100%' }}
+                      value={personalForm.dia}
+                      onChange={e => setPersonalForm(f => ({ ...f, dia: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Turno</label>
+                    <input className="input" style={{ fontSize: 13, width: '100%' }}
+                      value={personalForm.turno}
+                      onChange={e => setPersonalForm(f => ({ ...f, turno: e.target.value }))}
+                      placeholder="ej. 8:00 a 18:00"
+                    />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Compensación ($)</label>
+                    <input className="input" type="number" min="0" step="0.01" style={{ fontSize: 13, width: '100%' }}
+                      value={personalForm.compensacion}
+                      onChange={e => setPersonalForm(f => ({ ...f, compensacion: e.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button className="btn-primary" onClick={savePersonal} disabled={savingPersonal} style={{ fontSize: 12, background: '#7c3aed' }}>
+                    {savingPersonal ? 'Guardando…' : '+ Agregar'}
+                  </button>
+                </div>
+                {err && <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '6px 10px', borderRadius: 6 }}>{err}</div>}
+              </div>
+
+              {/* Tabla de empleados */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                  Personal asignado ({personal.length})
+                </div>
+                {personal.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>Sin personal registrado</div>
+                ) : (
+                  <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
+                          {['Nombre', 'Día', 'Turno', 'Compensación', ''].map(h => (
+                            <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {personal.map((p, i) => (
+                          <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                            <td style={{ padding: '8px 10px', fontWeight: 600 }}>{p.nombre_empleado}</td>
+                            <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{fmtFecha(p.dia)}</td>
+                            <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{p.turno ?? '—'}</td>
+                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#7c3aed' }}>{fmt$(p.compensacion ?? 0)}</td>
+                            <td style={{ padding: '8px 10px' }}>
+                              <button className="btn-ghost" onClick={() => deletePersonal(p.id)} style={{ padding: '3px 6px', fontSize: 10, color: '#dc2626' }} title="Eliminar">
+                                <Trash2 size={11} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
+                          <td colSpan={3} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#7c3aed' }}>{fmt$(personal.reduce((s, p) => s + (p.compensacion ?? 0), 0))}</td>
+                          <td></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </ModalShell>
