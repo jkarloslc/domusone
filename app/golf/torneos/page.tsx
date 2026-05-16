@@ -3,11 +3,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, dbCtrl, dbComp, dbGolf } from '@/lib/supabase'
 import ModalShell from '@/components/ui/ModalShell'
 import {
-  Plus, Star, MapPin, Calendar, Users, DollarSign,
+  Plus, Flag, MapPin, Calendar, Users, DollarSign,
   FileText, Trash2, Edit2, ChevronLeft, Receipt, ShoppingBag,
   Printer, X, Check, Eye, TrendingUp, TrendingDown,
   Settings, ClipboardCheck, Upload, Loader, ExternalLink,
 } from 'lucide-react'
+
+const MODULE = 'golf' as const
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -266,6 +268,7 @@ export default function EventosPage() {
     let q = dbCtrl.from('eventos')
       .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, precio_pactado, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, objetivo, riesgos_operativos, montaje_carpas, montaje_escenario, montaje_pista_baile, montaje_mesas_sillas, montaje_iluminacion, montaje_audio, montaje_pantallas, montaje_generador, montaje_notas, seg_guardias, seg_control_accesos, seg_paramedicos, seg_ambulancia, seg_valet_parking, ayb_banquetero, ayb_tipo_servicio, ayb_num_comensales, ayb_barra_libre, ayb_permisos_sanitarios, golf_tipo_torneo, golf_num_jugadores, golf_tee_times, golf_caddies, golf_carritos, hip_tipo_evento, hip_num_caballos, hip_caballerizas, hip_veterinario, hip_trailers, chk_contrato_firmado, chk_anticipo_pagado, chk_layout_autorizado, chk_montaje_concluido, chk_revision_final, post_incidencias, post_danos, post_evaluacion, post_conclusion, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
       .eq('modulo', 'hospitality')
+      .eq('modulo', MODULE)
       .order('fecha_inicio', { ascending: false })
     if (filtroStatus) q = q.eq('status', filtroStatus)
     const { data } = await q
@@ -534,7 +537,7 @@ export default function EventosPage() {
       chk_revision_final: form.chk_revision_final,
       post_incidencias: form.post_incidencias || null, post_danos: form.post_danos || null,
       post_evaluacion: form.post_evaluacion || null, post_conclusion: form.post_conclusion || null,
-      modulo: 'hospitality',
+      modulo: MODULE,
     }
     if (editEvt) {
       const { error } = await dbCtrl.from('eventos').update(payload).eq('id', editEvt.id)
@@ -686,23 +689,23 @@ export default function EventosPage() {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1e1e1e; background: #fff; }
-  .header { background: linear-gradient(135deg, #7e22ce, #a855f7); color: #fff; padding: 24px 28px; border-radius: 12px; margin-bottom: 24px; }
+  .header { background: linear-gradient(135deg, #166534, #a855f7); color: #fff; padding: 24px 28px; border-radius: 12px; margin-bottom: 24px; }
   .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
   .header p { font-size: 12px; opacity: 0.75; }
   .folio { font-size: 28px; font-weight: 800; letter-spacing: 0.05em; color: #fff; margin-top: 8px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-  .field label { display: block; font-size: 10px; font-weight: 700; color: #9333ea; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .field label { display: block; font-size: 10px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
   .field span { font-size: 14px; color: #1e1e1e; }
-  .monto-box { background: #faf5ff; border: 2px solid #d8b4fe; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-  .monto-box .label { font-size: 12px; color: #9333ea; font-weight: 600; }
-  .monto-box .value { font-size: 28px; font-weight: 800; color: #7e22ce; }
+  .monto-box { background: #f0fdf4; border: 2px solid #d8b4fe; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .monto-box .label { font-size: 12px; color: #16a34a; font-weight: 600; }
+  .monto-box .value { font-size: 28px; font-weight: 800; color: #166534; }
   .firma { margin-top: 40px; display: flex; gap: 40px; }
   .firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 11px; color: #666; text-align: center; }
   @media print { body { padding: 20px; } }
 </style></head><body>
 <div class="header">
-  <h1>Recibo de Ingreso — Hospitality</h1>
-  <p>Club Balvanera · Hospitality</p>
+  <h1>Recibo de Ingreso — Golf</h1>
+  <p>Club Balvanera · Golf</p>
   <div class="folio">${ing.folio}</div>
 </div>
 <div class="grid">
@@ -781,15 +784,15 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e1e1e; background: #fff; padding: 32px; }
-.header { background: linear-gradient(135deg, #7e22ce, #a855f7); color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 22px; }
+.header { background: linear-gradient(135deg, #166534, #a855f7); color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 22px; }
 .header h1 { font-size: 20px; font-weight: 800; }
 .header .sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
 .header .folio { font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 6px; font-family: monospace; }
 .sec { margin-bottom: 18px; page-break-inside: avoid; }
-.sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #7e22ce; border-bottom: 2px solid #e9d5ff; padding-bottom: 4px; margin-bottom: 10px; }
+.sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #166534; border-bottom: 2px solid #bbf7d0; padding-bottom: 4px; margin-bottom: 10px; }
 .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-.f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #9333ea; display: block; margin-bottom: 2px; }
+.f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #16a34a; display: block; margin-bottom: 2px; }
 .f span { font-size: 12px; }
 .full { grid-column: 1 / -1; }
 .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
@@ -797,7 +800,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e1e
 .by { background:#ecfdf5; color:#15803d; border:1px solid #bbf7d0; }
 .bn { background:#f9fafb; color:#94a3b8; border:1px solid #e2e8f0; }
 .chk { display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; margin-bottom:4px; font-size:12px; }
-.chk.done { background:#faf5ff; border:1px solid #e9d5ff; }
+.chk.done { background:#f0fdf4; border:1px solid #bbf7d0; }
 .chk.pend { background:#f9fafb; border:1px solid #e2e8f0; color:#94a3b8; }
 .kpis { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px; }
 .kpi { padding:11px 14px; border-radius:8px; }
@@ -894,7 +897,7 @@ ${viewEvt.hip_tipo_evento || viewEvt.hip_num_caballos ? `
 </div>` : ''}
 <div class="sec">
   <div class="sec-title">Checklist Operativo</div>
-  ${chkItems.map(([l, val]) => `<div class="chk ${val ? 'done' : 'pend'}"><span style="font-size:14px">${val ? '☑' : '☐'}</span><span>${l}</span>${val ? '<span style="margin-left:auto;font-size:10px;color:#7e22ce;font-weight:700">Completado</span>' : ''}</div>`).join('')}
+  ${chkItems.map(([l, val]) => `<div class="chk ${val ? 'done' : 'pend'}"><span style="font-size:14px">${val ? '☑' : '☐'}</span><span>${l}</span>${val ? '<span style="margin-left:auto;font-size:10px;color:#166534;font-weight:700">Completado</span>' : ''}</div>`).join('')}
 </div>
 <div class="sec">
   <div class="sec-title">Información Financiera</div>
@@ -903,7 +906,7 @@ ${viewEvt.hip_tipo_evento || viewEvt.hip_num_caballos ? `
     <div class="kpi" style="background:#fef2f2"><div class="lbl" style="color:#991b1b">Total Gastos</div><div class="val" style="color:#dc2626">$${totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#64748b">${viewOps.length} OP(s)</div></div>
     <div class="kpi" style="background:${utilidad >= 0 ? '#eff6ff' : '#fef2f2'}"><div class="lbl" style="color:${utilidad >= 0 ? '#1e40af' : '#991b1b'}">Utilidad</div><div class="val" style="color:${utilidad >= 0 ? '#2563eb' : '#dc2626'}">$${utilidad.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div></div>
   </div>
-  ${viewIng.length > 0 ? `<div class="tw"><table><thead><tr><th>Folio</th><th>Descripción</th><th>Forma de pago</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead><tbody>${viewIng.map(i => `<tr><td style="font-family:monospace;color:#7e22ce">${i.folio}</td><td>${i.descripcion}</td><td>${i.forma_pago}</td><td>${new Date(i.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX')}</td><td style="text-align:right;font-weight:600">$${i.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
+  ${viewIng.length > 0 ? `<div class="tw"><table><thead><tr><th>Folio</th><th>Descripción</th><th>Forma de pago</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead><tbody>${viewIng.map(i => `<tr><td style="font-family:monospace;color:#166534">${i.folio}</td><td>${i.descripcion}</td><td>${i.forma_pago}</td><td>${new Date(i.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX')}</td><td style="text-align:right;font-weight:600">$${i.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
   ${viewOps.length > 0 ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Folio</th><th>Concepto</th><th>Proveedor</th><th>Status</th><th style="text-align:right">Monto</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${viewOps.map(o => `<tr><td style="font-family:monospace;color:#16a34a">${o.folio}</td><td>${o.concepto}</td><td>${o.id_proveedor_fk ? (provMap[o.id_proveedor_fk] ?? '—') : '—'}</td><td>${o.status}</td><td style="text-align:right;font-weight:600">$${o.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td style="text-align:right;color:${o.saldo > 0 ? '#dc2626' : '#16a34a'}">$${o.saldo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
 </div>
 ${viewEvt.post_incidencias || viewEvt.post_evaluacion || viewEvt.post_conclusion ? `
@@ -939,17 +942,17 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
       {/* Back */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <a href="/hospitality" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
-          <ChevronLeft size={15} /> Hospitality
+        <a href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
+          <ChevronLeft size={15} /> Golf
         </a>
         <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>/</span>
-        <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>Eventos</span>
+        <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>Torneos</span>
       </div>
 
       {/* Título + botón nuevo */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>Eventos</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>Torneos</h1>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
             {eventosFiltrados.length} evento{eventosFiltrados.length !== 1 ? 's' : ''} en los filtros actuales
           </p>
@@ -962,7 +965,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
       {/* KPIs */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         {[
-          { label: 'Total eventos', value: totalEventos, color: '#9333ea', bg: '#faf5ff' },
+          { label: 'Total eventos', value: totalEventos, color: '#16a34a', bg: '#f0fdf4' },
           { label: 'Confirmados / En curso', value: confirmados, color: '#2563eb', bg: '#eff6ff' },
           { label: 'Realizados', value: realizados, color: '#16a34a', bg: '#f0fdf4' },
         ].map(k => (
@@ -1007,7 +1010,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                 const tipo = ev.cat_tipos_evento
                 return (
                   <tr key={ev.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#9333ea', fontFamily: 'monospace', fontSize: 11 }}>{ev.folio}</td>
+                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 11 }}>{ev.folio}</td>
                     <td style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>{ev.nombre}</td>
                     <td style={{ padding: '9px 12px' }}>
                       {tipo ? (
@@ -1055,12 +1058,12 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
         <ModalShell
           modulo="default"
           titulo={editEvt ? `${editEvt.folio} — ${editEvt.nombre}` : 'Nuevo Evento'}
-          subtitulo={editEvt ? editEvt.status : 'Hospitality'}
-          icono={Star}
+          subtitulo={editEvt ? editEvt.status : 'Golf — Torneos'}
+          icono={Flag}
           maxWidth={820}
           onClose={() => setModal(false)}
           tabs={[
-            { key: 'info',      label: 'Información', icon: Star },
+            { key: 'info',      label: 'Información', icon: Flag },
             { key: 'operacion', label: 'Operación',   icon: Settings },
             { key: 'checklist', label: 'Checklist',   icon: ClipboardCheck },
             { key: 'ingresos',  label: 'Ingresos',    icon: DollarSign, badge: editEvt ? ingresos.length || undefined : undefined, disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
@@ -1079,7 +1082,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             <>
               {editEvt && (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  Total ingresos: <strong style={{ color: '#9333ea' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</strong>
+                  Total ingresos: <strong style={{ color: '#16a34a' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</strong>
                 </div>
               )}
             </>
@@ -1147,7 +1150,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
 
               {/* Cliente */}
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#9333ea', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Datos del cliente</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Datos del cliente</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nombre</label>
@@ -1177,8 +1180,34 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
           {activeTab === 'operacion' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
+              {/* Golf — sección principal */}
+              <FmSection title="Datos del Torneo de Golf" color="#16a34a">
+                <FmGrid2>
+                  <div>
+                    <label style={lblSt}>Tipo de torneo</label>
+                    <input className="input" value={form.golf_tipo_torneo} onChange={e => setForm(f => ({ ...f, golf_tipo_torneo: e.target.value }))} placeholder="Medal, Stableford, Texas, Scramble…" style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>N° de jugadores</label>
+                    <input className="input" type="number" value={form.golf_num_jugadores} onChange={e => setForm(f => ({ ...f, golf_num_jugadores: e.target.value ? Number(e.target.value) : '' }))} style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Tee times</label>
+                    <input className="input" value={form.golf_tee_times} onChange={e => setForm(f => ({ ...f, golf_tee_times: e.target.value }))} placeholder="Ej: 07:00 – 09:30" style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Caddies requeridos</label>
+                    <input className="input" type="number" value={form.golf_caddies} onChange={e => setForm(f => ({ ...f, golf_caddies: e.target.value ? Number(e.target.value) : '' }))} style={inpSt} />
+                  </div>
+                  <div>
+                    <label style={lblSt}>Carritos requeridos</label>
+                    <input className="input" type="number" value={form.golf_carritos} onChange={e => setForm(f => ({ ...f, golf_carritos: e.target.value ? Number(e.target.value) : '' }))} style={inpSt} />
+                  </div>
+                </FmGrid2>
+              </FmSection>
+
               {/* Resumen Ejecutivo */}
-              <FmSection title="Resumen Ejecutivo" color="#7e22ce">
+              <FmSection title="Resumen Ejecutivo" color="#166534">
                 <FmGrid2>
                   <FmFull label="Objetivo del evento">
                     <textarea className="input" value={form.objetivo} onChange={e => setForm(f => ({ ...f, objetivo: e.target.value }))} rows={2} style={taSt} placeholder="Describir el objetivo principal del evento…" />
@@ -1321,7 +1350,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Checklist operativo */}
-              <FmSection title="Checklist Operativo" color="#7e22ce">
+              <FmSection title="Checklist Operativo" color="#166534">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {CHECKLIST_ITEMS.map(([k, label]) => {
                     const hasFile = !!checklistFiles[k]
@@ -1429,25 +1458,25 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               {err && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', color: '#dc2626', fontSize: 12 }}>{err}</div>}
 
               {/* Formulario nuevo ingreso */}
-              <div className="card" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#9333ea', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Registrar ingreso</div>
+              <div className="card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Registrar ingreso</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 10 }}>
                   <input className="input" placeholder="Buscar venta POS por folio, día o cliente…"
                     value={busqVentaPOS} onChange={e => setBusqVentaPOS(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && buscarVentasPOS()} style={{ fontSize: 12, width: '100%' }} />
-                  <button className="btn-primary" onClick={buscarVentasPOS} disabled={loadingVentasPOS} style={{ fontSize: 12, background: '#7e22ce' }}>
+                  <button className="btn-primary" onClick={buscarVentasPOS} disabled={loadingVentasPOS} style={{ fontSize: 12, background: '#166534' }}>
                     {loadingVentasPOS ? '…' : 'Buscar POS'}
                   </button>
                 </div>
 
                 {ventasPOS.length > 0 && (
-                  <div style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid #e9d5ff', borderRadius: 8, marginBottom: 10, background: '#fff' }}>
+                  <div style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid #bbf7d0', borderRadius: 8, marginBottom: 10, background: '#fff' }}>
                     {ventasPOS.map(v => (
                       <button key={v.id}
                         onClick={() => seleccionarVentaPOS(v)}
-                        style={{ width: '100%', textAlign: 'left', border: 'none', background: 'transparent', borderBottom: '1px solid #f3e8ff', padding: '7px 10px', cursor: 'pointer' }}>
+                        style={{ width: '100%', textAlign: 'left', border: 'none', background: 'transparent', borderBottom: '1px solid #dcfce7', padding: '7px 10px', cursor: 'pointer' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#7e22ce', fontFamily: 'monospace' }}>{fmtFolioVentaPos(v)}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#166534', fontFamily: 'monospace' }}>{fmtFolioVentaPos(v)}</span>
                           <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a' }}>{fmt$(v.total)}</span>
                         </div>
                         <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
@@ -1460,10 +1489,10 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
 
                 {ingresoForm.id_venta_pos_fk && (
                   <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', border: '1px solid #ddd6fe', borderRadius: 8, background: '#f5f3ff' }}>
-                    <div style={{ fontSize: 12, color: '#6d28d9' }}>
+                    <div style={{ fontSize: 12, color: '#15803d' }}>
                       Venta POS asociada: <strong>#{String(ingresoForm.id_venta_pos_fk).padStart(6, '0')}</strong>
                     </div>
-                    <button className="btn-ghost" onClick={() => setIngresoForm(f => ({ ...f, id_venta_pos_fk: null }))} style={{ fontSize: 11, color: '#6d28d9', padding: '2px 6px' }}>
+                    <button className="btn-ghost" onClick={() => setIngresoForm(f => ({ ...f, id_venta_pos_fk: null }))} style={{ fontSize: 11, color: '#15803d', padding: '2px 6px' }}>
                       Quitar
                     </button>
                   </div>
@@ -1498,7 +1527,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   </div>
                 </div>
                 <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                  <button className="btn-primary" onClick={saveIngreso} disabled={savingIngreso} style={{ fontSize: 12, background: '#9333ea' }}>
+                  <button className="btn-primary" onClick={saveIngreso} disabled={savingIngreso} style={{ fontSize: 12, background: '#16a34a' }}>
                     {savingIngreso ? 'Guardando…' : '+ Registrar ingreso'}
                   </button>
                 </div>
@@ -1520,8 +1549,8 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     <tbody>
                       {ingresos.map((ing, i) => (
                         <tr key={ing.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#9333ea', fontFamily: 'monospace', fontSize: 10 }}>{ing.folio}</td>
-                          <td style={{ padding: '8px 10px', color: '#6d28d9', fontSize: 11, fontFamily: ing.id_venta_pos_fk ? 'monospace' : 'inherit' }}>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{ing.folio}</td>
+                          <td style={{ padding: '8px 10px', color: '#15803d', fontSize: 11, fontFamily: ing.id_venta_pos_fk ? 'monospace' : 'inherit' }}>
                             {ing.id_venta_pos_fk
                               ? (ventaPosMap[ing.id_venta_pos_fk] ? fmtFolioVentaPos(ventaPosMap[ing.id_venta_pos_fk]) : `#${String(ing.id_venta_pos_fk).padStart(6, '0')}`)
                               : '—'}
@@ -1667,7 +1696,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             maxWidth={760}
             footer={
               <div style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-                <button className="btn-primary" onClick={printFichaMaestra} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#7e22ce', fontSize: 13 }}>
+                <button className="btn-primary" onClick={printFichaMaestra} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#166534', fontSize: 13 }}>
                   <Printer size={13} /> Imprimir Ficha Maestra
                 </button>
                 <button className="btn-secondary" onClick={() => setViewEvt(null)}>Cerrar</button>

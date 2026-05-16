@@ -89,9 +89,11 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
-      { label: 'Golf',           href: '/golf',           icon: Flag          },
-      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
-      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      { label: 'Golf',              href: '/golf',                    icon: Flag          },
+      { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
+      { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
+      { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -126,9 +128,11 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
-      { label: 'Golf',           href: '/golf',           icon: Flag          },
-      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
-      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      { label: 'Golf',              href: '/golf',                    icon: Flag          },
+      { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
+      { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
+      { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -162,9 +166,11 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
-      { label: 'Golf',           href: '/golf',           icon: Flag          },
-      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
-      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      { label: 'Golf',              href: '/golf',                    icon: Flag          },
+      { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
+      { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
+      { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -191,9 +197,11 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       RPT('residencial'),
     ]},
     { section: 'Club', items: [
-      { label: 'Golf',           href: '/golf',           icon: Flag          },
-      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
-      { label: 'Hospitality',    href: '/hospitality',    icon: Star          },
+      { label: 'Golf',              href: '/golf',                    icon: Flag          },
+      { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
+      { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
+      { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -358,7 +366,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   usuariogolf: [
     { section: 'Club', items: [
-      { label: 'Golf',           href: '/golf',           icon: Flag          },
+      { label: 'Golf',         href: '/golf',         icon: Flag },
+      { label: 'Torneos',      href: '/golf/torneos', icon: Flag },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -371,7 +380,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   usuariohipico: [
     { section: 'Hípico', items: [
-      { label: 'Hípico',         href: '/hipico',         icon: HorseIcon     },
+      { label: 'Hípico',            href: '/hipico',                   icon: HorseIcon },
+      { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
       RPT('hipico'),
     ]},
     { section: 'Compras', items: [
