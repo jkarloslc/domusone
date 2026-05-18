@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, Truck, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark, MessageSquare,
-  Flag, Star, DollarSign, MessageCircle, LayoutDashboard,
+  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, Droplets,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -91,6 +91,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Club', items: [
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
       { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
@@ -130,6 +131,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Club', items: [
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
       { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
@@ -168,6 +170,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Club', items: [
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
       { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
@@ -199,6 +202,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Club', items: [
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
       { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
@@ -368,6 +372,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Club', items: [
       { label: 'Golf',         href: '/golf',         icon: Flag },
       { label: 'Torneos',      href: '/golf/torneos', icon: Flag },
+      { label: 'Riego',        href: '/golf/riego',   icon: Droplets },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [

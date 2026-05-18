@@ -2,7 +2,7 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
-import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star } from 'lucide-react'
+import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star, Droplets } from 'lucide-react'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
 import ReportePropietarios from './ReportePropietarios'
@@ -36,6 +36,7 @@ import ReporteOPsPorProveedor from './ReporteOPsPorProveedor'
 import ReporteEstadoCuentaProveedor from './ReporteEstadoCuentaProveedor'
 import ReportePagosAplicados from './ReportePagosAplicados'
 import ReporteGolfVentasHistoricas from './ReporteGolfVentasHistoricas'
+import ReporteRiegoConsumo from './ReporteRiegoConsumo'
 
 const GRUPOS = [
   {
@@ -118,6 +119,7 @@ const GRUPOS = [
       { id: 'golf-accesos',       label: 'Salidas al Campo',     icon: MapPin,    desc: 'Registro de rondas por socio, espacio y forma de juego' },
       { id: 'golf-caballos-servicios',  label: 'Caballos y Servicios',        icon: BarChart3, desc: 'Desglose por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
       { id: 'golf-ventas-historicas',   label: 'Ventas Históricas POS',       icon: Wallet,    desc: 'Ventas de cortes realizados por centro de venta, artículo/servicio y rango de fechas' },
+      { id: 'golf-riego-consumo',       label: 'Consumo de Agua — Riego',     icon: Droplets,  desc: 'Consumo real vs. programado por origen de agua, semana y período con análisis de gap' },
     ],
   },
   {
@@ -256,6 +258,7 @@ function ReportesContent() {
       {active === 'golf-accesos'       && <ReporteGolfAccesos />}
       {active === 'golf-caballos-servicios'  && <ReporteHipicoServicios />}
       {active === 'golf-ventas-historicas'   && <ReporteGolfVentasHistoricas />}
+      {active === 'golf-riego-consumo'       && <ReporteRiegoConsumo />}
 
       {/* Reportes hípico */}
       {active === 'hipico-estado-cuenta' && <ReporteHipicoEstadoCuenta />}
