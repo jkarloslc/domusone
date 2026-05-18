@@ -5,7 +5,7 @@ import {
   Droplets, Calendar, Gauge, X, Save, Plus, Pencil, Trash2, BookOpen,
 } from 'lucide-react'
 import Link from 'next/link'
-import { dbCtrl } from '@/lib/supabase'
+import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -145,9 +145,9 @@ function ProgramaModal({ prog, onClose, onSave }: {
       activo: true,
     }
     if (isEdit) {
-      await dbCtrl.from('golf.riego_programa').update(payload).eq('id', prog!.id!)
+      await dbGolf.from('riego_programa').update(payload).eq('id', prog!.id!)
     } else {
-      await dbCtrl.from('golf.riego_programa').insert(payload)
+      await dbGolf.from('riego_programa').insert(payload)
     }
     setSaving(false)
     onSave()
@@ -473,21 +473,21 @@ export default function RiegoPage() {
   useEffect(() => { loadEjecuciones(); loadConsumos() }, [anio, semana])
 
   async function loadPrograma() {
-    const { data } = await dbCtrl.from('golf.riego_programa').select('*').eq('activo', true).order('dia_semana').order('area').order('hoyo')
+    const { data } = await dbGolf.from('riego_programa').select('*').eq('activo', true).order('dia_semana').order('area').order('hoyo')
     if (data) setPrograma(data as Programa[])
     setLoading(false)
   }
 
   async function loadEjecuciones() {
     const fechas = weekDates.map(toDateStr)
-    const { data } = await dbCtrl.from('golf.riego_ejecucion').select('*')
+    const { data } = await dbGolf.from('riego_ejecucion').select('*')
       .gte('fecha_prog', fechas[0]).lte('fecha_prog', fechas[fechas.length-1])
     if (data) setEjecuciones(data as Ejecucion[])
   }
 
   async function loadConsumos() {
     const fechas = weekDates.map(toDateStr)
-    const { data } = await dbCtrl.from('golf.riego_consumo_diario').select('*')
+    const { data } = await dbGolf.from('riego_consumo_diario').select('*')
       .gte('fecha', fechas[0]).lte('fecha', fechas[fechas.length-1])
     if (data) setConsumos(data as ConsumoDiario[])
   }
@@ -497,16 +497,16 @@ export default function RiegoPage() {
     const existing = ejMap[key]
     const payload = { id_programa_fk: prog.id, fecha_prog: fecha, semana_iso: semana, anio, ...data }
     if (existing) {
-      await dbCtrl.from('golf.riego_ejecucion').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', existing.id)
+      await dbGolf.from('riego_ejecucion').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', existing.id)
     } else {
-      await dbCtrl.from('golf.riego_ejecucion').insert(payload)
+      await dbGolf.from('riego_ejecucion').insert(payload)
     }
     await loadEjecuciones()
   }
 
   async function saveConsumos(rows: ConsumoDiario[]) {
     for (const row of rows) {
-      await dbCtrl.from('golf.riego_consumo_diario').upsert(
+      await dbGolf.from('riego_consumo_diario').upsert(
         { ...row, updated_at: new Date().toISOString() }, { onConflict: 'fecha,origen' }
       )
     }
@@ -514,7 +514,7 @@ export default function RiegoPage() {
   }
 
   async function deletePrograma(p: Programa) {
-    await dbCtrl.from('golf.riego_programa').update({ activo: false }).eq('id', p.id)
+    await dbGolf.from('riego_programa').update({ activo: false }).eq('id', p.id)
     setDelConfirm(null)
     await loadPrograma()
   }
