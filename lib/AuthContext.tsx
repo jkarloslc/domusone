@@ -124,7 +124,7 @@ const HIPICO_MODULOS = [
 const HOSPITALITY_MODULOS = [
   'hospitality', 'reportes',
   'compras', 'requisiciones', 'transferencias',
-  'golf', 'hipico',
+  'golf', 'golf-torneos', 'hipico',
 ]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
