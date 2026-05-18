@@ -94,7 +94,7 @@ const ADMIN_MODULOS = [
   'proveedores', 'articulos', 'almacenes', 'areas',
   'tesoreria', 'ingresos', 'reportes', 'catalogos',
   'dashboards',
-  'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
+  'golf', 'golf-torneos', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
   'golf-cuotas', 'golf-cxc', 'golf-recibos', 'golf-intercambios', 'golf-catalogos',
   'golf-riego',
@@ -106,7 +106,7 @@ const ADMIN_MODULOS = [
 // Módulos Golf para rol dedicado
 // Incluye requisiciones y transferencias de Compras para flujo de solicitudes
 const GOLF_MODULOS = [
-  'golf', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
+  'golf', 'golf-torneos', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
   'golf-cuotas', 'golf-cxc', 'golf-recibos', 'golf-intercambios', 'golf-catalogos',
   'golf-riego',
