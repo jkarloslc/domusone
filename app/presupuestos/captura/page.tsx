@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, BookOpen, Loader, Save, Settings, BookMarked } from 'lucide-react'
+import { Plus, BookOpen, Loader, Save, Settings, BookMarked, Edit2 } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -57,6 +57,9 @@ export default function CapturaPpto() {
   const [formNew, setFormNew]       = useState(EMPTY_PPTO)
   const [savingNew, setSavingNew]   = useState(false)
   const [modalStatus, setModalStatus] = useState(false)
+  const [modalEdit, setModalEdit]   = useState(false)
+  const [formEdit, setFormEdit]     = useState(EMPTY_PPTO)
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const loadPresupuestos = useCallback(async () => {
     const { data } = await dbCtrl.from('ppto_presupuestos')
@@ -139,6 +142,24 @@ export default function CapturaPpto() {
     if (data) setSelId((data as any).id)
     else if (list.length > 0) setSelId(list[0].id)
     setFormNew(EMPTY_PPTO)
+  }
+
+  function openEdit() {
+    if (!selPpto) return
+    setFormEdit({ anio: selPpto.anio, nombre: selPpto.nombre, descripcion: selPpto.descripcion ?? '' })
+    setModalEdit(true)
+  }
+
+  async function handleEditPpto() {
+    if (!selId || !formEdit.nombre.trim()) return
+    setSavingEdit(true)
+    await dbCtrl.from('ppto_presupuestos').update({
+      anio: formEdit.anio, nombre: formEdit.nombre.trim(),
+      descripcion: formEdit.descripcion || null,
+    }).eq('id', selId)
+    setSavingEdit(false)
+    setModalEdit(false)
+    await loadPresupuestos()
   }
 
   async function handleStatus(newStatus: 'borrador' | 'aprobado' | 'cerrado') {
@@ -243,6 +264,12 @@ export default function CapturaPpto() {
                   }}>
                     {st.label}
                   </span>
+                  {puedeEscribir && (
+                    <button className="btn-ghost" onClick={openEdit}
+                      style={{ fontSize: 12, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Edit2 size={12} /> Editar
+                    </button>
+                  )}
                   {puedeEscribir && !cerrado && (
                     <button className="btn-ghost" onClick={() => setModalStatus(true)}
                       style={{ fontSize: 12, padding: '4px 10px' }}>
@@ -406,6 +433,49 @@ export default function CapturaPpto() {
               Descripción
               <input className="input" value={formNew.descripcion}
                 onChange={e => setFormNew(f => ({ ...f, descripcion: e.target.value }))}
+                placeholder="Opcional" />
+            </label>
+          </div>
+        </ModalShell>
+      )}
+
+      {/* Modal: Editar Presupuesto */}
+      {modalEdit && selPpto && (
+        <ModalShell
+          modulo="presupuestos"
+          titulo="Editar Presupuesto"
+          subtitulo={`Modificando: ${selPpto.nombre} · ${selPpto.anio}`}
+          icono={BookMarked}
+          maxWidth={420}
+          onClose={() => setModalEdit(false)}
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setModalEdit(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={handleEditPpto}
+                disabled={savingEdit || !formEdit.nombre.trim()}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {savingEdit ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+                Guardar
+              </button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <label style={lbl}>
+              Año *
+              <input className="input" type="number" min={2020} max={2099}
+                value={formEdit.anio}
+                onChange={e => setFormEdit(f => ({ ...f, anio: Number(e.target.value) }))} />
+            </label>
+            <label style={lbl}>
+              Nombre *
+              <input className="input" value={formEdit.nombre}
+                onChange={e => setFormEdit(f => ({ ...f, nombre: e.target.value }))} />
+            </label>
+            <label style={lbl}>
+              Descripción
+              <input className="input" value={formEdit.descripcion}
+                onChange={e => setFormEdit(f => ({ ...f, descripcion: e.target.value }))}
                 placeholder="Opcional" />
             </label>
           </div>
