@@ -15,31 +15,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Sub-navegación del módulo */}
-      <div style={{
-        borderBottom: '1px solid #e2e8f0',
-        background: '#fff',
-        paddingLeft: 32,
-        display: 'flex',
-        gap: 0,
-      }}>
+      {/* Sub-navegación del módulo — patrón Riego/POS */}
+      <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #e2e8f0',
+        paddingLeft: 32, background: '#fff' }}>
         {NAV.map(item => {
           const active = path.startsWith(item.href)
           const Icon   = item.icon
           return (
-            <Link key={item.href} href={item.href} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '11px 18px', fontSize: 13,
-              fontWeight: active ? 600 : 400,
-              color: active ? 'var(--blue)' : 'var(--text-muted)',
-              textDecoration: 'none',
-              borderBottom: active ? '2px solid var(--blue)' : '2px solid transparent',
-              marginBottom: -1,
-              transition: 'color .15s',
-              whiteSpace: 'nowrap',
-            }}>
-              <Icon size={13} />
-              {item.label}
+            <Link key={item.href} href={item.href}
+              style={{
+                padding: '10px 18px', border: 'none', background: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: active ? 700 : 500,
+                color: active ? '#2563eb' : '#64748b',
+                borderBottom: active ? '2px solid #2563eb' : '2px solid transparent',
+                marginBottom: -2, display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'all 0.15s', textDecoration: 'none', whiteSpace: 'nowrap',
+              }}>
+              <Icon size={14} /> {item.label}
             </Link>
           )
         })}
