@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, Truck, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark, MessageSquare,
-  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, Droplets,
+  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, Droplets, BookOpen,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -104,6 +104,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
     ]},
     { section: 'Sistema', items: [
@@ -144,6 +145,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
     ]},
     { section: 'Sistema', items: [
@@ -183,6 +185,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
     ]},
     { section: 'Sistema', items: [
@@ -215,6 +218,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
     ]},
     { section: 'Sistema', items: [
@@ -326,6 +330,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
     ]},
   ],
@@ -336,6 +342,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
     ]},
   ],
