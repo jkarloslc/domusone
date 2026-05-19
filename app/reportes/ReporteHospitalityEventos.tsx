@@ -44,6 +44,13 @@ const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
 
 const STATUSES = ['Cotización', 'Confirmado', 'En curso', 'Realizado', 'Cancelado']
 
+const MODULOS: { value: string; label: string }[] = [
+  { value: '',            label: 'Todos los módulos' },
+  { value: 'hospitality', label: 'Hospitality'       },
+  { value: 'golf',        label: 'Golf — Torneos'    },
+  { value: 'hipico',      label: 'Hípico — Ecuestres'},
+]
+
 const fmtFecha = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 })
 
@@ -55,11 +62,12 @@ export default function ReporteHospitalityEventos() {
   const [tipos,   setTipos]   = useState<TipoEvento[]>([])
   const [lugares, setLugares] = useState<Lugar[]>([])
 
-  const [filtroDesde,  setFiltroDesde]  = useState(desde)
-  const [filtroHasta,  setFiltroHasta]  = useState(hasta)
-  const [filtroTipo,   setFiltroTipo]   = useState<number | ''>('')
-  const [filtroStatus, setFiltroStatus] = useState('')
-  const [filtroLugar,  setFiltroLugar]  = useState<number | ''>('')
+  const [filtroDesde,   setFiltroDesde]   = useState(desde)
+  const [filtroHasta,   setFiltroHasta]   = useState(hasta)
+  const [filtroModulo,  setFiltroModulo]  = useState('')          // '' = todos
+  const [filtroTipo,    setFiltroTipo]    = useState<number | ''>('')
+  const [filtroStatus,  setFiltroStatus]  = useState('')
+  const [filtroLugar,   setFiltroLugar]   = useState<number | ''>('')
 
   const [rows,    setRows]    = useState<EventoRow[]>([])
   const [loading, setLoading] = useState(false)
@@ -78,10 +86,10 @@ export default function ReporteHospitalityEventos() {
     // 1. Eventos del período
     let q = dbCtrl.from('eventos')
       .select('id, folio, nombre, fecha_inicio, fecha_fin, status, cliente_nombre, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
-      .eq('modulo', 'hospitality')
       .gte('fecha_inicio', filtroDesde)
       .lte('fecha_inicio', filtroHasta)
       .order('fecha_inicio', { ascending: false })
+    if (filtroModulo)        q = q.eq('modulo', filtroModulo)
     if (filtroTipo   !== '') q = q.eq('id_tipo_evento_fk', filtroTipo)
     if (filtroStatus)        q = q.eq('status', filtroStatus)
     if (filtroLugar  !== '') q = q.eq('id_lugar_fk', filtroLugar)
@@ -144,7 +152,7 @@ export default function ReporteHospitalityEventos() {
 
     setRows(result)
     setLoading(false)
-  }, [filtroDesde, filtroHasta, filtroTipo, filtroStatus, filtroLugar])
+  }, [filtroDesde, filtroHasta, filtroModulo, filtroTipo, filtroStatus, filtroLugar])
 
   // KPIs
   const totalIngresos = rows.reduce((s, r) => s + r.total_ingresos, 0)
@@ -168,6 +176,12 @@ export default function ReporteHospitalityEventos() {
         <div>
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hasta</label>
           <input className="input" type="date" value={filtroHasta} onChange={e => setFiltroHasta(e.target.value)} style={{ fontSize: 12 }} />
+        </div>
+        <div>
+          <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Módulo</label>
+          <select className="input" value={filtroModulo} onChange={e => setFiltroModulo(e.target.value)} style={{ fontSize: 12, minWidth: 160 }}>
+            {MODULOS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
         </div>
         <div>
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Tipo de evento</label>
@@ -194,7 +208,11 @@ export default function ReporteHospitalityEventos() {
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
         {buscado && !loading && (
-          <PrintBar title="Hospitality-Eventos" count={rows.length} reportTitle="Eventos Hospitality — Ingresos vs Gastos" />
+          <PrintBar
+            title={`Eventos-${filtroModulo || 'Todos'}`}
+            count={rows.length}
+            reportTitle={`Eventos — Ingresos vs Gastos${filtroModulo ? ` · ${MODULOS.find(m => m.value === filtroModulo)?.label ?? ''}` : ' · Todos los módulos'}`}
+          />
         )}
       </div>
 
