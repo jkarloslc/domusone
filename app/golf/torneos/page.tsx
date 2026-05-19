@@ -98,6 +98,27 @@ type OP = {
 
 type EventoOP = { id: number; id_op_fk: number }
 
+type EventoGasto = {
+  id: number
+  id_evento_fk: number
+  concepto: string
+  proveedor: string | null
+  tipo_gasto: string | null
+  monto: number
+  fecha: string | null
+  notas: string | null
+  id_op_fk: number | null
+}
+
+const TIPOS_GASTO_EVT = [
+  'Servicios Profesionales', 'Mantenimiento', 'Reparación',
+  'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
+  'Electricidad', 'Agua', 'Telefonía / Internet',
+  'Honorarios', 'Asesoría', 'Capacitación', 'Entretenimiento',
+  'Alimentos y Bebidas', 'Decoración', 'Sonido / Iluminación',
+  'Transporte', 'Seguridad', 'Otro',
+]
+
 // ── Constants ────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -259,6 +280,20 @@ export default function EventosPage() {
   const [loadingOps, setLoadingOps] = useState(false)
   const [provMap,  setProvMap]  = useState<Record<number, string>>({})
 
+  // Gastos manuales
+  const [gastos,       setGastos]       = useState<EventoGasto[]>([])
+  const [modalGasto,   setModalGasto]   = useState(false)
+  const [gastoEdit,    setGastoEdit]    = useState<EventoGasto | null>(null)
+  const [gastoForm,    setGastoForm]    = useState({ concepto:'', proveedor:'', tipo_gasto:'', monto:'', fecha:'', notas:'' })
+  const [savingGasto,  setSavingGasto]  = useState(false)
+  const [gastoErrMsg,  setGastoErrMsg]  = useState('')
+  // Vincular gasto manual a OP
+  const [vincGastoId,  setVincGastoId]  = useState<number | null>(null)
+  const [busqOPGasto,  setBusqOPGasto]  = useState('')
+  const [opsGasto,     setOpsGasto]     = useState<OP[]>([])
+  const [loadingVinc,  setLoadingVinc]  = useState(false)
+  const [gastoOpMap,   setGastoOpMap]   = useState<Record<number, { folio: string; concepto: string }>>({})
+
   // Personal Operativo
   const [personal, setPersonal] = useState<PersonalItem[]>([])
   const [personalForm, setPersonalForm] = useState({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
@@ -292,6 +327,27 @@ export default function EventosPage() {
   }, [filtroStatus])
 
   useEffect(() => { loadEventos() }, [loadEventos])
+
+  // ── Load gastos manuales ───────────────────────────────────
+  const loadGastos = useCallback(async (evtId: number) => {
+    const { data } = await dbCtrl.from('eventos_gastos')
+      .select('id, id_evento_fk, concepto, proveedor, tipo_gasto, monto, fecha, notas, id_op_fk')
+      .eq('id_evento_fk', evtId)
+      .order('fecha', { ascending: false })
+    const rows = (data as unknown as EventoGasto[]) ?? []
+    setGastos(rows)
+    const opIds = Array.from(new Set(rows.map(g => g.id_op_fk).filter((v): v is number => !!v)))
+    if (opIds.length > 0) {
+      const { data: opData } = await dbComp.from('ordenes_pago')
+        .select('id, folio, concepto')
+        .in('id', opIds)
+      const m: Record<number, { folio: string; concepto: string }> = {}
+      ;((opData ?? []) as any[]).forEach((o: any) => { m[o.id] = { folio: o.folio, concepto: o.concepto } })
+      setGastoOpMap(m)
+    } else {
+      setGastoOpMap({})
+    }
+  }, [])
 
   // ── Load ingresos y OPs del evento seleccionado ────────────
   const loadEventoDetalle = useCallback(async (evtId: number) => {
@@ -327,7 +383,8 @@ export default function EventosPage() {
     } else {
       setOps([])
     }
-  }, [])
+    loadGastos(evtId)
+  }, [loadGastos])
 
   const loadChecklistFiles = useCallback(async (evtId: number) => {
     setLoadingChecklistFiles(true)
@@ -815,6 +872,72 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
     if (editEvt) loadEventoDetalle(editEvt.id)
   }
 
+  // ── Gastos manuales CRUD ───────────────────────────────────
+  const saveGasto = async (isEdit: boolean) => {
+    if (!editEvt) return
+    if (!gastoForm.concepto.trim()) { setGastoErrMsg('Concepto requerido'); return }
+    if (!gastoForm.monto || Number(gastoForm.monto) <= 0) { setGastoErrMsg('El monto debe ser mayor a 0'); return }
+    setSavingGasto(true); setGastoErrMsg('')
+    const payload = {
+      id_evento_fk: editEvt.id,
+      concepto:    gastoForm.concepto.trim(),
+      proveedor:   gastoForm.proveedor || null,
+      tipo_gasto:  gastoForm.tipo_gasto || null,
+      monto:       Number(gastoForm.monto),
+      fecha:       gastoForm.fecha || null,
+      notas:       gastoForm.notas || null,
+    }
+    if (isEdit && gastoEdit) {
+      const { error } = await dbCtrl.from('eventos_gastos').update(payload).eq('id', gastoEdit.id)
+      if (error) { setGastoErrMsg(error.message); setSavingGasto(false); return }
+    } else {
+      const { error } = await dbCtrl.from('eventos_gastos').insert(payload)
+      if (error) { setGastoErrMsg(error.message); setSavingGasto(false); return }
+    }
+    setSavingGasto(false)
+    setModalGasto(false)
+    setGastoEdit(null)
+    setGastoForm({ concepto: '', proveedor: '', tipo_gasto: '', monto: '', fecha: '', notas: '' })
+    loadGastos(editEvt.id)
+  }
+
+  const deleteGasto = async (id: number) => {
+    if (!editEvt) return
+    if (!confirm('¿Eliminar este gasto manual?')) return
+    await dbCtrl.from('eventos_gastos').delete().eq('id', id)
+    loadGastos(editEvt.id)
+  }
+
+  const buscarOPsParaGasto = async () => {
+    if (!busqOPGasto.trim()) return
+    setLoadingVinc(true)
+    const term = busqOPGasto.trim()
+    const { data, error } = await dbComp.from('ordenes_pago')
+      .select('id, folio, concepto, monto, saldo, status, id_proveedor_fk')
+      .or(`concepto.ilike.%${term}%,folio.ilike.%${term}%`)
+      .limit(15)
+    if (error) console.error('Error buscando OPs para gasto:', error)
+    setOpsGasto((data as unknown as OP[]) ?? [])
+    setLoadingVinc(false)
+  }
+
+  const vincularGastoAOP = async (gastoId: number, op: OP) => {
+    if (!editEvt) return
+    const { error } = await dbCtrl.from('eventos_gastos').update({ id_op_fk: op.id }).eq('id', gastoId)
+    if (error) { console.error('Error vinculando gasto a OP:', error); return }
+    setVincGastoId(null)
+    setBusqOPGasto('')
+    setOpsGasto([])
+    loadGastos(editEvt.id)
+  }
+
+  const desvincularGastoDeOP = async (gastoId: number) => {
+    if (!editEvt) return
+    const { error } = await dbCtrl.from('eventos_gastos').update({ id_op_fk: null }).eq('id', gastoId)
+    if (error) { console.error('Error desvinculando gasto de OP:', error); return }
+    loadGastos(editEvt.id)
+  }
+
   // ── Imprimir recibo de ingreso ─────────────────────────────
   const printRecibo = (ing: Ingreso) => {
     const evtNombre = editEvt?.nombre ?? ''
@@ -1204,7 +1327,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             { key: 'operacion', label: 'Operación',   icon: Settings },
             { key: 'checklist', label: 'Checklist',   icon: ClipboardCheck },
             { key: 'ingresos',  label: 'Ingresos',    icon: DollarSign, badge: editEvt ? ingresos.length || undefined : undefined, disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
-            { key: 'gastos',    label: 'Gastos / OPs', icon: ShoppingBag, badge: editEvt ? ops.length || undefined : undefined,    disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
+            { key: 'gastos',    label: 'Gastos / OPs', icon: ShoppingBag, badge: editEvt ? ((gastos.length + ops.length) || undefined) : undefined,    disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
             { key: 'personal',  label: 'Personal Op.', icon: Users, badge: editEvt ? personal.length || undefined : undefined,    disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
           ]}
           activeTab={activeTab}
@@ -1221,6 +1344,16 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               {editEvt && (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Total ingresos: <strong style={{ color: '#16a34a' }}>{fmt$(ingresos.reduce((s, i) => s + i.monto, 0))}</strong>
+                </div>
+              )}
+            </>
+          ) : activeTab === 'gastos' ? (
+            <>
+              {editEvt && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16 }}>
+                  <span>Gastos manuales: <strong style={{ color: '#d97706' }}>{fmt$(gastos.reduce((s, g) => s + g.monto, 0))}</strong></span>
+                  <span>OPs vinculadas: <strong style={{ color: '#16a34a' }}>{fmt$(ops.reduce((s, o) => s + o.monto, 0))}</strong></span>
+                  <span style={{ fontWeight: 700 }}>Total: <strong style={{ color: '#dc2626' }}>{fmt$(gastos.reduce((s, g) => s + g.monto, 0) + ops.reduce((s, o) => s + o.monto, 0))}</strong></span>
                 </div>
               )}
             </>
@@ -1732,92 +1865,311 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
 
           {/* ── TAB GASTOS / OPs ── */}
           {activeTab === 'gastos' && editEvt && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* Buscador de OPs */}
-              <div className="card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Vincular Orden de Pago</div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                  <input className="input" placeholder="Buscar por concepto…" value={busqOP} onChange={e => setBusqOP(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && buscarOPs()} style={{ flex: 1, fontSize: 12 }} />
-                  <button className="btn-primary" onClick={buscarOPs} disabled={loadingOps} style={{ fontSize: 12, background: '#16a34a' }}>
-                    {loadingOps ? '…' : 'Buscar'}
-                  </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+              {/* ══ Sección 1: Gastos Manuales ══ */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#d97706', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+                    Gastos Manuales ({gastos.length})
+                  </div>
+                  {!modalGasto && (
+                    <button className="btn-ghost" onClick={() => {
+                      setGastoEdit(null)
+                      setGastoForm({ concepto: '', proveedor: '', tipo_gasto: '', monto: '', fecha: editEvt.fecha_inicio, notas: '' })
+                      setGastoErrMsg('')
+                      setModalGasto(true)
+                    }} style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#d97706', border: '1px solid #fde68a', borderRadius: 6, padding: '4px 10px' }}>
+                      <Plus size={13} /> Agregar Gasto
+                    </button>
+                  )}
                 </div>
-                {opsComp.length > 0 && (
-                  <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
-                    {opsComp.map(op => {
-                      const yaVinculada = evtOps.some(e => e.id_op_fk === op.id)
-                      return (
-                        <div key={op.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
-                          <div>
-                            <span style={{ fontWeight: 700, color: '#16a34a', marginRight: 8, fontFamily: 'monospace' }}>{op.folio}</span>
-                            <span style={{ color: 'var(--text-primary)' }}>{op.concepto}</span>
-                            <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '') : ''}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontWeight: 700 }}>{fmt$(op.monto)}</span>
-                            {yaVinculada ? (
-                              <span style={{ fontSize: 10, color: '#16a34a' }}>✓ Vinculada</span>
-                            ) : (
-                              <button className="btn-primary" onClick={() => vincularOP(op)} style={{ fontSize: 11, padding: '3px 8px', background: '#16a34a' }}>Vincular</button>
+
+                {/* Inline form */}
+                {modalGasto && (
+                  <div className="card" style={{ background: '#fffbeb', border: '1px solid #fde68a', marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#d97706', letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 10 }}>
+                      {gastoEdit ? 'Editar Gasto Manual' : 'Nuevo Gasto Manual'}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Concepto *</label>
+                        <input className="input" style={{ fontSize: 13, width: '100%' }}
+                          value={gastoForm.concepto}
+                          onChange={e => setGastoForm(f => ({ ...f, concepto: e.target.value }))}
+                          placeholder="Descripción del gasto…"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Proveedor / Empresa</label>
+                        <input className="input" style={{ fontSize: 13, width: '100%' }}
+                          value={gastoForm.proveedor}
+                          onChange={e => setGastoForm(f => ({ ...f, proveedor: e.target.value }))}
+                          placeholder="Nombre del proveedor…"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Tipo de Gasto</label>
+                        <select className="input" style={{ fontSize: 13, width: '100%' }}
+                          value={gastoForm.tipo_gasto}
+                          onChange={e => setGastoForm(f => ({ ...f, tipo_gasto: e.target.value }))}>
+                          <option value="">— Seleccionar —</option>
+                          {TIPOS_GASTO_EVT.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Monto ($) *</label>
+                        <input className="input" type="number" min="0.01" step="0.01" style={{ fontSize: 13, width: '100%' }}
+                          value={gastoForm.monto}
+                          onChange={e => setGastoForm(f => ({ ...f, monto: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Fecha</label>
+                        <input className="input" type="date" style={{ fontSize: 13, width: '100%' }}
+                          value={gastoForm.fecha}
+                          onChange={e => setGastoForm(f => ({ ...f, fecha: e.target.value }))}
+                        />
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notas</label>
+                        <textarea className="input" rows={2} style={{ fontSize: 13, width: '100%', resize: 'vertical' as const }}
+                          value={gastoForm.notas}
+                          onChange={e => setGastoForm(f => ({ ...f, notas: e.target.value }))}
+                          placeholder="Observaciones adicionales…"
+                        />
+                      </div>
+                    </div>
+                    {gastoErrMsg && (
+                      <div style={{ marginBottom: 8, fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '6px 10px', borderRadius: 6 }}>{gastoErrMsg}</div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                      <button className="btn-ghost" onClick={() => { setModalGasto(false); setGastoEdit(null); setGastoErrMsg('') }} style={{ fontSize: 12 }}>Cancelar</button>
+                      <button className="btn-primary" onClick={() => saveGasto(!!gastoEdit)} disabled={savingGasto}
+                        style={{ fontSize: 12, background: '#d97706' }}>
+                        {savingGasto ? 'Guardando…' : gastoEdit ? 'Guardar cambios' : '+ Agregar gasto'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lista de gastos manuales */}
+                {gastos.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '16px 0' }}>Sin gastos manuales registrados</div>
+                ) : (
+                  <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
+                          {['Concepto', 'Proveedor', 'Tipo', 'Fecha', 'Monto', 'OP vinculada', ''].map(h => (
+                            <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {gastos.map((g, i) => (
+                          <>
+                            <tr key={g.id} style={{ borderBottom: vincGastoId === g.id ? 'none' : '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                {g.concepto}
+                                {g.notas && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{g.notas}</div>}
+                              </td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{g.proveedor ?? '—'}</td>
+                              <td style={{ padding: '8px 10px' }}>
+                                {g.tipo_gasto
+                                  ? <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#fffbeb', color: '#d97706', fontWeight: 600, border: '1px solid #fde68a' }}>{g.tipo_gasto}</span>
+                                  : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                                }
+                              </td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' as const }}>
+                                {g.fecha ? fmtFecha(g.fecha) : '—'}
+                              </td>
+                              <td style={{ padding: '8px 10px', fontWeight: 700, color: '#d97706', whiteSpace: 'nowrap' as const }}>{fmt$(g.monto)}</td>
+                              <td style={{ padding: '8px 10px' }}>
+                                {g.id_op_fk ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '2px 6px', borderRadius: 6 }}>
+                                      {gastoOpMap[g.id_op_fk]?.folio ?? `OP #${g.id_op_fk}`}
+                                    </span>
+                                    <button className="btn-ghost" onClick={() => desvincularGastoDeOP(g.id)}
+                                      style={{ padding: '2px 4px', fontSize: 10, color: '#dc2626' }} title="Desvincular OP">
+                                      <X size={10} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button className="btn-ghost" onClick={() => {
+                                    setVincGastoId(vincGastoId === g.id ? null : g.id)
+                                    setBusqOPGasto('')
+                                    setOpsGasto([])
+                                  }} style={{ fontSize: 10, color: '#2563eb', padding: '2px 6px', border: '1px solid #bfdbfe', borderRadius: 5 }}>
+                                    + Vincular OP
+                                  </button>
+                                )}
+                              </td>
+                              <td style={{ padding: '8px 10px' }}>
+                                <div style={{ display: 'flex', gap: 3 }}>
+                                  <button className="btn-ghost" onClick={() => {
+                                    setGastoEdit(g)
+                                    setGastoForm({ concepto: g.concepto, proveedor: g.proveedor ?? '', tipo_gasto: g.tipo_gasto ?? '', monto: String(g.monto), fecha: g.fecha ?? '', notas: g.notas ?? '' })
+                                    setGastoErrMsg('')
+                                    setModalGasto(true)
+                                  }} style={{ padding: '3px 5px', fontSize: 10 }} title="Editar">
+                                    <Edit2 size={11} />
+                                  </button>
+                                  <button className="btn-ghost" onClick={() => deleteGasto(g.id)} style={{ padding: '3px 5px', fontSize: 10, color: '#dc2626' }} title="Eliminar">
+                                    <Trash2 size={11} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {vincGastoId === g.id && (
+                              <tr key={`vinc-${g.id}`} style={{ borderBottom: '1px solid var(--border)', background: '#eff6ff' }}>
+                                <td colSpan={7} style={{ padding: '8px 12px' }}>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', marginBottom: 6 }}>Vincular OP a: {g.concepto}</div>
+                                  <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                                    <input className="input" placeholder="Buscar OP por concepto o folio…"
+                                      value={busqOPGasto}
+                                      onChange={e => setBusqOPGasto(e.target.value)}
+                                      onKeyDown={e => e.key === 'Enter' && buscarOPsParaGasto()}
+                                      style={{ flex: 1, fontSize: 12 }} />
+                                    <button className="btn-primary" onClick={buscarOPsParaGasto} disabled={loadingVinc}
+                                      style={{ fontSize: 12, background: '#2563eb', padding: '4px 12px' }}>
+                                      {loadingVinc ? '…' : 'Buscar'}
+                                    </button>
+                                    <button className="btn-ghost" onClick={() => { setVincGastoId(null); setOpsGasto([]) }}
+                                      style={{ fontSize: 12, padding: '4px 8px' }}>✕</button>
+                                  </div>
+                                  {opsGasto.length > 0 && (
+                                    <div style={{ maxHeight: 140, overflowY: 'auto', border: '1px solid #bfdbfe', borderRadius: 6, background: '#fff' }}>
+                                      {opsGasto.map(op => (
+                                        <div key={op.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderBottom: '1px solid #e0f2fe', fontSize: 12 }}>
+                                          <div>
+                                            <span style={{ fontWeight: 700, color: '#16a34a', marginRight: 6, fontFamily: 'monospace' }}>{op.folio}</span>
+                                            <span style={{ color: 'var(--text-primary)' }}>{op.concepto}</span>
+                                            {op.id_proveedor_fk && provMap[op.id_proveedor_fk] && (
+                                              <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{provMap[op.id_proveedor_fk]}</span>
+                                            )}
+                                          </div>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span style={{ fontWeight: 700 }}>{fmt$(op.monto)}</span>
+                                            <button className="btn-primary" onClick={() => vincularGastoAOP(g.id, op)}
+                                              style={{ fontSize: 11, padding: '3px 8px', background: '#2563eb' }}>Vincular</button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
                             )}
-                          </div>
-                        </div>
-                      )
-                    })}
+                          </>
+                        ))}
+                        <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
+                          <td colSpan={4} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL GASTOS MANUALES</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#d97706' }}>{fmt$(gastos.reduce((s, g) => s + g.monto, 0))}</td>
+                          <td colSpan={2}></td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
 
-              {/* OPs vinculadas */}
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
-                OPs vinculadas ({ops.length})
-              </div>
-              {ops.length === 0 ? (
-                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>Sin OPs vinculadas</div>
-              ) : (
-                <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                    <thead>
-                      <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                        {['Folio', 'Concepto', 'Proveedor', 'Monto', 'Saldo', 'Status', ''].map(h => (
-                          <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ops.map((op, i) => {
-                        const eop = evtOps.find(e => e.id_op_fk === op.id)
+              {/* ══ Separador ══ */}
+              <div style={{ borderTop: '1px solid var(--border)' }} />
+
+              {/* ══ Sección 2: OPs del sistema ══ */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#16a34a', letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 10 }}>
+                  OPs del sistema
+                </div>
+
+                {/* Buscador de OPs */}
+                <div className="card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#15803d', marginBottom: 8 }}>Vincular Orden de Pago existente</div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                    <input className="input" placeholder="Buscar por concepto o folio…" value={busqOP} onChange={e => setBusqOP(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && buscarOPs()} style={{ flex: 1, fontSize: 12 }} />
+                    <button className="btn-primary" onClick={buscarOPs} disabled={loadingOps} style={{ fontSize: 12, background: '#16a34a' }}>
+                      {loadingOps ? '…' : 'Buscar'}
+                    </button>
+                  </div>
+                  {opsComp.length > 0 && (
+                    <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
+                      {opsComp.map(op => {
+                        const yaVinculada = evtOps.some(e => e.id_op_fk === op.id)
                         return (
-                          <tr key={op.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                            <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{op.folio}</td>
-                            <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>{op.concepto}</td>
-                            <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
-                            <td style={{ padding: '8px 10px', fontWeight: 600 }}>{fmt$(op.monto)}</td>
-                            <td style={{ padding: '8px 10px', color: op.saldo > 0 ? '#dc2626' : '#16a34a', fontWeight: 600 }}>{fmt$(op.saldo)}</td>
-                            <td style={{ padding: '8px 10px' }}>
-                              <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#f8fafc', color: '#64748b', fontWeight: 600 }}>{op.status}</span>
-                            </td>
-                            <td style={{ padding: '8px 10px' }}>
-                              {eop && (
-                                <button className="btn-ghost" onClick={() => desvincularOP(eop.id)} style={{ padding: '3px 6px', fontSize: 10, color: '#dc2626' }} title="Desvincular">
-                                  <X size={11} />
-                                </button>
+                          <div key={op.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
+                            <div>
+                              <span style={{ fontWeight: 700, color: '#16a34a', marginRight: 8, fontFamily: 'monospace' }}>{op.folio}</span>
+                              <span style={{ color: 'var(--text-primary)' }}>{op.concepto}</span>
+                              <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '') : ''}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontWeight: 700 }}>{fmt$(op.monto)}</span>
+                              {yaVinculada ? (
+                                <span style={{ fontSize: 10, color: '#16a34a' }}>✓ Vinculada</span>
+                              ) : (
+                                <button className="btn-primary" onClick={() => vincularOP(op)} style={{ fontSize: 11, padding: '3px 8px', background: '#16a34a' }}>Vincular</button>
                               )}
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         )
                       })}
-                      <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
-                        <td colSpan={3} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL</td>
-                        <td style={{ padding: '8px 10px', fontWeight: 700 }}>{fmt$(ops.reduce((s, o) => s + o.monto, 0))}</td>
-                        <td style={{ padding: '8px 10px', fontWeight: 700, color: '#dc2626' }}>{fmt$(ops.reduce((s, o) => s + o.saldo, 0))}</td>
-                        <td colSpan={2}></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* OPs vinculadas */}
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>OPs vinculadas ({ops.length})</div>
+                {ops.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '16px 0' }}>Sin OPs vinculadas</div>
+                ) : (
+                  <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
+                          {['Folio', 'Concepto', 'Proveedor', 'Monto', 'Saldo', 'Status', ''].map(h => (
+                            <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ops.map((op, i) => {
+                          const eop = evtOps.find(e => e.id_op_fk === op.id)
+                          return (
+                            <tr key={op.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                              <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a', fontFamily: 'monospace', fontSize: 10 }}>{op.folio}</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>{op.concepto}</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600 }}>{fmt$(op.monto)}</td>
+                              <td style={{ padding: '8px 10px', color: op.saldo > 0 ? '#dc2626' : '#16a34a', fontWeight: 600 }}>{fmt$(op.saldo)}</td>
+                              <td style={{ padding: '8px 10px' }}>
+                                <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#f8fafc', color: '#64748b', fontWeight: 600 }}>{op.status}</span>
+                              </td>
+                              <td style={{ padding: '8px 10px' }}>
+                                {eop && (
+                                  <button className="btn-ghost" onClick={() => desvincularOP(eop.id)} style={{ padding: '3px 6px', fontSize: 10, color: '#dc2626' }} title="Desvincular">
+                                    <X size={11} />
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
+                          <td colSpan={3} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL OPs</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700 }}>{fmt$(ops.reduce((s, o) => s + o.monto, 0))}</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#dc2626' }}>{fmt$(ops.reduce((s, o) => s + o.saldo, 0))}</td>
+                          <td colSpan={2}></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
