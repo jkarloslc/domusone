@@ -166,7 +166,7 @@ export default function CapturaPpto() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Page header estándar */}
       <div className="page-header">

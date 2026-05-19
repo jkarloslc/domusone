@@ -1,9 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbPpto, dbCtrl, dbComp } from '@/lib/supabase'
-import { Loader, RefreshCw, Download } from 'lucide-react'
+import { Loader, RefreshCw, BookOpen } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
-import { BookOpen } from 'lucide-react'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string }
@@ -254,12 +253,16 @@ export default function ComparativoPage() {
     : `${MESES[filterMes - 1]} ${selPpto?.anio ?? ''}`
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left" style={{ display: 'block' }}>
-          <h1 className="page-title">Comparativo Presupuesto vs Real</h1>
+          <div className="page-eyebrow">
+            <BookOpen size={15} style={{ color: 'var(--blue)' }} />
+            <span className="page-eyebrow-label">Presupuestos</span>
+          </div>
+          <h1 className="page-title-xl">Comparativo Presupuesto vs Real</h1>
           <p className="page-subtitle">{mesLabel} · {selPpto?.nombre}</p>
         </div>
         <div className="page-header-actions">

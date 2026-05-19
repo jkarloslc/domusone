@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbPpto, dbCtrl, dbComp } from '@/lib/supabase'
-import { Loader, RefreshCw, TrendingUp, TrendingDown, Scale, AlertTriangle } from 'lucide-react'
+import { Loader, RefreshCw, TrendingUp, TrendingDown, Scale, AlertTriangle, BookOpen } from 'lucide-react'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string }
@@ -53,27 +53,28 @@ function BarChart12({ datos }: {
   )
 }
 
-// ── KPI Card ─────────────────────────────────────────────────────────────────
+// ── KPI Card — patrón tesorería ───────────────────────────────────────────────
 function KpiCard({ label, value, sub, color, bg, icon: Icon }: {
   label: string; value: string; sub?: string
   color: string; bg: string
   icon: React.ComponentType<any>
 }) {
   return (
-    <div className="card" style={{ flex: '1 1 200px', padding: '18px 20px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-          {label}
-        </span>
-        <div style={{
-          width: 32, height: 32, borderRadius: 8, background: bg,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Icon size={15} color={color} />
-        </div>
+    <div className="card" style={{ padding: '14px 18px', flex: '1 1 175px', background: bg,
+      display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ width: 36, height: 36, borderRadius: 9,
+        background: color + '20',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon size={16} style={{ color }} />
       </div>
-      <div style={{ fontSize: 26, fontWeight: 700, color, lineHeight: 1.1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{sub}</div>}
+      <div>
+        <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontWeight: 700,
+          color, fontVariantNumeric: 'tabular-nums' }}>
+          {value}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</div>
+        {sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{sub}</div>}
+      </div>
     </div>
   )
 }
@@ -255,12 +256,16 @@ export default function DashboardPpto() {
   )
 
   return (
-    <div style={{ padding: 24, maxWidth: 1300, margin: '0 auto' }}>
+    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left" style={{ display: 'block' }}>
-          <h1 className="page-title">Dashboard Presupuestal</h1>
+          <div className="page-eyebrow">
+            <BookOpen size={15} style={{ color: 'var(--blue)' }} />
+            <span className="page-eyebrow-label">Presupuestos</span>
+          </div>
+          <h1 className="page-title-xl">Dashboard Presupuestal</h1>
           <p className="page-subtitle">Seguimiento ejecutivo Presupuesto vs Real</p>
         </div>
         <div className="page-header-actions">
@@ -278,7 +283,7 @@ export default function DashboardPpto() {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginBottom: 24 }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
         <KpiCard
           label="% Ejercido Ingresos"
           value={pctIng !== null ? `${pctIng}%` : 'Sin ppto'}
