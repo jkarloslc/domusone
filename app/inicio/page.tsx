@@ -253,7 +253,7 @@ export default function InicioPage() {
 
         // Accesos de golf del día
         if (rol === 'usuariogolf' || rol === 'superadmin' || rol === 'admin') {
-          const { count } = await dbGolf.from('accesos')
+          const { count } = await dbGolf.from('ctrl_accesos')
             .select('id', { count: 'exact', head: true })
             .gte('fecha_entrada', `${hoy}T00:00:00`)
             .lte('fecha_entrada', `${hoy}T23:59:59`)
