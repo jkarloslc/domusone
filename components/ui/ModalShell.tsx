@@ -8,7 +8,7 @@ export type ModalModulo =
   | 'cobranza' | 'facturas' | 'facturacion' | 'accesos' | 'incidencias' | 'comunicados'
   | 'mantenimiento' | 'proyectos'
   | 'compras' | 'proveedores' | 'articulos' | 'almacenes'
-  | 'tesoreria' | 'ingresos'
+  | 'tesoreria' | 'ingresos' | 'presupuestos'
   | 'golf' | 'golf-miembros' | 'golf-accesos' | 'golf-pos' | 'golf-carritos'
   | 'hipico'
   | 'usuarios' | 'configuracion'
@@ -47,6 +47,7 @@ export const MODAL_PALETTES: Record<ModalModulo, Palette> = {
   // Tesorería — teal
   tesoreria:    { from: '#134e4a', to: '#0f766e', accent: '#0f766e' },
   ingresos:     { from: '#134e4a', to: '#14b8a6', accent: '#14b8a6' },
+  presupuestos: { from: '#1e3a5f', to: '#1d4ed8', accent: '#3b82f6' },
 
   // Hípico — café cuero / marrón cálido
   hipico:        { from: '#44200d', to: '#92400e', accent: '#b45309' },
