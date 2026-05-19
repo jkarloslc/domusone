@@ -18,16 +18,20 @@ type Evento = {
   cat_lugares?: { nombre: string }
 }
 
-type Ingreso = { id: number; id_evento_fk: number; monto: number; forma_pago: string }
+type Ingreso  = { id: number; id_evento_fk: number; monto: number }
 type EventoOP = { id: number; id_evento_fk: number; id_op_fk: number }
-type OP = { id: number; monto: number; saldo: number }
+type OP       = { id: number; monto: number; saldo: number | null }
+type Gasto    = { id: number; id_evento_fk: number; monto: number }
 
 type EventoRow = Evento & {
-  total_ingresos: number
-  total_gastos: number
-  balance: number
-  num_ingresos: number
-  num_ops: number
+  total_ingresos:  number
+  total_gastos_op: number   // OPs vinculadas
+  total_gastos_mn: number   // Gastos manuales
+  total_gastos:    number   // Suma de ambos
+  balance:         number
+  num_ingresos:    number
+  num_ops:         number
+  num_gastos:      number
 }
 
 const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
@@ -71,9 +75,10 @@ export default function ReporteHospitalityEventos() {
   const fetchData = useCallback(async () => {
     setLoading(true); setBuscado(true)
 
-    // 1. Traer eventos del período
+    // 1. Eventos del período
     let q = dbCtrl.from('eventos')
       .select('id, folio, nombre, fecha_inicio, fecha_fin, status, cliente_nombre, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
+      .eq('modulo', 'hospitality')
       .gte('fecha_inicio', filtroDesde)
       .lte('fecha_inicio', filtroHasta)
       .order('fecha_inicio', { ascending: false })
@@ -88,19 +93,25 @@ export default function ReporteHospitalityEventos() {
 
     const ids = eventos.map(e => e.id)
 
-    // 2. Ingresos de esos eventos
+    // 2. Ingresos
     const { data: ingData } = await dbCtrl.from('eventos_ingresos')
-      .select('id, id_evento_fk, monto, forma_pago')
+      .select('id, id_evento_fk, monto')
       .in('id_evento_fk', ids)
     const ingresos = (ingData as unknown as Ingreso[]) ?? []
 
-    // 3. Relaciones evento-OP
+    // 3. Gastos manuales
+    const { data: gManData } = await dbCtrl.from('eventos_gastos')
+      .select('id, id_evento_fk, monto')
+      .in('id_evento_fk', ids)
+    const gastosManuales = (gManData as unknown as Gasto[]) ?? []
+
+    // 4. Relaciones evento-OP
     const { data: eopData } = await dbCtrl.from('eventos_ops')
       .select('id, id_evento_fk, id_op_fk')
       .in('id_evento_fk', ids)
     const evOps = (eopData as unknown as EventoOP[]) ?? []
 
-    // 4. OPs vinculadas
+    // 5. OPs vinculadas
     let ops: OP[] = []
     const opIds = evOps.map(e => e.id_op_fk)
     if (opIds.length > 0) {
@@ -109,29 +120,42 @@ export default function ReporteHospitalityEventos() {
       ops = (opData as unknown as OP[]) ?? []
     }
 
-    // 5. Armar filas
+    // 6. Armar filas
     const result: EventoRow[] = eventos.map(ev => {
-      const ings      = ingresos.filter(i => i.id_evento_fk === ev.id)
-      const evOpLinks = evOps.filter(e => e.id_evento_fk === ev.id)
-      const evOpObjs  = ops.filter(o => evOpLinks.some(l => l.id_op_fk === o.id))
+      const ings       = ingresos.filter(i => i.id_evento_fk === ev.id)
+      const gMans      = gastosManuales.filter(g => g.id_evento_fk === ev.id)
+      const evOpLinks  = evOps.filter(e => e.id_evento_fk === ev.id)
+      const evOpObjs   = ops.filter(o => evOpLinks.some(l => l.id_op_fk === o.id))
 
-      const total_ingresos = ings.reduce((s, i) => s + i.monto, 0)
-      const total_gastos   = evOpObjs.reduce((s, o) => s + o.monto, 0)
-      const balance        = total_ingresos - total_gastos
+      const total_ingresos  = ings.reduce((s, i) => s + (i.monto ?? 0), 0)
+      const total_gastos_op = evOpObjs.reduce((s, o) => s + (o.monto ?? 0), 0)
+      const total_gastos_mn = gMans.reduce((s, g) => s + (g.monto ?? 0), 0)
+      const total_gastos    = total_gastos_op + total_gastos_mn
+      const balance         = total_ingresos - total_gastos
 
-      return { ...ev, total_ingresos, total_gastos, balance, num_ingresos: ings.length, num_ops: evOpObjs.length }
+      return {
+        ...ev,
+        total_ingresos, total_gastos_op, total_gastos_mn, total_gastos, balance,
+        num_ingresos: ings.length,
+        num_ops:      evOpObjs.length,
+        num_gastos:   gMans.length,
+      }
     })
 
     setRows(result)
     setLoading(false)
   }, [filtroDesde, filtroHasta, filtroTipo, filtroStatus, filtroLugar])
 
-  // KPIs totales
+  // KPIs
   const totalIngresos = rows.reduce((s, r) => s + r.total_ingresos, 0)
   const totalGastos   = rows.reduce((s, r) => s + r.total_gastos, 0)
   const balanceTotal  = totalIngresos - totalGastos
   const realizados    = rows.filter(r => r.status === 'Realizado').length
   const confirmados   = rows.filter(r => r.status === 'Confirmado' || r.status === 'En curso').length
+
+  // Estilos de celda compactos
+  const thSt: React.CSSProperties = { padding: '7px 10px', textAlign: 'left', fontWeight: 700, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.05em', whiteSpace: 'nowrap' }
+  const tdSt: React.CSSProperties = { padding: '7px 10px', fontSize: 12 }
 
   return (
     <div>
@@ -182,38 +206,50 @@ export default function ReporteHospitalityEventos() {
 
       {buscado && !loading && (
         <div id="reporte-print-area">
-          {/* KPIs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+
+          {/* ── KPIs — grid fijo de 6 columnas, nunca se parten ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Eventos',      value: rows.length.toString(),    color: '#9333ea', bg: '#faf5ff' },
-              { label: 'Realizados',   value: realizados.toString(),     color: '#15803d', bg: '#f0fdf4' },
-              { label: 'Confirmados',  value: confirmados.toString(),    color: '#2563eb', bg: '#eff6ff' },
-              { label: 'Total ingresos', value: fmt$(totalIngresos),     color: '#16a34a', bg: '#f0fdf4' },
-              { label: 'Total gastos',   value: fmt$(totalGastos),       color: '#dc2626', bg: '#fef2f2' },
-              { label: 'Balance',        value: fmt$(balanceTotal),
+              { label: 'Eventos',        value: rows.length.toString(), color: '#9333ea', bg: '#faf5ff' },
+              { label: 'Realizados',     value: realizados.toString(),  color: '#15803d', bg: '#f0fdf4' },
+              { label: 'Confirmados',    value: confirmados.toString(), color: '#2563eb', bg: '#eff6ff' },
+              { label: 'Total ingresos', value: fmt$(totalIngresos),    color: '#16a34a', bg: '#f0fdf4' },
+              { label: 'Total gastos',   value: fmt$(totalGastos),      color: '#dc2626', bg: '#fef2f2' },
+              {
+                label: 'Balance',
+                value: fmt$(balanceTotal),
                 color: balanceTotal >= 0 ? '#15803d' : '#dc2626',
-                bg:    balanceTotal >= 0 ? '#f0fdf4' : '#fef2f2' },
+                bg:    balanceTotal >= 0 ? '#f0fdf4' : '#fef2f2',
+              },
             ].map(k => (
-              <div key={k.label} className="card" style={{ flex: '1 1 130px', padding: '12px 16px' }}>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
+              <div key={k.label} className="card" style={{ padding: '12px 14px', minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{k.label}</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: k.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{k.value}</div>
               </div>
             ))}
           </div>
 
-          {/* Tabla */}
+          {/* ── Tabla ── */}
           {rows.length === 0 ? (
             <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
               Sin eventos con los filtros seleccionados
             </div>
           ) : (
-            <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
-              <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            /* overflowX auto en pantalla; el print de utils.tsx maneja landscape */
+            <div className="card" style={{ overflowX: 'auto', padding: 0 }}>
+              <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 900 }}>
                 <thead>
                   <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                    {['Folio', 'Nombre', 'Tipo', 'Lugar', 'Fecha', 'Cliente', 'Status', 'Ingresos', 'Gastos', 'Balance'].map(h => (
-                      <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
-                    ))}
+                    <th style={{ ...thSt, width: 110 }}>Folio</th>
+                    <th style={{ ...thSt, width: 160 }}>Nombre</th>
+                    <th style={{ ...thSt, width: 120 }}>Tipo</th>
+                    <th style={{ ...thSt, width: 120 }}>Lugar</th>
+                    <th style={{ ...thSt, width: 100 }}>Fecha</th>
+                    <th style={{ ...thSt, width: 120 }}>Cliente</th>
+                    <th style={{ ...thSt, width: 90 }}>Status</th>
+                    <th style={{ ...thSt, width: 120, textAlign: 'right' }}>Ingresos</th>
+                    <th style={{ ...thSt, width: 130, textAlign: 'right' }}>Gastos</th>
+                    <th style={{ ...thSt, width: 120, textAlign: 'right' }}>Balance</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -223,43 +259,92 @@ export default function ReporteHospitalityEventos() {
                     const bal  = r.balance
                     return (
                       <tr key={r.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                        <td style={{ padding: '9px 12px', fontWeight: 700, color: '#9333ea', fontFamily: 'monospace', fontSize: 11 }}>{r.folio}</td>
-                        <td style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)', maxWidth: 180 }}>{r.nombre}</td>
-                        <td style={{ padding: '9px 12px' }}>
+
+                        {/* Folio — nowrap para que no se parta */}
+                        <td style={{ ...tdSt, fontWeight: 700, color: '#9333ea', fontFamily: 'monospace', fontSize: 11, whiteSpace: 'nowrap' }}>
+                          {r.folio}
+                        </td>
+
+                        {/* Nombre */}
+                        <td style={{ ...tdSt, fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {r.nombre}
+                        </td>
+
+                        {/* Tipo */}
+                        <td style={tdSt}>
                           {tipo ? (
-                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: tipo.color + '22', color: tipo.color }}>
+                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: tipo.color + '22', color: tipo.color, whiteSpace: 'nowrap' }}>
                               {tipo.nombre}
                             </span>
                           ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                         </td>
-                        <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontSize: 11 }}>{r.cat_lugares?.nombre ?? '—'}</td>
-                        <td style={{ padding: '9px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 11 }}>{fmtFecha(r.fecha_inicio)}</td>
-                        <td style={{ padding: '9px 12px', color: 'var(--text-secondary)', fontSize: 11 }}>{r.cliente_nombre ?? '—'}</td>
-                        <td style={{ padding: '9px 12px' }}>
-                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{r.status}</span>
+
+                        {/* Lugar */}
+                        <td style={{ ...tdSt, color: 'var(--text-muted)', fontSize: 11 }}>
+                          {r.cat_lugares?.nombre ?? '—'}
                         </td>
-                        <td style={{ padding: '9px 12px', fontWeight: 600, color: '#16a34a' }}>
-                          {r.total_ingresos > 0 ? fmt$(r.total_ingresos) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
-                          {r.num_ingresos > 0 && <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 1 }}>{r.num_ingresos} recibo{r.num_ingresos !== 1 ? 's' : ''}</div>}
+
+                        {/* Fecha */}
+                        <td style={{ ...tdSt, color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 11 }}>
+                          {fmtFecha(r.fecha_inicio)}
                         </td>
-                        <td style={{ padding: '9px 12px', fontWeight: 600, color: '#dc2626' }}>
-                          {r.total_gastos > 0 ? fmt$(r.total_gastos) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
-                          {r.num_ops > 0 && <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 1 }}>{r.num_ops} OP{r.num_ops !== 1 ? 's' : ''}</div>}
+
+                        {/* Cliente */}
+                        <td style={{ ...tdSt, color: 'var(--text-secondary)', fontSize: 11 }}>
+                          {r.cliente_nombre ?? '—'}
                         </td>
-                        <td style={{ padding: '9px 12px', fontWeight: 700, color: bal >= 0 ? '#15803d' : '#dc2626' }}>
+
+                        {/* Status */}
+                        <td style={tdSt}>
+                          <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color, whiteSpace: 'nowrap' }}>
+                            {r.status}
+                          </span>
+                        </td>
+
+                        {/* Ingresos */}
+                        <td style={{ ...tdSt, fontWeight: 600, color: '#16a34a', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {r.total_ingresos > 0
+                            ? <>{fmt$(r.total_ingresos)}{r.num_ingresos > 0 && <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 400 }}>{r.num_ingresos} recibo{r.num_ingresos !== 1 ? 's' : ''}</div>}</>
+                            : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                        </td>
+
+                        {/* Gastos (OPs + manuales) */}
+                        <td style={{ ...tdSt, fontWeight: 600, color: '#dc2626', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {r.total_gastos > 0 ? (
+                            <>
+                              {fmt$(r.total_gastos)}
+                              <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 400 }}>
+                                {[
+                                  r.num_ops    > 0 && `${r.num_ops} OP${r.num_ops !== 1 ? 's' : ''}`,
+                                  r.num_gastos > 0 && `${r.num_gastos} gasto${r.num_gastos !== 1 ? 's' : ''}`,
+                                ].filter(Boolean).join(' + ')}
+                              </div>
+                            </>
+                          ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                        </td>
+
+                        {/* Balance */}
+                        <td style={{ ...tdSt, fontWeight: 700, color: bal >= 0 ? '#15803d' : '#dc2626', textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {(r.total_ingresos > 0 || r.total_gastos > 0) ? fmt$(bal) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                         </td>
                       </tr>
                     )
                   })}
-                  {/* Totales */}
+
+                  {/* Fila de totales */}
                   <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
-                    <td colSpan={7} style={{ padding: '9px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
+                    <td colSpan={7} style={{ ...tdSt, fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
                       TOTAL — {rows.length} evento{rows.length !== 1 ? 's' : ''}
                     </td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#16a34a' }}>{fmt$(totalIngresos)}</td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#dc2626' }}>{fmt$(totalGastos)}</td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: balanceTotal >= 0 ? '#15803d' : '#dc2626' }}>{fmt$(balanceTotal)}</td>
+                    <td style={{ ...tdSt, fontWeight: 700, color: '#16a34a', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {fmt$(totalIngresos)}
+                    </td>
+                    <td style={{ ...tdSt, fontWeight: 700, color: '#dc2626', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {fmt$(totalGastos)}
+                    </td>
+                    <td style={{ ...tdSt, fontWeight: 700, color: balanceTotal >= 0 ? '#15803d' : '#dc2626', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {fmt$(balanceTotal)}
+                    </td>
                   </tr>
                 </tbody>
               </table>
