@@ -1169,7 +1169,7 @@ ${viewEvt.hip_tipo_evento || viewEvt.hip_num_caballos ? `
     <div class="kpi" style="background:${utilidad >= 0 ? '#eff6ff' : '#fef2f2'}"><div class="lbl" style="color:${utilidad >= 0 ? '#1e40af' : '#991b1b'}">Utilidad</div><div class="val" style="color:${utilidad >= 0 ? '#2563eb' : '#dc2626'}">$${utilidad.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div></div>
   </div>
   ${viewIng.length > 0 ? `<div class="tw"><table><thead><tr><th>Folio</th><th>Descripción</th><th>Forma de pago</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead><tbody>${viewIng.map(i => `<tr><td style="font-family:monospace;color:#7e22ce">${i.folio}</td><td>${i.descripcion}</td><td>${i.forma_pago}</td><td>${new Date(i.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX')}</td><td style="text-align:right;font-weight:600">$${i.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
-  ${viewOps.length > 0 ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Folio</th><th>Concepto</th><th>Proveedor</th><th>Status</th><th style="text-align:right">Monto</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${viewOps.map(o => `<tr><td style="font-family:monospace;color:#16a34a">${o.folio}</td><td>${o.concepto}</td><td>${o.id_proveedor_fk ? (provMap[o.id_proveedor_fk] ?? '—') : '—'}</td><td>${o.status}</td><td style="text-align:right;font-weight:600">$${o.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td style="text-align:right;color:${o.saldo > 0 ? '#dc2626' : '#16a34a'}">$${o.saldo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
+  ${viewOps.length > 0 ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Folio</th><th>Concepto</th><th>Proveedor</th><th>Status</th><th style="text-align:right">Monto</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${viewOps.map(o => `<tr><td style="font-family:monospace;color:#16a34a">${o.folio}</td><td>${o.concepto}</td><td>${o.id_proveedor_fk ? (provMap[o.id_proveedor_fk] ?? '—') : '—'}</td><td>${o.status}</td><td style="text-align:right;font-weight:600">$${(o.monto ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td style="text-align:right;color:${(o.saldo ?? 0) > 0 ? '#dc2626' : '#16a34a'}">$${(o.saldo ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
 </div>
 ${viewEvt.post_incidencias || viewEvt.post_evaluacion || viewEvt.post_conclusion ? `
 <div class="sec">
@@ -2122,7 +2122,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                               <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>{op.concepto}</td>
                               <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                               <td style={{ padding: '8px 10px', fontWeight: 600 }}>{fmt$(op.monto)}</td>
-                              <td style={{ padding: '8px 10px', color: op.saldo > 0 ? '#dc2626' : '#16a34a', fontWeight: 600 }}>{fmt$(op.saldo)}</td>
+                              <td style={{ padding: '8px 10px', color: (op.saldo ?? 0) > 0 ? '#dc2626' : '#16a34a', fontWeight: 600 }}>{fmt$(op.saldo ?? 0)}</td>
                               <td style={{ padding: '8px 10px' }}>
                                 <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#f8fafc', color: '#64748b', fontWeight: 600 }}>{op.status}</span>
                               </td>
@@ -2139,7 +2139,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                           <td colSpan={3} style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)' }}>TOTAL OPs</td>
                           <td style={{ padding: '8px 10px', fontWeight: 700 }}>{fmt$(ops.reduce((s, o) => s + o.monto, 0))}</td>
-                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#dc2626' }}>{fmt$(ops.reduce((s, o) => s + o.saldo, 0))}</td>
+                          <td style={{ padding: '8px 10px', fontWeight: 700, color: '#dc2626' }}>{fmt$(ops.reduce((s, o) => s + (o.saldo ?? 0), 0))}</td>
                           <td colSpan={2}></td>
                         </tr>
                       </tbody>
@@ -2442,7 +2442,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                                   <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: '#f8fafc', color: '#64748b', fontWeight: 600 }}>{op.status}</span>
                                 </td>
                                 <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>{fmt$(op.monto)}</td>
-                                <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right', color: op.saldo > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(op.saldo)}</td>
+                                <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right', color: (op.saldo ?? 0) > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(op.saldo ?? 0)}</td>
                               </tr>
                             ))}
                           </tbody>
