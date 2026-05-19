@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { dbPpto } from '@/lib/supabase'
+import { dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, BookOpen, Loader, Save, Settings, BookMarked } from 'lucide-react'
 import Link from 'next/link'
@@ -59,7 +59,7 @@ export default function CapturaPpto() {
   const [modalStatus, setModalStatus] = useState(false)
 
   const loadPresupuestos = useCallback(async () => {
-    const { data } = await dbPpto.from('presupuestos')
+    const { data } = await dbCtrl.from('ppto_presupuestos')
       .select('*').order('anio', { ascending: false }).order('nombre')
     const list = (data ?? []) as Presupuesto[]
     setPresupuestos(list)
@@ -67,14 +67,14 @@ export default function CapturaPpto() {
   }, [])
 
   const loadPartidas = useCallback(async () => {
-    const { data } = await dbPpto.from('partidas').select('id, nombre, tipo, orden')
+    const { data } = await dbCtrl.from('ppto_partidas').select('id, nombre, tipo, orden')
       .eq('activo', true).order('tipo').order('orden').order('nombre')
     setPartidas((data ?? []) as Partida[])
   }, [])
 
   const loadDet = useCallback(async (id: number) => {
     setLoadingDet(true)
-    const { data } = await dbPpto.from('presupuesto_det')
+    const { data } = await dbCtrl.from('ppto_presupuesto_det')
       .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', id)
     const map: DetMap = {}
     ;(data ?? []).forEach((r: any) => {
@@ -115,7 +115,7 @@ export default function CapturaPpto() {
   async function commitCell() {
     if (!editCell || !selId) { setEditCell(null); return }
     const monto = parseNum(editVal)
-    await dbPpto.from('presupuesto_det').upsert(
+    await dbCtrl.from('ppto_presupuesto_det').upsert(
       { id_presupuesto_fk: selId, id_partida_fk: editCell.pid, mes: editCell.mes, monto },
       { onConflict: 'id_presupuesto_fk,id_partida_fk,mes' }
     )
@@ -129,7 +129,7 @@ export default function CapturaPpto() {
   async function handleNewPpto() {
     if (!formNew.nombre.trim()) return
     setSavingNew(true)
-    const { data } = await dbPpto.from('presupuestos').insert({
+    const { data } = await dbCtrl.from('ppto_presupuestos').insert({
       anio: formNew.anio, nombre: formNew.nombre.trim(),
       descripcion: formNew.descripcion || null, status: 'borrador',
     }).select().single()
@@ -143,7 +143,7 @@ export default function CapturaPpto() {
 
   async function handleStatus(newStatus: 'borrador' | 'aprobado' | 'cerrado') {
     if (!selId) return
-    await dbPpto.from('presupuestos').update({ status: newStatus }).eq('id', selId)
+    await dbCtrl.from('ppto_presupuestos').update({ status: newStatus }).eq('id', selId)
     setPresupuestos(prev => prev.map(p => p.id === selId ? { ...p, status: newStatus } : p))
     setModalStatus(false)
   }

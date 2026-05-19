@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbPpto, dbCtrl, dbComp } from '@/lib/supabase'
+import { dbCtrl, dbComp } from '@/lib/supabase'
 import { Loader, RefreshCw, TrendingUp, TrendingDown, Scale, AlertTriangle, BookOpen } from 'lucide-react'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
@@ -95,14 +95,14 @@ export default function DashboardPpto() {
     else setRefreshing(true)
 
     // Partidas activas
-    const { data: pData } = await dbPpto.from('partidas')
+    const { data: pData } = await dbCtrl.from('ppto_partidas')
       .select('id, nombre, tipo, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk')
       .eq('activo', true)
     const parts = (pData ?? []) as Partida[]
     setPartidas(parts)
 
     // Presupuesto detalle
-    const { data: det } = await dbPpto.from('presupuesto_det')
+    const { data: det } = await dbCtrl.from('ppto_presupuesto_det')
       .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId)
     const dm: DetMap = {}
     ;(det ?? []).forEach((r: any) => {
@@ -112,7 +112,7 @@ export default function DashboardPpto() {
     setDetMap(dm)
 
     // Real manual
-    const { data: manual } = await dbPpto.from('presupuesto_real_manual')
+    const { data: manual } = await dbCtrl.from('ppto_presupuesto_real_manual')
       .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId)
 
     // Real automático: ingresos
@@ -180,7 +180,7 @@ export default function DashboardPpto() {
   }, [])
 
   useEffect(() => {
-    dbPpto.from('presupuestos').select('id, anio, nombre, status')
+    dbCtrl.from('ppto_presupuestos').select('id, anio, nombre, status')
       .order('anio', { ascending: false }).order('nombre')
       .then(({ data }) => {
         const list = (data ?? []) as Presupuesto[]

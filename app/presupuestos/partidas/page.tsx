@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbPpto, dbCfg } from '@/lib/supabase'
+import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, Edit2, Loader, Save, ChevronRight, BookOpen } from 'lucide-react'
 import Link from 'next/link'
@@ -45,7 +45,7 @@ export default function PartidasPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data } = await dbPpto.from('partidas').select('*').order('tipo').order('orden').order('nombre')
+    const { data } = await dbCtrl.from('ppto_partidas').select('*').order('tipo').order('orden').order('nombre')
     setPartidas((data ?? []) as Partida[])
     setLoading(false)
   }, [])
@@ -87,9 +87,9 @@ export default function PartidasPage() {
       id_centro_ingreso_fk: form.tipo === 'ingreso' ? form.id_centro_ingreso_fk : null,
     }
     if (edit) {
-      await dbPpto.from('partidas').update(payload).eq('id', edit.id)
+      await dbCtrl.from('ppto_partidas').update(payload).eq('id', edit.id)
     } else {
-      await dbPpto.from('partidas').insert(payload)
+      await dbCtrl.from('ppto_partidas').insert(payload)
     }
     setSaving(false)
     setModal(false)

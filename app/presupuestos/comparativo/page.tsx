@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbPpto, dbCtrl, dbComp } from '@/lib/supabase'
+import { dbCtrl, dbComp } from '@/lib/supabase'
 import { Loader, RefreshCw, BookOpen } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -90,12 +90,12 @@ export default function ComparativoPage() {
     if (!silent) setLoading(true); else setRefreshing(true)
 
     const [{ data: pData }, { data: det }, { data: manual }] = await Promise.all([
-      dbPpto.from('partidas')
+      dbCtrl.from('ppto_partidas')
         .select('id, nombre, tipo, orden, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk')
         .eq('activo', true).order('tipo').order('orden').order('nombre'),
-      dbPpto.from('presupuesto_det')
+      dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
-      dbPpto.from('presupuesto_real_manual')
+      dbCtrl.from('ppto_presupuesto_real_manual')
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
     ])
 
@@ -168,7 +168,7 @@ export default function ComparativoPage() {
   }, [])
 
   useEffect(() => {
-    dbPpto.from('presupuestos').select('id, anio, nombre, status')
+    dbCtrl.from('ppto_presupuestos').select('id, anio, nombre, status')
       .order('anio', { ascending: false }).order('nombre')
       .then(({ data }) => {
         const list = (data ?? []) as Presupuesto[]
@@ -194,7 +194,7 @@ export default function ComparativoPage() {
     const monto = parseFloat(manualMonto.replace(/,/g, '')) || 0
     if (monto <= 0) return
     setSavingManual(true)
-    await dbPpto.from('presupuesto_real_manual').insert({
+    await dbCtrl.from('ppto_presupuesto_real_manual').insert({
       id_presupuesto_fk: selId, id_partida_fk: manualPid,
       mes: manualMes, monto, concepto: manualConc || null,
     })
