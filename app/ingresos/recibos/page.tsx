@@ -228,7 +228,7 @@ function ReciboModal({
     if (totalFinal === 0)           { setError('El monto total debe ser mayor a $0'); return }
     setSaving(true); setError('')
 
-    const usaDesglose = esSecciones || esFrente
+    const usaDesglose = esFrente  // frentes no capturan formas de pago; secciones sí
     const payload = {
       fecha:               form.fecha,
       id_centro_ingreso_fk: Number(form.id_centro_ingreso_fk),
@@ -353,7 +353,7 @@ function ReciboModal({
       const totalConceptosImp = conceptosPrint.reduce((a, c) => a + c.monto, 0)
       const formasRows = formas.length > 0
         ? formas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
-        : '<tr><td colspan="2">Captura por desglose</td></tr>'
+        : esFrente ? '<tr><td colspan="2" style="color:#94a3b8;font-style:italic">Captura por frente</td></tr>' : ''
       const logoHtml = orgLogo
         ? `<img src="${escapeHtml(orgLogo)}" style="height:52px;max-width:160px;object-fit:contain;" />`
         : '<div style="width:52px;height:52px;border-radius:8px;background:#e2e8f0;color:#64748b;display:flex;align-items:center;justify-content:center;font-weight:700">ORG</div>'
@@ -398,14 +398,15 @@ function ReciboModal({
           </table>
         </div>
 
+        ${!esFrente || formasRows ? `
         <div class="section">
           <div class="section-title">Formas de Cobro</div>
           <table>
             <thead><tr><th>Forma</th><th style="text-align:right">Monto</th></tr></thead>
             <tbody>${formasRows}</tbody>
-            <tfoot><tr><th class="total">Total</th><th class="total" style="text-align:right">${fmt(recibo.monto_total ?? 0)}</th></tr></tfoot>
+            ${!esSecciones ? `<tfoot><tr><th class="total">Total</th><th class="total" style="text-align:right">${fmt(recibo.monto_total ?? 0)}</th></tr></tfoot>` : ''}
           </table>
-        </div>
+        </div>` : ''}
 
         ${desgloseRows ? `
           <div class="section">
@@ -676,10 +677,13 @@ function ReciboModal({
                 </div>
               )}
             </div>
-          ) : (
+          ) : null}
+
+          {/* Formas de pago — visible en todos los centros excepto frentes */}
+          {!esFrente && (
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <DollarSign size={13} style={{ color: '#059669' }} /> Desglose por forma de cobro
+                <DollarSign size={13} style={{ color: '#059669' }} /> Formas de cobro
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {numInput('Efectivo', 'monto_efectivo', form.monto_efectivo)}
@@ -689,10 +693,12 @@ function ReciboModal({
                 {numInput('Cheque', 'monto_cheque', form.monto_cheque)}
                 {numInput('Depósito Ventanilla', 'monto_deposito', form.monto_deposito)}
               </div>
-              <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>Total</span>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalUnico)}</span>
-              </div>
+              {!esSecciones && (
+                <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>Total</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalUnico)}</span>
+                </div>
+              )}
             </div>
           )}
 
