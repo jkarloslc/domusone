@@ -216,6 +216,21 @@ const CATALOGOS: CatConfig[] = [
       { key: 'notas',                label: 'Notas',              type: 'textarea' },
     ],
   },
+  {
+    key:    'conceptos_ingreso',
+    tabla:  'conceptos_ingreso',
+    label:  'Conceptos de Cobro',
+    icon:   Tag,
+    color:  '#7c3aed',
+    desc:   'Conceptos adicionales de cobro en recibos de ingreso (No identificados, Deslindes, Tags, Intereses, etc.)',
+    sortBy: 'orden',
+    campos: [
+      { key: 'nombre',               label: 'Nombre *',          type: 'text',    required: true },
+      { key: 'clave',                label: 'Clave interna',     type: 'text' },
+      { key: 'id_centro_ingreso_fk', label: 'Centro de Ingreso', type: 'select',  selectTabla: 'centros_ingreso' },
+      { key: 'orden',                label: 'Orden de aparición',type: 'number' },
+    ],
+  },
 ]
 
 // ══════════════════════════════════════════════════════════════
