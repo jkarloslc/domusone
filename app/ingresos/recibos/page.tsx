@@ -20,6 +20,8 @@ type Frente = { id: number; nombre: string; codigo: string | null; id_centro_ing
 type FrenteRow = { id_frente_fk: number; nombre_frente: string; monto: number; notas: string }
 type Concepto = { id: number; nombre: string; clave: string | null; orden: number }
 type ConceptoRow = { id_concepto_fk: number; nombre_concepto: string; monto: number; notas: string }
+type FormaPago = { id: number; nombre: string }
+type FormaPagoRow = { id_forma_pago_fk: number; nombre_forma_pago: string; monto: number }
 type Recibo = {
   id: number; folio: string | null; fecha: string
   id_centro_ingreso_fk: number | null
@@ -81,20 +83,13 @@ function ReciboModal({
     fecha:               recibo?.fecha ?? today,
     id_centro_ingreso_fk: recibo?.id_centro_ingreso_fk ?? (centros[0]?.id ?? null),
     descripcion:         recibo?.descripcion ?? '',
-    monto_efectivo:       recibo?.monto_efectivo ?? 0,
-    monto_transferencia:  recibo?.monto_transferencia ?? 0,
-    monto_tarjeta_debito: (recibo?.monto_tarjeta_debito ?? 0) > 0
-                          ? (recibo?.monto_tarjeta_debito ?? 0)
-                          : (recibo?.monto_tarjeta_credito ?? 0) === 0 ? (recibo?.monto_tarjeta ?? 0) : 0,
-    monto_tarjeta_credito: recibo?.monto_tarjeta_credito ?? 0,
-    monto_cheque:          recibo?.monto_cheque    ?? 0,
-    monto_deposito:        recibo?.monto_deposito  ?? 0,
     notas:               recibo?.notas ?? '',
     status:              recibo?.status ?? 'Confirmado',
   })
-  const [secRows, setSecRows]       = useState<SeccionRow[]>([])
-  const [frenteRows, setFrenteRows] = useState<FrenteRow[]>([])
-  const [conceptoRows, setConceptoRows] = useState<ConceptoRow[]>([])
+  const [secRows, setSecRows]             = useState<SeccionRow[]>([])
+  const [frenteRows, setFrenteRows]       = useState<FrenteRow[]>([])
+  const [conceptoRows, setConceptoRows]   = useState<ConceptoRow[]>([])
+  const [formaPagoRows, setFormaPagoRows] = useState<FormaPagoRow[]>([])
   const [loadingSecs, setLoadingSecs] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [cancelling, setCancelling] = useState(false)
@@ -189,6 +184,40 @@ function ReciboModal({
     })))
   }
 
+  // ── Cargar formas de pago (dinámico desde cfg.formas_pago) ──
+  useEffect(() => {
+    if (esFrente) { setFormaPagoRows([]); return }
+    if (recibo) {
+      // Vista: cargar desde la tabla nueva; si está vacía, reconstruir desde columnas legacy
+      dbCtrl.from('recibos_ingreso_formas_pago')
+        .select('id_forma_pago_fk, nombre_forma_pago, monto')
+        .eq('id_recibo_fk', recibo.id)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setFormaPagoRows(data as FormaPagoRow[])
+          } else {
+            // Compatibilidad: recibo antiguo con columnas fijas — cargar catálogo activo
+            loadFormasPagoFromCfg()
+          }
+        })
+    } else {
+      loadFormasPagoFromCfg()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recibo?.id, esFrente])
+
+  const loadFormasPagoFromCfg = async () => {
+    const { data } = await dbCfg.from('formas_pago')
+      .select('id, nombre')
+      .eq('activo', true)
+      .order('nombre')
+    setFormaPagoRows((data ?? []).map((f: FormaPago) => ({
+      id_forma_pago_fk: f.id,
+      nombre_forma_pago: f.nombre,
+      monto: 0,
+    })))
+  }
+
   const loadFrentesFromCfg = async (centroId: number) => {
     setLoadingSecs(true)
     const { data } = await dbCfg.from('frentes_ingreso')
@@ -209,41 +238,35 @@ function ReciboModal({
     secciones.map(s => ({ id_seccion_fk: s.id, nombre_seccion: s.nombre, monto: 0, notas: '' }))
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
-  const setSecMonto      = (idx: number, val: number) =>
+  const setSecMonto        = (idx: number, val: number) =>
     setSecRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
-  const setFrenteMonto   = (idx: number, val: number) =>
+  const setFrenteMonto     = (idx: number, val: number) =>
     setFrenteRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
-  const setConceptoMonto = (idx: number, val: number) =>
+  const setConceptoMonto   = (idx: number, val: number) =>
     setConceptoRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
+  const setFormaPagoMonto  = (idx: number, val: number) =>
+    setFormaPagoRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
 
   // Total calculado
-  const totalUnico     = form.monto_efectivo + form.monto_transferencia + form.monto_tarjeta_debito + form.monto_tarjeta_credito + form.monto_cheque + form.monto_deposito
-  const totalSecs      = secRows.reduce((a, r) => a + (r.monto || 0), 0)
-  const totalConceptos = conceptoRows.reduce((a, r) => a + (r.monto || 0), 0)
-  const totalFrentes   = frenteRows.reduce((a, r) => a + (r.monto || 0), 0)
-  const totalFinal     = esSecciones ? (totalSecs + totalConceptos) : esFrente ? totalFrentes : totalUnico
+  const totalFormasPago = formaPagoRows.reduce((a, r) => a + (r.monto || 0), 0)
+  const totalSecs       = secRows.reduce((a, r) => a + (r.monto || 0), 0)
+  const totalConceptos  = conceptoRows.reduce((a, r) => a + (r.monto || 0), 0)
+  const totalFrentes    = frenteRows.reduce((a, r) => a + (r.monto || 0), 0)
+  const totalFinal      = esSecciones ? (totalSecs + totalConceptos) : esFrente ? totalFrentes : totalFormasPago
 
   const handleSave = async () => {
     if (!form.id_centro_ingreso_fk) { setError('Selecciona un centro de ingreso'); return }
     if (totalFinal === 0)           { setError('El monto total debe ser mayor a $0'); return }
     setSaving(true); setError('')
 
-    const usaDesglose = esFrente  // frentes no capturan formas de pago; secciones sí
     const payload = {
-      fecha:               form.fecha,
+      fecha:                form.fecha,
       id_centro_ingreso_fk: Number(form.id_centro_ingreso_fk),
-      descripcion:         form.descripcion || null,
-      monto_efectivo:        usaDesglose ? 0 : form.monto_efectivo,
-      monto_transferencia:   usaDesglose ? 0 : form.monto_transferencia,
-      monto_tarjeta_debito:  usaDesglose ? 0 : form.monto_tarjeta_debito,
-      monto_tarjeta_credito: usaDesglose ? 0 : form.monto_tarjeta_credito,
-      monto_tarjeta:         usaDesglose ? 0 : (form.monto_tarjeta_debito + form.monto_tarjeta_credito),
-      monto_cheque:          usaDesglose ? 0 : form.monto_cheque,
-      monto_deposito:        usaDesglose ? 0 : form.monto_deposito,
-      monto_total:         totalFinal,
-      status:              form.status,
-      notas:               form.notas || null,
-      usuario_crea:        authUser?.nombre ?? authUser?.email ?? 'sistema',
+      descripcion:          form.descripcion || null,
+      monto_total:          totalFinal,
+      status:               form.status,
+      notas:                form.notas || null,
+      usuario_crea:         authUser?.nombre ?? authUser?.email ?? 'sistema',
     }
 
     const { data: newRec, error: err } = await dbCtrl.from('recibos_ingreso')
@@ -277,6 +300,14 @@ function ReciboModal({
         .filter(r => r.monto > 0)
         .map(r => ({ id_recibo_fk: newRec.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, notas: r.notas || null }))
       await dbCtrl.from('recibos_ingreso_conceptos').insert(conceptosPayload)
+    }
+
+    // Formas de pago (todos los centros excepto frentes)
+    if (!esFrente && formaPagoRows.some(r => r.monto > 0)) {
+      const formasPayload = formaPagoRows
+        .filter(r => r.monto > 0)
+        .map(r => ({ id_recibo_fk: newRec.id, id_forma_pago_fk: r.id_forma_pago_fk, nombre_forma_pago: r.nombre_forma_pago, monto: r.monto }))
+      await dbCtrl.from('recibos_ingreso_formas_pago').insert(formasPayload)
     }
 
     setSaving(false)
@@ -314,7 +345,7 @@ function ReciboModal({
         if (row.clave === 'org_logo_url') orgLogo = row.valor ?? ''
       })
 
-      const [secRes, frenteRes, conceptoRes] = await Promise.all([
+      const [secRes, frenteRes, conceptoRes, formaRes] = await Promise.all([
         dbCtrl.from('recibos_ingreso_secciones')
           .select('nombre_seccion, monto')
           .eq('id_recibo_fk', recibo.id)
@@ -326,20 +357,26 @@ function ReciboModal({
         dbCtrl.from('recibos_ingreso_conceptos')
           .select('nombre_concepto, monto')
           .eq('id_recibo_fk', recibo.id),
+        dbCtrl.from('recibos_ingreso_formas_pago')
+          .select('nombre_forma_pago, monto')
+          .eq('id_recibo_fk', recibo.id),
       ])
       const secs = (secRes.data ?? []) as { nombre_seccion: string; monto: number }[]
       const frentes = (frenteRes.data ?? []) as { nombre_frente: string; monto: number }[]
       const conceptosPrint = (conceptoRes.data ?? []) as { nombre_concepto: string; monto: number }[]
 
-      const formas = [
-        { nombre: 'Efectivo', monto: recibo.monto_efectivo ?? 0 },
-        { nombre: 'Transferencia', monto: recibo.monto_transferencia ?? 0 },
-        { nombre: 'Tarjeta Débito',  monto: recibo.monto_tarjeta_debito  > 0 ? recibo.monto_tarjeta_debito
-            : (recibo.monto_tarjeta_credito ?? 0) === 0 ? (recibo.monto_tarjeta ?? 0) : 0 },
-        { nombre: 'Tarjeta Crédito', monto: recibo.monto_tarjeta_credito ?? 0 },
-        { nombre: 'Cheque', monto: recibo.monto_cheque ?? 0 },
-        { nombre: 'Depósito Ventanilla', monto: recibo.monto_deposito ?? 0 },
-      ].filter(f => f.monto > 0)
+      // Formas de pago: nueva tabla primero, fallback a columnas legacy
+      const formasNuevas = (formaRes.data ?? []) as { nombre_forma_pago: string; monto: number }[]
+      const formas: { nombre: string; monto: number }[] = formasNuevas.length > 0
+        ? formasNuevas.map(f => ({ nombre: f.nombre_forma_pago, monto: f.monto }))
+        : [
+            { nombre: 'Efectivo',           monto: recibo.monto_efectivo ?? 0 },
+            { nombre: 'Transferencia',       monto: recibo.monto_transferencia ?? 0 },
+            { nombre: 'Tarjeta Débito',      monto: recibo.monto_tarjeta_debito > 0 ? recibo.monto_tarjeta_debito : (recibo.monto_tarjeta_credito ?? 0) === 0 ? (recibo.monto_tarjeta ?? 0) : 0 },
+            { nombre: 'Tarjeta Crédito',     monto: recibo.monto_tarjeta_credito ?? 0 },
+            { nombre: 'Cheque',              monto: recibo.monto_cheque ?? 0 },
+            { nombre: 'Depósito Ventanilla', monto: recibo.monto_deposito ?? 0 },
+          ].filter(f => f.monto > 0)
 
       const centroNombre = centroSel?.nombre ?? 'Sin centro'
       const desgloseRows = esSecciones
@@ -458,19 +495,6 @@ function ReciboModal({
       setPrinting(false)
     }
   }
-
-  const numInput = (label: string, key: string, val: number) => (
-    <div>
-      <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>{label}</label>
-      <input
-        className="input" type="number" min="0" step="0.01"
-        value={val || ''}
-        onChange={e => set(key, parseFloat(e.target.value) || 0)}
-        disabled={isView}
-        style={{ fontVariantNumeric: 'tabular-nums' }}
-      />
-    </div>
-  )
 
   return (
     <ModalShell
@@ -679,24 +703,32 @@ function ReciboModal({
             </div>
           ) : null}
 
-          {/* Formas de pago — visible en todos los centros excepto frentes */}
-          {!esFrente && (
+          {/* Formas de pago — dinámicas desde cfg.formas_pago; visible en todos excepto frentes */}
+          {!esFrente && formaPagoRows.length > 0 && (
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <DollarSign size={13} style={{ color: '#059669' }} /> Formas de cobro
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {numInput('Efectivo', 'monto_efectivo', form.monto_efectivo)}
-                {numInput('Transferencia', 'monto_transferencia', form.monto_transferencia)}
-                {numInput('Tarjeta Débito', 'monto_tarjeta_debito', form.monto_tarjeta_debito)}
-                {numInput('Tarjeta Crédito', 'monto_tarjeta_credito', form.monto_tarjeta_credito)}
-                {numInput('Cheque', 'monto_cheque', form.monto_cheque)}
-                {numInput('Depósito Ventanilla', 'monto_deposito', form.monto_deposito)}
+                {formaPagoRows.map((row, i) => (
+                  <div key={row.id_forma_pago_fk}>
+                    <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>
+                      {row.nombre_forma_pago}
+                    </label>
+                    <input
+                      className="input" type="number" min="0" step="0.01"
+                      value={row.monto || ''}
+                      onChange={e => setFormaPagoMonto(i, parseFloat(e.target.value) || 0)}
+                      disabled={isView}
+                      style={{ fontVariantNumeric: 'tabular-nums' }}
+                    />
+                  </div>
+                ))}
               </div>
               {!esSecciones && (
                 <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>Total</span>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalUnico)}</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFormasPago)}</span>
                 </div>
               )}
             </div>
