@@ -89,7 +89,13 @@ export default function CotizacionesPage() {
                 <td style={{ fontSize: 12 }}>{fmtFecha(r.fecha_rfq)}</td>
                 <td style={{ fontSize: 12, color: r.fecha_limite ? 'var(--text-secondary)' : 'var(--text-muted)' }}>{fmtFecha(r.fecha_limite)}</td>
                 <td><StatusBadge status={r.status} /></td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.proveedor_ganador ? (provMap[r.proveedor_ganador] ?? `#${r.proveedor_ganador}`) : '—'}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  {r.status === 'Cerrada' && !r.proveedor_ganador
+                    ? <span style={{ color: '#15803d', fontWeight: 600 }}>Múltiples proveedores</span>
+                    : r.proveedor_ganador
+                      ? (provMap[r.proveedor_ganador] ?? `#${r.proveedor_ganador}`)
+                      : '—'}
+                </td>
                 <td>
                   <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(r)}><Eye size={13} /></button>
                 </td>
@@ -181,6 +187,10 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
   const [reqDet, setReqDet]     = useState<any[]>([])
   const [addingCot, setAddingCot] = useState(false)
   const [saving, setSaving]     = useState(false)
+  const [confirmando, setConfirmando] = useState(false)
+
+  // itemWinners: índice de producto → id de cotización ganadora
+  const [itemWinners, setItemWinners] = useState<Record<number, number>>({})
 
   // Form nueva cotización
   const [cotForm, setCotForm] = useState({
@@ -193,10 +203,34 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
   })
   const [cotDet, setCotDet] = useState<any[]>([])
 
+  const initWinners = (cots: any[]): Record<number, number> => {
+    const winners: Record<number, number> = {}
+    let hasAnyGanador = false
+    cots.forEach(c => {
+      ;(c.rfq_cotizaciones_det ?? []).forEach((d: any, pi: number) => {
+        if (d.ganador) { winners[pi] = c.id; hasAnyGanador = true }
+      })
+    })
+    // Compatibilidad con RFQs cerradas antes del multi-ganador
+    if (!hasAnyGanador) {
+      const sel = cots.find(c => c.seleccionada)
+      if (sel) {
+        ;(sel.rfq_cotizaciones_det ?? []).forEach((_: any, pi: number) => {
+          winners[pi] = sel.id
+        })
+      }
+    }
+    return winners
+  }
+
   useEffect(() => {
     dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det(*)')
       .eq('id_rfq_fk', rfq.id).order('id')
-      .then(({ data }) => setCots(data ?? []))
+      .then(({ data }) => {
+        const cots = data ?? []
+        setCots(cots)
+        setItemWinners(initWinners(cots))
+      })
     dbComp.from('proveedores').select('*').eq('activo', true).order('nombre')
       .then(({ data }) => setProvs(data as Proveedor[] ?? []))
     if (rfq.id_requisicion_fk) {
@@ -262,25 +296,61 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
       )
     }
     setSaving(false); setAddingCot(false)
-    dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det(*)')
-      .eq('id_rfq_fk', rfq.id).then(({ data }) => setCots(data ?? []))
+    const { data } = await dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det(*)').eq('id_rfq_fk', rfq.id).order('id')
+    const cots = data ?? []
+    setCots(cots)
+    setItemWinners(initWinners(cots))
   }
 
-  const seleccionarGanador = async (cotId: number, provId: number) => {
-    await dbComp.from('rfq_cotizaciones').update({ seleccionada: false }).eq('id_rfq_fk', rfq.id)
-    await dbComp.from('rfq_cotizaciones').update({ seleccionada: true }).eq('id', cotId)
-    await dbComp.from('rfq').update({ status: 'Cerrada', proveedor_ganador: provId }).eq('id', rfq.id)
-    dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det(*)')
-      .eq('id_rfq_fk', rfq.id).then(({ data }) => setCots(data ?? []))
+  // Asigna todos los productos de un proveedor como ganadores
+  const seleccionarTodoProveedor = (cotId: number) => {
+    const cot = cotizaciones.find(c => c.id === cotId)
+    if (!cot) return
+    const newWinners: Record<number, number> = {}
+    ;(cot.rfq_cotizaciones_det ?? []).forEach((_: any, pi: number) => {
+      newWinners[pi] = cotId
+    })
+    setItemWinners(newWinners)
+  }
+
+  // Guarda la selección por ítem y cierra la RFQ
+  const confirmarSeleccion = async () => {
+    if (Object.keys(itemWinners).length === 0) return
+    setConfirmando(true)
+
+    for (const c of cotizaciones) {
+      for (let pi = 0; pi < (c.rfq_cotizaciones_det ?? []).length; pi++) {
+        const d = c.rfq_cotizaciones_det[pi]
+        if (!d) continue
+        await dbComp.from('rfq_cotizaciones_det').update({ ganador: itemWinners[pi] === c.id }).eq('id', d.id)
+      }
+      const cotHasWinner = (c.rfq_cotizaciones_det ?? []).some((_: any, pi: number) => itemWinners[pi] === c.id)
+      await dbComp.from('rfq_cotizaciones').update({ seleccionada: cotHasWinner }).eq('id', c.id)
+    }
+
+    const winningCotIds = new Set(Object.values(itemWinners))
+    const winningProvIds = cotizaciones.filter(c => winningCotIds.has(c.id)).map(c => c.id_proveedor_fk)
+    // proveedor_ganador = ID único si hay un solo ganador, null si hay múltiples
+    const provGanador = winningProvIds.length === 1 ? winningProvIds[0] : null
+    await dbComp.from('rfq').update({ status: 'Cerrada', proveedor_ganador: provGanador }).eq('id', rfq.id)
+
+    setConfirmando(false)
+    const { data } = await dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det(*)').eq('id_rfq_fk', rfq.id).order('id')
+    const cots = data ?? []
+    setCots(cots)
+    setItemWinners(initWinners(cots))
   }
 
   const setCD = (i: number, k: string, v: string) =>
     setCotDet(d => d.map((x, j) => j === i ? { ...x, [k]: v } : x))
 
+  const totalItems = cotizaciones[0]?.rfq_cotizaciones_det?.length ?? 0
+  const assignedCount = Object.keys(itemWinners).length
+
   return (
     <ModalShell modulo="compras" titulo={rfq.folio}
       subtitulo={`${rfq.id_requisicion_fk ? `Requisición #${rfq.id_requisicion_fk} · ` : ''}Fecha límite: ${fmtFecha(rfq.fecha_limite)}`}
-      onClose={onClose} maxWidth={880}
+      onClose={onClose} maxWidth={920}
       footer={rfq.status === 'Abierta' && cotizaciones.length < 3 && !addingCot ? (
         <button className="btn-primary" onClick={() => setAddingCot(true)}><Plus size={13} /> Agregar Cotización</button>
       ) : undefined}
@@ -291,6 +361,11 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
                 Cuadro Comparativo ({cotizaciones.length}/3 cotizaciones)
+                {rfq.status === 'Abierta' && totalItems > 0 && (
+                  <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: 11, marginLeft: 10, textTransform: 'none', letterSpacing: 0 }}>
+                    — Clic en el precio para seleccionar proveedor ganador por producto
+                  </span>
+                )}
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table>
@@ -299,10 +374,16 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       <th>Concepto</th>
                       {cotizaciones.map(c => {
                         const prov = proveedores.find(p => p.id === c.id_proveedor_fk)
+                        const winnerCount = (c.rfq_cotizaciones_det ?? []).filter((_: any, pi: number) => itemWinners[pi] === c.id).length
+                        const hasWinners = winnerCount > 0
                         return (
-                          <th key={c.id} style={{ background: c.seleccionada ? '#f0fdf4' : undefined, color: c.seleccionada ? '#15803d' : undefined }}>
+                          <th key={c.id} style={{ background: hasWinners ? '#f0fdf4' : undefined, color: hasWinners ? '#15803d' : undefined, minWidth: 140 }}>
                             {prov?.nombre ?? `Prov #${c.id_proveedor_fk}`}
-                            {c.seleccionada && <span style={{ fontSize: 10, marginLeft: 4 }}>✓ GANADOR</span>}
+                            {hasWinners && (
+                              <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2 }}>
+                                ✓ {winnerCount}/{totalItems} producto{winnerCount !== 1 ? 's' : ''} ganador{winnerCount !== 1 ? 'es' : ''}
+                              </div>
+                            )}
                           </th>
                         )
                       })}
@@ -321,13 +402,40 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       <td style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-muted)' }}>Tiempo Entrega</td>
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12 }}>{c.tiempo_entrega ?? '—'}</td>)}
                     </tr>
-                    {/* Detalle por producto */}
+                    {/* Detalle por producto — clic en precio selecciona ganador */}
                     {(cotizaciones[0]?.rfq_cotizaciones_det ?? []).map((_: any, pi: number) => (
                       <tr key={pi}>
-                        <td style={{ fontSize: 12 }}>{cotizaciones[0]?.rfq_cotizaciones_det?.[pi]?.descripcion}</td>
+                        <td style={{ fontSize: 12, fontWeight: itemWinners[pi] !== undefined ? 600 : 400 }}>
+                          {cotizaciones[0]?.rfq_cotizaciones_det?.[pi]?.descripcion}
+                        </td>
                         {cotizaciones.map(c => {
                           const d = c.rfq_cotizaciones_det?.[pi]
-                          return <td key={c.id} style={{ fontSize: 12, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{d ? fmt(d.precio_unitario) : '—'}</td>
+                          const isWinner = itemWinners[pi] === c.id
+                          const clickable = rfq.status === 'Abierta' && !!d && Number(d.precio_unitario) > 0
+                          return (
+                            <td key={c.id}
+                              onClick={() => clickable && setItemWinners(w => ({ ...w, [pi]: c.id }))}
+                              title={clickable ? 'Clic para seleccionar como ganador' : undefined}
+                              style={{
+                                fontSize: 12,
+                                textAlign: 'right',
+                                fontVariantNumeric: 'tabular-nums',
+                                background: isWinner ? '#dcfce7' : undefined,
+                                outline: isWinner ? '2px solid #16a34a' : undefined,
+                                outlineOffset: -2,
+                                cursor: clickable ? 'pointer' : 'default',
+                                transition: 'background 0.12s',
+                                fontWeight: isWinner ? 700 : 400,
+                              }}
+                            >
+                              {d ? (
+                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+                                  {isWinner && <CheckCircle size={11} color="#16a34a" />}
+                                  {fmt(d.precio_unitario)}
+                                </span>
+                              ) : '—'}
+                            </td>
+                          )
                         })}
                       </tr>
                     ))}
@@ -347,22 +455,49 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                         </td>
                       ))}
                     </tr>
-                    {rfq.status === 'Abierta' && (
+                    {rfq.status === 'Abierta' && totalItems > 0 && (
                       <tr>
-                        <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>Seleccionar</td>
-                        {cotizaciones.map(c => (
-                          <td key={c.id} style={{ textAlign: 'center' }}>
-                            <button className="btn-primary" style={{ fontSize: 11, padding: '4px 10px' }}
-                              onClick={() => seleccionarGanador(c.id, c.id_proveedor_fk)}>
-                              <CheckCircle size={11} /> Seleccionar
-                            </button>
-                          </td>
-                        ))}
+                        <td style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>Seleccionar todo</td>
+                        {cotizaciones.map(c => {
+                          const allWinner = (c.rfq_cotizaciones_det ?? []).length > 0 &&
+                            (c.rfq_cotizaciones_det ?? []).every((_: any, pi: number) => itemWinners[pi] === c.id)
+                          return (
+                            <td key={c.id} style={{ textAlign: 'center', paddingTop: 8, paddingBottom: 8 }}>
+                              <button
+                                className={allWinner ? 'btn-primary' : 'btn-secondary'}
+                                style={{ fontSize: 11, padding: '4px 10px' }}
+                                onClick={() => seleccionarTodoProveedor(c.id)}
+                              >
+                                {allWinner ? <><CheckCircle size={11} /> Todo seleccionado</> : 'Sel. todo'}
+                              </button>
+                            </td>
+                          )
+                        })}
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
+
+              {/* Barra de confirmación */}
+              {rfq.status === 'Abierta' && assignedCount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, padding: '10px 16px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                  <div style={{ fontSize: 12, color: '#15803d' }}>
+                    <strong>{assignedCount}</strong> de {totalItems} producto{totalItems !== 1 ? 's' : ''} con ganador asignado
+                    {(() => {
+                      const winningCotIds = new Set(Object.values(itemWinners))
+                      const provNames = cotizaciones
+                        .filter(c => winningCotIds.has(c.id))
+                        .map(c => proveedores.find(p => p.id === c.id_proveedor_fk)?.nombre ?? `Prov #${c.id_proveedor_fk}`)
+                      return provNames.length > 0 ? <span style={{ color: '#166534', marginLeft: 6 }}>· {provNames.join(', ')}</span> : null
+                    })()}
+                  </div>
+                  <button className="btn-primary" onClick={confirmarSeleccion} disabled={confirmando || assignedCount < totalItems}>
+                    {confirmando ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />}
+                    {assignedCount < totalItems ? `Faltan ${totalItems - assignedCount} producto${totalItems - assignedCount !== 1 ? 's' : ''}` : 'Confirmar y Cerrar RFQ'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

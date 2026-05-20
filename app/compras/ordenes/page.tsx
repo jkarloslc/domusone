@@ -233,30 +233,51 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       return
     }
 
-    // 1. Proveedor ganador desde el state local (ya cargado)
+    // 1. Proveedor ganador desde el state local (ya cargado) — solo si es uno único
     const rfq = rfqs.find(r => r.id === Number(rfqId))
     if (rfq?.proveedor_ganador) setForm(f => ({ ...f, id_proveedor_fk: rfq.proveedor_ganador.toString() }))
 
-    // 2. Cotización seleccionada + detalle de artículos
-    // Usamos hint explícito de FK para evitar que Supabase falle en la inferencia automática
-    const { data: cot } = await dbComp.from('rfq_cotizaciones')
+    // 2. Cotizaciones ganadoras (puede haber más de una con seleccionada=true en multi-proveedor)
+    const { data: cots } = await dbComp.from('rfq_cotizaciones')
       .select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)')
-      .eq('id_rfq_fk', Number(rfqId)).eq('seleccionada', true).maybeSingle()
+      .eq('id_rfq_fk', Number(rfqId)).eq('seleccionada', true)
 
-    if (cot?.rfq_cotizaciones_det?.length) {
-      const items = cot.rfq_cotizaciones_det.map((d: any) => ({
-        id_articulo_fk: null,
-        descripcion:    d.descripcion   ?? '',
-        cantidad:       d.cantidad?.toString()       ?? '1',
-        unidad:         d.unidad        ?? 'PZA',
-        precio_unitario: d.precio_unitario?.toString() ?? '',
-        tasa_iva:       d.tasa_iva?.toString()        ?? '0',
-      }))
-      setDet(items)
-      // Bug 1 fix: sincronizar artSearches/artOptions con la cantidad de productos precargados
-      setArtSearches(new Array(items.length).fill(''))
-      setArtOptions(new Array(items.length).fill([]))
-      setForm(f => ({ ...f, condiciones_pago: cot.condiciones_pago ?? f.condiciones_pago }))
+    if (cots && cots.length > 0) {
+      let items: any[]
+      if (cots.length === 1) {
+        // Ganador único: usar ítems ganadores si existen, si no todos (compat. anterior)
+        const detItems = cots[0].rfq_cotizaciones_det ?? []
+        const ganadorItems = detItems.filter((d: any) => d.ganador)
+        const src = ganadorItems.length > 0 ? ganadorItems : detItems
+        items = src.map((d: any) => ({
+          id_articulo_fk:  null,
+          descripcion:     d.descripcion ?? '',
+          cantidad:        d.cantidad?.toString() ?? '1',
+          unidad:          d.unidad ?? 'PZA',
+          precio_unitario: d.precio_unitario?.toString() ?? '',
+          tasa_iva:        d.tasa_iva?.toString() ?? '0',
+        }))
+      } else {
+        // Multi-ganador: recopilar solo los ítems marcados ganador=true de cada cotización
+        items = cots.flatMap(c =>
+          (c.rfq_cotizaciones_det ?? [])
+            .filter((d: any) => d.ganador)
+            .map((d: any) => ({
+              id_articulo_fk:  null,
+              descripcion:     d.descripcion ?? '',
+              cantidad:        d.cantidad?.toString() ?? '1',
+              unidad:          d.unidad ?? 'PZA',
+              precio_unitario: d.precio_unitario?.toString() ?? '',
+              tasa_iva:        d.tasa_iva?.toString() ?? '0',
+            }))
+        )
+      }
+      if (items.length > 0) {
+        setDet(items)
+        setArtSearches(new Array(items.length).fill(''))
+        setArtOptions(new Array(items.length).fill([]))
+        setForm(f => ({ ...f, condiciones_pago: cots[0].condiciones_pago ?? f.condiciones_pago }))
+      }
     }
 
     // 3. CC / Sección / Frente desde la requisición vinculada al RFQ
