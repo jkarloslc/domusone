@@ -257,6 +257,17 @@ function ReciboModal({
   const handleSave = async () => {
     if (!form.id_centro_ingreso_fk) { setError('Selecciona un centro de ingreso'); return }
     if (totalFinal === 0)           { setError('El monto total debe ser mayor a $0'); return }
+
+    // Validar que formas de cobro coincidan con el total general (solo Cuotas Residencial)
+    if (esSecciones && totalFormasPago > 0) {
+      const diff = Math.round((totalFinal - totalFormasPago) * 100) / 100
+      if (diff !== 0) {
+        const tipo = diff > 0 ? 'falta' : 'excede'
+        setError(`El total cobrado (${fmt(totalFormasPago)}) no coincide con el total general (${fmt(totalFinal)}). ${tipo === 'falta' ? 'Faltan' : 'Sobran'} ${fmt(Math.abs(diff))} en las formas de cobro.`)
+        return
+      }
+    }
+
     setSaving(true); setError('')
 
     const payload = {
@@ -725,11 +736,37 @@ function ReciboModal({
                   </div>
                 ))}
               </div>
-              {!esSecciones && (
-                <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>Total</span>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFormasPago)}</span>
-                </div>
+              {/* Sumatoria de formas de cobro — siempre visible */}
+              <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>
+                  {esSecciones ? 'Total cobrado (formas)' : 'Total'}
+                </span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFormasPago)}</span>
+              </div>
+
+              {/* Validación: total general vs total cobrado (solo Cuotas Residencial) */}
+              {esSecciones && totalFormasPago > 0 && (
+                (() => {
+                  const diff = Math.round((totalFinal - totalFormasPago) * 100) / 100
+                  const ok   = diff === 0
+                  return (
+                    <div style={{
+                      marginTop: 8, padding: '10px 14px', borderRadius: 8,
+                      background: ok ? '#f0fdf4' : '#fef2f2',
+                      border: `1px solid ${ok ? '#86efac' : '#fca5a5'}`,
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+                    }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: ok ? '#15803d' : '#dc2626' }}>
+                        {ok ? '✓ Total cobrado coincide con el total general' : `⚠ Diferencia: ${fmt(Math.abs(diff))} ${diff > 0 ? '(falta por cobrar)' : '(excede el total)'}`}
+                      </span>
+                      {!ok && (
+                        <span style={{ fontSize: 12, color: '#dc2626', fontVariantNumeric: 'tabular-nums', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          {fmt(totalFinal)} esperado
+                        </span>
+                      )}
+                    </div>
+                  )
+                })()
               )}
             </div>
           )}
