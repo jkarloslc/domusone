@@ -545,8 +545,10 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 }
 
 function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: boolean; onClose: () => void; onAuth: (id: number, ap: boolean, c: string) => void; onEdit?: () => void }) {
+  const { authUser } = useAuth()
   const [det, setDet]       = useState<any[]>([])
   const [op, setOP]         = useState<any | null>(null)
+  const [prov, setProv]     = useState<any | null>(null)
   const [almMap, setAlmMap] = useState<Record<number, string>>({})
   const [ccMap,   setCCMap]   = useState<Record<number, string>>({})
   const [areaMap, setAreaMap] = useState<Record<number, string>>({})
@@ -554,11 +556,15 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
   const [comentario, setCom]    = useState('')
   const [creandoOP, setCreandoOP] = useState(false)
   const [savingOP, setSavingOP]   = useState(false)
-  const [opForm, setOpForm] = useState({ forma_pago: 'Transferencia', fecha_vencimiento: '', concepto: `OC ${oc.folio}`, notas: '' })
+  const [opForm, setOpForm] = useState({ forma_pago: 'Transferencia', fecha_vencimiento: '', concepto: `OC ${oc.folio}`, tipo_gasto: '', notas: '' })
 
   useEffect(() => {
     dbComp.from('ordenes_compra_det').select('*').eq('id_oc_fk', oc.id).then(({ data }) => setDet(data ?? []))
     dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle().then(({ data }) => setOP(data))
+    if (oc.id_proveedor_fk) {
+      dbComp.from('proveedores').select('id, nombre, banco, cuenta_clabe').eq('id', oc.id_proveedor_fk).maybeSingle()
+        .then(({ data }) => setProv(data))
+    }
     Promise.all([
       dbComp.from('almacenes').select('id, nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true),
@@ -571,7 +577,7 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
       setAreaMap(mk(ar.data ?? []))
       setFrMap(mk(fr.data ?? []))
     })
-  }, [oc.id])
+  }, [oc.id, oc.id_proveedor_fk])
 
   const crearOrdenPago = async () => {
     setSavingOP(true)
@@ -585,13 +591,20 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
     }
     await dbComp.from('ordenes_pago').insert({
       folio, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
-      id_almacen_fk: oc.id_almacen_entrega_fk ?? null,
+      id_almacen_fk:      oc.id_almacen_entrega_fk ?? null,
       id_centro_costo_fk: oc.id_centro_costo_fk ?? null,
-      id_area_fk: oc.id_area_fk ?? null,
-      id_frente_fk: oc.id_frente_fk ?? null,
-      monto: oc.total, forma_pago: opForm.forma_pago,
-      fecha_vencimiento: opForm.fecha_vencimiento || null,
-      concepto: opForm.concepto, notas: opForm.notas || null, status: 'Pendiente Auth',
+      id_area_fk:         oc.id_area_fk ?? null,
+      id_frente_fk:       oc.id_frente_fk ?? null,
+      monto:              oc.total,
+      forma_pago:         opForm.forma_pago,
+      fecha_vencimiento:  opForm.fecha_vencimiento || null,
+      concepto:           opForm.concepto,
+      tipo_gasto:         opForm.tipo_gasto || null,
+      notas:              opForm.notas || null,
+      banco_destino:      prov?.banco ?? null,
+      cuenta_clabe:       prov?.cuenta_clabe ?? null,
+      created_by:         authUser?.nombre ?? null,
+      status:             'Pendiente Auth',
     })
     setSavingOP(false); setCreandoOP(false)
     dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle().then(({ data }) => setOP(data))
@@ -599,16 +612,28 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
 
   const imprimirOP = async () => {
     if (!op) return
-    // Cargar config de organización
-    let orgNombre = 'Organización'
-    let orgSubtitulo = ''
-    let orgLogo = ''
+    // Fresh fetch para asegurar campos actualizados (autorizado_por, referencia_pago, etc.)
+    const { data: freshOP } = await dbComp.from('ordenes_pago').select('*').eq('id', op.id).single()
+    const opData = freshOP ? { ...op, ...freshOP } : op
+
+    const centroCostoNombre = opData.id_centro_costo_fk ? (ccMap[opData.id_centro_costo_fk] ?? `#${opData.id_centro_costo_fk}`) : 'Sin asignar'
+    const areaNombre  = opData.id_area_fk   ? (areaMap[opData.id_area_fk]  ?? `#${opData.id_area_fk}`)   : '—'
+    const frenteNombre = opData.id_frente_fk ? (frMap[opData.id_frente_fk]  ?? `#${opData.id_frente_fk}`) : '—'
+    const almNombre   = opData.id_almacen_fk ? (almMap[opData.id_almacen_fk] ?? `#${opData.id_almacen_fk}`) : '—'
+
+    const estadoAut = opData.status === 'Pendiente Auth'
+      ? 'Pendiente de autorización'
+      : opData.status === 'Rechazada'
+        ? 'Rechazada'
+        : opData.autorizado_por ? 'Autorizada' : 'En proceso'
+    const nombreElaboro   = opData.created_by ?? 'Sin registro'
+    const nombreAutorizo  = opData.autorizado_por
+      ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización' : opData.status === 'Rechazada' ? 'Rechazada' : 'Sin registro')
+
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
     try {
       const { createClient } = await import('@supabase/supabase-js')
-      const sb = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
       const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
         .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
       ;(cfgRows ?? []).forEach((r: any) => {
@@ -617,19 +642,23 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
         if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
       })
     } catch {}
+
     const logoHtml = orgLogo
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
-    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${op.folio}</title>
+
+    const html = `<!DOCTYPE html><html><head><title>Orden de Pago ${opData.folio}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
         .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
         .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
         .org-sub { font-size: 11px; color: #64748b; }
         .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+        .sub { color: #64748b; font-size: 12px; margin-bottom: 24px; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; }
         td, th { border: 1px solid #e2e8f0; padding: 8px 12px; }
-        th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; }
+        th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
+        .total { background: #eff6ff; font-size: 16px; font-weight: 700; color: #0D4F80; }
         .firmas { display: flex; gap: 60px; margin-top: 60px; }
         .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
         @page { margin: 1.2cm; }
@@ -642,22 +671,48 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
         </div>
         <div style="margin-left:auto;text-align:right">
           <div class="doc-title">Orden de Pago</div>
-          <div style="font-size:12px;color:#64748b">Folio: <strong>${op.folio}</strong> &nbsp;·&nbsp; OC: ${oc.folio}</div>
+          <div class="sub" style="margin:0">Folio: <strong>${opData.folio}</strong> &nbsp;·&nbsp; OC: ${oc.folio}</div>
         </div>
       </div>
       <table>
-        <tr><th>Proveedor</th><td colspan="3">${oc._provNombre ?? '—'}</td></tr>
-        <tr><th>Folio OP</th><td>${op.folio}</td><th>OC Ref.</th><td>${oc.folio}</td></tr>
-        <tr><th>Monto</th><td><strong>${fmt(op.monto)}</strong></td><th>Forma de Pago</th><td>${op.forma_pago}</td></tr>
-        <tr><th>Vencimiento</th><td>${fmtFecha(op.fecha_vencimiento)}</td><th>Almacén</th><td>${almMap[oc.id_almacen_entrega_fk] ?? '—'}</td></tr>
-        <tr><th>Concepto</th><td colspan="3">${op.concepto ?? '—'}</td></tr>
+        <tr><th>Beneficiario</th><td>${oc._provNombre ?? '—'}</td><th>Banco</th><td>${opData.banco_destino ?? prov?.banco ?? '—'}</td></tr>
+        <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? prov?.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
+        <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
+        <tr><th>Almacén</th><td>${almNombre}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
+        ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
+        <tr><th>Centro de Costo</th><td colspan="3">${centroCostoNombre}</td></tr>
+        <tr><th>Área</th><td>${areaNombre}</td><th>Frente</th><td>${frenteNombre}</td></tr>
+        <tr><th>OC Relacionada</th><td colspan="3">${oc.folio}</td></tr>
+        <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
+      ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
+      <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
+        <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
+          Autorización y Control de Pago
+        </div>
+        <table style="margin:0">
+          <tr><th>Estatus</th><td>${estadoAut}</td></tr>
+          ${opData.autorizado_por     ? `<tr><th>Autorizado por</th><td>${opData.autorizado_por}</td></tr>` : ''}
+          ${opData.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
+          ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
+          ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
+          ${!opData.autorizado_por && !opData.fecha_autorizacion && !opData.referencia_pago && !opData.instrucciones_pago ? `<tr><th>Detalle</th><td>Sin datos adicionales de autorización/pago.</td></tr>` : ''}
+        </table>
+      </div>
       <div class="firmas">
-        <div class="firma">Elaboró</div>
-        <div class="firma">Autorizó</div>
+        <div class="firma">
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreElaboro}</div>
+          Elaboró
+        </div>
+        <div class="firma">
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo}</div>
+          Autorizó
+          ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+        </div>
         <div class="firma">Recibió</div>
       </div>
       </body></html>`
+
     const iframe = document.createElement('iframe')
     iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
     document.body.appendChild(iframe)
@@ -757,6 +812,12 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
               </div>
               <div style={{ marginTop: 10 }}><label className="label">Concepto</label>
                 <input className="input" value={opForm.concepto} onChange={e => setOpForm(f => ({ ...f, concepto: e.target.value }))} />
+              </div>
+              <div style={{ marginTop: 10 }}><label className="label">Tipo de Gasto (opcional)</label>
+                <select className="select" value={opForm.tipo_gasto} onChange={e => setOpForm(f => ({ ...f, tipo_gasto: e.target.value }))}>
+                  <option value="">— Sin clasificar —</option>
+                  {['Servicios Profesionales','Mantenimiento','Reparación','Arrendamiento','Seguros','Publicidad','Combustible','Electricidad','Agua','Telefonía / Internet','Honorarios','Asesoría','Capacitación','Otro'].map(t => <option key={t}>{t}</option>)}
+                </select>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                 <button className="btn-secondary" onClick={() => setCreandoOP(false)}>Cancelar</button>
