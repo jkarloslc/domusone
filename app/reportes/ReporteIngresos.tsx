@@ -10,11 +10,13 @@ const fmtF = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-MX'
 type Recibo = {
   id: number; folio: string | null; fecha: string; status: string
   id_centro_ingreso_fk: number | null; descripcion: string | null
+  // columnas legacy (recibos anteriores al refactor de formas de pago)
   monto_efectivo: number; monto_transferencia: number
   monto_tarjeta: number; monto_tarjeta_debito: number; monto_tarjeta_credito: number
   monto_cheque: number; monto_deposito: number; monto_total: number
   origen: string | null
 }
+type FormaPagoRow = { id_recibo_fk: number; nombre_forma_pago: string; monto: number }
 
 type Centro = { id: number; nombre: string; tipo: string | null }
 
@@ -36,9 +38,10 @@ const TIPO_LABEL: Record<string, string> = {
 }
 
 export default function ReporteIngresos() {
-  const [recibos, setRecibos]   = useState<Recibo[]>([])
-  const [centros, setCentros]   = useState<Centro[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [recibos, setRecibos]         = useState<Recibo[]>([])
+  const [centros, setCentros]         = useState<Centro[]>([])
+  const [formasMap, setFormasMap]     = useState<Record<number, FormaPagoRow[]>>({})
+  const [loading, setLoading]         = useState(true)
   const [tab, setTab]           = useState<TabMode>('tipo')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
@@ -69,6 +72,24 @@ export default function ReporteIngresos() {
     if (filtroDe) result = result.filter(r => r.fecha >= filtroDe)
     if (filtroA)  result = result.filter(r => r.fecha <= filtroA)
     setRecibos(result)
+
+    // Cargar formas de pago de la tabla nueva para estos recibos
+    if (result.length > 0) {
+      const ids = result.map(r => r.id)
+      const { data: fp } = await dbCtrl
+        .from('recibos_ingreso_formas_pago')
+        .select('id_recibo_fk, nombre_forma_pago, monto')
+        .in('id_recibo_fk', ids)
+      const map: Record<number, FormaPagoRow[]> = {}
+      ;(fp ?? []).forEach((f: FormaPagoRow) => {
+        if (!map[f.id_recibo_fk]) map[f.id_recibo_fk] = []
+        map[f.id_recibo_fk].push(f)
+      })
+      setFormasMap(map)
+    } else {
+      setFormasMap({})
+    }
+
     setLoading(false)
   }, [filtroCentro, filtroTipo, filtroStatus, filtroDe, filtroA])
 
@@ -105,19 +126,40 @@ export default function ReporteIngresos() {
   const expandAll   = () => setExpanded(new Set(grupos.map(g => g.key)))
   const collapseAll = () => setExpanded(new Set())
 
-  // Forma de pago breakdown
+  // Forma de pago breakdown: nueva tabla primero, fallback a columnas legacy
   const fmtPago = (r: Recibo) => {
-    const parts = []
-    if (r.monto_efectivo      > 0) parts.push(`Eft ${fmt(r.monto_efectivo)}`)
-    if (r.monto_transferencia > 0) parts.push(`Trf ${fmt(r.monto_transferencia)}`)
-    const tdb = r.monto_tarjeta_debito  > 0 ? r.monto_tarjeta_debito  : r.monto_tarjeta_credito === 0 ? r.monto_tarjeta : 0
-    const tcr = r.monto_tarjeta_credito > 0 ? r.monto_tarjeta_credito : 0
-    if (tdb > 0) parts.push(`TDb ${fmt(tdb)}`)
-    if (tcr > 0) parts.push(`TCr ${fmt(tcr)}`)
-    if (r.monto_cheque        > 0) parts.push(`Chq ${fmt(r.monto_cheque)}`)
-    if (r.monto_deposito      > 0) parts.push(`Dep ${fmt(r.monto_deposito)}`)
+    const nuevas = formasMap[r.id] ?? []
+    if (nuevas.length > 0) {
+      return nuevas.filter(f => f.monto > 0).map(f => `${f.nombre_forma_pago} ${fmt(f.monto)}`).join(' · ') || '—'
+    }
+    // Legacy
+    const parts: string[] = []
+    if (r.monto_efectivo      > 0) parts.push(`Efectivo ${fmt(r.monto_efectivo)}`)
+    if (r.monto_transferencia > 0) parts.push(`Transf. ${fmt(r.monto_transferencia)}`)
+    const tdb = r.monto_tarjeta_debito > 0 ? r.monto_tarjeta_debito : r.monto_tarjeta_credito === 0 ? r.monto_tarjeta : 0
+    if (tdb > 0)                   parts.push(`T.Déb ${fmt(tdb)}`)
+    if (r.monto_tarjeta_credito > 0) parts.push(`T.Cré ${fmt(r.monto_tarjeta_credito)}`)
+    if (r.monto_cheque          > 0) parts.push(`Cheque ${fmt(r.monto_cheque)}`)
+    if (r.monto_deposito        > 0) parts.push(`Depósito ${fmt(r.monto_deposito)}`)
     return parts.join(' · ') || '—'
   }
+
+  // Agregados por forma de pago (combina nueva tabla + legacy)
+  const totalesPorForma: Record<string, number> = {}
+  recibos.forEach(r => {
+    const nuevas = formasMap[r.id] ?? []
+    if (nuevas.length > 0) {
+      nuevas.forEach(f => { totalesPorForma[f.nombre_forma_pago] = (totalesPorForma[f.nombre_forma_pago] ?? 0) + f.monto })
+    } else {
+      const tdb = r.monto_tarjeta_debito > 0 ? r.monto_tarjeta_debito : r.monto_tarjeta_credito === 0 ? r.monto_tarjeta : 0
+      if (r.monto_efectivo      > 0) totalesPorForma['Efectivo']           = (totalesPorForma['Efectivo'] ?? 0)           + r.monto_efectivo
+      if (r.monto_transferencia > 0) totalesPorForma['Transferencia']      = (totalesPorForma['Transferencia'] ?? 0)      + r.monto_transferencia
+      if (tdb                   > 0) totalesPorForma['Tarjeta Débito']     = (totalesPorForma['Tarjeta Débito'] ?? 0)     + tdb
+      if (r.monto_tarjeta_credito > 0) totalesPorForma['Tarjeta Crédito'] = (totalesPorForma['Tarjeta Crédito'] ?? 0)   + r.monto_tarjeta_credito
+      if (r.monto_cheque        > 0) totalesPorForma['Cheque']             = (totalesPorForma['Cheque'] ?? 0)             + r.monto_cheque
+      if (r.monto_deposito      > 0) totalesPorForma['Depósito Ventanilla']= (totalesPorForma['Depósito Ventanilla'] ?? 0)+ r.monto_deposito
+    }
+  })
 
   // Tipos únicos disponibles en catálogo
   const tiposCatalogo = Array.from(new Set(centros.map(c => c.tipo).filter(Boolean))) as string[]
@@ -157,29 +199,13 @@ export default function ReporteIngresos() {
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recibos</div>
           <div style={{ fontSize: 22, fontWeight: 700 }}>{recibos.length}</div>
         </div>
-        <div className="card" style={{ padding: '14px 20px', flex: '1 1 140px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Efectivo</div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(recibos.reduce((s, r) => s + Number(r.monto_efectivo ?? 0), 0))}</div>
-        </div>
-        <div className="card" style={{ padding: '14px 20px', flex: '1 1 140px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Transferencia</div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(recibos.reduce((s, r) => s + Number(r.monto_transferencia ?? 0), 0))}</div>
-        </div>
-        <div className="card" style={{ padding: '14px 20px', flex: '1 1 140px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>T. Débito</div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(recibos.reduce((s, r) => {
-            const v = r.monto_tarjeta_debito > 0 ? r.monto_tarjeta_debito : r.monto_tarjeta_credito === 0 ? r.monto_tarjeta : 0
-            return s + Number(v ?? 0)
-          }, 0))}</div>
-        </div>
-        <div className="card" style={{ padding: '14px 20px', flex: '1 1 140px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>T. Crédito</div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(recibos.reduce((s, r) => s + Number(r.monto_tarjeta_credito ?? 0), 0))}</div>
-        </div>
-        <div className="card" style={{ padding: '14px 20px', flex: '1 1 140px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Dep. Ventanilla</div>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(recibos.reduce((s, r) => s + Number(r.monto_deposito ?? 0), 0))}</div>
-        </div>
+        {/* KPIs dinámicos por forma de pago */}
+        {Object.entries(totalesPorForma).sort((a, b) => b[1] - a[1]).map(([nombre, total]) => (
+          <div key={nombre} className="card" style={{ padding: '14px 20px', flex: '1 1 140px' }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{nombre}</div>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>{fmt(total)}</div>
+          </div>
+        ))}
       </div>
 
       {/* Tabs */}

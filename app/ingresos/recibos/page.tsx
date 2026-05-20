@@ -900,11 +900,7 @@ export default function RecibosIngresoPage() {
                 <th>Fecha</th>
                 <th>Centro de Ingreso</th>
                 <th>Descripción</th>
-                <th style={{ textAlign: 'right' }}>Efectivo</th>
-                <th style={{ textAlign: 'right' }}>Transf.</th>
-                <th style={{ textAlign: 'right' }}>T.Déb</th>
-                <th style={{ textAlign: 'right' }}>T.Cré</th>
-                <th style={{ textAlign: 'right' }}>Dep.Ven</th>
+                <th>Origen</th>
                 <th style={{ textAlign: 'right' }}>Total</th>
                 <th>Status</th>
                 <th style={{ width: 60 }}></th>
@@ -912,11 +908,11 @@ export default function RecibosIngresoPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 48 }}>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48 }}>
                   <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
                 </td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                   <Receipt size={32} style={{ margin: '0 auto 12px', opacity: 0.2 }} />
                   <div style={{ fontSize: 14 }}>Sin recibos de ingreso</div>
                   <div style={{ fontSize: 12, marginTop: 4 }}>
@@ -947,13 +943,9 @@ export default function RecibosIngresoPage() {
                     <td style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {r.descripcion ?? '—'}
                     </td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{r.monto_efectivo > 0 ? fmt(r.monto_efectivo) : '—'}</td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{r.monto_transferencia > 0 ? fmt(r.monto_transferencia) : '—'}</td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
-                      {(() => { const v = r.monto_tarjeta_debito > 0 ? r.monto_tarjeta_debito : r.monto_tarjeta_credito === 0 ? r.monto_tarjeta : 0; return v > 0 ? fmt(v) : '—' })()}
+                    <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      {r.origen === 'cobranza' ? 'Cobranza' : r.origen === 'externo' ? 'Externo' : 'Manual'}
                     </td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{r.monto_tarjeta_credito > 0 ? fmt(r.monto_tarjeta_credito) : '—'}</td>
-                    <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>{r.monto_deposito > 0 ? fmt(r.monto_deposito) : '—'}</td>
                     <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: esCancelado ? '#94a3b8' : '#059669' }}>
                       {fmt(r.monto_total ?? 0)}
                     </td>
