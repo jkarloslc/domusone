@@ -18,6 +18,8 @@ type Seccion = { id: number; nombre: string; clave_alfa: string | null }
 type SeccionRow = { id_seccion_fk: number; nombre_seccion: string; monto: number; notas: string }
 type Frente = { id: number; nombre: string; codigo: string | null; id_centro_ingreso_fk: number | null }
 type FrenteRow = { id_frente_fk: number; nombre_frente: string; monto: number; notas: string }
+type Concepto = { id: number; nombre: string; clave: string | null; orden: number }
+type ConceptoRow = { id_concepto_fk: number; nombre_concepto: string; monto: number; notas: string }
 type Recibo = {
   id: number; folio: string | null; fecha: string
   id_centro_ingreso_fk: number | null
@@ -90,8 +92,9 @@ function ReciboModal({
     notas:               recibo?.notas ?? '',
     status:              recibo?.status ?? 'Confirmado',
   })
-  const [secRows, setSecRows]     = useState<SeccionRow[]>([])
+  const [secRows, setSecRows]       = useState<SeccionRow[]>([])
   const [frenteRows, setFrenteRows] = useState<FrenteRow[]>([])
+  const [conceptoRows, setConceptoRows] = useState<ConceptoRow[]>([])
   const [loadingSecs, setLoadingSecs] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [cancelling, setCancelling] = useState(false)
@@ -100,9 +103,10 @@ function ReciboModal({
   const [showCancel, setShowCancel] = useState(false)
   const [error, setError]         = useState('')
 
-  const centroSel  = centros.find(c => c.id === Number(form.id_centro_ingreso_fk))
-  const esSecciones = centroSel?.tipo_desglose === 'secciones'
-  const esFrente    = centroSel?.tipo_desglose === 'frentes'
+  const centroSel   = centros.find(c => c.id === Number(form.id_centro_ingreso_fk))
+  const esSecciones  = centroSel?.tipo_desglose === 'secciones'
+  const esFrente     = centroSel?.tipo_desglose === 'frentes'
+  const esConceptos  = esSecciones  // conceptos se muestran junto con secciones cuando hay configurados
 
   // ── Cargar secciones existentes (vista) o init (nuevo) ──────
   useEffect(() => {
@@ -148,6 +152,43 @@ function ReciboModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo?.id, esFrente, form.id_centro_ingreso_fk])
 
+  // ── Cargar conceptos del centro seleccionado ────────────────
+  useEffect(() => {
+    if (!esConceptos) { setConceptoRows([]); return }
+    const centroId = Number(form.id_centro_ingreso_fk)
+    if (!centroId) { setConceptoRows([]); return }
+
+    if (recibo) {
+      dbCtrl.from('recibos_ingreso_conceptos')
+        .select('id_concepto_fk, nombre_concepto, monto, notas')
+        .eq('id_recibo_fk', recibo.id)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setConceptoRows(data as ConceptoRow[])
+          } else {
+            loadConceptosFromCfg(centroId)
+          }
+        })
+    } else {
+      loadConceptosFromCfg(centroId)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recibo?.id, esConceptos, form.id_centro_ingreso_fk])
+
+  const loadConceptosFromCfg = async (centroId: number) => {
+    const { data } = await dbCfg.from('conceptos_ingreso')
+      .select('id, nombre, clave, orden')
+      .or(`id_centro_ingreso_fk.eq.${centroId},id_centro_ingreso_fk.is.null`)
+      .eq('activo', true)
+      .order('orden')
+    setConceptoRows((data ?? []).map((c: Concepto) => ({
+      id_concepto_fk: c.id,
+      nombre_concepto: c.nombre,
+      monto: 0,
+      notas: '',
+    })))
+  }
+
   const loadFrentesFromCfg = async (centroId: number) => {
     setLoadingSecs(true)
     const { data } = await dbCfg.from('frentes_ingreso')
@@ -168,16 +209,19 @@ function ReciboModal({
     secciones.map(s => ({ id_seccion_fk: s.id, nombre_seccion: s.nombre, monto: 0, notas: '' }))
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
-  const setSecMonto    = (idx: number, val: number) =>
+  const setSecMonto      = (idx: number, val: number) =>
     setSecRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
-  const setFrenteMonto = (idx: number, val: number) =>
+  const setFrenteMonto   = (idx: number, val: number) =>
     setFrenteRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
+  const setConceptoMonto = (idx: number, val: number) =>
+    setConceptoRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
 
   // Total calculado
-  const totalUnico   = form.monto_efectivo + form.monto_transferencia + form.monto_tarjeta_debito + form.monto_tarjeta_credito + form.monto_cheque + form.monto_deposito
-  const totalSecs    = secRows.reduce((a, r) => a + (r.monto || 0), 0)
-  const totalFrentes = frenteRows.reduce((a, r) => a + (r.monto || 0), 0)
-  const totalFinal   = esSecciones ? totalSecs : esFrente ? totalFrentes : totalUnico
+  const totalUnico     = form.monto_efectivo + form.monto_transferencia + form.monto_tarjeta_debito + form.monto_tarjeta_credito + form.monto_cheque + form.monto_deposito
+  const totalSecs      = secRows.reduce((a, r) => a + (r.monto || 0), 0)
+  const totalConceptos = conceptoRows.reduce((a, r) => a + (r.monto || 0), 0)
+  const totalFrentes   = frenteRows.reduce((a, r) => a + (r.monto || 0), 0)
+  const totalFinal     = esSecciones ? (totalSecs + totalConceptos) : esFrente ? totalFrentes : totalUnico
 
   const handleSave = async () => {
     if (!form.id_centro_ingreso_fk) { setError('Selecciona un centro de ingreso'); return }
@@ -227,6 +271,14 @@ function ReciboModal({
       await dbCtrl.from('recibos_ingreso_frentes').insert(frentesPayload)
     }
 
+    // Conceptos (complementario a secciones)
+    if (esConceptos && conceptoRows.some(r => r.monto > 0)) {
+      const conceptosPayload = conceptoRows
+        .filter(r => r.monto > 0)
+        .map(r => ({ id_recibo_fk: newRec.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, notas: r.notas || null }))
+      await dbCtrl.from('recibos_ingreso_conceptos').insert(conceptosPayload)
+    }
+
     setSaving(false)
     onSaved()
   }
@@ -262,7 +314,7 @@ function ReciboModal({
         if (row.clave === 'org_logo_url') orgLogo = row.valor ?? ''
       })
 
-      const [secRes, frenteRes] = await Promise.all([
+      const [secRes, frenteRes, conceptoRes] = await Promise.all([
         dbCtrl.from('recibos_ingreso_secciones')
           .select('nombre_seccion, monto')
           .eq('id_recibo_fk', recibo.id)
@@ -271,9 +323,13 @@ function ReciboModal({
           .select('nombre_frente, monto')
           .eq('id_recibo_fk', recibo.id)
           .order('nombre_frente'),
+        dbCtrl.from('recibos_ingreso_conceptos')
+          .select('nombre_concepto, monto')
+          .eq('id_recibo_fk', recibo.id),
       ])
       const secs = (secRes.data ?? []) as { nombre_seccion: string; monto: number }[]
       const frentes = (frenteRes.data ?? []) as { nombre_frente: string; monto: number }[]
+      const conceptosPrint = (conceptoRes.data ?? []) as { nombre_concepto: string; monto: number }[]
 
       const formas = [
         { nombre: 'Efectivo', monto: recibo.monto_efectivo ?? 0 },
@@ -292,6 +348,9 @@ function ReciboModal({
           ? frentes.map(f => `<tr><td>${escapeHtml(f.nombre_frente)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
           : ''
       const desgloseLabel = esSecciones ? 'Desglose por Sección' : esFrente ? 'Desglose por Frente' : ''
+      const conceptosRows = conceptosPrint.map(c => `<tr><td>${escapeHtml(c.nombre_concepto)}</td><td style="text-align:right">${fmt(c.monto)}</td></tr>`).join('')
+      const totalSecsImp = secs.reduce((a, s) => a + s.monto, 0)
+      const totalConceptosImp = conceptosPrint.reduce((a, c) => a + c.monto, 0)
       const formasRows = formas.length > 0
         ? formas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
         : '<tr><td colspan="2">Captura por desglose</td></tr>'
@@ -354,6 +413,23 @@ function ReciboModal({
             <table>
               <thead><tr><th>${esSecciones ? 'Sección' : 'Frente'}</th><th style="text-align:right">Monto</th></tr></thead>
               <tbody>${desgloseRows}</tbody>
+              ${esSecciones && conceptosRows ? `<tfoot><tr><th>Subtotal secciones</th><th style="text-align:right">${fmt(totalSecsImp)}</th></tr></tfoot>` : ''}
+            </table>
+          </div>
+        ` : ''}
+
+        ${esSecciones && conceptosRows ? `
+          <div class="section">
+            <div class="section-title">Otros Conceptos de Cobro</div>
+            <table>
+              <thead><tr><th>Concepto</th><th style="text-align:right">Monto</th></tr></thead>
+              <tbody>${conceptosRows}</tbody>
+              <tfoot><tr><th>Subtotal conceptos</th><th style="text-align:right">${fmt(totalConceptosImp)}</th></tr></tfoot>
+            </table>
+          </div>
+          <div class="section">
+            <table>
+              <tfoot><tr><th class="total">TOTAL GENERAL</th><th class="total" style="text-align:right">${fmt(totalSecsImp + totalConceptosImp)}</th></tr></tfoot>
             </table>
           </div>
         ` : ''}
@@ -500,9 +576,60 @@ function ReciboModal({
                     </div>
                   ))}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '9px 12px', background: '#f0fdf4', borderTop: '2px solid #bbf7d0' }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>TOTAL</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>Subtotal secciones</span>
                     <span style={{ fontSize: 14, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecs)}</span>
                   </div>
+                </div>
+              )}
+
+              {/* Conceptos complementarios */}
+              {esConceptos && conceptoRows.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <DollarSign size={13} style={{ color: '#7c3aed' }} /> Otros conceptos de cobro
+                  </div>
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '7px 12px', background: '#faf5ff', borderBottom: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed' }}>CONCEPTO</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textAlign: 'right' }}>MONTO</span>
+                    </div>
+                    {conceptoRows.map((row, i) => (
+                      <div key={row.id_concepto_fk} style={{
+                        display: 'grid', gridTemplateColumns: '1fr 140px', padding: '8px 12px', alignItems: 'center',
+                        borderBottom: i < conceptoRows.length - 1 ? '1px solid #f1f5f9' : 'none',
+                        background: row.monto > 0 ? '#faf5ff' : '#fff',
+                      }}>
+                        <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_concepto}</span>
+                        <div>
+                          <input
+                            className="input" type="number" min="0" step="0.01"
+                            value={row.monto || ''}
+                            onChange={e => setConceptoMonto(i, parseFloat(e.target.value) || 0)}
+                            disabled={isView}
+                            style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 8px', fontSize: 13 }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '9px 12px', background: '#faf5ff', borderTop: '2px solid #e9d5ff' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>Subtotal conceptos</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalConceptos)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Total general secciones + conceptos */}
+              {(esConceptos && conceptoRows.length > 0) && (
+                <div style={{ marginTop: 10, padding: '11px 14px', background: '#f0fdf4', borderRadius: 8, border: '2px solid #86efac', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>TOTAL GENERAL</span>
+                  <span style={{ fontSize: 17, fontWeight: 800, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFinal)}</span>
+                </div>
+              )}
+              {(!esConceptos || conceptoRows.length === 0) && (
+                <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>Total</span>
+                  <span style={{ fontSize: 16, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecs)}</span>
                 </div>
               )}
             </div>
