@@ -224,7 +224,8 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
   }
 
   useEffect(() => {
-    dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det(*)')
+    // Hint explícito de FK necesario — Supabase no infiere la relación automáticamente
+    dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)')
       .eq('id_rfq_fk', rfq.id).order('id')
       .then(({ data }) => {
         const cots = data ?? []
@@ -296,7 +297,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
       )
     }
     setSaving(false); setAddingCot(false)
-    const { data } = await dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det(*)').eq('id_rfq_fk', rfq.id).order('id')
+    const { data } = await dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)').eq('id_rfq_fk', rfq.id).order('id')
     const cots = data ?? []
     setCots(cots)
     setItemWinners(initWinners(cots))
@@ -335,7 +336,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     await dbComp.from('rfq').update({ status: 'Cerrada', proveedor_ganador: provGanador }).eq('id', rfq.id)
 
     setConfirmando(false)
-    const { data } = await dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det(*)').eq('id_rfq_fk', rfq.id).order('id')
+    const { data } = await dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)').eq('id_rfq_fk', rfq.id).order('id')
     const cots = data ?? []
     setCots(cots)
     setItemWinners(initWinners(cots))
