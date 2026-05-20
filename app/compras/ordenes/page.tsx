@@ -170,6 +170,8 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const [relAF,   setRelAF]        = useState<{id_area: number; id_frente: number}[]>([])
   const [areaId, setAreaId]        = useState<string>(row?.id_area_fk?.toString() ?? '')
   const [rfqs, setRFQs]         = useState<any[]>([])
+  // Opciones de proveedor cuando la RFQ tiene múltiples ganadores
+  const [rfqMultiProvs, setRfqMultiProvs] = useState<{cotId: number; provId: number; nombre: string; items: any[]}[]>([])
   const [form, setForm] = useState({
     id_proveedor_fk:       row?.id_proveedor_fk?.toString() ?? '',
     id_rfq_fk:             row?.id_rfq_fk?.toString() ?? '',
@@ -204,7 +206,12 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       const propioRFQ = row?.id_rfq_fk
       const rfqsUsadas = new Set((rfqsConOC ?? []).map((r: any) => r.id_rfq_fk).filter((id: any) => id !== propioRFQ))
       const { data } = await dbComp.from('rfq').select('id, folio, proveedor_ganador').eq('status', 'Cerrada')
-      setRFQs((data ?? []).filter((r: any) => !rfqsUsadas.has(r.id)))
+      setRFQs((data ?? []).filter((r: any) => {
+        // RFQ multi-ganador (proveedor_ganador = null): siempre visible para crear OC por proveedor
+        if (!r.proveedor_ganador) return true
+        // RFQ ganador único: ocultar si ya tiene OC
+        return !rfqsUsadas.has(r.id)
+      }))
     })()
     if (!isNew) {
       dbComp.from('ordenes_compra_det').select('*').eq('id_oc_fk', row.id).then(({ data }) => {
@@ -225,67 +232,41 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   }, [])
 
   const aplicarRFQ = async (rfqId: string) => {
-    setForm(f => ({ ...f, id_rfq_fk: rfqId }))
+    setForm(f => ({ ...f, id_rfq_fk: rfqId, id_proveedor_fk: f.id_proveedor_fk }))
+    setRfqMultiProvs([])
     if (!rfqId) {
-      // Limpiar precarga si el usuario deselecciona el RFQ
       setDet([{ id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
       setArtSearches(['']); setArtOptions([[]])
       return
     }
 
-    // 1. Proveedor ganador desde el state local (ya cargado) — solo si es uno único
-    const rfq = rfqs.find(r => r.id === Number(rfqId))
-    if (rfq?.proveedor_ganador) setForm(f => ({ ...f, id_proveedor_fk: rfq.proveedor_ganador.toString() }))
-
-    // 2. Cotizaciones ganadoras (puede haber más de una con seleccionada=true en multi-proveedor)
+    // 1. Cotizaciones ganadoras (puede haber más de una con seleccionada=true)
     const { data: cots } = await dbComp.from('rfq_cotizaciones')
       .select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)')
       .eq('id_rfq_fk', Number(rfqId)).eq('seleccionada', true)
 
-    if (cots && cots.length > 0) {
-      let items: any[]
-      if (cots.length === 1) {
-        // Ganador único: usar ítems ganadores si existen, si no todos (compat. anterior)
-        const detItems = cots[0].rfq_cotizaciones_det ?? []
-        const ganadorItems = detItems.filter((d: any) => d.ganador)
-        const src = ganadorItems.length > 0 ? ganadorItems : detItems
-        items = src.map((d: any) => ({
-          id_articulo_fk:  null,
-          descripcion:     d.descripcion ?? '',
-          cantidad:        d.cantidad?.toString() ?? '1',
-          unidad:          d.unidad ?? 'PZA',
-          precio_unitario: d.precio_unitario?.toString() ?? '',
-          tasa_iva:        d.tasa_iva?.toString() ?? '0',
-        }))
-      } else {
-        // Multi-ganador: recopilar solo los ítems marcados ganador=true de cada cotización
-        items = cots.flatMap(c =>
-          (c.rfq_cotizaciones_det ?? [])
-            .filter((d: any) => d.ganador)
-            .map((d: any) => ({
-              id_articulo_fk:  null,
-              descripcion:     d.descripcion ?? '',
-              cantidad:        d.cantidad?.toString() ?? '1',
-              unidad:          d.unidad ?? 'PZA',
-              precio_unitario: d.precio_unitario?.toString() ?? '',
-              tasa_iva:        d.tasa_iva?.toString() ?? '0',
-            }))
-        )
-      }
-      if (items.length > 0) {
-        setDet(items)
-        setArtSearches(new Array(items.length).fill(''))
-        setArtOptions(new Array(items.length).fill([]))
-        setForm(f => ({ ...f, condiciones_pago: cots[0].condiciones_pago ?? f.condiciones_pago }))
-      }
+    if (cots && cots.length > 1) {
+      // ── Multi-ganador: pausar y mostrar picker de proveedor ──────────
+      const opts = cots.map(c => {
+        const ganadorItems = (c.rfq_cotizaciones_det ?? []).filter((d: any) => d.ganador)
+        const prov = proveedores.find(p => p.id === c.id_proveedor_fk)
+        return { cotId: c.id, provId: c.id_proveedor_fk, nombre: prov?.nombre ?? `Proveedor #${c.id_proveedor_fk}`, items: ganadorItems }
+      }).filter(op => op.items.length > 0)
+      setRfqMultiProvs(opts)
+      // No cargar ítems todavía — el usuario elige proveedor en el picker
+    } else if (cots && cots.length === 1) {
+      // ── Ganador único ────────────────────────────────────────────────
+      setForm(f => ({ ...f, id_proveedor_fk: cots[0].id_proveedor_fk.toString() }))
+      const detItems = cots[0].rfq_cotizaciones_det ?? []
+      const ganadorItems = detItems.filter((d: any) => d.ganador)
+      const src = ganadorItems.length > 0 ? ganadorItems : detItems
+      _cargarItems(src, cots[0].condiciones_pago)
     }
 
-    // 3. CC / Sección / Frente desde la requisición vinculada al RFQ
-    // Consolidamos en un solo query trayendo rfq + requisición en una sola consulta
+    // 2. CC / Área / Frente desde la requisición vinculada
     const { data: rfqData } = await dbComp.from('rfq')
       .select('id_requisicion_fk, requisiciones(id_centro_costo_fk, id_area_fk, id_frente_fk)')
       .eq('id', Number(rfqId)).maybeSingle()
-
     const req = (rfqData as any)?.requisiciones
     if (req) {
       const aId = req.id_area_fk?.toString() ?? ''
@@ -293,9 +274,34 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       setForm(f => ({
         ...f,
         id_centro_costo_fk: req.id_centro_costo_fk?.toString() ?? f.id_centro_costo_fk,
-        id_area_fk:         aId                                || f.id_area_fk,
-        id_frente_fk:       req.id_frente_fk?.toString()       ?? f.id_frente_fk,
+        id_area_fk:         aId || f.id_area_fk,
+        id_frente_fk:       req.id_frente_fk?.toString() ?? f.id_frente_fk,
       }))
+    }
+  }
+
+  // Carga los ítems de un proveedor específico (elegido en el picker multi-ganador)
+  const elegirProveedorRFQ = (op: {cotId: number; provId: number; nombre: string; items: any[]}, condPago?: string) => {
+    setForm(f => ({ ...f, id_proveedor_fk: op.provId.toString(), condiciones_pago: condPago ?? f.condiciones_pago }))
+    _cargarItems(op.items, condPago)
+    setRfqMultiProvs([])
+  }
+
+  // Helper: convierte ítems de rfq_cotizaciones_det al formato det de OC
+  const _cargarItems = (src: any[], condPago?: string) => {
+    const items = src.map((d: any) => ({
+      id_articulo_fk:  null,
+      descripcion:     d.descripcion ?? '',
+      cantidad:        d.cantidad?.toString() ?? '1',
+      unidad:          d.unidad ?? 'PZA',
+      precio_unitario: d.precio_unitario?.toString() ?? '',
+      tasa_iva:        d.tasa_iva?.toString() ?? '0',
+    }))
+    if (items.length > 0) {
+      setDet(items)
+      setArtSearches(new Array(items.length).fill(''))
+      setArtOptions(new Array(items.length).fill([]))
+      if (condPago) setForm(f => ({ ...f, condiciones_pago: condPago }))
     }
   }
 
@@ -403,7 +409,11 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                 <label className="label">Desde RFQ (opcional)</label>
                 <select className="select" value={form.id_rfq_fk} onChange={e => aplicarRFQ(e.target.value)}>
                   <option value="">— Sin RFQ —</option>
-                  {rfqs.map(r => <option key={r.id} value={r.id}>{r.folio}</option>)}
+                  {rfqs.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.folio}{!r.proveedor_ganador ? ' · múltiples proveedores' : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -415,6 +425,27 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                 </select>
               </div>
             </div>
+            {/* Picker multi-ganador: aparece cuando la RFQ tiene varios proveedores ganadores */}
+            {rfqMultiProvs.length > 0 && (
+              <div style={{ padding: '12px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 10 }}>
+                  Esta RFQ tiene productos de múltiples proveedores ganadores.<br />
+                  <span style={{ fontWeight: 400 }}>Elige el proveedor para <em>esta</em> OC — crea una OC separada por cada proveedor.</span>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {rfqMultiProvs.map(op => (
+                    <button key={op.cotId} className="btn-secondary"
+                      style={{ fontSize: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 14px', gap: 2 }}
+                      onClick={() => elegirProveedorRFQ(op)}>
+                      <span style={{ fontWeight: 600 }}>{op.nombre}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {op.items.length} producto{op.items.length !== 1 ? 's' : ''} ganador{op.items.length !== 1 ? 'es' : ''}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
                 <label className="label">Fecha Entrega Est.</label>
