@@ -125,9 +125,21 @@ function RFQModal({ row, onClose, onSaved }: { row: any | null; onClose: () => v
   })
 
   useEffect(() => {
-    dbComp.from('requisiciones').select('id, folio, area_solicitante')
-      .eq('status', 'Aprobada').order('folio')
-      .then(({ data }) => setReqs(data ?? []))
+    ;(async () => {
+      // IDs de requisiciones ya vinculadas a alguna RFQ (excepto la propia si se edita)
+      const { data: rfqsConReq } = await dbComp.from('rfq')
+        .select('id_requisicion_fk').not('id_requisicion_fk', 'is', null)
+      const yaUsadas = new Set(
+        (rfqsConReq ?? [])
+          .map((r: any) => r.id_requisicion_fk)
+          .filter((id: any) => id !== (row?.id_requisicion_fk ?? null))
+      )
+      const { data } = await dbComp.from('requisiciones')
+        .select('id, folio, area_solicitante')
+        .eq('status', 'Aprobada').order('folio')
+      // Mostrar solo Aprobadas que aún no tienen RFQ asignada
+      setReqs((data ?? []).filter((r: any) => !yaUsadas.has(r.id)))
+    })()
   }, [])
 
   const handleSave = async () => {
