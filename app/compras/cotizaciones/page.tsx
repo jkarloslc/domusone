@@ -238,15 +238,25 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     return winners
   }
 
+  // Fetch cotizaciones + det en dos pasos para evitar problemas con el hint FK de Supabase
+  const fetchCots = async () => {
+    const { data: cotsData } = await dbComp.from('rfq_cotizaciones')
+      .select('*').eq('id_rfq_fk', rfq.id).order('id')
+    const ids = (cotsData ?? []).map((c: any) => c.id)
+    const detData = ids.length > 0
+      ? (await dbComp.from('rfq_cotizaciones_det').select('*').in('id_cotizacion_fk', ids).order('id')).data ?? []
+      : []
+    const cots = (cotsData ?? []).map((c: any) => ({
+      ...c,
+      rfq_cotizaciones_det: detData.filter((d: any) => d.id_cotizacion_fk === c.id),
+    }))
+    setCots(cots)
+    setItemWinners(initWinners(cots))
+    return cots
+  }
+
   useEffect(() => {
-    // Hint explícito de FK necesario — Supabase no infiere la relación automáticamente
-    dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)')
-      .eq('id_rfq_fk', rfq.id).order('id')
-      .then(({ data }) => {
-        const cots = data ?? []
-        setCots(cots)
-        setItemWinners(initWinners(cots))
-      })
+    fetchCots()
     dbComp.from('proveedores').select('*').eq('activo', true).order('nombre')
       .then(({ data }) => setProvs(data as Proveedor[] ?? []))
     if (rfq.id_requisicion_fk) {
@@ -321,10 +331,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
       )
     }
     setSaving(false); setAddingCot(false)
-    const { data } = await dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)').eq('id_rfq_fk', rfq.id).order('id')
-    const cots = data ?? []
-    setCots(cots)
-    setItemWinners(initWinners(cots))
+    await fetchCots()
   }
 
   // Asigna como ganadores solo los productos donde este proveedor cotizó precio > 0
@@ -360,10 +367,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     await dbComp.from('rfq').update({ status: 'Cerrada', proveedor_ganador: provGanador }).eq('id', rfq.id)
 
     setConfirmando(false)
-    const { data } = await dbComp.from('rfq_cotizaciones').select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)').eq('id_rfq_fk', rfq.id).order('id')
-    const cots = data ?? []
-    setCots(cots)
-    setItemWinners(initWinners(cots))
+    await fetchCots()
   }
 
   const setCD = (i: number, k: string, v: string) =>
