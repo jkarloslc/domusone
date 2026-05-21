@@ -190,7 +190,6 @@ function ReciboModal({
   useEffect(() => {
     if (esFrente) { setFormaPagoRows([]); return }
     if (recibo) {
-      // Vista: cargar desde la tabla nueva; si está vacía, reconstruir desde columnas legacy
       dbCtrl.from('recibos_ingreso_formas_pago')
         .select('id_forma_pago_fk, nombre_forma_pago, monto')
         .eq('id_recibo_fk', recibo.id)
@@ -198,29 +197,7 @@ function ReciboModal({
           if (data && data.length > 0) {
             setFormaPagoRows(data as FormaPagoRow[])
           } else {
-            // Compatibilidad: recibo creado con columnas legacy (POS o versión anterior)
-            // Reconstruir montos desde las columnas fijas del recibo
-            const legacyAmounts: { nombre: string; monto: number }[] = [
-              { nombre: 'Efectivo',           monto: recibo!.monto_efectivo ?? 0 },
-              { nombre: 'Transferencia',       monto: recibo!.monto_transferencia ?? 0 },
-              { nombre: 'Tarjeta Débito',      monto: recibo!.monto_tarjeta_debito > 0
-                  ? recibo!.monto_tarjeta_debito
-                  : (recibo!.monto_tarjeta_credito ?? 0) === 0 ? (recibo!.monto_tarjeta ?? 0) : 0 },
-              { nombre: 'Tarjeta Crédito',     monto: recibo!.monto_tarjeta_credito ?? 0 },
-              { nombre: 'Cheque',              monto: recibo!.monto_cheque ?? 0 },
-              { nombre: 'Depósito Ventanilla', monto: recibo!.monto_deposito ?? 0 },
-            ].filter(f => f.monto > 0)
-
-            if (legacyAmounts.length > 0) {
-              setFormaPagoRows(legacyAmounts.map((f, i) => ({
-                id_forma_pago_fk: -(i + 1), // id negativo → indica origen legacy (solo lectura)
-                nombre_forma_pago: f.nombre,
-                monto: f.monto,
-              })))
-            } else {
-              // Recibo sin montos en legacy ni en tabla nueva → mostrar catálogo vacío
-              loadFormasPagoFromCfg()
-            }
+            loadFormasPagoFromCfg()
           }
         })
     } else {
@@ -228,14 +205,6 @@ function ReciboModal({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo?.id, esFrente])
-
-  // ── En modo edición: si las formas son legacy (id negativo) recargar catálogo ──
-  useEffect(() => {
-    if (!isEditMode) return
-    const tieneLegacy = formaPagoRows.some(r => r.id_forma_pago_fk < 0)
-    if (tieneLegacy) loadFormasPagoFromCfg()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode])
 
   const loadFormasPagoFromCfg = async () => {
     const { data } = await dbCfg.from('formas_pago')
@@ -345,9 +314,9 @@ function ReciboModal({
     }
 
     // Formas de pago (todos los centros excepto frentes)
-    if (!esFrente && formaPagoRows.some(r => r.monto > 0)) {
+    if (!esFrente && formaPagoRows.some(r => r.monto > 0 && r.id_forma_pago_fk > 0)) {
       const formasPayload = formaPagoRows
-        .filter(r => r.monto > 0)
+        .filter(r => r.monto > 0 && r.id_forma_pago_fk > 0)
         .map(r => ({ id_recibo_fk: newRec.id, id_forma_pago_fk: r.id_forma_pago_fk, nombre_forma_pago: r.nombre_forma_pago, monto: r.monto }))
       await dbCtrl.from('recibos_ingreso_formas_pago').insert(formasPayload)
     }
@@ -359,6 +328,17 @@ function ReciboModal({
   const handleUpdate = async () => {
     if (!recibo) return
     if (totalFinal === 0) { setError('El monto total debe ser mayor a $0'); return }
+
+    // Misma validación de secciones vs formas de cobro que handleSave
+    if (esSecciones && totalFormasPago > 0) {
+      const diff = Math.round((totalFinal - totalFormasPago) * 100) / 100
+      if (diff !== 0) {
+        const tipo = diff > 0 ? 'falta' : 'excede'
+        setError(`El total cobrado (${fmt(totalFormasPago)}) no coincide con el total general (${fmt(totalFinal)}). ${tipo === 'falta' ? 'Faltan' : 'Sobran'} ${fmt(Math.abs(diff))} en las formas de cobro.`)
+        return
+      }
+    }
+
     setSaving(true); setError('')
 
     // 1. Actualizar cabecera
@@ -402,14 +382,12 @@ function ReciboModal({
           .map(r => ({ id_recibo_fk: recibo.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, notas: r.notas || null }))
       )
     }
-    if (!esFrente && formaPagoRows.some(r => r.monto > 0)) {
-      // Excluir filas con id negativo (origen legacy readonly) — deben tener id real del catálogo
-      const validFormas = formaPagoRows.filter(r => r.monto > 0 && r.id_forma_pago_fk > 0)
-      if (validFormas.length > 0) {
-        await dbCtrl.from('recibos_ingreso_formas_pago').insert(
-          validFormas.map(r => ({ id_recibo_fk: recibo.id, id_forma_pago_fk: r.id_forma_pago_fk, nombre_forma_pago: r.nombre_forma_pago, monto: r.monto }))
-        )
-      }
+    if (!esFrente && formaPagoRows.some(r => r.monto > 0 && r.id_forma_pago_fk > 0)) {
+      await dbCtrl.from('recibos_ingreso_formas_pago').insert(
+        formaPagoRows
+          .filter(r => r.monto > 0 && r.id_forma_pago_fk > 0)
+          .map(r => ({ id_recibo_fk: recibo.id, id_forma_pago_fk: r.id_forma_pago_fk, nombre_forma_pago: r.nombre_forma_pago, monto: r.monto }))
+      )
     }
 
     setSaving(false)
@@ -468,18 +446,8 @@ function ReciboModal({
       const frentes = (frenteRes.data ?? []) as { nombre_frente: string; monto: number }[]
       const conceptosPrint = (conceptoRes.data ?? []) as { nombre_concepto: string; monto: number }[]
 
-      // Formas de pago: nueva tabla primero, fallback a columnas legacy
-      const formasNuevas = (formaRes.data ?? []) as { nombre_forma_pago: string; monto: number }[]
-      const formas: { nombre: string; monto: number }[] = formasNuevas.length > 0
-        ? formasNuevas.map(f => ({ nombre: f.nombre_forma_pago, monto: f.monto }))
-        : [
-            { nombre: 'Efectivo',           monto: recibo.monto_efectivo ?? 0 },
-            { nombre: 'Transferencia',       monto: recibo.monto_transferencia ?? 0 },
-            { nombre: 'Tarjeta Débito',      monto: recibo.monto_tarjeta_debito > 0 ? recibo.monto_tarjeta_debito : (recibo.monto_tarjeta_credito ?? 0) === 0 ? (recibo.monto_tarjeta ?? 0) : 0 },
-            { nombre: 'Tarjeta Crédito',     monto: recibo.monto_tarjeta_credito ?? 0 },
-            { nombre: 'Cheque',              monto: recibo.monto_cheque ?? 0 },
-            { nombre: 'Depósito Ventanilla', monto: recibo.monto_deposito ?? 0 },
-          ].filter(f => f.monto > 0)
+      const formas = ((formaRes.data ?? []) as { nombre_forma_pago: string; monto: number }[])
+        .map(f => ({ nombre: f.nombre_forma_pago, monto: f.monto }))
 
       const centroNombre = centroSel?.nombre ?? 'Sin centro'
       const desgloseRows = esSecciones
@@ -614,7 +582,7 @@ function ReciboModal({
       maxWidth={600}
       footer={
         <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {/* Superadmin: botón Editar (solo si no está en modo edición ni cancelación) */}
             {isView && isSuperAdmin && !isEditMode && !showCancel && recibo!.status !== 'Cancelado' && (
               <button onClick={() => setIsEditMode(true)}
@@ -625,7 +593,7 @@ function ReciboModal({
             {/* Cancelar recibo (solo vista normal, no en modo edición) */}
             {isView && !isEditMode && recibo!.status === 'Confirmado' && !showCancel && (
               <button onClick={() => setShowCancel(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer', marginTop: isSuperAdmin ? 6 : 0 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
                 <Ban size={13} /> Cancelar recibo
               </button>
             )}
