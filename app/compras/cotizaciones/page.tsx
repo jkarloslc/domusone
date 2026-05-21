@@ -239,22 +239,14 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     return winners
   }
 
-  const [debugMsg, setDebugMsg] = useState('')
-
-  // Fetch cotizaciones + det en dos pasos
+  // Fetch cotizaciones + det en dos pasos (evita el hint FK roto de Supabase)
   const fetchCots = async () => {
-    const { data: cotsData, error: e1 } = await dbComp.from('rfq_cotizaciones')
+    const { data: cotsData } = await dbComp.from('rfq_cotizaciones')
       .select('*').eq('id_rfq_fk', rfq.id).order('id')
-    if (e1) { setDebugMsg(`Error cots: ${e1.message}`); return [] }
-
     const ids = (cotsData ?? []).map((c: any) => c.id)
-    const { data: detData, error: e2 } = ids.length > 0
+    const { data: detData } = ids.length > 0
       ? await dbComp.from('rfq_cotizaciones_det').select('*').in('id_cotizacion_fk', ids).order('id')
-      : { data: [], error: null }
-    if (e2) { setDebugMsg(`Error det: ${e2.message}`); return [] }
-
-    setDebugMsg(`cots=${cotsData?.length ?? 0} ids=[${ids}] det=${detData?.length ?? 0}`)
-
+      : { data: [] }
     const cots = (cotsData ?? []).map((c: any) => ({
       ...c,
       rfq_cotizaciones_det: (detData ?? []).filter((d: any) => d.id_cotizacion_fk === c.id),
@@ -383,10 +375,9 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     if (!editingCot) return
     setSaving(true)
     const detTodos = cotDet.filter(d => d.descripcion)
-    setDebugMsg(`Guardando ${detTodos.length} ítems para cot id=${editingCot.id}…`)
     // Borrar det anteriores y reemplazar
     const { error: delErr } = await dbComp.from('rfq_cotizaciones_det').delete().eq('id_cotizacion_fk', editingCot.id)
-    if (delErr) { setDebugMsg(`Error DELETE: ${delErr.message}`); setSaving(false); return }
+    if (delErr) { console.error('Error DELETE rfq_cotizaciones_det:', delErr.message); setSaving(false); return }
     const precio = (d: any) => d.precio_unitario !== '' && Number(d.precio_unitario) > 0
       ? Number(d.precio_unitario) : null
     if (detTodos.length > 0) {
@@ -410,7 +401,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
           }
         })
       )
-      if (insErr) { setDebugMsg(`Error INSERT: ${insErr.message}`); setSaving(false); return }
+      if (insErr) { console.error('Error INSERT rfq_cotizaciones_det:', insErr.message); setSaving(false); return }
     }
     // Recalcular totales en la cabecera
     const newSubtotal = detTodos.reduce((a, d) => {
@@ -502,13 +493,6 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
         </>
       ) : undefined}
     >
-
-          {/* Debug temporal */}
-          {debugMsg && (
-            <div style={{ padding: '6px 10px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: 6, fontSize: 11, fontFamily: 'monospace', marginBottom: 10 }}>
-              {debugMsg}
-            </div>
-          )}
 
           {/* Cuadro comparativo */}
           {cotizaciones.length > 0 && (
