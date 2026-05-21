@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { dbGolf } from '@/lib/supabase'
+import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
   Car, Lock, BookOpen, CreditCard, Receipt, FileText,
@@ -153,17 +154,14 @@ const MODULOS = [
 ]
 
 // ── Helpers de fecha ──────────────────────────────────────────
-function getHoy() {
-  return new Date().toISOString().split('T')[0]
-}
 function getIniMes() {
   const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]
+  return new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString('en-CA')
 }
 
 export default function GolfPage() {
   const router  = useRouter()
-  const hoy     = getHoy()
+  const hoy     = fechaLocal()
   const iniMes  = getIniMes()
 
   const [kpis,     setKpis]     = useState<KPIs>({
@@ -187,13 +185,13 @@ export default function GolfPage() {
         // 2. Salidas hoy
         dbGolf.from('ctrl_accesos')
           .select('id', { count: 'exact', head: true })
-          .gte('fecha_entrada', `${hoy}T00:00:00`)
-          .lte('fecha_entrada', `${hoy}T23:59:59`),
+          .gte('fecha_entrada', inicioDelDia(hoy))
+          .lte('fecha_entrada', finDelDia(hoy)),
         // 3. Salidas este mes
         dbGolf.from('ctrl_accesos')
           .select('id', { count: 'exact', head: true })
-          .gte('fecha_entrada', `${iniMes}T00:00:00`)
-          .lte('fecha_entrada', `${hoy}T23:59:59`),
+          .gte('fecha_entrada', inicioDelDia(iniMes))
+          .lte('fecha_entrada', finDelDia(hoy)),
         // 4. Cuotas vencidas (PENDIENTE + fecha_vencimiento < hoy)
         dbGolf.from('cat_cuotas')
           .select('monto_final')
@@ -202,8 +200,8 @@ export default function GolfPage() {
         // 5. Cortes del mes con ingresos (agrupados por centro)
         dbGolf.from('ctrl_cortes_caja')
           .select('id_centro_fk, centro_nombre, total_ventas')
-          .gte('fecha_corte', `${iniMes}T00:00:00`)
-          .lte('fecha_corte', `${hoy}T23:59:59`),
+          .gte('fecha_corte', inicioDelDia(iniMes))
+          .lte('fecha_corte', finDelDia(hoy)),
         // 6. Centros de venta (para orden y nombres)
         dbGolf.from('cat_centros_venta').select('id, nombre').eq('activo', true).order('orden'),
       ])
