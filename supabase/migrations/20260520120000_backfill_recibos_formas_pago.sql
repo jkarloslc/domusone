@@ -55,17 +55,17 @@ recibos_sin_formas AS (
 ),
 desglose AS (
   -- Expandir cada columna legacy a una fila
-  SELECT id AS id_recibo_fk, 'efectivo'            AS nombre_key, monto_efectivo        AS monto FROM recibos_sin_formas WHERE (monto_efectivo       ?? 0) > 0
+  SELECT id AS id_recibo_fk, 'efectivo'            AS nombre_key, monto_efectivo        AS monto FROM recibos_sin_formas WHERE COALESCE(monto_efectivo,       0) > 0
   UNION ALL
-  SELECT id, 'transferencia',                                       monto_transferencia        FROM recibos_sin_formas WHERE (monto_transferencia  ?? 0) > 0
+  SELECT id, 'transferencia',                                       monto_transferencia        FROM recibos_sin_formas WHERE COALESCE(monto_transferencia,   0) > 0
   UNION ALL
-  SELECT id, 'tarjeta débito',                                      monto_tarjeta_debito       FROM recibos_sin_formas WHERE (monto_tarjeta_debito ?? 0) > 0
+  SELECT id, 'tarjeta débito',                                      monto_tarjeta_debito       FROM recibos_sin_formas WHERE COALESCE(monto_tarjeta_debito,  0) > 0
   UNION ALL
-  SELECT id, 'tarjeta crédito',                                     monto_tarjeta_credito      FROM recibos_sin_formas WHERE (monto_tarjeta_credito?? 0) > 0
+  SELECT id, 'tarjeta crédito',                                     monto_tarjeta_credito      FROM recibos_sin_formas WHERE COALESCE(monto_tarjeta_credito, 0) > 0
   UNION ALL
-  SELECT id, 'cheque',                                              monto_cheque               FROM recibos_sin_formas WHERE (monto_cheque         ?? 0) > 0
+  SELECT id, 'cheque',                                              monto_cheque               FROM recibos_sin_formas WHERE COALESCE(monto_cheque,          0) > 0
   UNION ALL
-  SELECT id, 'depósito ventanilla',                                 monto_deposito             FROM recibos_sin_formas WHERE (monto_deposito       ?? 0) > 0
+  SELECT id, 'depósito ventanilla',                                 monto_deposito             FROM recibos_sin_formas WHERE COALESCE(monto_deposito,        0) > 0
 )
 INSERT INTO ctrl.recibos_ingreso_formas_pago
   (id_recibo_fk, id_forma_pago_fk, nombre_forma_pago, monto)
