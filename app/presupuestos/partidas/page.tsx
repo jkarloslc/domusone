@@ -46,7 +46,8 @@ export default function PartidasPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data } = await dbCtrl.from('ppto_partidas').select('*').order('tipo').order('orden').order('nombre')
+    const { data, error } = await dbCtrl.from('ppto_partidas').select('*').order('tipo').order('orden').order('nombre')
+    console.log('[ppto_partidas load]', { data, error })
     setPartidas((data ?? []) as Partida[])
     setLoading(false)
   }, [])
@@ -93,10 +94,11 @@ export default function PartidasPage() {
       id_area_fk:           form.tipo === 'egreso'  ? form.id_area_fk           : null,
       id_centro_ingreso_fk: form.tipo === 'ingreso' ? form.id_centro_ingreso_fk : null,
     }
-    const { error } = edit
-      ? await dbCtrl.from('ppto_partidas').update(payload).eq('id', edit.id)
-      : await dbCtrl.from('ppto_partidas').insert(payload)
+    const { error, data: savedData } = edit
+      ? await dbCtrl.from('ppto_partidas').update(payload).eq('id', edit.id).select()
+      : await dbCtrl.from('ppto_partidas').insert(payload).select()
 
+    console.log('[ppto_partidas save]', { savedData, error, payload })
     setSaving(false)
     if (error) {
       setErrorMsg(error.message)
