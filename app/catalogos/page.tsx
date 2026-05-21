@@ -198,22 +198,8 @@ const CATALOGOS: CatConfig[] = [
       { key: 'tipo',          label: 'Tipo',            type: 'select',
         staticOptions: ['golf', 'cuotas', 'rentas_espacios', 'caballerizas', 'otro'] },
       { key: 'tipo_desglose', label: 'Tipo de Captura', type: 'select',
-        staticOptions: ['unico', 'secciones', 'frentes'] },
+        staticOptions: ['unico', 'secciones'] },
       { key: 'notas',         label: 'Notas',           type: 'textarea' },
-    ],
-  },
-  {
-    key:   'frentes_ingreso',
-    tabla: 'frentes_ingreso',
-    label: 'Frentes de Ingreso',
-    icon:  TrendingUp,
-    color: '#0d9488',
-    desc:  'Frentes de ingreso por centro — Golf, Renta de Espacios, Caballerizas',
-    campos: [
-      { key: 'nombre',               label: 'Nombre *',           type: 'text',    required: true },
-      { key: 'codigo',               label: 'Código',             type: 'text' },
-      { key: 'id_centro_ingreso_fk', label: 'Centro de Ingreso *',type: 'select',  selectTabla: 'centros_ingreso', required: true },
-      { key: 'notas',                label: 'Notas',              type: 'textarea' },
     ],
   },
   {

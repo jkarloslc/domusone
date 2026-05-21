@@ -16,8 +16,6 @@ type Centro = {
 }
 type Seccion = { id: number; nombre: string; clave_alfa: string | null }
 type SeccionRow = { id_seccion_fk: number; nombre_seccion: string; monto: number; notas: string }
-type Frente = { id: number; nombre: string; codigo: string | null; id_centro_ingreso_fk: number | null }
-type FrenteRow = { id_frente_fk: number; nombre_frente: string; monto: number; notas: string }
 type Concepto = { id: number; nombre: string; clave: string | null; orden: number }
 type ConceptoRow = { id_concepto_fk: number; nombre_concepto: string; monto: number; notas: string }
 type FormaPago = { id: number; nombre: string }
@@ -89,7 +87,6 @@ function ReciboModal({
     status:              recibo?.status ?? 'Confirmado',
   })
   const [secRows, setSecRows]             = useState<SeccionRow[]>([])
-  const [frenteRows, setFrenteRows]       = useState<FrenteRow[]>([])
   const [conceptoRows, setConceptoRows]   = useState<ConceptoRow[]>([])
   const [formaPagoRows, setFormaPagoRows] = useState<FormaPagoRow[]>([])
   const [loadingSecs, setLoadingSecs] = useState(false)
@@ -102,7 +99,6 @@ function ReciboModal({
 
   const centroSel   = centros.find(c => c.id === Number(form.id_centro_ingreso_fk))
   const esSecciones  = centroSel?.tipo_desglose === 'secciones'
-  const esFrente     = centroSel?.tipo_desglose === 'frentes'
   const esConceptos  = esSecciones  // conceptos se muestran junto con secciones cuando hay configurados
 
   // ── Cargar secciones existentes (vista) o init (nuevo) ──────
@@ -122,32 +118,6 @@ function ReciboModal({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo?.id, esSecciones])
-
-  // ── Cargar frentes del centro seleccionado ──────────────────
-  useEffect(() => {
-    if (!esFrente) { setFrenteRows([]); return }
-    const centroId = Number(form.id_centro_ingreso_fk)
-    if (!centroId) { setFrenteRows([]); return }
-
-    if (recibo) {
-      // Vista: cargar desglose guardado
-      setLoadingSecs(true)
-      dbCtrl.from('recibos_ingreso_frentes')
-        .select('id_frente_fk, nombre_frente, monto, notas')
-        .eq('id_recibo_fk', recibo.id)
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setFrenteRows(data as FrenteRow[])
-          } else {
-            loadFrentesFromCfg(centroId)
-          }
-          setLoadingSecs(false)
-        })
-    } else {
-      loadFrentesFromCfg(centroId)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recibo?.id, esFrente, form.id_centro_ingreso_fk])
 
   // ── Cargar conceptos del centro seleccionado ────────────────
   useEffect(() => {
@@ -188,7 +158,6 @@ function ReciboModal({
 
   // ── Cargar formas de pago (dinámico desde cfg.formas_pago) ──
   useEffect(() => {
-    if (esFrente) { setFormaPagoRows([]); return }
     if (recibo) {
       dbCtrl.from('recibos_ingreso_formas_pago')
         .select('id_forma_pago_fk, nombre_forma_pago, monto')
@@ -204,7 +173,7 @@ function ReciboModal({
       loadFormasPagoFromCfg()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recibo?.id, esFrente])
+  }, [recibo?.id])
 
   const loadFormasPagoFromCfg = async () => {
     const { data } = await dbCfg.from('formas_pago')
@@ -218,30 +187,12 @@ function ReciboModal({
     })))
   }
 
-  const loadFrentesFromCfg = async (centroId: number) => {
-    setLoadingSecs(true)
-    const { data } = await dbCfg.from('frentes_ingreso')
-      .select('id, nombre, codigo, id_centro_ingreso_fk')
-      .eq('id_centro_ingreso_fk', centroId)
-      .eq('activo', true)
-      .order('nombre')
-    setFrenteRows((data ?? []).map((f: Frente) => ({
-      id_frente_fk: f.id,
-      nombre_frente: f.nombre,
-      monto: 0,
-      notas: '',
-    })))
-    setLoadingSecs(false)
-  }
-
   const initSecRowsVal = () =>
     secciones.map(s => ({ id_seccion_fk: s.id, nombre_seccion: s.nombre, monto: 0, notas: '' }))
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
   const setSecMonto        = (idx: number, val: number) =>
     setSecRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
-  const setFrenteMonto     = (idx: number, val: number) =>
-    setFrenteRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
   const setConceptoMonto   = (idx: number, val: number) =>
     setConceptoRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
   const setFormaPagoMonto  = (idx: number, val: number) =>
@@ -251,8 +202,7 @@ function ReciboModal({
   const totalFormasPago = formaPagoRows.reduce((a, r) => a + (r.monto || 0), 0)
   const totalSecs       = secRows.reduce((a, r) => a + (r.monto || 0), 0)
   const totalConceptos  = conceptoRows.reduce((a, r) => a + (r.monto || 0), 0)
-  const totalFrentes    = frenteRows.reduce((a, r) => a + (r.monto || 0), 0)
-  const totalFinal      = esSecciones ? (totalSecs + totalConceptos) : esFrente ? totalFrentes : totalFormasPago
+  const totalFinal      = esSecciones ? (totalSecs + totalConceptos) : totalFormasPago
 
   const handleSave = async () => {
     if (!form.id_centro_ingreso_fk) { setError('Selecciona un centro de ingreso'); return }
@@ -297,14 +247,6 @@ function ReciboModal({
       await dbCtrl.from('recibos_ingreso_secciones').insert(secsPayload)
     }
 
-    // Frentes
-    if (esFrente && frenteRows.some(r => r.monto > 0)) {
-      const frentesPayload = frenteRows
-        .filter(r => r.monto > 0)
-        .map(r => ({ id_recibo_fk: newRec.id, id_frente_fk: r.id_frente_fk, nombre_frente: r.nombre_frente, monto: r.monto, notas: r.notas || null }))
-      await dbCtrl.from('recibos_ingreso_frentes').insert(frentesPayload)
-    }
-
     // Conceptos (complementario a secciones)
     if (esConceptos && conceptoRows.some(r => r.monto > 0)) {
       const conceptosPayload = conceptoRows
@@ -313,8 +255,8 @@ function ReciboModal({
       await dbCtrl.from('recibos_ingreso_conceptos').insert(conceptosPayload)
     }
 
-    // Formas de pago (todos los centros excepto frentes)
-    if (!esFrente && formaPagoRows.some(r => r.monto > 0 && r.id_forma_pago_fk > 0)) {
+    // Formas de pago
+    if (formaPagoRows.some(r => r.monto > 0 && r.id_forma_pago_fk > 0)) {
       const formasPayload = formaPagoRows
         .filter(r => r.monto > 0 && r.id_forma_pago_fk > 0)
         .map(r => ({ id_recibo_fk: newRec.id, id_forma_pago_fk: r.id_forma_pago_fk, nombre_forma_pago: r.nombre_forma_pago, monto: r.monto }))
@@ -359,7 +301,6 @@ function ReciboModal({
     // 2. Borrar desglose existente y reinsertar
     await Promise.all([
       dbCtrl.from('recibos_ingreso_secciones').delete().eq('id_recibo_fk', recibo.id),
-      dbCtrl.from('recibos_ingreso_frentes').delete().eq('id_recibo_fk', recibo.id),
       dbCtrl.from('recibos_ingreso_conceptos').delete().eq('id_recibo_fk', recibo.id),
       dbCtrl.from('recibos_ingreso_formas_pago').delete().eq('id_recibo_fk', recibo.id),
     ])
@@ -370,19 +311,13 @@ function ReciboModal({
           .map(r => ({ id_recibo_fk: recibo.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, notas: r.notas || null }))
       )
     }
-    if (esFrente && frenteRows.some(r => r.monto > 0)) {
-      await dbCtrl.from('recibos_ingreso_frentes').insert(
-        frenteRows.filter(r => r.monto > 0)
-          .map(r => ({ id_recibo_fk: recibo.id, id_frente_fk: r.id_frente_fk, nombre_frente: r.nombre_frente, monto: r.monto, notas: r.notas || null }))
-      )
-    }
     if (esConceptos && conceptoRows.some(r => r.monto > 0)) {
       await dbCtrl.from('recibos_ingreso_conceptos').insert(
         conceptoRows.filter(r => r.monto > 0)
           .map(r => ({ id_recibo_fk: recibo.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, notas: r.notas || null }))
       )
     }
-    if (!esFrente && formaPagoRows.some(r => r.monto > 0 && r.id_forma_pago_fk > 0)) {
+    if (formaPagoRows.some(r => r.monto > 0 && r.id_forma_pago_fk > 0)) {
       await dbCtrl.from('recibos_ingreso_formas_pago').insert(
         formaPagoRows
           .filter(r => r.monto > 0 && r.id_forma_pago_fk > 0)
@@ -426,15 +361,11 @@ function ReciboModal({
         if (row.clave === 'org_logo_url') orgLogo = row.valor ?? ''
       })
 
-      const [secRes, frenteRes, conceptoRes, formaRes] = await Promise.all([
+      const [secRes, conceptoRes, formaRes] = await Promise.all([
         dbCtrl.from('recibos_ingreso_secciones')
           .select('nombre_seccion, monto')
           .eq('id_recibo_fk', recibo.id)
           .order('nombre_seccion'),
-        dbCtrl.from('recibos_ingreso_frentes')
-          .select('nombre_frente, monto')
-          .eq('id_recibo_fk', recibo.id)
-          .order('nombre_frente'),
         dbCtrl.from('recibos_ingreso_conceptos')
           .select('nombre_concepto, monto')
           .eq('id_recibo_fk', recibo.id),
@@ -443,7 +374,6 @@ function ReciboModal({
           .eq('id_recibo_fk', recibo.id),
       ])
       const secs = (secRes.data ?? []) as { nombre_seccion: string; monto: number }[]
-      const frentes = (frenteRes.data ?? []) as { nombre_frente: string; monto: number }[]
       const conceptosPrint = (conceptoRes.data ?? []) as { nombre_concepto: string; monto: number }[]
 
       const formas = ((formaRes.data ?? []) as { nombre_forma_pago: string; monto: number }[])
@@ -452,16 +382,12 @@ function ReciboModal({
       const centroNombre = centroSel?.nombre ?? 'Sin centro'
       const desgloseRows = esSecciones
         ? secs.map(s => `<tr><td>${escapeHtml(s.nombre_seccion)}</td><td style="text-align:right">${fmt(s.monto)}</td></tr>`).join('')
-        : esFrente
-          ? frentes.map(f => `<tr><td>${escapeHtml(f.nombre_frente)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
-          : ''
-      const desgloseLabel = esSecciones ? 'Desglose por Sección' : esFrente ? 'Desglose por Frente' : ''
+        : ''
+      const desgloseLabel = esSecciones ? 'Desglose por Sección' : ''
       const conceptosRows = conceptosPrint.map(c => `<tr><td>${escapeHtml(c.nombre_concepto)}</td><td style="text-align:right">${fmt(c.monto)}</td></tr>`).join('')
       const totalSecsImp = secs.reduce((a, s) => a + s.monto, 0)
       const totalConceptosImp = conceptosPrint.reduce((a, c) => a + c.monto, 0)
-      const formasRows = formas.length > 0
-        ? formas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
-        : esFrente ? '<tr><td colspan="2" style="color:#94a3b8;font-style:italic">Captura por frente</td></tr>' : ''
+      const formasRows = formas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
       const logoHtml = orgLogo
         ? `<img src="${escapeHtml(orgLogo)}" style="height:52px;max-width:160px;object-fit:contain;" />`
         : '<div style="width:52px;height:52px;border-radius:8px;background:#e2e8f0;color:#64748b;display:flex;align-items:center;justify-content:center;font-weight:700">ORG</div>'
@@ -506,7 +432,7 @@ function ReciboModal({
           </table>
         </div>
 
-        ${!esFrente || formasRows ? `
+        ${formasRows ? `
         <div class="section">
           <div class="section-title">Formas de Cobro</div>
           <table>
@@ -758,53 +684,10 @@ function ReciboModal({
                 </div>
               )}
             </div>
-          ) : esFrente ? (
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Layers size={13} style={{ color: '#0d9488' }} /> Monto por frente de ingreso
-              </div>
-              {loadingSecs ? (
-                <div style={{ textAlign: 'center', padding: 20 }}><Loader size={16} className="animate-spin" /></div>
-              ) : frenteRows.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: 13, border: '1px dashed #e2e8f0', borderRadius: 8 }}>
-                  Sin frentes configurados para este centro.{' '}
-                  <a href="/catalogos" target="_blank" style={{ color: '#0d9488' }}>Agregar en Catálogos</a>
-                </div>
-              ) : (
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '7px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>FRENTE</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>MONTO</span>
-                  </div>
-                  {frenteRows.map((row, i) => (
-                    <div key={row.id_frente_fk} style={{
-                      display: 'grid', gridTemplateColumns: '1fr 140px', padding: '8px 12px', alignItems: 'center',
-                      borderBottom: i < frenteRows.length - 1 ? '1px solid #f1f5f9' : 'none',
-                      background: row.monto > 0 ? '#f0fdfa' : '#fff',
-                    }}>
-                      <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_frente}</span>
-                      <div>
-                        <input
-                          className="input" type="number" min="0" step="0.01"
-                          value={row.monto || ''}
-                          onChange={e => setFrenteMonto(i, parseFloat(e.target.value) || 0)}
-                          disabled={isView && !isEditMode}
-                          style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 8px', fontSize: 13 }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '9px 12px', background: '#f0fdfa', borderTop: '2px solid #99f6e4' }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0d9488' }}>TOTAL</span>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#0d9488', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFrentes)}</span>
-                  </div>
-                </div>
-              )}
-            </div>
           ) : null}
 
-          {/* Formas de pago — dinámicas desde cfg.formas_pago; visible en todos excepto frentes */}
-          {!esFrente && formaPagoRows.length > 0 && (
+          {/* Formas de pago — dinámicas desde cfg.formas_pago */}
+          {formaPagoRows.length > 0 && (
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <DollarSign size={13} style={{ color: '#059669' }} /> Formas de cobro
