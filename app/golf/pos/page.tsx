@@ -726,8 +726,8 @@ ${operaciones.length > 0 ? `
     try {
       // Obtener desglose de formas de pago
       const { data: det } = await dbGolf.from('ctrl_cortes_caja_det')
-        .select('forma_nombre, monto').eq('id_corte_fk', c.id)
-      const fps = (det ?? []) as { forma_nombre: string; monto: number }[]
+        .select('id_forma_fk, forma_nombre, monto').eq('id_corte_fk', c.id)
+      const fps = (det ?? []) as { id_forma_fk: number; forma_nombre: string; monto: number }[]
       const fpagoMap = mapFormasPago(fps)
 
       const f1 = c.fecha_inicio.split('T')[0]
@@ -759,6 +759,18 @@ ${operaciones.length > 0 ? `
       }).select('id').single()
 
       if (reErr || !recibo) { alert('Error al generar recibo: ' + (reErr?.message ?? 'desconocido')); return }
+
+      // Insertar formas de pago en la tabla normalizada (nueva)
+      if (fps.length > 0) {
+        await dbCtrl.from('recibos_ingreso_formas_pago').insert(
+          fps.map(f => ({
+            id_recibo_fk:      recibo.id,
+            id_forma_pago_fk:  f.id_forma_fk,
+            nombre_forma_pago: f.forma_nombre,
+            monto:             f.monto,
+          }))
+        )
+      }
 
       await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: recibo.id }).eq('id', c.id)
       fetchCortes()

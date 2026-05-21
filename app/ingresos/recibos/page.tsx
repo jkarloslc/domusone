@@ -196,8 +196,29 @@ function ReciboModal({
           if (data && data.length > 0) {
             setFormaPagoRows(data as FormaPagoRow[])
           } else {
-            // Compatibilidad: recibo antiguo con columnas fijas — cargar catálogo activo
-            loadFormasPagoFromCfg()
+            // Compatibilidad: recibo creado con columnas legacy (POS o versión anterior)
+            // Reconstruir montos desde las columnas fijas del recibo
+            const legacyAmounts: { nombre: string; monto: number }[] = [
+              { nombre: 'Efectivo',           monto: recibo!.monto_efectivo ?? 0 },
+              { nombre: 'Transferencia',       monto: recibo!.monto_transferencia ?? 0 },
+              { nombre: 'Tarjeta Débito',      monto: recibo!.monto_tarjeta_debito > 0
+                  ? recibo!.monto_tarjeta_debito
+                  : (recibo!.monto_tarjeta_credito ?? 0) === 0 ? (recibo!.monto_tarjeta ?? 0) : 0 },
+              { nombre: 'Tarjeta Crédito',     monto: recibo!.monto_tarjeta_credito ?? 0 },
+              { nombre: 'Cheque',              monto: recibo!.monto_cheque ?? 0 },
+              { nombre: 'Depósito Ventanilla', monto: recibo!.monto_deposito ?? 0 },
+            ].filter(f => f.monto > 0)
+
+            if (legacyAmounts.length > 0) {
+              setFormaPagoRows(legacyAmounts.map((f, i) => ({
+                id_forma_pago_fk: -(i + 1), // id negativo → indica origen legacy (solo lectura)
+                nombre_forma_pago: f.nombre,
+                monto: f.monto,
+              })))
+            } else {
+              // Recibo sin montos en legacy ni en tabla nueva → mostrar catálogo vacío
+              loadFormasPagoFromCfg()
+            }
           }
         })
     } else {

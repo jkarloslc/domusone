@@ -223,6 +223,18 @@ export default function CorteModal({ idCentro, nombreCentro, exigirFacturacion =
         usuario_crea:        authUser?.nombre ?? 'sistema',
       }).select('id').single()
 
+      // Insertar formas de pago en la tabla normalizada (nueva)
+      if (recibo && formasPago.length > 0) {
+        await dbCtrl.from('recibos_ingreso_formas_pago').insert(
+          formasPago.map(f => ({
+            id_recibo_fk:      recibo.id,
+            id_forma_pago_fk:  f.id_forma_fk,
+            nombre_forma_pago: f.forma_nombre,
+            monto:             f.monto,
+          }))
+        )
+      }
+
       // Guardar FK en el corte
       if (recibo) {
         await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: recibo.id }).eq('id', corte.id)
