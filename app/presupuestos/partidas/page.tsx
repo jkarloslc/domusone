@@ -41,6 +41,7 @@ export default function PartidasPage() {
   const [edit, setEdit]             = useState<Partida | null>(null)
   const [form, setForm]             = useState<Omit<Partida, 'id'>>(EMPTY)
   const [saving, setSaving]         = useState(false)
+  const [errorMsg, setErrorMsg]     = useState<string | null>(null)
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
 
   const load = useCallback(async () => {
@@ -63,11 +64,13 @@ export default function PartidasPage() {
   function openNew() {
     setEdit(null)
     setForm(EMPTY)
+    setErrorMsg(null)
     setModal(true)
   }
 
   function openEdit(p: Partida) {
     setEdit(p)
+    setErrorMsg(null)
     setForm({
       nombre: p.nombre, descripcion: p.descripcion, tipo: p.tipo,
       id_centro_costo_fk: p.id_centro_costo_fk, id_area_fk: p.id_area_fk,
@@ -79,19 +82,26 @@ export default function PartidasPage() {
   async function handleSave() {
     if (!form.nombre.trim()) return
     setSaving(true)
+    setErrorMsg(null)
     const payload = {
-      ...form,
-      nombre: form.nombre.trim(),
+      nombre:               form.nombre.trim(),
+      descripcion:          form.descripcion,
+      tipo:                 form.tipo,
+      orden:                form.orden,
+      activo:               form.activo,
       id_centro_costo_fk:   form.tipo === 'egreso'  ? form.id_centro_costo_fk   : null,
       id_area_fk:           form.tipo === 'egreso'  ? form.id_area_fk           : null,
       id_centro_ingreso_fk: form.tipo === 'ingreso' ? form.id_centro_ingreso_fk : null,
     }
-    if (edit) {
-      await dbCtrl.from('ppto_partidas').update(payload).eq('id', edit.id)
-    } else {
-      await dbCtrl.from('ppto_partidas').insert(payload)
-    }
+    const { error } = edit
+      ? await dbCtrl.from('ppto_partidas').update(payload).eq('id', edit.id)
+      : await dbCtrl.from('ppto_partidas').insert(payload)
+
     setSaving(false)
+    if (error) {
+      setErrorMsg(error.message)
+      return
+    }
     setModal(false)
     load()
   }
@@ -264,6 +274,14 @@ export default function PartidasPage() {
           }
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {errorMsg && (
+              <div style={{
+                padding: '10px 14px', borderRadius: 8, background: '#fef2f2',
+                border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13,
+              }}>
+                {errorMsg}
+              </div>
+            )}
             <label style={lbl}>
               Nombre *
               <input className="input" value={form.nombre}
