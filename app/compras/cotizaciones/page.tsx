@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  Plus, Search, RefreshCw, Eye, X, Save, Loader,
+  Plus, Search, RefreshCw, Eye, Pencil, X, Save, Loader,
   ArrowLeft, ChevronRight, CheckCircle, Trash2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -97,7 +97,10 @@ export default function CotizacionesPage() {
                       : '—'}
                 </td>
                 <td>
-                  <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(r)}><Eye size={13} /></button>
+                  <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(r)}
+                    title={r.status === 'Abierta' ? 'Editar / Seleccionar ganador' : 'Ver detalle'}>
+                    {r.status === 'Abierta' ? <Pencil size={13} /> : <Eye size={13} />}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -370,8 +373,22 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     <ModalShell modulo="compras" titulo={rfq.folio}
       subtitulo={`${rfq.id_requisicion_fk ? `Requisición #${rfq.id_requisicion_fk} · ` : ''}Fecha límite: ${fmtFecha(rfq.fecha_limite)}`}
       onClose={onClose} maxWidth={920}
-      footer={rfq.status === 'Abierta' && cotizaciones.length < 3 && !addingCot ? (
-        <button className="btn-primary" onClick={() => setAddingCot(true)}><Plus size={13} /> Agregar Cotización</button>
+      footer={rfq.status === 'Abierta' && !addingCot ? (
+        <>
+          {cotizaciones.length < 3 && (
+            <button className="btn-secondary" onClick={() => setAddingCot(true)}><Plus size={13} /> Agregar Cotización</button>
+          )}
+          {cotizaciones.length > 0 && (
+            <button className="btn-primary" onClick={confirmarSeleccion}
+              disabled={confirmando || assignedCount < requiredItems}
+              title={assignedCount < requiredItems ? `Faltan ${requiredItems - assignedCount} producto${requiredItems - assignedCount !== 1 ? 's' : ''} sin ganador` : 'Confirmar y cerrar RFQ'}>
+              {confirmando ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />}
+              {assignedCount < requiredItems
+                ? `Confirmar (${assignedCount}/${requiredItems} asignados)`
+                : 'Confirmar y Cerrar RFQ'}
+            </button>
+          )}
+        </>
       ) : undefined}
     >
 
