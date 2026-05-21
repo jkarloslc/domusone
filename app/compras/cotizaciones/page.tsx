@@ -540,11 +540,17 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                     </tr>
                   </thead>
                   <tbody>
+                    {/* ── Sección: Datos generales ── */}
+                    <tr style={{ background: '#f1f5f9' }}>
+                      <td colSpan={cotizaciones.length + 1} style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 10px' }}>
+                        Datos de la cotización
+                      </td>
+                    </tr>
                     <tr>
                       <td style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-muted)' }}>No. Cotización</td>
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12 }}>{c.numero_cotizacion ?? '—'}</td>)}
                     </tr>
-                    <tr>
+                    <tr style={{ background: '#f8fafc' }}>
                       <td style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-muted)' }}>Condiciones Pago</td>
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12 }}>{c.condiciones_pago ?? '—'}</td>)}
                     </tr>
@@ -552,9 +558,17 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       <td style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-muted)' }}>Tiempo Entrega</td>
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12 }}>{c.tiempo_entrega ?? '—'}</td>)}
                     </tr>
-                    {/* Detalle por producto — clic en precio selecciona ganador */}
+                    {/* ── Sección: Artículos ── */}
+                    {(cotizaciones[0]?.rfq_cotizaciones_det ?? []).length > 0 && (
+                      <tr style={{ background: '#f1f5f9' }}>
+                        <td colSpan={cotizaciones.length + 1} style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 10px' }}>
+                          Artículos · precio unitario
+                          {rfq.status === 'Abierta' && <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8, color: '#64748b' }}>— clic en el precio para elegir ganador</span>}
+                        </td>
+                      </tr>
+                    )}
                     {(cotizaciones[0]?.rfq_cotizaciones_det ?? []).map((_: any, pi: number) => {
-                      const rowBg = pi % 2 === 0 ? '#f8fafc' : '#ffffff'
+                      const rowBg = pi % 2 === 0 ? '#ffffff' : '#f8fafc'
                       const hasWinner = itemWinners[pi] !== undefined
                       return (
                       <tr key={pi} style={{ background: hasWinner ? undefined : rowBg }}>
@@ -562,7 +576,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                           fontSize: 12,
                           fontWeight: hasWinner ? 600 : 400,
                           background: hasWinner ? '#f0fdf4' : rowBg,
-                          borderLeft: hasWinner ? '3px solid #16a34a' : '3px solid transparent',
+                          borderLeft: hasWinner ? '3px solid #16a34a' : '3px solid #e2e8f0',
                           paddingLeft: 10,
                         }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
