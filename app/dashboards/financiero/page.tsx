@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
+import { dbCtrl, dbComp, dbCfg, dbGolf } from '@/lib/supabase'
 import {
   TrendingUp, TrendingDown, Scale,
   Receipt, FileText, RefreshCw, Building2,
@@ -102,22 +102,29 @@ export default function DashboardFinancieroPage() {
   const [centrosCosto, setCentrosCosto] = useState<CentroCosto[]>([])
   const [areas,        setAreas]        = useState<Area[]>([])
 
-  const [filtroCentroIng, setFiltroCentroIng] = useState('')
-  const [filtroSeccion,   setFiltroSeccion]   = useState('')
+  const [filtroCentroIng,  setFiltroCentroIng]  = useState('')
+  const [filtroSeccion,    setFiltroSeccion]    = useState('')
+  const [filtroCentroVenta, setFiltroCentroVenta] = useState('')
   const [filtroCC,   setFiltroCC]   = useState('')
   const [filtroArea, setFiltroArea] = useState('')
 
-  const centroIngSel = centrosIng.find(c => String(c.id) === filtroCentroIng)
-  const esSecciones  = centroIngSel?.tipo_desglose === 'secciones'
+  // Mapeo: id_centro_ingreso → [{id, nombre}] centros de venta POS
+  const [centrosVentaByIng, setCentrosVentaByIng] = useState<Record<number, {id: number; nombre: string}[]>>({})
+
+  const centroIngSel    = centrosIng.find(c => String(c.id) === filtroCentroIng)
+  const esSecciones     = centroIngSel?.tipo_desglose === 'secciones'
+  const centrosVentaOpts = centrosVentaByIng[Number(filtroCentroIng)] ?? []
   const areasFiltradas = filtroCC
     ? areas.filter(a => a.id_centro_costo_fk === Number(filtroCC))
     : areas
-  const hayFiltroIng = !!(filtroCentroIng || filtroSeccion)
+  const hayFiltroIng = !!(filtroCentroIng || filtroSeccion || filtroCentroVenta)
   const hayFiltroEgr = !!(filtroCC || filtroArea)
 
-  const badgeIng = filtroSeccion
-    ? `${centroIngSel?.nombre ?? ''} › ${secciones.find(s => String(s.id) === filtroSeccion)?.nombre ?? ''}`
-    : centroIngSel?.nombre ?? ''
+  const badgeIng = filtroCentroVenta
+    ? `${centroIngSel?.nombre ?? ''} › ${centrosVentaOpts.find(v => String(v.id) === filtroCentroVenta)?.nombre ?? ''}`
+    : filtroSeccion
+      ? `${centroIngSel?.nombre ?? ''} › ${secciones.find(s => String(s.id) === filtroSeccion)?.nombre ?? ''}`
+      : centroIngSel?.nombre ?? ''
   const ccSel    = centrosCosto.find(c => String(c.id) === filtroCC)
   const arSel    = areas.find(a => String(a.id) === filtroArea)
   const badgeEgr = arSel ? `${ccSel?.nombre ?? ''} › ${arSel.nombre}` : ccSel?.nombre ?? ''
@@ -128,7 +135,9 @@ export default function DashboardFinancieroPage() {
       dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-    ]).then(([ci, sec, cc, ar]) => {
+      dbGolf.from('pos_centros_ingreso_map').select('id_centro_ingreso_fk, id_centro_venta_fk').eq('activo', true),
+      dbGolf.from('cat_centros_venta').select('id, nombre').eq('activo', true),
+    ]).then(([ci, sec, cc, ar, mapR, ventasR]) => {
       const csArr = (ci.data as any[]) ?? []
       const cmap: Record<number, string> = {}
       csArr.forEach((c: any) => { cmap[c.id] = c.nombre })
@@ -137,6 +146,19 @@ export default function DashboardFinancieroPage() {
       setSecciones((sec.data as any[]) ?? [])
       setCentrosCosto((cc.data as any[]) ?? [])
       setAreas((ar.data as any[]) ?? [])
+
+      // Construir mapeo centroIngreso → centros de venta POS
+      const ventaNombres: Record<number, string> = {}
+      ;((ventasR.data as any[]) ?? []).forEach((v: any) => { ventaNombres[v.id] = v.nombre })
+      const byIng: Record<number, {id: number; nombre: string}[]> = {}
+      ;((mapR.data as any[]) ?? []).forEach((m: any) => {
+        if (!byIng[m.id_centro_ingreso_fk]) byIng[m.id_centro_ingreso_fk] = []
+        byIng[m.id_centro_ingreso_fk].push({
+          id:     m.id_centro_venta_fk,
+          nombre: ventaNombres[m.id_centro_venta_fk] ?? `#${m.id_centro_venta_fk}`,
+        })
+      })
+      setCentrosVentaByIng(byIng)
     })
   }, [])
 
@@ -157,8 +179,22 @@ export default function DashboardFinancieroPage() {
 
     let ingPromise: Promise<any>
     let ultIngPromise: Promise<any>
+    let ingSourceIsCortes = false
 
-    if (filtroSeccion) {
+    if (filtroCentroVenta) {
+      // Fuente: cortes POS del centro de venta específico
+      ingSourceIsCortes = true
+      ingPromise = (dbGolf.from('ctrl_cortes_caja') as any)
+        .select('total_ventas')
+        .eq('id_centro_fk', Number(filtroCentroVenta))
+        .gte('fecha_corte', `${ini}T00:00:00`)
+        .lte('fecha_corte', `${fin}T23:59:59`)
+      ultIngPromise = (dbGolf.from('ctrl_cortes_caja') as any)
+        .select('id, centro_nombre, fecha_corte, total_ventas')
+        .eq('id_centro_fk', Number(filtroCentroVenta))
+        .order('fecha_corte', { ascending: false })
+        .limit(8)
+    } else if (filtroSeccion) {
       ingPromise = (dbCtrl.from('recibos_ingreso_secciones') as any)
         .select('monto, recibos_ingreso!inner(status, fecha)')
         .eq('id_seccion_fk', Number(filtroSeccion))
@@ -207,9 +243,11 @@ export default function DashboardFinancieroPage() {
     ])
 
     const ingData = ingR.status === 'fulfilled' ? ingR.value.data ?? [] : []
-    const ingresos = filtroSeccion
-      ? ingData.reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
-      : ingData.reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
+    const ingresos = ingSourceIsCortes
+      ? ingData.reduce((a: number, r: any) => a + (r.total_ventas ?? 0), 0)
+      : filtroSeccion
+        ? ingData.reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
+        : ingData.reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
 
     const egresos     = (egrR.status === 'fulfilled' ? egrR.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
     const cxp         = (cxpR.status === 'fulfilled' ? cxpR.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.saldo ?? r.monto ?? 0), 0)
@@ -220,15 +258,24 @@ export default function DashboardFinancieroPage() {
 
     if (ultIngR.status === 'fulfilled') {
       const raw = ultIngR.value.data ?? []
-      setUltRecibos(filtroSeccion
-        ? raw.map((s: any) => ({
-            id:                  s.recibos_ingreso?.id,
-            folio:               s.recibos_ingreso?.folio,
-            fecha:               s.recibos_ingreso?.fecha,
-            monto_total:         s.monto,
-            id_centro_ingreso_fk: s.recibos_ingreso?.id_centro_ingreso_fk,
+      setUltRecibos(ingSourceIsCortes
+        ? raw.map((c: any) => ({
+            id:                   c.id,
+            folio:                `Corte #${c.id}`,
+            fecha:                c.fecha_corte?.slice(0, 10),
+            monto_total:          c.total_ventas,
+            id_centro_ingreso_fk: Number(filtroCentroIng),
+            _label:               c.centro_nombre,
           }))
-        : raw
+        : filtroSeccion
+          ? raw.map((s: any) => ({
+              id:                  s.recibos_ingreso?.id,
+              folio:               s.recibos_ingreso?.folio,
+              fecha:               s.recibos_ingreso?.fecha,
+              monto_total:         s.monto,
+              id_centro_ingreso_fk: s.recibos_ingreso?.id_centro_ingreso_fk,
+            }))
+          : raw
       )
     }
     setUltOps(ultOpR.status === 'fulfilled' ? (ultOpR.value.data ?? []) : [])
@@ -236,7 +283,13 @@ export default function DashboardFinancieroPage() {
     const meses = getUltimosMeses()
     const grafData = await Promise.all(meses.map(async m => {
       let igP: Promise<any>
-      if (filtroSeccion) {
+      if (filtroCentroVenta) {
+        igP = (dbGolf.from('ctrl_cortes_caja') as any)
+          .select('total_ventas')
+          .eq('id_centro_fk', Number(filtroCentroVenta))
+          .gte('fecha_corte', `${m.ini}T00:00:00`)
+          .lte('fecha_corte', `${m.fin}T23:59:59`)
+      } else if (filtroSeccion) {
         igP = (dbCtrl.from('recibos_ingreso_secciones') as any)
           .select('monto, recibos_ingreso!inner(status, fecha)')
           .eq('id_seccion_fk', Number(filtroSeccion))
@@ -255,9 +308,11 @@ export default function DashboardFinancieroPage() {
       )
       const [ig, eg] = await Promise.allSettled([igP, egP])
       const iData = ig.status === 'fulfilled' ? ig.value.data ?? [] : []
-      const ing   = filtroSeccion
-        ? iData.reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
-        : iData.reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
+      const ing   = filtroCentroVenta
+        ? iData.reduce((a: number, r: any) => a + (r.total_ventas ?? 0), 0)
+        : filtroSeccion
+          ? iData.reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
+          : iData.reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0)
       const egr   = (eg.status === 'fulfilled' ? eg.value.data ?? [] : []).reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
       return { label: m.label, ing, egr }
     }))
@@ -265,7 +320,7 @@ export default function DashboardFinancieroPage() {
     setLoading(false)
     setRefreshing(false)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodo, filtroCentroIng, filtroSeccion, filtroCC, filtroArea])
+  }, [periodo, filtroCentroIng, filtroSeccion, filtroCentroVenta, filtroCC, filtroArea])
 
   useEffect(() => { setLoading(true); loadAll() }, [loadAll])
 
@@ -317,7 +372,7 @@ export default function DashboardFinancieroPage() {
             </span>
             <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <select value={filtroCentroIng}
-                onChange={e => { setFiltroCentroIng(e.target.value); setFiltroSeccion('') }}
+                onChange={e => { setFiltroCentroIng(e.target.value); setFiltroSeccion(''); setFiltroCentroVenta('') }}
                 style={{ ...selStyle(!!filtroCentroIng, ING), minWidth: 148 }}>
                 <option value="">Todos los centros</option>
                 {centrosIng.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
@@ -330,8 +385,16 @@ export default function DashboardFinancieroPage() {
                   {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
               )}
+              {!esSecciones && centrosVentaOpts.length > 0 && (
+                <select value={filtroCentroVenta}
+                  onChange={e => setFiltroCentroVenta(e.target.value)}
+                  style={{ ...selStyle(!!filtroCentroVenta, ING), minWidth: 140 }}>
+                  <option value="">Todos los centros de venta</option>
+                  {centrosVentaOpts.map(v => <option key={v.id} value={v.id}>{v.nombre}</option>)}
+                </select>
+              )}
               {hayFiltroIng && (
-                <button onClick={() => { setFiltroCentroIng(''); setFiltroSeccion('') }}
+                <button onClick={() => { setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroCentroVenta('') }}
                   title="Limpiar filtro ingresos"
                   style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #bbf7d0',
                     background: '#f0fdf4', color: '#16a34a', cursor: 'pointer', fontSize: 10,
@@ -511,7 +574,11 @@ export default function DashboardFinancieroPage() {
         <div className="card" style={{ padding: '18px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>
-              Últimos Recibos{filtroSeccion ? ` — ${secciones.find(s => String(s.id) === filtroSeccion)?.nombre ?? ''}` : ''}
+              {filtroCentroVenta
+                ? `Últimos Cortes — ${centrosVentaOpts.find(v => String(v.id) === filtroCentroVenta)?.nombre ?? ''}`
+                : filtroSeccion
+                  ? `Últimos Recibos — ${secciones.find(s => String(s.id) === filtroSeccion)?.nombre ?? ''}`
+                  : 'Últimos Recibos'}
             </div>
             <button onClick={() => router.push('/ingresos/recibos')}
               style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none',
@@ -535,7 +602,7 @@ export default function DashboardFinancieroPage() {
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</div>
                     <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                      {centrosMap[r.id_centro_ingreso_fk] ?? '—'} · {r.fecha ? fmtFecha(r.fecha) : '—'}
+                      {r._label ?? centrosMap[r.id_centro_ingreso_fk] ?? '—'} · {r.fecha ? fmtFecha(r.fecha) : '—'}
                     </div>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#059669', fontVariantNumeric: 'tabular-nums' }}>

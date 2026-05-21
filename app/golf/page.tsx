@@ -1,10 +1,37 @@
 'use client'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { dbGolf } from '@/lib/supabase'
 import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
-  Car, Lock, BookOpen, CreditCard, Receipt, FileText, ChevronRight, ArrowRightLeft,
+  Car, Lock, BookOpen, CreditCard, Receipt, FileText,
+  ChevronRight, ArrowRightLeft, RefreshCw, AlertTriangle,
+  TrendingUp, Activity,
 } from 'lucide-react'
 
+// ── Formatters ────────────────────────────────────────────────
+const fmt$ = (n: number) =>
+  '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const fmtK = (n: number) => {
+  if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000)     return '$' + (n / 1_000).toFixed(1) + 'K'
+  return fmt$(n)
+}
+
+// ── KPI state ─────────────────────────────────────────────────
+type KPIs = {
+  sociosActivos: number
+  salidasHoy:    number
+  salidasMes:    number
+  cuotasVencidas: number
+  montoCuotasVencidas: number
+  ingresosMes:   number
+  cortesPendientes: number
+}
+
+type IngresoPorCentro = { nombre: string; monto: number; id: number }
+
+// ── Módulos del club ──────────────────────────────────────────
 const MODULOS = [
   {
     key: 'miembros',
@@ -125,66 +152,332 @@ const MODULOS = [
   },
 ]
 
+// ── Helpers de fecha ──────────────────────────────────────────
+function getHoy() {
+  return new Date().toISOString().split('T')[0]
+}
+function getIniMes() {
+  const d = new Date()
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]
+}
+
 export default function GolfPage() {
-  const router = useRouter()
+  const router  = useRouter()
+  const hoy     = getHoy()
+  const iniMes  = getIniMes()
+
+  const [kpis,     setKpis]     = useState<KPIs>({
+    sociosActivos: 0, salidasHoy: 0, salidasMes: 0,
+    cuotasVencidas: 0, montoCuotasVencidas: 0,
+    ingresosMes: 0, cortesPendientes: 0,
+  })
+  const [ingresosPorCentro, setIngresosPorCentro] = useState<IngresoPorCentro[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const loadKpis = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      const [
+        sociosR, salidasHoyR, salidasMesR,
+        cuotasR, cortesR, centrosR,
+      ] = await Promise.allSettled([
+        // 1. Socios activos
+        dbGolf.from('cat_socios').select('id', { count: 'exact', head: true }).eq('activo', true),
+        // 2. Salidas hoy
+        dbGolf.from('ctrl_accesos')
+          .select('id', { count: 'exact', head: true })
+          .gte('fecha_entrada', `${hoy}T00:00:00`)
+          .lte('fecha_entrada', `${hoy}T23:59:59`),
+        // 3. Salidas este mes
+        dbGolf.from('ctrl_accesos')
+          .select('id', { count: 'exact', head: true })
+          .gte('fecha_entrada', `${iniMes}T00:00:00`)
+          .lte('fecha_entrada', `${hoy}T23:59:59`),
+        // 4. Cuotas vencidas (PENDIENTE + fecha_vencimiento < hoy)
+        dbGolf.from('cat_cuotas')
+          .select('monto_final')
+          .eq('status', 'PENDIENTE')
+          .lt('fecha_vencimiento', hoy),
+        // 5. Cortes del mes con ingresos (agrupados por centro)
+        dbGolf.from('ctrl_cortes_caja')
+          .select('id_centro_fk, centro_nombre, total_ventas')
+          .gte('fecha_corte', `${iniMes}T00:00:00`)
+          .lte('fecha_corte', `${hoy}T23:59:59`),
+        // 6. Centros de venta (para orden y nombres)
+        dbGolf.from('cat_centros_venta').select('id, nombre').eq('activo', true).order('orden'),
+      ])
+
+      // Socios activos
+      const sociosActivos = sociosR.status === 'fulfilled' ? (sociosR.value.count ?? 0) : 0
+
+      // Salidas
+      const salidasHoy = salidasHoyR.status === 'fulfilled' ? (salidasHoyR.value.count ?? 0) : 0
+      const salidasMes = salidasMesR.status === 'fulfilled' ? (salidasMesR.value.count ?? 0) : 0
+
+      // Cuotas vencidas
+      const cuotasData = cuotasR.status === 'fulfilled' ? (cuotasR.value.data ?? []) : []
+      const cuotasVencidas = cuotasData.length
+      const montoCuotasVencidas = cuotasData.reduce((a: number, c: any) => a + (c.monto_final ?? 0), 0)
+
+      // Ingresos por centro de venta del mes
+      const cortesData  = cortesR.status === 'fulfilled' ? (cortesR.value.data ?? []) : []
+      const centrosData = centrosR.status === 'fulfilled' ? (centrosR.value.data ?? []) : []
+
+      // Agrupar por centro_nombre
+      const porCentro: Record<string, { monto: number; id: number }> = {}
+      cortesData.forEach((c: any) => {
+        const key = c.centro_nombre ?? `Centro #${c.id_centro_fk}`
+        if (!porCentro[key]) porCentro[key] = { monto: 0, id: c.id_centro_fk }
+        porCentro[key].monto += (c.total_ventas ?? 0)
+      })
+
+      // Ordenar según cat_centros_venta orden
+      const centrosOrden: Record<number, number> = {}
+      centrosData.forEach((cv: any, i: number) => { centrosOrden[cv.id] = i })
+      const ingresosPorCentroArr: IngresoPorCentro[] = Object.entries(porCentro)
+        .map(([nombre, { monto, id }]) => ({ nombre, monto, id }))
+        .sort((a, b) => (centrosOrden[a.id] ?? 99) - (centrosOrden[b.id] ?? 99))
+
+      const ingresosMes = ingresosPorCentroArr.reduce((a, c) => a + c.monto, 0)
+
+      setKpis({
+        sociosActivos, salidasHoy, salidasMes,
+        cuotasVencidas, montoCuotasVencidas,
+        ingresosMes, cortesPendientes: 0,
+      })
+      setIngresosPorCentro(ingresosPorCentroArr)
+    } catch {
+      // silencioso — KPIs son opcionales
+    }
+    setLoading(false)
+    setRefreshing(false)
+  }, [hoy, iniMes])
+
+  useEffect(() => { loadKpis() }, [loadKpis])
+
+  // Barra de progreso ingresos por centro
+  const maxCentro = Math.max(...ingresosPorCentro.map(c => c.monto), 1)
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-        {/* Header */}
-        <div className="page-header">
-          <div className="page-header-left" style={{ display: 'block' }}>
-            <div className="page-eyebrow">
-              <Flag size={16} style={{ color: 'var(--blue)' }} />
-              <span className="page-eyebrow-label">Módulo</span>
+      {/* Header */}
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
+            <Flag size={16} style={{ color: 'var(--blue)' }} />
+            <span className="page-eyebrow-label">Módulo</span>
+          </div>
+          <h1 className="page-title-xl">Club Golf</h1>
+          <p className="page-subtitle">Administración del club — socios, operaciones de campo y servicios deportivos</p>
+        </div>
+        <div className="page-header-actions">
+          <button className="btn-ghost" onClick={loadKpis} title="Actualizar">
+            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      </div>
+
+      {/* KPIs ─────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+
+        {/* Socios activos */}
+        <div className="card" onClick={() => router.push('/golf/miembros')}
+          style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
+            flex: '1 1 160px', maxWidth: 220, cursor: 'pointer', background: '#f0f9ff',
+            transition: 'transform 0.1s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: '#3F4A7520',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Users size={16} style={{ color: '#3F4A75' }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
+              color: '#3F4A75', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? '—' : kpis.sociosActivos}
             </div>
-            <h1 className="page-title-xl">Club</h1>
-            <p className="page-subtitle">Administración del club — socios, operaciones de campo y servicios deportivos</p>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Socios activos</div>
           </div>
         </div>
 
-        {/* Grid de módulos */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-          {MODULOS.map(m => {
-            const Icon = m.icon
-            return (
-              <button
-                key={m.key}
-                onClick={() => m.activo && router.push(m.href)}
-                className={m.activo ? 'card card-hover' : 'card'}
-                style={{
-                  padding: '18px 20px',
-                  textAlign: 'left',
-                  background: '#fff',
-                  border: '1px solid #e2e8f0',
-                  cursor: m.activo ? 'pointer' : 'default',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  opacity: m.activo ? 1 : 0.5,
-                }}
-              >
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  background: m.color + '15',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <Icon size={18} style={{ color: m.color }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
-                </div>
-                {m.activo
-                  ? <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
-                  : <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', flexShrink: 0, whiteSpace: 'nowrap' }}>PRÓXIMO</span>
-                }
-              </button>
-            )
-          })}
+        {/* Salidas hoy */}
+        <div className="card" onClick={() => router.push('/golf/accesos')}
+          style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
+            flex: '1 1 160px', maxWidth: 220, cursor: 'pointer', background: '#f0fdf4',
+            transition: 'transform 0.1s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: '#16a34a20',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Activity size={16} style={{ color: '#16a34a' }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
+              color: '#16a34a', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? '—' : kpis.salidasHoy}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              Salidas hoy · <span style={{ fontWeight: 600 }}>{loading ? '—' : kpis.salidasMes}</span> en el mes
+            </div>
+          </div>
+        </div>
+
+        {/* Ingresos del mes */}
+        <div className="card" onClick={() => router.push('/golf/pos')}
+          style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
+            flex: '1 1 180px', maxWidth: 240, cursor: 'pointer', background: '#f0fdf4',
+            transition: 'transform 0.1s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: '#05966920',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <TrendingUp size={16} style={{ color: '#059669' }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
+              color: '#059669', fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? '—' : fmtK(kpis.ingresosMes)}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Ingresos POS este mes</div>
+          </div>
+        </div>
+
+        {/* Cuotas vencidas */}
+        <div className="card" onClick={() => router.push('/golf/cxc')}
+          style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
+            flex: '1 1 180px', maxWidth: 240, cursor: 'pointer',
+            background: kpis.cuotasVencidas > 0 ? '#fef2f2' : '#f8fafc',
+            transition: 'transform 0.1s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
+          <div style={{ width: 36, height: 36, borderRadius: 9,
+            background: kpis.cuotasVencidas > 0 ? '#dc262620' : '#64748b20',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <AlertTriangle size={16} style={{ color: kpis.cuotasVencidas > 0 ? '#dc2626' : '#64748b' }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
+              color: kpis.cuotasVencidas > 0 ? '#dc2626' : '#64748b',
+              fontVariantNumeric: 'tabular-nums' }}>
+              {loading ? '—' : kpis.cuotasVencidas}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              Cuotas vencidas
+              {!loading && kpis.montoCuotasVencidas > 0 && (
+                <span style={{ marginLeft: 4, fontWeight: 600,
+                  color: kpis.cuotasVencidas > 0 ? '#dc2626' : 'inherit' }}>
+                  · {fmtK(kpis.montoCuotasVencidas)}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
       </div>
+
+      {/* Ingresos por centro de venta ────────────────────── */}
+      {!loading && ingresosPorCentro.length > 0 && (
+        <div className="card" style={{ padding: '18px 22px', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+                textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
+                Ingresos POS · Este mes
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                Desglose por centro de venta
+              </div>
+            </div>
+            <button onClick={() => router.push('/golf/pos')}
+              style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+              Ver cortes <ChevronRight size={11} />
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {ingresosPorCentro.map(centro => (
+              <div key={centro.id}>
+                <div style={{ display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'center', marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {centro.nombre}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#059669',
+                    fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt$(centro.monto)}
+                  </span>
+                </div>
+                <div style={{ height: 6, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', borderRadius: 3, background: '#059669',
+                    width: `${(centro.monto / maxCentro) * 100}%`,
+                    transition: 'width 0.4s ease',
+                  }} />
+                </div>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between',
+              paddingTop: 10, borderTop: '1px solid #e2e8f0', marginTop: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>Total</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#059669',
+                fontVariantNumeric: 'tabular-nums' }}>
+                {fmt$(kpis.ingresosMes)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grid de módulos ─────────────────────────────────── */}
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+        textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
+        Módulos
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+        {MODULOS.map(m => {
+          const Icon = m.icon
+          return (
+            <button
+              key={m.key}
+              onClick={() => m.activo && router.push(m.href)}
+              className={m.activo ? 'card card-hover' : 'card'}
+              style={{
+                padding: '18px 20px',
+                textAlign: 'left',
+                background: '#fff',
+                border: '1px solid #e2e8f0',
+                cursor: m.activo ? 'pointer' : 'default',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                opacity: m.activo ? 1 : 0.5,
+              }}
+            >
+              <div style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: m.color + '15',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Icon size={18} style={{ color: m.color }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
+              </div>
+              {m.activo
+                ? <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+                : <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                    background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0',
+                    flexShrink: 0, whiteSpace: 'nowrap' }}>PRÓXIMO</span>
+              }
+            </button>
+          )
+        })}
+      </div>
+
+    </div>
   )
 }
