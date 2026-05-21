@@ -7,7 +7,7 @@ import {
   ChevronRight, LayoutDashboard, Star, CalendarDays,
 } from 'lucide-react'
 import Link from 'next/link'
-import { fechaLocal } from '@/lib/dateUtils'
+import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 const fmt = (n: number) =>
   '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -84,8 +84,8 @@ export default function VistaEjecutivaPage() {
       dbCtrl.from('recibos_ingreso').select('monto_total, id_centro_ingreso_fk')
         .eq('status', 'Confirmado').gte('fecha', semAntIni).lte('fecha', semAntFin),
       dbGolf.from('ctrl_accesos').select('id', { count: 'exact', head: true })
-        .gte('fecha_entrada', new Date(`${hoy}T00:00:00`).toISOString())
-        .lte('fecha_entrada', new Date(`${hoy}T23:59:59`).toISOString()),
+        .gte('fecha_entrada', inicioDelDia(hoy))
+        .lte('fecha_entrada', finDelDia(hoy)),
       dbHip.from('cat_caballerizas').select('status'),
       dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })
         .in('status', ['Pendiente', 'Pendiente Auth']).lt('fecha_vencimiento', hoy),
