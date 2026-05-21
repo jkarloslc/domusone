@@ -4,7 +4,7 @@ import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Receipt, ChevronLeft, ChevronRight,
-  Save, Loader, Calendar, Eye, Ban, Layers, DollarSign, Printer
+  Save, Loader, Calendar, Eye, Ban, Layers, DollarSign, Printer, Pencil
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
@@ -76,7 +76,9 @@ function ReciboModal({
   onSaved: () => void
   authUser: any
 }) {
-  const isView   = !!recibo
+  const isView        = !!recibo
+  const isSuperAdmin  = authUser?.rol === 'superadmin'
+  const [isEditMode, setIsEditMode] = useState(false)
   const today    = toLocalYmd(new Date())
 
   const [form, setForm] = useState({
@@ -346,6 +348,67 @@ function ReciboModal({
     onSaved()
   }
 
+  const handleUpdate = async () => {
+    if (!recibo) return
+    if (totalFinal === 0) { setError('El monto total debe ser mayor a $0'); return }
+    setSaving(true); setError('')
+
+    // 1. Actualizar cabecera
+    const { error: errUpd } = await dbCtrl.from('recibos_ingreso').update({
+      fecha:                form.fecha,
+      id_centro_ingreso_fk: Number(form.id_centro_ingreso_fk),
+      descripcion:          form.descripcion || null,
+      monto_total:          totalFinal,
+      notas:                form.notas || null,
+      // limpiar columnas legacy para que el fallback de display no confunda
+      monto_efectivo: 0, monto_transferencia: 0,
+      monto_tarjeta: 0, monto_tarjeta_debito: 0, monto_tarjeta_credito: 0,
+      monto_cheque: 0, monto_deposito: 0,
+    }).eq('id', recibo.id)
+
+    if (errUpd) { setSaving(false); setError(errUpd.message); return }
+
+    // 2. Borrar desglose existente y reinsertar
+    await Promise.all([
+      dbCtrl.from('recibos_ingreso_secciones').delete().eq('id_recibo_fk', recibo.id),
+      dbCtrl.from('recibos_ingreso_frentes').delete().eq('id_recibo_fk', recibo.id),
+      dbCtrl.from('recibos_ingreso_conceptos').delete().eq('id_recibo_fk', recibo.id),
+      dbCtrl.from('recibos_ingreso_formas_pago').delete().eq('id_recibo_fk', recibo.id),
+    ])
+
+    if (esSecciones && secRows.some(r => r.monto > 0)) {
+      await dbCtrl.from('recibos_ingreso_secciones').insert(
+        secRows.filter(r => r.monto > 0)
+          .map(r => ({ id_recibo_fk: recibo.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, notas: r.notas || null }))
+      )
+    }
+    if (esFrente && frenteRows.some(r => r.monto > 0)) {
+      await dbCtrl.from('recibos_ingreso_frentes').insert(
+        frenteRows.filter(r => r.monto > 0)
+          .map(r => ({ id_recibo_fk: recibo.id, id_frente_fk: r.id_frente_fk, nombre_frente: r.nombre_frente, monto: r.monto, notas: r.notas || null }))
+      )
+    }
+    if (esConceptos && conceptoRows.some(r => r.monto > 0)) {
+      await dbCtrl.from('recibos_ingreso_conceptos').insert(
+        conceptoRows.filter(r => r.monto > 0)
+          .map(r => ({ id_recibo_fk: recibo.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, notas: r.notas || null }))
+      )
+    }
+    if (!esFrente && formaPagoRows.some(r => r.monto > 0)) {
+      // Excluir filas con id negativo (origen legacy readonly) — deben tener id real del catálogo
+      const validFormas = formaPagoRows.filter(r => r.monto > 0 && r.id_forma_pago_fk > 0)
+      if (validFormas.length > 0) {
+        await dbCtrl.from('recibos_ingreso_formas_pago').insert(
+          validFormas.map(r => ({ id_recibo_fk: recibo.id, id_forma_pago_fk: r.id_forma_pago_fk, nombre_forma_pago: r.nombre_forma_pago, monto: r.monto }))
+        )
+      }
+    }
+
+    setSaving(false)
+    setIsEditMode(false)
+    onSaved()
+  }
+
   const handleCancel = async () => {
     if (!cancelMotivo.trim()) { setError('Escribe el motivo de cancelación'); return }
     setCancelling(true); setError('')
@@ -532,34 +595,63 @@ function ReciboModal({
     <ModalShell
       modulo="ingresos"
       titulo={isView ? (recibo!.folio ?? `Recibo #${recibo!.id}`) : 'Nuevo Recibo de Ingreso'}
-      subtitulo={isView ? `${fmtFecha(form.fecha)} · ${centroSel?.nombre ?? 'Sin centro'}` : 'Captura manual de ingresos'}
+      subtitulo={
+        isView
+          ? isEditMode
+            ? `✏️ Editando · ${fmtFecha(form.fecha)} · ${centroSel?.nombre ?? 'Sin centro'}`
+            : `${fmtFecha(form.fecha)} · ${centroSel?.nombre ?? 'Sin centro'}`
+          : 'Captura manual de ingresos'
+      }
       onClose={onClose}
       maxWidth={600}
       footer={
         <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            {isView && recibo!.status === 'Confirmado' && !showCancel && (
+            {/* Superadmin: botón Editar (solo si no está en modo edición ni cancelación) */}
+            {isView && isSuperAdmin && !isEditMode && !showCancel && recibo!.status !== 'Cancelado' && (
+              <button onClick={() => setIsEditMode(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#7c3aed', border: '1px solid #c4b5fd', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                <Pencil size={13} /> Editar recibo
+              </button>
+            )}
+            {/* Cancelar recibo (solo vista normal, no en modo edición) */}
+            {isView && !isEditMode && recibo!.status === 'Confirmado' && !showCancel && (
               <button onClick={() => setShowCancel(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer', marginTop: isSuperAdmin ? 6 : 0 }}>
                 <Ban size={13} /> Cancelar recibo
               </button>
             )}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            {isView && (
+            {isView && !isEditMode && (
               <button className="btn-secondary" onClick={handlePrint} disabled={printing} style={{ fontSize: 12 }}>
                 {printing ? <Loader size={14} className="animate-spin" /> : <Printer size={14} />}
                 Imprimir
               </button>
             )}
-            <button className="btn-secondary" onClick={onClose}>
-              {isView ? 'Cerrar' : 'Cancelar'}
-            </button>
-            {!isView && (
-              <button className="btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-                Guardar Recibo
-              </button>
+            {isEditMode ? (
+              <>
+                <button className="btn-secondary" onClick={() => { setIsEditMode(false); setError('') }}>
+                  Descartar cambios
+                </button>
+                <button className="btn-primary" onClick={handleUpdate} disabled={saving}
+                  style={{ background: '#7c3aed', borderColor: '#7c3aed' }}>
+                  {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+                  Guardar cambios
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn-secondary" onClick={onClose}>
+                  {isView ? 'Cerrar' : 'Cancelar'}
+                </button>
+                {!isView && (
+                  <button className="btn-primary" onClick={handleSave} disabled={saving}>
+                    {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+                    Guardar Recibo
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -582,11 +674,11 @@ function ReciboModal({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Fecha *</label>
-              <input className="input" type="date" value={form.fecha} onChange={e => set('fecha', e.target.value)} disabled={isView} />
+              <input className="input" type="date" value={form.fecha} onChange={e => set('fecha', e.target.value)} disabled={isView && !isEditMode} />
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Centro de Ingreso *</label>
-              <select className="select" value={form.id_centro_ingreso_fk ?? ''} onChange={e => set('id_centro_ingreso_fk', e.target.value)} disabled={isView}>
+              <select className="select" value={form.id_centro_ingreso_fk ?? ''} onChange={e => set('id_centro_ingreso_fk', e.target.value)} disabled={isView && !isEditMode}>
                 <option value="">Seleccionar…</option>
                 {centros.filter(c => c.activo).map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
@@ -596,7 +688,7 @@ function ReciboModal({
           {/* Descripción */}
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Descripción / Concepto</label>
-            <input className="input" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} disabled={isView}
+            <input className="input" value={form.descripcion} onChange={e => set('descripcion', e.target.value)} disabled={isView && !isEditMode}
               placeholder="ej. Ventas del día — green fees, carros, práctica" />
           </div>
 
@@ -626,7 +718,7 @@ function ReciboModal({
                           className="input" type="number" min="0" step="0.01"
                           value={row.monto || ''}
                           onChange={e => setSecMonto(i, parseFloat(e.target.value) || 0)}
-                          disabled={isView}
+                          disabled={isView && !isEditMode}
                           style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 8px', fontSize: 13 }}
                         />
                       </div>
@@ -662,7 +754,7 @@ function ReciboModal({
                             className="input" type="number" min="0" step="0.01"
                             value={row.monto || ''}
                             onChange={e => setConceptoMonto(i, parseFloat(e.target.value) || 0)}
-                            disabled={isView}
+                            disabled={isView && !isEditMode}
                             style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 8px', fontSize: 13 }}
                           />
                         </div>
@@ -720,7 +812,7 @@ function ReciboModal({
                           className="input" type="number" min="0" step="0.01"
                           value={row.monto || ''}
                           onChange={e => setFrenteMonto(i, parseFloat(e.target.value) || 0)}
-                          disabled={isView}
+                          disabled={isView && !isEditMode}
                           style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 8px', fontSize: 13 }}
                         />
                       </div>
@@ -751,7 +843,7 @@ function ReciboModal({
                       className="input" type="number" min="0" step="0.01"
                       value={row.monto || ''}
                       onChange={e => setFormaPagoMonto(i, parseFloat(e.target.value) || 0)}
-                      disabled={isView}
+                      disabled={isView && !isEditMode}
                       style={{ fontVariantNumeric: 'tabular-nums' }}
                     />
                   </div>
@@ -796,7 +888,7 @@ function ReciboModal({
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Notas</label>
             <textarea className="input" rows={2} value={form.notas} onChange={e => set('notas', e.target.value)}
-              disabled={isView} style={{ resize: 'vertical', minHeight: 52 }} />
+              disabled={isView && !isEditMode} style={{ resize: 'vertical', minHeight: 52 }} />
           </div>
 
           {/* Datos de auditoría (vista) */}
