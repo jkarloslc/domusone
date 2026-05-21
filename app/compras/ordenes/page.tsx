@@ -171,7 +171,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   const [areaId, setAreaId]        = useState<string>(row?.id_area_fk?.toString() ?? '')
   const [rfqs, setRFQs]         = useState<any[]>([])
   // Opciones de proveedor cuando la RFQ tiene múltiples ganadores
-  const [rfqMultiProvs, setRfqMultiProvs] = useState<{cotId: number; provId: number; nombre: string; items: any[]}[]>([])
+  const [rfqMultiProvs, setRfqMultiProvs] = useState<{cotId: number; provId: number; nombre: string; items: any[]; yaCreada?: boolean}[]>([])
   const [form, setForm] = useState({
     id_proveedor_fk:       row?.id_proveedor_fk?.toString() ?? '',
     id_rfq_fk:             row?.id_rfq_fk?.toString() ?? '',
@@ -247,10 +247,16 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
 
     if (cots && cots.length > 1) {
       // ── Multi-ganador: pausar y mostrar picker de proveedor ──────────
+      // Proveedores que ya tienen OC para esta RFQ (excepto la OC que se está editando)
+      const { data: ocsExistentes } = await dbComp.from('ordenes_compra')
+        .select('id_proveedor_fk').eq('id_rfq_fk', Number(rfqId))
+        .not('id', 'eq', row?.id ?? 0)
+      const provsConOC = new Set((ocsExistentes ?? []).map((o: any) => o.id_proveedor_fk))
+
       const opts = cots.map(c => {
         const ganadorItems = (c.rfq_cotizaciones_det ?? []).filter((d: any) => d.ganador)
         const prov = proveedores.find(p => p.id === c.id_proveedor_fk)
-        return { cotId: c.id, provId: c.id_proveedor_fk, nombre: prov?.nombre ?? `Proveedor #${c.id_proveedor_fk}`, items: ganadorItems }
+        return { cotId: c.id, provId: c.id_proveedor_fk, nombre: prov?.nombre ?? `Proveedor #${c.id_proveedor_fk}`, items: ganadorItems, yaCreada: provsConOC.has(c.id_proveedor_fk) }
       }).filter(op => op.items.length > 0)
       setRfqMultiProvs(opts)
       // No cargar ítems todavía — el usuario elige proveedor en el picker
@@ -290,7 +296,7 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   // Helper: convierte ítems de rfq_cotizaciones_det al formato det de OC
   const _cargarItems = (src: any[], condPago?: string) => {
     const items = src.map((d: any) => ({
-      id_articulo_fk:  null,
+      id_articulo_fk:  d.id_articulo_fk ?? null,
       descripcion:     d.descripcion ?? '',
       cantidad:        d.cantidad?.toString() ?? '1',
       unidad:          d.unidad ?? 'PZA',
@@ -434,12 +440,12 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {rfqMultiProvs.map(op => (
-                    <button key={op.cotId} className="btn-secondary"
-                      style={{ fontSize: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 14px', gap: 2 }}
+                    <button key={op.cotId} className={op.yaCreada ? 'btn-ghost' : 'btn-secondary'}
+                      style={{ fontSize: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 14px', gap: 2, opacity: op.yaCreada ? 0.6 : 1 }}
                       onClick={() => elegirProveedorRFQ(op)}>
                       <span style={{ fontWeight: 600 }}>{op.nombre}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {op.items.length} producto{op.items.length !== 1 ? 's' : ''} ganador{op.items.length !== 1 ? 'es' : ''}
+                      <span style={{ fontSize: 11, color: op.yaCreada ? '#15803d' : 'var(--text-muted)' }}>
+                        {op.yaCreada ? '✓ OC ya creada' : `${op.items.length} producto${op.items.length !== 1 ? 's' : ''} ganador${op.items.length !== 1 ? 'es' : ''}`}
                       </span>
                     </button>
                   ))}
