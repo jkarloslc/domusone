@@ -553,10 +553,27 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12 }}>{c.tiempo_entrega ?? '—'}</td>)}
                     </tr>
                     {/* Detalle por producto — clic en precio selecciona ganador */}
-                    {(cotizaciones[0]?.rfq_cotizaciones_det ?? []).map((_: any, pi: number) => (
-                      <tr key={pi}>
-                        <td style={{ fontSize: 12, fontWeight: itemWinners[pi] !== undefined ? 600 : 400 }}>
-                          {cotizaciones[0]?.rfq_cotizaciones_det?.[pi]?.descripcion}
+                    {(cotizaciones[0]?.rfq_cotizaciones_det ?? []).map((_: any, pi: number) => {
+                      const rowBg = pi % 2 === 0 ? '#f8fafc' : '#ffffff'
+                      const hasWinner = itemWinners[pi] !== undefined
+                      return (
+                      <tr key={pi} style={{ background: hasWinner ? undefined : rowBg }}>
+                        <td style={{
+                          fontSize: 12,
+                          fontWeight: hasWinner ? 600 : 400,
+                          background: hasWinner ? '#f0fdf4' : rowBg,
+                          borderLeft: hasWinner ? '3px solid #16a34a' : '3px solid transparent',
+                          paddingLeft: 10,
+                        }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{
+                              display: 'inline-block', width: 18, height: 18, borderRadius: '50%',
+                              background: hasWinner ? '#dcfce7' : '#e2e8f0',
+                              color: hasWinner ? '#15803d' : '#94a3b8',
+                              fontSize: 10, fontWeight: 700, lineHeight: '18px', textAlign: 'center', flexShrink: 0,
+                            }}>{pi + 1}</span>
+                            {cotizaciones[0]?.rfq_cotizaciones_det?.[pi]?.descripcion}
+                          </span>
                         </td>
                         {cotizaciones.map(c => {
                           const d = c.rfq_cotizaciones_det?.[pi]
@@ -570,7 +587,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                                 fontSize: 12,
                                 textAlign: 'right',
                                 fontVariantNumeric: 'tabular-nums',
-                                background: isWinner ? '#dcfce7' : undefined,
+                                background: isWinner ? '#dcfce7' : rowBg,
                                 outline: isWinner ? '2px solid #16a34a' : undefined,
                                 outlineOffset: -2,
                                 cursor: clickable ? 'pointer' : 'default',
@@ -588,7 +605,8 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                           )
                         })}
                       </tr>
-                    ))}
+                      )
+                    })}
                     <tr style={{ borderTop: '2px solid #e2e8f0' }}>
                       <td style={{ fontWeight: 700 }}>Subtotal</td>
                       {cotizaciones.map(c => <td key={c.id} style={{ fontWeight: 700, textAlign: 'right' }}>{fmt(c.subtotal)}</td>)}
