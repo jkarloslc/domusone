@@ -281,7 +281,9 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     if (!cotForm.id_proveedor_fk) return
     if (cotizaciones.length >= 3) { alert('Máximo 3 cotizaciones por RFQ'); return }
     setSaving(true)
-    const detValidos = cotDet.filter(d => d.descripcion && Number(d.precio_unitario) > 0)
+    // Guardamos TODOS los ítems (incluidos los no cotizados con precio null)
+    // para mantener alineación de índice en el cuadro comparativo
+    const detTodos = cotDet.filter(d => d.descripcion)
     const { data: cot, error: err } = await dbComp.from('rfq_cotizaciones').insert({
       id_rfq_fk:        rfq.id,
       id_proveedor_fk:  Number(cotForm.id_proveedor_fk),
@@ -295,20 +297,27 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
       total:             subtotalCot + ivaCot,
     }).select('id').single()
     if (!err && cot) {
+      const precio = (d: any) => d.precio_unitario !== '' && Number(d.precio_unitario) > 0
+        ? Number(d.precio_unitario) : null
       await dbComp.from('rfq_cotizaciones_det').insert(
-        detValidos.map(d => ({
-          id_cotizacion_fk:      cot.id,
-          id_requisicion_det_fk: d.id_requisicion_det_fk || null,
-          id_articulo_fk:        (d as any).id_articulo_fk ?? null,
-          descripcion:           d.descripcion,
-          cantidad:              Number(d.cantidad),
-          unidad:                d.unidad,
-          precio_unitario:       Number(d.precio_unitario),
-          subtotal:              Number(d.cantidad) * Number(d.precio_unitario),
-          tasa_iva:              Number(d.tasa_iva),
-          iva:                   Number(d.cantidad) * Number(d.precio_unitario) * Number(d.tasa_iva),
-          total:                 Number(d.cantidad) * Number(d.precio_unitario) * (1 + Number(d.tasa_iva)),
-        }))
+        detTodos.map(d => {
+          const pu = precio(d)
+          const sub = pu !== null ? Number(d.cantidad) * pu : 0
+          const tiva = Number(d.tasa_iva || 0)
+          return {
+            id_cotizacion_fk:      cot.id,
+            id_requisicion_det_fk: d.id_requisicion_det_fk || null,
+            id_articulo_fk:        (d as any).id_articulo_fk ?? null,
+            descripcion:           d.descripcion,
+            cantidad:              Number(d.cantidad),
+            unidad:                d.unidad,
+            precio_unitario:       pu,           // null si no cotizó
+            subtotal:              sub,
+            tasa_iva:              tiva,
+            iva:                   sub * tiva,
+            total:                 sub * (1 + tiva),
+          }
+        })
       )
     }
     setSaving(false); setAddingCot(false)
@@ -410,14 +419,16 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       <th>Concepto</th>
                       {cotizaciones.map(c => {
                         const prov = proveedores.find(p => p.id === c.id_proveedor_fk)
-                        const winnerCount = (c.rfq_cotizaciones_det ?? []).filter((_: any, pi: number) => itemWinners[pi] === c.id).length
+                        const winnerCount = (c.rfq_cotizaciones_det ?? []).filter((d: any, pi: number) =>
+                          itemWinners[pi] === c.id && d?.precio_unitario != null && Number(d.precio_unitario) > 0
+                        ).length
                         const hasWinners = winnerCount > 0
                         return (
                           <th key={c.id} style={{ background: hasWinners ? '#f0fdf4' : undefined, color: hasWinners ? '#15803d' : undefined, minWidth: 140 }}>
                             {prov?.nombre ?? `Prov #${c.id_proveedor_fk}`}
                             {hasWinners && (
                               <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2 }}>
-                                ✓ {winnerCount}/{totalItems} producto{winnerCount !== 1 ? 's' : ''} ganador{winnerCount !== 1 ? 'es' : ''}
+                                ✓ {winnerCount}/{requiredItems} producto{winnerCount !== 1 ? 's' : ''} ganador{winnerCount !== 1 ? 'es' : ''}
                               </div>
                             )}
                           </th>
@@ -464,12 +475,12 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                                 fontWeight: isWinner ? 700 : 400,
                               }}
                             >
-                              {d ? (
+                              {d?.precio_unitario != null && Number(d.precio_unitario) > 0 ? (
                                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
                                   {isWinner && <CheckCircle size={11} color="#16a34a" />}
                                   {fmt(d.precio_unitario)}
                                 </span>
-                              ) : '—'}
+                              ) : <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>}
                             </td>
                           )
                         })}
