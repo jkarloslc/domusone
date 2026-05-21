@@ -229,6 +229,14 @@ function ReciboModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recibo?.id, esFrente])
 
+  // ── En modo edición: si las formas son legacy (id negativo) recargar catálogo ──
+  useEffect(() => {
+    if (!isEditMode) return
+    const tieneLegacy = formaPagoRows.some(r => r.id_forma_pago_fk < 0)
+    if (tieneLegacy) loadFormasPagoFromCfg()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode])
+
   const loadFormasPagoFromCfg = async () => {
     const { data } = await dbCfg.from('formas_pago')
       .select('id, nombre')
