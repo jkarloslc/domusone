@@ -23,11 +23,23 @@ type Periodo = 'hoy' | 'semana' | 'mes' | 'anio'
 const PERIODOS: { key: Periodo; label: string }[] = [
   { key: 'hoy',    label: 'Hoy' },
   { key: 'semana', label: 'Esta semana' },
-  { key: 'mes',    label: 'Este mes' },
+  { key: 'mes',    label: 'Por mes' },
   { key: 'anio',   label: 'Este año' },
 ]
 
-function getRango(p: Periodo): { ini: string; fin: string } {
+function getMesesDisponibles(): { value: string; label: string }[] {
+  const now = new Date()
+  const result = []
+  for (let i = 23; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const value = d.toLocaleDateString('en-CA').slice(0, 7) // YYYY-MM
+    const label = d.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
+    result.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) })
+  }
+  return result
+}
+
+function getRango(p: Periodo, mesSel?: string): { ini: string; fin: string } {
   const now = new Date()
   const hoy = fechaLocal()
   if (p === 'hoy')    return { ini: hoy, fin: hoy }
@@ -36,7 +48,12 @@ function getRango(p: Periodo): { ini: string; fin: string } {
     return { ini: d.toLocaleDateString('en-CA'), fin: hoy }
   }
   if (p === 'mes') {
-    return { ini: new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA'), fin: hoy }
+    const ym = mesSel ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const [y, m] = ym.split('-').map(Number)
+    const ini = new Date(y, m - 1, 1).toLocaleDateString('en-CA')
+    const finMes = new Date(y, m, 0).toLocaleDateString('en-CA')
+    const fin = finMes < hoy ? finMes : hoy
+    return { ini, fin }
   }
   return { ini: `${now.getFullYear()}-01-01`, fin: hoy }
 }
@@ -86,6 +103,8 @@ export default function DashboardFinancieroPage() {
   const router = useRouter()
 
   const [periodo, setPeriodo] = useState<Periodo>('mes')
+  const now0 = new Date()
+  const [mesSel, setMesSel] = useState(`${now0.getFullYear()}-${String(now0.getMonth() + 1).padStart(2, '0')}`)
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -175,7 +194,7 @@ export default function DashboardFinancieroPage() {
 
   const loadAll = useCallback(async () => {
     setRefreshing(true)
-    const { ini, fin } = getRango(periodo)
+    const { ini, fin } = getRango(periodo, mesSel)
 
     let ingPromise: Promise<any>
     let ultIngPromise: Promise<any>
@@ -320,7 +339,7 @@ export default function DashboardFinancieroPage() {
     setLoading(false)
     setRefreshing(false)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodo, filtroCentroIng, filtroSeccion, filtroCentroVenta, filtroCC, filtroArea])
+  }, [periodo, mesSel, filtroCentroIng, filtroSeccion, filtroCentroVenta, filtroCC, filtroArea])
 
   useEffect(() => { setLoading(true); loadAll() }, [loadAll])
 
@@ -442,18 +461,30 @@ export default function DashboardFinancieroPage() {
               textTransform: 'uppercase', color: 'var(--text-muted)', paddingLeft: 2 }}>
               Período
             </span>
-            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 9, padding: 3, gap: 2 }}>
-              {PERIODOS.map(p => (
-                <button key={p.key} onClick={() => setPeriodo(p.key)}
-                  style={{ padding: '5px 10px', borderRadius: 7, border: 'none', cursor: 'pointer',
-                    fontSize: 11, fontWeight: 500,
-                    background: periodo === p.key ? '#fff' : 'transparent',
-                    color: periodo === p.key ? 'var(--blue)' : 'var(--text-muted)',
-                    boxShadow: periodo === p.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                    transition: 'all 0.15s' }}>
-                  {p.label}
-                </button>
-              ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 9, padding: 3, gap: 2 }}>
+                {PERIODOS.map(p => (
+                  <button key={p.key} onClick={() => setPeriodo(p.key)}
+                    style={{ padding: '5px 10px', borderRadius: 7, border: 'none', cursor: 'pointer',
+                      fontSize: 11, fontWeight: 500,
+                      background: periodo === p.key ? '#fff' : 'transparent',
+                      color: periodo === p.key ? 'var(--blue)' : 'var(--text-muted)',
+                      boxShadow: periodo === p.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.15s' }}>
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              {periodo === 'mes' && (
+                <select value={mesSel} onChange={e => setMesSel(e.target.value)}
+                  style={{ fontSize: 11, padding: '5px 8px', borderRadius: 7,
+                    border: '1px solid #cbd5e1', background: '#fff',
+                    color: 'var(--text-primary)', cursor: 'pointer', minWidth: 150 }}>
+                  {getMesesDisponibles().map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
