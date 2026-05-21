@@ -201,6 +201,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
   const [proveedores, setProvs] = useState<Proveedor[]>([])
   const [reqDet, setReqDet]     = useState<any[]>([])
   const [addingCot, setAddingCot] = useState(false)
+  const [editingCot, setEditingCot] = useState<any | null>(null) // cotización existente en edición
   const [saving, setSaving]     = useState(false)
   const [confirmando, setConfirmando] = useState(false)
 
@@ -334,6 +335,92 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     await fetchCots()
   }
 
+  // Abre el form de edición para una cotización existente (sin det guardado)
+  const abrirEdicionCot = (cot: any) => {
+    setCotForm({
+      id_proveedor_fk:   cot.id_proveedor_fk?.toString() ?? '',
+      numero_cotizacion: cot.numero_cotizacion ?? '',
+      fecha_cotizacion:  cot.fecha_cotizacion ?? '',
+      condiciones_pago:  cot.condiciones_pago ?? '',
+      tiempo_entrega:    cot.tiempo_entrega ?? '',
+      notas:             cot.notas ?? '',
+    })
+    // Pre-llenar ítems: si hay det guardados úsalos, si no usar reqDet
+    const src = (cot.rfq_cotizaciones_det ?? []).length > 0
+      ? cot.rfq_cotizaciones_det.map((d: any) => ({
+          id_requisicion_det_fk: d.id_requisicion_det_fk,
+          id_articulo_fk:        d.id_articulo_fk ?? null,
+          descripcion:           d.descripcion,
+          cantidad:              d.cantidad?.toString() ?? '1',
+          unidad:                d.unidad,
+          precio_unitario:       d.precio_unitario != null ? d.precio_unitario.toString() : '',
+          tasa_iva:              d.tasa_iva?.toString() ?? '0',
+        }))
+      : reqDet.map((d: any) => ({
+          id_requisicion_det_fk: d.id,
+          id_articulo_fk:        d.id_articulo_fk ?? null,
+          descripcion:           d.descripcion,
+          cantidad:              d.cantidad?.toString() ?? '1',
+          unidad:                d.unidad,
+          precio_unitario:       '',
+          tasa_iva:              '0',
+        }))
+    setCotDet(src.length > 0 ? src : [{ id_requisicion_det_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
+    setEditingCot(cot)
+    setAddingCot(false)
+  }
+
+  // Guarda los det de una cotización existente (upsert)
+  const saveEdicionCot = async () => {
+    if (!editingCot) return
+    setSaving(true)
+    const detTodos = cotDet.filter(d => d.descripcion)
+    // Borrar det anteriores y reemplazar
+    await dbComp.from('rfq_cotizaciones_det').delete().eq('id_cotizacion_fk', editingCot.id)
+    const precio = (d: any) => d.precio_unitario !== '' && Number(d.precio_unitario) > 0
+      ? Number(d.precio_unitario) : null
+    if (detTodos.length > 0) {
+      await dbComp.from('rfq_cotizaciones_det').insert(
+        detTodos.map(d => {
+          const pu = precio(d)
+          const sub = pu !== null ? Number(d.cantidad) * pu : 0
+          const tiva = Number(d.tasa_iva || 0)
+          return {
+            id_cotizacion_fk:      editingCot.id,
+            id_requisicion_det_fk: d.id_requisicion_det_fk || null,
+            id_articulo_fk:        d.id_articulo_fk ?? null,
+            descripcion:           d.descripcion,
+            cantidad:              Number(d.cantidad),
+            unidad:                d.unidad,
+            precio_unitario:       pu,
+            subtotal:              sub,
+            tasa_iva:              tiva,
+            iva:                   sub * tiva,
+            total:                 sub * (1 + tiva),
+          }
+        })
+      )
+    }
+    // Recalcular totales en la cabecera
+    const newSubtotal = detTodos.reduce((a, d) => {
+      const pu = precio(d); return a + (pu !== null ? Number(d.cantidad) * pu : 0)
+    }, 0)
+    const newIva = detTodos.reduce((a, d) => {
+      const pu = precio(d); const sub = pu !== null ? Number(d.cantidad) * pu : 0
+      return a + sub * Number(d.tasa_iva || 0)
+    }, 0)
+    await dbComp.from('rfq_cotizaciones').update({
+      numero_cotizacion: cotForm.numero_cotizacion || null,
+      fecha_cotizacion:  cotForm.fecha_cotizacion || null,
+      condiciones_pago:  cotForm.condiciones_pago || null,
+      tiempo_entrega:    cotForm.tiempo_entrega || null,
+      notas:             cotForm.notas || null,
+      subtotal: newSubtotal, iva: newIva, total: newSubtotal + newIva,
+    }).eq('id', editingCot.id)
+    setSaving(false); setEditingCot(null)
+    await fetchCots()
+  }
+
   // Asigna como ganadores solo los productos donde este proveedor cotizó precio > 0
   const seleccionarTodoProveedor = (cotId: number) => {
     const cot = cotizaciones.find(c => c.id === cotId)
@@ -386,7 +473,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     <ModalShell modulo="compras" titulo={rfq.folio}
       subtitulo={`${rfq.id_requisicion_fk ? `Requisición #${rfq.id_requisicion_fk} · ` : ''}Fecha límite: ${fmtFecha(rfq.fecha_limite)}`}
       onClose={onClose} maxWidth={920}
-      footer={rfq.status === 'Abierta' && !addingCot ? (
+      footer={rfq.status === 'Abierta' && !addingCot && !editingCot ? (
         <>
           {cotizaciones.length < 3 && (
             <button className="btn-secondary" onClick={() => setAddingCot(true)}><Plus size={13} /> Agregar Cotización</button>
@@ -429,7 +516,17 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                         const hasWinners = winnerCount > 0
                         return (
                           <th key={c.id} style={{ background: hasWinners ? '#f0fdf4' : undefined, color: hasWinners ? '#15803d' : undefined, minWidth: 140 }}>
-                            {prov?.nombre ?? `Prov #${c.id_proveedor_fk}`}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                              <span>{prov?.nombre ?? `Prov #${c.id_proveedor_fk}`}</span>
+                              {rfq.status === 'Abierta' && (
+                                <button className="btn-ghost"
+                                  style={{ padding: '2px 5px', fontSize: 10, fontWeight: 500, color: 'var(--blue)', flexShrink: 0 }}
+                                  onClick={e => { e.stopPropagation(); abrirEdicionCot(c) }}
+                                  title="Editar precios de esta cotización">
+                                  <Pencil size={10} style={{ display: 'inline', marginRight: 2 }} />Editar
+                                </button>
+                              )}
+                            </div>
                             {hasWinners && (
                               <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2 }}>
                                 ✓ {winnerCount}/{requiredItems} producto{winnerCount !== 1 ? 's' : ''} ganador{winnerCount !== 1 ? 'es' : ''}
@@ -559,6 +656,69 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
           {cotizaciones.length === 0 && !addingCot && (
             <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: 13 }}>
               Sin cotizaciones registradas. Agrega hasta 3 proveedores para comparar.
+            </div>
+          )}
+
+          {/* Formulario edición cotización existente */}
+          {editingCot && (
+            <div style={{ padding: '16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 12 }}>
+                Editar precios — {proveedores.find(p => p.id === editingCot.id_proveedor_fk)?.nombre ?? `Proveedor #${editingCot.id_proveedor_fk}`}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+                <div>
+                  <label className="label">No. Cotización</label>
+                  <input className="input" value={cotForm.numero_cotizacion}
+                    onChange={e => setCotForm(f => ({ ...f, numero_cotizacion: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Condiciones de Pago</label>
+                  <select className="select" value={cotForm.condiciones_pago}
+                    onChange={e => setCotForm(f => ({ ...f, condiciones_pago: e.target.value }))}>
+                    <option value="">—</option>
+                    {FORMAS_PAGO_COMP.map(p => <option key={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Tiempo de Entrega</label>
+                  <input className="input" value={cotForm.tiempo_entrega}
+                    onChange={e => setCotForm(f => ({ ...f, tiempo_entrega: e.target.value }))} />
+                </div>
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>Precios por Producto</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '3fr 70px 70px 80px 80px', gap: 6, marginBottom: 4 }}>
+                {['Descripción','Cantidad','Unidad','P. Unit.','IVA %'].map(h => (
+                  <div key={h} style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700 }}>{h}</div>
+                ))}
+              </div>
+              {cotDet.map((d, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '3fr 70px 70px 80px 80px', gap: 6, marginBottom: 6 }}>
+                  <input className="input" value={d.descripcion} onChange={e => setCD(i,'descripcion',e.target.value)} />
+                  <input className="input" type="number" value={d.cantidad} onChange={e => setCD(i,'cantidad',e.target.value)} style={{ textAlign: 'right' }} />
+                  <input className="input" value={d.unidad} onChange={e => setCD(i,'unidad',e.target.value)} />
+                  <input className="input" type="number" step="0.01" value={d.precio_unitario} onChange={e => setCD(i,'precio_unitario',e.target.value)} style={{ textAlign: 'right' }} placeholder="0.00" autoFocus={i === 0} />
+                  <select className="select" value={d.tasa_iva} onChange={e => setCD(i,'tasa_iva',e.target.value)}>
+                    <option value="0">Exento</option>
+                    <option value="0.16">16%</option>
+                    <option value="0.08">8%</option>
+                  </select>
+                </div>
+              ))}
+              {!rfq.id_requisicion_fk && (
+                <button className="btn-ghost" style={{ marginBottom: 10 }}
+                  onClick={() => setCotDet(d => [...d, { id_requisicion_det_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])}>
+                  <Plus size={12} /> Agregar producto
+                </button>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>Total: {fmt(subtotalCot + ivaCot)}</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn-secondary" onClick={() => setEditingCot(null)}>Cancelar</button>
+                  <button className="btn-primary" onClick={saveEdicionCot} disabled={saving}>
+                    {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar Precios
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
