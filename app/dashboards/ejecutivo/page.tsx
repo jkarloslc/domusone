@@ -71,7 +71,7 @@ export default function VistaEjecutivaPage() {
     const [
       centrosR, recHoyR,
       recSemActR, recSemAntR,
-      golfR, caballR,
+      golfR, golfAcompR, caballR,
       opsAlertaR, ocCntR, ocMontoR, opsPendR,
       recMesR, egrMesR, cxpR,
       hospEventosR, hospIngresosR,
@@ -83,9 +83,15 @@ export default function VistaEjecutivaPage() {
         .eq('status', 'Confirmado').gte('fecha', semActIni).lte('fecha', semActFin),
       dbCtrl.from('recibos_ingreso').select('monto_total, id_centro_ingreso_fk')
         .eq('status', 'Confirmado').gte('fecha', semAntIni).lte('fecha', semAntFin),
+      // Accesos hoy (socios principales)
       dbGolf.from('ctrl_accesos').select('id', { count: 'exact', head: true })
         .gte('fecha_entrada', inicioDelDia(hoy))
         .lte('fecha_entrada', finDelDia(hoy)),
+      // Acompañantes de accesos hoy (inner join vía FK)
+      (dbGolf.from('ctrl_acceso_acomp') as any)
+        .select('id, ctrl_accesos!inner(fecha_entrada)', { count: 'exact', head: true })
+        .gte('ctrl_accesos.fecha_entrada', inicioDelDia(hoy))
+        .lte('ctrl_accesos.fecha_entrada', finDelDia(hoy)),
       dbHip.from('cat_caballerizas').select('status'),
       dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })
         .in('status', ['Pendiente', 'Pendiente Auth']).lt('fecha_vencimiento', hoy),
@@ -133,8 +139,10 @@ export default function VistaEjecutivaPage() {
     setIngHoy(ingHoyArr)
     setIngHoyTotal(ingHoyArr.reduce((s, c) => s + c.total, 0))
 
-    // Golf accesos hoy
-    setSalidaGolf(golfR.status === 'fulfilled' ? (golfR.value.count ?? 0) : 0)
+    // Golf accesos hoy: socios principales + acompañantes
+    const golfPrincipales = golfR.status     === 'fulfilled' ? (golfR.value.count     ?? 0) : 0
+    const golfAcomps      = golfAcompR.status === 'fulfilled' ? (golfAcompR.value.count ?? 0) : 0
+    setSalidaGolf(golfPrincipales + golfAcomps)
 
     // Caballerizas
     const caballAll = caballR.status === 'fulfilled' ? caballR.value.data ?? [] : []

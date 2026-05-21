@@ -177,21 +177,32 @@ export default function GolfPage() {
     setRefreshing(true)
     try {
       const [
-        sociosR, salidasHoyR, salidasMesR,
+        sociosR, salidasHoyR, salidasHoyAcompR,
+        salidasMesR, salidasMesAcompR,
         cuotasR, cortesR, centrosR,
       ] = await Promise.allSettled([
         // 1. Socios activos
         dbGolf.from('cat_socios').select('id', { count: 'exact', head: true }).eq('activo', true),
-        // 2. Salidas hoy
+        // 2. Salidas hoy — socios principales
         dbGolf.from('ctrl_accesos')
           .select('id', { count: 'exact', head: true })
           .gte('fecha_entrada', inicioDelDia(hoy))
           .lte('fecha_entrada', finDelDia(hoy)),
-        // 3. Salidas este mes
+        // 3. Salidas hoy — acompañantes
+        (dbGolf.from('ctrl_acceso_acomp') as any)
+          .select('id, ctrl_accesos!inner(fecha_entrada)', { count: 'exact', head: true })
+          .gte('ctrl_accesos.fecha_entrada', inicioDelDia(hoy))
+          .lte('ctrl_accesos.fecha_entrada', finDelDia(hoy)),
+        // 4. Salidas este mes — socios principales
         dbGolf.from('ctrl_accesos')
           .select('id', { count: 'exact', head: true })
           .gte('fecha_entrada', inicioDelDia(iniMes))
           .lte('fecha_entrada', finDelDia(hoy)),
+        // 5. Salidas este mes — acompañantes
+        (dbGolf.from('ctrl_acceso_acomp') as any)
+          .select('id, ctrl_accesos!inner(fecha_entrada)', { count: 'exact', head: true })
+          .gte('ctrl_accesos.fecha_entrada', inicioDelDia(iniMes))
+          .lte('ctrl_accesos.fecha_entrada', finDelDia(hoy)),
         // 4. Cuotas vencidas (PENDIENTE + fecha_vencimiento < hoy)
         dbGolf.from('cat_cuotas')
           .select('monto_final')
@@ -209,9 +220,11 @@ export default function GolfPage() {
       // Socios activos
       const sociosActivos = sociosR.status === 'fulfilled' ? (sociosR.value.count ?? 0) : 0
 
-      // Salidas
-      const salidasHoy = salidasHoyR.status === 'fulfilled' ? (salidasHoyR.value.count ?? 0) : 0
-      const salidasMes = salidasMesR.status === 'fulfilled' ? (salidasMesR.value.count ?? 0) : 0
+      // Salidas (socios principales + acompañantes)
+      const salidasHoy = (salidasHoyR.status === 'fulfilled' ? (salidasHoyR.value.count ?? 0) : 0)
+                       + (salidasHoyAcompR.status === 'fulfilled' ? (salidasHoyAcompR.value.count ?? 0) : 0)
+      const salidasMes = (salidasMesR.status === 'fulfilled' ? (salidasMesR.value.count ?? 0) : 0)
+                       + (salidasMesAcompR.status === 'fulfilled' ? (salidasMesAcompR.value.count ?? 0) : 0)
 
       // Cuotas vencidas
       const cuotasData = cuotasR.status === 'fulfilled' ? (cuotasR.value.data ?? []) : []
