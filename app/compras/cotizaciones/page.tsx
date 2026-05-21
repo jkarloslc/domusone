@@ -315,13 +315,13 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     setItemWinners(initWinners(cots))
   }
 
-  // Asigna todos los productos de un proveedor como ganadores
+  // Asigna como ganadores solo los productos donde este proveedor cotizó precio > 0
   const seleccionarTodoProveedor = (cotId: number) => {
     const cot = cotizaciones.find(c => c.id === cotId)
     if (!cot) return
-    const newWinners: Record<number, number> = {}
-    ;(cot.rfq_cotizaciones_det ?? []).forEach((_: any, pi: number) => {
-      newWinners[pi] = cotId
+    const newWinners: Record<number, number> = { ...itemWinners }
+    ;(cot.rfq_cotizaciones_det ?? []).forEach((d: any, pi: number) => {
+      if (Number(d?.precio_unitario) > 0) newWinners[pi] = cotId
     })
     setItemWinners(newWinners)
   }
@@ -358,7 +358,13 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     setCotDet(d => d.map((x, j) => j === i ? { ...x, [k]: v } : x))
 
   const totalItems = cotizaciones[0]?.rfq_cotizaciones_det?.length ?? 0
-  const assignedCount = Object.keys(itemWinners).length
+  // Ítems donde al menos un proveedor cotizó precio > 0 (los demás no bloquean la confirmación)
+  const requiredItems = (cotizaciones[0]?.rfq_cotizaciones_det ?? []).filter((_: any, pi: number) =>
+    cotizaciones.some(c => Number(c.rfq_cotizaciones_det?.[pi]?.precio_unitario) > 0)
+  ).length
+  const assignedCount = Object.keys(itemWinners).filter(pi =>
+    cotizaciones.some(c => Number(c.rfq_cotizaciones_det?.[Number(pi)]?.precio_unitario) > 0)
+  ).length
 
   return (
     <ModalShell modulo="compras" titulo={rfq.folio}
@@ -472,8 +478,12 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       <tr>
                         <td style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>Seleccionar todo</td>
                         {cotizaciones.map(c => {
-                          const allWinner = (c.rfq_cotizaciones_det ?? []).length > 0 &&
-                            (c.rfq_cotizaciones_det ?? []).every((_: any, pi: number) => itemWinners[pi] === c.id)
+                          const quotedItems = (c.rfq_cotizaciones_det ?? []).filter((d: any) => Number(d?.precio_unitario) > 0)
+                          const allWinner = quotedItems.length > 0 &&
+                            quotedItems.every((d: any, _: number) => {
+                              const pi = (c.rfq_cotizaciones_det ?? []).indexOf(d)
+                              return itemWinners[pi] === c.id
+                            })
                           return (
                             <td key={c.id} style={{ textAlign: 'center', paddingTop: 8, paddingBottom: 8 }}>
                               <button
@@ -496,7 +506,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
               {rfq.status === 'Abierta' && assignedCount > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, padding: '10px 16px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
                   <div style={{ fontSize: 12, color: '#15803d' }}>
-                    <strong>{assignedCount}</strong> de {totalItems} producto{totalItems !== 1 ? 's' : ''} con ganador asignado
+                    <strong>{assignedCount}</strong> de {requiredItems} producto{requiredItems !== 1 ? 's' : ''} con ganador asignado
                     {(() => {
                       const winningCotIds = new Set(Object.values(itemWinners))
                       const provNames = cotizaciones
@@ -505,9 +515,9 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       return provNames.length > 0 ? <span style={{ color: '#166534', marginLeft: 6 }}>· {provNames.join(', ')}</span> : null
                     })()}
                   </div>
-                  <button className="btn-primary" onClick={confirmarSeleccion} disabled={confirmando || assignedCount < totalItems}>
+                  <button className="btn-primary" onClick={confirmarSeleccion} disabled={confirmando || assignedCount < requiredItems}>
                     {confirmando ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />}
-                    {assignedCount < totalItems ? `Faltan ${totalItems - assignedCount} producto${totalItems - assignedCount !== 1 ? 's' : ''}` : 'Confirmar y Cerrar RFQ'}
+                    {assignedCount < requiredItems ? `Faltan ${requiredItems - assignedCount} producto${requiredItems - assignedCount !== 1 ? 's' : ''}` : 'Confirmar y Cerrar RFQ'}
                   </button>
                 </div>
               )}
