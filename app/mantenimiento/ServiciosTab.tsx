@@ -27,14 +27,34 @@ const fmtConsumo = (n: number | null | undefined, tipo: string) => {
   return `${n.toLocaleString('es-MX')} ${tipo === 'CFE' ? 'kWh' : 'm³'}`
 }
 
-const fmtPeriodo = (fecha: string) => {
-  const d = new Date(fecha + 'T12:00:00')
-  return d.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' })
+const fmtFecha = (f: string | null | undefined) => {
+  if (!f) return '—'
+  const d = new Date(f + 'T12:00:00')
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-const periodoDefault = () => {
+const fmtRango = (inicio: string | null | undefined, fin: string | null | undefined) => {
+  if (!inicio) return '—'
+  if (!fin) return fmtFecha(inicio)
+  // Si mismo año, omite año en la fecha de inicio
+  const dI = new Date(inicio + 'T12:00:00')
+  const dF = new Date(fin    + 'T12:00:00')
+  const mismoAnio = dI.getFullYear() === dF.getFullYear()
+  const labelI = dI.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', ...(mismoAnio ? {} : { year: 'numeric' }) })
+  const labelF = dF.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+  return `${labelI} – ${labelF}`
+}
+
+const periodoInicioDefault = () => {
   const hoy = new Date()
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`
+}
+
+const periodoFinDefault = () => {
+  const hoy = new Date()
+  // Último día del mes actual
+  const fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)
+  return `${fin.getFullYear()}-${String(fin.getMonth() + 1).padStart(2, '0')}-${String(fin.getDate()).padStart(2, '0')}`
 }
 
 // ════════════════════════════════════════════════════════════
@@ -50,7 +70,7 @@ export default function ServiciosTab() {
   const [editingCat,  setEditingCat]  = useState<any | null>(null)
 
   // Mini-form inline por servicio
-  const [formReg,  setFormReg]  = useState<Record<number, { fecha: string; consumo: string; monto: string }>>({})
+  const [formReg,  setFormReg]  = useState<Record<number, { fechaInicio: string; fechaFin: string; consumo: string; monto: string }>>({})
   const [savingReg, setSavingReg] = useState<number | null>(null)
 
   const fetchCatalogo = useCallback(async () => {
@@ -110,7 +130,7 @@ export default function ServiciosTab() {
     setExpandidos(e => ({ ...e, [id]: !e[id] }))
 
   const initFormReg = (id: number) =>
-    setFormReg(f => ({ ...f, [id]: f[id] ?? { fecha: periodoDefault(), consumo: '', monto: '' } }))
+    setFormReg(f => ({ ...f, [id]: f[id] ?? { fechaInicio: periodoInicioDefault(), fechaFin: periodoFinDefault(), consumo: '', monto: '' } }))
 
   const handleSaveReg = async (servicio: any) => {
     const f = formReg[servicio.id]
@@ -119,7 +139,8 @@ export default function ServiciosTab() {
     const { authUser } = { authUser: null } // hook solo disponible en render — usamos ref local
     await dbCtrl.from('servicios_registros').insert({
       id_servicio_fk:  servicio.id,
-      fecha_periodo:   f.fecha,
+      fecha_inicio:    f.fechaInicio,
+      fecha_fin:       f.fechaFin || null,
       consumo_periodo: f.consumo ? Number(f.consumo) : null,
       monto_periodo:   Number(f.monto),
     })
@@ -291,7 +312,7 @@ export default function ServiciosTab() {
                         <div style={{ fontSize: 14, fontWeight: 700, color: ts?.color,
                           fontVariantNumeric: 'tabular-nums' }}>{fmt(ultimo.monto_periodo)}</div>
                         <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                          {fmtPeriodo(ultimo.fecha_periodo)}
+                          {fmtRango(ultimo.fecha_inicio, ultimo.fecha_fin)}
                           {ultimo.consumo_periodo != null && (
                             <span style={{ marginLeft: 6 }}>
                               · {fmtConsumo(ultimo.consumo_periodo, servicio.tipo_servicio)}
@@ -344,12 +365,21 @@ export default function ServiciosTab() {
                           </div>
                         </div>
                         <div>
-                          <label style={{ fontSize: 10, color: 'var(--text-muted)' }}>Periodo</label>
+                          <label style={{ fontSize: 10, color: 'var(--text-muted)' }}>Inicio</label>
                           <input className="input" type="date"
-                            style={{ fontSize: 12, height: 28, padding: '3px 6px', width: 140 }}
-                            value={fReg?.fecha ?? periodoDefault()}
+                            style={{ fontSize: 12, height: 28, padding: '3px 6px', width: 130 }}
+                            value={fReg?.fechaInicio ?? periodoInicioDefault()}
                             onChange={e => setFormReg(f => ({
-                              ...f, [servicio.id]: { ...f[servicio.id], fecha: e.target.value }
+                              ...f, [servicio.id]: { ...f[servicio.id], fechaInicio: e.target.value }
+                            }))} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 10, color: 'var(--text-muted)' }}>Fin</label>
+                          <input className="input" type="date"
+                            style={{ fontSize: 12, height: 28, padding: '3px 6px', width: 130 }}
+                            value={fReg?.fechaFin ?? periodoFinDefault()}
+                            onChange={e => setFormReg(f => ({
+                              ...f, [servicio.id]: { ...f[servicio.id], fechaFin: e.target.value }
                             }))} />
                         </div>
                         <div>
@@ -396,7 +426,8 @@ export default function ServiciosTab() {
                       <table>
                         <thead>
                           <tr>
-                            <th>Periodo</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
                             <th style={{ textAlign: 'right' }}>
                               Consumo {servicio.tipo_servicio === 'CFE' ? '(kWh)' : '(m³)'}
                             </th>
@@ -409,8 +440,8 @@ export default function ServiciosTab() {
                           {regs.map((r: any, i: number) => (
                             <tr key={r.id}
                               style={{ background: i === 0 ? (ts?.bg ?? '#fff') : 'transparent' }}>
-                              <td style={{ fontSize: 12, fontWeight: i === 0 ? 600 : 400 }}>
-                                {fmtPeriodo(r.fecha_periodo)}
+                              <td style={{ fontSize: 12, fontWeight: i === 0 ? 600 : 400, whiteSpace: 'nowrap' }}>
+                                {fmtFecha(r.fecha_inicio)}
                                 {i === 0 && (
                                   <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 5px',
                                     borderRadius: 8, background: ts?.color + '20', color: ts?.color,
@@ -418,6 +449,9 @@ export default function ServiciosTab() {
                                     Último
                                   </span>
                                 )}
+                              </td>
+                              <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                                {fmtFecha(r.fecha_fin)}
                               </td>
                               <td style={{ textAlign: 'right', fontSize: 12,
                                 fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
