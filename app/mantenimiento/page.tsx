@@ -5,9 +5,10 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Eye, X, Save, Loader,
   Calendar, CheckCircle, ChevronDown, ChevronRight,
-  Filter, ClipboardList, Wrench
+  Filter, ClipboardList, Wrench, Zap
 } from 'lucide-react'
 import OrdenesTrabajoTab from './OrdenesTrabajoTab'
+import ServiciosTab from './ServiciosTab'
 import ModalShell from '@/components/ui/ModalShell'
 
 const FRECUENCIAS = ['Semanal','Quincenal','Mensual','Bimestral','Trimestral','Semestral','Anual']
@@ -64,7 +65,7 @@ const fmtDate = (d: string | Date) => {
 // ═══════════════════════════════════════════════════════════════
 export default function MantenimientoPage() {
   const { canWrite, canDelete } = useAuth()
-  const [tab,          setTab]        = useState<'programa' | 'ordenes' | 'ordenes_oitydisa'>('programa')
+  const [tab,          setTab]        = useState<'programa' | 'ordenes' | 'ordenes_oitydisa' | 'servicios'>('programa')
   const [programas,    setProgramas]  = useState<any[]>([])
   const [areas,       setAreas]  = useState<any[]>([])
   const [areaMap,     setAreaMap]     = useState<Record<number, string>>({})
@@ -160,7 +161,8 @@ export default function MantenimientoPage() {
           </div>
         </div>
         {tab === 'programa' && canWrite('mantenimiento') && (
-          <button className="btn-primary" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => { setEditing(null); setModal(true) }}>
+          <button className="btn-primary" style={{ fontSize: 12, padding: '6px 12px' }}
+            onClick={() => { setEditing(null); setModal(true) }}>
             <Plus size={12} /> Nuevo Programa
           </button>
         )}
@@ -195,6 +197,15 @@ export default function MantenimientoPage() {
             marginBottom: -1 }}>
           <Wrench size={12} /> OT Oitydisa
         </button>
+        <button onClick={() => setTab('servicios')}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
+            background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
+            fontWeight: tab === 'servicios' ? 600 : 400,
+            color: tab === 'servicios' ? '#d97706' : 'var(--text-muted)',
+            borderBottom: tab === 'servicios' ? '2px solid #d97706' : '2px solid transparent',
+            marginBottom: -1 }}>
+          <Zap size={12} /> Servicios
+        </button>
       </div>
 
       {/* Tab: Órdenes de Trabajo Balvanera */}
@@ -202,6 +213,9 @@ export default function MantenimientoPage() {
 
       {/* Tab: Órdenes de Trabajo Oitydisa */}
       {tab === 'ordenes_oitydisa' && <OrdenesTrabajoTab empresa="Oitydisa" />}
+
+      {/* Tab: Servicios (CFE / Agua) */}
+      {tab === 'servicios' && <ServiciosTab />}
 
       {/* Tab: Programa Anual */}
       {tab === 'programa' && (
