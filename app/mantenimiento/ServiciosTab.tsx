@@ -275,6 +275,11 @@ export default function ServiciosTab() {
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
                         {servicio.ubicacion ?? 'Sin ubicación'} · {servicio.modalidad}
+                        {servicio.titular && (
+                          <span style={{ marginLeft: 6, color: 'var(--text-secondary)' }}>
+                            · {servicio.titular}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -476,6 +481,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
   const [form, setForm] = useState({
     no_servicio:   row?.no_servicio   ?? '',
     ubicacion:     row?.ubicacion     ?? '',
+    titular:       row?.titular       ?? '',
     tipo_servicio: row?.tipo_servicio ?? 'CFE',
     modalidad:     row?.modalidad     ?? 'Mensual',
     notas:         row?.notas         ?? '',
@@ -492,6 +498,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
     const payload = {
       no_servicio:   form.no_servicio.trim(),
       ubicacion:     form.ubicacion.trim() || null,
+      titular:       form.titular.trim() || null,
       tipo_servicio: form.tipo_servicio,
       modalidad:     form.modalidad,
       notas:         form.notas.trim() || null,
@@ -550,6 +557,13 @@ function CatalogoModal({ row, onClose, onSaved }: {
           <input className="input" style={{ fontSize: 13 }}
             value={form.ubicacion} onChange={setF('ubicacion')}
             placeholder="ej. Caseta principal, Parque Sur…" />
+        </div>
+
+        <div>
+          <label className="label" style={{ fontSize: 11 }}>Titular</label>
+          <input className="input" style={{ fontSize: 13 }}
+            value={form.titular} onChange={setF('titular')}
+            placeholder="ej. Fraccionamiento Balvanera S.A. de C.V." />
         </div>
 
         <div>
