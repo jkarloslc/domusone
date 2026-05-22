@@ -4,18 +4,19 @@ import { dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Filter, X, Save, Loader,
-  Zap, Droplets, Edit2, Trash2
+  Zap, Droplets, Edit2, Trash2, ChevronDown, ChevronRight,
+  History
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
-// ── Constantes ──────────────────────────────────────────────
+// ── Constantes ───────────────────────────────────────────────
 const TIPOS_SERVICIO = ['CFE', 'Agua'] as const
 const MODALIDADES    = ['Mensual', 'Bimestral'] as const
 type TipoServicio    = typeof TIPOS_SERVICIO[number]
 
-const TIPO_STYLE: Record<TipoServicio, { color: string; bg: string; border: string; icon: React.FC<any> }> = {
-  CFE:   { color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: Zap },
-  Agua:  { color: '#0369a1', bg: '#e0f2fe', border: '#bae6fd', icon: Droplets },
+const TIPO_STYLE: Record<TipoServicio, { color: string; bg: string; border: string; Icon: React.FC<any> }> = {
+  CFE:  { color: '#d97706', bg: '#fffbeb', border: '#fde68a', Icon: Zap      },
+  Agua: { color: '#0369a1', bg: '#e0f2fe', border: '#bae6fd', Icon: Droplets },
 }
 
 const fmt = (n: number | null | undefined) =>
@@ -31,100 +32,160 @@ const fmtPeriodo = (fecha: string) => {
   return d.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' })
 }
 
-const ANIOS = Array.from({ length: 4 }, (_, i) => new Date().getFullYear() - 1 + i)
-const MESES = [
-  { v: '',  l: 'Todos' },
-  { v: '01', l: 'Enero' }, { v: '02', l: 'Febrero' }, { v: '03', l: 'Marzo' },
-  { v: '04', l: 'Abril' }, { v: '05', l: 'Mayo' },    { v: '06', l: 'Junio' },
-  { v: '07', l: 'Julio' }, { v: '08', l: 'Agosto' },  { v: '09', l: 'Septiembre' },
-  { v: '10', l: 'Octubre'},{ v: '11', l: 'Noviembre'},{ v: '12', l: 'Diciembre' },
-]
+const periodoDefault = () => {
+  const hoy = new Date()
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`
+}
 
 // ════════════════════════════════════════════════════════════
 export default function ServiciosTab() {
   const { canWrite, canDelete } = useAuth()
-  const [rows,        setRows]        = useState<any[]>([])
+  const [catalogo,    setCatalogo]    = useState<any[]>([])
+  const [registros,   setRegistros]   = useState<Record<number, any[]>>({})
   const [loading,     setLoading]     = useState(true)
   const [filterTipo,  setFilterTipo]  = useState('')
   const [filterUbic,  setFilterUbic]  = useState('')
-  const [filterAnio,  setFilterAnio]  = useState(String(new Date().getFullYear()))
-  const [filterMes,   setFilterMes]   = useState('')
-  const [modal,       setModal]       = useState(false)
-  const [editing,     setEditing]     = useState<any | null>(null)
+  const [expandidos,  setExpandidos]  = useState<Record<number, boolean>>({})
+  const [modalCat,    setModalCat]    = useState(false)
+  const [editingCat,  setEditingCat]  = useState<any | null>(null)
 
-  const fetchData = useCallback(async () => {
+  // Mini-form inline por servicio
+  const [formReg,  setFormReg]  = useState<Record<number, { fecha: string; consumo: string; monto: string }>>({})
+  const [savingReg, setSavingReg] = useState<number | null>(null)
+
+  const fetchCatalogo = useCallback(async () => {
     setLoading(true)
-    let q = dbCtrl.from('servicios_suministros').select('*').eq('activo', true)
-    if (filterTipo) q = q.eq('tipo_servicio', filterTipo)
-    if (filterAnio) {
-      const y = filterAnio
-      if (filterMes) {
-        q = q.gte('fecha_periodo', `${y}-${filterMes}-01`)
-             .lte('fecha_periodo', `${y}-${filterMes}-28`)
-      } else {
-        q = q.gte('fecha_periodo', `${y}-01-01`).lte('fecha_periodo', `${y}-12-31`)
-      }
-    }
-    q = q.order('fecha_periodo', { ascending: false }).order('tipo_servicio')
-    const { data } = await q
-    setRows(data ?? [])
+    const { data: cats } = await dbCtrl
+      .from('servicios_catalogo')
+      .select('*')
+      .eq('activo', true)
+      .order('tipo_servicio')
+      .order('ubicacion')
+
+    if (!cats?.length) { setCatalogo([]); setLoading(false); return }
+
+    const ids = cats.map((c: any) => c.id)
+    const { data: regs } = await dbCtrl
+      .from('servicios_registros')
+      .select('*')
+      .in('id_servicio_fk', ids)
+      .order('fecha_periodo', { ascending: false })
+
+    const regMap: Record<number, any[]> = {}
+    ;(regs ?? []).forEach((r: any) => {
+      if (!regMap[r.id_servicio_fk]) regMap[r.id_servicio_fk] = []
+      regMap[r.id_servicio_fk].push(r)
+    })
+
+    setCatalogo(cats)
+    setRegistros(regMap)
     setLoading(false)
-  }, [filterTipo, filterAnio, filterMes])
+  }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => { fetchCatalogo() }, [fetchCatalogo])
 
-  const filteredRows = filterUbic
-    ? rows.filter(r => r.ubicacion?.toLowerCase().includes(filterUbic.toLowerCase()))
-    : rows
+  const filteredCat = catalogo.filter(c => {
+    if (filterTipo && c.tipo_servicio !== filterTipo) return false
+    if (filterUbic && !c.ubicacion?.toLowerCase().includes(filterUbic.toLowerCase())) return false
+    return true
+  })
 
-  const totalMonto = filteredRows.reduce((a, r) => a + (r.monto_periodo ?? 0), 0)
-  const totalCFE   = filteredRows.filter(r => r.tipo_servicio === 'CFE').reduce((a, r) => a + (r.monto_periodo ?? 0), 0)
-  const totalAgua  = filteredRows.filter(r => r.tipo_servicio === 'Agua').reduce((a, r) => a + (r.monto_periodo ?? 0), 0)
-  const cntCFE     = filteredRows.filter(r => r.tipo_servicio === 'CFE').length
-  const cntAgua    = filteredRows.filter(r => r.tipo_servicio === 'Agua').length
+  // KPIs: último registro de cada servicio
+  const ultimosRegistros = catalogo.map(c => (registros[c.id] ?? [])[0]).filter(Boolean)
+  const totalUltimoMes   = ultimosRegistros.reduce((a, r) => a + (r?.monto_periodo ?? 0), 0)
+  const totalCFE  = catalogo
+    .filter(c => c.tipo_servicio === 'CFE')
+    .map(c => (registros[c.id] ?? [])[0])
+    .filter(Boolean)
+    .reduce((a, r) => a + (r?.monto_periodo ?? 0), 0)
+  const totalAgua = catalogo
+    .filter(c => c.tipo_servicio === 'Agua')
+    .map(c => (registros[c.id] ?? [])[0])
+    .filter(Boolean)
+    .reduce((a, r) => a + (r?.monto_periodo ?? 0), 0)
+  const cntCFE  = catalogo.filter(c => c.tipo_servicio === 'CFE').length
+  const cntAgua = catalogo.filter(c => c.tipo_servicio === 'Agua').length
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este registro?')) return
-    await dbCtrl.from('servicios_suministros').update({ activo: false }).eq('id', id)
-    fetchData()
+  const toggleExpand = (id: number) =>
+    setExpandidos(e => ({ ...e, [id]: !e[id] }))
+
+  const initFormReg = (id: number) =>
+    setFormReg(f => ({ ...f, [id]: f[id] ?? { fecha: periodoDefault(), consumo: '', monto: '' } }))
+
+  const handleSaveReg = async (servicio: any) => {
+    const f = formReg[servicio.id]
+    if (!f?.monto || Number(f.monto) <= 0) return
+    setSavingReg(servicio.id)
+    const { authUser } = { authUser: null } // hook solo disponible en render — usamos ref local
+    await dbCtrl.from('servicios_registros').insert({
+      id_servicio_fk:  servicio.id,
+      fecha_periodo:   f.fecha,
+      consumo_periodo: f.consumo ? Number(f.consumo) : null,
+      monto_periodo:   Number(f.monto),
+    })
+    setFormReg(prev => {
+      const next = { ...prev }
+      delete next[servicio.id]
+      return next
+    })
+    setSavingReg(null)
+    fetchCatalogo()
   }
 
-  const openNew = () => { setEditing(null); setModal(true) }
-  const openEdit = (r: any) => { setEditing(r); setModal(true) }
+  const handleDeleteReg = async (regId: number) => {
+    if (!confirm('¿Eliminar este registro?')) return
+    await dbCtrl.from('servicios_registros').delete().eq('id', regId)
+    fetchCatalogo()
+  }
+
+  const handleDeleteServicio = async (id: number) => {
+    if (!confirm('¿Desactivar este servicio del catálogo?')) return
+    await dbCtrl.from('servicios_catalogo').update({ activo: false }).eq('id', id)
+    fetchCatalogo()
+  }
 
   return (
     <div>
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
         <div className="card" style={{ padding: '10px 14px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Total Periodo</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalMonto)}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{filteredRows.length} registros</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '0.05em', marginBottom: 2 }}>Último periodo (total)</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)',
+            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalUltimoMes)}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+            {catalogo.length} servicios activos
+          </div>
         </div>
         <div className="card" style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
             <Zap size={11} style={{ color: '#d97706' }} />
-            <span style={{ fontSize: 11, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CFE</span>
+            <span style={{ fontSize: 10, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CFE — Último periodo</span>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#d97706', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCFE)}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#d97706',
+            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCFE)}</div>
           <div style={{ fontSize: 10, color: '#92400e' }}>{cntCFE} servicios</div>
         </div>
         <div className="card" style={{ padding: '10px 14px', background: '#e0f2fe', border: '1px solid #bae6fd' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
             <Droplets size={11} style={{ color: '#0369a1' }} />
-            <span style={{ fontSize: 11, color: '#075985', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agua</span>
+            <span style={{ fontSize: 10, color: '#075985', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agua — Último periodo</span>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#0369a1', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAgua)}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#0369a1',
+            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAgua)}</div>
           <div style={{ fontSize: 10, color: '#075985' }}>{cntAgua} servicios</div>
         </div>
         <div className="card" style={{ padding: '10px 14px' }}>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Año</div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>{filterAnio || '—'}</div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{filterMes ? MESES.find(m => m.v === filterMes)?.l : 'Todos los meses'}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '0.05em', marginBottom: 2 }}>Total registros</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
+            {Object.values(registros).reduce((a, arr) => a + arr.length, 0)}
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>histórico completo</div>
         </div>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros + acción */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12,
         padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0',
         borderRadius: 8, flexWrap: 'wrap' }}>
@@ -134,135 +195,266 @@ export default function ServiciosTab() {
         </span>
         <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
 
-        <select className="select" style={{ width: 72, fontSize: 12, padding: '3px 6px', height: 28 }}
-          value={filterAnio} onChange={e => setFilterAnio(e.target.value)}>
-          {ANIOS.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-
-        <select className="select" style={{ width: 120, fontSize: 12, padding: '3px 8px', height: 28 }}
-          value={filterMes} onChange={e => setFilterMes(e.target.value)}>
-          {MESES.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
-        </select>
-
-        <select className="select" style={{ width: 110, fontSize: 12, padding: '3px 8px', height: 28 }}
+        <select className="select"
+          style={{ width: 120, fontSize: 12, padding: '3px 8px', height: 28 }}
           value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
           <option value="">Tipo servicio</option>
           {TIPOS_SERVICIO.map(t => <option key={t}>{t}</option>)}
         </select>
 
-        <input className="input" style={{ flex: '1 1 130px', maxWidth: 200, fontSize: 12,
-          padding: '3px 8px', height: 28 }}
+        <input className="input"
+          style={{ flex: '1 1 140px', maxWidth: 220, fontSize: 12, padding: '3px 8px', height: 28 }}
           placeholder="Buscar ubicación…"
           value={filterUbic} onChange={e => setFilterUbic(e.target.value)} />
 
-        {(filterTipo || filterUbic || filterMes) && (
-          <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28,
-            color: '#dc2626', whiteSpace: 'nowrap' }}
-            onClick={() => { setFilterTipo(''); setFilterUbic(''); setFilterMes('') }}>
+        {(filterTipo || filterUbic) && (
+          <button className="btn-ghost"
+            style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+            onClick={() => { setFilterTipo(''); setFilterUbic('') }}>
             <X size={11} /> Limpiar
           </button>
         )}
         <button className="btn-ghost" style={{ padding: '3px 8px', height: 28, marginLeft: 'auto' }}
-          onClick={fetchData}>
+          onClick={fetchCatalogo}>
           <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
         </button>
         {canWrite('mantenimiento') && (
           <button className="btn-primary" style={{ fontSize: 12, padding: '4px 10px', height: 28 }}
-            onClick={openNew}>
-            <Plus size={11} /> Nuevo
+            onClick={() => { setEditingCat(null); setModalCat(true) }}>
+            <Plus size={11} /> Nuevo Servicio
           </button>
         )}
       </div>
 
-      {/* Tabla */}
+      {/* Lista catálogo con expansión */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 48 }}>
           <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
         </div>
-      ) : filteredRows.length === 0 ? (
+      ) : filteredCat.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)', fontSize: 13 }}>
-          Sin registros para los filtros seleccionados
+          {catalogo.length === 0
+            ? 'Sin servicios en el catálogo. Agrega el primero con "Nuevo Servicio".'
+            : 'Sin resultados para los filtros aplicados.'}
         </div>
       ) : (
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <table>
-            <thead>
-              <tr>
-                <th>No. Servicio</th>
-                <th>Ubicación</th>
-                <th>Tipo</th>
-                <th>Modalidad</th>
-                <th>Periodo</th>
-                <th style={{ textAlign: 'right' }}>Consumo</th>
-                <th style={{ textAlign: 'right' }}>Monto</th>
-                <th style={{ width: 72 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.map(r => {
-                const ts = TIPO_STYLE[r.tipo_servicio as TipoServicio]
-                const Icon = ts?.icon
-                return (
-                  <tr key={r.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600,
-                      color: 'var(--blue)' }}>{r.no_servicio}</td>
-                    <td style={{ fontSize: 13 }}>{r.ubicacion ?? '—'}</td>
-                    <td>
-                      {ts && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4,
-                          fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
-                          color: ts.color, background: ts.bg, border: `1px solid ${ts.border}` }}>
-                          <Icon size={10} /> {r.tipo_servicio}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.modalidad}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                      {fmtPeriodo(r.fecha_periodo)}
-                    </td>
-                    <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums',
-                      color: 'var(--text-secondary)' }}>
-                      {fmtConsumo(r.consumo_periodo, r.tipo_servicio)}
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 700,
-                      fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>
-                      {fmt(r.monto_periodo)}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 3, justifyContent: 'flex-end' }}>
-                        {canWrite('mantenimiento') && (
-                          <button className="btn-ghost" style={{ padding: '3px 6px', fontSize: 11 }}
-                            onClick={() => openEdit(r)} title="Editar">
-                            <Edit2 size={12} />
-                          </button>
-                        )}
-                        {canDelete() && (
-                          <button className="btn-ghost" style={{ padding: '3px 6px', fontSize: 11,
-                            color: '#dc2626' }} onClick={() => handleDelete(r.id)} title="Eliminar">
-                            <Trash2 size={12} />
-                          </button>
-                        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {filteredCat.map(servicio => {
+            const ts       = TIPO_STYLE[servicio.tipo_servicio as TipoServicio]
+            const Icon     = ts?.Icon
+            const regs     = registros[servicio.id] ?? []
+            const ultimo   = regs[0]
+            const expanded = !!expandidos[servicio.id]
+            const fReg     = formReg[servicio.id]
+
+            return (
+              <div key={servicio.id} className="card" style={{ overflow: 'hidden', padding: 0 }}>
+
+                {/* Cabecera del servicio */}
+                <div
+                  onClick={() => { toggleExpand(servicio.id); if (!expandidos[servicio.id]) initFormReg(servicio.id) }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 14px', cursor: 'pointer',
+                    background: ts ? ts.bg : 'var(--blue-pale)',
+                    borderBottom: expanded ? `1px solid ${ts?.border ?? '#e2e8f0'}` : 'none' }}>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {expanded
+                      ? <ChevronDown size={13} style={{ color: ts?.color ?? 'var(--blue)', flexShrink: 0 }} />
+                      : <ChevronRight size={13} style={{ color: ts?.color ?? 'var(--blue)', flexShrink: 0 }} />}
+                    {Icon && (
+                      <div style={{ width: 28, height: 28, borderRadius: 6,
+                        background: ts.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon size={13} style={{ color: ts.color }} />
                       </div>
-                    </td>
-                  </tr>
-                )
-              })}
-              <tr style={{ background: 'var(--blue-pale)', fontWeight: 700 }}>
-                <td colSpan={6} style={{ color: 'var(--blue)', fontSize: 12 }}>TOTAL</td>
-                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums',
-                  fontSize: 15, color: 'var(--blue)' }}>{fmt(totalMonto)}</td>
-                <td />
-              </tr>
-            </tbody>
-          </table>
+                    )}
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: ts?.color ?? 'var(--blue)',
+                        fontFamily: 'monospace', letterSpacing: '0.02em' }}>
+                        {servicio.no_servicio}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                        {servicio.ubicacion ?? 'Sin ubicación'} · {servicio.modalidad}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    {/* Último registro */}
+                    {ultimo ? (
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: ts?.color,
+                          fontVariantNumeric: 'tabular-nums' }}>{fmt(ultimo.monto_periodo)}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                          {fmtPeriodo(ultimo.fecha_periodo)}
+                          {ultimo.consumo_periodo != null && (
+                            <span style={{ marginLeft: 6 }}>
+                              · {fmtConsumo(ultimo.consumo_periodo, servicio.tipo_servicio)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                        Sin registros
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                      <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10,
+                        background: '#f1f5f9', color: 'var(--text-muted)', display: 'flex',
+                        alignItems: 'center', gap: 3 }}>
+                        <History size={10} /> {regs.length}
+                      </span>
+                      {canWrite('mantenimiento') && (
+                        <button className="btn-secondary" style={{ fontSize: 11, padding: '3px 8px' }}
+                          onClick={() => { setEditingCat(servicio); setModalCat(true) }}>
+                          <Edit2 size={10} />
+                        </button>
+                      )}
+                      {canDelete() && (
+                        <button className="btn-ghost"
+                          style={{ fontSize: 11, padding: '3px 6px', color: '#dc2626' }}
+                          onClick={() => handleDeleteServicio(servicio.id)}>
+                          <Trash2 size={11} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Panel expandido */}
+                {expanded && (
+                  <div style={{ padding: '10px 14px', background: '#fff' }}>
+
+                    {/* Mini-form para nuevo registro */}
+                    {canWrite('mantenimiento') && (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 12,
+                        padding: '10px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0',
+                        borderRadius: 8 }}>
+                        <div style={{ flexShrink: 0 }}>
+                          <div style={{ fontSize: 10, color: '#15803d', fontWeight: 600,
+                            marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            + Agregar Registro
+                          </div>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 10, color: 'var(--text-muted)' }}>Periodo</label>
+                          <input className="input" type="date"
+                            style={{ fontSize: 12, height: 28, padding: '3px 6px', width: 140 }}
+                            value={fReg?.fecha ?? periodoDefault()}
+                            onChange={e => setFormReg(f => ({
+                              ...f, [servicio.id]: { ...f[servicio.id], fecha: e.target.value }
+                            }))} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                            Consumo {servicio.tipo_servicio === 'CFE' ? '(kWh)' : '(m³)'}
+                          </label>
+                          <input className="input" type="number" step="0.01"
+                            style={{ fontSize: 12, height: 28, padding: '3px 6px', width: 100 }}
+                            placeholder="0"
+                            value={fReg?.consumo ?? ''}
+                            onChange={e => setFormReg(f => ({
+                              ...f, [servicio.id]: { ...f[servicio.id], consumo: e.target.value }
+                            }))} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 10, color: 'var(--text-muted)' }}>Monto *</label>
+                          <input className="input" type="number" step="0.01"
+                            style={{ fontSize: 12, height: 28, padding: '3px 6px', width: 110, textAlign: 'right' }}
+                            placeholder="0.00"
+                            value={fReg?.monto ?? ''}
+                            onChange={e => setFormReg(f => ({
+                              ...f, [servicio.id]: { ...f[servicio.id], monto: e.target.value }
+                            }))} />
+                        </div>
+                        <button className="btn-primary"
+                          style={{ fontSize: 12, padding: '4px 12px', height: 28, flexShrink: 0 }}
+                          onClick={() => handleSaveReg(servicio)}
+                          disabled={savingReg === servicio.id || !fReg?.monto}>
+                          {savingReg === servicio.id
+                            ? <Loader size={11} className="animate-spin" />
+                            : <Save size={11} />}
+                          Guardar
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Historial de registros */}
+                    {regs.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '16px 0',
+                        color: 'var(--text-muted)', fontSize: 12 }}>
+                        Sin registros aún
+                      </div>
+                    ) : (
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Periodo</th>
+                            <th style={{ textAlign: 'right' }}>
+                              Consumo {servicio.tipo_servicio === 'CFE' ? '(kWh)' : '(m³)'}
+                            </th>
+                            <th style={{ textAlign: 'right' }}>Monto</th>
+                            <th style={{ fontSize: 10, color: 'var(--text-muted)' }}>Notas</th>
+                            {canDelete() && <th style={{ width: 40 }}></th>}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {regs.map((r: any, i: number) => (
+                            <tr key={r.id}
+                              style={{ background: i === 0 ? (ts?.bg ?? '#fff') : 'transparent' }}>
+                              <td style={{ fontSize: 12, fontWeight: i === 0 ? 600 : 400 }}>
+                                {fmtPeriodo(r.fecha_periodo)}
+                                {i === 0 && (
+                                  <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 5px',
+                                    borderRadius: 8, background: ts?.color + '20', color: ts?.color,
+                                    fontWeight: 600 }}>
+                                    Último
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ textAlign: 'right', fontSize: 12,
+                                fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                                {fmtConsumo(r.consumo_periodo, servicio.tipo_servicio)}
+                              </td>
+                              <td style={{ textAlign: 'right', fontWeight: i === 0 ? 700 : 500,
+                                fontVariantNumeric: 'tabular-nums',
+                                color: i === 0 ? (ts?.color ?? 'var(--blue)') : 'var(--text-primary)' }}>
+                                {fmt(r.monto_periodo)}
+                              </td>
+                              <td style={{ fontSize: 11, color: 'var(--text-muted)',
+                                maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {r.notas ?? '—'}
+                              </td>
+                              {canDelete() && (
+                                <td>
+                                  <button className="btn-ghost"
+                                    style={{ padding: '2px 5px', color: '#dc2626' }}
+                                    onClick={() => handleDeleteReg(r.id)}>
+                                    <Trash2 size={11} />
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {modal && (
-        <ServicioModal
-          row={editing}
-          onClose={() => setModal(false)}
-          onSaved={() => { setModal(false); fetchData() }}
+      {/* Modal catálogo */}
+      {modalCat && (
+        <CatalogoModal
+          row={editingCat}
+          onClose={() => setModalCat(false)}
+          onSaved={() => { setModalCat(false); fetchCatalogo() }}
         />
       )}
     </div>
@@ -270,9 +462,9 @@ export default function ServiciosTab() {
 }
 
 // ════════════════════════════════════════════════════════════
-// Modal Nuevo / Editar
+// Modal — Alta / Edición de servicio en catálogo
 // ════════════════════════════════════════════════════════════
-function ServicioModal({ row, onClose, onSaved }: {
+function CatalogoModal({ row, onClose, onSaved }: {
   row: any | null
   onClose: () => void
   onSaved: () => void
@@ -281,18 +473,12 @@ function ServicioModal({ row, onClose, onSaved }: {
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
 
-  const today = new Date()
-  const defaultPeriodo = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
-
   const [form, setForm] = useState({
-    no_servicio:     row?.no_servicio     ?? '',
-    ubicacion:       row?.ubicacion       ?? '',
-    tipo_servicio:   row?.tipo_servicio   ?? 'CFE',
-    modalidad:       row?.modalidad       ?? 'Mensual',
-    consumo_periodo: row?.consumo_periodo?.toString() ?? '',
-    monto_periodo:   row?.monto_periodo?.toString()   ?? '',
-    fecha_periodo:   row?.fecha_periodo   ?? defaultPeriodo,
-    notas:           row?.notas           ?? '',
+    no_servicio:   row?.no_servicio   ?? '',
+    ubicacion:     row?.ubicacion     ?? '',
+    tipo_servicio: row?.tipo_servicio ?? 'CFE',
+    modalidad:     row?.modalidad     ?? 'Mensual',
+    notas:         row?.notas         ?? '',
   })
 
   const setF = (k: string) =>
@@ -301,27 +487,22 @@ function ServicioModal({ row, onClose, onSaved }: {
 
   const handleSave = async () => {
     if (!form.no_servicio.trim()) { setError('El número de servicio es obligatorio'); return }
-    if (!form.monto_periodo || Number(form.monto_periodo) < 0) { setError('El monto es obligatorio'); return }
-    if (!form.fecha_periodo) { setError('La fecha del periodo es obligatoria'); return }
     setSaving(true); setError('')
 
     const payload = {
-      no_servicio:     form.no_servicio.trim(),
-      ubicacion:       form.ubicacion.trim() || null,
-      tipo_servicio:   form.tipo_servicio,
-      modalidad:       form.modalidad,
-      consumo_periodo: form.consumo_periodo ? Number(form.consumo_periodo) : null,
-      monto_periodo:   Number(form.monto_periodo),
-      fecha_periodo:   form.fecha_periodo,
-      notas:           form.notas.trim() || null,
-      updated_at:      new Date().toISOString(),
+      no_servicio:   form.no_servicio.trim(),
+      ubicacion:     form.ubicacion.trim() || null,
+      tipo_servicio: form.tipo_servicio,
+      modalidad:     form.modalidad,
+      notas:         form.notas.trim() || null,
+      updated_at:    new Date().toISOString(),
     }
 
     if (row) {
-      const { error: err } = await dbCtrl.from('servicios_suministros').update(payload).eq('id', row.id)
+      const { error: err } = await dbCtrl.from('servicios_catalogo').update(payload).eq('id', row.id)
       if (err) { setError(err.message); setSaving(false); return }
     } else {
-      const { error: err } = await dbCtrl.from('servicios_suministros')
+      const { error: err } = await dbCtrl.from('servicios_catalogo')
         .insert({ ...payload, created_by: authUser?.nombre ?? null })
       if (err) { setError(err.message); setSaving(false); return }
     }
@@ -331,17 +512,15 @@ function ServicioModal({ row, onClose, onSaved }: {
 
   return (
     <ModalShell modulo="mantenimiento"
-      titulo={row ? 'Editar Servicio' : 'Nuevo Registro de Servicio'}
-      onClose={onClose} maxWidth={480}>
-      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12,
-        overflowY: 'auto', maxHeight: 'calc(90vh - 110px)' }}>
+      titulo={row ? 'Editar Servicio' : 'Nuevo Servicio — Catálogo'}
+      onClose={onClose} maxWidth={420}>
 
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {error && (
           <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
             borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>
         )}
 
-        {/* Tipo + Modalidad */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
             <label className="label" style={{ fontSize: 11 }}>Tipo de Servicio *</label>
@@ -359,7 +538,6 @@ function ServicioModal({ row, onClose, onSaved }: {
           </div>
         </div>
 
-        {/* No. Servicio */}
         <div>
           <label className="label" style={{ fontSize: 11 }}>No. de Servicio *</label>
           <input className="input" style={{ fontSize: 13, fontFamily: 'monospace' }}
@@ -367,7 +545,6 @@ function ServicioModal({ row, onClose, onSaved }: {
             placeholder="ej. 123456789012" />
         </div>
 
-        {/* Ubicación */}
         <div>
           <label className="label" style={{ fontSize: 11 }}>Ubicación</label>
           <input className="input" style={{ fontSize: 13 }}
@@ -375,30 +552,6 @@ function ServicioModal({ row, onClose, onSaved }: {
             placeholder="ej. Caseta principal, Parque Sur…" />
         </div>
 
-        {/* Periodo + Consumo + Monto */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-          <div>
-            <label className="label" style={{ fontSize: 11 }}>Fecha de Periodo *</label>
-            <input className="input" type="date" style={{ fontSize: 12 }}
-              value={form.fecha_periodo} onChange={setF('fecha_periodo')} />
-          </div>
-          <div>
-            <label className="label" style={{ fontSize: 11 }}>
-              Consumo {form.tipo_servicio === 'CFE' ? '(kWh)' : '(m³)'}
-            </label>
-            <input className="input" type="number" step="0.01" style={{ fontSize: 13 }}
-              value={form.consumo_periodo} onChange={setF('consumo_periodo')}
-              placeholder="0" />
-          </div>
-          <div>
-            <label className="label" style={{ fontSize: 11 }}>Monto del Periodo *</label>
-            <input className="input" type="number" step="0.01" style={{ fontSize: 13, textAlign: 'right' }}
-              value={form.monto_periodo} onChange={setF('monto_periodo')}
-              placeholder="0.00" />
-          </div>
-        </div>
-
-        {/* Notas */}
         <div>
           <label className="label" style={{ fontSize: 11 }}>Notas</label>
           <textarea className="input" rows={2} style={{ fontSize: 12, resize: 'vertical' }}
@@ -411,7 +564,7 @@ function ServicioModal({ row, onClose, onSaved }: {
         <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
         <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
           {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
-          {row ? 'Guardar' : 'Crear'}
+          {row ? 'Guardar Cambios' : 'Agregar al Catálogo'}
         </button>
       </div>
     </ModalShell>
