@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbComp } from '@/lib/supabase'
+import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Filter, X, Save, Loader,
@@ -60,14 +60,17 @@ const periodoFinDefault = () => {
 // ════════════════════════════════════════════════════════════
 export default function ServiciosTab() {
   const { canWrite, canDelete } = useAuth()
-  const [catalogo,    setCatalogo]    = useState<any[]>([])
-  const [registros,   setRegistros]   = useState<Record<number, any[]>>({})
-  const [loading,     setLoading]     = useState(true)
-  const [filterTipo,  setFilterTipo]  = useState('')
-  const [filterUbic,  setFilterUbic]  = useState('')
-  const [expandidos,  setExpandidos]  = useState<Record<number, boolean>>({})
-  const [modalCat,    setModalCat]    = useState(false)
-  const [editingCat,  setEditingCat]  = useState<any | null>(null)
+  const [catalogo,      setCatalogo]      = useState<any[]>([])
+  const [registros,     setRegistros]     = useState<Record<number, any[]>>({})
+  const [centrosCosto,  setCentrosCosto]  = useState<any[]>([])
+  const [ccMap,         setCcMap]         = useState<Record<number, string>>({})
+  const [loading,       setLoading]       = useState(true)
+  const [filterTipo,    setFilterTipo]    = useState('')
+  const [filterUbic,    setFilterUbic]    = useState('')
+  const [filterCC,      setFilterCC]      = useState('')
+  const [expandidos,    setExpandidos]    = useState<Record<number, boolean>>({})
+  const [modalCat,      setModalCat]      = useState(false)
+  const [editingCat,    setEditingCat]    = useState<any | null>(null)
 
   // Mini-form inline por servicio
   const [formReg,  setFormReg]  = useState<Record<number, { fechaInicio: string; fechaFin: string; consumo: string; monto: string }>>({})
@@ -104,9 +107,20 @@ export default function ServiciosTab() {
 
   useEffect(() => { fetchCatalogo() }, [fetchCatalogo])
 
+  useEffect(() => {
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => {
+        setCentrosCosto(data ?? [])
+        const m: Record<number, string> = {}
+        ;(data ?? []).forEach((c: any) => { m[c.id] = c.nombre })
+        setCcMap(m)
+      })
+  }, [])
+
   const filteredCat = catalogo.filter(c => {
     if (filterTipo && c.tipo_servicio !== filterTipo) return false
     if (filterUbic && !c.ubicacion?.toLowerCase().includes(filterUbic.toLowerCase())) return false
+    if (filterCC   && String(c.id_centro_costo_fk) !== filterCC) return false
     return true
   })
 
@@ -217,21 +231,28 @@ export default function ServiciosTab() {
         <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
 
         <select className="select"
-          style={{ width: 120, fontSize: 12, padding: '3px 8px', height: 28 }}
+          style={{ flex: '1 1 150px', maxWidth: 210, fontSize: 12, padding: '3px 8px', height: 28 }}
+          value={filterCC} onChange={e => setFilterCC(e.target.value)}>
+          <option value="">Centro de costo</option>
+          {centrosCosto.map((c: any) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
+
+        <select className="select"
+          style={{ width: 110, fontSize: 12, padding: '3px 8px', height: 28 }}
           value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
           <option value="">Tipo servicio</option>
           {TIPOS_SERVICIO.map(t => <option key={t}>{t}</option>)}
         </select>
 
         <input className="input"
-          style={{ flex: '1 1 140px', maxWidth: 220, fontSize: 12, padding: '3px 8px', height: 28 }}
+          style={{ flex: '1 1 130px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }}
           placeholder="Buscar ubicación…"
           value={filterUbic} onChange={e => setFilterUbic(e.target.value)} />
 
-        {(filterTipo || filterUbic) && (
+        {(filterCC || filterTipo || filterUbic) && (
           <button className="btn-ghost"
             style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
-            onClick={() => { setFilterTipo(''); setFilterUbic('') }}>
+            onClick={() => { setFilterCC(''); setFilterTipo(''); setFilterUbic('') }}>
             <X size={11} /> Limpiar
           </button>
         )}
@@ -296,6 +317,11 @@ export default function ServiciosTab() {
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
                         {servicio.ubicacion ?? 'Sin ubicación'} · {servicio.modalidad}
+                        {servicio.id_centro_costo_fk && ccMap[servicio.id_centro_costo_fk] && (
+                          <span style={{ marginLeft: 6, color: 'var(--text-secondary)' }}>
+                            · {ccMap[servicio.id_centro_costo_fk]}
+                          </span>
+                        )}
                         {servicio.titular && (
                           <span style={{ marginLeft: 6, color: 'var(--text-secondary)' }}>
                             · {servicio.titular}
@@ -509,26 +535,29 @@ function CatalogoModal({ row, onClose, onSaved }: {
   onSaved: () => void
 }) {
   const { authUser } = useAuth()
-  const [saving,    setSaving]    = useState(false)
-  const [error,     setError]     = useState('')
-  const [internos,  setInternos]  = useState<{ id: number; nombre: string }[]>([])
+  const [saving,        setSaving]        = useState(false)
+  const [error,         setError]         = useState('')
+  const [internos,      setInternos]      = useState<{ id: number; nombre: string }[]>([])
+  const [centrosCosto,  setCentrosCosto]  = useState<any[]>([])
 
   useEffect(() => {
-    dbComp.from('proveedores')
-      .select('id, nombre')
-      .eq('interno', true)
-      .eq('activo', true)
-      .order('nombre')
-      .then(({ data }) => setInternos(data ?? []))
+    Promise.all([
+      dbComp.from('proveedores').select('id, nombre').eq('interno', true).eq('activo', true).order('nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+    ]).then(([{ data: provs }, { data: ccs }]) => {
+      setInternos(provs ?? [])
+      setCentrosCosto(ccs ?? [])
+    })
   }, [])
 
   const [form, setForm] = useState({
-    no_servicio:   row?.no_servicio   ?? '',
-    ubicacion:     row?.ubicacion     ?? '',
-    titular:       row?.titular       ?? '',
-    tipo_servicio: row?.tipo_servicio ?? 'CFE',
-    modalidad:     row?.modalidad     ?? 'Mensual',
-    notas:         row?.notas         ?? '',
+    no_servicio:         row?.no_servicio                   ?? '',
+    ubicacion:           row?.ubicacion                     ?? '',
+    titular:             row?.titular                       ?? '',
+    id_centro_costo_fk:  row?.id_centro_costo_fk?.toString() ?? '',
+    tipo_servicio:       row?.tipo_servicio                 ?? 'CFE',
+    modalidad:           row?.modalidad                     ?? 'Mensual',
+    notas:               row?.notas                         ?? '',
   })
 
   const setF = (k: string) =>
@@ -540,13 +569,14 @@ function CatalogoModal({ row, onClose, onSaved }: {
     setSaving(true); setError('')
 
     const payload = {
-      no_servicio:   form.no_servicio.trim(),
-      ubicacion:     form.ubicacion.trim() || null,
-      titular:       form.titular.trim() || null,
-      tipo_servicio: form.tipo_servicio,
-      modalidad:     form.modalidad,
-      notas:         form.notas.trim() || null,
-      updated_at:    new Date().toISOString(),
+      no_servicio:        form.no_servicio.trim(),
+      ubicacion:          form.ubicacion.trim() || null,
+      titular:            form.titular.trim() || null,
+      id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+      tipo_servicio:      form.tipo_servicio,
+      modalidad:          form.modalidad,
+      notas:              form.notas.trim() || null,
+      updated_at:         new Date().toISOString(),
     }
 
     if (row) {
@@ -601,6 +631,17 @@ function CatalogoModal({ row, onClose, onSaved }: {
           <input className="input" style={{ fontSize: 13 }}
             value={form.ubicacion} onChange={setF('ubicacion')}
             placeholder="ej. Caseta principal, Parque Sur…" />
+        </div>
+
+        <div>
+          <label className="label" style={{ fontSize: 11 }}>Centro de Costo</label>
+          <select className="select" style={{ fontSize: 13 }}
+            value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
+            <option value="">— Sin asignar —</option>
+            {centrosCosto.map((c: any) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </select>
         </div>
 
         <div>
