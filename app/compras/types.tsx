@@ -92,6 +92,7 @@ export const CATEGORIAS_ART = [
   'Servicios',
 ]
 export const FORMAS_PAGO_COMP = ['Transferencia', 'Cheque', 'Efectivo', 'Tarjeta', 'Crédito 30 días', 'Crédito 60 días', 'Crédito 90 días']
+export const CONDICIONES_PAGO_PROV = ['Contado', 'Crédito 30 días', 'Crédito 60 días', 'Crédito 90 días']
 
 /**
  * Genera el siguiente folio atómico usando la función RPC en Supabase.

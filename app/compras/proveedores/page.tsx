@@ -9,7 +9,7 @@ import {
   FileText, CheckCircle, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { type Proveedor, FORMAS_PAGO_COMP } from '../types'
+import { type Proveedor, CONDICIONES_PAGO_PROV } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
 
 // ── Documentos requeridos ─────────────────────────────────
@@ -339,7 +339,7 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                 <div><label className="label">Condiciones de Pago</label>
                   <select className="select" value={form.condiciones_pago} onChange={set('condiciones_pago')}>
                     <option value="">—</option>
-                    {FORMAS_PAGO_COMP.map(p => <option key={p}>{p}</option>)}
+                    {CONDICIONES_PAGO_PROV.map(p => <option key={p}>{p}</option>)}
                   </select>
                 </div>
               </Sec>
