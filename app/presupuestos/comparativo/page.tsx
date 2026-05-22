@@ -8,9 +8,12 @@ import ModalShell from '@/components/ui/ModalShell'
 type Presupuesto = { id: number; anio: number; nombre: string; status: string }
 type Partida     = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'; orden: number
+  fuente_real:          string | null
   id_centro_ingreso_fk: number | null
   id_centro_costo_fk:   number | null
   id_area_fk:           number | null
+  id_seccion_fk:        number | null
+  id_concepto_fk:       number | null
 }
 type DetMap = Record<number, Record<number, number>>
 
@@ -91,7 +94,7 @@ export default function ComparativoPage() {
 
     const [{ data: pData }, { data: det }, { data: manual }] = await Promise.all([
       dbCtrl.from('ppto_partidas')
-        .select('id, nombre, tipo, orden, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk')
+        .select('id, nombre, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk')
         .eq('activo', true).order('tipo').order('orden').order('nombre'),
       dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
@@ -109,46 +112,70 @@ export default function ComparativoPage() {
     })
     setDetMap(dm)
 
-    // Real auto
-    const ingParts = parts.filter(p => p.tipo === 'ingreso' && p.id_centro_ingreso_fk)
-    const egrParts = parts.filter(p => p.tipo === 'egreso' && p.id_centro_costo_fk)
-    const ciIds    = [...new Set(ingParts.map(p => p.id_centro_ingreso_fk!))]
-    const ccIds    = [...new Set(egrParts.map(p => p.id_centro_costo_fk!))]
+    // ── Clasificar partidas por fuente real ──────────────────────
+    const secParts  = parts.filter(p => p.fuente_real === 'seccion'  && p.id_seccion_fk)
+    const concParts = parts.filter(p => p.fuente_real === 'concepto' && p.id_concepto_fk)
+    const areaParts = parts.filter(p => p.fuente_real === 'op_area'  && p.id_area_fk)
 
-    const [{ data: recibos }, { data: ops }] = await Promise.all([
-      ciIds.length > 0
-        ? dbCtrl.from('recibos_ingreso')
-            .select('id_centro_ingreso_fk, fecha, monto_total')
-            .in('id_centro_ingreso_fk', ciIds)
-            .gte('fecha', `${anio}-01-01`).lte('fecha', `${anio}-12-31`)
-            .neq('status', 'Cancelado')
+    const secIds  = [...new Set(secParts.map(p => p.id_seccion_fk!))]
+    const concIds = [...new Set(concParts.map(p => p.id_concepto_fk!))]
+    const areaIds = [...new Set(areaParts.map(p => p.id_area_fk!))]
+
+    // ── Consultas en paralelo ────────────────────────────────────
+    const [{ data: secData }, { data: concData }, { data: opsData }] = await Promise.all([
+      secIds.length > 0
+        ? (dbCtrl.from('recibos_ingreso_secciones') as any)
+            .select('id_seccion_fk, monto, recibos_ingreso!inner(status, fecha)')
+            .in('id_seccion_fk', secIds)
+            .eq('recibos_ingreso.status', 'Confirmado')
+            .gte('recibos_ingreso.fecha', `${anio}-01-01`)
+            .lte('recibos_ingreso.fecha', `${anio}-12-31`)
         : Promise.resolve({ data: [] }),
-      ccIds.length > 0
+      concIds.length > 0
+        ? (dbCtrl.from('recibos_ingreso_conceptos') as any)
+            .select('id_concepto_fk, monto, recibos_ingreso!inner(status, fecha)')
+            .in('id_concepto_fk', concIds)
+            .eq('recibos_ingreso.status', 'Confirmado')
+            .gte('recibos_ingreso.fecha', `${anio}-01-01`)
+            .lte('recibos_ingreso.fecha', `${anio}-12-31`)
+        : Promise.resolve({ data: [] }),
+      areaIds.length > 0
         ? dbComp.from('ordenes_pago')
-            .select('id_centro_costo_fk, id_area_fk, fecha_op, monto')
-            .in('id_centro_costo_fk', ccIds)
-            .gte('fecha_op', `${anio}-01-01`).lte('fecha_op', `${anio}-12-31`)
+            .select('id_area_fk, fecha_op, monto')
+            .in('id_area_fk', areaIds)
+            .gte('fecha_op', `${anio}-01-01`)
+            .lte('fecha_op', `${anio}-12-31`)
             .not('status', 'in', '("Cancelada","Cancelado")')
         : Promise.resolve({ data: [] }),
     ])
 
+    // ── Construir realMap ────────────────────────────────────────
     const rm: DetMap = {}
-    ingParts.forEach(p => {
+
+    // Por sección
+    secParts.forEach(p => {
       rm[p.id] = {}
-      ;(recibos ?? []).filter((r: any) => r.id_centro_ingreso_fk === p.id_centro_ingreso_fk)
+      ;(secData ?? []).filter((r: any) => r.id_seccion_fk === p.id_seccion_fk)
         .forEach((r: any) => {
-          const mes = new Date(r.fecha + 'T12:00:00').getMonth() + 1
-          rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(r.monto_total)
+          const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
+          rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(r.monto)
         })
     })
-    egrParts.forEach(p => {
+
+    // Por concepto
+    concParts.forEach(p => {
       rm[p.id] = {}
-      ;(ops ?? [])
-        .filter((op: any) => {
-          if (op.id_centro_costo_fk !== p.id_centro_costo_fk) return false
-          if (p.id_area_fk && op.id_area_fk !== p.id_area_fk) return false
-          return true
+      ;(concData ?? []).filter((r: any) => r.id_concepto_fk === p.id_concepto_fk)
+        .forEach((r: any) => {
+          const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
+          rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(r.monto)
         })
+    })
+
+    // Por área (ordenes de pago)
+    areaParts.forEach(p => {
+      rm[p.id] = {}
+      ;(opsData ?? []).filter((op: any) => op.id_area_fk === p.id_area_fk)
         .forEach((op: any) => {
           if (!op.fecha_op) return
           const mes = new Date(op.fecha_op + 'T12:00:00').getMonth() + 1
