@@ -9,7 +9,7 @@ import {
   FileText, CheckCircle, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { type Proveedor, CONDICIONES_PAGO_PROV } from '../types'
+import { type Proveedor, CONDICIONES_PAGO_PROV, nextFolio } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
 
 // ── Documentos requeridos ─────────────────────────────────
@@ -179,10 +179,20 @@ export default function ProveedoresPage() {
 // ════════════════════════════════════════════════════════════
 function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: () => void; onSaved: () => void }) {
   const isNew = !row
-  const [saving, setSaving]       = useState(false)
-  const [error, setError]         = useState('')
-  const [uploading, setUploading] = useState<string | null>(null)
-  const [tab, setTab]             = useState<'datos'|'documentos'>('datos')
+  const [saving, setSaving]         = useState(false)
+  const [loadingClave, setLoadingClave] = useState(false)
+  const [error, setError]           = useState('')
+  const [uploading, setUploading]   = useState<string | null>(null)
+  const [tab, setTab]               = useState<'datos'|'documentos'>('datos')
+
+  const generarClave = useCallback(async () => {
+    setLoadingClave(true)
+    try {
+      return await nextFolio(dbComp, 'PROV')
+    } finally {
+      setLoadingClave(false)
+    }
+  }, [])
 
   const [form, setForm] = useState({
     clave:            row?.clave            ?? '',
@@ -246,10 +256,11 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
   }
 
   const handleSave = async () => {
-    if (!form.clave.trim() || !form.nombre.trim()) { setError('Clave y Nombre son obligatorios'); return }
+    if (!isNew && !form.clave.trim()) { setError('La clave es obligatoria'); return }
+    if (!form.nombre.trim()) { setError('Nombre es obligatorio'); return }
     setSaving(true); setError('')
 
-    const payload = {
+    const payload: any = {
       clave:            form.clave.trim().toUpperCase(),
       nombre:           form.nombre.trim(),
       razon_social:     form.razon_social.trim()     || null,
@@ -273,6 +284,16 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
       edo_cuenta_url:   form.edo_cuenta_url   || null,
       acta_const_url:   form.acta_const_url   || null,
       comp_dom_url:     form.comp_dom_url     || null,
+    }
+
+    if (isNew) {
+      try {
+        payload.clave = await generarClave()
+      } catch (e: any) {
+        setError(e.message ?? 'No se pudo generar la clave automática')
+        setSaving(false)
+        return
+      }
     }
 
     const { error: err } = isNew
@@ -322,7 +343,26 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
           {tab === 'datos' && (
             <>
               <Sec label="Datos Fiscales">
-                <G><F label="Clave *" value={form.clave} onChange={set('clave')} mono /><F label="Nombre *" value={form.nombre} onChange={set('nombre')} /></G>
+                <G>
+                  <div>
+                    <label className="label">Clave</label>
+                    <input className="input"
+                      value={isNew ? '' : form.clave}
+                      onChange={set('clave')}
+                      disabled={isNew || loadingClave}
+                      style={{ fontFamily: 'monospace', textTransform: 'uppercase',
+                        background: isNew ? '#f8fafc' : undefined,
+                        color: isNew ? 'var(--text-muted)' : undefined }}
+                      placeholder={isNew ? 'Se asigna al guardar' : ''}
+                    />
+                    {isNew && (
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
+                        {loadingClave ? 'Generando…' : 'Se asigna automáticamente al guardar.'}
+                      </div>
+                    )}
+                  </div>
+                  <F label="Nombre *" value={form.nombre} onChange={set('nombre')} />
+                </G>
                 <G><F label="Razón Social" value={form.razon_social} onChange={set('razon_social')} /><F label="RFC" value={form.rfc} onChange={set('rfc')} mono /></G>
               </Sec>
               <Sec label="Contacto">
