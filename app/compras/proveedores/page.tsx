@@ -109,8 +109,14 @@ export default function ProveedoresPage() {
                     {r.correo   && <div style={{ fontSize: 11, color: 'var(--blue)',        display: 'flex', alignItems: 'center', gap: 3 }}><Mail size={10} />{r.correo}</div>}
                   </td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <span className={`badge ${r.activo ? 'badge-vendido' : 'badge-default'}`}>{r.activo ? 'Activo' : 'Inactivo'}</span>
+                      {r.interno && (
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 10,
+                          background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe' }}>
+                          Interno
+                        </span>
+                      )}
                       {ndocs > 0 && (
                         <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 10,
                           background: ndocs === DOCS.length ? '#f0fdf4' : '#fffbeb',
@@ -195,6 +201,7 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
     cuenta_clabe:     row?.cuenta_clabe     ?? '',
     condiciones_pago: row?.condiciones_pago ?? '',
     activo:           row?.activo           ?? true,
+    interno:          row?.interno          ?? false,
     // Documentos
     csf_url:          row?.csf_url          ?? '',
     opinion_sat_url:  row?.opinion_sat_url  ?? '',
@@ -259,6 +266,7 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
       cuenta_clabe:     form.cuenta_clabe.trim()     || null,
       condiciones_pago: form.condiciones_pago        || null,
       activo:           form.activo,
+      interno:          form.interno,
       csf_url:          form.csf_url         || null,
       opinion_sat_url:  form.opinion_sat_url  || null,
       id_oficial_url:   form.id_oficial_url   || null,
@@ -335,12 +343,31 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                   </select>
                 </div>
               </Sec>
-              <div><label className="label">Status</label>
-                <select className="select" value={form.activo ? 'true' : 'false'}
-                  onChange={e => setForm(f => ({ ...f, activo: e.target.value === 'true' }))}>
-                  <option value="true">Activo</option>
-                  <option value="false">Inactivo</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div><label className="label">Status</label>
+                  <select className="select" value={form.activo ? 'true' : 'false'}
+                    onChange={e => setForm(f => ({ ...f, activo: e.target.value === 'true' }))}>
+                    <option value="true">Activo</option>
+                    <option value="false">Inactivo</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 2 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                    padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: 6,
+                    background: form.interno ? '#eff6ff' : '#fafafa',
+                    borderColor: form.interno ? '#bfdbfe' : '#e2e8f0' }}>
+                    <input type="checkbox" checked={form.interno}
+                      onChange={e => setForm(f => ({ ...f, interno: e.target.checked }))}
+                      style={{ width: 14, height: 14, accentColor: 'var(--blue)' }} />
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600,
+                        color: form.interno ? 'var(--blue)' : 'var(--text-primary)' }}>
+                        Empresa interna
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Grupo Balvanera</div>
+                    </div>
+                  </label>
+                </div>
               </div>
             </>
           )}

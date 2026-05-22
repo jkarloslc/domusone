@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl } from '@/lib/supabase'
+import { dbCtrl, dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Filter, X, Save, Loader,
@@ -475,8 +475,18 @@ function CatalogoModal({ row, onClose, onSaved }: {
   onSaved: () => void
 }) {
   const { authUser } = useAuth()
-  const [saving, setSaving] = useState(false)
-  const [error,  setError]  = useState('')
+  const [saving,    setSaving]    = useState(false)
+  const [error,     setError]     = useState('')
+  const [internos,  setInternos]  = useState<{ id: number; nombre: string }[]>([])
+
+  useEffect(() => {
+    dbComp.from('proveedores')
+      .select('id, nombre')
+      .eq('interno', true)
+      .eq('activo', true)
+      .order('nombre')
+      .then(({ data }) => setInternos(data ?? []))
+  }, [])
 
   const [form, setForm] = useState({
     no_servicio:   row?.no_servicio   ?? '',
@@ -561,9 +571,18 @@ function CatalogoModal({ row, onClose, onSaved }: {
 
         <div>
           <label className="label" style={{ fontSize: 11 }}>Titular</label>
-          <input className="input" style={{ fontSize: 13 }}
-            value={form.titular} onChange={setF('titular')}
-            placeholder="ej. Fraccionamiento Balvanera S.A. de C.V." />
+          <select className="select" style={{ fontSize: 13 }}
+            value={form.titular} onChange={setF('titular')}>
+            <option value="">— Sin titular —</option>
+            {internos.map(p => (
+              <option key={p.id} value={p.nombre}>{p.nombre}</option>
+            ))}
+          </select>
+          {internos.length === 0 && (
+            <div style={{ fontSize: 10, color: '#d97706', marginTop: 3 }}>
+              Sin empresas internas en el catálogo de proveedores. Marca proveedores como "Empresa interna" primero.
+            </div>
+          )}
         </div>
 
         <div>
