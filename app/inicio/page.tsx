@@ -251,16 +251,29 @@ export default function InicioPage() {
           }
         }
 
-        // Accesos de golf del día
+        // Accesos de golf del día (socios principales + acompañantes)
         if (rol === 'usuariogolf' || rol === 'superadmin' || rol === 'admin') {
-          const { count } = await dbGolf.from('ctrl_accesos')
-            .select('id', { count: 'exact', head: true })
+          // 1) IDs de accesos de hoy
+          const { data: accesosHoy, count: cntSocios } = await dbGolf.from('ctrl_accesos')
+            .select('id', { count: 'exact' })
             .gte('fecha_entrada', `${hoy}T00:00:00`)
             .lte('fecha_entrada', `${hoy}T23:59:59`)
-          if ((count ?? 0) > 0) {
+
+          // 2) Acompañantes vinculados a esos accesos
+          let cntAcomp = 0
+          const idsHoy = (accesosHoy ?? []).map((a: any) => a.id)
+          if (idsHoy.length > 0) {
+            const { count: ca } = await dbGolf.from('ctrl_acceso_acomp')
+              .select('id', { count: 'exact', head: true })
+              .in('id_acceso_fk', idsHoy)
+            cntAcomp = ca ?? 0
+          }
+
+          const totalAccesos = (cntSocios ?? 0) + cntAcomp
+          if (totalAccesos > 0) {
             items.push({
               id:    'golf-accesos',
-              texto: `${count} acceso${count === 1 ? '' : 's'} al campo hoy`,
+              texto: `${totalAccesos} acceso${totalAccesos === 1 ? '' : 's'} al campo hoy`,
               href:  '/golf/accesos',
             })
           }
