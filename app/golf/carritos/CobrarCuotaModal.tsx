@@ -101,9 +101,21 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const [ticketErr, setTicketErr] = useState('')
 
   const printRef = useRef<HTMLDivElement>(null)
+  const [orgNombre, setOrgNombre]   = useState('Organización')
+  const [orgSubtitulo, setOrgSub]   = useState('')
+  const [orgLogo, setOrgLogo]       = useState('')
 
   // ── Carga inicial ──────────────────────────────────────────
   useEffect(() => {
+    dbCfg.from('configuracion').select('clave, valor')
+      .in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      .then(({ data }) => {
+        ;(data ?? []).forEach((r: any) => {
+          if (r.clave === 'org_nombre')    setOrgNombre(r.valor ?? 'Organización')
+          if (r.clave === 'org_subtitulo') setOrgSub(r.valor ?? '')
+          if (r.clave === 'org_logo_url')  setOrgLogo(r.valor ?? '')
+        })
+      }).catch(() => {})
     Promise.all([
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
       dbGolf.from('cat_socios')
@@ -432,34 +444,34 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 32px; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid #1e3a5f; padding-bottom: 16px; }
-        .inst-name { font-size: 18px; font-weight: 700; color: #1e3a5f; }
-        .inst-sub  { font-size: 11px; color: #64748b; margin-top: 2px; }
-        .folio-box { text-align: right; }
-        .folio-lbl { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
-        .folio-val { font-size: 20px; font-weight: 700; color: #1e3a5f; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
+        .org-header img { height: 52px; max-width: 160px; object-fit: contain; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        .org-sub  { font-size: 11px; color: #64748b; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
         .section   { margin-bottom: 18px; }
-        .section-title { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        .section-title { font-size: 10px; font-weight: 700; color: #0D4F80; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; border-bottom: 1px solid #bfdbfe; padding-bottom: 4px; }
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; }
         .info-item label { font-size: 10px; color: #64748b; display: block; margin-bottom: 1px; }
         .info-item span  { font-size: 12px; font-weight: 500; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        th { padding: 7px 10px; background: #1e3a5f; color: #fff; font-size: 10px; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; }
+        th { padding: 7px 10px; background: #f1f5f9; color: #0D4F80; font-size: 10px; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid #e2e8f0; }
         td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
         tr:last-child td { border-bottom: none; }
         .right { text-align: right; }
         .totales { margin-left: auto; width: 260px; }
         .totales-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
-        .totales-row.total { font-weight: 700; font-size: 15px; border-top: 2px solid #1e3a5f; padding-top: 8px; margin-top: 4px; color: #1e3a5f; }
-        .pago-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
-        .pago-label { font-size: 10px; color: #15803d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
-        .pago-val   { font-size: 14px; font-weight: 700; color: #15803d; }
+        .totales-row.total { font-weight: 700; font-size: 15px; border-top: 2px solid #0D4F80; padding-top: 8px; margin-top: 4px; color: #0D4F80; }
+        .pago-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+        .pago-label { font-size: 10px; color: #0D4F80; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+        .pago-val   { font-size: 14px; font-weight: 700; color: #0D4F80; }
         .parcial-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px; color: #92400e; }
         .firma-area { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 48px; }
         .firma-line { border-top: 1px solid #1e293b; padding-top: 4px; font-size: 10px; color: #64748b; text-align: center; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
         .badge-fact { background: #eff6ff; color: #1d4ed8; }
         .footer { margin-top: 32px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+        @page { margin: 1.2cm; }
       </style></head><body>
       ${printRef.current.innerHTML}
       </body></html>
@@ -497,17 +509,20 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         {/* Vista previa del recibo */}
             <div ref={printRef}>
               {/* ── RECIBO IMPRIMIBLE ── */}
-              <div className="header">
+              <div className="org-header">
+                {orgLogo
+                  ? <img src={orgLogo} style={{ height: 52, maxWidth: 160, objectFit: 'contain' }} alt="" />
+                  : <div style={{ width: 52, height: 52, background: '#e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#94a3b8' }}>🏢</div>
+                }
                 <div>
-                  <div className="inst-name">{INSTITUCION.nombre}</div>
-                  <div className="inst-sub">{INSTITUCION.domicilio}</div>
-                  {INSTITUCION.rfc && <div className="inst-sub">RFC: {INSTITUCION.rfc}</div>}
+                  <div className="org-nombre">{orgNombre}</div>
+                  {orgSubtitulo && <div className="org-sub">{orgSubtitulo}</div>}
                 </div>
-                <div className="folio-box">
-                  <div className="folio-lbl">Recibo de Cobro</div>
-                  <div className="folio-val">{recibo.folio}</div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{fechaFmt(fechaPago)}</div>
-                  {facturable && <span className="badge badge-fact" style={{ marginTop: 4 }}>Facturable</span>}
+                <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                  <div className="doc-title">Recibo de Cobro</div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>Folio: <strong>{recibo.folio}</strong></div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>{fechaFmt(fechaPago)}</div>
+                  {facturable && <span className="badge badge-fact" style={{ marginTop: 4, display: 'inline-block' }}>Facturable</span>}
                 </div>
               </div>
 
@@ -629,7 +644,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
 
               <div className="footer">
                 Este recibo es comprobante de pago de cuotas del club. Para facturación, presentar este folio en administración.<br/>
-                {INSTITUCION.nombre} · {new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
+                {orgNombre} · {new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
               </div>
             </div>
         {/* Vista previa del recibo */}

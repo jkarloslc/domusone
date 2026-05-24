@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { dbGolf } from '@/lib/supabase'
+import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, Edit2, Trash2,
@@ -188,7 +188,7 @@ function CartaModal({
         {/* Header */}
         <div style={{ padding: '18px 22px', borderBottom: '1px solid #e2e8f0',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'linear-gradient(135deg,#1e3a5f,#2563eb)', borderRadius: '14px 14px 0 0' }}>
+          background: 'linear-gradient(135deg,#0D4F80,#2563eb)', borderRadius: '14px 14px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <ArrowRightLeft size={18} style={{ color: '#93c5fd' }} />
             <div>
@@ -406,7 +406,7 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
 
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'linear-gradient(135deg,#1e3a5f,#0891b2)', borderRadius: '14px 14px 0 0' }}>
+          background: 'linear-gradient(135deg,#0D4F80,#0891b2)', borderRadius: '14px 14px 0 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Building2 size={16} style={{ color: '#7dd3fc' }} />
             <span style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>
@@ -497,7 +497,20 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
 // ══════════════════════════════════════════════════════════════
 // IMPRESIÓN DE CARTA
 // ══════════════════════════════════════════════════════════════
-function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club>) {
+async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club>) {
+  let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+  try {
+    const { data: cfgRows } = await dbCfg.from('configuracion')
+      .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+    ;(cfgRows ?? []).forEach((r: any) => {
+      if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+      if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+      if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+    })
+  } catch {}
+  const logoHtml = orgLogo
+    ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+    : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
   const win = window.open('', '_blank', 'width=800,height=700')
   if (!win) return
   const html = `<!DOCTYPE html>
@@ -510,22 +523,22 @@ function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club>)
     body{font-family:'Georgia',serif;font-size:13px;color:#1e293b;padding:0}
     .page{width:210mm;min-height:297mm;margin:0 auto;padding:20mm 22mm;position:relative}
     /* Encabezado */
-    .header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1e3a5f;padding-bottom:14px;margin-bottom:24px}
-    .club-name{font-size:22px;font-weight:700;color:#1e3a5f;letter-spacing:-0.5px}
-    .club-sub{font-size:11px;color:#64748b;margin-top:2px}
-    .folio-box{text-align:right}
+    .org-header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #0D4F80;padding-bottom:14px;margin-bottom:24px}
+    .org-nombre{font-size:18px;font-weight:700;color:#0D4F80;margin:0 0 2px}
+    .org-sub{font-size:11px;color:#64748b}
+    .doc-title{font-size:14px;font-weight:600;color:#0D4F80;margin-bottom:2px}
     .folio-lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em}
-    .folio-val{font-size:18px;font-weight:700;color:#2563eb;letter-spacing:1px}
+    .folio-val{font-size:18px;font-weight:700;color:#0D4F80;letter-spacing:1px}
     /* Tipo documento */
     .doc-type{text-align:center;margin-bottom:22px}
-    .doc-type h1{font-size:17px;font-weight:700;color:#1e3a5f;letter-spacing:2px;text-transform:uppercase;border:2px solid #1e3a5f;display:inline-block;padding:6px 24px;border-radius:4px}
+    .doc-type h1{font-size:17px;font-weight:700;color:#0D4F80;letter-spacing:2px;text-transform:uppercase;border:2px solid #0D4F80;display:inline-block;padding:6px 24px;border-radius:4px}
     /* Fechas */
     .fechas{display:flex;gap:32px;margin-bottom:22px;font-size:12px;color:#475569}
     .fecha-item span{font-weight:600;color:#1e293b}
     /* Destinatario */
     .destinatario{margin-bottom:22px;background:#f8fafc;border-left:3px solid #2563eb;padding:12px 16px;border-radius:0 8px 8px 0}
     .dest-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:6px}
-    .dest-nombre{font-size:14px;font-weight:700;color:#1e3a5f}
+    .dest-nombre{font-size:14px;font-weight:700;color:#0D4F80}
     .dest-cargo{font-size:12px;color:#475569}
     .dest-club{font-size:13px;font-weight:600;color:#2563eb;margin-top:2px}
     .dest-lugar{font-size:11px;color:#64748b}
@@ -536,12 +549,12 @@ function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club>)
     /* Socio box */
     .socio-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;margin-bottom:26px}
     .socio-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#3b82f6;margin-bottom:6px}
-    .socio-nombre{font-size:15px;font-weight:700;color:#1e3a5f}
+    .socio-nombre{font-size:15px;font-weight:700;color:#0D4F80}
     .socio-num{font-size:11px;color:#3b82f6;margin-top:2px}
     /* Firma */
     .firma{display:flex;justify-content:space-between;align-items:flex-end;margin-top:40px}
     .firma-bloque{text-align:center;width:200px}
-    .firma-linea{border-top:1px solid #1e3a5f;padding-top:8px;margin-top:50px}
+    .firma-linea{border-top:1px solid #0D4F80;padding-top:8px;margin-top:50px}
     .firma-nombre{font-size:12px;font-weight:700;color:#1e293b}
     .firma-cargo{font-size:10px;color:#64748b}
     /* Pie */
@@ -553,12 +566,14 @@ function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club>)
 <body>
 <div class="page">
   <!-- Encabezado institucional -->
-  <div class="header">
+  <div class="org-header">
+    ${logoHtml}
     <div>
-      <div class="club-name">Club de Golf Balvanera</div>
-      <div class="club-sub">Balvanera Polo & Country Club · Corregidora, Querétaro</div>
+      <div class="org-nombre">${orgNombre}</div>
+      ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
     </div>
-    <div class="folio-box">
+    <div style="margin-left:auto;text-align:right">
+      <div class="doc-title">Carta de Intercambio</div>
       <div class="folio-lbl">Folio</div>
       <div class="folio-val">${carta.folio ?? '—'}</div>
     </div>

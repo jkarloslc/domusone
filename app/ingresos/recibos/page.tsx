@@ -395,17 +395,17 @@ function ReciboModal({
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Recibo ${escapeHtml(recibo.folio ?? `#${recibo.id}`)}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 34px; font-size: 12px; color: #1e293b; }
-        .org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0f766e; margin-bottom:18px; }
-        .org-nombre { font-size: 18px; font-weight: 700; color: #0f766e; margin:0 0 2px; }
+        .org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin:0 0 2px; }
         .org-sub { font-size: 11px; color: #64748b; }
-        .doc-title { font-size: 14px; font-weight: 700; color: #0f766e; margin-bottom: 3px; }
+        .doc-title { font-size: 14px; font-weight: 700; color: #0D4F80; margin-bottom: 3px; }
         .meta { font-size: 11px; color: #64748b; }
         .section { margin-bottom: 16px; }
-        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: #0f766e; margin-bottom: 8px; }
+        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: #0D4F80; margin-bottom: 8px; }
         table { width: 100%; border-collapse: collapse; margin: 8px 0; }
         th, td { border: 1px solid #e2e8f0; padding: 8px 10px; }
-        th { background: #f0fdfa; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: left; }
-        .total { background: #ecfeff; font-weight: 700; color: #0f766e; }
+        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; text-align: left; }
+        .total { background: #eff6ff; font-weight: 700; color: #0D4F80; }
         .firmas { display: flex; gap: 60px; margin-top: 52px; }
         .firma { border-top: 1px solid #0f172a; width: 190px; padding-top: 6px; text-align: center; font-size: 11px; color: #64748b; }
         @page { margin: 1.2cm; }

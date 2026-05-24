@@ -737,8 +737,22 @@ function ReporteSemanal({ secciones, secMap, onClose }: {
 
   useEffect(() => { cargarOTs() }, [cargarOTs])
 
-  const generarPDF = () => {
+  const generarPDF = async () => {
     setGenerating(true)
+
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
 
     const fechaReporte = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
     const seccionNombre = filterSec ? (secMap[Number(filterSec)] ?? 'Todas') : 'Mantenimiento Residencial'
@@ -766,10 +780,10 @@ function ReporteSemanal({ secciones, secMap, onClose }: {
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 32px; }
-  .header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 3px solid #0D4F80; padding-bottom: 16px; margin-bottom: 20px; }
-  .org-name { font-size: 20px; font-weight: 700; color: #0D4F80; }
-  .org-sub  { font-size: 12px; color: #64748b; margin-top: 2px; }
-  .report-title { font-size: 18px; font-weight: 700; color: #0D4F80; text-align: right; }
+  .org-header { display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #0D4F80; padding-bottom: 14px; margin-bottom: 20px; }
+  .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+  .org-sub  { font-size: 11px; color: #64748b; }
+  .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
   .meta { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .meta-row { display: flex; gap: 8px; }
   .meta-label { font-weight: 700; color: #475569; min-width: 140px; }
@@ -801,13 +815,15 @@ function ReporteSemanal({ secciones, secMap, onClose }: {
 </style></head><body>
 
 <!-- Encabezado -->
-<div class="header">
+<div class="org-header">
+  ${logoHtml}
   <div>
-    <div class="org-name">Balvanera Polo &amp; Country Club</div>
-    <div class="org-sub">Administración Residencial — Mantenimiento</div>
+    <div class="org-nombre">${orgNombre}</div>
+    ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
   </div>
-  <div class="report-title">REPORTE DE MANTENIMIENTO<br>
-    <span style="font-size:13px;color:#64748b">Semana No. ${semana} — ${anio}</span>
+  <div style="margin-left:auto;text-align:right">
+    <div class="doc-title">Reporte de Mantenimiento</div>
+    <div style="font-size:13px;color:#64748b">Semana No. ${semana} — ${anio}</div>
   </div>
 </div>
 
@@ -887,7 +903,7 @@ ${todosRecursos.length > 0 ? `
 
 <!-- Pie de página -->
 <div class="footer">
-  <span>DomusOne — Sistema de Administración Residencial · Balvanera Polo &amp; Country Club</span>
+  <span>DomusOne — Sistema de Administración Residencial · ${orgNombre}</span>
   <span>Generado: ${new Date().toLocaleString('es-MX')}</span>
 </div>
 

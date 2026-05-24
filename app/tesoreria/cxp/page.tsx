@@ -1,6 +1,6 @@
 'use client'
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { dbComp, supabase } from '@/lib/supabase'
+import { dbComp, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   ArrowLeft, RefreshCw, Search, Eye, X, Loader,
@@ -318,19 +318,50 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
   const saldoTotal  = ops.filter(o => o.status !== 'Pagada').reduce((a,o) => a + (o.saldo ?? o.monto ?? 0), 0)
   const pagadoTotal = ops.filter(o => o.status === 'Pagada').reduce((a,o) => a + (o.monto ?? 0), 0)
 
-  const imprimirEC = () => {
-    const win = window.open('', '_blank')
-    win?.document.write(`
-      <html><head><title>Estado de Cuenta — ${prov.nombre}</title>
-      <style>body{font-family:Arial,sans-serif;padding:40px;font-size:12px}h1{color:#0D4F80;font-size:20px;margin:0}
-      .sub{color:#64748b;font-size:11px;margin-bottom:20px}
-      table{width:100%;border-collapse:collapse;margin:16px 0}
-      td,th{border:1px solid #e2e8f0;padding:7px 10px}
-      th{background:#f1f5f9;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
-      .total{background:#eff6ff;font-weight:700;color:#0D4F80}
-      .venc{color:#dc2626;font-weight:600}</style></head><body>
-      <h1>Estado de Cuenta — Cuentas por Pagar</h1>
-      <div class="sub">Proveedor: <strong>${prov.nombre}</strong> &nbsp;·&nbsp; RFC: ${prov.rfc ?? '—'} &nbsp;·&nbsp; Fecha: ${new Date().toLocaleDateString('es-MX')}</div>
+  const imprimirEC = async () => {
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(`<!DOCTYPE html><html><head><title>Estado de Cuenta — ${prov.nombre}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; color: #1e293b; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #64748b; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+        .sub { color: #64748b; font-size: 11px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        td, th { border: 1px solid #e2e8f0; padding: 7px 10px; }
+        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+        .total { background: #eff6ff; font-weight: 700; color: #0D4F80; }
+        .venc { color: #dc2626; font-weight: 600; }
+        @page { margin: 1.2cm; }
+      </style></head><body>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="doc-title">Estado de Cuenta — CXP</div>
+          <div class="sub" style="margin:0">Proveedor: <strong>${prov.nombre}</strong> &nbsp;·&nbsp; RFC: ${prov.rfc ?? '—'} &nbsp;·&nbsp; Fecha: ${new Date().toLocaleDateString('es-MX')}</div>
+        </div>
+      </div>
       <table>
         <thead><tr><th>Folio</th><th>Concepto</th><th>Fecha OP</th><th>Vencimiento</th><th>Monto</th><th>Pagado</th><th>Saldo</th><th>Status</th></tr></thead>
         <tbody>
@@ -351,9 +382,13 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
         </tbody>
       </table>
       <p style="font-size:11px;color:#64748b;margin-top:24px">Documento generado por DomusOne · ${new Date().toLocaleString('es-MX')}</p>
-      </body></html>
-    `)
-    win?.print()
+      </body></html>`)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
   }
 
   return (

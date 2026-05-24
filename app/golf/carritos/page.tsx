@@ -403,7 +403,20 @@ export default function CarritosPage() {
   }
 
   // ── Imprimir recibo pensión ───────────────────────────────
-  const handlePrintRecibo = (r: ReciboCarrito) => {
+  const handlePrintRecibo = async (r: ReciboCarrito) => {
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((row: any) => {
+        if (row.clave === 'org_nombre')    orgNombre    = row.valor ?? orgNombre
+        if (row.clave === 'org_subtitulo') orgSubtitulo = row.valor ?? ''
+        if (row.clave === 'org_logo_url')  orgLogo      = row.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
     const win = window.open('', '_blank', 'width=750,height=900')
     if (!win) return
     const rows = r.recibos_golf_det.map(d => `
@@ -419,39 +432,38 @@ export default function CarritosPage() {
       <style>
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:Arial,sans-serif;font-size:12px;color:#1e293b;padding:32px}
-        .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:2px solid #059669;padding-bottom:16px}
-        .inst-name{font-size:18px;font-weight:700;color:#065f46}
-        .inst-sub{font-size:11px;color:#64748b;margin-top:2px}
-        .folio-box{text-align:right}
-        .folio-lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.08em}
-        .folio-val{font-size:20px;font-weight:700;color:#065f46}
+        .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #0D4F80;margin-bottom:18px}
+        .org-nombre{font-size:18px;font-weight:700;color:#0D4F80;margin:0 0 2px}
+        .org-sub{font-size:11px;color:#64748b}
+        .doc-title{font-size:14px;font-weight:600;color:#0D4F80;margin-bottom:2px}
         .section{margin-bottom:18px}
-        .section-title{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
+        .section-title{font-size:10px;font-weight:700;color:#0D4F80;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #bfdbfe;padding-bottom:4px}
         table{width:100%;border-collapse:collapse;margin-bottom:16px}
-        th{padding:7px 10px;background:#065f46;color:#fff;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em}
+        th{padding:7px 10px;background:#f1f5f9;color:#0D4F80;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #e2e8f0}
         td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px}
         tr:last-child td{border-bottom:none}
         .right{text-align:right}
         .totales{margin-left:auto;width:260px}
         .totales-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
-        .totales-row.total{font-weight:700;font-size:15px;border-top:2px solid #059669;padding-top:8px;margin-top:4px;color:#065f46}
-        .pago-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
-        .pago-label{font-size:10px;color:#15803d;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
-        .pago-val{font-size:14px;font-weight:700;color:#15803d}
+        .totales-row.total{font-weight:700;font-size:15px;border-top:2px solid #0D4F80;padding-top:8px;margin-top:4px;color:#0D4F80}
+        .pago-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+        .pago-label{font-size:10px;color:#0D4F80;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+        .pago-val{font-size:14px;font-weight:700;color:#0D4F80}
         .firma-area{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px}
         .firma-line{border-top:1px solid #1e293b;padding-top:4px;font-size:10px;color:#64748b;text-align:center}
         .footer{margin-top:32px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}
+        @page{margin:1.2cm}
       </style></head><body>
-      <div class="header">
+      <div class="org-header">
+        ${logoHtml}
         <div>
-          <div class="inst-name">${INSTITUCION.nombre}</div>
-          <div class="inst-sub">${INSTITUCION.domicilio}</div>
-          <div class="inst-sub">RFC: ${INSTITUCION.rfc}</div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
         </div>
-        <div class="folio-box">
-          <div class="folio-lbl">Recibo Pensión Carrito</div>
-          <div class="folio-val">${r.folio}</div>
-          <div style="font-size:11px;color:#64748b;margin-top:2px">${fechaFmtR(r.fecha_recibo)}</div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="doc-title">Recibo Pensión Carrito</div>
+          <div style="font-size:11px;color:#64748b">Folio: <strong>${r.folio}</strong></div>
+          <div style="font-size:11px;color:#64748b">${fechaFmtR(r.fecha_recibo)}</div>
           ${r.status === 'CANCELADO' ? '<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:#fee2e2;color:#dc2626;margin-top:4px">CANCELADO</span>' : ''}
         </div>
       </div>
@@ -486,7 +498,7 @@ export default function CarritosPage() {
       </div>
       <div class="footer">
         Recibo de pago de pensión de carrito de golf.<br/>
-        ${INSTITUCION.nombre} · ${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
+        ${orgNombre} · ${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
       </div>
     </body></html>`)
     win.document.close()
