@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase, dbCtrl, dbComp, dbGolf } from '@/lib/supabase'
+import { supabase, dbCtrl, dbComp, dbGolf, dbCfg } from '@/lib/supabase'
 import ModalShell from '@/components/ui/ModalShell'
 import {
   Plus, Star, MapPin, Calendar, Users, DollarSign,
@@ -756,8 +756,21 @@ export default function EventosPage() {
     loadEventoDetalle(editEvt.id)
   }
 
-  const printPersonal = () => {
+  const printPersonal = async () => {
     if (!editEvt) return
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
     const totalComp = personal.reduce((s, p) => s + (p.compensacion ?? 0), 0)
     const lugar     = editEvt.cat_lugares?.nombre ?? ''
     const fmtD = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
@@ -768,10 +781,10 @@ export default function EventosPage() {
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Arial, sans-serif; padding: 36px; color: #1e1e1e; background: #fff; font-size: 13px; }
-.header { background: linear-gradient(135deg, #7e22ce, #a855f7); color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 22px; }
-.header h1 { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
-.header .sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
-.header .folio { font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 8px; font-family: monospace; letter-spacing: .05em; }
+.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
+.org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
+.org-sub { font-size:11px; color:#64748b; }
+.doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
 .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; padding: 14px 16px; background: #faf5ff; border-radius: 8px; border: 1px solid #e9d5ff; }
 .meta .f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #9333ea; display: block; margin-bottom: 2px; }
 .meta .f span { font-size: 12px; }
@@ -794,10 +807,16 @@ tr:last-child td { border-bottom: none; }
 .firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 10px; color: #888; text-align: center; }
 @media print { body { padding: 20px; } }
 </style></head><body>
-<div class="header">
-  <h1>Personal Operativo — ${editEvt.nombre}</h1>
-  <div class="sub">Club Balvanera · Hospitality</div>
-  <div class="folio">${editEvt.folio} &nbsp;·&nbsp; ${editEvt.status}</div>
+<div class="org-header">
+  ${logoHtml}
+  <div>
+    <div class="org-nombre">${orgNombre}</div>
+    ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div class="doc-title">Personal Operativo</div>
+    <div style="font-size:11px;color:#64748b">${editEvt.folio} · ${editEvt.nombre}</div>
+  </div>
 </div>
 <div class="meta">
   <div class="f"><label>Evento</label><span>${editEvt.nombre}</span></div>
@@ -941,7 +960,20 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
   }
 
   // ── Imprimir recibo de ingreso ─────────────────────────────
-  const printRecibo = (ing: Ingreso) => {
+  const printRecibo = async (ing: Ingreso) => {
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
     const evtNombre = editEvt?.nombre ?? ''
     const lugar     = editEvt?.cat_lugares?.nombre ?? ''
     const win = window.open('', '_blank', 'width=700,height=900')
@@ -951,10 +983,10 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1e1e1e; background: #fff; }
-  .header { background: linear-gradient(135deg, #7e22ce, #a855f7); color: #fff; padding: 24px 28px; border-radius: 12px; margin-bottom: 24px; }
-  .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-  .header p { font-size: 12px; opacity: 0.75; }
-  .folio { font-size: 28px; font-weight: 800; letter-spacing: 0.05em; color: #fff; margin-top: 8px; }
+  .org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
+  .org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
+  .org-sub { font-size:11px; color:#64748b; }
+  .doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
   .field label { display: block; font-size: 10px; font-weight: 700; color: #9333ea; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
   .field span { font-size: 14px; color: #1e1e1e; }
@@ -965,10 +997,16 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
   .firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 11px; color: #666; text-align: center; }
   @media print { body { padding: 20px; } }
 </style></head><body>
-<div class="header">
-  <h1>Recibo de Ingreso — Hospitality</h1>
-  <p>Club Balvanera · Hospitality</p>
-  <div class="folio">${ing.folio}</div>
+<div class="org-header">
+  ${logoHtml}
+  <div>
+    <div class="org-nombre">${orgNombre}</div>
+    ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div class="doc-title">Recibo de Ingreso</div>
+    <div style="font-size:11px;color:#64748b">${ing.folio}</div>
+  </div>
 </div>
 <div class="grid">
   <div class="field"><label>Evento</label><span>${evtNombre}</span></div>
@@ -1016,8 +1054,21 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
   })
 
   // ── Imprimir Ficha Maestra ─────────────────────────────────
-  const printFichaMaestra = () => {
+  const printFichaMaestra = async () => {
     if (!viewEvt) return
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
     const totalIng    = viewIng.reduce((s, i) => s + (i.monto ?? 0), 0)
     const totalGastos = viewOps.reduce((s, o) => s + (o.monto ?? 0), 0)
     const utilidad    = totalIng - totalGastos
@@ -1046,10 +1097,10 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e1e1e; background: #fff; padding: 32px; }
-.header { background: linear-gradient(135deg, #7e22ce, #a855f7); color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 22px; }
-.header h1 { font-size: 20px; font-weight: 800; }
-.header .sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
-.header .folio { font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 6px; font-family: monospace; }
+.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
+.org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
+.org-sub { font-size:11px; color:#64748b; }
+.doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
 .sec { margin-bottom: 18px; page-break-inside: avoid; }
 .sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #7e22ce; border-bottom: 2px solid #e9d5ff; padding-bottom: 4px; margin-bottom: 10px; }
 .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1075,10 +1126,16 @@ td { padding:5px 10px; border-top:1px solid #f1f5f9; }
 .sig td { height:52px; vertical-align:top; padding:5px 10px; color:#bbb; font-size:10px; }
 @media print { body { padding: 16px; } .sec { page-break-inside: avoid; } }
 </style></head><body>
-<div class="header">
-  <h1>Ficha Maestra de Evento</h1>
-  <div class="sub">Operación Integral · Planeación · Ejecución · Cierre</div>
-  <div class="folio">${viewEvt.folio} · ${viewEvt.status}${tipo ? ' · ' + tipo.nombre : ''}</div>
+<div class="org-header">
+  ${logoHtml}
+  <div>
+    <div class="org-nombre">${orgNombre}</div>
+    ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div class="doc-title">Ficha Maestra de Evento</div>
+    <div style="font-size:11px;color:#64748b">${viewEvt.folio} · ${viewEvt.status}${tipo ? ' · ' + tipo.nombre : ''}</div>
+  </div>
 </div>
 
 <div class="sec">
