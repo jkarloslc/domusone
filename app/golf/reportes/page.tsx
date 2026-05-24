@@ -1,11 +1,12 @@
 'use client'
 import { useState } from 'react'
-import { ChevronLeft, MapPin, CreditCard, FileText, BarChart2 } from 'lucide-react'
+import { ChevronLeft, MapPin, CreditCard, FileText, BarChart2, Award } from 'lucide-react'
 import Link from 'next/link'
-import ReporteGolfAccesos      from '@/app/reportes/ReporteGolfAccesos'
-import ReporteGolfEstadoCuenta from '@/app/reportes/ReporteGolfEstadoCuenta'
-import ReporteGolfCobranza     from '@/app/reportes/ReporteGolfCobranza'
-import ReporteHipicoServicios  from '@/app/reportes/ReporteHipicoServicios'
+import ReporteGolfAccesos         from '@/app/reportes/ReporteGolfAccesos'
+import ReporteGolfEstadoCuenta    from '@/app/reportes/ReporteGolfEstadoCuenta'
+import ReporteGolfCobranza        from '@/app/reportes/ReporteGolfCobranza'
+import ReporteHipicoServicios     from '@/app/reportes/ReporteHipicoServicios'
+import ReporteMiembrosFederados   from '@/app/reportes/ReporteMiembrosFederados'
 
 const REPORTES = [
   {
@@ -39,6 +40,14 @@ const REPORTES = [
     icon:  BarChart2,
     color: '#92400e',
     bg:    '#fff7ed',
+  },
+  {
+    key:   'miembros-federados',
+    label: 'Miembros Federados',
+    desc:  'Socios inscritos a la Federación Mexicana de Golf por período (año)',
+    icon:  Award,
+    color: '#d97706',
+    bg:    '#fffbeb',
   },
 ]
 
@@ -126,10 +135,11 @@ export default function GolfReportesPage() {
       )}
 
       {/* Reporte activo */}
-      {activo === 'accesos'       && <ReporteGolfAccesos />}
-      {activo === 'cobranza'      && <ReporteGolfCobranza />}
-      {activo === 'estado-cuenta' && <ReporteGolfEstadoCuenta />}
+      {activo === 'accesos'            && <ReporteGolfAccesos />}
+      {activo === 'cobranza'           && <ReporteGolfCobranza />}
+      {activo === 'estado-cuenta'      && <ReporteGolfEstadoCuenta />}
       {activo === 'caballos-servicios' && <ReporteHipicoServicios />}
+      {activo === 'miembros-federados' && <ReporteMiembrosFederados />}
     </div>
   )
 }
