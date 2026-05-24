@@ -101,6 +101,10 @@ const ADMIN_MODULOS = [
   // Hípico
   'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
   'hipico-contratos', 'hipico-cobranza', 'hipico-servicios',
+  // Hospitality
+  'hospitality',
+  // Vehículos y Maquinaria
+  'equipo-flota',
 ]
 
 // Módulos Golf para rol dedicado
