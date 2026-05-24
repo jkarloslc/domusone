@@ -9,11 +9,11 @@ import { fechaLocal, inicioDelDia } from '@/lib/dateUtils'
 type Producto = {
   id: number; nombre: string; descripcion: string | null; sku: string | null
   precio: number; iva_pct: number; aplica_iva: boolean; tipo: string
-  id_centro_fk: number | null
+  id_centro_fk: number | null; precio_variable: boolean
 }
 type FormaPago = { id: number; nombre: string }
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null }
-type LineaVenta = { id_producto: number; concepto: string; cantidad: number; precio_unitario: number; iva_pct: number; aplica_iva: boolean }
+type LineaVenta = { id_producto: number; concepto: string; cantidad: number; precio_unitario: number; iva_pct: number; aplica_iva: boolean; precio_variable: boolean }
 
 type Props = {
   idCentro: number
@@ -57,6 +57,10 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
 
   // Búsqueda de productos
   const [prodSearch, setProdSearch] = useState('')
+
+  // Mini-diálogo para precio variable
+  const [precioVarProducto, setPrecioVarProducto] = useState<Producto | null>(null)
+  const [precioVarInput,    setPrecioVarInput]    = useState('')
 
   // Pago
   const [forma1, setForma1] = useState<number>(0)
@@ -116,15 +120,34 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
 
   // ── Agregar producto al carrito ───────────────────────────
   const agregarProducto = (p: Producto) => {
+    if (p.precio_variable) {
+      // Abrir mini-diálogo para capturar el precio
+      setPrecioVarProducto(p)
+      setPrecioVarInput(p.precio > 0 ? String(p.precio) : '')
+      return
+    }
+    agregarConPrecio(p, p.precio)
+  }
+
+  const agregarConPrecio = (p: Producto, precio: number) => {
     setLineas(prev => {
-      const idx = prev.findIndex(l => l.id_producto === p.id)
-      if (idx >= 0) {
+      const idx = prev.findIndex(l => l.id_producto === p.id && !l.precio_variable)
+      if (idx >= 0 && !p.precio_variable) {
         const next = [...prev]
         next[idx] = { ...next[idx], cantidad: next[idx].cantidad + 1 }
         return next
       }
-      return [...prev, { id_producto: p.id, concepto: p.nombre, cantidad: 1, precio_unitario: p.precio, iva_pct: p.iva_pct, aplica_iva: p.aplica_iva }]
+      return [...prev, { id_producto: p.id, concepto: p.nombre, cantidad: 1, precio_unitario: precio, iva_pct: p.iva_pct, aplica_iva: p.aplica_iva, precio_variable: p.precio_variable }]
     })
+  }
+
+  const confirmarPrecioVariable = () => {
+    if (!precioVarProducto) return
+    const precio = parseFloat(precioVarInput)
+    if (isNaN(precio) || precio <= 0) return
+    agregarConPrecio(precioVarProducto, precio)
+    setPrecioVarProducto(null)
+    setPrecioVarInput('')
   }
 
   const cambiarCantidad = (idx: number, delta: number) => {
@@ -295,6 +318,41 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
     </div>
   )
 
+  // ── Mini-diálogo precio variable ─────────────────────────
+  if (precioVarProducto) return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}>
+      <div style={{ background: '#fff', borderRadius: 14, padding: '28px 24px', maxWidth: 340, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>{precioVarProducto.nombre}</div>
+        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 18 }}>
+          Ingresa el precio a cobrar al cliente
+          {precioVarProducto.aplica_iva && <span style={{ marginLeft: 6, color: '#059669', fontWeight: 600 }}>(IVA {precioVarProducto.iva_pct}% incluido)</span>}
+        </div>
+        <div style={{ position: 'relative', marginBottom: 16 }}>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14, fontWeight: 700 }}>$</span>
+          <input
+            autoFocus
+            type="number" min={0.01} step={0.01}
+            value={precioVarInput}
+            onChange={e => setPrecioVarInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') confirmarPrecioVariable(); if (e.key === 'Escape') { setPrecioVarProducto(null); setPrecioVarInput('') } }}
+            style={{ width: '100%', padding: '10px 12px 10px 24px', fontSize: 22, fontWeight: 700, border: '2px solid #fbbf24', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', color: '#1e293b', background: '#fffbeb', textAlign: 'right' }}
+            placeholder="0.00" />
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => { setPrecioVarProducto(null); setPrecioVarInput('') }}
+            style={{ flex: 1, padding: '10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+            Cancelar
+          </button>
+          <button onClick={confirmarPrecioVariable}
+            disabled={!precioVarInput || parseFloat(precioVarInput) <= 0}
+            style={{ flex: 2, padding: '10px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (!precioVarInput || parseFloat(precioVarInput) <= 0) ? 0.5 : 1 }}>
+            Agregar al carrito
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 12 }}>
       <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 900, maxHeight: '95vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
@@ -351,6 +409,9 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
                       {p.tipo === 'PRODUCTO' ? '📦 Producto' : '⚡ Servicio'}
                       {p.aplica_iva ? ` (IVA inc.)` : ''}
                     </div>
+                    {p.precio_variable && (
+                      <div style={{ fontSize: 9, fontWeight: 700, color: '#d97706', marginTop: 2 }}>✏ Precio variable</div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -422,11 +483,15 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
                           <span style={{ fontSize: 12, fontWeight: 600, minWidth: 20, textAlign: 'center' }}>{l.cantidad}</span>
                           <button onClick={() => cambiarCantidad(i, 1)} style={{ width: 20, height: 20, borderRadius: 4, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={10} /></button>
                           <span style={{ fontSize: 11, color: '#94a3b8' }}>× </span>
-                          <input
-                            type="number" min={0} step={0.01}
-                            value={l.precio_unitario}
-                            onChange={e => cambiarPrecio(i, e.target.value)}
-                            style={{ width: 64, padding: '2px 4px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 4, textAlign: 'right', fontFamily: 'inherit', outline: 'none' }} />
+                          {l.precio_variable ? (
+                            <input
+                              type="number" min={0} step={0.01}
+                              value={l.precio_unitario}
+                              onChange={e => cambiarPrecio(i, e.target.value)}
+                              style={{ width: 64, padding: '2px 4px', fontSize: 11, border: '1px solid #fbbf24', borderRadius: 4, textAlign: 'right', fontFamily: 'inherit', outline: 'none', background: '#fffbeb' }} />
+                          ) : (
+                            <span style={{ fontSize: 11, fontWeight: 600, color: '#475569', minWidth: 64, textAlign: 'right' }}>{fmt$(l.precio_unitario)}</span>
+                          )}
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>

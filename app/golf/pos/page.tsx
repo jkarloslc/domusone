@@ -43,6 +43,7 @@ type Producto = {
   id: number; nombre: string; descripcion: string | null; sku: string | null
   precio: number; costo: number; iva_pct: number; aplica_iva: boolean
   tipo: string; activo: boolean; id_centro_fk: number | null
+  precio_variable: boolean
 }
 type FormaPago = { id: number; nombre: string; activo: boolean }
 type CfgPos = { id: number; razon_social: string; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string }
@@ -787,16 +788,17 @@ ${operaciones.length > 0 ? `
     if (!editingProd?.nombre) return
     setSavingProd(true)
     const payload = {
-      nombre:      editingProd.nombre,
-      descripcion: editingProd.descripcion || null,
-      sku:         editingProd.sku || null,
-      precio:      editingProd.precio ?? 0,
-      costo:       editingProd.costo ?? 0,
-      iva_pct:     editingProd.iva_pct ?? 16,
-      aplica_iva:  editingProd.aplica_iva ?? true,
-      tipo:        editingProd.tipo ?? 'SERVICIO',
-      activo:      editingProd.activo ?? true,
-      id_centro_fk: editingProd.id_centro_fk ?? null,
+      nombre:          editingProd.nombre,
+      descripcion:     editingProd.descripcion || null,
+      sku:             editingProd.sku || null,
+      precio:          editingProd.precio ?? 0,
+      costo:           editingProd.costo ?? 0,
+      iva_pct:         editingProd.iva_pct ?? 16,
+      aplica_iva:      editingProd.aplica_iva ?? true,
+      precio_variable: editingProd.precio_variable ?? false,
+      tipo:            editingProd.tipo ?? 'SERVICIO',
+      activo:          editingProd.activo ?? true,
+      id_centro_fk:    editingProd.id_centro_fk ?? null,
     }
     if (editingProd.id) {
       await dbGolf.from('cat_productos_pos').update(payload).eq('id', editingProd.id)
@@ -1549,7 +1551,7 @@ ${operaciones.length > 0 ? `
                   <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{productos.length} registros · el precio es el monto final cobrado al cliente</div>
                 </div>
                 {puedeEscribir && (
-                  <button onClick={() => setEditingProd({ tipo: 'SERVICIO', aplica_iva: true, iva_pct: 16, activo: true, precio: 0, costo: 0, id_centro_fk: centros[0]?.id ?? null })}
+                  <button onClick={() => setEditingProd({ tipo: 'SERVICIO', aplica_iva: true, iva_pct: 16, activo: true, precio: 0, costo: 0, precio_variable: false, id_centro_fk: centros[0]?.id ?? null })}
                     style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
                     <Plus size={13} /> Nuevo producto / servicio
                   </button>
@@ -1594,10 +1596,14 @@ ${operaciones.length > 0 ? `
                       </select>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
                       <input type="checkbox" checked={editingProd.aplica_iva ?? true} onChange={e => setEditingProd(p => ({ ...p, aplica_iva: e.target.checked }))} />
                       IVA incluido en precio (desglose en factura)
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={editingProd.precio_variable ?? false} onChange={e => setEditingProd(p => ({ ...p, precio_variable: e.target.checked }))} />
+                      <span>Precio Variable <span style={{ color: '#d97706', fontWeight: 600 }}>(el cajero puede modificarlo al vender)</span></span>
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
                       <input type="checkbox" checked={editingProd.activo ?? true} onChange={e => setEditingProd(p => ({ ...p, activo: e.target.checked }))} />
@@ -1634,6 +1640,11 @@ ${operaciones.length > 0 ? `
                           {p.aplica_iva
                             ? <span style={{ padding: '1px 7px', borderRadius: 10, background: '#ecfdf5', color: '#065f46', fontWeight: 600 }}>IVA {p.iva_pct}% inc.</span>
                             : <span style={{ padding: '1px 7px', borderRadius: 10, background: '#f1f5f9', color: '#64748b' }}>Exento</span>}
+                          {p.precio_variable && (
+                            <span style={{ padding: '1px 7px', borderRadius: 10, background: '#fffbeb', color: '#d97706', fontWeight: 600 }}>
+                              Precio variable
+                            </span>
+                          )}
                           {!p.activo && <span style={{ color: '#dc2626', fontWeight: 600 }}>Inactivo</span>}
                         </div>
                       </div>
