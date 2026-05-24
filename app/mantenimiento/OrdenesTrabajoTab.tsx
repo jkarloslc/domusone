@@ -46,7 +46,7 @@ const semanaActual = () => {
 const fmtFecha = (d: string | null) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?: 'Balvanera' | 'Oitydisa' }) {
+export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?: 'Balvanera' | 'Cuadrilla' }) {
   const { canWrite, canDelete } = useAuth()
   const [rows, setRows]           = useState<any[]>([])
   const [total, setTotal]         = useState(0)
@@ -253,7 +253,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
 
 // ── OTModal ────────────────────────────────────────────────────
 function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
-  areas: any[]; ot?: any; empresa?: 'Balvanera' | 'Oitydisa'; onClose: () => void; onSaved: () => void
+  areas: any[]; ot?: any; empresa?: 'Balvanera' | 'Cuadrilla'; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
@@ -318,7 +318,7 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
     const isNew = !ot
     let otId = ot?.id
     if (isNew) {
-      const prefijo = empresa === 'Oitydisa' ? 'OTO' : 'OTB'
+      const prefijo = empresa === 'Cuadrilla' ? 'OTC' : 'OTB'
       const { count } = await dbCtrl.from('ordenes_trabajo')
         .select('id', { count: 'exact', head: true }).eq('empresa', empresa)
       const anio  = new Date().getFullYear()

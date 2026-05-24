@@ -65,7 +65,7 @@ const fmtDate = (d: string | Date) => {
 // ═══════════════════════════════════════════════════════════════
 export default function MantenimientoPage() {
   const { canWrite, canDelete } = useAuth()
-  const [tab,          setTab]        = useState<'programa' | 'ordenes' | 'ordenes_oitydisa' | 'servicios'>('programa')
+  const [tab,          setTab]        = useState<'programa' | 'ordenes' | 'ordenes_cuadrilla' | 'servicios'>('programa')
   const [programas,    setProgramas]  = useState<any[]>([])
   const [areas,       setAreas]  = useState<any[]>([])
   const [areaMap,     setAreaMap]     = useState<Record<number, string>>({})
@@ -188,14 +188,14 @@ export default function MantenimientoPage() {
             marginBottom: -1 }}>
           <ClipboardList size={12} /> OT Balvanera
         </button>
-        <button onClick={() => setTab('ordenes_oitydisa')}
+        <button onClick={() => setTab('ordenes_cuadrilla')}
           style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
             background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
-            fontWeight: tab === 'ordenes_oitydisa' ? 600 : 400,
-            color: tab === 'ordenes_oitydisa' ? '#2563eb' : 'var(--text-muted)',
-            borderBottom: tab === 'ordenes_oitydisa' ? '2px solid #2563eb' : '2px solid transparent',
+            fontWeight: tab === 'ordenes_cuadrilla' ? 600 : 400,
+            color: tab === 'ordenes_cuadrilla' ? '#2563eb' : 'var(--text-muted)',
+            borderBottom: tab === 'ordenes_cuadrilla' ? '2px solid #2563eb' : '2px solid transparent',
             marginBottom: -1 }}>
-          <Wrench size={12} /> OT Oitydisa
+          <Wrench size={12} /> OT Cuadrilla
         </button>
         <button onClick={() => setTab('servicios')}
           style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
@@ -211,8 +211,8 @@ export default function MantenimientoPage() {
       {/* Tab: Órdenes de Trabajo Balvanera */}
       {tab === 'ordenes' && <OrdenesTrabajoTab empresa="Balvanera" />}
 
-      {/* Tab: Órdenes de Trabajo Oitydisa */}
-      {tab === 'ordenes_oitydisa' && <OrdenesTrabajoTab empresa="Oitydisa" />}
+      {/* Tab: Órdenes de Trabajo Cuadrilla */}
+      {tab === 'ordenes_cuadrilla' && <OrdenesTrabajoTab empresa="Cuadrilla" />}
 
       {/* Tab: Servicios (CFE / Agua) */}
       {tab === 'servicios' && <ServiciosTab />}
