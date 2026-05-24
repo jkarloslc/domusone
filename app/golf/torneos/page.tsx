@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase, dbCtrl, dbComp, dbGolf } from '@/lib/supabase'
+import { supabase, dbCtrl, dbComp, dbGolf, dbCfg } from '@/lib/supabase'
 import ModalShell from '@/components/ui/ModalShell'
 import {
   Plus, Flag, MapPin, Calendar, Users, DollarSign,
@@ -758,11 +758,24 @@ export default function EventosPage() {
     loadEventoDetalle(editEvt.id)
   }
 
-  const printPersonal = () => {
+  const printPersonal = async () => {
     if (!editEvt) return
     const totalComp = personal.reduce((s, p) => s + (p.compensacion ?? 0), 0)
     const lugar     = editEvt.cat_lugares?.nombre ?? ''
     const fmtD = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
     const win = window.open('', '_blank', 'width=800,height=1050')
     if (!win) return
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -770,32 +783,38 @@ export default function EventosPage() {
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Arial, sans-serif; padding: 36px; color: #1e1e1e; background: #fff; font-size: 13px; }
-.header { background: linear-gradient(135deg, #15803d, #22c55e); color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 22px; }
-.header h1 { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
-.header .sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
-.header .folio { font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 8px; font-family: monospace; letter-spacing: .05em; }
+.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
+.org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
+.org-sub { font-size:11px; color:#64748b; }
+.doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
 .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; padding: 14px 16px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0; }
 .meta .f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #16a34a; display: block; margin-bottom: 2px; }
 .meta .f span { font-size: 12px; }
 .notes-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; }
 .notes-box .lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #16a34a; margin-bottom: 6px; }
 .notes-box p { font-size: 12px; color: #374151; white-space: pre-wrap; }
-.sec-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #16a34a; border-bottom: 2px solid #bbf7d0; padding-bottom: 4px; margin-bottom: 10px; }
+.sec-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-bottom: 10px; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th { background: #f0fdf4; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #166534; border-bottom: 2px solid #bbf7d0; }
+th { background: #eff6ff; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; }
 td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; }
 tr:last-child td { border-bottom: none; }
-.tr-total { background: #f0fdf4; font-weight: 700; }
-.tr-total td { border-top: 2px solid #bbf7d0; font-weight: 700; }
+.tr-total { background: #eff6ff; font-weight: 700; }
+.tr-total td { border-top: 2px solid #bfdbfe; font-weight: 700; }
 .num { text-align: right; }
 .firma { margin-top: 44px; display: flex; gap: 40px; }
 .firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 10px; color: #888; text-align: center; }
 @media print { body { padding: 20px; } }
 </style></head><body>
-<div class="header">
-  <h1>Personal Operativo — ${editEvt.nombre}</h1>
-  <div class="sub">Club Balvanera · Golf — Torneos</div>
-  <div class="folio">${editEvt.folio} &nbsp;·&nbsp; ${editEvt.status}</div>
+<div class="org-header">
+  ${logoHtml}
+  <div>
+    <div class="org-nombre">${orgNombre}</div>
+    ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div class="doc-title">Personal Operativo</div>
+    <div style="font-size:11px;color:#64748b">${editEvt.nombre} · ${editEvt.folio}</div>
+  </div>
 </div>
 <div class="meta">
   <div class="f"><label>Evento</label><span>${editEvt.nombre}</span></div>
@@ -939,9 +958,22 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
   }
 
   // ── Imprimir recibo de ingreso ─────────────────────────────
-  const printRecibo = (ing: Ingreso) => {
+  const printRecibo = async (ing: Ingreso) => {
     const evtNombre = editEvt?.nombre ?? ''
     const lugar     = editEvt?.cat_lugares?.nombre ?? ''
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
     const win = window.open('', '_blank', 'width=700,height=900')
     if (!win) return
     win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -949,24 +981,30 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1e1e1e; background: #fff; }
-  .header { background: linear-gradient(135deg, #166534, #a855f7); color: #fff; padding: 24px 28px; border-radius: 12px; margin-bottom: 24px; }
-  .header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-  .header p { font-size: 12px; opacity: 0.75; }
-  .folio { font-size: 28px; font-weight: 800; letter-spacing: 0.05em; color: #fff; margin-top: 8px; }
+  .org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
+  .org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
+  .org-sub { font-size:11px; color:#64748b; }
+  .doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
   .field label { display: block; font-size: 10px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
   .field span { font-size: 14px; color: #1e1e1e; }
-  .monto-box { background: #f0fdf4; border: 2px solid #d8b4fe; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-  .monto-box .label { font-size: 12px; color: #16a34a; font-weight: 600; }
-  .monto-box .value { font-size: 28px; font-weight: 800; color: #166534; }
+  .monto-box { background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .monto-box .label { font-size: 12px; color: #0D4F80; font-weight: 600; }
+  .monto-box .value { font-size: 28px; font-weight: 800; color: #0D4F80; }
   .firma { margin-top: 40px; display: flex; gap: 40px; }
   .firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 11px; color: #666; text-align: center; }
   @media print { body { padding: 20px; } }
 </style></head><body>
-<div class="header">
-  <h1>Recibo de Ingreso — Golf</h1>
-  <p>Club Balvanera · Golf</p>
-  <div class="folio">${ing.folio}</div>
+<div class="org-header">
+  ${logoHtml}
+  <div>
+    <div class="org-nombre">${orgNombre}</div>
+    ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div class="doc-title">Recibo de Ingreso</div>
+    <div style="font-size:11px;color:#64748b">${ing.folio}</div>
+  </div>
 </div>
 <div class="grid">
   <div class="field"><label>Evento</label><span>${evtNombre}</span></div>
@@ -1014,7 +1052,7 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
   })
 
   // ── Imprimir Ficha Maestra ─────────────────────────────────
-  const printFichaMaestra = () => {
+  const printFichaMaestra = async () => {
     if (!viewEvt) return
     const totalIng    = viewIng.reduce((s, i) => s + (i.monto ?? 0), 0)
     const totalGastos = viewOps.reduce((s, o) => s + (o.monto ?? 0), 0)
@@ -1023,6 +1061,19 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
     const fmtD = (s?: string | null) => s ? new Date(s + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : '—'
     const v    = (x: string | number | null | undefined) => x ?? '—'
     const yn   = (x: boolean | null | undefined) => x ? '✓ Sí' : '✗ No'
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
 
     const montItems: [string, boolean | undefined][] = [
       ['Carpas', viewEvt.montaje_carpas], ['Escenario', viewEvt.montaje_escenario],
@@ -1044,12 +1095,12 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #1e1e1e; background: #fff; padding: 32px; }
-.header { background: linear-gradient(135deg, #166534, #a855f7); color: #fff; padding: 22px 28px; border-radius: 12px; margin-bottom: 22px; }
-.header h1 { font-size: 20px; font-weight: 800; }
-.header .sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
-.header .folio { font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 6px; font-family: monospace; }
+.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
+.org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
+.org-sub { font-size:11px; color:#64748b; }
+.doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
 .sec { margin-bottom: 18px; page-break-inside: avoid; }
-.sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #166534; border-bottom: 2px solid #bbf7d0; padding-bottom: 4px; margin-bottom: 10px; }
+.sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-bottom: 10px; }
 .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #16a34a; display: block; margin-bottom: 2px; }
@@ -1073,10 +1124,16 @@ td { padding:5px 10px; border-top:1px solid #f1f5f9; }
 .sig td { height:52px; vertical-align:top; padding:5px 10px; color:#bbb; font-size:10px; }
 @media print { body { padding: 16px; } .sec { page-break-inside: avoid; } }
 </style></head><body>
-<div class="header">
-  <h1>Ficha Maestra de Evento</h1>
-  <div class="sub">Operación Integral · Planeación · Ejecución · Cierre</div>
-  <div class="folio">${viewEvt.folio} · ${viewEvt.status}${tipo ? ' · ' + tipo.nombre : ''}</div>
+<div class="org-header">
+  ${logoHtml}
+  <div>
+    <div class="org-nombre">${orgNombre}</div>
+    ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div class="doc-title">Ficha Maestra de Evento</div>
+    <div style="font-size:11px;color:#64748b">${viewEvt.folio} · ${viewEvt.status}${tipo ? ' · ' + tipo.nombre : ''}</div>
+  </div>
 </div>
 
 <div class="sec">
