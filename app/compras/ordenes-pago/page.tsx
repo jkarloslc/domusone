@@ -1584,6 +1584,7 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onClose, onDone 
   const [servicio, setServicio] = useState<any>(null)
   const [form, setForm] = useState({ fechaInicio: iniDef, fechaFin: finDef, consumo: '', monto: montoSugerido.toString() })
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
     dbCtrl.from('servicios_catalogo').select('*').eq('id', servicioId).single()
@@ -1596,14 +1597,22 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onClose, onDone 
   const handleSave = async () => {
     if (!form.monto || Number(form.monto) <= 0) return
     setSaving(true)
-    await dbCtrl.from('servicios_registros').insert({
+    setSaveError('')
+    // id_op_fk es trazabilidad opcional — omitirlo si la columna aún no existe
+    const payload: any = {
       id_servicio_fk:  servicioId,
-      id_op_fk:        opId,
       fecha_inicio:    form.fechaInicio,
       fecha_fin:       form.fechaFin || null,
       consumo_periodo: form.consumo ? Number(form.consumo) : null,
       monto_periodo:   Number(form.monto),
-    })
+    }
+    // Intentar con id_op_fk; si falla por columna faltante, reintentar sin él
+    let { error: err } = await dbCtrl.from('servicios_registros').insert({ ...payload, id_op_fk: opId })
+    if (err && err.message?.includes('id_op_fk')) {
+      const res = await dbCtrl.from('servicios_registros').insert(payload)
+      err = res.error
+    }
+    if (err) { setSaveError(err.message); setSaving(false); return }
     setSaving(false)
     onDone()
   }
@@ -1628,6 +1637,10 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onClose, onDone 
       </>}
     >
       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {saveError && (
+          <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
+            borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{saveError}</div>
+        )}
         <div style={{ padding: '10px 12px', background: '#eff6ff', border: '1px solid #bfdbfe',
           borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
           La OP fue generada. Registra el consumo para mantener el historial del servicio actualizado, o usa <strong>Omitir</strong> si lo harás después.

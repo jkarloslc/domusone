@@ -93,7 +93,7 @@ export default function ServiciosTab() {
       .from('servicios_registros')
       .select('*')
       .in('id_servicio_fk', ids)
-      .order('fecha_periodo', { ascending: false })
+      .order('fecha_inicio', { ascending: false })
 
     const regMap: Record<number, any[]> = {}
     ;(regs ?? []).forEach((r: any) => {
