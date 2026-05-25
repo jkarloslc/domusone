@@ -26,6 +26,7 @@ import ReporteProgramasMantenimiento from './ReporteProgramasMantenimiento'
 import ReporteEstadoCuenta from './ReporteEstadoCuenta'
 import ReporteComprasPorProveedor from './ReporteComprasPorProveedor'
 import ReporteIngresos from './ReporteIngresos'
+import ReporteIngresosPorFormaPago from './ReporteIngresosPorFormaPago'
 import ReporteHipicoEstadoCuenta from './ReporteHipicoEstadoCuenta'
 import ReporteHipicoServicios from './ReporteHipicoServicios'
 import ReporteGolfEstadoCuenta from './ReporteGolfEstadoCuenta'
@@ -84,8 +85,9 @@ const GRUPOS = [
     label: 'Ingresos',
     color: '#059669',
     reportes: [
-      { id: 'ingresos-tipo',   label: 'Ingresos por Tipo',           icon: TrendingDown, desc: 'Recibos agrupados por tipo de ingreso (Golf, Cuotas, Rentas, Caballerizas)' },
-      { id: 'ingresos-centro', label: 'Ingresos por Centro',         icon: Building2,    desc: 'Recibos agrupados por centro de ingreso con desglose de forma de pago' },
+      { id: 'ingresos-tipo',       label: 'Ingresos por Tipo',              icon: TrendingDown, desc: 'Recibos agrupados por tipo de ingreso (Golf, Cuotas, Rentas, Caballerizas)' },
+      { id: 'ingresos-centro',     label: 'Ingresos por Centro',            icon: Building2,    desc: 'Recibos agrupados por centro de ingreso con desglose de forma de pago' },
+      { id: 'ingresos-formas-pago', label: 'Ingresos por Forma de Pago',   icon: Wallet,       desc: 'Matriz de ingresos por centro de ingreso con columnas por forma de pago — filtrable por centro y forma' },
     ],
   },
   {
@@ -234,8 +236,9 @@ function ReportesContent() {
 
       {/* Reportes compras */}
       {/* Reportes ingresos */}
-      {active === 'ingresos-tipo'   && <ReporteIngresos />}
-      {active === 'ingresos-centro' && <ReporteIngresos />}
+      {active === 'ingresos-tipo'        && <ReporteIngresos />}
+      {active === 'ingresos-centro'      && <ReporteIngresos />}
+      {active === 'ingresos-formas-pago' && <ReporteIngresosPorFormaPago />}
 
       {/* Reportes compras */}
       {active === 'consumo-cc'       && <ReporteConsumoCentroCosto />}
