@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Filter, X, Save, Loader,
   Zap, Droplets, Edit2, Trash2, ChevronDown, ChevronRight,
-  History, Network
+  History, Network, BarChart2, List
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -70,6 +70,7 @@ export default function ServiciosTab() {
   const [filterUbic,    setFilterUbic]    = useState('')
   const [filterCC,      setFilterCC]      = useState('')
   const [expandidos,    setExpandidos]    = useState<Record<number, boolean>>({})
+  const [vistaReporte,  setVistaReporte]  = useState(false)
   const [modalCat,      setModalCat]      = useState(false)
   const [editingCat,    setEditingCat]    = useState<any | null>(null)
 
@@ -261,6 +262,13 @@ export default function ServiciosTab() {
           onClick={fetchCatalogo}>
           <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
         </button>
+        <button
+          className={vistaReporte ? 'btn-primary' : 'btn-ghost'}
+          style={{ fontSize: 12, padding: '4px 10px', height: 28, display: 'flex', alignItems: 'center', gap: 4 }}
+          onClick={() => setVistaReporte(v => !v)}>
+          {vistaReporte ? <List size={11} /> : <BarChart2 size={11} />}
+          {vistaReporte ? 'Lista' : 'Reporte'}
+        </button>
         {canWrite('mantenimiento') && (
           <button className="btn-primary" style={{ fontSize: 12, padding: '4px 10px', height: 28 }}
             onClick={() => { setEditingCat(null); setModalCat(true) }}>
@@ -269,8 +277,17 @@ export default function ServiciosTab() {
         )}
       </div>
 
+      {vistaReporte && (
+        <ReporteServicios
+          catalogo={catalogo}
+          registros={registros}
+          ccMap={ccMap}
+          centrosCosto={centrosCosto}
+        />
+      )}
+
       {/* Lista catálogo con expansión */}
-      {loading ? (
+      {!vistaReporte && (loading ? (
         <div style={{ textAlign: 'center', padding: 48 }}>
           <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
         </div>
@@ -513,7 +530,7 @@ export default function ServiciosTab() {
             )
           })}
         </div>
-      )}
+      ))}
 
       {/* Modal catálogo */}
       {modalCat && (
@@ -522,6 +539,354 @@ export default function ServiciosTab() {
           onClose={() => setModalCat(false)}
           onSaved={() => { setModalCat(false); fetchCatalogo() }}
         />
+      )}
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// Reporte de consumo por servicio
+// ════════════════════════════════════════════════════════════
+function ReporteServicios({
+  catalogo, registros, ccMap, centrosCosto,
+}: {
+  catalogo: any[]
+  registros: Record<number, any[]>
+  ccMap: Record<number, string>
+  centrosCosto: any[]
+}) {
+  const currentYear = new Date().getFullYear()
+  const [filterAnio,  setFilterAnio]  = useState(String(currentYear))
+  const [filterTipoR, setFilterTipoR] = useState('')
+  const [filterCCR,   setFilterCCR]   = useState('')
+
+  const servicioInfo: Record<number, { tipo: string; cc: number | null }> = {}
+  catalogo.forEach(c => { servicioInfo[c.id] = { tipo: c.tipo_servicio, cc: c.id_centro_costo_fk } })
+
+  // Flatten all records with their service metadata
+  const todos: { sid: number; tipo: string; cc: number | null; fecha: string; monto: number; consumo: number | null }[] = []
+  Object.entries(registros).forEach(([sidStr, regs]) => {
+    const sid = Number(sidStr)
+    const info = servicioInfo[sid]
+    if (!info) return
+    regs.forEach(r => {
+      todos.push({ sid, tipo: info.tipo, cc: info.cc, fecha: r.fecha_inicio ?? '', monto: r.monto_periodo ?? 0, consumo: r.consumo_periodo ?? null })
+    })
+  })
+
+  // Available years from actual data
+  const anosDisp = Array.from(new Set(todos.map(r => r.fecha.slice(0, 4)).filter(Boolean))).sort((a, b) => Number(b) - Number(a))
+  if (!anosDisp.includes(String(currentYear))) anosDisp.unshift(String(currentYear))
+
+  const filtered = todos.filter(r => {
+    if (filterAnio && !r.fecha.startsWith(filterAnio)) return false
+    if (filterTipoR && r.tipo !== filterTipoR) return false
+    if (filterCCR && String(r.cc) !== filterCCR) return false
+    return true
+  })
+
+  // Group by YYYY-MM
+  type MesData = { CFE: number; Agua: number; consumoCFE: number; consumoAgua: number }
+  const byMes: Record<string, MesData> = {}
+  filtered.forEach(r => {
+    const mes = r.fecha.slice(0, 7) || 'sin-mes'
+    if (!byMes[mes]) byMes[mes] = { CFE: 0, Agua: 0, consumoCFE: 0, consumoAgua: 0 }
+    if (r.tipo === 'CFE') { byMes[mes].CFE += r.monto; byMes[mes].consumoCFE += r.consumo ?? 0 }
+    else                  { byMes[mes].Agua += r.monto; byMes[mes].consumoAgua += r.consumo ?? 0 }
+  })
+  const meses = Object.keys(byMes).sort()
+
+  const totalCFE       = filtered.filter(r => r.tipo === 'CFE').reduce((a, r) => a + r.monto, 0)
+  const totalAgua      = filtered.filter(r => r.tipo === 'Agua').reduce((a, r) => a + r.monto, 0)
+  const totalConsuCFE  = filtered.filter(r => r.tipo === 'CFE' && r.consumo != null).reduce((a, r) => a + (r.consumo ?? 0), 0)
+  const totalConsuAgua = filtered.filter(r => r.tipo === 'Agua' && r.consumo != null).reduce((a, r) => a + (r.consumo ?? 0), 0)
+
+  const showCFE  = !filterTipoR || filterTipoR === 'CFE'
+  const showAgua = !filterTipoR || filterTipoR === 'Agua'
+  const nBars    = (showCFE ? 1 : 0) + (showAgua ? 1 : 0)
+
+  // SVG chart geometry
+  const SVG_W = 760, SVG_H = 230
+  const PAD = { l: 70, r: 16, t: 16, b: 46 }
+  const plotW = SVG_W - PAD.l - PAD.r
+  const plotH = SVG_H - PAD.t - PAD.b
+
+  const maxVal = meses.length === 0 ? 1 :
+    Math.max(...meses.flatMap(m => [showCFE ? byMes[m].CFE : 0, showAgua ? byMes[m].Agua : 0]), 1)
+
+  // Nice Y ceiling
+  const yMax = (() => {
+    const mag = Math.pow(10, Math.floor(Math.log10(maxVal)))
+    const c = [1, 2, 2.5, 5, 10].map(f => f * mag)
+    return (c.find(v => v >= maxVal * 1.1) ?? maxVal * 1.15)
+  })()
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(t => yMax * t)
+  const groupW    = meses.length > 0 ? plotW / meses.length : plotW
+  const barW      = Math.min(Math.max((groupW - 8) / nBars - 3, 5), 40)
+  const gap       = 3
+  const innerW    = nBars * barW + (nBars - 1) * gap
+  const groupOff  = (groupW - innerW) / 2
+  const toY       = (v: number) => PAD.t + plotH - (v / yMax) * plotH
+
+  const MESES_ES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  const fmtMes   = (ym: string) => {
+    const [y, m] = ym.split('-')
+    return `${MESES_ES[Number(m) - 1] ?? m} ${y?.slice(2)}`
+  }
+
+  return (
+    <div>
+      {/* Filtros reporte */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12,
+        padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0',
+        borderRadius: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Filter size={11} /> Reporte
+        </span>
+        <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
+        <select className="select"
+          style={{ width: 88, fontSize: 12, padding: '3px 8px', height: 28 }}
+          value={filterAnio} onChange={e => setFilterAnio(e.target.value)}>
+          <option value="">Todos</option>
+          {anosDisp.map(a => <option key={a} value={a}>{a}</option>)}
+        </select>
+        <select className="select"
+          style={{ width: 112, fontSize: 12, padding: '3px 8px', height: 28 }}
+          value={filterTipoR} onChange={e => setFilterTipoR(e.target.value)}>
+          <option value="">CFE + Agua</option>
+          {TIPOS_SERVICIO.map(t => <option key={t}>{t}</option>)}
+        </select>
+        <select className="select"
+          style={{ flex: '1 1 150px', maxWidth: 210, fontSize: 12, padding: '3px 8px', height: 28 }}
+          value={filterCCR} onChange={e => setFilterCCR(e.target.value)}>
+          <option value="">Todos los centros</option>
+          {centrosCosto.map((c: any) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
+        {(filterTipoR || filterCCR) && (
+          <button className="btn-ghost"
+            style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626' }}
+            onClick={() => { setFilterTipoR(''); setFilterCCR('') }}>
+            <X size={11} /> Limpiar
+          </button>
+        )}
+      </div>
+
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
+        <div className="card" style={{ padding: '10px 14px' }}>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '.05em', marginBottom: 2 }}>Total periodo</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--blue)',
+            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCFE + totalAgua)}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{filtered.length} registros · {meses.length} meses</div>
+        </div>
+        <div className="card" style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+          <div style={{ fontSize: 10, color: '#92400e', textTransform: 'uppercase',
+            letterSpacing: '.05em', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Zap size={10} style={{ color: '#d97706' }} /> CFE
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#d97706',
+            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCFE)}</div>
+          <div style={{ fontSize: 10, color: '#92400e' }}>
+            {totalConsuCFE > 0 ? `${totalConsuCFE.toLocaleString('es-MX')} kWh` : 'Sin consumo registrado'}
+          </div>
+        </div>
+        <div className="card" style={{ padding: '10px 14px', background: '#e0f2fe', border: '1px solid #bae6fd' }}>
+          <div style={{ fontSize: 10, color: '#075985', textTransform: 'uppercase',
+            letterSpacing: '.05em', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Droplets size={10} style={{ color: '#0369a1' }} /> Agua
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#0369a1',
+            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAgua)}</div>
+          <div style={{ fontSize: 10, color: '#075985' }}>
+            {totalConsuAgua > 0 ? `${totalConsuAgua.toLocaleString('es-MX')} m³` : 'Sin consumo registrado'}
+          </div>
+        </div>
+        <div className="card" style={{ padding: '10px 14px' }}>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase',
+            letterSpacing: '.05em', marginBottom: 2 }}>Promedio mensual</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)',
+            fontVariantNumeric: 'tabular-nums' }}>
+            {fmt(meses.length > 0 ? (totalCFE + totalAgua) / meses.length : 0)}
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>por mes</div>
+        </div>
+      </div>
+
+      {/* Gráfica */}
+      {meses.length === 0 ? (
+        <div className="card" style={{ padding: 40, textAlign: 'center',
+          color: 'var(--text-muted)', fontSize: 13 }}>
+          Sin datos para los filtros seleccionados.
+        </div>
+      ) : (
+        <div className="card" style={{ padding: '14px 12px 10px', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
+              Consumo por periodo — Monto ($)
+            </div>
+            <div style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--text-muted)' }}>
+              {showCFE && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#d97706', display: 'inline-block' }} />
+                  CFE
+                </span>
+              )}
+              {showAgua && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#0369a1', display: 'inline-block' }} />
+                  Agua
+                </span>
+              )}
+            </div>
+          </div>
+          <div style={{ width: '100%', overflowX: 'auto' }}>
+            <svg
+              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+              style={{ width: '100%', minWidth: Math.max(meses.length * 55, 280), display: 'block' }}>
+
+              {/* Y gridlines + labels */}
+              {yTicks.map((v, i) => {
+                const y = toY(v)
+                return (
+                  <g key={i}>
+                    <line x1={PAD.l} y1={y} x2={SVG_W - PAD.r} y2={y}
+                      stroke={i === 0 ? '#94a3b8' : '#e2e8f0'}
+                      strokeWidth={i === 0 ? 1 : 0.5} />
+                    <text x={PAD.l - 6} y={y + 3.5} textAnchor="end" fontSize={9} fill="#94a3b8">
+                      {v >= 1000
+                        ? `$${(v / 1000).toLocaleString('es-MX', { maximumFractionDigits: 1 })}k`
+                        : `$${Math.round(v)}`}
+                    </text>
+                  </g>
+                )
+              })}
+
+              {/* Bars per month */}
+              {meses.map((mes, mi) => {
+                const gx   = PAD.l + mi * groupW + groupOff
+                const data = byMes[mes]
+                const bars: { color: string; val: number }[] = []
+                if (showCFE)  bars.push({ color: '#d97706', val: data.CFE })
+                if (showAgua) bars.push({ color: '#0369a1', val: data.Agua })
+                return (
+                  <g key={mes}>
+                    {bars.map((b, bi) => {
+                      const bx = gx + bi * (barW + gap)
+                      const h  = Math.max((b.val / yMax) * plotH, b.val > 0 ? 2 : 0)
+                      const y  = PAD.t + plotH - h
+                      return (
+                        <g key={bi}>
+                          <rect x={bx} y={y} width={barW} height={h} rx={2}
+                            fill={b.color} opacity={0.82} />
+                          {h > 18 && (
+                            <text x={bx + barW / 2} y={y + h - 4}
+                              textAnchor="middle" fontSize={7.5} fill="#fff" fontWeight={600}>
+                              {b.val >= 1000
+                                ? `${(b.val / 1000).toFixed(0)}k`
+                                : Math.round(b.val).toString()}
+                            </text>
+                          )}
+                        </g>
+                      )
+                    })}
+                    {/* X label */}
+                    <text
+                      x={PAD.l + mi * groupW + groupW / 2}
+                      y={SVG_H - PAD.b + 14}
+                      textAnchor="middle" fontSize={9} fill="#64748b">
+                      {fmtMes(mes)}
+                    </text>
+                  </g>
+                )
+              })}
+
+              {/* Y axis line */}
+              <line x1={PAD.l} y1={PAD.t} x2={PAD.l} y2={PAD.t + plotH}
+                stroke="#94a3b8" strokeWidth={1} />
+            </svg>
+          </div>
+        </div>
+      )}
+
+      {/* Tabla detalle por mes */}
+      {meses.length > 0 && (
+        <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid #e2e8f0',
+            fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Detalle por periodo
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Periodo</th>
+                {showCFE && <>
+                  <th style={{ textAlign: 'right' }}>Monto CFE</th>
+                  <th style={{ textAlign: 'right' }}>Consumo (kWh)</th>
+                </>}
+                {showAgua && <>
+                  <th style={{ textAlign: 'right' }}>Monto Agua</th>
+                  <th style={{ textAlign: 'right' }}>Consumo (m³)</th>
+                </>}
+                <th style={{ textAlign: 'right' }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...meses].reverse().map(mes => {
+                const d     = byMes[mes]
+                const total = (showCFE ? d.CFE : 0) + (showAgua ? d.Agua : 0)
+                return (
+                  <tr key={mes}>
+                    <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtMes(mes)}</td>
+                    {showCFE && <>
+                      <td style={{ textAlign: 'right', color: '#d97706',
+                        fontVariantNumeric: 'tabular-nums' }}>{fmt(d.CFE)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)',
+                        fontVariantNumeric: 'tabular-nums' }}>
+                        {d.consumoCFE > 0 ? d.consumoCFE.toLocaleString('es-MX') : '—'}
+                      </td>
+                    </>}
+                    {showAgua && <>
+                      <td style={{ textAlign: 'right', color: '#0369a1',
+                        fontVariantNumeric: 'tabular-nums' }}>{fmt(d.Agua)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)',
+                        fontVariantNumeric: 'tabular-nums' }}>
+                        {d.consumoAgua > 0 ? d.consumoAgua.toLocaleString('es-MX') : '—'}
+                      </td>
+                    </>}
+                    <td style={{ textAlign: 'right', fontWeight: 700,
+                      fontVariantNumeric: 'tabular-nums' }}>{fmt(total)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ fontWeight: 700, background: '#f8fafc' }}>
+                <td>Total</td>
+                {showCFE && <>
+                  <td style={{ textAlign: 'right', color: '#d97706',
+                    fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCFE)}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {totalConsuCFE > 0 ? `${totalConsuCFE.toLocaleString('es-MX')} kWh` : '—'}
+                  </td>
+                </>}
+                {showAgua && <>
+                  <td style={{ textAlign: 'right', color: '#0369a1',
+                    fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAgua)}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {totalConsuAgua > 0 ? `${totalConsuAgua.toLocaleString('es-MX')} m³` : '—'}
+                  </td>
+                </>}
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                  {fmt(totalCFE + totalAgua)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       )}
     </div>
   )
