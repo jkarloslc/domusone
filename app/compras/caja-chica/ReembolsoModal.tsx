@@ -134,6 +134,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
         status:         statusFinal,
         observaciones:  form.observaciones.trim() || null,
         created_by:     authUser?.nombre ?? null,
+        activo:         true,
       }).select('id').single()
 
       if (remErr) { setError(remErr.message); setSaving(false); return }
@@ -156,6 +157,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
           id_centro_costo_fk: d.id_centro_costo_fk ? Number(d.id_centro_costo_fk) : null,
           id_area_fk:         d.id_area_fk ? Number(d.id_area_fk) : null,
           id_frente_fk:       d.id_frente_fk ? Number(d.id_frente_fk) : null,
+          activo:             true,
         }))
       )
       if (detErr) { setError(detErr.message); setSaving(false); return }
@@ -170,8 +172,8 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
       }).eq('id', reembolso.id)
       if (remErr) { setError(remErr.message); setSaving(false); return }
 
-      // Borrar detalles y re-insertar
-      await dbComp.from('reembolsos_detalle').delete().eq('id_reembolso_fk', reembolso.id)
+      // Soft-delete detalles anteriores y re-insertar
+      await dbComp.from('reembolsos_detalle').update({ activo: false }).eq('id_reembolso_fk', reembolso.id)
       await dbComp.from('reembolsos_detalle').insert(
         detalles.map(d => ({
           id_reembolso_fk:    reembolso.id,
@@ -184,6 +186,7 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
           id_centro_costo_fk: d.id_centro_costo_fk ? Number(d.id_centro_costo_fk) : null,
           id_area_fk:         d.id_area_fk ? Number(d.id_area_fk) : null,
           id_frente_fk:       d.id_frente_fk ? Number(d.id_frente_fk) : null,
+          activo:             true,
         }))
       )
     }

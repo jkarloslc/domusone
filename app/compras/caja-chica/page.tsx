@@ -43,8 +43,8 @@ export default function CajaChicaPage() {
     const uid = authUser?.user?.id ?? ''
     const [remQ, fondosQ] = await Promise.all([
       isAdmin
-        ? dbComp.from('reembolsos').select('*').eq('activo', true).order('created_at', { ascending: false })
-        : dbComp.from('reembolsos').select('*').eq('id_usuario_fk', uid).eq('activo', true).order('created_at', { ascending: false }),
+        ? dbComp.from('reembolsos').select('*, reembolsos_detalle(count)').eq('activo', true).order('created_at', { ascending: false })
+        : dbComp.from('reembolsos').select('*, reembolsos_detalle(count)').eq('id_usuario_fk', uid).eq('activo', true).order('created_at', { ascending: false }),
       dbComp.from('fondos_caja_chica').select('*').eq('activo', true).order('created_at', { ascending: false }),
     ])
     setReembolsos(remQ.data ?? [])
@@ -190,7 +190,9 @@ export default function CajaChicaPage() {
                       <td style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>
                         ${(r.total ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </td>
-                      <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>—</td>
+                      <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                        {(r.reembolsos_detalle?.[0]?.count ?? 0)} gasto{(r.reembolsos_detalle?.[0]?.count ?? 0) !== 1 ? 's' : ''}
+                      </td>
                       <td>
                         <span className={`badge ${STATUS_COLORS[r.status] ?? 'badge-default'}`}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
