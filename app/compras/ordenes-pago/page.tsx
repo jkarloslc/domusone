@@ -1,7 +1,7 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { dbComp, dbCfg, supabase } from '@/lib/supabase'
+import { dbComp, dbCfg, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
@@ -260,6 +260,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [detLines, setDetLines]       = useState<DetLine[]>([])
   const [nextTempId, setNextTempId]   = useState(0)
 
+  const [serviciosCatalogo, setServiciosCatalogo] = useState<any[]>([])
+  const [savedOpForConsumo, setSavedOpForConsumo] = useState<{ opId: number; servicioId: number; monto: number } | null>(null)
+
   const pdfRef = useRef<HTMLInputElement>(null)
   const xmlRef = useRef<HTMLInputElement>(null)
 
@@ -279,6 +282,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     monto_manual:      opEdit?.monto?.toString() ?? '',
     pdf_factura:       opEdit?.pdf_factura       ?? '',
     xml_factura:       opEdit?.xml_factura       ?? '',
+    id_servicio_fk:    opEdit?.id_servicio_fk?.toString() ?? '',
   })
 
   useEffect(() => {
@@ -304,6 +308,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
         .then(({ data }) => setFormasPago(data ?? []))
     })
+    // Catálogo de servicios (CFE/Agua) para cuando proveedor es id=75
+    dbCtrl.from('servicios_catalogo').select('id, no_servicio, ubicacion, tipo_servicio')
+      .eq('activo', true).order('tipo_servicio').order('ubicacion')
+      .then(({ data }) => setServiciosCatalogo(data ?? []))
+
     // Cargar líneas de distribución al editar
     if (isEdit && opEdit?.id) {
       dbComp.from('ordenes_pago_det').select('*').eq('id_op_fk', opEdit.id).order('id')
@@ -483,6 +492,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       monto:             montoTotal,
       pdf_factura:       form.pdf_factura || null,
       xml_factura:       form.xml_factura || null,
+      id_servicio_fk:    form.id_servicio_fk ? Number(form.id_servicio_fk) : null,
     }
 
     // EDITAR
@@ -501,6 +511,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
             monto:        Number(l.monto) || 0,
           }))
         )
+      }
+      if (Number(form.id_proveedor_fk) === 75 && form.id_servicio_fk) {
+        setSavedOpForConsumo({ opId: opEdit.id, servicioId: Number(form.id_servicio_fk), monto: montoTotal })
+        setSaving(false)
+        return
       }
       setSaving(false); onSaved()
       return
@@ -543,7 +558,26 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       )
     }
 
+    if (Number(form.id_proveedor_fk) === 75 && form.id_servicio_fk) {
+      setSavedOpForConsumo({ opId: op.id, servicioId: Number(form.id_servicio_fk), monto: montoTotal })
+      setSaving(false)
+      return
+    }
+
     setSaving(false); onSaved()
+  }
+
+  // Paso consumo — aparece tras guardar OP con proveedor id=75
+  if (savedOpForConsumo) {
+    return (
+      <ConsumoAfterOPModal
+        servicioId={savedOpForConsumo.servicioId}
+        opId={savedOpForConsumo.opId}
+        montoSugerido={savedOpForConsumo.monto}
+        onClose={onClose}
+        onDone={onSaved}
+      />
+    )
   }
 
   // Paso 1: elegir si tiene OC o no — solo en nuevo
@@ -648,6 +682,29 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 </div>
               )}
             </div>
+
+            {/* Servicio asociado — solo cuando proveedor = CFE/Agua (id 75) */}
+            {Number(form.id_proveedor_fk) === 75 && (
+              <div style={{ padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a',
+                borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#92400e', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  ⚡ Servicio de suministro asociado
+                </div>
+                <select className="select" value={form.id_servicio_fk} onChange={setF('id_servicio_fk')}>
+                  <option value="">— Seleccionar servicio —</option>
+                  {serviciosCatalogo.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.tipo_servicio} · {s.no_servicio}{s.ubicacion ? ` · ${s.ubicacion}` : ''}
+                    </option>
+                  ))}
+                </select>
+                {form.id_servicio_fk && (
+                  <div style={{ fontSize: 11, color: '#92400e' }}>
+                    Al guardar la OP se abrirá un modal para registrar el consumo del servicio.
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Sin OC → Centro de Costo (siempre) + Área/Frente solo cuando sin detalle */}
             {!conOC && (
@@ -1505,6 +1562,99 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
             </div>
           )}
         </div>
+    </ModalShell>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// Modal de consumo — se abre tras guardar OP con proveedor id=75
+// ════════════════════════════════════════════════════════════
+function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onClose, onDone }: {
+  servicioId: number
+  opId:       number
+  montoSugerido: number
+  onClose:    () => void
+  onDone:     () => void
+}) {
+  const hoy     = new Date()
+  const iniDef  = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-01`
+  const finDate = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)
+  const finDef  = `${finDate.getFullYear()}-${String(finDate.getMonth() + 1).padStart(2, '0')}-${String(finDate.getDate()).padStart(2, '0')}`
+
+  const [servicio, setServicio] = useState<any>(null)
+  const [form, setForm] = useState({ fechaInicio: iniDef, fechaFin: finDef, consumo: '', monto: montoSugerido.toString() })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    dbCtrl.from('servicios_catalogo').select('*').eq('id', servicioId).single()
+      .then(({ data }) => setServicio(data))
+  }, [servicioId])
+
+  const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const handleSave = async () => {
+    if (!form.monto || Number(form.monto) <= 0) return
+    setSaving(true)
+    await dbCtrl.from('servicios_registros').insert({
+      id_servicio_fk:  servicioId,
+      id_op_fk:        opId,
+      fecha_inicio:    form.fechaInicio,
+      fecha_fin:       form.fechaFin || null,
+      consumo_periodo: form.consumo ? Number(form.consumo) : null,
+      monto_periodo:   Number(form.monto),
+    })
+    setSaving(false)
+    onDone()
+  }
+
+  const unidad    = servicio?.tipo_servicio === 'Agua' ? 'm³' : 'kWh'
+  const servLabel = servicio
+    ? `${servicio.tipo_servicio} · ${servicio.no_servicio}${servicio.ubicacion ? ` · ${servicio.ubicacion}` : ''}`
+    : '…'
+
+  return (
+    <ModalShell modulo="compras"
+      titulo="Registrar Consumo de Servicio"
+      subtitulo={servLabel}
+      onClose={onClose}
+      maxWidth={480}
+      footer={<>
+        <button className="btn-secondary" onClick={onDone}>Omitir</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving || !form.monto || Number(form.monto) <= 0}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+          Guardar Consumo
+        </button>
+      </>}
+    >
+      <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ padding: '10px 12px', background: '#eff6ff', border: '1px solid #bfdbfe',
+          borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+          La OP fue generada. Registra el consumo para mantener el historial del servicio actualizado, o usa <strong>Omitir</strong> si lo harás después.
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div>
+            <label className="label">Inicio del periodo</label>
+            <input className="input" type="date" value={form.fechaInicio} onChange={setF('fechaInicio')} />
+          </div>
+          <div>
+            <label className="label">Fin del periodo</label>
+            <input className="input" type="date" value={form.fechaFin} onChange={setF('fechaFin')} />
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div>
+            <label className="label">Consumo ({unidad})</label>
+            <input className="input" type="number" step="0.01" placeholder="0"
+              value={form.consumo} onChange={setF('consumo')} />
+          </div>
+          <div>
+            <label className="label">Monto *</label>
+            <input className="input" type="number" step="0.01" style={{ textAlign: 'right' }}
+              value={form.monto} onChange={setF('monto')} />
+          </div>
+        </div>
+      </div>
     </ModalShell>
   )
 }

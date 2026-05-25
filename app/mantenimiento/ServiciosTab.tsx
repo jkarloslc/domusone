@@ -5,14 +5,15 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Filter, X, Save, Loader,
   Zap, Droplets, Edit2, Trash2, ChevronDown, ChevronRight,
-  History
+  History, Network
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 // ── Constantes ───────────────────────────────────────────────
-const TIPOS_SERVICIO = ['CFE', 'Agua'] as const
-const MODALIDADES    = ['Mensual', 'Bimestral'] as const
-type TipoServicio    = typeof TIPOS_SERVICIO[number]
+const TIPOS_SERVICIO  = ['CFE', 'Agua'] as const
+const MODALIDADES     = ['Mensual', 'Bimestral'] as const
+type TipoServicio     = typeof TIPOS_SERVICIO[number]
+const TIPOS_CONEXION  = ['Medidor', 'Toma', 'Circuito', 'Interruptor', 'Tablero', 'Válvula', 'Hidrante', 'Otro'] as const
 
 const TIPO_STYLE: Record<TipoServicio, { color: string; bg: string; border: string; Icon: React.FC<any> }> = {
   CFE:  { color: '#d97706', bg: '#fffbeb', border: '#fde68a', Icon: Zap      },
@@ -535,10 +536,24 @@ function CatalogoModal({ row, onClose, onSaved }: {
   onSaved: () => void
 }) {
   const { authUser } = useAuth()
-  const [saving,        setSaving]        = useState(false)
-  const [error,         setError]         = useState('')
-  const [internos,      setInternos]      = useState<{ id: number; nombre: string }[]>([])
-  const [centrosCosto,  setCentrosCosto]  = useState<any[]>([])
+  const [saving,          setSaving]          = useState(false)
+  const [error,           setError]           = useState('')
+  const [internos,        setInternos]        = useState<{ id: number; nombre: string }[]>([])
+  const [centrosCosto,    setCentrosCosto]    = useState<any[]>([])
+
+  // Puntos de conexión
+  const [puntos,          setPuntos]          = useState<any[]>([])
+  const [puntosLoading,   setPuntosLoading]   = useState(false)
+  const [newPuntoForm,    setNewPuntoForm]     = useState<{ nombre: string; tipo: string; referencia: string; ubicacion: string } | null>(null)
+  const [editingPuntoId,  setEditingPuntoId]  = useState<number | null>(null)
+  const [editPuntoForm,   setEditPuntoForm]   = useState({ nombre: '', tipo: '', referencia: '', ubicacion: '' })
+  const [savingPunto,     setSavingPunto]     = useState(false)
+
+  const reloadPuntos = async () => {
+    const { data } = await dbCtrl.from('servicios_puntos_conexion')
+      .select('*').eq('id_servicio_fk', row!.id).eq('activo', true).order('id')
+    setPuntos(data ?? [])
+  }
 
   useEffect(() => {
     Promise.all([
@@ -549,6 +564,50 @@ function CatalogoModal({ row, onClose, onSaved }: {
       setCentrosCosto(ccs ?? [])
     })
   }, [])
+
+  useEffect(() => {
+    if (!row?.id) return
+    setPuntosLoading(true)
+    dbCtrl.from('servicios_puntos_conexion')
+      .select('*').eq('id_servicio_fk', row.id).eq('activo', true).order('id')
+      .then(({ data }) => { setPuntos(data ?? []); setPuntosLoading(false) })
+  }, [row?.id])
+
+  const handleAddPunto = async () => {
+    if (!newPuntoForm?.nombre.trim()) return
+    setSavingPunto(true)
+    await dbCtrl.from('servicios_puntos_conexion').insert({
+      id_servicio_fk: row!.id,
+      nombre:         newPuntoForm.nombre.trim(),
+      tipo:           newPuntoForm.tipo || null,
+      referencia:     newPuntoForm.referencia.trim() || null,
+      ubicacion:      newPuntoForm.ubicacion.trim()  || null,
+    })
+    setNewPuntoForm(null)
+    await reloadPuntos()
+    setSavingPunto(false)
+  }
+
+  const handleEditPunto = async (id: number) => {
+    if (!editPuntoForm.nombre.trim()) return
+    setSavingPunto(true)
+    await dbCtrl.from('servicios_puntos_conexion').update({
+      nombre:     editPuntoForm.nombre.trim(),
+      tipo:       editPuntoForm.tipo || null,
+      referencia: editPuntoForm.referencia.trim() || null,
+      ubicacion:  editPuntoForm.ubicacion.trim()  || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
+    setEditingPuntoId(null)
+    await reloadPuntos()
+    setSavingPunto(false)
+  }
+
+  const handleDeletePunto = async (id: number) => {
+    if (!confirm('¿Eliminar este punto de conexión?')) return
+    await dbCtrl.from('servicios_puntos_conexion').update({ activo: false }).eq('id', id)
+    setPuntos(prev => prev.filter(p => p.id !== id))
+  }
 
   const [form, setForm] = useState({
     no_servicio:         row?.no_servicio                   ?? '',
@@ -594,7 +653,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
   return (
     <ModalShell modulo="mantenimiento"
       titulo={row ? 'Editar Servicio' : 'Nuevo Servicio — Catálogo'}
-      onClose={onClose} maxWidth={420}>
+      onClose={onClose} maxWidth={560}>
 
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {error && (
@@ -664,6 +723,174 @@ function CatalogoModal({ row, onClose, onSaved }: {
           <label className="label" style={{ fontSize: 11 }}>Notas</label>
           <textarea className="input" rows={2} style={{ fontSize: 12, resize: 'vertical' }}
             value={form.notas} onChange={setF('notas')} />
+        </div>
+
+        {/* ── Puntos de Conexión ── */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <label className="label" style={{ fontSize: 11, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Network size={11} style={{ color: 'var(--blue)' }} /> Puntos de Conexión
+              {puntos.length > 0 && (
+                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 10,
+                  background: 'var(--blue-pale)', color: 'var(--blue)', fontWeight: 600 }}>
+                  {puntos.length}
+                </span>
+              )}
+            </label>
+            {row && !newPuntoForm && (
+              <button className="btn-ghost" style={{ fontSize: 11, padding: '2px 8px', height: 24 }}
+                onClick={() => setNewPuntoForm({ nombre: '', tipo: '', referencia: '', ubicacion: '' })}>
+                <Plus size={10} /> Agregar
+              </button>
+            )}
+          </div>
+
+          {!row ? (
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px',
+              background: '#f8fafc', borderRadius: 6, border: '1px dashed #e2e8f0' }}>
+              Guarda el servicio primero para agregar puntos de conexión.
+            </div>
+          ) : puntosLoading ? (
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: 8, textAlign: 'center' }}>
+              <RefreshCw size={11} className="animate-spin" style={{ display: 'inline', marginRight: 4 }} />
+              Cargando…
+            </div>
+          ) : puntos.length === 0 && !newPuntoForm ? (
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px',
+              background: '#f8fafc', borderRadius: 6, border: '1px dashed #e2e8f0' }}>
+              Sin puntos de conexión. Usa "+ Agregar" para añadir.
+            </div>
+          ) : (
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc' }}>
+                    {['Nombre', 'Tipo', 'Referencia', 'Ubicación'].map(h => (
+                      <th key={h} style={{ padding: '5px 8px', textAlign: 'left', fontWeight: 600,
+                        color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase',
+                        letterSpacing: '.04em' }}>{h}</th>
+                    ))}
+                    <th style={{ width: 60 }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {puntos.map((p: any, idx: number) => editingPuntoId === p.id ? (
+                    <tr key={p.id} style={{ background: '#fffbeb', borderTop: idx > 0 ? '1px solid #f1f5f9' : undefined }}>
+                      <td style={{ padding: '4px 6px' }}>
+                        <input className="input" autoFocus
+                          style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
+                          value={editPuntoForm.nombre}
+                          onChange={e => setEditPuntoForm(f => ({ ...f, nombre: e.target.value }))}
+                          placeholder="Nombre *" />
+                      </td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <select className="select" style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
+                          value={editPuntoForm.tipo}
+                          onChange={e => setEditPuntoForm(f => ({ ...f, tipo: e.target.value }))}>
+                          <option value="">—</option>
+                          {TIPOS_CONEXION.map(t => <option key={t}>{t}</option>)}
+                        </select>
+                      </td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <input className="input" style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
+                          value={editPuntoForm.referencia}
+                          onChange={e => setEditPuntoForm(f => ({ ...f, referencia: e.target.value }))}
+                          placeholder="ej. 123456" />
+                      </td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <input className="input" style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
+                          value={editPuntoForm.ubicacion}
+                          onChange={e => setEditPuntoForm(f => ({ ...f, ubicacion: e.target.value }))}
+                          placeholder="ej. Caseta" />
+                      </td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <div style={{ display: 'flex', gap: 3 }}>
+                          <button className="btn-primary" style={{ padding: '3px 6px' }}
+                            onClick={() => handleEditPunto(p.id)}
+                            disabled={savingPunto || !editPuntoForm.nombre.trim()}>
+                            {savingPunto ? <Loader size={10} className="animate-spin" /> : <Save size={10} />}
+                          </button>
+                          <button className="btn-ghost" style={{ padding: '3px 6px' }}
+                            onClick={() => setEditingPuntoId(null)}><X size={10} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={p.id} style={{ borderTop: idx > 0 ? '1px solid #f1f5f9' : undefined }}>
+                      <td style={{ padding: '6px 8px', fontWeight: 600 }}>{p.nombre}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--text-muted)', fontSize: 11 }}>{p.tipo ?? '—'}</td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'monospace', fontSize: 11, color: 'var(--text-secondary)' }}>
+                        {p.referencia ?? '—'}
+                      </td>
+                      <td style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)',
+                        maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.ubicacion ?? '—'}
+                      </td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <div style={{ display: 'flex', gap: 3 }}>
+                          <button className="btn-ghost" style={{ padding: '3px 5px' }}
+                            onClick={() => {
+                              setEditingPuntoId(p.id)
+                              setEditPuntoForm({ nombre: p.nombre, tipo: p.tipo ?? '', referencia: p.referencia ?? '', ubicacion: p.ubicacion ?? '' })
+                            }}>
+                            <Edit2 size={10} />
+                          </button>
+                          <button className="btn-ghost" style={{ padding: '3px 5px', color: '#dc2626' }}
+                            onClick={() => handleDeletePunto(p.id)}>
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* Fila para nuevo punto */}
+                  {newPuntoForm && (
+                    <tr style={{ background: '#f0fdf4', borderTop: puntos.length > 0 ? '1px solid #bbf7d0' : undefined }}>
+                      <td style={{ padding: '4px 6px' }}>
+                        <input className="input" autoFocus
+                          style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
+                          value={newPuntoForm.nombre}
+                          onChange={e => setNewPuntoForm(f => f ? { ...f, nombre: e.target.value } : f)}
+                          placeholder="Nombre *" />
+                      </td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <select className="select" style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
+                          value={newPuntoForm.tipo}
+                          onChange={e => setNewPuntoForm(f => f ? { ...f, tipo: e.target.value } : f)}>
+                          <option value="">—</option>
+                          {TIPOS_CONEXION.map(t => <option key={t}>{t}</option>)}
+                        </select>
+                      </td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <input className="input" style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
+                          value={newPuntoForm.referencia}
+                          onChange={e => setNewPuntoForm(f => f ? { ...f, referencia: e.target.value } : f)}
+                          placeholder="ej. 123456" />
+                      </td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <input className="input" style={{ padding: '3px 6px', fontSize: 11, height: 28 }}
+                          value={newPuntoForm.ubicacion}
+                          onChange={e => setNewPuntoForm(f => f ? { ...f, ubicacion: e.target.value } : f)}
+                          placeholder="ej. Caseta" />
+                      </td>
+                      <td style={{ padding: '4px 6px' }}>
+                        <div style={{ display: 'flex', gap: 3 }}>
+                          <button className="btn-primary" style={{ padding: '3px 6px' }}
+                            onClick={handleAddPunto}
+                            disabled={savingPunto || !newPuntoForm.nombre.trim()}>
+                            {savingPunto ? <Loader size={10} className="animate-spin" /> : <Save size={10} />}
+                          </button>
+                          <button className="btn-ghost" style={{ padding: '3px 6px' }}
+                            onClick={() => setNewPuntoForm(null)}><X size={10} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
