@@ -24,11 +24,10 @@ export default function ReporteIngresosPorFormaPago() {
   const [loading, setLoading]     = useState(true)
   const [expanded, setExpanded]   = useState<Set<string>>(new Set())
 
-  const [filtroCentro,    setFiltroCentro]    = useState('')
-  const [filtroFormaPago, setFiltroFormaPago] = useState('')
-  const [filtroStatus,    setFiltroStatus]    = useState('Confirmado')
-  const [filtroDe,        setFiltroDe]        = useState('')
-  const [filtroA,         setFiltroA]         = useState('')
+  const [filtroCentro, setFiltroCentro] = useState('')
+  const [filtroStatus, setFiltroStatus] = useState('Confirmado')
+  const [filtroDe,     setFiltroDe]     = useState('')
+  const [filtroA,      setFiltroA]      = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -84,25 +83,15 @@ export default function ReporteIngresosPorFormaPago() {
     return parts
   }
 
-  // Todas las formas disponibles en el dataset para poblar el filtro
-  const todasFormas = Array.from(new Set(
+  // Formas a mostrar como columnas
+  const formasColumnas = Array.from(new Set(
     recibos.flatMap(r => getFormasPago(r).map(f => f.nombre))
   )).sort()
 
-  // Aplicar filtro de forma de pago localmente (sin re-fetch)
-  const recibosFiltrados = filtroFormaPago
-    ? recibos.filter(r => getFormasPago(r).some(f => f.nombre === filtroFormaPago))
-    : recibos
-
-  // Formas a mostrar como columnas (del dataset ya filtrado)
-  const formasColumnas = Array.from(new Set(
-    recibosFiltrados.flatMap(r => getFormasPago(r).map(f => f.nombre))
-  )).sort()
-
   // Agrupados por centro de ingreso
-  const centroIds = Array.from(new Set(recibosFiltrados.map(r => r.id_centro_ingreso_fk ?? 0)))
+  const centroIds = Array.from(new Set(recibos.map(r => r.id_centro_ingreso_fk ?? 0)))
   const grupos = centroIds.map(cid => {
-    const items = recibosFiltrados.filter(r => (r.id_centro_ingreso_fk ?? 0) === cid)
+    const items = recibos.filter(r => (r.id_centro_ingreso_fk ?? 0) === cid)
     const porForma: Record<string, number> = {}
     items.forEach(r =>
       getFormasPago(r).forEach(f => {
@@ -120,12 +109,12 @@ export default function ReporteIngresosPorFormaPago() {
 
   // Totales generales por forma
   const totalesForma: Record<string, number> = {}
-  recibosFiltrados.forEach(r =>
+  recibos.forEach(r =>
     getFormasPago(r).forEach(f => {
       totalesForma[f.nombre] = (totalesForma[f.nombre] ?? 0) + f.monto
     })
   )
-  const totalGeneral = recibosFiltrados.reduce((s, r) => s + Number(r.monto_total ?? 0), 0)
+  const totalGeneral = recibos.reduce((s, r) => s + Number(r.monto_total ?? 0), 0)
 
   const toggle = (key: string) =>
     setExpanded(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
@@ -146,10 +135,6 @@ export default function ReporteIngresosPorFormaPago() {
           <option value="">Todos los centros</option>
           {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroFormaPago} onChange={e => setFiltroFormaPago(e.target.value)}>
-          <option value="">Todas las formas de pago</option>
-          {todasFormas.map(f => <option key={f} value={f}>{f}</option>)}
-        </select>
         <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 140 }} />
         <input className="input" type="date" value={filtroA}  onChange={e => setFiltroA(e.target.value)}  style={{ width: 140 }} />
         <button className="btn-ghost" onClick={fetchData}>
@@ -162,7 +147,7 @@ export default function ReporteIngresosPorFormaPago() {
         <div className="card" style={{ padding: '14px 20px', flex: '1 1 180px' }}>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Ingresos</div>
           <div style={{ fontSize: 22, fontWeight: 700, color: '#059669' }}>{fmt(totalGeneral)}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{recibosFiltrados.length} recibo{recibosFiltrados.length !== 1 ? 's' : ''} · {grupos.length} centro{grupos.length !== 1 ? 's' : ''}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{recibos.length} recibo{recibos.length !== 1 ? 's' : ''} · {grupos.length} centro{grupos.length !== 1 ? 's' : ''}</div>
         </div>
         {Object.entries(totalesForma).sort((a, b) => b[1] - a[1]).map(([nombre, total]) => (
           <div key={nombre} className="card" style={{ padding: '14px 20px', flex: '1 1 140px' }}>
@@ -177,7 +162,7 @@ export default function ReporteIngresosPorFormaPago() {
 
       <PrintBar
         title="Ingresos-por-Forma-de-Pago"
-        count={recibosFiltrados.length}
+        count={recibos.length}
         reportTitle="Ingresos por Centro y Forma de Pago"
       />
 
@@ -268,7 +253,7 @@ export default function ReporteIngresosPorFormaPago() {
               {/* Total general */}
               <tr style={{ background: '#0f172a', borderTop: '2px solid #334155' }}>
                 <td style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
-                  Total General · {recibosFiltrados.length} recibo{recibosFiltrados.length !== 1 ? 's' : ''}
+                  Total General · {recibos.length} recibo{recibos.length !== 1 ? 's' : ''}
                 </td>
                 {formasColumnas.map(f => (
                   <td key={f} style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 13, color: '#6ee7b7' }}>
