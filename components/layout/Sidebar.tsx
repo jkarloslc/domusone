@@ -105,8 +105,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
-      RPT('tesoreria'),
-      RPT('ingresos'),
+      { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
@@ -147,8 +146,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
-      RPT('tesoreria'),
-      RPT('ingresos'),
+      { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
@@ -188,8 +186,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
-      RPT('tesoreria'),
-      RPT('ingresos'),
+      { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
@@ -222,8 +219,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
-      RPT('tesoreria'),
-      RPT('ingresos'),
+      { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
@@ -336,8 +332,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
-      RPT('tesoreria'),
-      RPT('ingresos'),
+      { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
   ],
 
@@ -349,8 +344,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
-      RPT('tesoreria'),
-      RPT('ingresos'),
+      { label: 'Reportes', href: '/reportes', icon: BarChart3 },
     ]},
   ],
 
