@@ -106,6 +106,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
+      RPT('ingresos'),
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
@@ -147,6 +148,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
+      RPT('ingresos'),
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
@@ -187,6 +189,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
+      RPT('ingresos'),
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
@@ -220,6 +223,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
+      RPT('ingresos'),
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
@@ -246,7 +250,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
-      RPT('tesoreria'),
+      RPT('ingresos'),
     ]},
     { section: 'Sistema', items: [
       { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
@@ -333,6 +337,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
+      RPT('ingresos'),
     ]},
   ],
 
@@ -345,6 +350,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
       { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
       RPT('tesoreria'),
+      RPT('ingresos'),
     ]},
   ],
 
