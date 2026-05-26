@@ -884,7 +884,13 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
               <label className="label" style={{ fontSize: 11 }}>Equipo *</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_equipo_fk} onChange={setF('id_equipo_fk')}>
                 <option value="">— Seleccionar —</option>
-                {equipos.map(e => <option key={e.id} value={e.id}>{e.nombre} {e.placa ? `(${e.placa})` : ''}</option>)}
+                {equipos
+                  .filter(e => e.status !== 'Baja')
+                  .map(e => {
+                    const serie = e.no_serie ? ` · SN: ${e.no_serie}` : ''
+                    const placa = e.placa ? ` (${e.placa})` : ''
+                    return <option key={e.id} value={e.id}>{e.nombre}{placa}{serie}</option>
+                  })}
               </select>
             </div>
             <div>
