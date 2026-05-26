@@ -203,7 +203,8 @@ export default function CajaChicaPage() {
                         <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setDetail(r)}>
                           <Eye size={13} />
                         </button>
-                        {(r.status === 'Borrador') && (r.id_usuario_fk === authUser?.user?.id || isAdmin) && (
+                        {((r.status === 'Borrador' && (r.id_usuario_fk === authUser?.user?.id || isAdmin)) ||
+                          (r.status === 'Pendiente Auth' && isAdmin)) && (
                           <button className="btn-ghost" style={{ padding: '4px 8px' }}
                             onClick={() => setRemModal({ open: true, rem: r })}>
                             <Edit2 size={13} />
