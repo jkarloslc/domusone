@@ -1,12 +1,13 @@
--- Fix caja chica: reembolsos_detalle tenía id_seccion_fk → cfg.secciones
--- pero el módulo Compras usa cfg.areas como catálogo de áreas/secciones.
--- Renombrar columna y corregir FK para que el modal pueda insertar correctamente.
+-- Fix caja chica: el constraint id_seccion_fk en reembolsos_detalle
+-- apuntaba a cfg.secciones (tabla residencial) pero la columna id_area_fk
+-- debe referenciar cfg.areas (catálogo Compras).
+-- La columna ya se llama id_area_fk; solo se corrige el FK.
 
 ALTER TABLE comp.reembolsos_detalle
   DROP CONSTRAINT IF EXISTS reembolsos_detalle_id_seccion_fk_fkey;
 
 ALTER TABLE comp.reembolsos_detalle
-  RENAME COLUMN id_seccion_fk TO id_area_fk;
+  DROP CONSTRAINT IF EXISTS reembolsos_detalle_id_area_fk_fkey;
 
 ALTER TABLE comp.reembolsos_detalle
   ADD CONSTRAINT reembolsos_detalle_id_area_fk_fkey
