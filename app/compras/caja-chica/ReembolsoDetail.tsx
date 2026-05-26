@@ -2,7 +2,7 @@
 import ModalShell from '@/components/ui/ModalShell'
 import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
-import { CheckCircle, XCircle, ExternalLink, DollarSign, Printer, FileText, Download } from 'lucide-react'
+import { CheckCircle, XCircle, ExternalLink, DollarSign, Printer, FileText, Download, Loader } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { folioGen, fmt, nextFolio } from '../types'
 
@@ -27,10 +27,12 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
   const [ccMap,     setCCMap]     = useState<Record<number, string>>({})
   const [areaMap,   setAreaMap]   = useState<Record<number, string>>({})
   const [frtMap,    setFrtMap]    = useState<Record<number, string>>({})
-  const [notasAuth, setNotasAuth] = useState('')
-  const [loading,   setLoading]   = useState(false)
+  const [notasAuth,    setNotasAuth]    = useState('')
+  const [loading,      setLoading]      = useState(false)
+  const [loadingDet,   setLoadingDet]   = useState(true)
 
   useEffect(() => {
+    setLoadingDet(true)
     Promise.all([
       dbComp.from('reembolsos_detalle').select('*').eq('id_reembolso_fk', r.id).eq('activo', true),
       dbCfg.from('centros_costo').select('id, nombre'),
@@ -42,6 +44,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
       setCCMap(toMap(cc.data ?? []))
       setAreaMap(toMap(ar.data ?? []))
       setFrtMap(toMap(frt.data ?? []))
+      setLoadingDet(false)
     })
   }, [r.id])
 
@@ -331,6 +334,15 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
               Detalle de gastos
             </div>
+            {loadingDet ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '32px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+                <Loader size={15} className="animate-spin" /> Cargando gastos…
+              </div>
+            ) : detalles.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+                Sin renglones de gasto registrados
+              </div>
+            ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {detalles.map((d, i) => (
                 <div key={i} style={{ padding: '12px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-700)' }}>
@@ -380,6 +392,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
                 </div>
               ))}
             </div>
+            )}
           </div>
 
           {/* Total */}
