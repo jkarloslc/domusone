@@ -190,7 +190,24 @@ function ReciboModal({
   const initSecRowsVal = () =>
     secciones.map(s => ({ id_seccion_fk: s.id, nombre_seccion: s.nombre, monto: 0, notas: '' }))
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const CENTRO_CUOTAS_ID = 2
+  const descripcionCuotas = (fecha: string) =>
+    `Cobranza del ${fecha} - Cuotas Mantenimiento y Servicios`
+
+  const set = (k: string, v: any) => setForm(f => {
+    const next = { ...f, [k]: v }
+    if (!recibo) {
+      if (k === 'id_centro_ingreso_fk' && Number(v) === CENTRO_CUOTAS_ID) {
+        next.descripcion = descripcionCuotas(next.fecha)
+      } else if (k === 'id_centro_ingreso_fk' && Number(v) !== CENTRO_CUOTAS_ID &&
+                 Number(f.id_centro_ingreso_fk) === CENTRO_CUOTAS_ID) {
+        next.descripcion = ''
+      } else if (k === 'fecha' && Number(next.id_centro_ingreso_fk) === CENTRO_CUOTAS_ID) {
+        next.descripcion = descripcionCuotas(v)
+      }
+    }
+    return next
+  })
   const setSecMonto        = (idx: number, val: number) =>
     setSecRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
   const setConceptoMonto   = (idx: number, val: number) =>
