@@ -307,10 +307,11 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
       iva:               ivaCot,
       total:             subtotalCot + ivaCot,
     }).select('id').single()
-    if (!err && cot) {
+    if (err) { alert(`Error al guardar cotización: ${err.message}`); setSaving(false); return }
+    if (cot) {
       const precio = (d: any) => d.precio_unitario !== '' && Number(d.precio_unitario) > 0
         ? Number(d.precio_unitario) : null
-      await dbComp.from('rfq_cotizaciones_det').insert(
+      const { error: insErr } = await dbComp.from('rfq_cotizaciones_det').insert(
         detTodos.map(d => {
           const pu = precio(d)
           const sub = pu !== null ? Number(d.cantidad) * pu : 0
@@ -322,7 +323,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
             descripcion:           d.descripcion,
             cantidad:              Number(d.cantidad),
             unidad:                d.unidad,
-            precio_unitario:       pu,           // null si no cotizó
+            precio_unitario:       pu,
             subtotal:              sub,
             tasa_iva:              tiva,
             iva:                   sub * tiva,
@@ -330,8 +331,12 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
           }
         })
       )
+      if (insErr) { alert(`Error al guardar artículos: ${insErr.message}`); setSaving(false); return }
     }
     setSaving(false); setAddingCot(false)
+    // Limpiar precios del form para la siguiente cotización (mantiene descripciones/cantidades)
+    setCotDet(d => d.map(x => ({ ...x, precio_unitario: '', tasa_iva: '0' })))
+    setCotForm({ id_proveedor_fk: '', numero_cotizacion: '', fecha_cotizacion: '', condiciones_pago: '', tiempo_entrega: '', notas: '' })
     await fetchCots()
   }
 
@@ -559,11 +564,27 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
                       {cotizaciones.map(c => <td key={c.id} style={{ fontSize: 12 }}>{c.tiempo_entrega ?? '—'}</td>)}
                     </tr>
                     {/* ── Sección: Artículos ── */}
-                    {(cotizaciones[0]?.rfq_cotizaciones_det ?? []).length > 0 && (
-                      <tr style={{ background: '#f1f5f9' }}>
-                        <td colSpan={cotizaciones.length + 1} style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 10px' }}>
-                          Artículos · precio unitario
-                          {rfq.status === 'Abierta' && <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8, color: '#64748b' }}>— clic en el precio para elegir ganador</span>}
+                    <tr style={{ background: '#f1f5f9' }}>
+                      <td colSpan={cotizaciones.length + 1} style={{ fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '6px 10px' }}>
+                        Artículos · precio unitario
+                        {rfq.status === 'Abierta' && (cotizaciones[0]?.rfq_cotizaciones_det ?? []).length > 0 && (
+                          <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8, color: '#64748b' }}>— clic en el precio para elegir ganador</span>
+                        )}
+                      </td>
+                    </tr>
+                    {/* Aviso cuando alguna cotización no tiene artículos cargados */}
+                    {(cotizaciones[0]?.rfq_cotizaciones_det ?? []).length === 0 && (
+                      <tr>
+                        <td colSpan={cotizaciones.length + 1} style={{ padding: '14px 10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                            <span style={{ fontSize: 16 }}>⚠️</span>
+                            <span>
+                              Las cotizaciones no tienen artículos registrados.
+                              {rfq.status === 'Abierta'
+                                ? <strong> Usa el botón ✏️ Editar en cada proveedor para ingresar los precios.</strong>
+                                : ' Los precios no fueron capturados en esta cotización.'}
+                            </span>
+                          </div>
                         </td>
                       </tr>
                     )}
