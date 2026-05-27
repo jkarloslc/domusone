@@ -239,7 +239,7 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     return winners
   }
 
-  // Fetch cotizaciones + det en dos pasos (evita el hint FK roto de Supabase)
+  // Fetch cotizaciones + det secuencial (det depende de IDs de cots)
   const fetchCots = async () => {
     const { data: cotsData } = await dbComp.from('rfq_cotizaciones')
       .select('*').eq('id_rfq_fk', rfq.id).order('id')
@@ -257,26 +257,34 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
   }
 
   useEffect(() => {
-    fetchCots()
-    dbComp.from('proveedores').select('*').eq('activo', true).order('nombre')
-      .then(({ data }) => setProvs(data as Proveedor[] ?? []))
-    if (rfq.id_requisicion_fk) {
-      dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', rfq.id_requisicion_fk)
-        .then(({ data }) => {
-          setReqDet(data ?? [])
-          setCotDet((data ?? []).map((d: any) => ({
-            id_requisicion_det_fk: d.id,
-            id_articulo_fk:        d.id_articulo_fk ?? null,
-            descripcion:           d.descripcion,
-            cantidad:              d.cantidad?.toString(),
-            unidad:                d.unidad,
-            precio_unitario:       '',
-            tasa_iva:              '0',
-          })))
-        })
-    } else {
-      setCotDet([{ id_requisicion_det_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
-    }
+    // Todas las consultas independientes en paralelo
+    const reqDetPromise = rfq.id_requisicion_fk
+      ? dbComp.from('requisiciones_det')
+          .select('id, id_articulo_fk, descripcion, cantidad, unidad')
+          .eq('id_requisicion_fk', rfq.id_requisicion_fk)
+      : Promise.resolve({ data: null })
+
+    Promise.all([
+      fetchCots(),
+      dbComp.from('proveedores').select('id, nombre').eq('activo', true).order('nombre'),
+      reqDetPromise,
+    ]).then(([, { data: provs }, { data: reqDetData }]) => {
+      setProvs((provs ?? []) as Proveedor[])
+      if (reqDetData && reqDetData.length > 0) {
+        setReqDet(reqDetData)
+        setCotDet(reqDetData.map((d: any) => ({
+          id_requisicion_det_fk: d.id,
+          id_articulo_fk:        d.id_articulo_fk ?? null,
+          descripcion:           d.descripcion,
+          cantidad:              d.cantidad?.toString() ?? '1',
+          unidad:                d.unidad,
+          precio_unitario:       '',
+          tasa_iva:              '0',
+        })))
+      } else {
+        setCotDet([{ id_requisicion_det_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
+      }
+    })
   }, [rfq.id, rfq.id_requisicion_fk])
 
   const subtotalCot = cotDet.reduce((a, d) => {
