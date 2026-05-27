@@ -42,6 +42,7 @@ type Rol =
   | 'mantenimiento' | 'fraccionamiento' | 'tesoreria'
   | 'seguridad' | 'usuario_solicitante' | 'ingresos'
   | 'usuariogolf' | 'usuariohipico' | 'usuariohospitality'
+  | 'usuario_nomina'
 
 type Acceso = { label: string; href: string; icon: any; color: string; bg: string }
 
@@ -166,6 +167,9 @@ const ACCESOS: Record<Rol, Acceso[]> = {
   usuariohospitality: [
     { label: 'Hospitality',      href: '/hospitality',         icon: Star,            color: '#d97706', bg: '#fffbeb' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
+  ],
+  usuario_nomina: [
+    { label: 'Órdenes de Pago',  href: '/compras/ordenes-pago', icon: Landmark,      color: '#0f766e', bg: '#f0fdfa' },
   ],
 }
 

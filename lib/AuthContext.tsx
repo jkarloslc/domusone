@@ -50,8 +50,9 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'compras_supervisor':
     case 'almacen':
     case 'usuario_solicitante':
-    case 'usuario_nomina':
       return '/compras'
+    case 'usuario_nomina':
+      return '/inicio'
     case 'tesoreria':
       return '/tesoreria'
     case 'ingresos':
