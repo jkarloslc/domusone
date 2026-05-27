@@ -18,8 +18,10 @@ const TIPOS_GASTO = [
   'Servicios Profesionales', 'Mantenimiento', 'Reparación',
   'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
   'Electricidad', 'Agua', 'Telefonía / Internet',
-  'Honorarios', 'Asesoría', 'Capacitación', 'Otro',
+  'Honorarios', 'Asesoría', 'Capacitación', 'Nómina', 'Otro',
 ]
+
+type RolTipoOp = { tipo_gasto: string; modo: string; solo_propios: boolean }
 
 export default function OrdenesPagoPage() {
   const { canWrite } = useAuth()
@@ -36,6 +38,8 @@ export default function OrdenesPagoPage() {
   const [filterCC, setFilterCC] = useState('')
   const [filterArea, setFilterArea] = useState('')
   const [filterProv, setFilterProv] = useState('')
+  const [filterTipoGasto, setFilterTipoGasto] = useState('')
+  const [rolRestricciones, setRolRestricciones] = useState<RolTipoOp[] | null>(null)
   const [centrosCosto, setCentros] = useState<{ id: number; nombre: string }[]>([])
   const [areaFiltros, setAreaFiltros] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading]   = useState(true)
@@ -43,7 +47,16 @@ export default function OrdenesPagoPage() {
   const [editOp, setEditOp]     = useState<any | null>(null)
   const [detail, setDetail]     = useState<any | null>(null)
 
+  const tiposPermitidos = rolRestricciones !== null && rolRestricciones.some(r => r.modo === 'ALLOW')
+    ? rolRestricciones.filter(r => r.modo === 'ALLOW').map(r => r.tipo_gasto)
+    : null
+  const tiposExcluidos = rolRestricciones !== null && rolRestricciones.some(r => r.modo === 'DENY')
+    ? rolRestricciones.filter(r => r.modo === 'DENY').map(r => r.tipo_gasto)
+    : null
+  const soloPropios = rolRestricciones?.some(r => r.modo === 'ALLOW' && r.solo_propios) ?? false
+
   const fetchData = useCallback(async () => {
+    if (rolRestricciones === null) return
     setLoading(true)
     let q = dbComp.from('ordenes_pago').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -52,7 +65,20 @@ export default function OrdenesPagoPage() {
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
     if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
+    if (filterTipoGasto) q = q.eq('tipo_gasto', filterTipoGasto)
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,concepto.ilike.%${debouncedSearch}%`)
+
+    // Restricciones por rol
+    if (tiposPermitidos) {
+      q = q.in('tipo_gasto', tiposPermitidos)
+      if (soloPropios && authUser?.user.id) q = q.eq('created_by_id', authUser.user.id)
+    }
+    if (tiposExcluidos && tiposExcluidos.length === 1) {
+      q = q.or(`tipo_gasto.is.null,tipo_gasto.neq.${tiposExcluidos[0]}`)
+    } else if (tiposExcluidos && tiposExcluidos.length > 1) {
+      q = q.not('tipo_gasto', 'in', `(${tiposExcluidos.join(',')})`)
+    }
+
     const { data, count } = await q
     setRows(data ?? [])
     setTotal(count ?? 0)
@@ -68,7 +94,7 @@ export default function OrdenesPagoPage() {
     setProvMap(pm)
     setAlmMap(am)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterArea, filterProv])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterTipoGasto, rolRestricciones, authUser?.user.id])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -77,6 +103,12 @@ export default function OrdenesPagoPage() {
     dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setAreaFiltros((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
   }, [])
+
+  useEffect(() => {
+    if (!authUser) return
+    dbCfg.from('rol_tipos_op').select('tipo_gasto, modo, solo_propios').eq('rol', authUser.rol)
+      .then(({ data }) => setRolRestricciones(data ?? []))
+  }, [authUser?.rol])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
   const pendientes     = rows.filter(r => r.status === 'Pendiente').reduce((a, r) => a + (r.monto ?? 0), 0)
@@ -149,6 +181,15 @@ export default function OrdenesPagoPage() {
             <option key={id} value={id}>{nombre}</option>
           ))}
         </select>
+        {!tiposPermitidos && (
+          <select className="select" style={{ width: 180 }} value={filterTipoGasto}
+            onChange={e => { setFilterTipoGasto(e.target.value); setPage(0) }}>
+            <option value="">Todos los tipos</option>
+            {TIPOS_GASTO
+              .filter(t => !tiposExcluidos || !tiposExcluidos.includes(t))
+              .map(t => <option key={t}>{t}</option>)}
+          </select>
+        )}
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
       </div>
 
@@ -238,6 +279,7 @@ export default function OrdenesPagoPage() {
 function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => void; onSaved: () => void }) {
   const { authUser } = useAuth()
   const isEdit = !!opEdit
+  const [rolRestriccionesModal, setRolRestriccionesModal] = useState<RolTipoOp[] | null>(null)
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
   const [uploading, setUploading] = useState<string | null>(null)
@@ -330,6 +372,19 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
         })
     }
   }, [])
+
+  useEffect(() => {
+    if (!authUser) return
+    dbCfg.from('rol_tipos_op').select('tipo_gasto, modo, solo_propios').eq('rol', authUser.rol)
+      .then(({ data }) => {
+        const rows = (data ?? []) as RolTipoOp[]
+        setRolRestriccionesModal(rows)
+        const permitidos = rows.filter(r => r.modo === 'ALLOW').map(r => r.tipo_gasto)
+        if (!isEdit && permitidos.length === 1) {
+          setForm(f => ({ ...f, tipo_gasto: permitidos[0] }))
+        }
+      })
+  }, [authUser?.rol, isEdit])
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -531,8 +586,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
     // OP con OC: ya viene autorizada por la cadena REQ→COT→OC → entra directo a CXP
     // OP sin OC: gasto directo sin cadena de aprobación → requiere autorización previa
-    payload.status     = conOC ? 'Pendiente' : 'Pendiente Auth'
-    payload.created_by = authUser?.nombre ?? null
+    payload.status         = conOC ? 'Pendiente' : 'Pendiente Auth'
+    payload.created_by     = authUser?.nombre ?? null
+    payload.created_by_id  = authUser?.user.id ?? null
 
     const { data: op, error: err } = await dbComp.from('ordenes_pago').insert(payload).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
@@ -745,10 +801,22 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
                   <label className="label">Tipo de Gasto *</label>
-                  <select className="select" value={form.tipo_gasto} onChange={setF('tipo_gasto')}>
-                    <option value="">— Seleccionar —</option>
-                    {TIPOS_GASTO.map(t => <option key={t}>{t}</option>)}
-                  </select>
+                  {(() => {
+                    const permitidos = rolRestriccionesModal?.filter(r => r.modo === 'ALLOW').map(r => r.tipo_gasto) ?? null
+                    const excluidos  = rolRestriccionesModal?.filter(r => r.modo === 'DENY').map(r => r.tipo_gasto) ?? null
+                    if (permitidos && permitidos.length === 1) {
+                      return <input className="input" value={permitidos[0]} readOnly
+                        style={{ background: '#f8fafc', color: '#64748b', cursor: 'not-allowed' }} />
+                    }
+                    return (
+                      <select className="select" value={form.tipo_gasto} onChange={setF('tipo_gasto')}>
+                        <option value="">— Seleccionar —</option>
+                        {TIPOS_GASTO
+                          .filter(t => !excluidos || !excluidos.includes(t))
+                          .map(t => <option key={t}>{t}</option>)}
+                      </select>
+                    )
+                  })()}
                 </div>
                 {detLines.length === 0 && (
                   <div>

@@ -24,6 +24,7 @@ type Rol =
   | 'usuariogolf'
   | 'usuariohipico'
   | 'usuariohospitality'
+  | 'usuario_nomina'
 
 type AuthUser = {
   user:   User
@@ -49,6 +50,7 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'compras_supervisor':
     case 'almacen':
     case 'usuario_solicitante':
+    case 'usuario_nomina':
       return '/compras'
     case 'tesoreria':
       return '/tesoreria'
@@ -77,9 +79,9 @@ type AuthCtx = {
   /** ¿Puede ELIMINAR? — solo admin */
   canDelete:  () => boolean
   /** ¿Puede ver secciones de Compras?
-   *  Retorna 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | false
+   *  Retorna 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | 'nomina' | false
    *  Acepta clave opcional del módulo para filtrar tarjetas del hub */
-  canCompras: (key?: string) => 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | false
+  canCompras: (key?: string) => 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | 'nomina' | false
   /** ¿Puede AUTORIZAR documentos (Req, OC, Transferencias)? */
   canAuth:    (modulo?: string) => boolean
 }
@@ -161,6 +163,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   usuariogolf:         GOLF_MODULOS,
   usuariohipico:       HIPICO_MODULOS,
   usuariohospitality:  HOSPITALITY_MODULOS,
+  usuario_nomina:      ['compras', 'ordenes-pago'],
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -189,6 +192,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   usuariogolf:         GOLF_MODULOS,
   usuariohipico:       HIPICO_MODULOS,
   usuariohospitality:  HOSPITALITY_MODULOS,
+  usuario_nomina:      ['ordenes-pago'],
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
@@ -206,7 +210,7 @@ const AuthContext = createContext<AuthCtx>({
   can:        () => false,
   canWrite:   () => false,
   canDelete:  () => false,
-  canCompras: (_key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | false => false,
+  canCompras: (_key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | 'nomina' | false => false,
   canAuth:    () => false,
 })
 
@@ -283,7 +287,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Uso en /compras/page.tsx:
    *   {MODULOS.filter(m => canCompras(m.key)).map(...)}
    */
-  const canCompras = (key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | false => {
+  const canCompras = (key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | 'nomina' | false => {
     if (!authUser) return false
     const r = authUser.rol
     // superadmin / admin / fraccionamiento: acceso total
@@ -299,6 +303,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const MODS_SEGURIDAD = ['requisiciones', 'transferencias', 'caja-chica']
       if (!key) return 'seguridad'
       return MODS_SEGURIDAD.includes(key) ? 'seguridad' : false
+    }
+    if (r === 'usuario_nomina') {
+      if (!key) return 'nomina'
+      return key === 'ordenes-pago' ? 'nomina' : false
     }
     if (r === 'usuario_solicitante' || r === 'usuariogolf' || r === 'usuariohipico' || r === 'usuariohospitality') {
       // Solo ve Requisiciones y Transferencias — sin autorización, sin catálogos
