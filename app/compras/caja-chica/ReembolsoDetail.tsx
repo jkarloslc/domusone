@@ -53,8 +53,9 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
     if (aprobado) {
       // 1. Actualizar reembolso
       await dbComp.from('reembolsos').update({
-        status:     'Autorizado',
-        notas_auth: notasAuth.trim() || null,
+        status:        'Autorizado',
+        notas_auth:    notasAuth.trim() || null,
+        autorizado_por: authUser?.nombre ?? authUser?.user?.email ?? null,
       }).eq('id', r.id)
 
       // 2. Resolver proveedor del beneficiario
@@ -219,6 +220,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
     .notas-auth { margin: 10px 0; padding: 10px 14px; background: #fefce8; border-left: 3px solid #fbbf24; font-size: 12px; color: #78350f; border-radius: 0 4px 4px 0; }
     .firmas { display: flex; gap: 50px; margin-top: 56px; justify-content: center; }
     .firma { text-align: center; width: 160px; }
+    .firma-nombre { font-size: 11px; font-weight: 600; color: #1e293b; margin-bottom: 28px; min-height: 16px; }
     .firma-linea { border-top: 1px solid #1e293b; padding-top: 8px; font-size: 10px; color: #64748b; }
     @page { margin: 1.2cm; }
     @media print { body { padding: 0; } }
@@ -285,9 +287,18 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
   <!-- Firmas -->
   <div class="firmas">
-    <div class="firma"><div class="firma-linea">Elaboró</div></div>
-    <div class="firma"><div class="firma-linea">Autorizó</div></div>
-    <div class="firma"><div class="firma-linea">Recibió / Conforme</div></div>
+    <div class="firma">
+      <div class="firma-nombre">${r.usuario_nombre ?? ''}</div>
+      <div class="firma-linea">Elaboró</div>
+    </div>
+    <div class="firma">
+      <div class="firma-nombre">${r.autorizado_por ?? ''}</div>
+      <div class="firma-linea">Autorizó</div>
+    </div>
+    <div class="firma">
+      <div class="firma-nombre">&nbsp;</div>
+      <div class="firma-linea">Recibió / Conforme</div>
+    </div>
   </div>
 
 </body></html>`
