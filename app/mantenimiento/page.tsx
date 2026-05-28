@@ -4,8 +4,8 @@ import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Eye, X, Save, Loader, Printer,
-  Calendar, CheckCircle, ChevronDown, ChevronRight,
-  Filter, ClipboardList, Wrench, Zap
+  Calendar, CheckCircle, Edit2, Trash2,
+  ClipboardList, Wrench, Zap
 } from 'lucide-react'
 import OrdenesTrabajoTab from './OrdenesTrabajoTab'
 import ServiciosTab from './ServiciosTab'
@@ -82,7 +82,6 @@ export default function MantenimientoPage() {
   const [modal,        setModal]      = useState(false)
   const [editing,      setEditing]    = useState<any | null>(null)
   const [detail,       setDetail]     = useState<any | null>(null)
-  const [expandidos,   setExpandidos] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
     Promise.all([
@@ -133,8 +132,6 @@ export default function MantenimientoPage() {
   const completadas = todasTareas.filter((t: any) => t.status === 'Completada').length
   const cumplimiento = todasTareas.length ? Math.round((completadas / todasTareas.length) * 100) : 0
 
-  const toggleExpand = (id: number) => setExpandidos(e => ({ ...e, [id]: !e[id] }))
-
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este programa?')) return
     await dbCtrl.from('programas_mantenimiento').update({ activo: false }).eq('id', id)
@@ -142,138 +139,87 @@ export default function MantenimientoPage() {
   }
 
   return (
-    <div style={{ padding: '20px 24px', animation: 'fadeIn 0.3s ease-out' }}>
+    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--blue-pale)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Calendar size={16} style={{ color: 'var(--blue)' }} />
-          </div>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, letterSpacing: '-0.01em' }}>
-              Mantenimiento
-            </h1>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              Programa anual · Órdenes de trabajo · {filterAnio}
-            </p>
-          </div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Mantenimiento</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+            Programa anual · Órdenes de trabajo · {filterAnio}
+          </p>
         </div>
         {tab === 'programa' && canWrite('mantenimiento') && (
-          <button className="btn-primary" style={{ fontSize: 12, padding: '6px 12px' }}
-            onClick={() => { setEditing(null); setModal(true) }}>
-            <Plus size={12} /> Nuevo Programa
+          <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
+            <Plus size={14} /> Nuevo Programa
           </button>
         )}
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 14 }}>
-        <button onClick={() => setTab('programa')}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
-            background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
-            fontWeight: tab === 'programa' ? 600 : 400,
-            color: tab === 'programa' ? 'var(--blue)' : 'var(--text-muted)',
-            borderBottom: tab === 'programa' ? '2px solid var(--blue)' : '2px solid transparent',
-            marginBottom: -1 }}>
-          <Calendar size={12} /> Programa Anual
-        </button>
-        <button onClick={() => setTab('ordenes')}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
-            background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
-            fontWeight: tab === 'ordenes' ? 600 : 400,
-            color: tab === 'ordenes' ? 'var(--blue)' : 'var(--text-muted)',
-            borderBottom: tab === 'ordenes' ? '2px solid var(--blue)' : '2px solid transparent',
-            marginBottom: -1 }}>
-          <ClipboardList size={12} /> OT Balvanera
-        </button>
-        <button onClick={() => setTab('ordenes_cuadrilla')}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
-            background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
-            fontWeight: tab === 'ordenes_cuadrilla' ? 600 : 400,
-            color: tab === 'ordenes_cuadrilla' ? '#2563eb' : 'var(--text-muted)',
-            borderBottom: tab === 'ordenes_cuadrilla' ? '2px solid #2563eb' : '2px solid transparent',
-            marginBottom: -1 }}>
-          <Wrench size={12} /> OT Cuadrilla
-        </button>
-        <button onClick={() => setTab('servicios')}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px',
-            background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
-            fontWeight: tab === 'servicios' ? 600 : 400,
-            color: tab === 'servicios' ? '#d97706' : 'var(--text-muted)',
-            borderBottom: tab === 'servicios' ? '2px solid #d97706' : '2px solid transparent',
-            marginBottom: -1 }}>
-          <Zap size={12} /> Servicios
-        </button>
+      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+        {([
+          { key: 'programa',          label: 'Programa Anual', icon: <Calendar size={13} /> },
+          { key: 'ordenes',           label: 'OT Balvanera',   icon: <ClipboardList size={13} /> },
+          { key: 'ordenes_cuadrilla', label: 'OT Cuadrilla',   icon: <Wrench size={13} /> },
+          { key: 'servicios',         label: 'Servicios',      icon: <Zap size={13} /> },
+        ] as const).map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
+              background: 'none', border: 'none', cursor: 'pointer', fontSize: 13,
+              fontWeight: tab === t.key ? 600 : 400,
+              color: tab === t.key ? 'var(--blue)' : 'var(--text-muted)',
+              borderBottom: tab === t.key ? '2px solid var(--blue)' : '2px solid transparent',
+              marginBottom: -1 }}>
+            {t.icon}{t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Tab: Órdenes de Trabajo Balvanera */}
-      {tab === 'ordenes' && <OrdenesTrabajoTab empresa="Balvanera" />}
-
-      {/* Tab: Órdenes de Trabajo Cuadrilla */}
+      {tab === 'ordenes'           && <OrdenesTrabajoTab empresa="Balvanera" />}
       {tab === 'ordenes_cuadrilla' && <OrdenesTrabajoTab empresa="Cuadrilla" />}
+      {tab === 'servicios'         && <ServiciosTab />}
 
-      {/* Tab: Servicios (CFE / Agua) */}
-      {tab === 'servicios' && <ServiciosTab />}
-
-      {/* Tab: Programa Anual */}
       {tab === 'programa' && (
         <div>
           {/* KPIs */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 }}>
-            <div className="card" style={{ padding: '10px 12px' }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)' }}>{programas.length}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Programas</div>
-            </div>
-            <div className="card" style={{ padding: '10px 12px' }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#d97706' }}>
-                {todasTareas.filter((t: any) => t.status === 'Pendiente').length}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Programas',   value: programas.length,                                       color: 'var(--blue)', bg: 'var(--blue-pale)' },
+              { label: 'Pendientes',  value: todasTareas.filter((t: any) => t.status === 'Pendiente').length, color: '#d97706', bg: '#fffbeb' },
+              { label: 'Completadas', value: completadas,                                             color: '#15803d',    bg: '#f0fdf4' },
+              { label: 'Omitidas',    value: todasTareas.filter((t: any) => t.status === 'Omitida').length,  color: '#94a3b8',    bg: '#f8fafc' },
+              { label: 'Cumplimiento',value: `${cumplimiento}%`,
+                color: cumplimiento >= 80 ? '#15803d' : cumplimiento >= 50 ? '#d97706' : '#dc2626', bg: '#fff' },
+            ].map(k => (
+              <div key={k.label} className="card" style={{ padding: '12px 18px', background: k.bg, minWidth: 120 }}>
+                <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>
+                  {k.value}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pendientes</div>
-            </div>
-            <div className="card" style={{ padding: '10px 12px' }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#15803d' }}>{completadas}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completadas</div>
-            </div>
-            <div className="card" style={{ padding: '10px 12px' }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#94a3b8' }}>
-                {todasTareas.filter((t: any) => t.status === 'Omitida').length}
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Omitidas</div>
-            </div>
-            <div className="card" style={{ padding: '10px 12px' }}>
-              <div style={{ fontSize: 20, fontWeight: 700,
-                color: cumplimiento >= 80 ? '#15803d' : cumplimiento >= 50 ? '#d97706' : '#dc2626' }}>
-                {cumplimiento}%
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cumplimiento</div>
-            </div>
+            ))}
           </div>
 
           {/* Filtros */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-              <Filter size={11} /> Filtros
-            </span>
-            <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
-            <select className="select" style={{ width: 72, fontSize: 12, padding: '3px 6px', height: 28 }} value={filterAnio}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+            <select className="select" style={{ width: 80 }} value={filterAnio}
               onChange={e => setFilterAnio(Number(e.target.value))}>
               {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
             </select>
-            <select className="select" style={{ flex: '1 1 130px', maxWidth: 210, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC}
+            <select className="select" style={{ width: 220 }} value={filterCC}
               onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setFilterFr('') }}>
               <option value="">Centro de costo</option>
               {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
-            <select className="select" style={{ flex: '1 1 110px', maxWidth: 190, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea}
+            <select className="select" style={{ width: 190 }} value={filterArea}
               onChange={e => { setFilterArea(e.target.value); setFilterFr('') }}>
               <option value="">Área</option>
               {(areas as any[])
                 .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
                 .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
-            <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr}
+            <select className="select" style={{ width: 160 }} value={filterFr}
               onChange={e => setFilterFr(e.target.value)}>
               <option value="">Frente</option>
               {(() => {
@@ -287,98 +233,105 @@ export default function MantenimientoPage() {
               })()}
             </select>
             {(filterCC || filterArea || filterFr) && (
-              <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
+              <button className="btn-ghost" style={{ color: '#dc2626' }}
                 onClick={() => { setFilterCC(''); setFilterArea(''); setFilterFr('') }}>
-                <X size={11} /> Limpiar
+                <X size={13} /> Limpiar
               </button>
             )}
-            <button className="btn-ghost" style={{ padding: '3px 8px', height: 28, marginLeft: 'auto' }} onClick={fetchData}>
-              <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+            <button className="btn-ghost" onClick={fetchData}>
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
 
-          {/* Lista programas */}
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: 40 }}>
-              <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
-            </div>
-          ) : programas.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
-              Sin programas de mantenimiento para {filterAnio}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {programas.map((prog: any) => {
-                const tareas      = prog.tareas ?? []
-                const comp        = tareas.filter((t: any) => t.status === 'Completada').length
-                const pct         = tareas.length ? Math.round((comp / tareas.length) * 100) : 0
-                const expanded    = expandidos[prog.id] !== false
-                const proxima     = tareas.find((t: any) => t.status === 'Pendiente')
-
-                return (
-                  <div key={prog.id} className="card" style={{ overflow: 'hidden', padding: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 14px', borderBottom: expanded ? '1px solid #e2e8f0' : 'none',
-                      background: 'var(--blue-pale)', cursor: 'pointer' }}
-                      onClick={() => toggleExpand(prog.id)}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {expanded
-                          ? <ChevronDown size={12} style={{ color: 'var(--blue)' }} />
-                          : <ChevronRight size={12} style={{ color: 'var(--blue)' }} />}
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--blue)' }}>{prog.nombre}</div>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
-                            {prog.id_area_fk ? areaMap[prog.id_area_fk] : 'Sin área'} ·{' '}
-                            {prog.tipo_trabajo ?? '—'} · {prog.frecuencia}
-                            {prog.responsable ? ` · ${prog.responsable}` : ''}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>
-                            {comp}/{tareas.length} · {pct}%
-                          </div>
-                          <div style={{ width: 100, height: 5, background: '#e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 2,
-                              background: pct >= 80 ? '#15803d' : pct >= 50 ? '#d97706' : '#2563eb' }} />
-                          </div>
-                        </div>
+          {/* Tabla de programas */}
+          <div className="card" style={{ overflow: 'hidden' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Programa</th>
+                  <th>Tipo</th>
+                  <th>Frecuencia</th>
+                  <th>Área</th>
+                  <th>Periodo</th>
+                  <th>Progreso</th>
+                  <th style={{ width: 80 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
+                    <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+                  </td></tr>
+                ) : programas.length === 0 ? (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                    Sin programas de mantenimiento para {filterAnio}
+                  </td></tr>
+                ) : programas.map((prog: any) => {
+                  const tareas = prog.tareas ?? []
+                  const comp   = tareas.filter((t: any) => t.status === 'Completada').length
+                  const pct    = tareas.length ? Math.round((comp / tareas.length) * 100) : 0
+                  const proxima = tareas.find((t: any) => t.status === 'Pendiente')
+                  return (
+                    <tr key={prog.id}>
+                      <td>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{prog.nombre}</div>
+                        {prog.responsable && (
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{prog.responsable}</div>
+                        )}
+                      </td>
+                      <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{prog.tipo_trabajo ?? '—'}</td>
+                      <td style={{ fontSize: 13 }}>{prog.frecuencia}</td>
+                      <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                        {prog.id_area_fk ? areaMap[prog.id_area_fk] : '—'}
+                      </td>
+                      <td style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                        {prog.fecha_inicio ? fmtDate(prog.fecha_inicio) : '—'}
+                        {prog.fecha_fin && prog.fecha_inicio
+                          ? <><br /><span style={{ color: 'var(--text-muted)' }}>→ {fmtDate(prog.fecha_fin)}</span></>
+                          : null}
                         {proxima && (
-                          <div style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap', marginLeft: 8 }}>
-                            Próxima: <span style={{ fontWeight: 600, color: 'var(--blue)' }}>{fmtDate(proxima.fecha_prog)}</span>
+                          <div style={{ marginTop: 2, color: 'var(--blue)', fontWeight: 500 }}>
+                            Próx: {fmtDate(proxima.fecha_prog)}
                           </div>
                         )}
-                        <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                          <button className="btn-secondary" style={{ fontSize: 11, padding: '4px 8px' }}
-                            onClick={() => setDetail(prog)}>
-                            <Eye size={10} /> Ver
+                      </td>
+                      <td style={{ minWidth: 140 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ flex: 1, height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3,
+                              background: pct >= 80 ? '#15803d' : pct >= 50 ? '#d97706' : '#2563eb' }} />
+                          </div>
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            {comp}/{tareas.length}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                          <button className="btn-ghost" style={{ padding: '4px 6px' }}
+                            onClick={() => setDetail(prog)} title="Ver detalle">
+                            <Eye size={13} />
                           </button>
                           {canWrite('mantenimiento') && (
-                            <button className="btn-secondary" style={{ fontSize: 11, padding: '4px 8px' }}
-                              onClick={() => { setEditing(prog); setModal(true) }}>
-                              Editar
+                            <button className="btn-ghost" style={{ padding: '4px 6px' }}
+                              onClick={() => { setEditing(prog); setModal(true) }} title="Editar">
+                              <Edit2 size={13} />
                             </button>
                           )}
                           {canDelete() && (
-                            <button className="btn-ghost" style={{ fontSize: 11, color: '#dc2626', padding: '4px 6px' }}
-                              onClick={() => handleDelete(prog.id)}>
-                              <X size={11} />
+                            <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }}
+                              onClick={() => handleDelete(prog.id)} title="Eliminar">
+                              <Trash2 size={13} />
                             </button>
                           )}
                         </div>
-                      </div>
-                    </div>
-                    {expanded && (
-                      <div style={{ padding: '10px 14px' }}>
-                        <MiniCalendario tareas={tareas} onRefresh={fetchData} prog={prog} areaMap={areaMap} />
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
