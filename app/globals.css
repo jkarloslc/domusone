@@ -483,7 +483,7 @@ tbody tr:last-child td { border-bottom: none; }
 
 /* Tablas: scroll horizontal en móvil */
 @media (max-width: 768px) {
-  .card { overflow-x: auto; }
+  .card { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
   table { min-width: 560px; }
   thead th, tbody td { padding: 9px 10px; font-size: 12px; }
 }
