@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  Plus, RefreshCw, Eye, X, Save, Loader,
+  Plus, RefreshCw, Eye, X, Save, Loader, Printer,
   Calendar, CheckCircle, ChevronDown, ChevronRight,
   Filter, ClipboardList, Wrench, Zap
 } from 'lucide-react'
@@ -386,7 +386,8 @@ export default function MantenimientoPage() {
         onClose={() => setModal(false)}
         onSaved={() => { setModal(false); fetchData() }} />}
       {detail && <ProgramaDetail prog={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap}
-        onClose={() => { setDetail(null); fetchData() }} />}
+        onClose={() => { setDetail(null); fetchData() }}
+        onEdit={() => { setDetail(null); setEditing(detail); setModal(true) }} />}
     </div>
   )
 }
@@ -471,19 +472,23 @@ function MiniCalendario({ tareas, onRefresh, prog, areaMap }: {
                   <div style={{ display: 'flex', gap: 3, marginTop: 4, flexWrap: 'wrap' }}>
                     {t.status === 'Pendiente' && !t.id_ot_fk && (
                       <button onClick={() => generarOT(t)} disabled={generando === t.id}
+                        title="Crear Orden de Trabajo para esta tarea"
                         style={{ fontSize: 9, padding: '2px 5px', borderRadius: 3,
                           background: 'var(--blue)', color: '#fff', border: 'none', cursor: 'pointer' }}>
                         {generando === t.id ? '…' : '+ OT'}
                       </button>
                     )}
                     {t.id_ot_fk && (
-                      <span style={{ fontSize: 9, padding: '2px 5px', borderRadius: 3,
-                        background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe' }}>
-                        OT
+                      <span title="Orden de Trabajo generada"
+                        style={{ fontSize: 9, padding: '2px 5px', borderRadius: 3,
+                          background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe',
+                          fontFamily: 'monospace', cursor: 'default' }}>
+                        OT ✓
                       </span>
                     )}
                     {t.status !== 'Completada' && (
                       <button onClick={() => cambiarStatus(t.id, 'Completada')} disabled={updating === t.id}
+                        title="Marcar como Completada"
                         style={{ fontSize: 9, padding: '2px 5px', borderRadius: 3,
                           background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', cursor: 'pointer' }}>
                         ✓
@@ -491,6 +496,7 @@ function MiniCalendario({ tareas, onRefresh, prog, areaMap }: {
                     )}
                     {t.status === 'Pendiente' && (
                       <button onClick={() => cambiarStatus(t.id, 'Omitida')} disabled={updating === t.id}
+                        title="Marcar como Omitida"
                         style={{ fontSize: 9, padding: '2px 5px', borderRadius: 3,
                           background: '#f8fafc', color: '#94a3b8', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
                         —
@@ -531,10 +537,26 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
     responsable:        prog?.responsable        ?? '',
     descripcion:        prog?.descripcion        ?? '',
     presupuesto_est:    prog?.presupuesto_est?.toString() ?? '0',
+    fecha_inicio:       prog?.fecha_inicio       ?? '',
+    fecha_fin:          prog?.fecha_fin          ?? '',
   })
+  const [regenerarTareas, setRegenerarTareas] = useState(false)
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
+
+  // Auto-compute fecha_inicio / fecha_fin when scheduling fields change
+  useEffect(() => {
+    const fechas = generarFechas(Number(form.anio), form.frecuencia, Number(form.mes_inicio))
+    if (fechas.length > 0) {
+      setForm(f => ({
+        ...f,
+        fecha_inicio: fechas[0].toISOString().slice(0, 10),
+        fecha_fin:    fechas[fechas.length - 1].toISOString().slice(0, 10),
+      }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.anio, form.frecuencia, form.mes_inicio])
 
   useEffect(() => {
     Promise.all([
@@ -565,12 +587,31 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
       responsable:        form.responsable.trim() || null,
       descripcion:        form.descripcion.trim() || null,
       presupuesto_est:    Number(form.presupuesto_est || 0),
+      fecha_inicio:       form.fecha_inicio || null,
+      fecha_fin:          form.fecha_fin    || null,
       updated_at:         new Date().toISOString(),
     }
     let progId = prog?.id
     if (prog) {
       const { error: err } = await dbCtrl.from('programas_mantenimiento').update(payload).eq('id', prog.id)
       if (err) { setError(err.message); setSaving(false); return }
+      if (regenerarTareas) {
+        // Eliminar solo tareas Pendiente sin OT vinculada
+        await dbCtrl.from('programa_tareas')
+          .delete().eq('id_programa_fk', prog.id).eq('status', 'Pendiente').is('id_ot_fk', null)
+        const fechas = generarFechas(Number(form.anio), form.frecuencia, Number(form.mes_inicio))
+        const nuevasTareas = fechas.map(d => ({
+          id_programa_fk: prog.id,
+          fecha_prog:     d.toISOString().slice(0, 10),
+          mes:            d.getMonth() + 1,
+          semana_no:      getSemana(d),
+          status:         'Pendiente',
+        }))
+        if (nuevasTareas.length) {
+          const { error: errT } = await dbCtrl.from('programa_tareas').insert(nuevasTareas)
+          if (errT) { setError(errT.message); setSaving(false); return }
+        }
+      }
     } else {
       const { data: newProg, error: err } = await dbCtrl.from('programas_mantenimiento')
         .insert({ ...payload, created_by: authUser?.nombre ?? null }).select('id').single()
@@ -660,11 +701,27 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
               </select>
             </div>
           </div>
-          {!prog && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div><label className="label" style={{ fontSize: 11 }}>Fecha de inicio</label>
+              <input className="input" type="date" style={{ fontSize: 13 }} value={form.fecha_inicio} onChange={setF('fecha_inicio')} />
+            </div>
+            <div><label className="label" style={{ fontSize: 11 }}>Fecha de fin</label>
+              <input className="input" type="date" style={{ fontSize: 13 }} value={form.fecha_fin} onChange={setF('fecha_fin')} />
+            </div>
+          </div>
+          {!prog ? (
             <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe',
               borderRadius: 6, fontSize: 12, color: 'var(--blue)' }}>
               Se generarán <strong>{totalFechas} tareas</strong> para {form.anio}
             </div>
+          ) : (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer',
+              padding: '8px 12px', background: regenerarTareas ? '#fff7ed' : '#f8fafc',
+              border: `1px solid ${regenerarTareas ? '#fed7aa' : '#e2e8f0'}`, borderRadius: 6 }}>
+              <input type="checkbox" checked={regenerarTareas} onChange={e => setRegenerarTareas(e.target.checked)} />
+              <span>Regenerar tareas pendientes al guardar</span>
+              <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>(elimina Pendientes sin OT y recrea según la nueva programación)</span>
+            </label>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>Responsable</label>
@@ -694,12 +751,13 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
 // ═══════════════════════════════════════════════════════════════
 // Detalle del Programa
 // ═══════════════════════════════════════════════════════════════
-function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
+function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose, onEdit }: {
   prog: any
   areaMap: Record<number, string>
   ccMap: Record<number, string>
   frMap: Record<number, string>
   onClose: () => void
+  onEdit?: () => void
 }) {
   const { authUser } = useAuth()
   const [tareas,    setTareas]    = useState<any[]>([])
@@ -759,10 +817,122 @@ function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
 
   const completadas = tareas.filter(t => t.status === 'Completada').length
 
+  const imprimirPrograma = async () => {
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;">🔧</div>`
+
+    const pend = tareas.filter(t => t.status === 'Pendiente').length
+    const omit = tareas.filter(t => t.status === 'Omitida').length
+    const pct  = tareas.length ? Math.round((completadas / tareas.length) * 100) : 0
+    const SC: Record<string, string> = {
+      'Pendiente': '#d97706', 'En Proceso': '#2563eb', 'Completada': '#15803d', 'Omitida': '#94a3b8'
+    }
+
+    const tareaRows = tareas.map(t => {
+      const sc = SC[t.status] ?? '#64748b'
+      const otFolio = t.id_ot_fk && otMap[t.id_ot_fk] ? otMap[t.id_ot_fk] : '—'
+      return `<tr>
+        <td>${fmtDate(t.fecha_prog)}</td>
+        <td>${MESES[(t.mes ?? 1) - 1]}</td>
+        <td style="text-align:center">${t.semana_no ?? '—'}</td>
+        <td><span style="color:${sc};font-weight:600;font-size:11px">${t.status}</span></td>
+        <td style="font-family:monospace;color:#2563eb;font-size:11px">${otFolio}</td>
+      </tr>`
+    }).join('')
+
+    const html = `<!DOCTYPE html><html><head><title>Programa ${prog.nombre}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 36px; font-size: 13px; color: #1e293b; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 20px; }
+        .org-nombre { font-size: 17px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #64748b; }
+        h2 { font-size: 14px; font-weight: 700; color: #0D4F80; margin: 16px 0 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 30px; margin-bottom: 12px; }
+        .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; margin-bottom: 2px; }
+        .val { font-size: 13px; color: #1e293b; }
+        .kpis { display: flex; gap: 14px; margin: 12px 0; }
+        .kpi { text-align: center; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; min-width: 72px; }
+        .kpi-num { font-size: 22px; font-weight: 700; }
+        .kpi-lbl { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; }
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+        td, th { border: 1px solid #e2e8f0; padding: 6px 10px; }
+        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
+        @page { margin: 1.2cm; }
+      </style></head><body>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+          <div style="font-size:12px;font-weight:600;color:#0D4F80;margin-top:3px;">Programa de Mantenimiento</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;font-size:11px;color:#94a3b8;">
+          Año: <strong style="color:#0D4F80">${prog.anio}</strong><br/>
+          ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
+        </div>
+      </div>
+
+      <div style="font-size:18px;font-weight:700;margin-bottom:12px;">${prog.nombre}</div>
+
+      <div class="grid">
+        ${prog.tipo_trabajo ? `<div><div class="lbl">Tipo de Trabajo</div><div class="val">${prog.tipo_trabajo}</div></div>` : ''}
+        <div><div class="lbl">Frecuencia</div><div class="val">${prog.frecuencia}</div></div>
+        ${prog.responsable ? `<div><div class="lbl">Responsable</div><div class="val">${prog.responsable}</div></div>` : ''}
+        ${prog.id_centro_costo_fk && ccMap[prog.id_centro_costo_fk] ? `<div><div class="lbl">Centro de Costo</div><div class="val">${ccMap[prog.id_centro_costo_fk]}</div></div>` : ''}
+        ${prog.id_area_fk && areaMap[prog.id_area_fk] ? `<div><div class="lbl">Área</div><div class="val">${areaMap[prog.id_area_fk]}</div></div>` : ''}
+        ${prog.id_frente_fk && frMap[prog.id_frente_fk] ? `<div><div class="lbl">Frente</div><div class="val">${frMap[prog.id_frente_fk]}</div></div>` : ''}
+        ${prog.fecha_inicio ? `<div><div class="lbl">Fecha Inicio</div><div class="val">${fmtDate(prog.fecha_inicio)}</div></div>` : ''}
+        ${prog.fecha_fin ? `<div><div class="lbl">Fecha Fin</div><div class="val">${fmtDate(prog.fecha_fin)}</div></div>` : ''}
+        ${prog.presupuesto_est ? `<div><div class="lbl">Presupuesto Est.</div><div class="val">$${Number(prog.presupuesto_est).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div></div>` : ''}
+      </div>
+      ${prog.descripcion ? `<p style="background:#f8fafc;border-left:3px solid #0D4F80;padding:8px 12px;font-size:13px;margin:8px 0">${prog.descripcion}</p>` : ''}
+
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-num" style="color:#0D4F80">${tareas.length}</div><div class="kpi-lbl">Total</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:#15803d">${completadas}</div><div class="kpi-lbl">Completadas</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:#d97706">${pend}</div><div class="kpi-lbl">Pendientes</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:#94a3b8">${omit}</div><div class="kpi-lbl">Omitidas</div></div>
+        <div class="kpi"><div class="kpi-num" style="color:${pct>=80?'#15803d':pct>=50?'#d97706':'#dc2626'}">${pct}%</div><div class="kpi-lbl">Cumplimiento</div></div>
+      </div>
+
+      <h2>Calendario de Tareas</h2>
+      <table>
+        <thead><tr><th>Fecha</th><th>Mes</th><th>Semana</th><th>Status</th><th>Folio OT</th></tr></thead>
+        <tbody>${tareaRows}</tbody>
+      </table>
+      </body></html>`
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
+  }
+
   return (
     <ModalShell modulo="mantenimiento" titulo={prog.nombre} onClose={onClose} maxWidth={760}
     >
-        <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 120px)' }}>
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 165px)' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40 }}>
               <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
@@ -798,25 +968,30 @@ function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
                         {!t.id_ot_fk && t.status !== 'Completada' && t.status !== 'Omitida' && (
                           <button className="btn-secondary" style={{ fontSize: 11, padding: '3px 8px' }}
                             onClick={() => generarOT(t)} disabled={generando === t.id}>
-                            {generando === t.id ? <Loader size={10} className="animate-spin" /> : <Wrench size={10} />} OT
+                            {generando === t.id ? <Loader size={10} className="animate-spin" /> : <Wrench size={10} />}
+                            {generando === t.id ? ' Creando…' : ' Crear OT'}
                           </button>
                         )}
                         {t.status !== 'Completada' && (
-                          <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', color: '#15803d' }}
-                            onClick={() => cambiarStatus(t.id, 'Completada')} disabled={updating === t.id}>
-                            <CheckCircle size={11} />
+                          <button className="btn-ghost"
+                            style={{ fontSize: 11, padding: '3px 8px', color: '#15803d', display: 'flex', alignItems: 'center', gap: 3 }}
+                            onClick={() => cambiarStatus(t.id, 'Completada')} disabled={updating === t.id}
+                            title="Marcar como Completada">
+                            <CheckCircle size={11} /> Completar
                           </button>
                         )}
                         {t.status === 'Pendiente' && (
                           <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', color: '#94a3b8' }}
-                            onClick={() => cambiarStatus(t.id, 'Omitida')} disabled={updating === t.id}>
-                            —
+                            onClick={() => cambiarStatus(t.id, 'Omitida')} disabled={updating === t.id}
+                            title="Marcar como Omitida">
+                            Omitir
                           </button>
                         )}
                         {t.status === 'Completada' && (
                           <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', color: '#d97706' }}
-                            onClick={() => cambiarStatus(t.id, 'Pendiente')} disabled={updating === t.id}>
-                            ↩
+                            onClick={() => cambiarStatus(t.id, 'Pendiente')} disabled={updating === t.id}
+                            title="Reabrir tarea">
+                            Reabrir
                           </button>
                         )}
                       </div>
@@ -826,6 +1001,22 @@ function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose }: {
               </tbody>
             </table>
           )}
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
+          padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            {completadas}/{tareas.length} completadas · {tareas.length ? Math.round((completadas/tareas.length)*100) : 0}% cumplimiento
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {onEdit && (
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
+                Editar programa
+              </button>
+            )}
+            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirPrograma}>
+              <Printer size={12} /> Imprimir programa
+            </button>
+          </div>
         </div>
     </ModalShell>
   )

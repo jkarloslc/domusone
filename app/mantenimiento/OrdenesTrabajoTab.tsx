@@ -670,10 +670,27 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
   }
 
   return (
-    <ModalShell modulo="mantenimiento" titulo="Modal" onClose={onClose} maxWidth={640}
+    <ModalShell modulo="mantenimiento" titulo={ot.folio} onClose={onClose} maxWidth={640}
     >
-
-        <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 200px)', padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 180px)', padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Cabecera de status y título */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>{ot.titulo}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ ...PRIORIDAD_STYLE[ot.prioridad ?? 'Media'],
+                  fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                  border: `1px solid ${PRIORIDAD_STYLE[ot.prioridad ?? 'Media']?.border ?? '#e2e8f0'}` }}>
+                  {ot.prioridad ?? 'Media'}
+                </span>
+                <span style={{ ...STATUS_STYLE[currentStatus],
+                  fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                  border: `1px solid ${STATUS_STYLE[currentStatus]?.border ?? '#e2e8f0'}` }}>
+                  {currentStatus}
+                </span>
+              </div>
+            </div>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
             {ot.tipo_trabajo && <DI label="Tipo" value={ot.tipo_trabajo} />}
             {ot.asignado_a   && <DI label="Asignado a" value={ot.asignado_a} />}
@@ -782,6 +799,28 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+        {/* Footer: cambio de status + imprimir + editar */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
+          padding: '10px 24px', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>Cambiar status:</span>
+            <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px' }}
+              value={currentStatus}
+              onChange={e => cambiarStatus(e.target.value)}
+              disabled={updatingStatus}>
+              {STATUSES.map(s => <option key={s}>{s}</option>)}
+            </select>
+            {updatingStatus && <Loader size={12} className="animate-spin" style={{ color: 'var(--blue)' }} />}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirOT}>
+              <Printer size={12} /> Imprimir OT
+            </button>
+            <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => onEdit(ot)}>
+              Editar
+            </button>
           </div>
         </div>
     </ModalShell>
