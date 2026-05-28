@@ -45,32 +45,31 @@ DECLARE
     ARRAY['ctrl', 'servicio_cfe'],
     ARRAY['ctrl', 'solicitudes_compra_venta']
   ];
-  s TEXT;
-  t TEXT;
+  par TEXT[];
 BEGIN
-  FOREACH s, t SLICE 1 IN ARRAY schemas_tablas LOOP
+  FOREACH par SLICE 1 IN ARRAY schemas_tablas LOOP
     -- Habilitar RLS
-    EXECUTE format('ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY', s, t);
+    EXECUTE format('ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY', par[1], par[2]);
 
     -- SELECT
     EXECUTE format(
       'CREATE POLICY %I ON %I.%I FOR SELECT TO authenticated USING (true)',
-      t || '_select_auth', s, t
+      par[2] || '_select_auth', par[1], par[2]
     );
     -- INSERT
     EXECUTE format(
       'CREATE POLICY %I ON %I.%I FOR INSERT TO authenticated WITH CHECK (true)',
-      t || '_insert_auth', s, t
+      par[2] || '_insert_auth', par[1], par[2]
     );
     -- UPDATE
     EXECUTE format(
       'CREATE POLICY %I ON %I.%I FOR UPDATE TO authenticated USING (true) WITH CHECK (true)',
-      t || '_update_auth', s, t
+      par[2] || '_update_auth', par[1], par[2]
     );
     -- DELETE
     EXECUTE format(
       'CREATE POLICY %I ON %I.%I FOR DELETE TO authenticated USING (true)',
-      t || '_delete_auth', s, t
+      par[2] || '_delete_auth', par[1], par[2]
     );
   END LOOP;
 END $$;
