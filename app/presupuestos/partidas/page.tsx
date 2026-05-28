@@ -19,6 +19,7 @@ type Partida = {
   id_centro_ingreso_fk: number | null
   id_seccion_fk:        number | null
   id_concepto_fk:       number | null
+  tipo_gasto:           string | null
   orden: number
   activo: boolean
 }
@@ -29,10 +30,17 @@ type CI       = { id: number; nombre: string }
 type Seccion  = { id: number; nombre: string }
 type Concepto = { id: number; nombre: string; id_centro_ingreso_fk: number | null }
 
+const TIPOS_GASTO = [
+  'Servicios Profesionales', 'Mantenimiento', 'Reparación',
+  'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
+  'Electricidad', 'Agua', 'Telefonía / Internet',
+  'Honorarios', 'Asesoría', 'Capacitación', 'Nómina', 'Otro',
+]
+
 const EMPTY: Omit<Partida, 'id'> = {
   nombre: '', descripcion: null, tipo: 'egreso', fuente_real: 'op_area',
   id_centro_costo_fk: null, id_area_fk: null, id_centro_ingreso_fk: null,
-  id_seccion_fk: null, id_concepto_fk: null, orden: 0, activo: true,
+  id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, orden: 0, activo: true,
 }
 
 const FUENTE_LABEL: Record<FuenteReal, string> = {
@@ -99,6 +107,7 @@ export default function PartidasPage() {
       id_centro_costo_fk: p.id_centro_costo_fk, id_area_fk: p.id_area_fk,
       id_centro_ingreso_fk: p.id_centro_ingreso_fk,
       id_seccion_fk: p.id_seccion_fk, id_concepto_fk: p.id_concepto_fk,
+      tipo_gasto: p.tipo_gasto,
       orden: p.orden, activo: p.activo,
     })
     setModal(true)
@@ -117,6 +126,7 @@ export default function PartidasPage() {
       // Egresos
       id_centro_costo_fk:   form.tipo === 'egreso' ? form.id_centro_costo_fk : null,
       id_area_fk:           form.tipo === 'egreso' ? form.id_area_fk         : null,
+      tipo_gasto:           form.tipo === 'egreso' ? form.tipo_gasto         : null,
       // Ingresos
       id_centro_ingreso_fk: form.tipo === 'ingreso' ? form.id_centro_ingreso_fk : null,
       id_seccion_fk:        (form.tipo === 'ingreso' && form.fuente_real === 'seccion')  ? form.id_seccion_fk  : null,
@@ -232,7 +242,10 @@ export default function PartidasPage() {
                         let vinculo = '—'
                         if (fr === 'seccion'  && p.id_seccion_fk)        vinculo = secMap[p.id_seccion_fk] ?? '—'
                         if (fr === 'concepto' && p.id_concepto_fk)       vinculo = concMap[p.id_concepto_fk] ?? '—'
-                        if (fr === 'op_area'  && p.id_area_fk)           vinculo = `${p.id_centro_costo_fk ? ccMap[p.id_centro_costo_fk] + ' / ' : ''}${areaMap[p.id_area_fk] ?? '—'}`
+                        if (fr === 'op_area'  && p.id_area_fk) {
+                          vinculo = `${p.id_centro_costo_fk ? ccMap[p.id_centro_costo_fk] + ' / ' : ''}${areaMap[p.id_area_fk] ?? '—'}`
+                          if (p.tipo_gasto) vinculo += ` · ${p.tipo_gasto}`
+                        }
                         if (fr === 'manual'   && p.id_centro_ingreso_fk) vinculo = ciMap[p.id_centro_ingreso_fk] ?? '—'
                         return (
                           <tr key={p.id} style={{
@@ -369,6 +382,17 @@ export default function PartidasPage() {
                     <option value="">— Sin vínculo —</option>
                     {areasFiltradas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                   </select>
+                </label>
+                <label style={lbl}>
+                  Tipo de Gasto
+                  <select className="input" value={form.tipo_gasto ?? ''}
+                    onChange={e => setForm(f => ({ ...f, tipo_gasto: e.target.value || null }))}>
+                    <option value="">— Todos (sin filtro) —</option>
+                    {TIPOS_GASTO.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                    Filtra OPs por tipo de gasto dentro del área. Dejar vacío = tomar todo el área.
+                  </span>
                 </label>
               </>
             )}

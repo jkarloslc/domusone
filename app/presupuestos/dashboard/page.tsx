@@ -99,7 +99,7 @@ export default function DashboardPpto() {
 
     // Partidas activas
     const { data: pData } = await dbCtrl.from('ppto_partidas')
-      .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk')
+      .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto')
       .eq('activo', true)
     const parts = (pData ?? []) as Partida[]
     setPartidas(parts)
@@ -146,7 +146,7 @@ export default function DashboardPpto() {
         : Promise.resolve({ data: [] }),
       areaIds.length > 0
         ? dbComp.from('ordenes_pago')
-            .select('id_area_fk, fecha_op, monto')
+            .select('id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_op, monto')
             .in('id_area_fk', areaIds)
             .gte('fecha_op', `${anio}-01-01`)
             .lte('fecha_op', `${anio}-12-31`)
@@ -179,7 +179,11 @@ export default function DashboardPpto() {
     // Por área
     areaParts.forEach(p => {
       rm[p.id] = {}
-      ;(opsData ?? []).filter((op: any) => op.id_area_fk === p.id_area_fk)
+      ;(opsData ?? []).filter((op: any) => {
+          if (p.id_area_fk && op.id_area_fk !== p.id_area_fk) return false
+          if (p.tipo_gasto && op.tipo_gasto !== p.tipo_gasto) return false
+          return true
+        })
         .forEach((op: any) => {
           if (!op.fecha_op) return
           const mes = new Date(op.fecha_op + 'T12:00:00').getMonth() + 1
