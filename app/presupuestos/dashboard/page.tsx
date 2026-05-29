@@ -146,11 +146,11 @@ export default function DashboardPpto() {
         : Promise.resolve({ data: [] }),
       areaIds.length > 0
         ? dbComp.from('ordenes_pago')
-            .select('id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_op, monto')
+            .select('id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_pago, monto')
             .in('id_area_fk', areaIds)
-            .gte('fecha_op', `${anio}-01-01`)
-            .lte('fecha_op', `${anio}-12-31`)
-            .in('status', ['Pagada', 'Pendiente'])
+            .gte('fecha_pago', `${anio}-01-01`)
+            .lte('fecha_pago', `${anio}-12-31`)
+            .eq('status', 'Pagada')
         : Promise.resolve({ data: [] }),
     ])
 
@@ -185,8 +185,8 @@ export default function DashboardPpto() {
           return true
         })
         .forEach((op: any) => {
-          if (!op.fecha_op) return
-          const mes = new Date(op.fecha_op + 'T12:00:00').getMonth() + 1
+          if (!op.fecha_pago) return
+          const mes = new Date(op.fecha_pago + 'T12:00:00').getMonth() + 1
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(op.monto)
         })
     })
