@@ -18,7 +18,8 @@ const TIPOS_GASTO = [
   'Servicios Profesionales', 'Mantenimiento', 'Reparación',
   'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
   'Electricidad', 'Agua', 'Telefonía / Internet',
-  'Honorarios', 'Asesoría', 'Capacitación', 'Nómina', 'Otro',
+  'Honorarios', 'Asesoría', 'Capacitación', 'Nómina',
+  'Impuestos Federales', 'Impuestos Estatales', 'Otro',
 ]
 
 type RolTipoOp = { tipo_gasto: string; modo: string; solo_propios: boolean }
