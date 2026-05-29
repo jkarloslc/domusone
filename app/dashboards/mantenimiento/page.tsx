@@ -316,7 +316,7 @@ export default function DashboardMantenimientoPage() {
             titulo="OT Balvanera" empresa="Balvanera" color="#2563eb"
             data={otBalv} loading={loading} href="/mantenimiento" />
           <OtBloque
-            titulo="OT Oitydisa" empresa="Oitydisa" color="#7c3aed"
+            titulo="OT Cuadrilla" empresa="Oitydisa" color="#7c3aed"
             data={otOitydisa} loading={loading} href="/mantenimiento" />
         </div>
       </div>
