@@ -145,7 +145,7 @@ export default function ComparativoPage() {
             .in('id_area_fk', areaIds)
             .gte('fecha_op', `${anio}-01-01`)
             .lte('fecha_op', `${anio}-12-31`)
-            .not('status', 'in', '("Cancelada","Cancelado")')
+            .in('status', ['Pagada', 'Pendiente'])
         : Promise.resolve({ data: [] }),
     ])
 
