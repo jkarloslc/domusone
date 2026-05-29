@@ -141,15 +141,13 @@ export default function ComparativoPage() {
         : Promise.resolve({ data: [] }),
       areaIds.length > 0
         ? dbComp.from('ordenes_pago')
-            .select('id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_op, monto, status')
+            .select('id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_op, monto')
             .in('id_area_fk', areaIds)
             .gte('fecha_op', `${anio}-01-01`)
             .lte('fecha_op', `${anio}-12-31`)
             .in('status', ['Pagada', 'Pendiente'])
         : Promise.resolve({ data: [] }),
     ])
-
-    console.log('[ops fetched]', opsData?.map((o: any) => ({ status: o.status, monto: o.monto, area: o.id_area_fk })))
 
     // ── Construir realMap ────────────────────────────────────────
     const rm: DetMap = {}
