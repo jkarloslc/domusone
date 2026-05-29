@@ -40,6 +40,8 @@ export default function OrdenesPagoPage() {
   const [filterArea, setFilterArea] = useState('')
   const [filterProv, setFilterProv] = useState('')
   const [filterTipoGasto, setFilterTipoGasto] = useState('')
+  const [filterFechaDesde, setFilterFechaDesde] = useState('')
+  const [filterFechaHasta, setFilterFechaHasta] = useState('')
   const [rolRestricciones, setRolRestricciones] = useState<RolTipoOp[] | null>(null)
   const [centrosCosto, setCentros] = useState<{ id: number; nombre: string }[]>([])
   const [areaFiltros, setAreaFiltros] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
@@ -67,6 +69,8 @@ export default function OrdenesPagoPage() {
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
     if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
     if (filterTipoGasto) q = q.eq('tipo_gasto', filterTipoGasto)
+    if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
+    if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,concepto.ilike.%${debouncedSearch}%`)
 
     // Restricciones por rol
@@ -95,7 +99,7 @@ export default function OrdenesPagoPage() {
     setProvMap(pm)
     setAlmMap(am)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterTipoGasto, rolRestricciones, authUser?.user.id])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterTipoGasto, filterFechaDesde, filterFechaHasta, rolRestricciones, authUser?.user.id])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -192,6 +196,24 @@ export default function OrdenesPagoPage() {
           </select>
         )}
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
+      </div>
+
+      {/* Filtro de rango de fechas */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Fecha creación:</span>
+        <input className="input" type="date" style={{ width: 150 }}
+          value={filterFechaDesde}
+          onChange={e => { setFilterFechaDesde(e.target.value); setPage(0) }} />
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
+        <input className="input" type="date" style={{ width: 150 }}
+          value={filterFechaHasta}
+          onChange={e => { setFilterFechaHasta(e.target.value); setPage(0) }} />
+        {(filterFechaDesde || filterFechaHasta) && (
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px' }}
+            onClick={() => { setFilterFechaDesde(''); setFilterFechaHasta(''); setPage(0) }}>
+            Limpiar fechas
+          </button>
+        )}
       </div>
 
       {/* Tabla */}
