@@ -52,11 +52,16 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
     setLoading(true)
     if (aprobado) {
       // 1. Actualizar reembolso
-      await dbComp.from('reembolsos').update({
-        status:        'Autorizado',
-        notas_auth:    notasAuth.trim() || null,
+      const { error: statusErr } = await dbComp.from('reembolsos').update({
+        status:         'Autorizado',
+        notas_auth:     notasAuth.trim() || null,
         autorizado_por: authUser?.nombre ?? authUser?.user?.email ?? null,
       }).eq('id', r.id)
+
+      if (statusErr) {
+        alert(`Error al actualizar status: ${statusErr.message}`)
+        setLoading(false); return
+      }
 
       // 2. Resolver proveedor del beneficiario
       //    ordenes_pago.id_proveedor_fk es NOT NULL; el empleado actúa como proveedor en reembolsos
@@ -130,10 +135,11 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
       }
 
     } else {
-      await dbComp.from('reembolsos').update({
+      const { error: rechErr } = await dbComp.from('reembolsos').update({
         status:     'Rechazado',
         notas_auth: notasAuth.trim() || null,
       }).eq('id', r.id)
+      if (rechErr) { alert(`Error al rechazar: ${rechErr.message}`); setLoading(false); return }
     }
     setLoading(false)
     onUpdated()
