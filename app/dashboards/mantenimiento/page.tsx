@@ -160,6 +160,8 @@ function OtBloque({ titulo, empresa, color, data, loading, href }: {
   )
 }
 
+const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+
 // ── Page ───────────────────────────────────────────────────────
 export default function DashboardMantenimientoPage() {
   const anio = new Date().getFullYear()
@@ -191,8 +193,6 @@ export default function DashboardMantenimientoPage() {
 
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-
-  const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
   const loadServicios = useCallback(async () => {
     setSvcLoading(true)
@@ -231,7 +231,7 @@ export default function DashboardMantenimientoPage() {
     })
     setServiciosMes(Object.values(porMes))
     setSvcLoading(false)
-  }, [svcAnio, svcTipo, svcServicioId, MESES_CORTO])
+  }, [svcAnio, svcTipo, svcServicioId])
 
   useEffect(() => { loadServicios() }, [loadServicios])
 
