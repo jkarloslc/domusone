@@ -409,43 +409,41 @@ export default function DashboardMantenimientoPage() {
 
       {/* ─── Servicios CFE / Agua ────────────────────────────────── */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'nowrap', overflow: 'auto' }}>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', whiteSpace: 'nowrap', marginRight: 4 }}>
             Servicios
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 76 }}
-              value={svcAnio} onChange={e => setSvcAnio(Number(e.target.value))}>
-              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 106 }}
-              value={svcTipo}
-              onChange={e => { setSvcTipo(e.target.value as any); setSvcServicioId('') }}>
-              <option value="">CFE + Agua</option>
-              <option value="CFE">Solo CFE</option>
-              <option value="Agua">Solo Agua</option>
-            </select>
-            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, minWidth: 200, maxWidth: 320 }}
-              value={svcServicioId}
-              onChange={e => {
-                const id = e.target.value ? Number(e.target.value) : ''
-                setSvcServicioId(id)
-                if (id) {
-                  const cat = svcCatalogo.find(c => c.id === id)
-                  if (cat) setSvcTipo(cat.tipo_servicio as any)
-                }
-              }}>
-              <option value="">— Todos los servicios —</option>
-              {svcCatalogo.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.no_servicio}{c.ubicacion ? ` · ${c.ubicacion}` : ''}
-                </option>
-              ))}
-            </select>
-            <button className="btn-ghost" style={{ padding: '3px 8px', height: 28 }} onClick={loadServicios}>
-              <RefreshCw size={11} className={svcLoading ? 'animate-spin' : ''} />
-            </button>
-          </div>
+          </span>
+          <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 76, flexShrink: 0 }}
+            value={svcAnio} onChange={e => setSvcAnio(Number(e.target.value))}>
+            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 106, flexShrink: 0 }}
+            value={svcTipo}
+            onChange={e => { setSvcTipo(e.target.value as any); setSvcServicioId('') }}>
+            <option value="">CFE + Agua</option>
+            <option value="CFE">Solo CFE</option>
+            <option value="Agua">Solo Agua</option>
+          </select>
+          <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, flex: 1, minWidth: 0 }}
+            value={svcServicioId}
+            onChange={e => {
+              const id = e.target.value ? Number(e.target.value) : ''
+              setSvcServicioId(id)
+              if (id) {
+                const cat = svcCatalogo.find(c => c.id === id)
+                if (cat) setSvcTipo(cat.tipo_servicio as any)
+              }
+            }}>
+            <option value="">— Todos los servicios —</option>
+            {svcCatalogo.map(c => (
+              <option key={c.id} value={c.id}>
+                {c.no_servicio}{c.ubicacion ? ` · ${c.ubicacion}` : ''}
+              </option>
+            ))}
+          </select>
+          <button className="btn-ghost" style={{ padding: '3px 8px', height: 28, flexShrink: 0 }} onClick={loadServicios}>
+            <RefreshCw size={11} className={svcLoading ? 'animate-spin' : ''} />
+          </button>
         </div>
 
         {/* KPIs resumen */}
