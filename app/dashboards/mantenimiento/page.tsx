@@ -182,17 +182,54 @@ export default function DashboardMantenimientoPage() {
 
   // Servicios
   type MesServicio = { mes: string; kwh: number; agua: number; monto: number; montoCfe: number; montoAgua: number }
-  const [serviciosMes, setServiciosMes] = useState<MesServicio[]>([])
+  const [serviciosMes,   setServiciosMes]   = useState<MesServicio[]>([])
+  const [svcAnio,        setSvcAnio]        = useState(new Date().getFullYear())
+  const [svcTipo,        setSvcTipo]        = useState<'CFE' | 'Agua' | ''>('')
+  const [svcLoading,     setSvcLoading]     = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
+  const loadServicios = useCallback(async () => {
+    setSvcLoading(true)
+    const [svcCatR, svcRegR] = await Promise.allSettled([
+      dbCtrl.from('servicios_catalogo').select('id, tipo_servicio').eq('activo', true),
+      dbCtrl.from('servicios_registros')
+        .select('id_servicio_fk, fecha_inicio, consumo_periodo, monto_periodo')
+        .gte('fecha_inicio', `${svcAnio}-01-01`)
+        .lt('fecha_inicio',  `${svcAnio + 1}-01-01`),
+    ])
+    const svcCat: any[] = svcCatR.status === 'fulfilled' ? (svcCatR.value.data ?? []) : []
+    const svcReg: any[] = svcRegR.status === 'fulfilled' ? (svcRegR.value.data ?? []) : []
+    const tipoMap: Record<number, string> = {}
+    svcCat.forEach((c: any) => { tipoMap[c.id] = c.tipo_servicio })
+
+    const porMes: Record<number, MesServicio> = {}
+    for (let m = 1; m <= 12; m++) {
+      porMes[m] = { mes: MESES_CORTO[m - 1], kwh: 0, agua: 0, monto: 0, montoCfe: 0, montoAgua: 0 }
+    }
+    svcReg.forEach((r: any) => {
+      const tipo = tipoMap[r.id_servicio_fk]
+      if (svcTipo && tipo !== svcTipo) return
+      const m = new Date(r.fecha_inicio + 'T12:00:00').getMonth() + 1
+      if (!porMes[m]) return
+      const monto = Number(r.monto_periodo ?? 0)
+      if (tipo === 'CFE')  { porMes[m].kwh   += Number(r.consumo_periodo ?? 0); porMes[m].montoCfe  += monto }
+      if (tipo === 'Agua') { porMes[m].agua  += Number(r.consumo_periodo ?? 0); porMes[m].montoAgua += monto }
+      porMes[m].monto += monto
+    })
+    setServiciosMes(Object.values(porMes))
+    setSvcLoading(false)
+  }, [svcAnio, svcTipo, MESES_CORTO])
+
+  useEffect(() => { loadServicios() }, [loadServicios])
+
   const loadAll = useCallback(async () => {
     setRefreshing(true)
 
-    const [progR, otAllR, equiposR, bitacoraR, svcCatR, svcRegR] = await Promise.allSettled([
+    const [progR, otAllR, equiposR, bitacoraR] = await Promise.allSettled([
       // Programas del año activos
       dbCtrl.from('programas_mantenimiento').select('id').eq('anio', anio).eq('activo', true),
       // Todas las OTs (ambas empresas)
@@ -202,13 +239,6 @@ export default function DashboardMantenimientoPage() {
       // Bitácoras del mes actual
       dbCtrl.from('bitacora_equipos').select('id', { count: 'exact', head: true })
         .eq('activo', true).gte('fecha_inicio', mesIni),
-      // Catálogo de servicios
-      dbCtrl.from('servicios_catalogo').select('id, tipo_servicio').eq('activo', true),
-      // Registros del año
-      dbCtrl.from('servicios_registros')
-        .select('id_servicio_fk, fecha_inicio, consumo_periodo, monto_periodo')
-        .gte('fecha_inicio', `${anio}-01-01`)
-        .lt('fecha_inicio',  `${anio + 1}-01-01`),
     ])
 
     // ── Programas y tareas (2 queries encadenadas) ──────────
@@ -263,27 +293,6 @@ export default function DashboardMantenimientoPage() {
     const total = equiposR.status === 'fulfilled' ? (equiposR.value.count ?? 0) : 0
     const bMes  = bitacoraR.status === 'fulfilled' ? (bitacoraR.value.count ?? 0) : 0
     setVehiculos({ total, bitacorasMes: bMes })
-
-    // ── Servicios por mes ──────────────────────────────────
-    const svcCat: any[]  = svcCatR.status === 'fulfilled'  ? (svcCatR.value.data  ?? []) : []
-    const svcReg: any[]  = svcRegR.status === 'fulfilled'  ? (svcRegR.value.data  ?? []) : []
-    const tipoMap: Record<number, string> = {}
-    svcCat.forEach((c: any) => { tipoMap[c.id] = c.tipo_servicio })
-
-    const porMes: Record<number, MesServicio> = {}
-    for (let m = 1; m <= 12; m++) {
-      porMes[m] = { mes: MESES_CORTO[m - 1], kwh: 0, agua: 0, monto: 0, montoCfe: 0, montoAgua: 0 }
-    }
-    svcReg.forEach((r: any) => {
-      const m = new Date(r.fecha_inicio + 'T12:00:00').getMonth() + 1
-      if (!porMes[m]) return
-      const tipo = tipoMap[r.id_servicio_fk]
-      const monto = Number(r.monto_periodo ?? 0)
-      if (tipo === 'CFE')  { porMes[m].kwh      += Number(r.consumo_periodo ?? 0); porMes[m].montoCfe  += monto }
-      if (tipo === 'Agua') { porMes[m].agua     += Number(r.consumo_periodo ?? 0); porMes[m].montoAgua += monto }
-      porMes[m].monto += monto
-    })
-    setServiciosMes(Object.values(porMes))
 
     setLoading(false)
     setRefreshing(false)
@@ -391,13 +400,29 @@ export default function DashboardMantenimientoPage() {
 
       {/* ─── Servicios CFE / Agua ────────────────────────────────── */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
-          textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
-          Servicios · {anio}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            Servicios
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 80 }}
+              value={svcAnio} onChange={e => setSvcAnio(Number(e.target.value))}>
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 110 }}
+              value={svcTipo} onChange={e => setSvcTipo(e.target.value as any)}>
+              <option value="">CFE + Agua</option>
+              <option value="CFE">Solo CFE</option>
+              <option value="Agua">Solo Agua</option>
+            </select>
+            <button className="btn-ghost" style={{ padding: '3px 8px', height: 28 }} onClick={loadServicios}>
+              <RefreshCw size={11} className={svcLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
 
         {/* KPIs resumen */}
-        {!loading && (() => {
+        {!svcLoading && (() => {
           const totalKwh   = serviciosMes.reduce((a, m) => a + m.kwh,   0)
           const totalAgua  = serviciosMes.reduce((a, m) => a + m.agua,  0)
           const totalMonto = serviciosMes.reduce((a, m) => a + m.monto, 0)
@@ -425,7 +450,7 @@ export default function DashboardMantenimientoPage() {
         })()}
 
         {/* Gráficas por mes */}
-        {!loading && serviciosMes.some(m => m.kwh > 0 || m.agua > 0 || m.monto > 0) && (
+        {!svcLoading && serviciosMes.some(m => m.kwh > 0 || m.agua > 0 || m.monto > 0) && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {/* KWH */}
             <div className="card" style={{ padding: '14px 16px' }}>
