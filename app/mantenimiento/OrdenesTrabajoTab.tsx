@@ -276,7 +276,6 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
     supervisor:         ot?.supervisor        ?? '',
     fecha_inicio:       ot?.fecha_inicio      ?? '',
     fecha_limite:       ot?.fecha_limite      ?? '',
-    semana_no:          ot?.semana_no?.toString() ?? semanaActual().toString(),
   })
   const [recursos, setRecursos] = useState<any[]>(
     ot ? [] : [{ cantidad: '', descripcion: '', costo: '0' }]
@@ -333,7 +332,7 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
         descripcion: form.descripcion.trim() || null, notas: form.notas.trim() || null,
         asignado_a: form.asignado_a.trim() || null, supervisor: form.supervisor.trim() || null,
         fecha_inicio: form.fecha_inicio || null, fecha_limite: form.fecha_limite || null,
-        semana_no: form.semana_no ? Number(form.semana_no) : semanaActual(),
+        semana_no: form.status === 'Completada' ? semanaActual() : null,
         anio: new Date().getFullYear(), created_by: authUser?.nombre ?? null,
       }).select('id').single()
       if (err) { setError(err.message); setSaving(false); return }
@@ -349,7 +348,7 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
         descripcion: form.descripcion.trim() || null, notas: form.notas.trim() || null,
         asignado_a: form.asignado_a.trim() || null, supervisor: form.supervisor.trim() || null,
         fecha_inicio: form.fecha_inicio || null, fecha_limite: form.fecha_limite || null,
-        semana_no: form.semana_no ? Number(form.semana_no) : null,
+        semana_no: form.status === 'Completada' ? semanaActual() : null,
         fecha_cierre: form.status === 'Completada' ? new Date().toISOString().slice(0,10) : null,
         updated_at: new Date().toISOString(),
       }).eq('id', ot.id)
@@ -443,7 +442,11 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 70px', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>F. Inicio</label><input className="input" style={{ fontSize: 13 }} type="date" value={form.fecha_inicio} onChange={setF('fecha_inicio')} /></div>
             <div><label className="label" style={{ fontSize: 11 }}>F. Límite</label><input className="input" style={{ fontSize: 13 }} type="date" value={form.fecha_limite} onChange={setF('fecha_limite')} /></div>
-            <div><label className="label" style={{ fontSize: 11 }}>Semana</label><input className="input" style={{ fontSize: 13 }} type="number" value={form.semana_no} onChange={setF('semana_no')} /></div>
+            <div><label className="label" style={{ fontSize: 11 }}>Semana</label>
+              <div className="input" style={{ fontSize: 13, color: 'var(--text-muted)', background: 'var(--bg-subtle, #f8fafc)' }}>
+                {form.status === 'Completada' ? semanaActual() : '—'}
+              </div>
+            </div>
           </div>
           <div><label className="label" style={{ fontSize: 11 }}>Notas</label>
             <textarea className="input" rows={2} value={form.notas} onChange={setF('notas')} style={{ fontSize: 13, resize: 'vertical' }} /></div>
@@ -508,7 +511,10 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
   const cambiarStatus = async (nuevoStatus: string) => {
     setUpdatingStatus(true)
     const extra: any = { updated_at: new Date().toISOString() }
-    if (nuevoStatus === 'Completada') extra.fecha_cierre = new Date().toISOString().slice(0,10)
+    if (nuevoStatus === 'Completada') {
+      extra.fecha_cierre = new Date().toISOString().slice(0,10)
+      extra.semana_no    = semanaActual()
+    }
     const { error: err } = await dbCtrl.from('ordenes_trabajo').update({ status: nuevoStatus, ...extra }).eq('id', ot.id)
     if (err) { alert(`Error: ${err.message}`); setUpdatingStatus(false); return }
     setCurrentStatus(nuevoStatus)

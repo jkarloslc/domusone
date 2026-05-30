@@ -247,7 +247,6 @@ function OTModal({ areas, ot, onClose, onSaved }: {
     supervisor:       ot?.supervisor       ?? '',
     fecha_inicio:     ot?.fecha_inicio     ?? '',
     fecha_limite:     ot?.fecha_limite     ?? '',
-    semana_no:        ot?.semana_no?.toString() ?? semanaActual().toString(),
   })
   const [recursos, setRecursos] = useState<any[]>(
     ot ? [] : [{ cantidad: '', descripcion: '', costo: '0' }]
@@ -304,7 +303,7 @@ function OTModal({ areas, ot, onClose, onSaved }: {
         supervisor:        form.supervisor.trim() || null,
         fecha_inicio:      form.fecha_inicio || null,
         fecha_limite:      form.fecha_limite || null,
-        semana_no:         form.semana_no ? Number(form.semana_no) : semanaActual(),
+        semana_no:         form.status === 'Completada' ? semanaActual() : null,
         anio:              new Date().getFullYear(),
         created_by:        authUser?.nombre ?? null,
       }).select('id').single()
@@ -325,7 +324,7 @@ function OTModal({ areas, ot, onClose, onSaved }: {
         supervisor:        form.supervisor.trim() || null,
         fecha_inicio:      form.fecha_inicio || null,
         fecha_limite:      form.fecha_limite || null,
-        semana_no:         form.semana_no ? Number(form.semana_no) : null,
+        semana_no:         form.status === 'Completada' ? semanaActual() : null,
         fecha_cierre:      form.status === 'Completada' ? new Date().toISOString().slice(0,10) : null,
         updated_at:        new Date().toISOString(),
       }).eq('id', ot.id)
@@ -434,7 +433,9 @@ function OTModal({ areas, ot, onClose, onSaved }: {
               <input className="input" type="date" value={form.fecha_limite} onChange={setF('fecha_limite')} />
             </div>
             <div><label className="label">Semana</label>
-              <input className="input" type="number" value={form.semana_no} onChange={setF('semana_no')} />
+              <div className="input" style={{ color: 'var(--text-muted)', background: 'var(--bg-subtle, #f8fafc)' }}>
+                {form.status === 'Completada' ? semanaActual() : '—'}
+              </div>
             </div>
           </div>
 
