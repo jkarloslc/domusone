@@ -448,15 +448,17 @@ export default function DashboardMantenimientoPage() {
 
         {/* KPIs resumen */}
         {!svcLoading && (() => {
-          const totalKwh   = serviciosMes.reduce((a, m) => a + m.kwh,   0)
-          const totalAgua  = serviciosMes.reduce((a, m) => a + m.agua,  0)
-          const totalMonto = serviciosMes.reduce((a, m) => a + m.monto, 0)
+          const totalKwh      = serviciosMes.reduce((a, m) => a + m.kwh,       0)
+          const totalAgua     = serviciosMes.reduce((a, m) => a + m.agua,      0)
+          const totalMonto    = serviciosMes.reduce((a, m) => a + m.monto,     0)
+          const totalMontoAgua = serviciosMes.reduce((a, m) => a + m.montoAgua, 0)
           return (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
               {[
-                { label: 'Consumo KWH acum.', value: totalKwh.toLocaleString('es-MX', { maximumFractionDigits: 0 }), unit: 'kWh', color: '#d97706', bg: '#fffbeb', icon: '⚡' },
-                { label: 'Consumo Agua acum.', value: totalAgua.toLocaleString('es-MX', { maximumFractionDigits: 1 }), unit: 'm³', color: '#0891b2', bg: '#ecfeff', icon: '💧' },
-                { label: 'Monto total',         value: '$' + totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 }), unit: '', color: '#059669', bg: '#f0fdf4', icon: '💰' },
+                { label: 'Consumo KWH acum.',  value: totalKwh.toLocaleString('es-MX', { maximumFractionDigits: 0 }),       unit: 'kWh', color: '#d97706', bg: '#fffbeb', icon: '⚡' },
+                { label: 'Consumo Agua acum.', value: totalAgua.toLocaleString('es-MX', { maximumFractionDigits: 1 }),       unit: 'm³',  color: '#0891b2', bg: '#ecfeff', icon: '💧' },
+                { label: 'Monto Agua',          value: '$' + totalMontoAgua.toLocaleString('es-MX', { minimumFractionDigits: 2 }), unit: '', color: '#0369a1', bg: '#e0f2fe', icon: '💧' },
+                { label: 'Monto total',         value: '$' + totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 }),     unit: '', color: '#059669', bg: '#f0fdf4', icon: '💰' },
               ].map(k => (
                 <div key={k.label} className="card" style={{ padding: '14px 18px', background: k.bg,
                   display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 160px', maxWidth: 260 }}>
