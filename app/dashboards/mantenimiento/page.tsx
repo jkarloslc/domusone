@@ -183,8 +183,10 @@ export default function DashboardMantenimientoPage() {
   // Servicios
   type MesServicio = { mes: string; kwh: number; agua: number; monto: number; montoCfe: number; montoAgua: number }
   const [serviciosMes,   setServiciosMes]   = useState<MesServicio[]>([])
+  const [svcCatalogo,    setSvcCatalogo]    = useState<{ id: number; no_servicio: string; ubicacion: string | null; tipo_servicio: string }[]>([])
   const [svcAnio,        setSvcAnio]        = useState(new Date().getFullYear())
   const [svcTipo,        setSvcTipo]        = useState<'CFE' | 'Agua' | ''>('')
+  const [svcServicioId,  setSvcServicioId]  = useState<number | ''>('')
   const [svcLoading,     setSvcLoading]     = useState(false)
 
   const [loading, setLoading] = useState(true)
@@ -195,7 +197,10 @@ export default function DashboardMantenimientoPage() {
   const loadServicios = useCallback(async () => {
     setSvcLoading(true)
     const [svcCatR, svcRegR] = await Promise.allSettled([
-      dbCtrl.from('servicios_catalogo').select('id, tipo_servicio').eq('activo', true),
+      dbCtrl.from('servicios_catalogo')
+        .select('id, no_servicio, ubicacion, tipo_servicio')
+        .eq('activo', true)
+        .order('tipo_servicio').order('no_servicio'),
       dbCtrl.from('servicios_registros')
         .select('id_servicio_fk, fecha_inicio, consumo_periodo, monto_periodo')
         .gte('fecha_inicio', `${svcAnio}-01-01`)
@@ -203,6 +208,9 @@ export default function DashboardMantenimientoPage() {
     ])
     const svcCat: any[] = svcCatR.status === 'fulfilled' ? (svcCatR.value.data ?? []) : []
     const svcReg: any[] = svcRegR.status === 'fulfilled' ? (svcRegR.value.data ?? []) : []
+
+    setSvcCatalogo(svcCat)
+
     const tipoMap: Record<number, string> = {}
     svcCat.forEach((c: any) => { tipoMap[c.id] = c.tipo_servicio })
 
@@ -212,7 +220,8 @@ export default function DashboardMantenimientoPage() {
     }
     svcReg.forEach((r: any) => {
       const tipo = tipoMap[r.id_servicio_fk]
-      if (svcTipo && tipo !== svcTipo) return
+      if (svcTipo       && tipo              !== svcTipo)         return
+      if (svcServicioId && r.id_servicio_fk  !== svcServicioId)   return
       const m = new Date(r.fecha_inicio + 'T12:00:00').getMonth() + 1
       if (!porMes[m]) return
       const monto = Number(r.monto_periodo ?? 0)
@@ -222,7 +231,7 @@ export default function DashboardMantenimientoPage() {
     })
     setServiciosMes(Object.values(porMes))
     setSvcLoading(false)
-  }, [svcAnio, svcTipo, MESES_CORTO])
+  }, [svcAnio, svcTipo, svcServicioId, MESES_CORTO])
 
   useEffect(() => { loadServicios() }, [loadServicios])
 
@@ -404,16 +413,34 @@ export default function DashboardMantenimientoPage() {
           <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
             Servicios
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 80 }}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 76 }}
               value={svcAnio} onChange={e => setSvcAnio(Number(e.target.value))}>
               {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
-            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 110 }}
-              value={svcTipo} onChange={e => setSvcTipo(e.target.value as any)}>
+            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 106 }}
+              value={svcTipo}
+              onChange={e => { setSvcTipo(e.target.value as any); setSvcServicioId('') }}>
               <option value="">CFE + Agua</option>
               <option value="CFE">Solo CFE</option>
               <option value="Agua">Solo Agua</option>
+            </select>
+            <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, minWidth: 200, maxWidth: 320 }}
+              value={svcServicioId}
+              onChange={e => {
+                const id = e.target.value ? Number(e.target.value) : ''
+                setSvcServicioId(id)
+                if (id) {
+                  const cat = svcCatalogo.find(c => c.id === id)
+                  if (cat) setSvcTipo(cat.tipo_servicio as any)
+                }
+              }}>
+              <option value="">— Todos los servicios —</option>
+              {svcCatalogo.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.no_servicio}{c.ubicacion ? ` · ${c.ubicacion}` : ''}
+                </option>
+              ))}
             </select>
             <button className="btn-ghost" style={{ padding: '3px 8px', height: 28 }} onClick={loadServicios}>
               <RefreshCw size={11} className={svcLoading ? 'animate-spin' : ''} />
