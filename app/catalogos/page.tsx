@@ -6,7 +6,7 @@ import {
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
   Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle, Building2,
-  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store, Flag,
+  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store, Flag, HardHat,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
@@ -213,6 +213,21 @@ const CATALOGOS: CatConfig[] = [
       { key: 'clave',                label: 'Clave interna',     type: 'text' },
       { key: 'id_centro_ingreso_fk', label: 'Centro de Ingreso', type: 'select',  selectTabla: 'centros_ingreso' },
       { key: 'orden',                label: 'Orden de aparición',type: 'number' },
+    ],
+  },
+  // ── Mantenimiento ────────────────────────────────────────────
+  {
+    key:          'cat_mano_obra',
+    tabla:        'cat_categorias_mano_obra',
+    label:        'Categorías Mano de Obra',
+    icon:         HardHat,
+    color:        '#b45309',
+    sectionLabel: 'Mantenimiento',
+    desc:         'Categorías de mano de obra con sueldo diario y costo por hora de referencia (sueldo/8)',
+    sortBy:       'categoria',
+    campos: [
+      { key: 'categoria',     label: 'Categoría *',      type: 'text',   required: true },
+      { key: 'sueldo_diario', label: 'Sueldo Diario *',  type: 'number', required: true },
     ],
   },
   // ── Golf ─────────────────────────────────────────────────────

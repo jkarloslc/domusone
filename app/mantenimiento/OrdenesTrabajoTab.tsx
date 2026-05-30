@@ -258,9 +258,11 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
-  const [centrosCosto, setCentros] = useState<any[]>([])
-  const [frentes, setFrentes]      = useState<any[]>([])
-  const [relAF, setRelAFModal]     = useState<{id_area: number; id_frente: number}[]>([])
+  const [centrosCosto, setCentros]   = useState<any[]>([])
+  const [frentes, setFrentes]        = useState<any[]>([])
+  const [relAF, setRelAFModal]       = useState<{id_area: number; id_frente: number}[]>([])
+  const [catManoObra, setCatManoObra] = useState<any[]>([])
+  const [manoObra, setManoObra]      = useState<any[]>([])
   const [form, setForm] = useState({
     titulo:             ot?.titulo            ?? '',
     tipo_trabajo:       ot?.tipo_trabajo      ?? '',
@@ -278,7 +280,7 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
     fecha_limite:       ot?.fecha_limite      ?? '',
   })
   const [recursos, setRecursos] = useState<any[]>(
-    ot ? [] : [{ cantidad: '', descripcion: '', costo: '0' }]
+    ot ? [] : [{ cantidad: '', descripcion: '', tipo: 'Material', costo: '0' }]
   )
   useEffect(() => {
     if (ot?.id) {
@@ -286,7 +288,17 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
         .then(({ data }) => {
           if (data && data.length > 0) {
             setRecursos(data.map((r: any) => ({
-              id: r.id, cantidad: r.cantidad ?? '', descripcion: r.descripcion ?? '', costo: r.costo?.toString() ?? '0',
+              id: r.id, cantidad: r.cantidad ?? '', descripcion: r.descripcion ?? '',
+              tipo: r.tipo ?? 'Material', costo: r.costo?.toString() ?? '0',
+            })))
+          }
+        })
+      dbCtrl.from('ot_mano_obra').select('*').eq('id_ot_fk', ot.id).order('id')
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setManoObra(data.map((r: any) => ({
+              id: r.id, id_categoria_fk: r.id_categoria_fk?.toString() ?? '',
+              trabajadores: r.trabajadores?.toString() ?? '1', horas: r.horas?.toString() ?? '',
             })))
           }
         })
@@ -301,10 +313,12 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-    ]).then(([cc, fr, rel]) => {
+      dbCfg.from('cat_categorias_mano_obra').select('id, categoria, costo_hora_referencia').eq('activo', true).order('categoria'),
+    ]).then(([cc, fr, rel, mo]) => {
       setCentros(cc.data ?? [])
       setFrentes(fr.data ?? [])
       setRelAFModal((rel.data ?? []) as any)
+      setCatManoObra(mo.data ?? [])
     })
   }, [])
   const setR = (i: number, k: string, v: string) =>
@@ -362,14 +376,35 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
         const idsAEliminar = (recActuales ?? []).filter((r: any) => !idsExistentes.includes(r.id)).map((r: any) => r.id)
         if (idsAEliminar.length) await dbCtrl.from('ot_recursos').delete().in('id', idsAEliminar)
         for (const r of recursosValidos.filter(r => r.id)) {
-          await dbCtrl.from('ot_recursos').update({ cantidad: r.cantidad || null, descripcion: r.descripcion, costo: Number(r.costo || 0) }).eq('id', r.id)
+          await dbCtrl.from('ot_recursos').update({ cantidad: r.cantidad || null, descripcion: r.descripcion, tipo: r.tipo || null, costo: Number(r.costo || 0) }).eq('id', r.id)
         }
       }
       const nuevos = recursosValidos.filter(r => !r.id)
       if (nuevos.length) {
         await dbCtrl.from('ot_recursos').insert(
-          nuevos.map(r => ({ id_ot_fk: otId, cantidad: r.cantidad || null, descripcion: r.descripcion, costo: Number(r.costo || 0) }))
+          nuevos.map(r => ({ id_ot_fk: otId, cantidad: r.cantidad || null, descripcion: r.descripcion, tipo: r.tipo || null, costo: Number(r.costo || 0) }))
         )
+      }
+      // Mano de Obra
+      const moValidos = manoObra.filter(r => r.id_categoria_fk && r.horas)
+      if (!isNew) {
+        const idsExMO = moValidos.filter(r => r.id).map(r => r.id)
+        const { data: moAct } = await dbCtrl.from('ot_mano_obra').select('id').eq('id_ot_fk', otId)
+        const idsDelMO = (moAct ?? []).filter((r: any) => !idsExMO.includes(r.id)).map((r: any) => r.id)
+        if (idsDelMO.length) await dbCtrl.from('ot_mano_obra').delete().in('id', idsDelMO)
+        for (const r of moValidos.filter(r => r.id)) {
+          const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
+          const costo = Number(r.trabajadores || 1) * Number(r.horas) * Number(cat?.costo_hora_referencia || 0)
+          await dbCtrl.from('ot_mano_obra').update({ id_categoria_fk: Number(r.id_categoria_fk), trabajadores: Number(r.trabajadores || 1), horas: Number(r.horas), costo_total: costo }).eq('id', r.id)
+        }
+      }
+      const nuevosMO = moValidos.filter(r => !r.id)
+      if (nuevosMO.length) {
+        await dbCtrl.from('ot_mano_obra').insert(nuevosMO.map(r => {
+          const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
+          const costo = Number(r.trabajadores || 1) * Number(r.horas) * Number(cat?.costo_hora_referencia || 0)
+          return { id_ot_fk: otId, id_categoria_fk: Number(r.id_categoria_fk), trabajadores: Number(r.trabajadores || 1), horas: Number(r.horas), costo_total: costo }
+        }))
       }
     }
     setSaving(false); onSaved()
@@ -450,19 +485,63 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
           </div>
           <div><label className="label" style={{ fontSize: 11 }}>Notas</label>
             <textarea className="input" rows={2} value={form.notas} onChange={setF('notas')} style={{ fontSize: 13, resize: 'vertical' }} /></div>
+          {/* Mano de Obra */}
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#b45309', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Mano de Obra</div>
+            {manoObra.map((r, i) => {
+              const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
+              const costo = Number(r.trabajadores || 1) * Number(r.horas || 0) * Number(cat?.costo_hora_referencia || 0)
+              return (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 50px 60px 70px 24px', gap: 6, marginBottom: 6 }}>
+                  <select className="select" style={{ fontSize: 11 }} value={r.id_categoria_fk}
+                    onChange={e => setManoObra(m => m.map((x,j) => j===i ? {...x, id_categoria_fk: e.target.value} : x))}>
+                    <option value="">— Categoría —</option>
+                    {catManoObra.map(c => <option key={c.id} value={c.id}>{c.categoria}</option>)}
+                  </select>
+                  <input className="input" type="number" min="1" style={{ fontSize: 11, textAlign: 'center' }} value={r.trabajadores} placeholder="Trab."
+                    onChange={e => setManoObra(m => m.map((x,j) => j===i ? {...x, trabajadores: e.target.value} : x))} />
+                  <input className="input" type="number" step="0.5" min="0" style={{ fontSize: 11, textAlign: 'right' }} value={r.horas} placeholder="Hrs"
+                    onChange={e => setManoObra(m => m.map((x,j) => j===i ? {...x, horas: e.target.value} : x))} />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 11, color: 'var(--text-secondary)' }}>
+                    {costo > 0 ? `$${costo.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—'}
+                  </div>
+                  <button className="btn-ghost" style={{ padding: '3px' }} onClick={() => setManoObra(m => m.filter((_,j) => j!==i))}><X size={10} /></button>
+                </div>
+              )
+            })}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button className="btn-ghost" style={{ fontSize: 11 }}
+                onClick={() => setManoObra(m => [...m, { id_categoria_fk: '', trabajadores: '1', horas: '' }])}>
+                <Plus size={10} /> Agregar
+              </button>
+              {manoObra.length > 0 && (() => {
+                const total = manoObra.reduce((acc, r) => {
+                  const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
+                  return acc + Number(r.trabajadores||1)*Number(r.horas||0)*Number(cat?.costo_hora_referencia||0)
+                }, 0)
+                return total > 0 ? <div style={{ fontSize: 12, fontWeight: 700, color: '#b45309' }}>${total.toLocaleString('es-MX',{minimumFractionDigits:2})}</div> : null
+              })()}
+            </div>
+          </div>
+          {/* Recursos */}
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Recursos</div>
             {recursos.map((r, i) => (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px 24px', gap: 6, marginBottom: 6 }}>
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '70px 1fr 90px 80px 24px', gap: 6, marginBottom: 6 }}>
                 <input className="input" style={{ fontSize: 11 }} value={r.cantidad} onChange={e => setR(i,'cantidad',e.target.value)} placeholder="Cant." />
                 <input className="input" style={{ fontSize: 11 }} value={r.descripcion} onChange={e => setR(i,'descripcion',e.target.value)} placeholder="Descripción…" />
+                <select className="select" style={{ fontSize: 11 }} value={r.tipo}
+                  onChange={e => setR(i,'tipo',e.target.value)}>
+                  <option value="Material">Material</option>
+                  <option value="Equipo">Equipo</option>
+                </select>
                 <input className="input" type="number" step="0.01" value={r.costo} onChange={e => setR(i,'costo',e.target.value)} style={{ textAlign: 'right', fontSize: 11 }} />
                 <button className="btn-ghost" style={{ padding: '3px' }} onClick={() => setRecursos(r => r.filter((_,j) => j !== i))}><X size={10} /></button>
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button className="btn-ghost" style={{ fontSize: 11 }}
-                onClick={() => setRecursos(r => [...r, { cantidad: '', descripcion: '', costo: '0' }])}>
+                onClick={() => setRecursos(r => [...r, { cantidad: '', descripcion: '', tipo: 'Material', costo: '0' }])}>
                 <Plus size={10} /> Agregar
               </button>
               {costoTotal > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)' }}>
