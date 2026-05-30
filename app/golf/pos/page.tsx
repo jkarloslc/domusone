@@ -106,10 +106,8 @@ export default function POSPage() {
   const [savingToggle,      setSavingToggle]      = useState(false)
   const [editingProd,    setEditingProd]    = useState<Partial<Producto> | null>(null)
   const [savingProd,     setSavingProd]     = useState(false)
-  const [nuevoCentroNom, setNuevoCentroNom] = useState('')
   const [centrosIngreso, setCentrosIngreso] = useState<CentroIngreso[]>([])
   const [centrosIngresoMap, setCentrosIngresoMap] = useState<CentroIngresoMap[]>([])
-  const [savingMap, setSavingMap] = useState<number | null>(null)
 
   // Cortes — acciones
   const [generandoRecibo, setGenerandoRecibo] = useState<number | null>(null)
@@ -828,40 +826,6 @@ ${operaciones.length > 0 ? `
       await dbCfg.from('configuracion').insert({ clave: 'pos_exigir_facturacion_corte', valor: nuevoValor ? 'true' : 'false', descripcion: 'POS: exigir que todas las ventas estén facturadas antes de cerrar el corte de caja' })
     }
     setSavingToggle(false)
-  }
-
-  const guardarMapCentroIngreso = async (idCentroVenta: number, idCentroIngreso: number | null) => {
-    setSavingMap(idCentroVenta)
-    if (idCentroIngreso) {
-      const existente = centrosIngresoMap.find(m => m.id_centro_venta_fk === idCentroVenta)
-      if (existente) {
-        await dbGolf.from('pos_centros_ingreso_map').update({
-          id_centro_ingreso_fk: idCentroIngreso,
-          activo: true,
-          updated_at: new Date().toISOString(),
-        }).eq('id', existente.id)
-      } else {
-        await dbGolf.from('pos_centros_ingreso_map').insert({
-          id_centro_venta_fk: idCentroVenta,
-          id_centro_ingreso_fk: idCentroIngreso,
-          activo: true,
-        })
-      }
-    } else {
-      await dbGolf.from('pos_centros_ingreso_map').delete().eq('id_centro_venta_fk', idCentroVenta)
-    }
-    setSavingMap(null)
-    fetchConfig()
-  }
-
-  // ── Agregar centro ────────────────────────────────────────
-  const agregarCentro = async () => {
-    if (!nuevoCentroNom.trim()) return
-    await dbGolf.from('cat_centros_venta').insert({ nombre: nuevoCentroNom.trim(), orden: centros.length + 1 })
-    setNuevoCentroNom('')
-    dbGolf.from('cat_centros_venta').select('*').eq('activo', true).order('orden')
-      .then(({ data }) => setCentros((data as Centro[]) ?? []))
-    fetchConfig()
   }
 
   const ventasF = ventas.filter(v => {
@@ -1712,57 +1676,14 @@ ${operaciones.length > 0 ? `
                 </button>
               </div>
 
-              {/* Centros de venta */}
-              <div className="card" style={{ padding: 20, maxWidth: 600 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Centros de Venta</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                  {centros.map(c => (
-                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 20 }}>
-                      <Store size={12} color="#059669" />
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#065f46' }}>{c.nombre}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input value={nuevoCentroNom} onChange={e => setNuevoCentroNom(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && agregarCentro()}
-                    placeholder="Nombre del nuevo centro…"
-                    style={{ flex: 1, padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none' }} />
-                  <button onClick={agregarCentro} disabled={!nuevoCentroNom.trim()}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: nuevoCentroNom.trim() ? 1 : 0.5 }}>
-                    <Plus size={13} /> Agregar
-                  </button>
-                </div>
-              </div>
-
-              {/* Mapeo POS a Ingresos */}
-              <div className="card" style={{ padding: 20, maxWidth: 760 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>Mapeo POS a Centro de Ingreso</div>
-                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 12 }}>
-                  Define qué centro de ingreso se usa al generar recibos desde cortes de caja.
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {centros.map(c => {
-                    const m = getCentroIngresoMap(c.id)
-                    return (
-                      <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px' }}>
-                        <div>
-                          <div style={{ fontSize: 12, color: '#94a3b8' }}>Centro POS</div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{c.nombre}</div>
-                        </div>
-                        <select
-                          value={m?.id_centro_ingreso_fk ?? ''}
-                          onChange={e => guardarMapCentroIngreso(c.id, e.target.value ? Number(e.target.value) : null)}
-                          style={{ width: '100%', padding: '7px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
-                          <option value="">Sin asignar</option>
-                          {centrosIngreso.map(ci => <option key={ci.id} value={ci.id}>{ci.nombre}</option>)}
-                        </select>
-                        <div style={{ minWidth: 90, textAlign: 'right', fontSize: 11, color: m ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
-                          {savingMap === c.id ? 'Guardando…' : (m ? 'Mapeado' : 'Pendiente')}
-                        </div>
-                      </div>
-                    )
-                  })}
+              {/* Centros de venta — gestionados en Catálogos del Club → Centros de Venta POS */}
+              <div className="card" style={{ padding: '14px 20px', maxWidth: 600, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Store size={14} color="#059669" />
+                  <span style={{ fontSize: 13, color: '#475569' }}>
+                    Los centros de venta y su mapeo a centros de ingreso se administran en{' '}
+                    <a href="/golf/catalogos" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>Catálogos del Club → Centros de Venta POS</a>.
+                  </span>
                 </div>
               </div>
 
