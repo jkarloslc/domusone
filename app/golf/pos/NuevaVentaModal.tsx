@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Search, Plus, Minus, Trash2, ShoppingCart, Loader, CheckCircle, Printer } from 'lucide-react'
+import { X, Search, Plus, Minus, Trash2, ShoppingCart, Loader, CheckCircle, Printer, ShieldCheck, Lock } from 'lucide-react'
 import { fechaLocal, inicioDelDia } from '@/lib/dateUtils'
 
 // ── Tipos ──────────────────────────────────────────────────────
@@ -74,6 +75,13 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
   const [error,   setError]   = useState('')
   const [success, setSuccess] = useState<{ id: number; folio_dia: number } | null>(null)
 
+  // Auth condonación
+  const [showCondonAuth,  setShowCondonAuth]  = useState(false)
+  const [condonEmail,     setCondonEmail]     = useState('')
+  const [condonPassword,  setCondonPassword]  = useState('')
+  const [condonError,     setCondonError]     = useState('')
+  const [condonLoading,   setCondonLoading]   = useState(false)
+
   // ── Cargar catálogo ────────────────────────────────────────
   useEffect(() => {
     Promise.all([
@@ -117,6 +125,10 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
   const totalPagado = (parseFloat(monto1) || 0) + (dosFormas ? (parseFloat(monto2) || 0) : 0)
   const cambio      = totalPagado - totales.total
   const canSave     = lineas.length > 0 && forma1 > 0 && totalPagado >= totales.total && totales.total > 0
+
+  const esCondonacion = (idForma: number) =>
+    !!formasPago.find(f => f.id === idForma)?.nombre.toLowerCase().includes('condonac')
+  const requiereCondonAuth = esCondonacion(forma1) || (dosFormas && esCondonacion(forma2))
 
   // ── Agregar producto al carrito ───────────────────────────
   const agregarProducto = (p: Producto) => {
@@ -173,8 +185,54 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
     if (!dosFormas) setMonto1(totales.total > 0 ? totales.total.toFixed(2) : '')
   }, [totales.total, dosFormas])
 
+  // ── Verificar credenciales admin para condonación ─────────
+  const verificarAdminCondonacion = async (email: string, password: string): Promise<{ ok: boolean; nombre?: string; errorMsg?: string }> => {
+    const tempClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false, storageKey: 'condon-verify-tmp' } },
+    )
+    const { error: authErr } = await tempClient.auth.signInWithPassword({ email: email.trim(), password })
+    if (authErr) return { ok: false, errorMsg: 'Contraseña o correo incorrecto.' }
+
+    const { data: uData } = await dbCfg
+      .from('usuarios')
+      .select('rol, nombre')
+      .eq('email', email.trim().toLowerCase())
+      .in('rol', ['superadmin', 'admin'])
+      .maybeSingle()
+
+    if (!uData) return { ok: false, errorMsg: 'El usuario no tiene permisos de administrador.' }
+    return { ok: true, nombre: uData.nombre }
+  }
+
+  // ── Botón Cobrar: redirige a auth si hay condonación ─────
+  const handleCobrar = () => {
+    if (!canSave) return
+    if (requiereCondonAuth) {
+      setCondonEmail(''); setCondonPassword(''); setCondonError('')
+      setShowCondonAuth(true)
+    } else {
+      handleSave()
+    }
+  }
+
+  const handleCondonAuth = async () => {
+    if (!condonEmail || !condonPassword) return
+    setCondonLoading(true); setCondonError('')
+    const result = await verificarAdminCondonacion(condonEmail, condonPassword)
+    if (!result.ok) {
+      setCondonError(result.errorMsg ?? 'Error de autorización.')
+      setCondonLoading(false)
+      return
+    }
+    setShowCondonAuth(false)
+    setCondonLoading(false)
+    handleSave(result.nombre)
+  }
+
   // ── Guardar venta ─────────────────────────────────────────
-  const handleSave = async () => {
+  const handleSave = async (autorizadoPor?: string) => {
     if (!canSave) return
     setSaving(true); setError('')
 
@@ -205,6 +263,7 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
       descuento:      0,
       status:         'PAGADA',
       usuario_crea:   authUser?.nombre ?? 'sistema',
+      ...(autorizadoPor ? { autoriza_condonacion: autorizadoPor } : {}),
     }).select('id, folio_dia').single()
 
     if (e1 || !venta) { setError(e1?.message ?? 'Error al crear venta'); setSaving(false); return }
@@ -347,6 +406,71 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
             disabled={!precioVarInput || parseFloat(precioVarInput) <= 0}
             style={{ flex: 2, padding: '10px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (!precioVarInput || parseFloat(precioVarInput) <= 0) ? 0.5 : 1 }}>
             Agregar al carrito
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── Diálogo de autorización de condonación ───────────────
+  if (showCondonAuth) return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.35)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ background: '#fef3c7', borderRadius: '50%', width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+            <ShieldCheck size={26} color="#d97706" />
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 4, textAlign: 'center' }}>Autorización requerida</div>
+          <div style={{ fontSize: 12, color: '#64748b', textAlign: 'center' }}>
+            La forma de pago <strong>Condonación</strong> requiere<br />autorización de un administrador.
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Correo del administrador</label>
+          <input
+            autoFocus
+            type="email"
+            value={condonEmail}
+            onChange={e => setCondonEmail(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleCondonAuth() }}
+            placeholder="admin@ejemplo.com"
+            style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Contraseña</label>
+          <div style={{ position: 'relative' }}>
+            <Lock size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <input
+              type="password"
+              value={condonPassword}
+              onChange={e => setCondonPassword(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleCondonAuth() }}
+              placeholder="••••••••"
+              style={{ width: '100%', padding: '9px 12px 9px 30px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+        </div>
+
+        {condonError && (
+          <div style={{ padding: '7px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 12, color: '#dc2626', marginBottom: 12 }}>
+            {condonError}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setShowCondonAuth(false)}
+            style={{ flex: 1, padding: '10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+            Cancelar
+          </button>
+          <button
+            onClick={handleCondonAuth}
+            disabled={condonLoading || !condonEmail || !condonPassword}
+            style={{ flex: 2, padding: '10px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: (condonLoading || !condonEmail || !condonPassword) ? 0.6 : 1 }}>
+            {condonLoading ? <Loader size={15} /> : <ShieldCheck size={15} />}
+            {condonLoading ? 'Verificando…' : 'Autorizar y Cobrar'}
           </button>
         </div>
       </div>
@@ -563,10 +687,10 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
 
                 {error && <div style={{ padding: '6px 8px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, fontSize: 11, color: '#dc2626', marginBottom: 6 }}>{error}</div>}
 
-                <button onClick={handleSave} disabled={saving || !canSave}
-                  style={{ width: '100%', padding: '10px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: canSave ? 'pointer' : 'default', opacity: canSave ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                  {saving ? <Loader size={15} /> : <ShoppingCart size={15} />}
-                  {saving ? 'Registrando…' : 'Cobrar'}
+                <button onClick={handleCobrar} disabled={saving || !canSave}
+                  style={{ width: '100%', padding: '10px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8, background: requiereCondonAuth ? '#d97706' : '#059669', color: '#fff', cursor: canSave ? 'pointer' : 'default', opacity: canSave ? 1 : 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  {saving ? <Loader size={15} /> : requiereCondonAuth ? <ShieldCheck size={15} /> : <ShoppingCart size={15} />}
+                  {saving ? 'Registrando…' : requiereCondonAuth ? 'Cobrar (requiere auth)' : 'Cobrar'}
                 </button>
               </div>
             </div>
