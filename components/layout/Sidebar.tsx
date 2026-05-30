@@ -246,15 +246,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
-    { section: 'Club', items: [
-      { label: 'Punto de Venta',    href: '/golf/pos',    icon: Store         },
-      { label: 'Golf',              href: '/golf',        icon: Flag          },
-      { label: 'Torneos Golf',      href: '/golf/torneos',icon: Flag          },
-      { label: 'Riego',             href: '/golf/riego',  icon: Droplets      },
-      { label: 'Hípico',            href: '/hipico',      icon: HorseIcon     },
-      { label: 'Hospitality',       href: '/hospitality', icon: Star          },
-      RPT('golf'),
-    ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),

@@ -5,7 +5,7 @@ import { dbGolf } from '@/lib/supabase'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import {
   Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
-  Car, Lock, BookOpen, CreditCard, Receipt, FileText,
+  Car, Lock, CreditCard, Receipt, FileText,
   ChevronRight, ArrowRightLeft, RefreshCw, AlertTriangle,
   TrendingUp, Activity,
 } from 'lucide-react'
@@ -140,15 +140,6 @@ const MODULOS = [
     icon: ArrowRightLeft,
     color: '#2563eb',
     href: '/golf/intercambios',
-    activo: true,
-  },
-  {
-    key: 'catalogos',
-    label: 'Catálogos',
-    desc: 'Categorías, espacios deportivos, formas de juego y más',
-    icon: BookOpen,
-    color: '#7c3aed',
-    href: '/golf/catalogos',
     activo: true,
   },
 ]
