@@ -1,12 +1,12 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { dbCfg, dbComp, supabase } from '@/lib/supabase'
+import { dbCfg, dbComp, dbGolf, supabase } from '@/lib/supabase'
 import {
   BookOpen, Plus, Edit2, Trash2, X, Save,
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
   Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle, Building2,
-  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp
+  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
@@ -217,7 +217,248 @@ const CATALOGOS: CatConfig[] = [
       { key: 'orden',                label: 'Orden de aparición',type: 'number' },
     ],
   },
+  {
+    key:   'centros_venta_pos',
+    tabla: '__custom__',  // handled by CentrosVentaPOSPanel
+    label: 'Centros de Venta POS',
+    icon:  Store,
+    color: '#059669',
+    desc:  'Centros de venta del POS de Golf — incluye mapeo al Centro de Ingreso para cortes de caja',
+    campos: [],
+  },
 ]
+
+// ══════════════════════════════════════════════════════════════
+// Centros de Venta POS — panel custom con mapeo a Centro de Ingreso
+// ══════════════════════════════════════════════════════════════
+type CentroVentaPos = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number }
+type CentroIngresoOpt = { id: number; nombre: string; activo: boolean }
+type IngresoMapRow   = { id: number; id_centro_venta_fk: number; id_centro_ingreso_fk: number; activo: boolean }
+
+const emptyCVForm = () => ({ nombre: '', descripcion: '', orden: 1, id_centro_ingreso_fk: '' as string | number })
+
+const inputSt: React.CSSProperties = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }
+const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
+
+function CentrosVentaPOSPanel() {
+  const { authUser } = useAuth()
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const [items, setItems]           = useState<CentroVentaPos[]>([])
+  const [centrosIng, setCentrosIng] = useState<CentroIngresoOpt[]>([])
+  const [maps, setMaps]             = useState<IngresoMapRow[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [showForm, setShowForm]     = useState(false)
+  const [editing, setEditing]       = useState<CentroVentaPos | null>(null)
+  const [saving, setSaving]         = useState(false)
+  const [error, setError]           = useState('')
+  const [form, setForm]             = useState(emptyCVForm())
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    const [{ data: cvs }, { data: cis }, { data: ms }] = await Promise.all([
+      dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden').order('orden'),
+      dbCfg.from('centros_ingreso').select('id, nombre, activo').eq('activo', true).order('nombre'),
+      dbGolf.from('pos_centros_ingreso_map').select('id, id_centro_venta_fk, id_centro_ingreso_fk, activo'),
+    ])
+    setItems((cvs as CentroVentaPos[]) ?? [])
+    setCentrosIng((cis as CentroIngresoOpt[]) ?? [])
+    setMaps((ms as IngresoMapRow[]) ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  const getMap = (id: number) => maps.find(m => m.id_centro_venta_fk === id)
+
+  const openNew = () => {
+    setEditing(null); setForm({ ...emptyCVForm(), orden: items.length + 1 }); setError(''); setShowForm(true)
+  }
+  const openEdit = (item: CentroVentaPos) => {
+    const m = getMap(item.id)
+    setEditing(item)
+    setForm({ nombre: item.nombre, descripcion: item.descripcion ?? '', orden: item.orden, id_centro_ingreso_fk: m?.id_centro_ingreso_fk ?? '' })
+    setError(''); setShowForm(true)
+  }
+
+  const handleSave = async () => {
+    if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
+    setSaving(true); setError('')
+    const payload: any = { nombre: form.nombre.trim(), descripcion: form.descripcion || null, orden: Number(form.orden) }
+    let centroId: number
+    if (editing) {
+      const { error: err } = await dbGolf.from('cat_centros_venta').update(payload).eq('id', editing.id)
+      if (err) { setError(err.message); setSaving(false); return }
+      centroId = editing.id
+    } else {
+      payload.activo = true
+      const { data, error: err } = await dbGolf.from('cat_centros_venta').insert(payload).select('id').single()
+      if (err) { setError(err.message); setSaving(false); return }
+      centroId = (data as any).id
+    }
+    const idIngreso = form.id_centro_ingreso_fk ? Number(form.id_centro_ingreso_fk) : null
+    const existente = getMap(centroId)
+    if (idIngreso) {
+      if (existente) {
+        await dbGolf.from('pos_centros_ingreso_map').update({ id_centro_ingreso_fk: idIngreso, activo: true, updated_at: new Date().toISOString() }).eq('id', existente.id)
+      } else {
+        await dbGolf.from('pos_centros_ingreso_map').insert({ id_centro_venta_fk: centroId, id_centro_ingreso_fk: idIngreso, activo: true })
+      }
+    } else if (existente) {
+      await dbGolf.from('pos_centros_ingreso_map').delete().eq('id', existente.id)
+    }
+    setSaving(false); setShowForm(false); fetchAll()
+  }
+
+  const toggleActivo = async (item: CentroVentaPos) => {
+    await dbGolf.from('cat_centros_venta').update({ activo: !item.activo }).eq('id', item.id); fetchAll()
+  }
+
+  const activos   = items.filter(i => i.activo).length
+  const inactivos = items.filter(i => !i.activo).length
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#05966918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Store size={15} style={{ color: '#059669' }} />
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Centros de Venta POS</h2>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 40 }}>
+            Centros de venta del POS de Golf — incluye mapeo al Centro de Ingreso para cortes de caja
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-ghost" onClick={fetchAll} style={{ padding: '7px 10px' }}>
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+          {puedeEscribir && (
+            <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={14} /> Nuevo
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+        <div className="card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CheckCircle size={13} style={{ color: '#15803d' }} />
+          <span style={{ fontSize: 12 }}><strong style={{ color: '#15803d' }}>{activos}</strong> activos</span>
+        </div>
+        {inactivos > 0 && (
+          <div className="card" style={{ padding: '8px 16px' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}><strong>{inactivos}</strong> inactivos</span>
+          </div>
+        )}
+      </div>
+
+      {/* Formulario inline */}
+      {showForm && (
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{editing ? 'Editar centro' : 'Nuevo centro'}</span>
+            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px' }}>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelSt}>Nombre *</label>
+              <input style={inputSt} value={form.nombre} autoFocus onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej. Golf Principal" />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelSt}>Descripción</label>
+              <input style={inputSt} value={form.descripcion as string} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder="Descripción opcional" />
+            </div>
+            <div>
+              <label style={labelSt}>Orden</label>
+              <input style={inputSt} type="number" min="1" value={form.orden} onChange={e => setForm(f => ({ ...f, orden: Number(e.target.value) }))} />
+            </div>
+            <div>
+              <label style={labelSt}>Centro de Ingreso (cortes)</label>
+              <select style={{ ...inputSt, cursor: 'pointer' }} value={String(form.id_centro_ingreso_fk)} onChange={e => setForm(f => ({ ...f, id_centro_ingreso_fk: e.target.value }))}>
+                <option value="">Sin asignar</option>
+                {centrosIng.map(ci => <option key={ci.id} value={String(ci.id)}>{ci.nombre}</option>)}
+              </select>
+            </div>
+          </div>
+          {error && <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+            <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
+            <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+              {editing ? 'Guardar' : 'Crear'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tabla */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <table>
+          <thead>
+            <tr>
+              <th style={{ width: 50 }}>ID</th>
+              <th>Nombre</th>
+              <th>Descripción</th>
+              <th style={{ width: 60, textAlign: 'center' }}>Orden</th>
+              <th>Centro de Ingreso</th>
+              <th style={{ width: 80, textAlign: 'center' }}>Status</th>
+              {puedeEscribir && <th style={{ width: 90 }}></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
+                <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+              </td></tr>
+            ) : items.length === 0 ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                Sin centros. Haz clic en "Nuevo" para agregar.
+              </td></tr>
+            ) : items.map(item => {
+              const m = getMap(item.id)
+              const ciNombre = m ? (centrosIng.find(ci => ci.id === m.id_centro_ingreso_fk)?.nombre ?? '—') : null
+              return (
+                <tr key={item.id} style={{ opacity: item.activo ? 1 : 0.45 }}>
+                  <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{item.id}</td>
+                  <td style={{ fontWeight: 500 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <Store size={12} color="#059669" />{item.nombre}
+                    </div>
+                  </td>
+                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{item.descripcion ?? '—'}</td>
+                  <td style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>{item.orden}</td>
+                  <td>
+                    {ciNombre
+                      ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#dcfce7', color: '#15803d' }}>{ciNombre}</span>
+                      : <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>Sin asignar</span>}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button onClick={() => toggleActivo(item)} style={{ background: 'none', border: 'none', cursor: puedeEscribir ? 'pointer' : 'default', display: 'flex', margin: '0 auto' }}>
+                      {item.activo
+                        ? <ToggleRight size={20} style={{ color: '#15803d' }} />
+                        : <ToggleLeft  size={20} style={{ color: '#cbd5e1' }} />}
+                    </button>
+                  </td>
+                  {puedeEscribir && (
+                    <td>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                        <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => openEdit(item)}><Edit2 size={13} /></button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
 
 // ══════════════════════════════════════════════════════════════
 export default function CatalogosPage() {
@@ -277,7 +518,10 @@ export default function CatalogosPage() {
           })}
         </div>
 
-        <CatalogoTable config={active} key={activeKey} />
+        {activeKey === 'centros_venta_pos'
+          ? <CentrosVentaPOSPanel key="centros_venta_pos" />
+          : <CatalogoTable config={active} key={activeKey} />
+        }
       </div>
     </div>
   )
