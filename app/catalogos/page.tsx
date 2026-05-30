@@ -6,7 +6,7 @@ import {
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
   Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle, Building2,
-  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store,
+  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store, Flag,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
@@ -15,14 +15,15 @@ import ModalShell from '@/components/ui/ModalShell'
 type CatConfig = {
   key:      string
   tabla:    string
-  schema?:  'cfg' | 'comp'
+  schema?:  'cfg' | 'comp' | 'golf'
   label:    string
   icon:     any
   color:    string
   campos:   Campo[]
   desc:     string
-  sortBy?:    string   // columna de ordenamiento; default 'nombre'
-  hasDetail?: boolean  // muestra botón "Ver detalle" en la fila
+  sortBy?:      string
+  hasDetail?:   boolean
+  sectionLabel?: string  // renders a group header above this item in the sidebar
 }
 
 type Campo = {
@@ -30,12 +31,9 @@ type Campo = {
   label:     string
   type:      'text' | 'number' | 'textarea' | 'date' | 'select' | 'file'
   required?: boolean
-  // Para type='select': tabla cfg de donde cargar las opciones
   selectTabla?:   string
-  selectSchema?:  'cfg' | 'comp'
-  // Para type='select': opciones estáticas (alternativa a selectTabla)
+  selectSchema?:  'cfg' | 'comp' | 'golf'
   staticOptions?: string[]
-  // Para type='file': bucket de storage
   bucket?: string
 }
 
@@ -217,13 +215,62 @@ const CATALOGOS: CatConfig[] = [
       { key: 'orden',                label: 'Orden de aparición',type: 'number' },
     ],
   },
+  // ── Golf ─────────────────────────────────────────────────────
+  {
+    key:          'golf_categorias',
+    tabla:        'cat_categorias_socios',
+    schema:       'golf',
+    label:        'Categorías de Socios',
+    icon:         Tag,
+    color:        '#059669',
+    sectionLabel: 'Golf',
+    desc:         'Categorías de membresía del Club de Golf (Platino, Oro, Familiar, etc.)',
+    campos: [
+      { key: 'nombre',      label: 'Nombre *',    type: 'text',     required: true },
+      { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+    ],
+  },
+  {
+    key:    'golf_espacios',
+    tabla:  'cat_espacios_deportivos',
+    schema: 'golf',
+    label:  'Espacios Deportivos',
+    icon:   MapPin,
+    color:  '#0369a1',
+    desc:   'Canchas y espacios disponibles para reservaciones',
+    campos: [
+      { key: 'nombre',      label: 'Nombre *',    type: 'text',     required: true },
+      { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+    ],
+  },
+  {
+    key:    'golf_formas',
+    tabla:  'cat_formas_juego',
+    schema: 'golf',
+    label:  'Formas de Juego',
+    icon:   Flag,
+    color:  '#d97706',
+    desc:   'Modalidades de juego (18 Hoyos, 9 Hoyos, Práctica, etc.)',
+    campos: [
+      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+    ],
+  },
+  {
+    key:    'golf_cuotas',
+    tabla:  '__custom__',
+    label:  'Cuotas de Membresía',
+    icon:   DollarSign,
+    color:  '#7c3aed',
+    desc:   'Cuotas de inscripción, mensualidad y pensión de carrito por categoría',
+    campos: [],
+  },
   {
     key:   'centros_venta_pos',
-    tabla: '__custom__',  // handled by CentrosVentaPOSPanel
+    tabla: '__custom__',
     label: 'Centros de Venta POS',
     icon:  Store,
     color: '#059669',
-    desc:  'Centros de venta del POS de Golf — incluye mapeo al Centro de Ingreso para cortes de caja',
+    desc:  'Centros de venta del POS de Golf y su mapeo al Centro de Ingreso para cortes',
     campos: [],
   },
 ]
@@ -235,6 +282,246 @@ type CentroVentaPos = { id: number; nombre: string; descripcion: string | null; 
 type CentroIngresoOpt = { id: number; nombre: string; activo: boolean }
 type IngresoMapRow   = { id: number; id_centro_venta_fk: number; id_centro_ingreso_fk: number; activo: boolean }
 
+// ══════════════════════════════════════════════════════════════
+// Cuotas de Membresía Golf
+// ══════════════════════════════════════════════════════════════
+type CuotaCategoria = { id: number; nombre: string }
+type CuotaConfig = {
+  id: number; id_categoria_fk: number | null; tipo: string; nombre: string
+  monto: number; meses_aplicar: number; dia_vencimiento: number; activo: boolean; notas: string | null
+  cat_categorias_socios?: { nombre: string } | null
+}
+const TIPO_CUOTA_OPTS = ['INSCRIPCION', 'MENSUALIDAD', 'PENSION_CARRITO']
+const TIPO_CUOTA_LABEL: Record<string, { label: string; color: string; bg: string }> = {
+  INSCRIPCION:     { label: 'Inscripción',     color: '#7c3aed', bg: '#f5f3ff' },
+  MENSUALIDAD:     { label: 'Mensualidad',     color: '#0369a1', bg: '#e0f2fe' },
+  PENSION_CARRITO: { label: 'Pensión Carrito', color: '#b45309', bg: '#fef3c7' },
+}
+const emptyQForm = () => ({ id_categoria_fk: '' as string | number, tipo: 'MENSUALIDAD', nombre: '', monto: '', meses_aplicar: 12, dia_vencimiento: 10, notas: '' })
+
+function CuotasGolfPanel() {
+  const { authUser } = useAuth()
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const [items, setItems]           = useState<CuotaConfig[]>([])
+  const [categorias, setCategorias] = useState<CuotaCategoria[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [showForm, setShowForm]     = useState(false)
+  const [editing, setEditing]       = useState<CuotaConfig | null>(null)
+  const [saving, setSaving]         = useState(false)
+  const [error, setError]           = useState('')
+  const [form, setForm]             = useState(emptyQForm())
+  const [filtroCat, setFiltroCat]   = useState('all')
+  const [filtroTipo, setFiltroTipo] = useState('all')
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    const [{ data: cuotas }, { data: cats }] = await Promise.all([
+      dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').order('id_categoria_fk').order('tipo').order('nombre'),
+      dbGolf.from('cat_categorias_socios').select('id, nombre').eq('activo', true).order('nombre'),
+    ])
+    setItems((cuotas as unknown as CuotaConfig[]) ?? [])
+    setCategorias((cats as CuotaCategoria[]) ?? [])
+    setLoading(false)
+  }, [])
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  const openNew = () => { setEditing(null); setForm(emptyQForm()); setError(''); setShowForm(true) }
+  const openEdit = (item: CuotaConfig) => {
+    setEditing(item)
+    setForm({ id_categoria_fk: item.id_categoria_fk ?? '', tipo: item.tipo, nombre: item.nombre, monto: String(item.monto), meses_aplicar: item.meses_aplicar, dia_vencimiento: item.dia_vencimiento, notas: item.notas ?? '' })
+    setError(''); setShowForm(true)
+  }
+  const handleSave = async () => {
+    if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
+    if (!form.monto || isNaN(Number(form.monto)) || Number(form.monto) < 0) { setError('Monto inválido'); return }
+    setSaving(true); setError('')
+    const payload: any = {
+      id_categoria_fk: form.id_categoria_fk !== '' ? Number(form.id_categoria_fk) : null,
+      tipo: form.tipo, nombre: form.nombre.trim(), monto: Number(form.monto),
+      meses_aplicar: Number(form.meses_aplicar), dia_vencimiento: Number(form.dia_vencimiento),
+      notas: (form.notas as string) || null,
+    }
+    if (editing) {
+      const { error: err } = await dbGolf.from('cat_cuotas_config').update(payload).eq('id', editing.id)
+      if (err) { setError(err.message); setSaving(false); return }
+    } else {
+      payload.activo = true
+      const { error: err } = await dbGolf.from('cat_cuotas_config').insert(payload)
+      if (err) { setError(err.message); setSaving(false); return }
+    }
+    setSaving(false); setShowForm(false); fetchAll()
+  }
+  const toggleActivo = async (item: CuotaConfig) => {
+    await dbGolf.from('cat_cuotas_config').update({ activo: !item.activo }).eq('id', item.id); fetchAll()
+  }
+
+  const filtered = items.filter(i =>
+    (filtroCat  === 'all' || String(i.id_categoria_fk) === filtroCat) &&
+    (filtroTipo === 'all' || i.tipo === filtroTipo)
+  )
+  const inputC: React.CSSProperties = { padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', background: '#fff' }
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#7c3aed18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DollarSign size={15} style={{ color: '#7c3aed' }} />
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Cuotas de Membresía</h2>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 40 }}>Cuotas de inscripción, mensualidad y pensión de carrito por categoría</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-ghost" onClick={fetchAll} style={{ padding: '7px 10px' }}>
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+          {puedeEscribir && (
+            <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={14} /> Nueva cuota
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <select value={filtroCat} onChange={e => setFiltroCat(e.target.value)} style={{ ...inputC, minWidth: 180 }}>
+          <option value="all">Todas las categorías</option>
+          {categorias.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
+        </select>
+        <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ ...inputC, minWidth: 160 }}>
+          <option value="all">Todos los tipos</option>
+          {TIPO_CUOTA_OPTS.map(t => <option key={t} value={t}>{TIPO_CUOTA_LABEL[t]?.label ?? t}</option>)}
+        </select>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{filtered.length} registros</span>
+      </div>
+
+      {/* Formulario inline */}
+      {showForm && (
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{editing ? 'Editar cuota' : 'Nueva cuota'}</span>
+            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px' }}>
+            <div>
+              <label className="label">Categoría de socio</label>
+              <select className="select" value={String(form.id_categoria_fk)} onChange={e => setForm(f => ({ ...f, id_categoria_fk: e.target.value }))}>
+                <option value="">— Aplica a todas —</option>
+                {categorias.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Tipo *</label>
+              <select className="select" value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
+                {TIPO_CUOTA_OPTS.map(t => <option key={t} value={t}>{TIPO_CUOTA_LABEL[t]?.label ?? t}</option>)}
+              </select>
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label className="label">Nombre *</label>
+              <input className="input" value={form.nombre as string} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej. Mensualidad Platino" autoFocus />
+            </div>
+            <div>
+              <label className="label">Monto *</label>
+              <input className="input" type="number" min="0" step="0.01" value={form.monto as string} onChange={e => setForm(f => ({ ...f, monto: e.target.value }))} placeholder="0.00" />
+            </div>
+            {form.tipo === 'MENSUALIDAD' && (
+              <div>
+                <label className="label">Meses a generar</label>
+                <input className="input" type="number" min="1" max="24" value={form.meses_aplicar} onChange={e => setForm(f => ({ ...f, meses_aplicar: Number(e.target.value) }))} />
+              </div>
+            )}
+            {(form.tipo === 'MENSUALIDAD' || form.tipo === 'PENSION_CARRITO') && (
+              <div>
+                <label className="label">Día de vencimiento</label>
+                <input className="input" type="number" min="1" max="31" value={form.dia_vencimiento} onChange={e => setForm(f => ({ ...f, dia_vencimiento: Number(e.target.value) }))} />
+              </div>
+            )}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label className="label">Notas</label>
+              <input className="input" value={form.notas as string} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} placeholder="Observaciones opcionales" />
+            </div>
+          </div>
+          {error && <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+            <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
+            <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+              {editing ? 'Guardar cambios' : 'Crear cuota'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tabla */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Tipo</th>
+              <th style={{ textAlign: 'right' }}>Monto</th>
+              <th style={{ textAlign: 'center' }}>Meses</th>
+              <th style={{ textAlign: 'center' }}>Vence día</th>
+              <th style={{ textAlign: 'center', width: 80 }}>Status</th>
+              {puedeEscribir && <th style={{ width: 80 }}></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
+                <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+              </td></tr>
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                {items.length === 0 ? 'Sin cuotas. Crea la primera.' : 'Sin resultados con los filtros aplicados.'}
+              </td></tr>
+            ) : filtered.map(item => {
+              const tipoInfo = TIPO_CUOTA_LABEL[item.tipo]
+              return (
+                <tr key={item.id} style={{ opacity: item.activo ? 1 : 0.45 }}>
+                  <td style={{ fontWeight: 500 }}>
+                    {item.nombre}
+                    {item.notas && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{item.notas}</div>}
+                  </td>
+                  <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{item.cat_categorias_socios?.nombre ?? <span style={{ color: 'var(--text-muted)' }}>Todas</span>}</td>
+                  <td>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: tipoInfo?.bg ?? '#f1f5f9', color: tipoInfo?.color ?? '#64748b' }}>
+                      {tipoInfo?.label ?? item.tipo}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right', fontWeight: 600, fontFamily: 'monospace' }}>{fmt$(item.monto)}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>{item.tipo === 'MENSUALIDAD' ? item.meses_aplicar : '—'}</td>
+                  <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>{item.tipo !== 'INSCRIPCION' ? `día ${item.dia_vencimiento}` : '—'}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button onClick={() => puedeEscribir && toggleActivo(item)} style={{ background: 'none', border: 'none', cursor: puedeEscribir ? 'pointer' : 'default', display: 'flex', margin: '0 auto' }}>
+                      {item.activo ? <ToggleRight size={20} style={{ color: '#15803d' }} /> : <ToggleLeft size={20} style={{ color: '#cbd5e1' }} />}
+                    </button>
+                  </td>
+                  {puedeEscribir && (
+                    <td>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                        <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => openEdit(item)}><Edit2 size={13} /></button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ── Centros de Venta POS ──────────────────────────────────────
 const emptyCVForm = () => ({ nombre: '', descripcion: '', orden: 1, id_centro_ingreso_fk: '' as string | number })
 
 const inputSt: React.CSSProperties = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }
@@ -492,34 +779,44 @@ export default function CatalogosPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16, alignItems: 'start' }}>
         {/* Menú lateral */}
         <div className="card" style={{ overflow: 'hidden' }}>
-          {CATALOGOS.map(cat => {
+          {CATALOGOS.map((cat, i) => {
             const Icon = cat.icon
             const isActive = cat.key === activeKey
+            const showSection = cat.sectionLabel && (i === 0 || CATALOGOS[i - 1].sectionLabel !== cat.sectionLabel)
             return (
-              <button key={cat.key} onClick={() => setActiveKey(cat.key)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '12px 14px', background: isActive ? cat.color + '10' : 'none',
-                  border: 'none', borderLeft: `3px solid ${isActive ? cat.color : 'transparent'}`,
-                  cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8fafc' }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'none' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 7,
-                  background: cat.color + (isActive ? '20' : '12'),
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={13} style={{ color: cat.color }} />
-                </div>
-                <div style={{ fontSize: 13, fontWeight: isActive ? 600 : 400,
-                  color: isActive ? cat.color : 'var(--text-primary)',
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {cat.label}
-                </div>
-              </button>
+              <div key={cat.key}>
+                {showSection && (
+                  <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', borderTop: i > 0 ? '1px solid #f1f5f9' : 'none', marginTop: i > 0 ? 4 : 0 }}>
+                    {cat.sectionLabel}
+                  </div>
+                )}
+                <button onClick={() => setActiveKey(cat.key)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 14px', background: isActive ? cat.color + '10' : 'none',
+                    border: 'none', borderLeft: `3px solid ${isActive ? cat.color : 'transparent'}`,
+                    cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = '#f8fafc' }}
+                  onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'none' }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 7,
+                    background: cat.color + (isActive ? '20' : '12'),
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={13} style={{ color: cat.color }} />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: isActive ? 600 : 400,
+                    color: isActive ? cat.color : 'var(--text-primary)',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {cat.label}
+                  </div>
+                </button>
+              </div>
             )
           })}
         </div>
 
         {activeKey === 'centros_venta_pos'
           ? <CentrosVentaPOSPanel key="centros_venta_pos" />
+          : activeKey === 'golf_cuotas'
+          ? <CuotasGolfPanel key="golf_cuotas" />
           : <CatalogoTable config={active} key={activeKey} />
         }
       </div>
@@ -533,7 +830,7 @@ export default function CatalogosPage() {
 const PAGE_SIZE = 25
 
 function CatalogoTable({ config }: { config: CatConfig }) {
-  const db = config.schema === 'comp' ? dbComp : dbCfg
+  const db = config.schema === 'comp' ? dbComp : config.schema === 'golf' ? dbGolf : dbCfg
   const [rows, setRows]       = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
@@ -550,7 +847,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
     // Cargar opciones de campos select
     const maps: Record<string, Record<number, string>> = {}
     for (const c of config.campos.filter(f => f.type === 'select' && f.selectTabla)) {
-      const sdb = c.selectSchema === 'comp' ? dbComp : dbCfg
+      const sdb = c.selectSchema === 'comp' ? dbComp : c.selectSchema === 'golf' ? dbGolf : dbCfg
       const { data: opts } = await sdb.from(c.selectTabla!).select('id, nombre').order('nombre')
       const m: Record<number, string> = {}
       ;(opts ?? []).forEach((o: any) => { m[o.id] = o.nombre })
@@ -1030,7 +1327,7 @@ function CatalogoModal({ config, row, onClose, onSaved }:
   useEffect(() => {
     // Cargar opciones de todos los campos select
     config.campos.filter(c => c.type === 'select' && c.selectTabla).forEach(async c => {
-      const sdb = c.selectSchema === 'comp' ? dbComp : dbCfg
+      const sdb = c.selectSchema === 'comp' ? dbComp : c.selectSchema === 'golf' ? dbGolf : dbCfg
       const { data } = await sdb.from(c.selectTabla!).select('id, nombre').eq('activo', true).order('nombre')
       setSelectOpts(prev => ({ ...prev, [c.key]: data ?? [] }))
     })
@@ -1064,7 +1361,7 @@ function CatalogoModal({ config, row, onClose, onSaved }:
       else payload[c.key] = form[c.key]?.trim() || null
     })
 
-    const db = config.schema === 'comp' ? dbComp : dbCfg
+    const db = config.schema === 'comp' ? dbComp : config.schema === 'golf' ? dbGolf : dbCfg
     const { error: err } = isNew
       ? await db.from(config.tabla).insert(payload)
       : await db.from(config.tabla).update(payload).eq('id', row.id)
