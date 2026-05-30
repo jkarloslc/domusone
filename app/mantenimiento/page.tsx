@@ -160,7 +160,7 @@ export default function MantenimientoPage() {
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
         {([
           { key: 'programa',          label: 'Programa Anual', icon: <Calendar size={13} /> },
-          { key: 'ordenes',           label: 'OT Balvanera',   icon: <ClipboardList size={13} /> },
+          { key: 'ordenes',           label: 'OT Mantto. Res', icon: <ClipboardList size={13} /> },
           { key: 'ordenes_cuadrilla', label: 'OT Cuadrilla',   icon: <Wrench size={13} /> },
           { key: 'servicios',         label: 'Servicios',      icon: <Zap size={13} /> },
         ] as const).map(t => (
