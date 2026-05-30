@@ -181,7 +181,7 @@ export default function DashboardMantenimientoPage() {
   const [vehiculos, setVehiculos] = useState({ total: 0, bitacorasMes: 0 })
 
   // Servicios
-  type MesServicio = { mes: string; kwh: number; agua: number; monto: number }
+  type MesServicio = { mes: string; kwh: number; agua: number; monto: number; montoCfe: number; montoAgua: number }
   const [serviciosMes, setServiciosMes] = useState<MesServicio[]>([])
 
   const [loading, setLoading] = useState(true)
@@ -272,15 +272,16 @@ export default function DashboardMantenimientoPage() {
 
     const porMes: Record<number, MesServicio> = {}
     for (let m = 1; m <= 12; m++) {
-      porMes[m] = { mes: MESES_CORTO[m - 1], kwh: 0, agua: 0, monto: 0 }
+      porMes[m] = { mes: MESES_CORTO[m - 1], kwh: 0, agua: 0, monto: 0, montoCfe: 0, montoAgua: 0 }
     }
     svcReg.forEach((r: any) => {
       const m = new Date(r.fecha_inicio + 'T12:00:00').getMonth() + 1
       if (!porMes[m]) return
       const tipo = tipoMap[r.id_servicio_fk]
-      if (tipo === 'CFE')   porMes[m].kwh   += Number(r.consumo_periodo ?? 0)
-      if (tipo === 'Agua')  porMes[m].agua  += Number(r.consumo_periodo ?? 0)
-      porMes[m].monto += Number(r.monto_periodo ?? 0)
+      const monto = Number(r.monto_periodo ?? 0)
+      if (tipo === 'CFE')  { porMes[m].kwh      += Number(r.consumo_periodo ?? 0); porMes[m].montoCfe  += monto }
+      if (tipo === 'Agua') { porMes[m].agua     += Number(r.consumo_periodo ?? 0); porMes[m].montoAgua += monto }
+      porMes[m].monto += monto
     })
     setServiciosMes(Object.values(porMes))
 
@@ -425,7 +426,7 @@ export default function DashboardMantenimientoPage() {
 
         {/* Gráficas por mes */}
         {!loading && serviciosMes.some(m => m.kwh > 0 || m.agua > 0 || m.monto > 0) && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {/* KWH */}
             <div className="card" style={{ padding: '14px 16px' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#d97706', marginBottom: 10,
@@ -435,6 +436,18 @@ export default function DashboardMantenimientoPage() {
               <BarChart
                 data={serviciosMes.map(m => ({ label: m.mes, value: m.kwh }))}
                 color="#d97706" unit="kWh"
+              />
+            </div>
+            {/* Monto CFE */}
+            <div className="card" style={{ padding: '14px 16px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#d97706', marginBottom: 10,
+                display: 'flex', alignItems: 'center', gap: 6 }}>
+                ⚡ Monto CFE por mes
+              </div>
+              <BarChart
+                data={serviciosMes.map(m => ({ label: m.mes, value: m.montoCfe }))}
+                color="#f59e0b" unit="$"
+                fmt={v => '$' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toLocaleString('es-MX', { maximumFractionDigits: 0 }))}
               />
             </div>
             {/* Agua */}
@@ -448,15 +461,15 @@ export default function DashboardMantenimientoPage() {
                 color="#0891b2" unit="m³"
               />
             </div>
-            {/* Monto */}
+            {/* Monto Agua */}
             <div className="card" style={{ padding: '14px 16px' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#059669', marginBottom: 10,
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0891b2', marginBottom: 10,
                 display: 'flex', alignItems: 'center', gap: 6 }}>
-                💰 Monto por mes
+                💧 Monto Agua por mes
               </div>
               <BarChart
-                data={serviciosMes.map(m => ({ label: m.mes, value: m.monto }))}
-                color="#059669" unit="$"
+                data={serviciosMes.map(m => ({ label: m.mes, value: m.montoAgua }))}
+                color="#0369a1" unit="$"
                 fmt={v => '$' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toLocaleString('es-MX', { maximumFractionDigits: 0 }))}
               />
             </div>
