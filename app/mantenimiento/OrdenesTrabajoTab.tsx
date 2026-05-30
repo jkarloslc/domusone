@@ -51,6 +51,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
   const [rows, setRows]           = useState<any[]>([])
   const [total, setTotal]         = useState(0)
   const [loading, setLoading]     = useState(true)
+  const [kpis, setKpis]           = useState({ pendientes: 0, enProceso: 0, completadas: 0, urgentes: 0 })
   const [areas, setAreas] = useState<any[]>([])
   const [areaMap, setAreaMap]       = useState<Record<number, string>>({})
   const [centrosCosto, setCentros] = useState<any[]>([])
@@ -71,6 +72,17 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+
+    // Conteos sin filtros de status/tipo para KPIs exactos
+    const { data: todos } = await dbCtrl.from('ordenes_trabajo')
+      .select('status, prioridad').eq('empresa', empresa)
+    setKpis({
+      pendientes:  (todos ?? []).filter(r => r.status === 'Pendiente').length,
+      enProceso:   (todos ?? []).filter(r => r.status === 'En Proceso').length,
+      completadas: (todos ?? []).filter(r => r.status === 'Completada').length,
+      urgentes:    (todos ?? []).filter(r => r.prioridad === 'Urgente' && r.status !== 'Completada').length,
+    })
+
     let q = dbCtrl.from('ordenes_trabajo').select('*', { count: 'exact' })
       .eq('empresa', empresa)
       .order('created_at', { ascending: false })
@@ -105,12 +117,6 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const kpis = {
-    pendientes:  rows.filter(r => r.status === 'Pendiente').length,
-    enProceso:   rows.filter(r => r.status === 'En Proceso').length,
-    completadas: rows.filter(r => r.status === 'Completada').length,
-    urgentes:    rows.filter(r => r.prioridad === 'Urgente' && r.status !== 'Completada').length,
-  }
 
   return (
     <div>

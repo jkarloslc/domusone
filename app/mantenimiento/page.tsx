@@ -75,6 +75,7 @@ export default function MantenimientoPage() {
   const [frMap,        setFrMap]      = useState<Record<number, string>>({})
   const [relAF,        setRelAF]      = useState<{id_area: number; id_frente: number}[]>([])
   const [loading,      setLoading]    = useState(true)
+  const [otStats, setOtStats] = useState<Record<string, Record<string, number>>>({ Balvanera: {}, Cuadrilla: {} })
   const [filterAnio,   setFilterAnio] = useState(new Date().getFullYear())
   const [filterCC,     setFilterCC]   = useState('')
   const [filterArea,  setFilterArea]  = useState('')
@@ -127,6 +128,20 @@ export default function MantenimientoPage() {
   }, [filterAnio, filterCC, filterArea, filterFr])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    const cargarOtStats = async () => {
+      const { data } = await dbCtrl.from('ordenes_trabajo').select('empresa, status, prioridad')
+      const stats: Record<string, Record<string, number>> = { Balvanera: {}, Cuadrilla: {} }
+      ;(data ?? []).forEach((r: any) => {
+        const emp = r.empresa ?? 'Balvanera'
+        if (!stats[emp]) stats[emp] = {}
+        stats[emp][r.status] = (stats[emp][r.status] ?? 0) + 1
+      })
+      setOtStats(stats)
+    }
+    cargarOtStats()
+  }, [])
 
   const todasTareas = programas.flatMap((p: any) => p.tareas ?? [])
   const completadas = todasTareas.filter((t: any) => t.status === 'Completada').length
@@ -182,8 +197,8 @@ export default function MantenimientoPage() {
 
       {tab === 'programa' && (
         <div>
-          {/* KPIs */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+          {/* KPIs Programa Anual */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
             {[
               { label: 'Programas',   value: programas.length,                                       color: 'var(--blue)', bg: 'var(--blue-pale)' },
               { label: 'Pendientes',  value: todasTareas.filter((t: any) => t.status === 'Pendiente').length, color: '#d97706', bg: '#fffbeb' },
@@ -199,6 +214,38 @@ export default function MantenimientoPage() {
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{k.label}</div>
               </div>
             ))}
+          </div>
+
+          {/* KPIs OTs por empresa */}
+          <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
+            {(['Balvanera', 'Cuadrilla'] as const).map(emp => {
+              const s       = otStats[emp] ?? {}
+              const etiqueta = emp === 'Balvanera' ? 'OT Mantto. Res' : 'OT Cuadrilla'
+              const total   = Object.values(s).reduce((a, b) => a + b, 0)
+              const pend    = s['Pendiente']  ?? 0
+              const proc    = s['En Proceso'] ?? 0
+              const comp    = s['Completada'] ?? 0
+              return (
+                <div key={emp} className="card" style={{ padding: '12px 16px', minWidth: 280, flex: '1 1 280px', maxWidth: 400 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+                    {etiqueta}
+                  </div>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    {[
+                      { label: 'Total',       value: total, color: 'var(--blue)',  bg: 'var(--blue-pale)' },
+                      { label: 'Pendientes',  value: pend,  color: '#d97706',      bg: '#fffbeb' },
+                      { label: 'En Proceso',  value: proc,  color: '#2563eb',      bg: '#eff6ff' },
+                      { label: 'Completadas', value: comp,  color: '#15803d',      bg: '#f0fdf4' },
+                    ].map(k => (
+                      <div key={k.label} style={{ flex: 1, textAlign: 'center', padding: '8px 4px', background: k.bg, borderRadius: 8 }}>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{k.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
           {/* Filtros */}
