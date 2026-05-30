@@ -66,9 +66,10 @@ export default function ServiciosTab() {
   const [centrosCosto,  setCentrosCosto]  = useState<any[]>([])
   const [ccMap,         setCcMap]         = useState<Record<number, string>>({})
   const [loading,       setLoading]       = useState(true)
-  const [filterTipo,    setFilterTipo]    = useState('')
-  const [filterUbic,    setFilterUbic]    = useState('')
-  const [filterCC,      setFilterCC]      = useState('')
+  const [filterTipo,      setFilterTipo]      = useState('')
+  const [filterUbic,      setFilterUbic]      = useState('')
+  const [filterCC,        setFilterCC]        = useState('')
+  const [filterNoServicio, setFilterNoServicio] = useState('')
   const [expandidos,    setExpandidos]    = useState<Record<number, boolean>>({})
   const [vistaReporte,  setVistaReporte]  = useState(false)
   const [modalCat,      setModalCat]      = useState(false)
@@ -120,9 +121,10 @@ export default function ServiciosTab() {
   }, [])
 
   const filteredCat = catalogo.filter(c => {
-    if (filterTipo && c.tipo_servicio !== filterTipo) return false
-    if (filterUbic && !c.ubicacion?.toLowerCase().includes(filterUbic.toLowerCase())) return false
-    if (filterCC   && String(c.id_centro_costo_fk) !== filterCC) return false
+    if (filterTipo       && c.tipo_servicio !== filterTipo) return false
+    if (filterUbic       && !c.ubicacion?.toLowerCase().includes(filterUbic.toLowerCase())) return false
+    if (filterCC         && String(c.id_centro_costo_fk) !== filterCC) return false
+    if (filterNoServicio && !c.no_servicio?.toLowerCase().includes(filterNoServicio.toLowerCase())) return false
     return true
   })
 
@@ -247,14 +249,19 @@ export default function ServiciosTab() {
         </select>
 
         <input className="input"
-          style={{ flex: '1 1 130px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }}
-          placeholder="Buscar ubicación…"
+          style={{ flex: '1 1 120px', maxWidth: 180, fontSize: 12, padding: '3px 8px', height: 28 }}
+          placeholder="No. Servicio…"
+          value={filterNoServicio} onChange={e => setFilterNoServicio(e.target.value)} />
+
+        <input className="input"
+          style={{ flex: '1 1 120px', maxWidth: 180, fontSize: 12, padding: '3px 8px', height: 28 }}
+          placeholder="Ubicación…"
           value={filterUbic} onChange={e => setFilterUbic(e.target.value)} />
 
-        {(filterCC || filterTipo || filterUbic) && (
+        {(filterCC || filterTipo || filterUbic || filterNoServicio) && (
           <button className="btn-ghost"
             style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
-            onClick={() => { setFilterCC(''); setFilterTipo(''); setFilterUbic('') }}>
+            onClick={() => { setFilterCC(''); setFilterTipo(''); setFilterUbic(''); setFilterNoServicio('') }}>
             <X size={11} /> Limpiar
           </button>
         )}
@@ -329,12 +336,21 @@ export default function ServiciosTab() {
                       </div>
                     )}
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: ts?.color ?? 'var(--blue)',
-                        fontFamily: 'monospace', letterSpacing: '0.02em' }}>
-                        {servicio.no_servicio}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: ts?.color ?? 'var(--blue)',
+                          fontFamily: 'monospace', letterSpacing: '0.02em' }}>
+                          {servicio.no_servicio}
+                        </div>
+                        {servicio.ubicacion && (
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px',
+                            borderRadius: 20, background: (ts?.color ?? '#64748b') + '15',
+                            color: ts?.color ?? '#64748b', border: `1px solid ${ts?.color ?? '#64748b'}30` }}>
+                            {servicio.ubicacion}
+                          </span>
+                        )}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-                        {servicio.ubicacion ?? 'Sin ubicación'} · {servicio.modalidad}
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {servicio.modalidad}
                         {servicio.id_centro_costo_fk && ccMap[servicio.id_centro_costo_fk] && (
                           <span style={{ marginLeft: 6, color: 'var(--text-secondary)' }}>
                             · {ccMap[servicio.id_centro_costo_fk]}
