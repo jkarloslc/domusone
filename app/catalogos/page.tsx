@@ -1355,9 +1355,10 @@ function CatalogoModal({ config, row, onClose, onSaved }:
 
     const payload: Record<string, any> = { activo: form.activo === 'true' }
     config.campos.forEach(c => {
-      if (c.type === 'number')   payload[c.key] = form[c.key] ? Number(form[c.key]) : null
-      else if (c.type === 'select') payload[c.key] = form[c.key] ? Number(form[c.key]) : null
-      else if (c.type === 'file')   payload[c.key] = form[c.key]?.trim() || null
+      if (c.type === 'number')        payload[c.key] = form[c.key] ? Number(form[c.key]) : null
+      else if (c.type === 'select' && c.staticOptions) payload[c.key] = form[c.key] || null
+      else if (c.type === 'select')   payload[c.key] = form[c.key] ? Number(form[c.key]) : null
+      else if (c.type === 'file')     payload[c.key] = form[c.key]?.trim() || null
       else payload[c.key] = form[c.key]?.trim() || null
     })
 
