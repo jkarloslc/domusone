@@ -57,7 +57,7 @@ export default function OrdenesTrabajoPage() {
   const [rows, setRows]         = useState<any[]>([])
   const [total, setTotal]       = useState(0)
   const [loading, setLoading]   = useState(true)
-  const [secciones, setSecciones] = useState<any[]>([])
+  const [areas, setAreas]       = useState<any[]>([])
   const [secMap, setSecMap]     = useState<Record<number, string>>({})
   const [search, setSearch]     = useState('')
   const debouncedSearch         = useDebounce(search, 300)
@@ -75,16 +75,16 @@ export default function OrdenesTrabajoPage() {
     if (debouncedSearch)  q = q.or(`folio.ilike.%${debouncedSearch}%,titulo.ilike.%${debouncedSearch}%,asignado_a.ilike.%${debouncedSearch}%`)
     if (filterStatus)     q = q.eq('status', filterStatus)
     if (filterTipo)       q = q.eq('tipo_trabajo', filterTipo)
-    if (filterSec)        q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterSec)        q = q.eq('id_area_fk', Number(filterSec))
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
   }, [debouncedSearch, filterStatus, filterTipo, filterSec])
 
   useEffect(() => {
-    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+    dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => {
-        setSecciones(data ?? [])
+        setAreas(data ?? [])
         const m: Record<number, string> = {}
         ;(data ?? []).forEach((s: any) => { m[s.id] = s.nombre })
         setSecMap(m)
@@ -159,8 +159,8 @@ export default function OrdenesTrabajoPage() {
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
         <select className="select" style={{ minWidth: 160 }} value={filterSec} onChange={e => setFilterSec(e.target.value)}>
-          <option value="">Todas las secciones</option>
-          {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          <option value="">Todas las áreas</option>
+          {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
         <button className="btn-ghost" onClick={fetchData}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
@@ -175,7 +175,7 @@ export default function OrdenesTrabajoPage() {
               <th>Folio</th>
               <th>Título</th>
               <th>Tipo</th>
-              <th>Sección</th>
+              <th>Área</th>
               <th>Asignado</th>
               <th>F. Límite</th>
               <th>Prioridad</th>
@@ -200,7 +200,7 @@ export default function OrdenesTrabajoPage() {
                   {r.ubicacion_detalle && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.ubicacion_detalle}</div>}
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.tipo_trabajo ?? '—'}</td>
-                <td style={{ fontSize: 12 }}>{r.id_seccion_fk ? (secMap[r.id_seccion_fk] ?? '—') : '—'}</td>
+                <td style={{ fontSize: 12 }}>{r.id_area_fk ? (secMap[r.id_area_fk] ?? '—') : '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.asignado_a ?? '—'}</td>
                 <td style={{ fontSize: 12, color: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? '#dc2626' : 'var(--text-secondary)', fontWeight: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? 600 : 400 }}>
                   {fmtFecha(r.fecha_limite)}
@@ -218,9 +218,9 @@ export default function OrdenesTrabajoPage() {
         </table>
       </div>
 
-      {modal      && <OTModal secciones={secciones} ot={editingOT} onClose={() => { setModal(false); setEditingOT(null) }} onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
+      {modal      && <OTModal areas={areas} ot={editingOT} onClose={() => { setModal(false); setEditingOT(null) }} onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
       {detail     && <OTDetail ot={detail} secMap={secMap} onClose={() => { setDetail(null); fetchData() }} onEdit={ot => { setDetail(null); setEditingOT(ot); setModal(true) }} />}
-      {reportModal && <ReporteSemanal secciones={secciones} secMap={secMap} onClose={() => setReportModal(false)} />}
+      {reportModal && <ReporteSemanal areas={areas} secMap={secMap} onClose={() => setReportModal(false)} />}
     </div>
   )
 }
@@ -228,8 +228,8 @@ export default function OrdenesTrabajoPage() {
 // ════════════════════════════════════════════════════════════
 // Modal nueva/editar OT
 // ════════════════════════════════════════════════════════════
-function OTModal({ secciones, ot, onClose, onSaved }: {
-  secciones: any[]; ot?: any; onClose: () => void; onSaved: () => void
+function OTModal({ areas, ot, onClose, onSaved }: {
+  areas: any[]; ot?: any; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
@@ -239,7 +239,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
     tipo_trabajo:     ot?.tipo_trabajo     ?? '',
     prioridad:        ot?.prioridad        ?? 'Media',
     status:           ot?.status           ?? 'Pendiente',
-    id_seccion_fk:    ot?.id_seccion_fk?.toString() ?? '',
+    id_area_fk:       ot?.id_area_fk?.toString() ?? '',
     ubicacion_detalle: ot?.ubicacion_detalle ?? '',
     descripcion:      ot?.descripcion      ?? '',
     notas:            ot?.notas            ?? '',
@@ -296,7 +296,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
         tipo_trabajo:      form.tipo_trabajo  || null,
         prioridad:         form.prioridad,
         status:            form.status,
-        id_seccion_fk:     form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+        id_area_fk:        form.id_area_fk ? Number(form.id_area_fk) : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
         descripcion:       form.descripcion.trim() || null,
         notas:             form.notas.trim() || null,
@@ -317,7 +317,7 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
         tipo_trabajo:      form.tipo_trabajo  || null,
         prioridad:         form.prioridad,
         status:            form.status,
-        id_seccion_fk:     form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
+        id_area_fk:        form.id_area_fk ? Number(form.id_area_fk) : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
         descripcion:       form.descripcion.trim() || null,
         notas:             form.notas.trim() || null,
@@ -396,12 +396,12 @@ function OTModal({ secciones, ot, onClose, onSaved }: {
             </div>
           </div>
 
-          {/* Sección / Ubicación */}
+          {/* Área / Ubicación */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div><label className="label">Sección</label>
-              <select className="select" value={form.id_seccion_fk} onChange={setF('id_seccion_fk')}>
-                <option value="">— Sin sección —</option>
-                {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            <div><label className="label">Área</label>
+              <select className="select" value={form.id_area_fk} onChange={setF('id_area_fk')}>
+                <option value="">— Sin área —</option>
+                {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </div>
             <div><label className="label">Detalle de Ubicación</label>
@@ -690,8 +690,8 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
 // ════════════════════════════════════════════════════════════
 // Reporte Semanal PDF — mismo formato que S-38
 // ════════════════════════════════════════════════════════════
-function ReporteSemanal({ secciones, secMap, onClose }: {
-  secciones: any[]; secMap: Record<number, string>; onClose: () => void
+function ReporteSemanal({ areas, secMap, onClose }: {
+  areas: any[]; secMap: Record<number, string>; onClose: () => void
 }) {
   const [semana,      setSemana]      = useState(semanaActual())
   const [anio,        setAnio]        = useState(new Date().getFullYear())
@@ -704,8 +704,8 @@ function ReporteSemanal({ secciones, secMap, onClose }: {
   const cargarOTs = useCallback(async () => {
     setLoaded(false)
     let q = dbCtrl.from('ordenes_trabajo').select('*')
-      .eq('semana_no', semana).eq('anio', anio).order('id_seccion_fk')
-    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
+      .eq('semana_no', semana).eq('anio', anio).order('id_area_fk')
+    if (filterSec) q = q.eq('id_area_fk', Number(filterSec))
     const { data } = await q
     const ids = (data ?? []).map((o: any) => o.id)
 
@@ -757,10 +757,10 @@ function ReporteSemanal({ secciones, secMap, onClose }: {
     const fechaReporte = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
     const seccionNombre = filterSec ? (secMap[Number(filterSec)] ?? 'Todas') : 'Mantenimiento Residencial'
 
-    // Agrupar OTs por sección
+    // Agrupar OTs por área
     const porSeccion: Record<string, any[]> = {}
     ots.forEach(o => {
-      const key = o.id_seccion_fk ? (secMap[o.id_seccion_fk] ?? 'Sin sección') : 'Sin sección'
+      const key = o.id_area_fk ? (secMap[o.id_area_fk] ?? 'Sin área') : 'Sin área'
       if (!porSeccion[key]) porSeccion[key] = []
       porSeccion[key].push(o)
     })
@@ -945,12 +945,12 @@ ${todosRecursos.length > 0 ? `
             </div>
           </div>
 
-          {/* Sección (opcional) */}
+          {/* Área (opcional) */}
           <div>
-            <label className="label">Sección (opcional — todas si vacío)</label>
+            <label className="label">Área (opcional — todas si vacío)</label>
             <select className="select" value={filterSec} onChange={e => setFilterSec(e.target.value)}>
-              <option value="">Todas las secciones</option>
-              {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              <option value="">Todas las áreas</option>
+              {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
           </div>
 
