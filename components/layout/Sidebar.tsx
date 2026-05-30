@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, Truck, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark, MessageSquare,
-  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, Droplets, BookOpen,
+  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, Droplets, BookOpen, Store,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -91,6 +91,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
+      { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
@@ -132,6 +133,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
+      { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
@@ -172,6 +174,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
     ]},
     { section: 'Club', items: [
+      { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
@@ -205,6 +208,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       RPT('residencial'),
     ]},
     { section: 'Club', items: [
+      { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
@@ -241,6 +245,15 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
+    ]},
+    { section: 'Club', items: [
+      { label: 'Punto de Venta',    href: '/golf/pos',    icon: Store         },
+      { label: 'Golf',              href: '/golf',        icon: Flag          },
+      { label: 'Torneos Golf',      href: '/golf/torneos',icon: Flag          },
+      { label: 'Riego',             href: '/golf/riego',  icon: Droplets      },
+      { label: 'Hípico',            href: '/hipico',      icon: HorseIcon     },
+      { label: 'Hospitality',       href: '/hospitality', icon: Star          },
+      RPT('golf'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -380,9 +393,10 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   usuariogolf: [
     { section: 'Club', items: [
-      { label: 'Golf',         href: '/golf',         icon: Flag },
-      { label: 'Torneos',      href: '/golf/torneos', icon: Flag },
-      { label: 'Riego',        href: '/golf/riego',   icon: Droplets },
+      { label: 'Punto de Venta', href: '/golf/pos',    icon: Store    },
+      { label: 'Golf',           href: '/golf',        icon: Flag     },
+      { label: 'Torneos',        href: '/golf/torneos',icon: Flag     },
+      { label: 'Riego',          href: '/golf/riego',  icon: Droplets },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
