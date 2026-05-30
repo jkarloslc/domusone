@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { dbGolf } from '@/lib/supabase'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import {
-  Users, Flag, MapPin, Calendar, Tag, ShoppingCart,
+  Users, Flag, MapPin, Calendar, Tag,
   Car, Lock, CreditCard, Receipt, FileText,
   ChevronRight, ArrowRightLeft, RefreshCw, AlertTriangle,
   TrendingUp, Activity,
@@ -78,15 +78,6 @@ const MODULOS = [
     color: '#0891b2',
     href: '/golf/clinicas',
     activo: false,
-  },
-  {
-    key: 'pos',
-    label: 'Ventas / POS',
-    desc: 'Punto de venta, cortes de caja y historial por socio',
-    icon: ShoppingCart,
-    color: '#dc2626',
-    href: '/golf/pos',
-    activo: true,
   },
   {
     key: 'carritos',
