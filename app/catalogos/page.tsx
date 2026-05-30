@@ -944,7 +944,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
                 {colsTabla.map(c => (
                   <td key={c.key} style={{ fontSize: c.key === 'nombre' ? 14 : 12, fontWeight: c.key === 'nombre' ? 500 : 400, color: 'var(--text-secondary)' }}>
                     {c.type === 'select'
-                      ? (selectMaps[c.key]?.[row[c.key]] ?? '—')
+                      ? (c.staticOptions ? (row[c.key] ?? '—') : (selectMaps[c.key]?.[row[c.key]] ?? '—'))
                       : c.type === 'number' && row[c.key] != null
                         ? (['monto', 'saldo'].includes(c.key) ? '$' + Number(row[c.key]).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : row[c.key])
                         : (row[c.key] ?? '—')}
