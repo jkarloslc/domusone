@@ -138,8 +138,8 @@ export default function DashboardMantenimientoPage() {
   const [progPorMes, setProgPorMes] = useState<{ mes: string; pct: number }[]>([])
 
   // OTs
-  const [otBalv,    setOtBalv]    = useState({ abiertas: 0, completadas: 0, canceladas: 0, total: 0 })
-  const [otOitydisa, setOtOitydisa] = useState({ abiertas: 0, completadas: 0, canceladas: 0, total: 0 })
+  const [otBalv,      setOtBalv]      = useState({ abiertas: 0, completadas: 0, canceladas: 0, total: 0 })
+  const [otCuadrilla, setOtCuadrilla] = useState({ abiertas: 0, completadas: 0, canceladas: 0, total: 0 })
 
   // Vehículos
   const [vehiculos, setVehiculos] = useState({ total: 0, bitacorasMes: 0 })
@@ -210,7 +210,7 @@ export default function DashboardMantenimientoPage() {
       }
     }
     setOtBalv(calcOt('Balvanera'))
-    setOtOitydisa(calcOt('Oitydisa'))
+    setOtCuadrilla(calcOt('Cuadrilla'))
 
     // ── Vehículos ──────────────────────────────────────────
     const total = equiposR.status === 'fulfilled' ? (equiposR.value.count ?? 0) : 0
@@ -313,11 +313,11 @@ export default function DashboardMantenimientoPage() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <OtBloque
-            titulo="OT Balvanera" empresa="Balvanera" color="#2563eb"
+            titulo="OT Mantto. Res" empresa="Balvanera" color="#2563eb"
             data={otBalv} loading={loading} href="/mantenimiento" />
           <OtBloque
-            titulo="OT Cuadrilla" empresa="Oitydisa" color="#7c3aed"
-            data={otOitydisa} loading={loading} href="/mantenimiento" />
+            titulo="OT Cuadrilla" empresa="Cuadrilla" color="#7c3aed"
+            data={otCuadrilla} loading={loading} href="/mantenimiento" />
         </div>
       </div>
 
