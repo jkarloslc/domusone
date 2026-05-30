@@ -49,6 +49,42 @@ function CumplimientoBar({ pct, label }: { pct: number; label: string }) {
   )
 }
 
+function BarChart({ data, color, unit, fmt }: {
+  data: { label: string; value: number }[]
+  color: string
+  unit: string
+  fmt?: (v: number) => string
+}) {
+  const max = Math.max(...data.map(d => d.value), 1)
+  const fmtVal = fmt ?? ((v: number) => v.toLocaleString('es-MX', { maximumFractionDigits: 1 }))
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 100, paddingBottom: 20, position: 'relative' }}>
+      {data.map((d, i) => {
+        const pct = Math.round((d.value / max) * 100)
+        return (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, height: '100%', justifyContent: 'flex-end' }}>
+            {d.value > 0 && (
+              <div style={{ fontSize: 8, color, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                {fmtVal(d.value)}
+              </div>
+            )}
+            <div style={{ width: '100%', height: `${pct}%`, minHeight: d.value > 0 ? 3 : 0,
+              background: color, borderRadius: '3px 3px 0 0', opacity: 0.85,
+              transition: 'height 0.4s ease' }} />
+            <div style={{ fontSize: 9, color: 'var(--text-muted)', position: 'absolute', bottom: 0,
+              left: `calc(${(i / data.length) * 100}% + ${100 / data.length / 2}%)`,
+              transform: 'translateX(-50%)' }}>
+              {d.label}
+            </div>
+          </div>
+        )
+      })}
+      <div style={{ position: 'absolute', bottom: 18, right: 0, fontSize: 9,
+        color: 'var(--text-muted)', fontWeight: 600 }}>{unit}</div>
+    </div>
+  )
+}
+
 function OtBloque({ titulo, empresa, color, data, loading, href }: {
   titulo: string; empresa: string; color: string
   data: { abiertas: number; completadas: number; canceladas: number; total: number }
@@ -144,6 +180,10 @@ export default function DashboardMantenimientoPage() {
   // Vehículos
   const [vehiculos, setVehiculos] = useState({ total: 0, bitacorasMes: 0 })
 
+  // Servicios
+  type MesServicio = { mes: string; kwh: number; agua: number; monto: number }
+  const [serviciosMes, setServiciosMes] = useState<MesServicio[]>([])
+
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -152,16 +192,23 @@ export default function DashboardMantenimientoPage() {
   const loadAll = useCallback(async () => {
     setRefreshing(true)
 
-    const [progR, otAllR, equiposR, bitacoraR] = await Promise.allSettled([
+    const [progR, otAllR, equiposR, bitacoraR, svcCatR, svcRegR] = await Promise.allSettled([
       // Programas del año activos
       dbCtrl.from('programas_mantenimiento').select('id').eq('anio', anio).eq('activo', true),
       // Todas las OTs (ambas empresas)
       dbCtrl.from('ordenes_trabajo').select('empresa, status'),
       // Equipos activos
       dbCfg.from('equipos').select('id', { count: 'exact', head: true }).eq('activo', true),
-      // Bitácoras del mes actual (por fecha_inicio, no created_at)
+      // Bitácoras del mes actual
       dbCtrl.from('bitacora_equipos').select('id', { count: 'exact', head: true })
         .eq('activo', true).gte('fecha_inicio', mesIni),
+      // Catálogo de servicios
+      dbCtrl.from('servicios_catalogo').select('id, tipo_servicio').eq('activo', true),
+      // Registros del año
+      dbCtrl.from('servicios_registros')
+        .select('id_servicio_fk, fecha_inicio, consumo_periodo, monto_periodo')
+        .gte('fecha_inicio', `${anio}-01-01`)
+        .lt('fecha_inicio',  `${anio + 1}-01-01`),
     ])
 
     // ── Programas y tareas (2 queries encadenadas) ──────────
@@ -216,6 +263,26 @@ export default function DashboardMantenimientoPage() {
     const total = equiposR.status === 'fulfilled' ? (equiposR.value.count ?? 0) : 0
     const bMes  = bitacoraR.status === 'fulfilled' ? (bitacoraR.value.count ?? 0) : 0
     setVehiculos({ total, bitacorasMes: bMes })
+
+    // ── Servicios por mes ──────────────────────────────────
+    const svcCat: any[]  = svcCatR.status === 'fulfilled'  ? (svcCatR.value.data  ?? []) : []
+    const svcReg: any[]  = svcRegR.status === 'fulfilled'  ? (svcRegR.value.data  ?? []) : []
+    const tipoMap: Record<number, string> = {}
+    svcCat.forEach((c: any) => { tipoMap[c.id] = c.tipo_servicio })
+
+    const porMes: Record<number, MesServicio> = {}
+    for (let m = 1; m <= 12; m++) {
+      porMes[m] = { mes: MESES_CORTO[m - 1], kwh: 0, agua: 0, monto: 0 }
+    }
+    svcReg.forEach((r: any) => {
+      const m = new Date(r.fecha_inicio + 'T12:00:00').getMonth() + 1
+      if (!porMes[m]) return
+      const tipo = tipoMap[r.id_servicio_fk]
+      if (tipo === 'CFE')   porMes[m].kwh   += Number(r.consumo_periodo ?? 0)
+      if (tipo === 'Agua')  porMes[m].agua  += Number(r.consumo_periodo ?? 0)
+      porMes[m].monto += Number(r.monto_periodo ?? 0)
+    })
+    setServiciosMes(Object.values(porMes))
 
     setLoading(false)
     setRefreshing(false)
@@ -319,6 +386,82 @@ export default function DashboardMantenimientoPage() {
             titulo="OT Cuadrilla" empresa="Cuadrilla" color="#7c3aed"
             data={otCuadrilla} loading={loading} href="/mantenimiento" />
         </div>
+      </div>
+
+      {/* ─── Servicios CFE / Agua ────────────────────────────────── */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+          textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
+          Servicios · {anio}
+        </div>
+
+        {/* KPIs resumen */}
+        {!loading && (() => {
+          const totalKwh   = serviciosMes.reduce((a, m) => a + m.kwh,   0)
+          const totalAgua  = serviciosMes.reduce((a, m) => a + m.agua,  0)
+          const totalMonto = serviciosMes.reduce((a, m) => a + m.monto, 0)
+          return (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+              {[
+                { label: 'Consumo KWH acum.', value: totalKwh.toLocaleString('es-MX', { maximumFractionDigits: 0 }), unit: 'kWh', color: '#d97706', bg: '#fffbeb', icon: '⚡' },
+                { label: 'Consumo Agua acum.', value: totalAgua.toLocaleString('es-MX', { maximumFractionDigits: 1 }), unit: 'm³', color: '#0891b2', bg: '#ecfeff', icon: '💧' },
+                { label: 'Monto total',         value: '$' + totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 }), unit: '', color: '#059669', bg: '#f0fdf4', icon: '💰' },
+              ].map(k => (
+                <div key={k.label} className="card" style={{ padding: '14px 18px', background: k.bg,
+                  display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 160px', maxWidth: 260 }}>
+                  <div style={{ fontSize: 22 }}>{k.icon}</div>
+                  <div>
+                    <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontWeight: 700,
+                      color: k.color, fontVariantNumeric: 'tabular-nums' }}>
+                      {k.value} <span style={{ fontSize: 11, fontWeight: 400 }}>{k.unit}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{k.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
+
+        {/* Gráficas por mes */}
+        {!loading && serviciosMes.some(m => m.kwh > 0 || m.agua > 0 || m.monto > 0) && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            {/* KWH */}
+            <div className="card" style={{ padding: '14px 16px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#d97706', marginBottom: 10,
+                display: 'flex', alignItems: 'center', gap: 6 }}>
+                ⚡ Consumo KWH por mes
+              </div>
+              <BarChart
+                data={serviciosMes.map(m => ({ label: m.mes, value: m.kwh }))}
+                color="#d97706" unit="kWh"
+              />
+            </div>
+            {/* Agua */}
+            <div className="card" style={{ padding: '14px 16px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#0891b2', marginBottom: 10,
+                display: 'flex', alignItems: 'center', gap: 6 }}>
+                💧 Consumo Agua por mes
+              </div>
+              <BarChart
+                data={serviciosMes.map(m => ({ label: m.mes, value: m.agua }))}
+                color="#0891b2" unit="m³"
+              />
+            </div>
+            {/* Monto */}
+            <div className="card" style={{ padding: '14px 16px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#059669', marginBottom: 10,
+                display: 'flex', alignItems: 'center', gap: 6 }}>
+                💰 Monto por mes
+              </div>
+              <BarChart
+                data={serviciosMes.map(m => ({ label: m.mes, value: m.monto }))}
+                color="#059669" unit="$"
+                fmt={v => '$' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toLocaleString('es-MX', { maximumFractionDigits: 0 }))}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ─── Vehículos y Maquinaria ─────────────────────────────── */}
