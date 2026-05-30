@@ -564,28 +564,37 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
   onEdit: (ot: any) => void
 }) {
   const { authUser } = useAuth()
-  const [recursos,   setRecursos]   = useState<any[]>([])
-  const [evidencias, setEvidencias] = useState<any[]>([])
-  const [loading,    setLoading]    = useState(true)
-  const [uploading,  setUploading]  = useState(false)
+  const [recursos,    setRecursos]   = useState<any[]>([])
+  const [manoObra,    setManoObra]   = useState<any[]>([])
+  const [catMO,       setCatMO]      = useState<Record<number, string>>({})
+  const [evidencias,  setEvidencias] = useState<any[]>([])
+  const [loading,     setLoading]    = useState(true)
+  const [uploading,   setUploading]  = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [currentStatus,  setCurrentStatus]  = useState(ot.status)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const fetchDetalle = useCallback(async () => {
     setLoading(true)
-    const [{ data: rec }, { data: ev }] = await Promise.all([
+    const [{ data: rec }, { data: mo }, { data: ev }, { data: cats }] = await Promise.all([
       dbCtrl.from('ot_recursos').select('*').eq('id_ot_fk', ot.id).order('id'),
+      dbCtrl.from('ot_mano_obra').select('*').eq('id_ot_fk', ot.id).order('id'),
       dbCtrl.from('ot_evidencias').select('*').eq('id_ot_fk', ot.id).order('created_at'),
+      dbCfg.from('cat_categorias_mano_obra').select('id, categoria, costo_hora_referencia').eq('activo', true),
     ])
     setRecursos(rec ?? [])
+    setManoObra(mo ?? [])
+    const m: Record<number, string> = {}
+    ;(cats ?? []).forEach((c: any) => { m[c.id] = c.categoria })
+    setCatMO(m)
     setEvidencias(ev ?? [])
     setLoading(false)
   }, [ot.id])
 
   useEffect(() => { fetchDetalle() }, [fetchDetalle])
 
-  const costoTotal = recursos.reduce((a, r) => a + Number(r.costo || 0), 0)
+  const costoRecursos = recursos.reduce((a, r) => a + Number(r.costo || 0), 0)
+  const costoTotal    = costoRecursos
 
   const cambiarStatus = async (nuevoStatus: string) => {
     setUpdatingStatus(true)
@@ -650,18 +659,45 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
       'Completada': '#15803d', 'Cancelada': '#94a3b8'
     }
 
+    const moRows = manoObra.map(r => {
+      const categoria = catMO[r.id_categoria_fk] ?? '—'
+      const costoMO   = Number(r.costo_total || 0)
+      return `<tr>
+        <td>${categoria}</td>
+        <td style="text-align:center">${r.trabajadores ?? 1}</td>
+        <td style="text-align:right">${Number(r.horas ?? 0).toFixed(2)}</td>
+        <td style="text-align:right">${costoMO > 0 ? '$' + costoMO.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}</td>
+      </tr>`
+    }).join('')
+    const costoMOTotal = manoObra.reduce((a, r) => a + Number(r.costo_total || 0), 0)
+    const moTotalHtml  = costoMOTotal > 0
+      ? `<tr style="background:#fef3c7;font-weight:700">
+          <td colspan="3" style="color:#b45309">TOTAL MANO DE OBRA</td>
+          <td style="text-align:right;color:#b45309">$${costoMOTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+        </tr>`
+      : ''
+
     const recursoRows = recursos.map(r =>
       `<tr>
         <td>${r.cantidad ?? '—'}</td>
         <td>${r.descripcion ?? ''}</td>
+        <td>${r.tipo ?? '—'}</td>
         <td style="text-align:right">${Number(r.costo) > 0 ? '$' + Number(r.costo).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}</td>
       </tr>`
     ).join('')
-
-    const costoHtml = costoTotal > 0
+    const costoRecTotal = costoRecursos
+    const costoHtml = costoRecTotal > 0
       ? `<tr style="background:#eff6ff;font-weight:700">
-          <td colspan="2" style="color:#0D4F80">TOTAL</td>
-          <td style="text-align:right;color:#0D4F80">$${costoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+          <td colspan="3" style="color:#0D4F80">TOTAL RECURSOS</td>
+          <td style="text-align:right;color:#0D4F80">$${costoRecTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+        </tr>`
+      : ''
+
+    const costoGranTotal = costoMOTotal + costoRecTotal
+    const granTotalHtml = costoGranTotal > 0
+      ? `<tr style="background:#0D4F80;color:#fff;font-weight:700;font-size:13px;">
+          <td colspan="3">COSTO TOTAL DE LA OT</td>
+          <td style="text-align:right">$${costoGranTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
         </tr>`
       : ''
 
@@ -722,14 +758,29 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
       ${ot.descripcion ? `<h2>Descripción</h2><div class="desc">${ot.descripcion}</div>` : ''}
       ${ot.notas ? `<h2>Notas</h2><div class="notas">${ot.notas}</div>` : ''}
 
+      ${manoObra.length > 0 ? `
+      <h2 style="color:#b45309;border-bottom-color:#fde68a;">Mano de Obra</h2>
+      <table>
+        <thead><tr><th>Categoría</th><th style="text-align:center">Trabajadores</th><th style="text-align:right">Horas</th><th style="text-align:right">Costo</th></tr></thead>
+        <tbody>
+          ${moRows}
+          ${moTotalHtml}
+        </tbody>
+      </table>` : ''}
+
       ${recursos.length > 0 ? `
       <h2>Recursos</h2>
       <table>
-        <thead><tr><th>Cantidad</th><th>Descripción</th><th style="text-align:right">Costo</th></tr></thead>
+        <thead><tr><th>Cantidad</th><th>Descripción</th><th>Tipo</th><th style="text-align:right">Costo</th></tr></thead>
         <tbody>
           ${recursoRows}
           ${costoHtml}
         </tbody>
+      </table>` : ''}
+
+      ${costoGranTotal > 0 ? `
+      <table style="margin-top:6px;">
+        <tbody>${granTotalHtml}</tbody>
       </table>` : ''}
 
       ${evidencias.length > 0 ? `<p style="font-size:12px;color:#64748b;">${evidencias.length} evidencia(s) fotográfica(s) adjuntas en el sistema.</p>` : ''}

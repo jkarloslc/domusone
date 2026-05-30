@@ -7,7 +7,7 @@ import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
   ClipboardList, Filter, Camera, Trash2, Upload,
   ExternalLink, CheckCircle, Clock, AlertTriangle, Wrench,
-  ChevronDown
+  ChevronDown, Printer, Edit2,
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -570,6 +570,8 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
 }) {
   const { authUser } = useAuth()
   const [recursos,   setRecursos]   = useState<any[]>([])
+  const [manoObra,   setManoObra]   = useState<any[]>([])
+  const [catMO,      setCatMO]      = useState<Record<number, { nombre: string; costHora: number }>>({})
   const [evidencias, setEvidencias] = useState<any[]>([])
   const [loading,    setLoading]    = useState(true)
   const [uploading,  setUploading]  = useState(false)
@@ -579,11 +581,17 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
 
   const fetchDetalle = useCallback(async () => {
     setLoading(true)
-    const [{ data: rec }, { data: ev }] = await Promise.all([
+    const [{ data: rec }, { data: mo }, { data: ev }, { data: cats }] = await Promise.all([
       dbCtrl.from('ot_recursos').select('*').eq('id_ot_fk', ot.id).order('id'),
+      dbCtrl.from('ot_mano_obra').select('*').eq('id_ot_fk', ot.id).order('id'),
       dbCtrl.from('ot_evidencias').select('*').eq('id_ot_fk', ot.id).order('created_at'),
+      dbCfg.from('cat_categorias_mano_obra').select('id, categoria, costo_hora_referencia').eq('activo', true),
     ])
     setRecursos(rec ?? [])
+    setManoObra(mo ?? [])
+    const m: Record<number, { nombre: string; costHora: number }> = {}
+    ;(cats ?? []).forEach((c: any) => { m[c.id] = { nombre: c.categoria, costHora: Number(c.costo_hora_referencia) } })
+    setCatMO(m)
     setEvidencias(ev ?? [])
     setLoading(false)
   }, [ot.id])
@@ -633,8 +641,129 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
     fetchDetalle()
   }
 
+  const imprimirOT = async () => {
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion').select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;">🔧</div>`
+
+    const priCol: Record<string,string> = { 'Urgente':'#dc2626','Alta':'#ea580c','Media':'#d97706','Baja':'#64748b' }
+    const staCol: Record<string,string> = { 'Pendiente':'#d97706','En Proceso':'#2563eb','En Pausa':'#7c3aed','Completada':'#15803d','Cancelada':'#94a3b8' }
+
+    const moRows = manoObra.map(r => {
+      const cat = catMO[r.id_categoria_fk]
+      return `<tr>
+        <td>${cat?.nombre ?? '—'}</td>
+        <td style="text-align:center">${r.trabajadores ?? 1}</td>
+        <td style="text-align:right">${Number(r.horas ?? 0).toFixed(2)}</td>
+        <td style="text-align:right">${Number(r.costo_total) > 0 ? '$'+Number(r.costo_total).toLocaleString('es-MX',{minimumFractionDigits:2}) : '—'}</td>
+      </tr>`
+    }).join('')
+    const costoMOTotal = manoObra.reduce((a,r) => a+Number(r.costo_total||0), 0)
+    const moTotalHtml  = costoMOTotal > 0
+      ? `<tr style="background:#fef3c7;font-weight:700"><td colspan="3" style="color:#b45309">TOTAL MANO DE OBRA</td><td style="text-align:right;color:#b45309">$${costoMOTotal.toLocaleString('es-MX',{minimumFractionDigits:2})}</td></tr>` : ''
+
+    const recRows = recursos.map(r =>
+      `<tr>
+        <td>${r.cantidad ?? '—'}</td>
+        <td>${r.descripcion ?? ''}</td>
+        <td>${r.tipo ?? '—'}</td>
+        <td style="text-align:right">${Number(r.costo)>0 ? '$'+Number(r.costo).toLocaleString('es-MX',{minimumFractionDigits:2}) : '—'}</td>
+      </tr>`).join('')
+    const costoRecTotal = costoTotal
+    const recTotalHtml = costoRecTotal > 0
+      ? `<tr style="background:#eff6ff;font-weight:700"><td colspan="3" style="color:#0D4F80">TOTAL RECURSOS</td><td style="text-align:right;color:#0D4F80">$${costoRecTotal.toLocaleString('es-MX',{minimumFractionDigits:2})}</td></tr>` : ''
+
+    const costoGranTotal = costoMOTotal + costoRecTotal
+    const granTotalHtml = costoGranTotal > 0
+      ? `<table style="margin-top:6px;width:100%;border-collapse:collapse"><tbody><tr style="background:#0D4F80;color:#fff;font-weight:700;font-size:13px;"><td colspan="3" style="border:1px solid #0D4F80;padding:7px 11px">COSTO TOTAL DE LA OT</td><td style="border:1px solid #0D4F80;padding:7px 11px;text-align:right">$${costoGranTotal.toLocaleString('es-MX',{minimumFractionDigits:2})}</td></tr></tbody></table>` : ''
+
+    const html = `<!DOCTYPE html><html><head><title>OT ${ot.folio}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 36px; font-size: 13px; color: #1e293b; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 20px; }
+        .org-nombre { font-size: 17px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        h2 { font-size: 14px; font-weight: 700; color: #0D4F80; margin: 18px 0 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        h2.mo { color: #b45309; border-bottom-color: #fde68a; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; margin-bottom: 14px; }
+        .lbl { font-size: 10px; text-transform: uppercase; letter-spacing:.05em; color:#94a3b8; margin-bottom:2px; }
+        .val { font-size: 13px; color: #1e293b; }
+        .badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+        table { width:100%; border-collapse:collapse; margin:8px 0; }
+        td, th { border:1px solid #e2e8f0; padding:7px 11px; }
+        th { background:#f1f5f9; font-size:10px; text-transform:uppercase; letter-spacing:.04em; text-align:left; }
+        .desc { background:#f8fafc; border-left:3px solid #0D4F80; padding:10px 14px; border-radius:4px; font-size:13px; line-height:1.6; }
+        .notas { background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:10px 14px; font-size:12px; }
+        .firmas { display:flex; gap:50px; margin-top:50px; }
+        .firma { text-align:center; border-top:1px solid #000; padding-top:8px; width:160px; font-size:11px; color:#64748b; }
+        @page { margin: 1.2cm; }
+      </style></head><body>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div style="font-size:11px;color:#64748b">${orgSubtitulo}</div>` : ''}
+          <div style="font-size:12px;font-weight:600;color:#0D4F80;margin-top:3px;">Orden de Trabajo</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;font-size:11px;color:#94a3b8">
+          Folio: <strong style="color:#0D4F80;font-size:16px">${ot.folio}</strong><br/>
+          ${new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'})}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <span style="font-size:18px;font-weight:700">${ot.titulo}</span>
+        <span class="badge" style="color:${priCol[ot.prioridad??'Media']??'#64748b'};background:${(priCol[ot.prioridad??'Media']??'#64748b')+'18'};border:1px solid ${(priCol[ot.prioridad??'Media']??'#e2e8f0')+'44'}">${ot.prioridad??'Media'}</span>
+        <span class="badge" style="color:${staCol[currentStatus]??'#64748b'};background:${(staCol[currentStatus]??'#64748b')+'18'};border:1px solid ${(staCol[currentStatus]??'#e2e8f0')+'44'}">${currentStatus}</span>
+      </div>
+      <div class="grid">
+        ${ot.tipo_trabajo ? `<div><div class="lbl">Tipo de Trabajo</div><div class="val">${ot.tipo_trabajo}</div></div>` : ''}
+        ${ot.id_area_fk ? `<div><div class="lbl">Área</div><div class="val">${secMap[ot.id_area_fk]??'—'}</div></div>` : ''}
+        ${ot.ubicacion_detalle ? `<div><div class="lbl">Ubicación</div><div class="val">${ot.ubicacion_detalle}</div></div>` : ''}
+        ${ot.asignado_a ? `<div><div class="lbl">Asignado a</div><div class="val">${ot.asignado_a}</div></div>` : ''}
+        ${ot.supervisor ? `<div><div class="lbl">Supervisor</div><div class="val">${ot.supervisor}</div></div>` : ''}
+        ${ot.semana_no ? `<div><div class="lbl">Semana</div><div class="val">Semana ${ot.semana_no} — ${ot.anio}</div></div>` : ''}
+        ${ot.fecha_inicio ? `<div><div class="lbl">Fecha Inicio</div><div class="val">${fmtFecha(ot.fecha_inicio)}</div></div>` : ''}
+        ${ot.fecha_limite ? `<div><div class="lbl">Fecha Límite</div><div class="val">${fmtFecha(ot.fecha_limite)}</div></div>` : ''}
+        ${ot.fecha_cierre ? `<div><div class="lbl">Fecha Cierre</div><div class="val">${fmtFecha(ot.fecha_cierre)}</div></div>` : ''}
+      </div>
+      ${ot.descripcion ? `<h2>Descripción</h2><div class="desc">${ot.descripcion}</div>` : ''}
+      ${ot.notas ? `<h2>Notas</h2><div class="notas">${ot.notas}</div>` : ''}
+      ${manoObra.length > 0 ? `<h2 class="mo">Mano de Obra</h2><table><thead><tr><th>Categoría</th><th style="text-align:center">Trabajadores</th><th style="text-align:right">Horas</th><th style="text-align:right">Costo</th></tr></thead><tbody>${moRows}${moTotalHtml}</tbody></table>` : ''}
+      ${recursos.length > 0 ? `<h2>Recursos</h2><table><thead><tr><th>Cantidad</th><th>Descripción</th><th>Tipo</th><th style="text-align:right">Costo</th></tr></thead><tbody>${recRows}${recTotalHtml}</tbody></table>` : ''}
+      ${granTotalHtml}
+      ${evidencias.length > 0 ? `<p style="font-size:12px;color:#64748b;margin-top:12px">${evidencias.length} evidencia(s) fotográfica(s) adjuntas en el sistema.</p>` : ''}
+      <div class="firmas">
+        <div class="firma">Elaboró</div>
+        <div class="firma">Supervisó</div>
+        <div class="firma">Conforme</div>
+      </div>
+      </body></html>`
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => { iframe.contentWindow!.focus(); iframe.contentWindow!.print(); setTimeout(() => document.body.removeChild(iframe), 2000) }, 300)
+  }
+
   return (
-    <ModalShell modulo="residencial" titulo="Modal" onClose={onClose} maxWidth={640}
+    <ModalShell modulo="residencial" titulo={ot.folio} onClose={onClose} maxWidth={640}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cerrar</button>
+        <button className="btn-ghost" onClick={() => onEdit(ot)}><Edit2 size={13} /> Editar</button>
+        <button className="btn-primary" onClick={imprimirOT}><Printer size={13} /> Imprimir OT</button>
+      </>}
     >
 
         <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 200px)', padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -664,6 +793,47 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
             </div>
           )}
 
+          {/* Mano de Obra */}
+          {!loading && manoObra.length > 0 && (
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#b45309', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+                Mano de Obra
+              </div>
+              <div className="card" style={{ overflow: 'hidden' }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Categoría</th>
+                      <th style={{ textAlign: 'center' }}>Trabaj.</th>
+                      <th style={{ textAlign: 'right' }}>Horas</th>
+                      <th style={{ textAlign: 'right' }}>Costo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {manoObra.map(r => (
+                      <tr key={r.id}>
+                        <td style={{ fontSize: 13 }}>{catMO[r.id_categoria_fk]?.nombre ?? '—'}</td>
+                        <td style={{ textAlign: 'center', fontSize: 12 }}>{r.trabajadores ?? 1}</td>
+                        <td style={{ textAlign: 'right', fontSize: 12 }}>{Number(r.horas ?? 0).toFixed(2)}</td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
+                          {Number(r.costo_total) > 0 ? `$${Number(r.costo_total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                    {manoObra.reduce((a,r) => a+Number(r.costo_total||0),0) > 0 && (
+                      <tr style={{ background: '#fef3c7', fontWeight: 700 }}>
+                        <td colSpan={3} style={{ color: '#b45309' }}>TOTAL MANO DE OBRA</td>
+                        <td style={{ textAlign: 'right', color: '#b45309', fontVariantNumeric: 'tabular-nums' }}>
+                          ${manoObra.reduce((a,r) => a+Number(r.costo_total||0),0).toLocaleString('es-MX',{minimumFractionDigits:2})}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Recursos */}
           {!loading && recursos.length > 0 && (
             <div>
@@ -676,6 +846,7 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
                     <tr>
                       <th>Cantidad</th>
                       <th>Descripción</th>
+                      <th>Tipo</th>
                       <th style={{ textAlign: 'right' }}>Costo</th>
                     </tr>
                   </thead>
@@ -684,6 +855,7 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
                       <tr key={r.id}>
                         <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{r.cantidad ?? '—'}</td>
                         <td style={{ fontSize: 13 }}>{r.descripcion}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.tipo ?? '—'}</td>
                         <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
                           {Number(r.costo) > 0 ? `$${Number(r.costo).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
                         </td>
@@ -691,7 +863,7 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
                     ))}
                     {costoTotal > 0 && (
                       <tr style={{ background: 'var(--blue-pale)', fontWeight: 700 }}>
-                        <td colSpan={2} style={{ color: 'var(--blue)' }}>TOTAL</td>
+                        <td colSpan={3} style={{ color: 'var(--blue)' }}>TOTAL RECURSOS</td>
                         <td style={{ textAlign: 'right', color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>
                           ${costoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                         </td>
