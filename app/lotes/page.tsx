@@ -221,6 +221,7 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
                 <th>Clave Lote</th>
                 <th>Clasificación</th>
                 <th>Sección</th>
+                <th>Lote</th>
                 <th>Dirección</th>
                 <th>Status</th>
                 <th style={{ width: 100 }}></th>
@@ -228,11 +229,11 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                   <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} />
                 </td></tr>
               ) : lotes.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                   No se encontraron lotes
                 </td></tr>
               ) : lotes.map(l => {
@@ -249,6 +250,9 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
                     {l.id_seccion_fk ? (secciones[l.id_seccion_fk] ?? '—') : '—'}
+                  </td>
+                  <td style={{ color: 'var(--text-secondary)' }}>
+                    {l.lote ?? '—'}
                   </td>
                   <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{dir}</td>
                   <td>
