@@ -40,6 +40,7 @@ import ReportePagosAplicados from './ReportePagosAplicados'
 import ReporteGolfVentasHistoricas from './ReporteGolfVentasHistoricas'
 import ReporteRiegoConsumo from './ReporteRiegoConsumo'
 import ReporteLotesPorSeccionClasif from './ReporteLotesPorSeccionClasif'
+import ReporteLotesResumenClasif from './ReporteLotesResumenClasif'
 
 const GRUPOS = [
   {
@@ -49,7 +50,8 @@ const GRUPOS = [
     color: 'var(--blue)',
     reportes: [
       { id: 'lotes',                label: 'Lotes por Sección',          icon: MapPin,        desc: 'Catálogo de lotes filtrable por sección' },
-      { id: 'lotes-seccion-clasif', label: 'Lotes por Sección y Clasificación', icon: MapPin, desc: 'Lotes agrupados jerárquicamente por sección y clasificación, con subtotales de superficie y valor' },
+      { id: 'lotes-seccion-clasif',   label: 'Lotes por Sección y Clasificación', icon: MapPin, desc: 'Lotes agrupados jerárquicamente por sección y clasificación, con subtotales de superficie y valor' },
+      { id: 'lotes-resumen-clasif',   label: 'Resumen por Sección y Clasificación', icon: MapPin, desc: 'Tabla resumen sin desglose: una fila por clasificación dentro de cada sección, con subtotales y total general' },
       { id: 'lotes-propietarios',   label: 'Lotes y Propietarios',       icon: Users,         desc: 'Relación de lotes con su propietario asignado' },
       { id: 'propietarios',         label: 'Directorio de Propietarios', icon: Users,         desc: 'Datos completos de todos los propietarios' },
       { id: 'incidencias',          label: 'Incidencias por Lote',       icon: AlertTriangle, desc: 'Historial de incidencias filtrado por lote' },
@@ -223,6 +225,7 @@ function ReportesContent() {
       {/* Reportes residencial */}
       {active === 'lotes'                && <ReporteLotes />}
       {active === 'lotes-seccion-clasif' && <ReporteLotesPorSeccionClasif />}
+      {active === 'lotes-resumen-clasif' && <ReporteLotesResumenClasif />}
       {active === 'lotes-propietarios'   && <ReporteLotesPropietarios />}
       {active === 'propietarios'         && <ReportePropietarios />}
       {active === 'incidencias'          && <ReporteIncidencias />}
