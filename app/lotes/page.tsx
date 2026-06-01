@@ -58,6 +58,7 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
   const [search, setSearch]           = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter]     = useState('')
+  const [filterSeccion, setFilterSeccion] = useState('')
   const [filterDir, setFilterDir]     = useState('')
   const debouncedDir = useDebounce(filterDir, 300)
   const [loading, setLoading]         = useState(true)
@@ -93,6 +94,7 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
 
     if (debouncedSearch) q = q.ilike('cve_lote', `%${debouncedSearch}%`)
     if (filterStatus)    q = q.eq('status_lote', filterStatus)
+    if (filterSeccion)   q = q.eq('id_seccion_fk', Number(filterSeccion))
     if (debouncedDir)    q = q.or(`calle.ilike.%${debouncedDir}%,numero.ilike.%${debouncedDir}%`)
 
     const { data, count, error } = await q
@@ -101,7 +103,7 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
       setTotal(count ?? 0)
     }
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, debouncedDir])
+  }, [page, debouncedSearch, filterStatus, filterSeccion, debouncedDir])
 
   useEffect(() => { fetchLotes() }, [fetchLotes])
 
@@ -191,6 +193,18 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
           <option value="Libre">Libre</option>
           <option value="Vendido">Vendido</option>
           <option value="Bloqueado">Bloqueado</option>
+        </select>
+
+        <select
+          className="select"
+          style={{ width: 180 }}
+          value={filterSeccion}
+          onChange={e => { setFilterSeccion(e.target.value); setPage(0) }}
+        >
+          <option value="">Todas las secciones</option>
+          {Object.entries(secciones).map(([id, nombre]) => (
+            <option key={id} value={id}>{nombre}</option>
+          ))}
         </select>
 
         <button className="btn-ghost" onClick={fetchLotes} title="Actualizar">
