@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCfg, type Lote } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, MapPin,
-  ChevronLeft, ChevronRight, X, Edit2, Trash2, Eye, Users, MapPinned, List
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Edit2, Trash2, Eye, Users, MapPinned, List
 } from 'lucide-react'
 import Link from 'next/link'
 import LoteModal from './LoteModal'
@@ -300,11 +300,17 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
               Página {page + 1} de {totalPages} · {total} registros
             </span>
             <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(0)} title="Primera página">
+                <ChevronsLeft size={13} />
+              </button>
+              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)} title="Página anterior">
                 <ChevronLeft size={13} />
               </button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} title="Página siguiente">
                 <ChevronRight size={13} />
+              </button>
+              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(totalPages - 1)} title="Última página">
+                <ChevronsRight size={13} />
               </button>
             </div>
           </div>
