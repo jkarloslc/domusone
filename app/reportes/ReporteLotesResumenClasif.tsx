@@ -33,7 +33,6 @@ export default function ReporteLotesResumenClasif() {
     setLoading(true)
     let q = dbCat.from('lotes')
       .select('id_seccion_fk, id_clasificacion_fk, superficie, valor_operacion, status_lote')
-      .order('cve_lote')
     if (filterSec)    q = q.eq('id_seccion_fk', Number(filterSec))
     if (filterClasif) q = q.eq('id_clasificacion_fk', Number(filterClasif))
     if (filterStatus) q = q.eq('status_lote', filterStatus)
