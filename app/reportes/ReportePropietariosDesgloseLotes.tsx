@@ -104,41 +104,41 @@ export default function ReportePropietariosDesgloseLotes() {
     return true
   })
 
-  // Construir jerarquía: sección → propietario → clasificación → lotes[]
+  // Construir jerarquía: propietario → sección → clasificación → lotes[]
   type HierMap = Record<string, Record<string, Record<string, any[]>>>
   const hier: HierMap = {}
 
   filtered.forEach(r => {
     const lote  = r._lote
-    const sec   = lote?.id_seccion_fk      ? (secMap[lote.id_seccion_fk]           ?? 'Sin sección')         : 'Sin sección'
-    const clas  = lote?.id_clasificacion_fk ? (clasifMap[lote.id_clasificacion_fk]  ?? 'Sin clasificación')   : 'Sin clasificación'
     const prop  = propNombre(r._prop)
+    const sec   = lote?.id_seccion_fk       ? (secMap[lote.id_seccion_fk]           ?? 'Sin sección')       : 'Sin sección'
+    const clas  = lote?.id_clasificacion_fk  ? (clasifMap[lote.id_clasificacion_fk]  ?? 'Sin clasificación') : 'Sin clasificación'
 
-    if (!hier[sec])              hier[sec] = {}
-    if (!hier[sec][prop])        hier[sec][prop] = {}
-    if (!hier[sec][prop][clas])  hier[sec][prop][clas] = []
-    hier[sec][prop][clas].push(r)
+    if (!hier[prop])              hier[prop] = {}
+    if (!hier[prop][sec])         hier[prop][sec] = {}
+    if (!hier[prop][sec][clas])   hier[prop][sec][clas] = []
+    hier[prop][sec][clas].push(r)
   })
 
-  const seccionesOrdenadas = Object.keys(hier).sort()
+  const propietariosOrdenados = Object.keys(hier).sort()
 
   // Expand / collapse helpers
-  const toggleSec  = (sec: string)  => setExpandedSec(e  => ({ ...e, [sec]:  e[sec]  === false }))
-  const toggleProp = (key: string)  => setExpandedProp(e => ({ ...e, [key]:  e[key]  === false }))
+  const toggleProp = (prop: string) => setExpandedProp(e => ({ ...e, [prop]: e[prop] === false }))
+  const toggleSec  = (key: string)  => setExpandedSec(e  => ({ ...e, [key]:  e[key]  === false }))
 
   const expandAll = () => {
-    const s: Record<string, boolean> = {}
     const p: Record<string, boolean> = {}
-    seccionesOrdenadas.forEach(sec => {
-      s[sec] = true
-      Object.keys(hier[sec]).forEach(prop => { p[`${sec}::${prop}`] = true })
+    const s: Record<string, boolean> = {}
+    propietariosOrdenados.forEach(prop => {
+      p[prop] = true
+      Object.keys(hier[prop]).forEach(sec => { s[`${prop}::${sec}`] = true })
     })
-    setExpandedSec(s); setExpandedProp(p)
+    setExpandedProp(p); setExpandedSec(s)
   }
   const collapseAll = () => {
-    const s: Record<string, boolean> = {}
-    seccionesOrdenadas.forEach(sec => { s[sec] = false })
-    setExpandedSec(s); setExpandedProp({})
+    const p: Record<string, boolean> = {}
+    propietariosOrdenados.forEach(prop => { p[prop] = false })
+    setExpandedProp(p); setExpandedSec({})
   }
 
   // KPIs globales (sobre filtered)
@@ -220,77 +220,76 @@ export default function ReportePropietariosDesgloseLotes() {
         </div>
       ) : (
         <div id="reporte-print-area" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {seccionesOrdenadas.map(sec => {
-            const propsEnSec     = Object.keys(hier[sec]).sort()
-            const totalLotesSec  = propsEnSec.reduce((a, p) =>
-              a + Object.values(hier[sec][p]).reduce((b, arr) => b + arr.length, 0), 0)
-            const totalPropsSec  = propsEnSec.length
-            const expandedS      = expandedSec[sec] !== false  // open by default
+          {propietariosOrdenados.map(prop => {
+            const secsEnProp    = Object.keys(hier[prop]).sort()
+            const totalLotesProp = secsEnProp.reduce((a, s) =>
+              a + Object.values(hier[prop][s]).reduce((b, arr) => b + arr.length, 0), 0)
+            const expandedP     = expandedProp[prop] !== false  // open by default
+            // datos del propietario desde cualquier fila
+            const propData      = hier[prop][secsEnProp[0]][Object.keys(hier[prop][secsEnProp[0]])[0]][0]._prop
 
             return (
-              <div key={sec} className="card" style={{ overflow: 'hidden' }}>
-                {/* ── Header SECCIÓN ── */}
-                <button onClick={() => toggleSec(sec)}
+              <div key={prop} className="card" style={{ overflow: 'hidden' }}>
+                {/* ── Header PROPIETARIO ── */}
+                <button onClick={() => toggleProp(prop)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '12px 16px', background: 'var(--blue-pale)', border: 'none', cursor: 'pointer',
-                    borderBottom: expandedS ? '1px solid #e2e8f0' : 'none' }}>
+                    borderBottom: expandedP ? '1px solid #e2e8f0' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {expandedS
+                    {expandedP
                       ? <ChevronDown  size={14} style={{ color: 'var(--blue)' }} />
                       : <ChevronRight size={14} style={{ color: 'var(--blue)' }} />}
-                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>{sec}</span>
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      · {totalPropsSec} propietario{totalPropsSec !== 1 ? 's' : ''}
-                      &nbsp;·&nbsp;{totalLotesSec} lote{totalLotesSec !== 1 ? 's' : ''}
-                    </span>
+                    <div style={{ width: 30, height: 30, borderRadius: '50%',
+                      background: '#6366f120', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <User size={14} style={{ color: '#6366f1' }} />
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--blue)' }}>{prop}</span>
+                    {propData?.rfc && (
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                        {propData.rfc}
+                      </span>
+                    )}
+                    {propData?.tipo_persona && (
+                      <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10,
+                        background: '#e0e7ff', color: '#4f46e5', fontWeight: 600 }}>
+                        {propData.tipo_persona}
+                      </span>
+                    )}
                   </div>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    {secsEnProp.length} sección{secsEnProp.length !== 1 ? 'es' : ''}
+                    &nbsp;·&nbsp;{totalLotesProp} lote{totalLotesProp !== 1 ? 's' : ''}
+                  </span>
                 </button>
 
-                {expandedS && propsEnSec.map(prop => {
-                  const clasifsEnProp = Object.keys(hier[sec][prop]).sort()
-                  const propKey       = `${sec}::${prop}`
-                  const expandedP     = expandedProp[propKey] !== false  // open by default
-                  const totalLotesProp = clasifsEnProp.reduce((a, cl) => a + hier[sec][prop][cl].length, 0)
-                  // cualquier row tiene _prop
-                  const propData = hier[sec][prop][clasifsEnProp[0]][0]._prop
+                {expandedP && secsEnProp.map(sec => {
+                  const clasifsEnSec = Object.keys(hier[prop][sec]).sort()
+                  const secKey       = `${prop}::${sec}`
+                  const expandedS    = expandedSec[secKey] !== false  // open by default
+                  const totalLotesSec = clasifsEnSec.reduce((a, cl) => a + hier[prop][sec][cl].length, 0)
 
                   return (
-                    <div key={propKey} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      {/* ── Sub-header PROPIETARIO ── */}
-                      <button onClick={() => toggleProp(propKey)}
+                    <div key={secKey} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      {/* ── Sub-header SECCIÓN ── */}
+                      <button onClick={() => toggleSec(secKey)}
                         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           padding: '10px 20px', background: '#f8fafc', border: 'none', cursor: 'pointer',
-                          borderBottom: expandedP ? '1px solid #e2e8f0' : 'none' }}>
+                          borderBottom: expandedS ? '1px solid #e2e8f0' : 'none' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {expandedP
+                          {expandedS
                             ? <ChevronDown  size={12} style={{ color: '#64748b' }} />
                             : <ChevronRight size={12} style={{ color: '#64748b' }} />}
-                          <div style={{ width: 26, height: 26, borderRadius: '50%',
-                            background: '#6366f115', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <User size={12} style={{ color: '#6366f1' }} />
-                          </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{prop}</span>
-                          {propData?.rfc && (
-                            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                              {propData.rfc}
-                            </span>
-                          )}
-                          {propData?.tipo_persona && (
-                            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 10,
-                              background: '#e0e7ff', color: '#4f46e5' }}>
-                              {propData.tipo_persona}
-                            </span>
-                          )}
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{sec}</span>
                         </div>
                         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                          {totalLotesProp} lote{totalLotesProp !== 1 ? 's' : ''}
+                          {totalLotesSec} lote{totalLotesSec !== 1 ? 's' : ''}
                         </span>
                       </button>
 
-                      {expandedP && (
+                      {expandedS && (
                         <div>
-                          {clasifsEnProp.map(clasif => {
-                            const lotesEnClasif = hier[sec][prop][clasif]
+                          {clasifsEnSec.map(clasif => {
+                            const lotesEnClasif = hier[prop][sec][clasif]
 
                             return (
                               <div key={clasif} style={{ borderBottom: '1px solid #f8fafc' }}>
