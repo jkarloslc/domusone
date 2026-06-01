@@ -89,7 +89,8 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
     let q = dbCat
       .from('lotes')
       .select('*', { count: 'exact' })
-      .order('cve_lote', { ascending: true })
+      .order('id_seccion_fk', { ascending: true })
+      .order('lote', { ascending: true })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
     if (debouncedSearch) q = q.ilike('cve_lote', `%${debouncedSearch}%`)
