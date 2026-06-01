@@ -39,6 +39,7 @@ import ReporteEstadoCuentaProveedor from './ReporteEstadoCuentaProveedor'
 import ReportePagosAplicados from './ReportePagosAplicados'
 import ReporteGolfVentasHistoricas from './ReporteGolfVentasHistoricas'
 import ReporteRiegoConsumo from './ReporteRiegoConsumo'
+import ReporteLotesPorSeccionClasif from './ReporteLotesPorSeccionClasif'
 
 const GRUPOS = [
   {
@@ -48,6 +49,7 @@ const GRUPOS = [
     color: 'var(--blue)',
     reportes: [
       { id: 'lotes',                label: 'Lotes por Sección',          icon: MapPin,        desc: 'Catálogo de lotes filtrable por sección' },
+      { id: 'lotes-seccion-clasif', label: 'Lotes por Sección y Clasificación', icon: MapPin, desc: 'Lotes agrupados jerárquicamente por sección y clasificación, con subtotales de superficie y valor' },
       { id: 'lotes-propietarios',   label: 'Lotes y Propietarios',       icon: Users,         desc: 'Relación de lotes con su propietario asignado' },
       { id: 'propietarios',         label: 'Directorio de Propietarios', icon: Users,         desc: 'Datos completos de todos los propietarios' },
       { id: 'incidencias',          label: 'Incidencias por Lote',       icon: AlertTriangle, desc: 'Historial de incidencias filtrado por lote' },
@@ -220,6 +222,7 @@ function ReportesContent() {
 
       {/* Reportes residencial */}
       {active === 'lotes'                && <ReporteLotes />}
+      {active === 'lotes-seccion-clasif' && <ReporteLotesPorSeccionClasif />}
       {active === 'lotes-propietarios'   && <ReporteLotesPropietarios />}
       {active === 'propietarios'         && <ReportePropietarios />}
       {active === 'incidencias'          && <ReporteIncidencias />}
