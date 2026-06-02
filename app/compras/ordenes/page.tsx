@@ -240,32 +240,47 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       return
     }
 
-    // 1. Cotizaciones ganadoras (puede haber más de una con seleccionada=true)
-    const { data: cots } = await dbComp.from('rfq_cotizaciones')
-      .select('*, rfq_cotizaciones_det!id_cotizacion_fk(*)')
-      .eq('id_rfq_fk', Number(rfqId)).eq('seleccionada', true)
+    // 1. Cotizaciones ganadoras — dos queries separadas (join Supabase falla con FK hint)
+    const { data: cotsRaw } = await dbComp.from('rfq_cotizaciones')
+      .select('*').eq('id_rfq_fk', Number(rfqId)).eq('seleccionada', true)
 
-    if (cots && cots.length > 1) {
-      // ── Multi-ganador: pausar y mostrar picker de proveedor ──────────
-      // Proveedores que ya tienen OC para esta RFQ (excepto la OC que se está editando)
+    const cotIds = (cotsRaw ?? []).map((c: any) => c.id)
+    const { data: detRaw } = cotIds.length > 0
+      ? await dbComp.from('rfq_cotizaciones_det').select('*').in('id_cotizacion_fk', cotIds)
+      : { data: [] }
+
+    // Combinar: cada cotización recibe su array de det
+    const cots = (cotsRaw ?? []).map((c: any) => ({
+      ...c,
+      rfq_cotizaciones_det: (detRaw ?? []).filter((d: any) => d.id_cotizacion_fk === c.id),
+    }))
+
+    if (cots.length > 1) {
+      // ── Multi-ganador: mostrar picker de proveedor ──────────
       const { data: ocsExistentes } = await dbComp.from('ordenes_compra')
         .select('id_proveedor_fk').eq('id_rfq_fk', Number(rfqId))
         .not('id', 'eq', row?.id ?? 0)
       const provsConOC = new Set((ocsExistentes ?? []).map((o: any) => o.id_proveedor_fk))
 
       const opts = cots.map(c => {
-        const ganadorItems = (c.rfq_cotizaciones_det ?? []).filter((d: any) => d.ganador)
+        // Ítems ganadores con precio real para este proveedor
+        const ganadorItems = (c.rfq_cotizaciones_det ?? []).filter(
+          (d: any) => d.ganador && d.precio_unitario != null && Number(d.precio_unitario) > 0
+        )
         const prov = proveedores.find(p => p.id === c.id_proveedor_fk)
         return { cotId: c.id, provId: c.id_proveedor_fk, nombre: prov?.nombre ?? `Proveedor #${c.id_proveedor_fk}`, items: ganadorItems, yaCreada: provsConOC.has(c.id_proveedor_fk) }
       }).filter(op => op.items.length > 0)
       setRfqMultiProvs(opts)
-      // No cargar ítems todavía — el usuario elige proveedor en el picker
-    } else if (cots && cots.length === 1) {
-      // ── Ganador único ────────────────────────────────────────────────
+
+    } else if (cots.length === 1) {
+      // ── Ganador único ────────────────────────────────────────
       setForm(f => ({ ...f, id_proveedor_fk: cots[0].id_proveedor_fk.toString() }))
       const detItems = cots[0].rfq_cotizaciones_det ?? []
-      const ganadorItems = detItems.filter((d: any) => d.ganador)
-      const src = ganadorItems.length > 0 ? ganadorItems : detItems
+      // Preferir ítems marcados como ganadores con precio > 0; fallback a todos con precio
+      const ganadorItems = detItems.filter((d: any) => d.ganador && Number(d.precio_unitario) > 0)
+      const src = ganadorItems.length > 0
+        ? ganadorItems
+        : detItems.filter((d: any) => d.precio_unitario != null && Number(d.precio_unitario) > 0)
       _cargarItems(src, cots[0].condiciones_pago)
     }
 
@@ -294,15 +309,18 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
   }
 
   // Helper: convierte ítems de rfq_cotizaciones_det al formato det de OC
+  // Solo incluye ítems con precio real (excluye no cotizados con precio null)
   const _cargarItems = (src: any[], condPago?: string) => {
-    const items = src.map((d: any) => ({
-      id_articulo_fk:  d.id_articulo_fk ?? null,
-      descripcion:     d.descripcion ?? '',
-      cantidad:        d.cantidad?.toString() ?? '1',
-      unidad:          d.unidad ?? 'PZA',
-      precio_unitario: d.precio_unitario?.toString() ?? '',
-      tasa_iva:        d.tasa_iva?.toString() ?? '0',
-    }))
+    const items = src
+      .filter((d: any) => d.descripcion && d.precio_unitario != null && Number(d.precio_unitario) > 0)
+      .map((d: any) => ({
+        id_articulo_fk:  d.id_articulo_fk ?? null,
+        descripcion:     d.descripcion ?? '',
+        cantidad:        d.cantidad?.toString() ?? '1',
+        unidad:          d.unidad ?? 'PZA',
+        precio_unitario: d.precio_unitario.toString(),
+        tasa_iva:        d.tasa_iva?.toString() ?? '0',
+      }))
     if (items.length > 0) {
       setDet(items)
       setArtSearches(new Array(items.length).fill(''))
