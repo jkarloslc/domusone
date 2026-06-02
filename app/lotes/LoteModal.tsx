@@ -104,7 +104,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
 
           <Section label="Identificación">
             <Row>
-              <Field label="Clave Lote *"><input className="input" value={form.cve_lote} onChange={set('cve_lote')} placeholder="GR-001" /></Field>
+              <Field label="Clave Lote"><input className="input" value={form.cve_lote} onChange={set('cve_lote')} placeholder="GR-001" /></Field>
               <Field label="No. Lote"><input className="input" type="number" value={form.lote} onChange={set('lote')} /></Field>
             </Row>
             <Row>

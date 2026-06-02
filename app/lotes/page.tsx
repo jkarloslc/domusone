@@ -147,9 +147,6 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
         )}
       </div>
 
-      {/* Stats rápidas */}
-      <StatsRow lotes={lotes} />
-
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
