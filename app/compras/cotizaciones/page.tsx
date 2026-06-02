@@ -383,16 +383,20 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
     setAddingCot(false)
   }
 
-  // Guarda los det de una cotización existente (upsert)
+  const [editError, setEditError] = useState('')
+
+  // Guarda los det de una cotización existente
+  // Orden: INSERT primero → DELETE viejo solo si INSERT fue exitoso
+  // Así si el INSERT falla, los datos anteriores se preservan
   const saveEdicionCot = async () => {
     if (!editingCot) return
-    setSaving(true)
+    setSaving(true); setEditError('')
+
     const detTodos = cotDet.filter(d => d.descripcion)
-    // Borrar det anteriores y reemplazar
-    const { error: delErr } = await dbComp.from('rfq_cotizaciones_det').delete().eq('id_cotizacion_fk', editingCot.id)
-    if (delErr) { console.error('Error DELETE rfq_cotizaciones_det:', delErr.message); setSaving(false); return }
     const precio = (d: any) => d.precio_unitario !== '' && Number(d.precio_unitario) > 0
       ? Number(d.precio_unitario) : null
+
+    // 1. INSERT nuevas filas (sin borrar las viejas todavía)
     if (detTodos.length > 0) {
       const { error: insErr } = await dbComp.from('rfq_cotizaciones_det').insert(
         detTodos.map(d => {
@@ -414,9 +418,25 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
           }
         })
       )
-      if (insErr) { console.error('Error INSERT rfq_cotizaciones_det:', insErr.message); setSaving(false); return }
+      if (insErr) {
+        setEditError(`Error al guardar: ${insErr.message}`)
+        setSaving(false)
+        return  // Datos anteriores intactos — no se borró nada
+      }
     }
-    // Recalcular totales en la cabecera
+
+    // 2. Solo ahora que el INSERT fue exitoso, borrar las filas viejas
+    // (borrar todas EXCEPTO las que acabamos de insertar, que tienen id mayor)
+    const { data: todas } = await dbComp.from('rfq_cotizaciones_det')
+      .select('id').eq('id_cotizacion_fk', editingCot.id).order('id')
+    const todosIds = (todas ?? []).map((r: any) => r.id)
+    const newIds = todosIds.slice(-detTodos.length) // los últimos N son los recién insertados
+    const oldIds = todosIds.slice(0, todosIds.length - detTodos.length)
+    if (oldIds.length > 0) {
+      await dbComp.from('rfq_cotizaciones_det').delete().in('id', oldIds)
+    }
+
+    // 3. Actualizar totales en la cabecera
     const newSubtotal = detTodos.reduce((a, d) => {
       const pu = precio(d); return a + (pu !== null ? Number(d.cantidad) * pu : 0)
     }, 0)
@@ -432,7 +452,8 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
       notas:             cotForm.notas || null,
       subtotal: newSubtotal, iva: newIva, total: newSubtotal + newIva,
     }).eq('id', editingCot.id)
-    setSaving(false); setEditingCot(null)
+
+    setSaving(false); setEditingCot(null); setEditError('')
     await fetchCots()
   }
 
@@ -728,6 +749,11 @@ function RFQDetail({ rfq, onClose }: { rfq: any; onClose: () => void }) {
               <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 12 }}>
                 Editar precios — {proveedores.find(p => p.id === editingCot.id_proveedor_fk)?.nombre ?? `Proveedor #${editingCot.id_proveedor_fk}`}
               </div>
+              {editError && (
+                <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
+                  {editError}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div>
                   <label className="label">No. Cotización</label>
