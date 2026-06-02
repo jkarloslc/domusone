@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
-const TIPOS      = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Mantto. Lineas Sanitarias','Otro']
+const TIPOS      = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Herrería','Carpintería','Mantto. Lineas Sanitarias','Otro']
 const PRIORIDADES = ['Urgente','Alta','Media','Baja']
 const STATUSES    = ['Pendiente','En Proceso','En Pausa','Completada','Cancelada']
 
