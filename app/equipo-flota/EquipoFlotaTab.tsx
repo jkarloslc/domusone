@@ -5,9 +5,10 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2, Trash2,
   Truck, Wrench, Filter, Search, Camera, ExternalLink, CheckCircle,
-  DollarSign, AlertTriangle, ChevronDown, Upload, Fuel
+  DollarSign, AlertTriangle, ChevronDown, Upload, Fuel, Activity
 } from 'lucide-react'
 import CombustibleTab from './CombustibleTab'
+import BitacoraUsoTab from './BitacoraUsoTab'
 import ModalShell from '@/components/ui/ModalShell'
 
 const TIPOS_EQUIPO  = ['Vehículo', 'Moto / Cuatrimoto','Maquinaria', 'Herramienta']
@@ -50,7 +51,7 @@ const fmtF = (d: string | null) =>
 // ══════════════════════════════════════════════════════════════
 export default function EquipoFlotaTab() {
   const { canWrite, canDelete, authUser } = useAuth()
-  const [subTab, setSubTab]     = useState<'catalogo' | 'bitacora' | 'combustible'>('catalogo')
+  const [subTab, setSubTab]     = useState<'catalogo' | 'bitacora' | 'uso' | 'combustible'>('catalogo')
 
   // ── Catálogo ─────────────────────────────────────────────
   const [equipos,   setEquipos]   = useState<any[]>([])
@@ -144,7 +145,7 @@ export default function EquipoFlotaTab() {
     <div>
       {/* Sub-tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 14 }}>
-        {([['catalogo', 'Catálogo de Equipos', Truck], ['bitacora', 'Bitácora', Wrench], ['combustible', 'Combustible', Fuel]] as const).map(([key, label, Icon]) => (
+        {([['catalogo', 'Catálogo de Equipos', Truck], ['bitacora', 'Bitácora de Servicios', Wrench], ['uso', 'Bitácora de Uso', Activity], ['combustible', 'Combustible', Fuel]] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setSubTab(key)}
             style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px',
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
@@ -429,6 +430,11 @@ export default function EquipoFlotaTab() {
         <BitacoraDetail bit={detailBit} equipoMap={equipoMap}
           onClose={() => setDetailBit(null)}
           onEdit={b => { setDetailBit(null); setModalBit({ open: true, bit: b }) }} />
+      )}
+
+      {/* ══════════ TAB: BITÁCORA DE USO ══════════ */}
+      {subTab === 'uso' && (
+        <BitacoraUsoTab equipos={equipos} equipoMap={equipoMap} />
       )}
 
       {/* ══════════ TAB: COMBUSTIBLE ══════════ */}
