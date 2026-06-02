@@ -200,7 +200,7 @@ export default function LotesPage({ embedded }: { embedded?: boolean }) {
           onChange={e => { setFilterSeccion(e.target.value); setPage(0) }}
         >
           <option value="">Todas las secciones</option>
-          {Object.entries(secciones).map(([id, nombre]) => (
+          {Object.entries(secciones).sort((a, b) => a[1].localeCompare(b[1], 'es')).map(([id, nombre]) => (
             <option key={id} value={id}>{nombre}</option>
           ))}
         </select>
