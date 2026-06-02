@@ -9,72 +9,82 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function ReporteLotesPropietarios() {
-  const [rows,      setRows]      = useState<any[]>([])
-  const [secciones, setSecciones] = useState<any[]>([])
-  const [loading,   setLoading]   = useState(true)
-  const [search,    setSearch]    = useState('')
-  const [filterSec, setFilterSec] = useState('')
+  const [rows,         setRows]         = useState<any[]>([])
+  const [secciones,    setSecciones]    = useState<any[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [queryError,   setQueryError]   = useState<string | null>(null)
+  const [search,       setSearch]       = useState('')
+  const [filterSec,    setFilterSec]    = useState('')
   const [filterStatus, setFilterStatus] = useState('')
 
+  // Catálogos
   useEffect(() => {
     dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setSecciones(data ?? []))
   }, [])
 
+  // Datos principales
   useEffect(() => {
     setLoading(true)
-    dbCtrl.from('propietarios_lotes').select('*').eq('activo', true)
-      .then(async ({ data }) => {
-        const rels = data ?? []
-        if (!rels.length) { setRows([]); setLoading(false); return }
+    setQueryError(null)
 
-        const loteIds = Array.from(new Set(rels.map((r: any) => r.id_lote_fk).filter(Boolean)))
-        const propIds = Array.from(new Set(rels.map((r: any) => r.id_propietario_fk).filter(Boolean)))
+    dbCtrl.from('propietarios_lotes').select('*').eq('activo', true).order('id')
+      .then(async ({ data: rels, error: relsErr }) => {
+        if (relsErr) { setQueryError(relsErr.message); setLoading(false); return }
+        const relRows = rels ?? []
+        if (!relRows.length) { setRows([]); setLoading(false); return }
 
-        const [{ data: lotesData }, { data: propsData }] = await Promise.all([
-          dbCat.from('lotes')
-            .select('id, cve_lote, lote, tipo_lote, status_lote, id_seccion_fk, clasificacion_cobranza, valor_operacion, superficie')
-            .in('id', loteIds),
+        const loteIds = Array.from(new Set(relRows.map((r: any) => r.id_lote_fk).filter(Boolean)))
+        const propIds = Array.from(new Set(relRows.map((r: any) => r.id_propietario_fk).filter(Boolean)))
+
+        const [
+          { data: lotesData,  error: lotesErr },
+          { data: propsData,  error: propsErr },
+        ] = await Promise.all([
+          dbCat.from('lotes').select('*').in('id', loteIds),
           dbCat.from('propietarios')
             .select('id, nombre, apellido_paterno, apellido_materno, rfc, tipo_persona')
             .in('id', propIds),
         ])
+
+        if (lotesErr) { setQueryError(lotesErr.message); setLoading(false); return }
+        if (propsErr) { setQueryError(propsErr.message); setLoading(false); return }
 
         const lotesMap: Record<number, any> = {}
         const propsMap: Record<number, any> = {}
         ;(lotesData ?? []).forEach((l: any) => { lotesMap[l.id] = l })
         ;(propsData ?? []).forEach((p: any) => { propsMap[p.id] = p })
 
-        const combined = rels
+        const combined = relRows
           .map((r: any) => ({
             ...r,
-            _lote: lotesMap[r.id_lote_fk]         ?? null,
-            _prop: propsMap[r.id_propietario_fk]   ?? null,
+            _lote: lotesMap[r.id_lote_fk]       ?? null,
+            _prop: propsMap[r.id_propietario_fk] ?? null,
           }))
-          .filter((r: any) => r._lote && r._prop)   // descartar vínculos incompletos
+          // Ordenar por cve_lote; filas sin lote van al final
           .sort((a: any, b: any) =>
-            (a._lote?.cve_lote ?? '').localeCompare(b._lote?.cve_lote ?? '', 'es-MX'))
+            (a._lote?.cve_lote ?? 'zzz').localeCompare(b._lote?.cve_lote ?? 'zzz', 'es-MX'))
 
         setRows(combined)
         setLoading(false)
       })
   }, [])
 
-  // Mapa sección id → nombre
+  // Mapa sección id → nombre (construido al render)
   const secMap: Record<number, string> = {}
   secciones.forEach(s => { secMap[s.id] = s.nombre })
 
   const filtered = rows.filter(r => {
-    const lote   = r._lote
-    const prop   = r._prop
-    if (filterSec    && lote?.id_seccion_fk !== Number(filterSec))   return false
-    if (filterStatus && lote?.status_lote   !== filterStatus)         return false
+    const lote = r._lote
+    const prop = r._prop
+    if (filterSec    && lote?.id_seccion_fk !== Number(filterSec)) return false
+    if (filterStatus && lote?.status_lote   !== filterStatus)       return false
     if (search) {
-      const clave   = (lote?.cve_lote ?? '').toLowerCase()
-      const nombre  = [prop?.nombre, prop?.apellido_paterno, prop?.apellido_materno]
+      const q      = search.toLowerCase()
+      const clave  = (lote?.cve_lote ?? '').toLowerCase()
+      const nombre = [prop?.nombre, prop?.apellido_paterno, prop?.apellido_materno]
         .filter(Boolean).join(' ').toLowerCase()
-      const rfc     = (prop?.rfc ?? '').toLowerCase()
-      const q = search.toLowerCase()
+      const rfc    = (prop?.rfc ?? '').toLowerCase()
       if (!clave.includes(q) && !nombre.includes(q) && !rfc.includes(q)) return false
     }
     return true
@@ -100,6 +110,13 @@ export default function ReporteLotesPropietarios() {
         {loading && <RefreshCw size={14} className="animate-spin" style={{ color: 'var(--text-muted)' }} />}
       </div>
 
+      {queryError && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
+          padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#dc2626' }}>
+          Error al cargar datos: {queryError}
+        </div>
+      )}
+
       <PrintBar title="Lotes_Propietarios" count={filtered.length} reportTitle="Lotes y Propietarios" />
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -118,10 +135,16 @@ export default function ReporteLotesPropietarios() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
               <tr>
                 <td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                  {loading ? 'Cargando…' : 'Sin registros'}
+                  Cargando…
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                  Sin registros
                 </td>
               </tr>
             ) : filtered.map((r, i) => {
@@ -129,11 +152,15 @@ export default function ReporteLotesPropietarios() {
               const p        = r._prop
               const stColor  = STATUS_COLOR[l?.status_lote ?? ''] ?? 'var(--text-muted)'
               const secNombre = l?.id_seccion_fk ? (secMap[l.id_seccion_fk] ?? '—') : '—'
-              const claveLote = l?.cve_lote ?? (l?.lote ? `#${l.lote}` : '—')
-              const nombre    = [p?.nombre, p?.apellido_paterno, p?.apellido_materno].filter(Boolean).join(' ') || '—'
+              const claveLote = l?.cve_lote
+                ? l.cve_lote
+                : l?.lote ? `#${l.lote}` : '—'
+              const nombre = p
+                ? [p.nombre, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ') || '—'
+                : '—'
 
               return (
-                <tr key={`${r.id_lote_fk}-${r.id_propietario_fk}-${i}`}>
+                <tr key={`${r.id_lote_fk ?? i}-${r.id_propietario_fk ?? i}`}>
                   <td style={{ fontWeight: 600, color: 'var(--blue)', whiteSpace: 'nowrap' }}>
                     {claveLote}
                   </td>
@@ -144,11 +171,13 @@ export default function ReporteLotesPropietarios() {
                     {l?.tipo_lote ?? '—'}
                   </td>
                   <td>
-                    <span style={{ fontSize: 11, fontWeight: 600,
-                      padding: '2px 8px', borderRadius: 20,
-                      color: stColor, background: stColor + '15', border: `1px solid ${stColor}40` }}>
-                      {l?.status_lote ?? '—'}
-                    </span>
+                    {l?.status_lote ? (
+                      <span style={{ fontSize: 11, fontWeight: 600,
+                        padding: '2px 8px', borderRadius: 20,
+                        color: stColor, background: stColor + '15', border: `1px solid ${stColor}40` }}>
+                        {l.status_lote}
+                      </span>
+                    ) : '—'}
                   </td>
                   <td style={{ fontWeight: 500 }}>{nombre}</td>
                   <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-secondary)' }}>
@@ -158,7 +187,8 @@ export default function ReporteLotesPropietarios() {
                     {p?.tipo_persona ?? '—'}
                   </td>
                   <td style={{ textAlign: 'center', fontSize: 12,
-                    color: r.es_principal ? '#15803d' : 'var(--text-muted)', fontWeight: r.es_principal ? 600 : 400 }}>
+                    color: r.es_principal ? '#15803d' : 'var(--text-muted)',
+                    fontWeight: r.es_principal ? 600 : 400 }}>
                     {r.es_principal ? '✓ Sí' : 'No'}
                   </td>
                   <td style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: 12 }}>
