@@ -5,7 +5,7 @@ import { Loader, RefreshCw, BookOpen } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
-type Presupuesto = { id: number; anio: number; nombre: string; status: string }
+type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
 type Partida     = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'; orden: number
   fuente_real:          string | null
@@ -89,13 +89,16 @@ export default function ComparativoPage() {
   const [manualConc,  setManualConc]  = useState('')
   const [savingManual, setSavingManual] = useState(false)
 
-  const loadEverything = useCallback(async (pptoId: number, anio: number, silent = false) => {
+  const loadEverything = useCallback(async (pptoId: number, anio: number, modulo: string, silent = false) => {
     if (!silent) setLoading(true); else setRefreshing(true)
 
+    let partidasQ = dbCtrl.from('ppto_partidas')
+      .select('id, nombre, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto')
+      .eq('activo', true)
+    if (modulo) partidasQ = (partidasQ as any).eq('modulo', modulo)
+
     const [{ data: pData }, { data: det }, { data: manual }] = await Promise.all([
-      dbCtrl.from('ppto_partidas')
-        .select('id, nombre, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto')
-        .eq('activo', true).order('tipo').order('orden').order('nombre'),
+      partidasQ.order('tipo').order('orden').order('nombre'),
       dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
       dbCtrl.from('ppto_presupuesto_real_manual')
@@ -199,14 +202,14 @@ export default function ComparativoPage() {
   }, [])
 
   useEffect(() => {
-    dbCtrl.from('ppto_presupuestos').select('id, anio, nombre, status')
+    dbCtrl.from('ppto_presupuestos').select('id, anio, nombre, status, modulo')
       .order('anio', { ascending: false }).order('nombre')
       .then(({ data }) => {
         const list = (data ?? []) as Presupuesto[]
         setPresupuestos(list)
         if (list.length > 0) {
           setSelId(list[0].id)
-          loadEverything(list[0].id, list[0].anio)
+          loadEverything(list[0].id, list[0].anio, list[0].modulo)
         } else setLoading(false)
       })
   }, [loadEverything])
@@ -216,7 +219,7 @@ export default function ComparativoPage() {
   function onChangePpto(id: number) {
     setSelId(id)
     const p = presupuestos.find(x => x.id === id)
-    if (p) loadEverything(p.id, p.anio, true)
+    if (p) loadEverything(p.id, p.anio, p.modulo, true)
   }
 
   // Agrega real manual
@@ -234,7 +237,7 @@ export default function ComparativoPage() {
     setManualMonto('')
     setManualConc('')
     const p = presupuestos.find(x => x.id === selId)
-    if (p) loadEverything(p.id, p.anio, true)
+    if (p) loadEverything(p.id, p.anio, p.modulo, true)
   }
 
   // ── Helpers de agregación ──────────────────────────────────────
@@ -303,7 +306,7 @@ export default function ComparativoPage() {
               <option key={p.id} value={p.id}>{p.anio} — {p.nombre}</option>
             ))}
           </select>
-          <button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, true)}
+          <button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true)}
             style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px' }}>
             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
           </button>

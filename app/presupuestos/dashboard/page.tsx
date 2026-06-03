@@ -4,7 +4,7 @@ import { dbCtrl, dbComp } from '@/lib/supabase'
 import { Loader, RefreshCw, TrendingUp, TrendingDown, Scale, AlertTriangle, BookOpen } from 'lucide-react'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
-type Presupuesto = { id: number; anio: number; nombre: string; status: string }
+type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
 type Partida     = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'
   fuente_real:          string | null
@@ -93,14 +93,16 @@ export default function DashboardPpto() {
   const [detMap,   setDetMap]   = useState<DetMap>({})
   const [realMap,  setRealMap]  = useState<DetMap>({})
 
-  const loadEverything = useCallback(async (pptoId: number, anio: number, silent = false) => {
+  const loadEverything = useCallback(async (pptoId: number, anio: number, modulo: string, silent = false) => {
     if (!silent) setLoading(true)
     else setRefreshing(true)
 
-    // Partidas activas
-    const { data: pData } = await dbCtrl.from('ppto_partidas')
+    // Partidas activas filtradas por módulo del presupuesto
+    let qPartidas = dbCtrl.from('ppto_partidas')
       .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto')
       .eq('activo', true)
+    if (modulo) qPartidas = (qPartidas as any).eq('modulo', modulo)
+    const { data: pData } = await qPartidas
     const parts = (pData ?? []) as Partida[]
     setPartidas(parts)
 
@@ -203,14 +205,14 @@ export default function DashboardPpto() {
   }, [])
 
   useEffect(() => {
-    dbCtrl.from('ppto_presupuestos').select('id, anio, nombre, status')
+    dbCtrl.from('ppto_presupuestos').select('id, anio, nombre, status, modulo')
       .order('anio', { ascending: false }).order('nombre')
       .then(({ data }) => {
         const list = (data ?? []) as Presupuesto[]
         setPresupuestos(list)
         if (list.length > 0) {
           setSelId(list[0].id)
-          loadEverything(list[0].id, list[0].anio)
+          loadEverything(list[0].id, list[0].anio, list[0].modulo)
         } else {
           setLoading(false)
         }
@@ -222,7 +224,7 @@ export default function DashboardPpto() {
   function onChangePpto(id: number) {
     setSelId(id)
     const p = presupuestos.find(x => x.id === id)
-    if (p) loadEverything(p.id, p.anio, true)
+    if (p) loadEverything(p.id, p.anio, p.modulo, true)
   }
 
   // ── Cálculos ──────────────────────────────────────────────────
@@ -298,7 +300,7 @@ export default function DashboardPpto() {
               <option key={p.id} value={p.id}>{p.anio} — {p.nombre}</option>
             ))}
           </select>
-          <button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, true)}
+          <button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true)}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
           </button>
