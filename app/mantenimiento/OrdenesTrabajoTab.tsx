@@ -888,6 +888,108 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
             </div>
           )}
 
+          {/* ── Bloque de acciones de status ── */}
+          {currentStatus !== 'Cancelada' && currentStatus !== 'Completada' && (
+            <div style={{
+              padding: '14px 16px',
+              background: STATUS_STYLE[currentStatus]?.bg ?? '#f8fafc',
+              border: `1.5px solid ${STATUS_STYLE[currentStatus]?.border ?? '#e2e8f0'}`,
+              borderRadius: 10,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: STATUS_STYLE[currentStatus]?.color ?? '#64748b',
+                  textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  {currentStatus}
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  {currentStatus === 'Pendiente'  && '— Aún no iniciada'}
+                  {currentStatus === 'En Proceso' && '— Trabajo en curso'}
+                  {currentStatus === 'En Pausa'   && '— Trabajo suspendido'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {currentStatus === 'Pendiente' && (
+                  <button disabled={updatingStatus} onClick={() => cambiarStatus('En Proceso')}
+                    style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #bfdbfe',
+                      background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, cursor: 'pointer',
+                      fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    {updatingStatus ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={13} />}
+                    Iniciar trabajo
+                  </button>
+                )}
+                {(currentStatus === 'En Proceso') && (
+                  <button disabled={updatingStatus} onClick={() => cambiarStatus('En Pausa')}
+                    style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #ddd6fe',
+                      background: '#f5f3ff', color: '#7c3aed', fontWeight: 700, cursor: 'pointer',
+                      fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    Pausar
+                  </button>
+                )}
+                {currentStatus === 'En Pausa' && (
+                  <button disabled={updatingStatus} onClick={() => cambiarStatus('En Proceso')}
+                    style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #bfdbfe',
+                      background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, cursor: 'pointer',
+                      fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    {updatingStatus ? <Loader size={12} className="animate-spin" /> : null}
+                    Reanudar
+                  </button>
+                )}
+                {(currentStatus === 'En Proceso' || currentStatus === 'En Pausa') && (
+                  <button disabled={updatingStatus} onClick={() => cambiarStatus('Completada')}
+                    style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #bbf7d0',
+                      background: '#f0fdf4', color: '#15803d', fontWeight: 700, cursor: 'pointer',
+                      fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                    {updatingStatus ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={13} />}
+                    Marcar Completada
+                  </button>
+                )}
+                <button disabled={updatingStatus} onClick={() => cambiarStatus('Cancelada')}
+                  style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #fecaca',
+                    background: '#fef2f2', color: '#dc2626', fontWeight: 600, cursor: 'pointer',
+                    fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                  Cancelar OT
+                </button>
+              </div>
+            </div>
+          )}
+
+          {currentStatus === 'Completada' && (
+            <div style={{ padding: '14px 16px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <CheckCircle size={15} style={{ color: '#15803d', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#14532d' }}>OT Completada</span>
+                {ot.fecha_cierre && (
+                  <span style={{ fontSize: 11, color: '#166534', marginLeft: 'auto' }}>
+                    {fmtFecha(ot.fecha_cierre)}
+                  </span>
+                )}
+              </div>
+              <button disabled={updatingStatus} onClick={() => cambiarStatus('En Proceso')}
+                style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #fde68a',
+                  background: '#fffbeb', color: '#92400e', fontWeight: 600, cursor: 'pointer',
+                  fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+                {updatingStatus ? <Loader size={12} className="animate-spin" /> : null}
+                Reabrir OT
+              </button>
+            </div>
+          )}
+
+          {currentStatus === 'Cancelada' && (
+            <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <X size={15} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>OT Cancelada</span>
+              </div>
+              <button disabled={updatingStatus} onClick={() => cambiarStatus('Pendiente')}
+                style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #fde68a',
+                  background: '#fffbeb', color: '#92400e', fontWeight: 600, cursor: 'pointer',
+                  fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
+                {updatingStatus ? <Loader size={12} className="animate-spin" /> : null}
+                Reactivar OT
+              </button>
+            </div>
+          )}
+
           {/* Evidencias */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -943,27 +1045,14 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
             )}
           </div>
         </div>
-        {/* Footer: cambio de status + imprimir + editar */}
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
-          padding: '10px 24px', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>Cambiar status:</span>
-            <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px' }}
-              value={currentStatus}
-              onChange={e => cambiarStatus(e.target.value)}
-              disabled={updatingStatus}>
-              {STATUSES.map(s => <option key={s}>{s}</option>)}
-            </select>
-            {updatingStatus && <Loader size={12} className="animate-spin" style={{ color: 'var(--blue)' }} />}
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirOT}>
-              <Printer size={12} /> Imprimir OT
-            </button>
-            <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => onEdit(ot)}>
-              Editar
-            </button>
-          </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end',
+          padding: '10px 24px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimirOT}>
+            <Printer size={12} /> Imprimir OT
+          </button>
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => onEdit(ot)}>
+            Editar
+          </button>
         </div>
     </ModalShell>
   )
