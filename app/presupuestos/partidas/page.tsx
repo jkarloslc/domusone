@@ -8,7 +8,7 @@ import ModalShell from '@/components/ui/ModalShell'
 
 type FuenteReal = 'seccion' | 'concepto' | 'op_area' | 'manual'
 
-const MODULOS = ['General', 'Residencial', 'Golf', 'Mantenimiento', 'Hípico', 'Eventos', 'Hospitalidad']
+const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Hospitalidad']
 
 const MODULO_COLOR: Record<string, { bg: string; color: string }> = {
   General:       { bg: '#f1f5f9', color: '#475569' },
@@ -51,7 +51,7 @@ const TIPOS_GASTO = [
 ]
 
 const EMPTY: Omit<Partida, 'id'> = {
-  nombre: '', descripcion: null, tipo: 'egreso', modulo: 'General', fuente_real: 'op_area',
+  nombre: '', descripcion: null, tipo: 'egreso', modulo: 'Golf', fuente_real: 'op_area',
   id_centro_costo_fk: null, id_area_fk: null, id_centro_ingreso_fk: null,
   id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, orden: 0, activo: true,
 }

@@ -6,7 +6,7 @@ import { Plus, BookOpen, Loader, Save, Settings, BookMarked, Edit2 } from 'lucid
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
-const MODULOS = ['General', 'Residencial', 'Golf', 'Mantenimiento', 'Hípico', 'Eventos', 'Hospitalidad']
+const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Hospitalidad']
 
 type Presupuesto = {
   id: number
@@ -39,7 +39,7 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
   cerrado:  { bg: '#f1f5f9', color: '#475569', label: 'Cerrado'  },
 }
 
-const EMPTY_PPTO = { anio: new Date().getFullYear(), nombre: '', descripcion: '', modulo: 'General' }
+const EMPTY_PPTO = { anio: new Date().getFullYear(), nombre: '', descripcion: '', modulo: 'Golf' }
 
 export default function CapturaPpto() {
   const { canWrite } = useAuth()
