@@ -1,6 +1,6 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
-import { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { dbCtrl, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
@@ -48,8 +48,10 @@ const fmtFecha = (d: string | null) =>
 
 export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?: 'Balvanera' | 'Cuadrilla' }) {
   const { canWrite, canDelete } = useAuth()
+  const PAGE_SIZE = 20
   const [rows, setRows]           = useState<any[]>([])
   const [total, setTotal]         = useState(0)
+  const [page, setPage]           = useState(1)
   const [loading, setLoading]     = useState(true)
   const [kpis, setKpis]           = useState({ pendientes: 0, enProceso: 0, completadas: 0, urgentes: 0 })
   const [areas, setAreas] = useState<any[]>([])
@@ -92,10 +94,11 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
     if (filterCC)         q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea)       q = q.eq('id_area_fk', Number(filterArea))
     if (filterFr)         q = q.eq('id_frente_fk', Number(filterFr))
-    const { data, count } = await q
+    const from = (page - 1) * PAGE_SIZE
+    const { data, count } = await q.range(from, from + PAGE_SIZE - 1)
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [empresa, debouncedSearch, filterStatus, filterTipo, filterCC, filterArea, filterFr])
+  }, [empresa, debouncedSearch, filterStatus, filterTipo, filterCC, filterArea, filterFr, page])
 
   useEffect(() => {
     Promise.all([
@@ -146,21 +149,21 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
         </div>
         <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
         {/* Filtros tipo / status */}
-        <select className="select" style={{ flex: '1 1 90px', maxWidth: 130, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 90px', maxWidth: 130, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1) }}>
           <option value="">Status</option>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
-        <select className="select" style={{ flex: '1 1 90px', maxWidth: 130, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 90px', maxWidth: 130, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterTipo} onChange={e => { setFilterTipo(e.target.value); setPage(1) }}>
           <option value="">Tipo</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
         <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
         {/* Filtros ubicación */}
-        <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setFilterFr('') }}>
+        <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setFilterFr(''); setPage(1) }}>
           <option value="">Centro de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterFr('') }}>
+        <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterFr(''); setPage(1) }}>
           <option value="">Área</option>
           {areas
             .filter((s: any) => !filterCC || s.id_centro_costo_fk === Number(filterCC))
@@ -180,7 +183,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
         </select>
         {(search || filterStatus || filterTipo || filterCC || filterArea || filterFr) && (
           <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
-            onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCC(''); setFilterArea(''); setFilterFr('') }}>
+            onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCC(''); setFilterArea(''); setFilterFr(''); setPage(1) }}>
             <X size={11} /> Limpiar
           </button>
         )}
@@ -246,6 +249,11 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
           </tbody>
         </table>
       </div>
+
+      {/* Paginación */}
+      {total > PAGE_SIZE && (
+        <PaginationNav page={page} total={total} pageSize={PAGE_SIZE} onChange={setPage} />
+      )}
 
       {modal  && <OTModal areas={areas} ot={editingOT} empresa={empresa}
         onClose={() => { setModal(false); setEditingOT(null) }}
@@ -1028,6 +1036,64 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
           </button>
         </div>
     </ModalShell>
+  )
+}
+
+// ── PaginationNav ─────────────────────────────────────────────
+function PaginationNav({ page, total, pageSize, onChange }: {
+  page: number; total: number; pageSize: number; onChange: (p: number) => void
+}) {
+  const lastPage = Math.ceil(total / pageSize)
+  const from = (page - 1) * pageSize + 1
+  const to   = Math.min(page * pageSize, total)
+
+  // Páginas a mostrar (ventana de 5 centrada en la actual)
+  const pages: (number | '...')[] = []
+  if (lastPage <= 7) {
+    for (let i = 1; i <= lastPage; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    if (page > 4) pages.push('...')
+    for (let i = Math.max(2, page - 1); i <= Math.min(lastPage - 1, page + 1); i++) pages.push(i)
+    if (page < lastPage - 3) pages.push('...')
+    pages.push(lastPage)
+  }
+
+  const btn = (label: React.ReactNode, target: number, disabled: boolean, active = false) => (
+    <button
+      key={String(label)}
+      onClick={() => !disabled && onChange(target)}
+      disabled={disabled}
+      style={{
+        minWidth: 30, height: 30, padding: '0 8px', borderRadius: 6, border: '1px solid',
+        borderColor: active ? 'var(--blue)' : '#e2e8f0',
+        background: active ? 'var(--blue)' : disabled ? '#f8fafc' : '#fff',
+        color: active ? '#fff' : disabled ? '#94a3b8' : 'var(--text-secondary)',
+        fontWeight: active ? 700 : 400, fontSize: 12, cursor: disabled ? 'default' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+      }}>
+      {label}
+    </button>
+  )
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
+      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+        {from}–{to} de <strong>{total}</strong> registros
+      </span>
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        {btn('««', 1,        page === 1)}
+        {btn('‹',  page - 1, page === 1)}
+        {pages.map((p, i) =>
+          p === '...'
+            ? <span key={`e${i}`} style={{ padding: '0 4px', color: 'var(--text-muted)', fontSize: 12 }}>…</span>
+            : btn(p, p as number, false, p === page)
+        )}
+        {btn('›',  page + 1, page === lastPage)}
+        {btn('»»', lastPage, page === lastPage)}
+      </div>
+    </div>
   )
 }
 

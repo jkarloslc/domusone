@@ -1,6 +1,6 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
-import { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { dbCtrl, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
@@ -54,8 +54,10 @@ const fmtFecha = (d: string | null) =>
 // Página principal
 // ════════════════════════════════════════════════════════════
 export default function OrdenesTrabajoPage() {
+  const PAGE_SIZE = 20
   const [rows, setRows]         = useState<any[]>([])
   const [total, setTotal]       = useState(0)
+  const [page, setPage]         = useState(1)
   const [loading, setLoading]   = useState(true)
   const [areas, setAreas]       = useState<any[]>([])
   const [secMap, setSecMap]     = useState<Record<number, string>>({})
@@ -76,10 +78,11 @@ export default function OrdenesTrabajoPage() {
     if (filterStatus)     q = q.eq('status', filterStatus)
     if (filterTipo)       q = q.eq('tipo_trabajo', filterTipo)
     if (filterSec)        q = q.eq('id_area_fk', Number(filterSec))
-    const { data, count } = await q
+    const from = (page - 1) * PAGE_SIZE
+    const { data, count } = await q.range(from, from + PAGE_SIZE - 1)
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [debouncedSearch, filterStatus, filterTipo, filterSec])
+  }, [debouncedSearch, filterStatus, filterTipo, filterSec, page])
 
   useEffect(() => {
     dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre')
@@ -150,15 +153,15 @@ export default function OrdenesTrabajoPage() {
           <input className="input" style={{ paddingLeft: 30 }} placeholder="Folio, título, asignado…"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select className="select" style={{ minWidth: 140 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        <select className="select" style={{ minWidth: 140 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1) }}>
           <option value="">Todos los status</option>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 140 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+        <select className="select" style={{ minWidth: 140 }} value={filterTipo} onChange={e => { setFilterTipo(e.target.value); setPage(1) }}>
           <option value="">Todos los tipos</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filterSec} onChange={e => setFilterSec(e.target.value)}>
+        <select className="select" style={{ minWidth: 160 }} value={filterSec} onChange={e => { setFilterSec(e.target.value); setPage(1) }}>
           <option value="">Todas las áreas</option>
           {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
@@ -218,9 +221,60 @@ export default function OrdenesTrabajoPage() {
         </table>
       </div>
 
+      {total > PAGE_SIZE && (
+        <PaginationNav page={page} total={total} pageSize={PAGE_SIZE} onChange={setPage} />
+      )}
+
       {modal      && <OTModal areas={areas} ot={editingOT} onClose={() => { setModal(false); setEditingOT(null) }} onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
       {detail     && <OTDetail ot={detail} secMap={secMap} onClose={() => { setDetail(null); fetchData() }} onEdit={ot => { setDetail(null); setEditingOT(ot); setModal(true) }} />}
       {reportModal && <ReporteSemanal areas={areas} secMap={secMap} onClose={() => setReportModal(false)} />}
+    </div>
+  )
+}
+
+// ── PaginationNav ─────────────────────────────────────────────
+function PaginationNav({ page, total, pageSize, onChange }: {
+  page: number; total: number; pageSize: number; onChange: (p: number) => void
+}) {
+  const lastPage = Math.ceil(total / pageSize)
+  const from = (page - 1) * pageSize + 1
+  const to   = Math.min(page * pageSize, total)
+  const pages: (number | '...')[] = []
+  if (lastPage <= 7) {
+    for (let i = 1; i <= lastPage; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    if (page > 4) pages.push('...')
+    for (let i = Math.max(2, page - 1); i <= Math.min(lastPage - 1, page + 1); i++) pages.push(i)
+    if (page < lastPage - 3) pages.push('...')
+    pages.push(lastPage)
+  }
+  const btn = (label: React.ReactNode, target: number, disabled: boolean, active = false) => (
+    <button key={String(label)} onClick={() => !disabled && onChange(target)} disabled={disabled}
+      style={{ minWidth: 30, height: 30, padding: '0 8px', borderRadius: 6, border: '1px solid',
+        borderColor: active ? 'var(--blue)' : '#e2e8f0',
+        background: active ? 'var(--blue)' : disabled ? '#f8fafc' : '#fff',
+        color: active ? '#fff' : disabled ? '#94a3b8' : 'var(--text-secondary)',
+        fontWeight: active ? 700 : 400, fontSize: 12, cursor: disabled ? 'default' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+      {label}
+    </button>
+  )
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
+      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+        {from}–{to} de <strong>{total}</strong> registros
+      </span>
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        {btn('««', 1, page === 1)}
+        {btn('‹', page - 1, page === 1)}
+        {pages.map((p, i) => p === '...'
+          ? <span key={`e${i}`} style={{ padding: '0 4px', color: 'var(--text-muted)', fontSize: 12 }}>…</span>
+          : btn(p, p as number, false, p === page)
+        )}
+        {btn('›', page + 1, page === lastPage)}
+        {btn('»»', lastPage, page === lastPage)}
+      </div>
     </div>
   )
 }
