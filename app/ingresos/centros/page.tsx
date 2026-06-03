@@ -94,6 +94,7 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
                 { val: 'unico',     label: 'Monto único',           desc: 'Un solo total por recibo' },
                 { val: 'secciones', label: 'Desglose por sección',  desc: 'Monto por cada sección del residencial' },
                 { val: 'frentes',   label: 'Desglose por frente',   desc: 'Monto por cada frente de ingreso' },
+                { val: 'conceptos', label: 'Desglose por concepto', desc: 'Monto por concepto de cobro (Golf, Hípico, etc.)' },
               ].map(opt => (
                 <button key={opt.val} onClick={() => set('tipo_desglose', opt.val)}
                   style={{ flex: 1, minWidth: 130, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',

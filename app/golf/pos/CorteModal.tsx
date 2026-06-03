@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbGolf, dbCtrl, dbCfg } from '@/lib/supabase'
+import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Save, Loader, AlertTriangle, CheckCircle } from 'lucide-react'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
@@ -182,25 +182,27 @@ export default function CorteModal({ idCentro, nombreCentro, exigirFacturacion =
       await dbGolf.from('ctrl_ventas').update({ id_corte_fk: corte.id }).in('id', ids)
     }
 
-    // 4. Crear recibo en módulo Ingresos (integración automática por mapeo explícito PV->CI)
+    // 4. Crear recibo en módulo Ingresos — solo si genera_recibo_automatico = true en el mapeo
     try {
       const { data: mapRow } = await dbGolf.from('pos_centros_ingreso_map')
-        .select('id_centro_ingreso_fk, activo')
+        .select('id_centro_ingreso_fk, activo, genera_recibo_automatico')
         .eq('id_centro_venta_fk', idCentro)
         .eq('activo', true)
         .maybeSingle()
 
-      const row = mapRow as CentroMap | null
-      let idCentroIngreso = row?.id_centro_ingreso_fk ?? null
-      if (!idCentroIngreso) {
-        const { data: byId } = await dbCtrl.from('centros_ingreso')
-          .select('id')
-          .eq('id', idCentro)
-          .maybeSingle()
-        idCentroIngreso = (byId as CentroIngreso | null)?.id ?? null
+      const row = mapRow as (CentroMap & { genera_recibo_automatico: boolean }) | null
+
+      // Si el mapeo no está configurado para generar recibo, salir sin error
+      if (!row?.genera_recibo_automatico) {
+        setSaving(false)
+        setSuccess(true)
+        onSaved()
+        return
       }
+
+      const idCentroIngreso = row.id_centro_ingreso_fk
       if (!idCentroIngreso) {
-        throw new Error(`No hay mapeo activo para el centro de venta "${nombreCentro}"`)
+        throw new Error(`No hay centro de ingreso mapeado para "${nombreCentro}"`)
       }
 
       const fpagoMap = mapFormasPago(formasPago)
@@ -223,7 +225,7 @@ export default function CorteModal({ idCentro, nombreCentro, exigirFacturacion =
         usuario_crea:        authUser?.nombre ?? 'sistema',
       }).select('id').single()
 
-      // Insertar formas de pago en la tabla normalizada (nueva)
+      // Insertar formas de pago
       if (recibo && formasPago.length > 0) {
         await dbCtrl.from('recibos_ingreso_formas_pago').insert(
           formasPago.map(f => ({
@@ -232,31 +234,6 @@ export default function CorteModal({ idCentro, nombreCentro, exigirFacturacion =
             nombre_forma_pago: f.forma_nombre,
             monto:             f.monto,
           }))
-        )
-      }
-
-      // Insertar desglose por concepto en recibos_ingreso_conceptos
-      if (recibo && detalleProd.length > 0) {
-        // Buscar conceptos_ingreso del centro para hacer match por nombre
-        const { data: cfgConceptos } = await dbCfg.from('conceptos_ingreso')
-          .select('id, nombre')
-          .or(`id_centro_ingreso_fk.eq.${idCentroIngreso},id_centro_ingreso_fk.is.null`)
-          .eq('activo', true)
-
-        const normalize = (s: string) => s.toLowerCase().trim()
-        const conceptoMap = Object.fromEntries(
-          (cfgConceptos ?? []).map((c: any) => [normalize(c.nombre), c.id])
-        )
-
-        await dbCtrl.from('recibos_ingreso_conceptos').insert(
-          detalleProd
-            .filter(d => d.monto > 0)
-            .map(d => ({
-              id_recibo_fk:    recibo.id,
-              id_concepto_fk:  conceptoMap[normalize(d.concepto)] ?? null,
-              nombre_concepto: d.concepto,
-              monto:           d.monto,
-            }))
         )
       }
 
