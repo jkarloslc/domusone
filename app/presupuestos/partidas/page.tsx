@@ -8,11 +8,24 @@ import ModalShell from '@/components/ui/ModalShell'
 
 type FuenteReal = 'seccion' | 'concepto' | 'op_area' | 'manual'
 
+const MODULOS = ['General', 'Residencial', 'Golf', 'Mantenimiento', 'Hípico', 'Eventos', 'Hospitalidad']
+
+const MODULO_COLOR: Record<string, { bg: string; color: string }> = {
+  General:       { bg: '#f1f5f9', color: '#475569' },
+  Residencial:   { bg: '#eff6ff', color: '#1d4ed8' },
+  Golf:          { bg: '#f0fdf4', color: '#15803d' },
+  Mantenimiento: { bg: '#fef3c7', color: '#92400e' },
+  Hípico:        { bg: '#fdf4ff', color: '#7e22ce' },
+  Eventos:       { bg: '#fff1f2', color: '#be123c' },
+  Hospitalidad:  { bg: '#ecfdf5', color: '#065f46' },
+}
+
 type Partida = {
   id: number
   nombre: string
   descripcion: string | null
   tipo: 'ingreso' | 'egreso'
+  modulo: string
   fuente_real: FuenteReal
   id_centro_costo_fk:   number | null
   id_area_fk:           number | null
@@ -38,7 +51,7 @@ const TIPOS_GASTO = [
 ]
 
 const EMPTY: Omit<Partida, 'id'> = {
-  nombre: '', descripcion: null, tipo: 'egreso', fuente_real: 'op_area',
+  nombre: '', descripcion: null, tipo: 'egreso', modulo: 'General', fuente_real: 'op_area',
   id_centro_costo_fk: null, id_area_fk: null, id_centro_ingreso_fk: null,
   id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, orden: 0, activo: true,
 }
@@ -73,6 +86,7 @@ export default function PartidasPage() {
   const [saving, setSaving]           = useState(false)
   const [errorMsg, setErrorMsg]       = useState<string | null>(null)
   const [filterTipo, setFilterTipo]   = useState<'' | 'ingreso' | 'egreso'>('')
+  const [filterModulo, setFilterModulo] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -104,6 +118,7 @@ export default function PartidasPage() {
     setForm({
       nombre: p.nombre, descripcion: p.descripcion, tipo: p.tipo,
       fuente_real: p.fuente_real ?? (p.tipo === 'egreso' && p.id_area_fk ? 'op_area' : 'manual'),
+      modulo: p.modulo ?? 'General',
       id_centro_costo_fk: p.id_centro_costo_fk, id_area_fk: p.id_area_fk,
       id_centro_ingreso_fk: p.id_centro_ingreso_fk,
       id_seccion_fk: p.id_seccion_fk, id_concepto_fk: p.id_concepto_fk,
@@ -120,6 +135,7 @@ export default function PartidasPage() {
       nombre:               form.nombre.trim(),
       descripcion:          form.descripcion,
       tipo:                 form.tipo,
+      modulo:               form.modulo,
       fuente_real:          form.tipo === 'egreso' ? 'op_area' : form.fuente_real,
       orden:                form.orden,
       activo:               form.activo,
@@ -151,7 +167,9 @@ export default function PartidasPage() {
   const secMap  = Object.fromEntries(secciones.map(s => [s.id, s.nombre]))
   const concMap = Object.fromEntries(conceptos.map(c => [c.id, c.nombre]))
 
-  const rows     = filterTipo ? partidas.filter(p => p.tipo === filterTipo) : partidas
+  const rows     = partidas
+    .filter(p => !filterTipo   || p.tipo   === filterTipo)
+    .filter(p => !filterModulo || (p.modulo ?? 'General') === filterModulo)
   const ingresos = rows.filter(p => p.tipo === 'ingreso')
   const egresos  = rows.filter(p => p.tipo === 'egreso')
 
@@ -174,6 +192,13 @@ export default function PartidasPage() {
           <p className="page-subtitle">Define las partidas y su fuente de datos real automático</p>
         </div>
         <div className="page-header-actions">
+          {/* Filtro módulo */}
+          <select className="input" style={{ fontSize: 12, padding: '5px 10px' }}
+            value={filterModulo} onChange={e => setFilterModulo(e.target.value)}>
+            <option value="">Todos los módulos</option>
+            {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          {/* Filtro tipo */}
           <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px' }}>
             {(['', 'ingreso', 'egreso'] as const).map(t => (
               <button key={t} onClick={() => setFilterTipo(t)}
@@ -228,6 +253,7 @@ export default function PartidasPage() {
                     <thead>
                       <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                         <th style={th}>Nombre</th>
+                        <th style={th}>Módulo</th>
                         <th style={th}>Fuente Real</th>
                         <th style={th}>Vínculo</th>
                         <th style={{ ...th, textAlign: 'center' }}>Orden</th>
@@ -254,6 +280,16 @@ export default function PartidasPage() {
                           }}>
                             <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>
                               {p.descripcion && <span style={{ display: 'block', fontSize: 12, color: '#94a3b8' }}>{p.descripcion}</span>}
+                            </td>
+                            <td style={td}>
+                              {(() => {
+                                const mc = MODULO_COLOR[p.modulo ?? 'General'] ?? MODULO_COLOR.General
+                                return (
+                                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: mc.bg, color: mc.color }}>
+                                    {p.modulo ?? 'General'}
+                                  </span>
+                                )
+                              })()}
                             </td>
                             <td style={td}>
                               <span style={{
@@ -337,6 +373,14 @@ export default function PartidasPage() {
               <input className="input" value={form.descripcion ?? ''}
                 onChange={e => setForm(f => ({ ...f, descripcion: e.target.value || null }))}
                 placeholder="Opcional" />
+            </label>
+
+            <label style={lbl}>
+              Módulo *
+              <select className="input" value={form.modulo}
+                onChange={e => setForm(f => ({ ...f, modulo: e.target.value }))}>
+                {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
             </label>
 
             <label style={lbl}>

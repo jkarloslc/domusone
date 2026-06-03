@@ -6,11 +6,14 @@ import { Plus, BookOpen, Loader, Save, Settings, BookMarked, Edit2 } from 'lucid
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
+const MODULOS = ['General', 'Residencial', 'Golf', 'Mantenimiento', 'Hípico', 'Eventos', 'Hospitalidad']
+
 type Presupuesto = {
   id: number
   anio: number
   nombre: string
   descripcion: string | null
+  modulo: string
   status: 'borrador' | 'aprobado' | 'cerrado'
 }
 
@@ -36,7 +39,7 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }>
   cerrado:  { bg: '#f1f5f9', color: '#475569', label: 'Cerrado'  },
 }
 
-const EMPTY_PPTO = { anio: new Date().getFullYear(), nombre: '', descripcion: '' }
+const EMPTY_PPTO = { anio: new Date().getFullYear(), nombre: '', descripcion: '', modulo: 'General' }
 
 export default function CapturaPpto() {
   const { canWrite } = useAuth()
@@ -69,9 +72,11 @@ export default function CapturaPpto() {
     return list
   }, [])
 
-  const loadPartidas = useCallback(async () => {
-    const { data } = await dbCtrl.from('ppto_partidas').select('id, nombre, tipo, orden')
-      .eq('activo', true).order('tipo').order('orden').order('nombre')
+  const loadPartidas = useCallback(async (modulo?: string) => {
+    let q = dbCtrl.from('ppto_partidas').select('id, nombre, tipo, orden')
+      .eq('activo', true)
+    if (modulo && modulo !== 'General') q = (q as any).eq('modulo', modulo)
+    const { data } = await q.order('tipo').order('orden').order('nombre')
     setPartidas((data ?? []) as Partida[])
   }, [])
 
@@ -94,6 +99,7 @@ export default function CapturaPpto() {
       if (list.length > 0) {
         setSelId(list[0].id)
         loadDet(list[0].id)
+        loadPartidas(list[0].modulo)
       }
       setLoading(false)
     })
@@ -134,7 +140,8 @@ export default function CapturaPpto() {
     setSavingNew(true)
     const { data } = await dbCtrl.from('ppto_presupuestos').insert({
       anio: formNew.anio, nombre: formNew.nombre.trim(),
-      descripcion: formNew.descripcion || null, status: 'borrador',
+      descripcion: formNew.descripcion || null,
+      modulo: formNew.modulo, status: 'borrador',
     }).select().single()
     setSavingNew(false)
     setModalNew(false)
@@ -146,7 +153,7 @@ export default function CapturaPpto() {
 
   function openEdit() {
     if (!selPpto) return
-    setFormEdit({ anio: selPpto.anio, nombre: selPpto.nombre, descripcion: selPpto.descripcion ?? '' })
+    setFormEdit({ anio: selPpto.anio, nombre: selPpto.nombre, descripcion: selPpto.descripcion ?? '', modulo: selPpto.modulo ?? 'General' })
     setModalEdit(true)
   }
 
@@ -156,6 +163,7 @@ export default function CapturaPpto() {
     await dbCtrl.from('ppto_presupuestos').update({
       anio: formEdit.anio, nombre: formEdit.nombre.trim(),
       descripcion: formEdit.descripcion || null,
+      modulo: formEdit.modulo,
     }).eq('id', selId)
     setSavingEdit(false)
     setModalEdit(false)
@@ -246,9 +254,14 @@ export default function CapturaPpto() {
                 Presupuesto:
               </span>
               <select className="input" style={{ minWidth: 260 }}
-                value={selId ?? ''} onChange={e => setSelId(Number(e.target.value))}>
+                value={selId ?? ''} onChange={e => {
+                  const id = Number(e.target.value)
+                  setSelId(id)
+                  const p = presupuestos.find(x => x.id === id)
+                  if (p) loadPartidas(p.modulo)
+                }}>
                 {presupuestos.map(p => (
-                  <option key={p.id} value={p.id}>{p.anio} — {p.nombre}</option>
+                  <option key={p.id} value={p.id}>{p.anio} — [{p.modulo}] {p.nombre}</option>
                 ))}
               </select>
             </label>
@@ -257,6 +270,12 @@ export default function CapturaPpto() {
               const st = STATUS_STYLE[selPpto.status]
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 12,
+                    background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0',
+                  }}>
+                    {selPpto.modulo ?? 'General'}
+                  </span>
                   <span style={{
                     fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 12,
                     background: st.bg, color: st.color,
@@ -417,12 +436,21 @@ export default function CapturaPpto() {
           }
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <label style={lbl}>
-              Año *
-              <input className="input" type="number" min={2020} max={2099}
-                value={formNew.anio}
-                onChange={e => setFormNew(f => ({ ...f, anio: Number(e.target.value) }))} />
-            </label>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <label style={{ ...lbl, flex: 1 }}>
+                Año *
+                <input className="input" type="number" min={2020} max={2099}
+                  value={formNew.anio}
+                  onChange={e => setFormNew(f => ({ ...f, anio: Number(e.target.value) }))} />
+              </label>
+              <label style={{ ...lbl, flex: 2 }}>
+                Módulo *
+                <select className="input" value={formNew.modulo}
+                  onChange={e => setFormNew(f => ({ ...f, modulo: e.target.value }))}>
+                  {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </label>
+            </div>
             <label style={lbl}>
               Nombre *
               <input className="input" value={formNew.nombre}
@@ -461,12 +489,21 @@ export default function CapturaPpto() {
           }
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <label style={lbl}>
-              Año *
-              <input className="input" type="number" min={2020} max={2099}
-                value={formEdit.anio}
-                onChange={e => setFormEdit(f => ({ ...f, anio: Number(e.target.value) }))} />
-            </label>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <label style={{ ...lbl, flex: 1 }}>
+                Año *
+                <input className="input" type="number" min={2020} max={2099}
+                  value={formEdit.anio}
+                  onChange={e => setFormEdit(f => ({ ...f, anio: Number(e.target.value) }))} />
+              </label>
+              <label style={{ ...lbl, flex: 2 }}>
+                Módulo *
+                <select className="input" value={formEdit.modulo}
+                  onChange={e => setFormEdit(f => ({ ...f, modulo: e.target.value }))}>
+                  {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </label>
+            </div>
             <label style={lbl}>
               Nombre *
               <input className="input" value={formEdit.nombre}
