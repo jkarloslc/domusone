@@ -23,6 +23,8 @@ import ReporteKardex from './ReporteKardex'
 import ReporteTransferencias from './ReporteTransferencias'
 import ReporteOrdenesTrabajo from './ReporteOrdenesTrabajo'
 import ReporteProgramasMantenimiento from './ReporteProgramasMantenimiento'
+import ReporteOTFinanciero from './ReporteOTFinanciero'
+import ReporteOTCumplimiento from './ReporteOTCumplimiento'
 import ReporteEstadoCuenta from './ReporteEstadoCuenta'
 import ReporteComprasPorProveedor from './ReporteComprasPorProveedor'
 import ReporteIngresos from './ReporteIngresos'
@@ -69,7 +71,9 @@ const GRUPOS = [
     label: 'Mantenimiento',
     color: '#7c3aed',
     reportes: [
-      { id: 'ordenes-trabajo',        label: 'Órdenes de Trabajo',          icon: Wrench,        desc: 'OT filtrable por status, tipo, sección, prioridad y fecha' },
+      { id: 'ordenes-trabajo',        label: 'Órdenes de Trabajo',          icon: Wrench,        desc: 'OT filtrable por status, tipo, área, prioridad y fecha' },
+      { id: 'ot-financiero',          label: 'OT Financiero CC/Área',       icon: Wallet,        desc: 'Costo de MO y recursos por Centro de Costo, Área y Frente' },
+      { id: 'ot-cumplimiento',        label: 'OT Cumplimiento',             icon: BarChart3,     desc: 'Tasa de completado, cumplimiento de fecha límite y desglose por CC/Área/Tipo' },
       { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Programas con sus tareas, responsable y semanas asignadas' },
     ],
   },
@@ -239,6 +243,8 @@ function ReportesContent() {
 
       {/* Reportes mantenimiento */}
       {active === 'ordenes-trabajo'         && <ReporteOrdenesTrabajo />}
+      {active === 'ot-financiero'           && <ReporteOTFinanciero />}
+      {active === 'ot-cumplimiento'         && <ReporteOTCumplimiento />}
       {active === 'programas-mantenimiento' && <ReporteProgramasMantenimiento />}
 
       {/* Reportes tesorería */}
