@@ -889,39 +889,12 @@ function OTDetail({ ot, secMap, onClose, onEdit }: {
                   {currentStatus}
                 </span>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  {currentStatus === 'Pendiente'  && '— Aún no iniciada'}
+                  {currentStatus === 'Pendiente'  && '— Pendiente de ejecución'}
                   {currentStatus === 'En Proceso' && '— Trabajo en curso'}
-                  {currentStatus === 'En Pausa'   && '— Trabajo suspendido'}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {currentStatus === 'Pendiente' && (
-                  <button disabled={updatingStatus} onClick={() => cambiarStatus('En Proceso')}
-                    style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #bfdbfe',
-                      background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, cursor: 'pointer',
-                      fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    {updatingStatus ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={13} />}
-                    Iniciar trabajo
-                  </button>
-                )}
-                {currentStatus === 'En Proceso' && (
-                  <button disabled={updatingStatus} onClick={() => cambiarStatus('En Pausa')}
-                    style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #ddd6fe',
-                      background: '#f5f3ff', color: '#7c3aed', fontWeight: 700, cursor: 'pointer',
-                      fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    Pausar
-                  </button>
-                )}
-                {currentStatus === 'En Pausa' && (
-                  <button disabled={updatingStatus} onClick={() => cambiarStatus('En Proceso')}
-                    style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #bfdbfe',
-                      background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, cursor: 'pointer',
-                      fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                    {updatingStatus ? <Loader size={12} className="animate-spin" /> : null}
-                    Reanudar
-                  </button>
-                )}
-                {(currentStatus === 'En Proceso' || currentStatus === 'En Pausa') && (
+                {(currentStatus === 'Pendiente' || currentStatus === 'En Proceso') && (
                   <button disabled={updatingStatus} onClick={() => cambiarStatus('Completada')}
                     style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid #bbf7d0',
                       background: '#f0fdf4', color: '#15803d', fontWeight: 700, cursor: 'pointer',
