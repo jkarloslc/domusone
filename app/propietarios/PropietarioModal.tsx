@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbCat, dbCtrl, type Propietario, type Lote } from '@/lib/supabase'
+import { dbCat, dbCfg, dbCtrl, type Propietario, type Lote } from '@/lib/supabase'
 import { Save, Loader, Plus, Trash2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -8,7 +8,7 @@ type Props = { propietario: Propietario | null; onClose: () => void; onSaved: ()
 
 type Tel   = { id?: number; tipo: string; numero: string }
 type Email = { id?: number; tipo: string; correo: string }
-type LoteAsig = { id?: number; id_lote_fk: number; cve_lote?: string; es_principal: boolean; porcentaje: string }
+type LoteAsig = { id?: number; id_lote_fk: number; id_seccion: number | null; cve_lote?: string; es_principal: boolean; porcentaje: string }
 
 const ESTADO_CIVIL = ['Soltero(a)', 'Casado(a)', 'Divorciado(a)', 'Viudo(a)', 'Unión Libre']
 const REGIMEN      = ['Separación de Bienes', 'Sociedad Conyugal']
@@ -51,6 +51,7 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
   const [correos, setCorreos]     = useState<Email[]>([{ tipo: 'Personal', correo: '' }])
   const [lotes, setLotes]         = useState<LoteAsig[]>([])
   const [lotesDisp, setLotesDisp] = useState<Lote[]>([])
+  const [secciones, setSecciones] = useState<any[]>([])
 
   useEffect(() => {
     if (!isNew) {
@@ -58,18 +59,29 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
         .then(({ data }) => { if (data?.length) setTelefonos(data.map(d => ({ id: d.id, tipo: d.tipo ?? 'Celular', numero: d.numero }))) })
       dbCat.from('propietarios_correos').select('*').eq('id_propietario_fk', propietario.id).eq('activo', true)
         .then(({ data }) => { if (data?.length) setCorreos(data.map(d => ({ id: d.id, tipo: d.tipo ?? 'Personal', correo: d.correo }))) })
-      dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', propietario.id)
-        .then(({ data }) => {
-          if (data?.length) setLotes(data.map((d: any) => ({
-            id:           d.id,
-            id_lote_fk:   d.id_lote_fk,
-            es_principal: d.es_principal,
-            porcentaje:   d.porcentaje?.toString() ?? '',
-          })))
-        })
     }
-    dbCat.from('lotes').select('id, cve_lote, lote, status_lote').order('cve_lote')
-      .then(({ data }) => setLotesDisp(data as Lote[] ?? []))
+
+    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setSecciones(data ?? []))
+
+    dbCat.from('lotes').select('id, cve_lote, lote, status_lote, id_seccion_fk').order('cve_lote')
+      .then(async ({ data: lotesData }) => {
+        setLotesDisp((lotesData ?? []) as any)
+        if (!isNew) {
+          const { data } = await dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', propietario.id)
+          if (data?.length) {
+            const lotesMap: Record<number, any> = {}
+            ;(lotesData ?? []).forEach((l: any) => { lotesMap[l.id] = l })
+            setLotes(data.map((d: any) => ({
+              id:           d.id,
+              id_lote_fk:   d.id_lote_fk,
+              id_seccion:   lotesMap[d.id_lote_fk]?.id_seccion_fk ?? null,
+              es_principal: d.es_principal,
+              porcentaje:   d.porcentaje?.toString() ?? '',
+            })))
+          }
+        }
+      })
   }, [isNew, propietario])
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -356,7 +368,7 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Lotes asignados a este propietario</span>
-                <button className="btn-ghost" onClick={() => setLotes(l => [...l, { id_lote_fk: 0, es_principal: false, porcentaje: '' }])}>
+                <button className="btn-ghost" onClick={() => setLotes(l => [...l, { id_lote_fk: 0, id_seccion: null, es_principal: false, porcentaje: '' }])}>
                   <Plus size={12} /> Asignar Lote
                 </button>
               </div>
@@ -365,14 +377,32 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
                   Sin lotes asignados
                 </div>
               )}
-              {lotes.map((l, i) => (
-                <div key={i} className="card" style={{ padding: '12px 14px', marginBottom: 8, display: 'grid', gridTemplateColumns: '1fr 100px 80px 32px', gap: 10, alignItems: 'center' }}>
+              {lotes.map((l, i) => {
+                const lotesFiltered = l.id_seccion
+                  ? (lotesDisp as any[]).filter(ld => ld.id_seccion_fk === l.id_seccion)
+                  : lotesDisp
+                return (
+                <div key={i} className="card" style={{ padding: '12px 14px', marginBottom: 8, display: 'grid', gridTemplateColumns: '150px 1fr 80px 80px 32px', gap: 10, alignItems: 'center' }}>
+                  <div>
+                    <label className="label">Sección</label>
+                    <select className="select" value={l.id_seccion || ''} onChange={e => {
+                      const secId = e.target.value ? Number(e.target.value) : null
+                      setLotes(ls => ls.map((x, j) => j === i ? { ...x, id_seccion: secId, id_lote_fk: 0 } : x))
+                    }}>
+                      <option value="">— Todas —</option>
+                      {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                    </select>
+                  </div>
                   <div>
                     <label className="label">Lote</label>
-                    <select className="select" value={l.id_lote_fk || ''} onChange={e => setLotes(ls => ls.map((x, j) => j === i ? { ...x, id_lote_fk: Number(e.target.value) } : x))}>
+                    <select className="select" value={l.id_lote_fk || ''} onChange={e => {
+                      const loteId = Number(e.target.value)
+                      const loteInfo = (lotesDisp as any[]).find(ld => ld.id === loteId)
+                      setLotes(ls => ls.map((x, j) => j === i ? { ...x, id_lote_fk: loteId, id_seccion: loteInfo?.id_seccion_fk ?? x.id_seccion } : x))
+                    }}>
                       <option value="">— Seleccionar —</option>
-                      {lotesDisp.map(ld => (
-                        <option key={ld.id} value={ld.id}>{ld.cve_lote ?? `#${ld.lote}`} {(ld as any).status_lote ? `· ${(ld as any).status_lote}` : ''}</option>
+                      {lotesFiltered.map((ld: any) => (
+                        <option key={ld.id} value={ld.id}>{ld.cve_lote ?? `#${ld.lote}`} {ld.status_lote ? `· ${ld.status_lote}` : ''}</option>
                       ))}
                     </select>
                   </div>
@@ -391,7 +421,8 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
                     <Trash2 size={12} />
                   </button>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
     </ModalShell>
