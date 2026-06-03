@@ -15,6 +15,8 @@ export default function RecepcionesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState('')
   const debouncedSearch = useDebounce(search, 300)
+  const [filterFechaDesde, setFilterFechaDesde] = useState('')
+  const [filterFechaHasta, setFilterFechaHasta] = useState('')
   const [modal, setModal]     = useState<boolean>(false)
   const [detail, setDetail]   = useState<any | null>(null)
 
@@ -23,9 +25,11 @@ export default function RecepcionesPage() {
     let q = dbComp.from('recepciones').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
     if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
+    if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
+    if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
-  }, [debouncedSearch])
+  }, [debouncedSearch, filterFechaDesde, filterFechaHasta])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -51,6 +55,21 @@ export default function RecepcionesPage() {
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
           <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Recepción</button>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Fecha creación:</span>
+        <input className="input" type="date" style={{ width: 150 }} value={filterFechaDesde}
+          onChange={e => setFilterFechaDesde(e.target.value)} />
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
+        <input className="input" type="date" style={{ width: 150 }} value={filterFechaHasta}
+          onChange={e => setFilterFechaHasta(e.target.value)} />
+        {(filterFechaDesde || filterFechaHasta) && (
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px' }}
+            onClick={() => { setFilterFechaDesde(''); setFilterFechaHasta('') }}>
+            Limpiar fechas
+          </button>
+        )}
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>

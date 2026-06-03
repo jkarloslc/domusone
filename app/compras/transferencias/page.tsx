@@ -68,6 +68,8 @@ export default function TransferenciasPage() {
   const [search, setSearch]     = useState('')
   const debouncedSearch         = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
+  const [filterFechaDesde, setFilterFechaDesde] = useState('')
+  const [filterFechaHasta, setFilterFechaHasta] = useState('')
   const [modal, setModal]       = useState(false)
   const [detail, setDetail]     = useState<any | null>(null)
 
@@ -76,6 +78,8 @@ export default function TransferenciasPage() {
     let q = dbComp.from('transferencias').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
     if (filterStatus)     q = q.eq('status', filterStatus)
+    if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
+    if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
     if (debouncedSearch)  q = q.or(`folio.ilike.%${debouncedSearch}%,solicitante.ilike.%${debouncedSearch}%,area_solicitante.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0)
@@ -85,7 +89,7 @@ export default function TransferenciasPage() {
     ;(alms ?? []).forEach((a: any) => { m[a.id] = a.nombre })
     setAlmMap(m)
     setLoading(false)
-  }, [debouncedSearch, filterStatus])
+  }, [debouncedSearch, filterStatus, filterFechaDesde, filterFechaHasta])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -183,6 +187,21 @@ export default function TransferenciasPage() {
           ))}
         </select>
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Fecha creación:</span>
+        <input className="input" type="date" style={{ width: 150 }} value={filterFechaDesde}
+          onChange={e => setFilterFechaDesde(e.target.value)} />
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
+        <input className="input" type="date" style={{ width: 150 }} value={filterFechaHasta}
+          onChange={e => setFilterFechaHasta(e.target.value)} />
+        {(filterFechaDesde || filterFechaHasta) && (
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px' }}
+            onClick={() => { setFilterFechaDesde(''); setFilterFechaHasta('') }}>
+            Limpiar fechas
+          </button>
+        )}
       </div>
 
       {/* Tabla */}

@@ -21,6 +21,8 @@ export default function CotizacionesPage() {
   const [page, setPage]     = useState(0)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
+  const [filterFechaDesde, setFilterFechaDesde] = useState('')
+  const [filterFechaHasta, setFilterFechaHasta] = useState('')
   const [loading, setLoading] = useState(true)
   const [modal, setModal]   = useState<any | null | 'new'>(null)
   const [detail, setDetail] = useState<any | null>(null)
@@ -32,6 +34,8 @@ export default function CotizacionesPage() {
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
+    if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
+    if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
     const [{ data, count }, { data: provs }] = await Promise.all([
       q,
       dbComp.from('proveedores').select('id, nombre'),
@@ -41,7 +45,7 @@ export default function CotizacionesPage() {
     ;(provs ?? []).forEach((p: any) => { pm[p.id] = p.nombre })
     setProvMap(pm)
     setLoading(false)
-  }, [page, debouncedSearch])
+  }, [page, debouncedSearch, filterFechaDesde, filterFechaHasta])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -67,6 +71,21 @@ export default function CotizacionesPage() {
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
           {canWrite('cotizaciones') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva RFQ</button>}
         </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Fecha creación:</span>
+        <input className="input" type="date" style={{ width: 150 }} value={filterFechaDesde}
+          onChange={e => { setFilterFechaDesde(e.target.value); setPage(0) }} />
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
+        <input className="input" type="date" style={{ width: 150 }} value={filterFechaHasta}
+          onChange={e => { setFilterFechaHasta(e.target.value); setPage(0) }} />
+        {(filterFechaDesde || filterFechaHasta) && (
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px' }}
+            onClick={() => { setFilterFechaDesde(''); setFilterFechaHasta(''); setPage(0) }}>
+            Limpiar fechas
+          </button>
+        )}
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>

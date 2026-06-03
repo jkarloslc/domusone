@@ -26,6 +26,8 @@ export default function RequisicionesPage() {
   const [filterStatus, setFilter] = useState('')
   const [filterCC, setFilterCC] = useState('')
   const [filterArea, setFilterArea] = useState('')
+  const [filterFechaDesde, setFilterFechaDesde] = useState('')
+  const [filterFechaHasta, setFilterFechaHasta] = useState('')
   const [ccFiltros, setCcFiltros] = useState<{ id: number; nombre: string }[]>([])
   const [areaFiltros, setAreaFiltros] = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,10 +42,12 @@ export default function RequisicionesPage() {
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
+    if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
+    if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,area_solicitante.ilike.%${debouncedSearch}%,solicitante.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterArea])
+  }, [page, debouncedSearch, filterStatus, filterCC, filterArea, filterFechaDesde, filterFechaHasta])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -103,6 +107,21 @@ export default function RequisicionesPage() {
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
         {canWrite('requisiciones') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva Requisición</button>}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Fecha creación:</span>
+        <input className="input" type="date" style={{ width: 150 }} value={filterFechaDesde}
+          onChange={e => { setFilterFechaDesde(e.target.value); setPage(0) }} />
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
+        <input className="input" type="date" style={{ width: 150 }} value={filterFechaHasta}
+          onChange={e => { setFilterFechaHasta(e.target.value); setPage(0) }} />
+        {(filterFechaDesde || filterFechaHasta) && (
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px' }}
+            onClick={() => { setFilterFechaDesde(''); setFilterFechaHasta(''); setPage(0) }}>
+            Limpiar fechas
+          </button>
+        )}
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
