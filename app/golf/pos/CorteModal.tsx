@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbGolf, dbCtrl } from '@/lib/supabase'
+import { dbGolf, dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Save, Loader, AlertTriangle, CheckCircle } from 'lucide-react'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
@@ -232,6 +232,31 @@ export default function CorteModal({ idCentro, nombreCentro, exigirFacturacion =
             nombre_forma_pago: f.forma_nombre,
             monto:             f.monto,
           }))
+        )
+      }
+
+      // Insertar desglose por concepto en recibos_ingreso_conceptos
+      if (recibo && detalleProd.length > 0) {
+        // Buscar conceptos_ingreso del centro para hacer match por nombre
+        const { data: cfgConceptos } = await dbCfg.from('conceptos_ingreso')
+          .select('id, nombre')
+          .or(`id_centro_ingreso_fk.eq.${idCentroIngreso},id_centro_ingreso_fk.is.null`)
+          .eq('activo', true)
+
+        const normalize = (s: string) => s.toLowerCase().trim()
+        const conceptoMap = Object.fromEntries(
+          (cfgConceptos ?? []).map((c: any) => [normalize(c.nombre), c.id])
+        )
+
+        await dbCtrl.from('recibos_ingreso_conceptos').insert(
+          detalleProd
+            .filter(d => d.monto > 0)
+            .map(d => ({
+              id_recibo_fk:    recibo.id,
+              id_concepto_fk:  conceptoMap[normalize(d.concepto)] ?? null,
+              nombre_concepto: d.concepto,
+              monto:           d.monto,
+            }))
         )
       }
 
