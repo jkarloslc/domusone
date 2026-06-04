@@ -99,7 +99,7 @@ function ReciboModal({
 
   const centroSel   = centros.find(c => c.id === Number(form.id_centro_ingreso_fk))
   const esSecciones  = centroSel?.tipo_desglose === 'secciones'
-  const esConceptos  = esSecciones  // conceptos se muestran junto con secciones cuando hay configurados
+  const esConceptos  = esSecciones || centroSel?.tipo_desglose === 'conceptos'
 
   // ── Cargar secciones existentes (vista) o init (nuevo) ──────
   useEffect(() => {
@@ -219,7 +219,9 @@ function ReciboModal({
   const totalFormasPago = formaPagoRows.reduce((a, r) => a + (r.monto || 0), 0)
   const totalSecs       = secRows.reduce((a, r) => a + (r.monto || 0), 0)
   const totalConceptos  = conceptoRows.reduce((a, r) => a + (r.monto || 0), 0)
-  const totalFinal      = esSecciones ? (totalSecs + totalConceptos) : totalFormasPago
+  const totalFinal      = esSecciones ? (totalSecs + totalConceptos)
+                        : centroSel?.tipo_desglose === 'conceptos' ? totalConceptos
+                        : totalFormasPago
 
   const handleSave = async () => {
     if (!form.id_centro_ingreso_fk) { setError('Selecciona un centro de ingreso'); return }
@@ -400,7 +402,8 @@ function ReciboModal({
       const desgloseRows = esSecciones
         ? secs.map(s => `<tr><td>${escapeHtml(s.nombre_seccion)}</td><td style="text-align:right">${fmt(s.monto)}</td></tr>`).join('')
         : ''
-      const desgloseLabel = esSecciones ? 'Desglose por Sección' : ''
+      const desgloseLabel = esSecciones ? 'Desglose por Sección'
+        : centroSel?.tipo_desglose === 'conceptos' ? 'Desglose por Concepto' : ''
       const conceptosRows = conceptosPrint.map(c => `<tr><td>${escapeHtml(c.nombre_concepto)}</td><td style="text-align:right">${fmt(c.monto)}</td></tr>`).join('')
       const totalSecsImp = secs.reduce((a, s) => a + s.monto, 0)
       const totalConceptosImp = conceptosPrint.reduce((a, c) => a + c.monto, 0)
