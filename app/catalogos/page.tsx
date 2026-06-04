@@ -295,7 +295,7 @@ const CATALOGOS: CatConfig[] = [
 // ══════════════════════════════════════════════════════════════
 type CentroVentaPos = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number }
 type CentroIngresoOpt = { id: number; nombre: string; activo: boolean }
-type IngresoMapRow   = { id: number; id_centro_venta_fk: number; id_centro_ingreso_fk: number; activo: boolean }
+type IngresoMapRow   = { id: number; id_centro_venta_fk: number; id_centro_ingreso_fk: number; activo: boolean; genera_recibo_automatico: boolean }
 
 // ══════════════════════════════════════════════════════════════
 // Cuotas de Membresía Golf
@@ -537,7 +537,7 @@ function CuotasGolfPanel() {
 }
 
 // ── Centros de Venta POS ──────────────────────────────────────
-const emptyCVForm = () => ({ nombre: '', descripcion: '', orden: 1, id_centro_ingreso_fk: '' as string | number })
+const emptyCVForm = () => ({ nombre: '', descripcion: '', orden: 1, id_centro_ingreso_fk: '' as string | number, genera_recibo_automatico: false })
 
 const inputSt: React.CSSProperties = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }
 const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
@@ -560,7 +560,7 @@ function CentrosVentaPOSPanel() {
     const [{ data: cvs }, { data: cis }, { data: ms }] = await Promise.all([
       dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden').order('orden'),
       dbCfg.from('centros_ingreso').select('id, nombre, activo').eq('activo', true).order('nombre'),
-      dbGolf.from('pos_centros_ingreso_map').select('id, id_centro_venta_fk, id_centro_ingreso_fk, activo'),
+      dbGolf.from('pos_centros_ingreso_map').select('id, id_centro_venta_fk, id_centro_ingreso_fk, activo, genera_recibo_automatico'),
     ])
     setItems((cvs as CentroVentaPos[]) ?? [])
     setCentrosIng((cis as CentroIngresoOpt[]) ?? [])
@@ -578,7 +578,7 @@ function CentrosVentaPOSPanel() {
   const openEdit = (item: CentroVentaPos) => {
     const m = getMap(item.id)
     setEditing(item)
-    setForm({ nombre: item.nombre, descripcion: item.descripcion ?? '', orden: item.orden, id_centro_ingreso_fk: m?.id_centro_ingreso_fk ?? '' })
+    setForm({ nombre: item.nombre, descripcion: item.descripcion ?? '', orden: item.orden, id_centro_ingreso_fk: m?.id_centro_ingreso_fk ?? '', genera_recibo_automatico: m?.genera_recibo_automatico ?? false })
     setError(''); setShowForm(true)
   }
 
@@ -598,12 +598,13 @@ function CentrosVentaPOSPanel() {
       centroId = (data as any).id
     }
     const idIngreso = form.id_centro_ingreso_fk ? Number(form.id_centro_ingreso_fk) : null
+    const genera    = (form as any).genera_recibo_automatico ?? false
     const existente = getMap(centroId)
     if (idIngreso) {
       if (existente) {
-        await dbGolf.from('pos_centros_ingreso_map').update({ id_centro_ingreso_fk: idIngreso, activo: true, updated_at: new Date().toISOString() }).eq('id', existente.id)
+        await dbGolf.from('pos_centros_ingreso_map').update({ id_centro_ingreso_fk: idIngreso, activo: true, genera_recibo_automatico: genera, updated_at: new Date().toISOString() }).eq('id', existente.id)
       } else {
-        await dbGolf.from('pos_centros_ingreso_map').insert({ id_centro_venta_fk: centroId, id_centro_ingreso_fk: idIngreso, activo: true })
+        await dbGolf.from('pos_centros_ingreso_map').insert({ id_centro_venta_fk: centroId, id_centro_ingreso_fk: idIngreso, activo: true, genera_recibo_automatico: genera })
       }
     } else if (existente) {
       await dbGolf.from('pos_centros_ingreso_map').delete().eq('id', existente.id)
@@ -686,6 +687,22 @@ function CentrosVentaPOSPanel() {
               </select>
             </div>
           </div>
+          {form.id_centro_ingreso_fk && (
+            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8,
+              background: (form as any).genera_recibo_automatico ? '#f0fdf4' : '#fef3c7',
+              border: `1px solid ${(form as any).genera_recibo_automatico ? '#bbf7d0' : '#fde68a'}`,
+              display: 'flex', alignItems: 'center', gap: 10 }}>
+              <input type="checkbox" id="chk-genera-recibo-cat"
+                checked={(form as any).genera_recibo_automatico ?? false}
+                onChange={e => setForm(f => ({ ...f, genera_recibo_automatico: e.target.checked } as any))} />
+              <label htmlFor="chk-genera-recibo-cat" style={{ fontSize: 13, cursor: 'pointer',
+                color: (form as any).genera_recibo_automatico ? '#15803d' : '#92400e', fontWeight: 500 }}>
+                {(form as any).genera_recibo_automatico
+                  ? '🟢 Genera recibo de ingreso automáticamente al hacer corte'
+                  : '🟡 No genera recibo automático — captura manual requerida'}
+              </label>
+            </div>
+          )}
           {error && <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
             <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
@@ -707,6 +724,7 @@ function CentrosVentaPOSPanel() {
               <th>Descripción</th>
               <th style={{ width: 60, textAlign: 'center' }}>Orden</th>
               <th>Centro de Ingreso</th>
+              <th style={{ width: 100, textAlign: 'center' }}>Recibo Auto</th>
               <th style={{ width: 80, textAlign: 'center' }}>Status</th>
               {puedeEscribir && <th style={{ width: 90 }}></th>}
             </tr>
@@ -737,6 +755,15 @@ function CentrosVentaPOSPanel() {
                     {ciNombre
                       ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#dcfce7', color: '#15803d' }}>{ciNombre}</span>
                       : <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>Sin asignar</span>}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    {m ? (
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 10,
+                        background: m.genera_recibo_automatico ? '#dcfce7' : '#fef3c7',
+                        color: m.genera_recibo_automatico ? '#15803d' : '#92400e' }}>
+                        {m.genera_recibo_automatico ? 'Activo' : 'Manual'}
+                      </span>
+                    ) : <span style={{ fontSize: 11, color: '#94a3b8' }}>—</span>}
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <button onClick={() => toggleActivo(item)} style={{ background: 'none', border: 'none', cursor: puedeEscribir ? 'pointer' : 'default', display: 'flex', margin: '0 auto' }}>
