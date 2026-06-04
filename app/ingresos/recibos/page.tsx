@@ -251,8 +251,8 @@ function ReciboModal({
     if (!form.id_centro_ingreso_fk) { setError('Selecciona un centro de ingreso'); return }
     if (totalFinal === 0)           { setError('El monto total debe ser mayor a $0'); return }
 
-    // Validar que formas de cobro coincidan con el total general (solo Cuotas Residencial)
-    if (esSecciones && totalFormasPago > 0) {
+    // Validar que formas de cobro coincidan con el total general (secciones y conceptos)
+    if ((esSecciones || centroSel?.tipo_desglose === 'conceptos') && totalFormasPago > 0) {
       const diff = Math.round((totalFinal - totalFormasPago) * 100) / 100
       if (diff !== 0) {
         const tipo = diff > 0 ? 'falta' : 'excede'
@@ -314,8 +314,8 @@ function ReciboModal({
     if (!recibo) return
     if (totalFinal === 0) { setError('El monto total debe ser mayor a $0'); return }
 
-    // Misma validación de secciones vs formas de cobro que handleSave
-    if (esSecciones && totalFormasPago > 0) {
+    // Misma validación de secciones/conceptos vs formas de cobro que handleSave
+    if ((esSecciones || centroSel?.tipo_desglose === 'conceptos') && totalFormasPago > 0) {
       const diff = Math.round((totalFinal - totalFormasPago) * 100) / 100
       if (diff !== 0) {
         const tipo = diff > 0 ? 'falta' : 'excede'
@@ -796,7 +796,7 @@ function ReciboModal({
               </div>
 
               {/* Validación: total general vs total cobrado (solo Cuotas Residencial) */}
-              {esSecciones && totalFormasPago > 0 && (
+              {(esSecciones || centroSel?.tipo_desglose === 'conceptos') && totalFormasPago > 0 && (
                 (() => {
                   const diff = Math.round((totalFinal - totalFormasPago) * 100) / 100
                   const ok   = diff === 0
