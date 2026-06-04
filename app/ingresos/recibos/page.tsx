@@ -706,6 +706,41 @@ function ReciboModal({
             </div>
           ) : null}
 
+          {/* Desglose por concepto — solo para tipo_desglose = 'conceptos' (sin secciones) */}
+          {!esSecciones && centroSel?.tipo_desglose === 'conceptos' && conceptoRows.length > 0 && (
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Layers size={13} style={{ color: '#d97706' }} /> Monto por concepto de cobro
+              </div>
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '7px 12px', background: '#fffbeb', borderBottom: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#92400e' }}>CONCEPTO</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textAlign: 'right' }}>MONTO</span>
+                </div>
+                {conceptoRows.map((row, i) => (
+                  <div key={row.id_concepto_fk} style={{
+                    display: 'grid', gridTemplateColumns: '1fr 140px', padding: '8px 12px', alignItems: 'center',
+                    borderBottom: i < conceptoRows.length - 1 ? '1px solid #f1f5f9' : 'none',
+                    background: row.monto > 0 ? '#fffbeb' : '#fff',
+                  }}>
+                    <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_concepto}</span>
+                    <input
+                      className="input" type="number" min="0" step="0.01"
+                      value={row.monto || ''}
+                      onChange={e => setConceptoMonto(i, parseFloat(e.target.value) || 0)}
+                      disabled={isView && !isEditMode}
+                      style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 8px', fontSize: 13 }}
+                    />
+                  </div>
+                ))}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '9px 12px', background: '#fffbeb', borderTop: '2px solid #fde68a' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>Total conceptos</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalConceptos)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Formas de pago — dinámicas desde cfg.formas_pago */}
           {formaPagoRows.length > 0 && (
             <div>
