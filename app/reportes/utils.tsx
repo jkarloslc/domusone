@@ -72,14 +72,20 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
     style.id = 'print-override'
     style.innerHTML = `
       @media print {
+        /* Ocultar chrome de la app */
+        aside.sidebar,
+        .sidebar-overlay,
+        .mobile-topbar,
+        .print-bar-container { display: none !important; }
+
         body * { visibility: hidden !important; }
         #reporte-print-area,
         #reporte-print-area * { visibility: visible !important; }
         #reporte-print-area {
-          position: absolute !important;
+          position: fixed !important;
           top: 0 !important;
           left: 0 !important;
-          width: 100% !important;
+          width: 100vw !important;
           background: white !important;
           padding: 16px !important;
           overflow: visible !important;
@@ -88,6 +94,7 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
           box-shadow: none !important;
           height: auto !important;
           max-height: none !important;
+          z-index: 9999 !important;
         }
         #reporte-print-area table {
           font-size: 11px !important;
@@ -151,7 +158,7 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+    <div className="print-bar-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
       <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
         <strong style={{ color: 'var(--text-primary)' }}>{count}</strong> registros
       </span>
