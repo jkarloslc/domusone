@@ -45,6 +45,7 @@ import ReporteLotesPorSeccionClasif from './ReporteLotesPorSeccionClasif'
 import ReporteLotesResumenClasif from './ReporteLotesResumenClasif'
 import ReportePropietariosDesgloseLotes from './ReportePropietariosDesgloseLotes'
 import ReporteLotesPorStatus from './ReporteLotesPorStatus'
+import ReporteSeccionesLotes from './ReporteSeccionesLotes'
 
 const GRUPOS = [
   {
@@ -53,6 +54,7 @@ const GRUPOS = [
     label: 'Residencial',
     color: 'var(--blue)',
     reportes: [
+      { id: 'secciones-lotes',        label: 'Secciones con Cantidad de Lotes', icon: MapPin, desc: 'Resumen por sección: total de lotes y desglose por status (Vendido / Libre / Bloqueado)' },
       { id: 'lotes',                label: 'Lotes por Sección',          icon: MapPin,        desc: 'Catálogo de lotes filtrable por sección' },
       { id: 'lotes-seccion-clasif',   label: 'Lotes por Sección y Clasificación', icon: MapPin, desc: 'Lotes agrupados jerárquicamente por sección y clasificación, con subtotales de superficie y valor' },
       { id: 'lotes-resumen-clasif',   label: 'Resumen por Sección y Clasificación', icon: MapPin, desc: 'Tabla resumen sin desglose: una fila por clasificación dentro de cada sección, con subtotales y total general' },
@@ -231,6 +233,7 @@ function ReportesContent() {
       ))}
 
       {/* Reportes residencial */}
+      {active === 'secciones-lotes'       && <ReporteSeccionesLotes />}
       {active === 'lotes'                && <ReporteLotes />}
       {active === 'lotes-seccion-clasif' && <ReporteLotesPorSeccionClasif />}
       {active === 'lotes-resumen-clasif'  && <ReporteLotesResumenClasif />}
