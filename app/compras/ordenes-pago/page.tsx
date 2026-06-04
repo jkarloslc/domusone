@@ -117,9 +117,6 @@ export default function OrdenesPagoPage() {
   }, [authUser?.rol])
 
   const totalPages = Math.ceil(total / pageSize)
-  const pendientes     = rows.filter(r => r.status === 'Pendiente').reduce((a, r) => a + (r.monto ?? 0), 0)
-  const pendientesAuth = rows.filter(r => r.status === 'Pendiente Auth').length
-  const pagadas        = rows.filter(r => r.status === 'Pagada').length
 
   return (
     <div style={{ padding: '32px 36px' }}>
@@ -135,21 +132,6 @@ export default function OrdenesPagoPage() {
         {canWrite('ordenes-pago') && (
           <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>
         )}
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        {[
-          { label: 'Por pagar',       value: fmt(pendientes),        color: '#d97706', bg: '#fffbeb' },
-          { label: 'Pend. Auth',      value: String(pendientesAuth), color: '#92400e', bg: '#fffbeb', hidden: pendientesAuth === 0 },
-          { label: 'Pagadas',         value: String(pagadas),        color: '#15803d', bg: '#f0fdf4' },
-          { label: 'Total reg.',      value: String(total),          color: 'var(--blue)', bg: 'var(--blue-pale)' },
-        ].filter(s => !s.hidden).map(s => (
-          <div key={s.label} className="card" style={{ padding: '12px 18px', background: s.bg, minWidth: 140 }}>
-            <div style={{ fontSize: 18, fontFamily: 'var(--font-display)', fontWeight: 700, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
-          </div>
-        ))}
       </div>
 
       {/* Filtros */}
