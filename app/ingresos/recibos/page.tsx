@@ -102,6 +102,8 @@ function ReciboModal({
   const esConceptos  = esSecciones || centroSel?.tipo_desglose === 'conceptos'
 
   // ── Cargar secciones existentes (vista) o init (nuevo) ──────
+  // Siempre muestra TODAS las secciones del config; si hay datos guardados,
+  // superpone los montos para que en modo edición sean editables todas.
   useEffect(() => {
     if (!esSecciones) { setSecRows([]); return }
     if (recibo) {
@@ -110,7 +112,12 @@ function ReciboModal({
         .select('id_seccion_fk, nombre_seccion, monto, notas')
         .eq('id_recibo_fk', recibo.id)
         .then(({ data }) => {
-          setSecRows(data && data.length > 0 ? (data as SeccionRow[]) : initSecRowsVal())
+          const saved = (data ?? []) as SeccionRow[]
+          const full  = initSecRowsVal().map(r => {
+            const match = saved.find(s => s.id_seccion_fk === r.id_seccion_fk)
+            return match ? { ...r, monto: match.monto, notas: match.notas } : r
+          })
+          setSecRows(full)
           setLoadingSecs(false)
         })
     } else {
@@ -120,22 +127,32 @@ function ReciboModal({
   }, [recibo?.id, esSecciones])
 
   // ── Cargar conceptos del centro seleccionado ────────────────
+  // Siempre muestra TODOS los conceptos del config; superpone montos guardados.
   useEffect(() => {
     if (!esConceptos) { setConceptoRows([]); return }
     const centroId = Number(form.id_centro_ingreso_fk)
     if (!centroId) { setConceptoRows([]); return }
 
     if (recibo) {
-      dbCtrl.from('recibos_ingreso_conceptos')
-        .select('id_concepto_fk, nombre_concepto, monto, notas')
-        .eq('id_recibo_fk', recibo.id)
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setConceptoRows(data as ConceptoRow[])
-          } else {
-            loadConceptosFromCfg(centroId)
-          }
+      Promise.all([
+        dbCtrl.from('recibos_ingreso_conceptos')
+          .select('id_concepto_fk, nombre_concepto, monto, notas')
+          .eq('id_recibo_fk', recibo.id),
+        dbCfg.from('conceptos_ingreso')
+          .select('id, nombre, clave, orden')
+          .or(`id_centro_ingreso_fk.eq.${centroId},id_centro_ingreso_fk.is.null`)
+          .eq('activo', true)
+          .order('orden'),
+      ]).then(([{ data: saved }, { data: cfg }]) => {
+        const savedRows = (saved ?? []) as ConceptoRow[]
+        const full = (cfg ?? []).map((c: Concepto) => {
+          const match = savedRows.find(r => r.id_concepto_fk === c.id)
+          return match
+            ? { ...match }
+            : { id_concepto_fk: c.id, nombre_concepto: c.nombre, monto: 0, notas: '' }
         })
+        setConceptoRows(full)
+      })
     } else {
       loadConceptosFromCfg(centroId)
     }
