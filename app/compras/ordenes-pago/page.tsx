@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, nextFolio, StatusBadge, FORMAS_PAGO_COMP } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
 
-const PAGE_SIZE = 25
+const PAGE_SIZES = [10, 25, 50, 100]
 
 const TIPOS_GASTO = [
   'Servicios Profesionales', 'Mantenimiento', 'Reparación',
@@ -33,6 +33,7 @@ export default function OrdenesPagoPage() {
   const [almMap, setAlmMap]     = useState<Record<number, string>>({})
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]     = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
@@ -63,7 +64,7 @@ export default function OrdenesPagoPage() {
     setLoading(true)
     let q = dbComp.from('ordenes_pago').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
@@ -99,7 +100,7 @@ export default function OrdenesPagoPage() {
     setProvMap(pm)
     setAlmMap(am)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterTipoGasto, filterFechaDesde, filterFechaHasta, rolRestricciones, authUser?.user.id])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterTipoGasto, filterFechaDesde, filterFechaHasta, rolRestricciones, authUser?.user.id])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -115,7 +116,7 @@ export default function OrdenesPagoPage() {
       .then(({ data }) => setRolRestricciones(data ?? []))
   }, [authUser?.rol])
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const totalPages = Math.ceil(total / pageSize)
   const pendientes     = rows.filter(r => r.status === 'Pendiente').reduce((a, r) => a + (r.monto ?? 0), 0)
   const pendientesAuth = rows.filter(r => r.status === 'Pendiente Auth').length
   const pagadas        = rows.filter(r => r.status === 'Pagada').length
@@ -276,16 +277,51 @@ export default function OrdenesPagoPage() {
               </tr>
             ))}
           </tbody>
+          {!loading && rows.length > 0 && (() => {
+            const sumaMontoPage  = rows.reduce((a, r) => a + (r.monto  ?? 0), 0)
+            const sumaSaldoPage  = rows.reduce((a, r) => a + (r.saldo  ?? 0), 0)
+            const sumaPagadoPage = rows.reduce((a, r) => a + ((r.monto ?? 0) - (r.saldo ?? 0)), 0)
+            return (
+              <tfoot>
+                <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                  <td colSpan={4} style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Subtotal página ({rows.length} reg.)
+                  </td>
+                  <td style={{ textAlign: 'right', padding: '10px 14px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', fontSize: 14, color: 'var(--text-primary)' }}>
+                    {fmt(sumaMontoPage)}
+                    {sumaSaldoPage > 0 && sumaSaldoPage !== sumaMontoPage && (
+                      <div style={{ fontSize: 10, fontWeight: 500, color: '#d97706', marginTop: 1 }}>
+                        Saldo: {fmt(sumaSaldoPage)}
+                      </div>
+                    )}
+                  </td>
+                  <td colSpan={3} style={{ padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)' }}>
+                    {sumaPagadoPage > 0 && <span>Pagado: {fmt(sumaPagadoPage)}</span>}
+                  </td>
+                </tr>
+              </tfoot>
+            )
+          })()}
         </table>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pág. {page+1} de {totalPages} · {total} registros</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page===0} onClick={() => setPage(p=>p-1)}><ChevronLeft size={13}/></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page>=totalPages-1} onClick={() => setPage(p=>p+1)}><ChevronRight size={13}/></button>
-            </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Mostrar</span>
+            <select className="select" style={{ width: 72, padding: '4px 8px', fontSize: 12 }}
+              value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(0) }}>
+              {PAGE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              · {total === 0 ? '0' : `${page * pageSize + 1}–${Math.min(page * pageSize + pageSize, total)}`} de {total} registros
+            </span>
           </div>
-        )}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13}/></button>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center', minWidth: 60, textAlign: 'center' }}>
+              Pág. {page + 1} de {Math.max(totalPages, 1)}
+            </span>
+            <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13}/></button>
+          </div>
+        </div>
       </div>
 
       {modal  && <OPModal   op={editOp} onClose={() => { setModal(false); setEditOp(null) }} onSaved={() => { setModal(false); setEditOp(null); fetchData() }} />}
