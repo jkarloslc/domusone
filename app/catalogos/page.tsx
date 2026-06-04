@@ -196,7 +196,7 @@ const CATALOGOS: CatConfig[] = [
       { key: 'tipo',          label: 'Tipo',            type: 'select',
         staticOptions: ['golf', 'cuotas', 'rentas_espacios', 'caballerizas', 'otro'] },
       { key: 'tipo_desglose', label: 'Tipo de Captura', type: 'select',
-        staticOptions: ['unico', 'secciones'] },
+        staticOptions: ['unico', 'secciones', 'frentes', 'conceptos'] },
       { key: 'notas',         label: 'Notas',           type: 'textarea' },
     ],
   },
