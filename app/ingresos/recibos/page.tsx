@@ -174,18 +174,25 @@ function ReciboModal({
   }
 
   // ── Cargar formas de pago (dinámico desde cfg.formas_pago) ──
+  // Siempre muestra TODAS las formas activas del config; superpone montos guardados.
   useEffect(() => {
     if (recibo) {
-      dbCtrl.from('recibos_ingreso_formas_pago')
-        .select('id_forma_pago_fk, nombre_forma_pago, monto')
-        .eq('id_recibo_fk', recibo.id)
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setFormaPagoRows(data as FormaPagoRow[])
-          } else {
-            loadFormasPagoFromCfg()
-          }
+      Promise.all([
+        dbCtrl.from('recibos_ingreso_formas_pago')
+          .select('id_forma_pago_fk, nombre_forma_pago, monto')
+          .eq('id_recibo_fk', recibo.id),
+        dbCfg.from('formas_pago')
+          .select('id, nombre')
+          .eq('activo', true)
+          .order('nombre'),
+      ]).then(([{ data: saved }, { data: cfg }]) => {
+        const savedRows = (saved ?? []) as FormaPagoRow[]
+        const full = (cfg ?? []).map((f: FormaPago) => {
+          const match = savedRows.find(r => r.id_forma_pago_fk === f.id)
+          return match ? { ...match } : { id_forma_pago_fk: f.id, nombre_forma_pago: f.nombre, monto: 0 }
         })
+        setFormaPagoRows(full)
+      })
     } else {
       loadFormasPagoFromCfg()
     }
