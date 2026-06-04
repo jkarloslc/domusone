@@ -50,7 +50,7 @@ export default function ReporteSeccionesLotes() {
     setQueryError(null)
     const { data, error } = await dbCat
       .from('lotes')
-      .select('id, id_seccion_fk, status_lote, superficie, valor_operacion')
+      .select('id, id_seccion_fk, status_lote, superficie, valor_catastral')
     if (error) setQueryError(error.message)
     setLotes(data ?? [])
     setLoading(false)
@@ -74,7 +74,7 @@ export default function ReporteSeccionesLotes() {
     else if (l.status_lote === 'Bloqueado') r.bloqueados++
     else                                    r.otros++
     r.superficie += l.superficie ?? 0
-    r.valor      += l.valor_operacion ? Number(l.valor_operacion) : 0
+    r.valor      += l.valor_catastral ? Number(l.valor_catastral) : 0
   })
 
   // Construir filas filtradas
@@ -132,7 +132,7 @@ export default function ReporteSeccionesLotes() {
           { label: 'Libres',        value: fmt(gt.libres),      color: '#1d4ed8' },
           { label: 'Bloqueados',    value: fmt(gt.bloqueados),  color: '#dc2626' },
           { label: 'Superficie m²', value: fmt(gt.superficie),  color: '#7c3aed' },
-          { label: 'Valor total',   value: fmtPeso(gt.valor),   color: '#0f766e' },
+          { label: 'Valor Catastral', value: fmtPeso(gt.valor),  color: '#0f766e' },
         ].map(k => (
           <div key={k.label} className="card"
             style={{ padding: '10px 16px', flex: '1 1 120px', maxWidth: 185, borderTop: `3px solid ${k.color}` }}>
@@ -172,7 +172,7 @@ export default function ReporteSeccionesLotes() {
                   <th style={{ textAlign: 'right' }}>Bloqueados</th>
                   <th style={{ textAlign: 'right' }}>Otros</th>
                   <th style={{ textAlign: 'right' }}>Superficie m²</th>
-                  <th style={{ textAlign: 'right' }}>Valor Operación</th>
+                  <th style={{ textAlign: 'right' }}>Valor Catastral</th>
                 </tr>
               </thead>
               <tbody>
