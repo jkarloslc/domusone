@@ -211,6 +211,8 @@ export default function CentrosIngresoPage() {
                           ? <><Layers size={11} style={{ color: '#7c3aed' }} /> Desglose por sección</>
                           : c.tipo_desglose === 'frentes'
                           ? <><Layers size={11} style={{ color: '#0d9488' }} /> Desglose por frente</>
+                          : c.tipo_desglose === 'conceptos'
+                          ? <><Layers size={11} style={{ color: '#d97706' }} /> Desglose por concepto</>
                           : 'Monto único'
                         }
                       </span>
