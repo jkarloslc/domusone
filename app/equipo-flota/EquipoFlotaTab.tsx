@@ -656,7 +656,11 @@ function EquipoDetail({ eq, areaMap, bitacora, onClose, onNewBit }: {
       </>}
     >
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {eq.foto_url && <img src={eq.foto_url} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 10 }} />}
+          {eq.foto_url && (
+            <div style={{ borderRadius: 10, overflow: 'hidden', background: '#f1f5f9', display: 'flex', justifyContent: 'center', maxHeight: 320 }}>
+              <img src={eq.foto_url} alt="" style={{ maxWidth: '100%', maxHeight: 320, objectFit: 'contain', display: 'block' }} />
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <Badge text={eq.status} map={EQUIPO_STATUS_STYLE} />
             <span style={{ fontSize: 11, color: 'var(--text-muted)', alignSelf: 'center' }}>{eq.tipo}</span>
