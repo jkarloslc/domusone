@@ -591,8 +591,8 @@ export default function RiegoPage() {
             <Droplets size={24} style={{ color:'#0ea5e9' }} /> Programa de Riego
           </h1>
         </div>
-        {/* Week nav — solo visible en tab programa */}
-        {tab === 'programa' && (
+        {/* Week nav — visible en programa y consumo */}
+        {tab !== 'catalogo' && (
           <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f8fafc', borderRadius:12, padding:'8px 14px', border:'1px solid #e2e8f0' }}>
             <button onClick={()=>navSemana(-1)} style={{ background:'none', border:'none', cursor:'pointer', color:'#64748b', display:'flex' }}><ChevronLeft size={18} /></button>
             <div style={{ textAlign:'center', minWidth:170 }}>
@@ -833,7 +833,6 @@ export default function RiegoPage() {
       {tab === 'consumo' && (
         <div>
           <div style={{ marginBottom:16, display:'flex', alignItems:'center', gap:12 }}>
-            <div style={{ fontSize:13, color:'#64748b' }}>Registro diario — Semana {semana}, {anio}.</div>
             <Link href="/reportes?grupo=golf&id=riego-consumo" style={{ fontSize:12, color:'#2563eb', fontWeight:600, textDecoration:'none' }}>
               Ver reporte completo →
             </Link>
