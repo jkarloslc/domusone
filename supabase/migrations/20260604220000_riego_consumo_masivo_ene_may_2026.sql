@@ -3,9 +3,9 @@
 -- Rango: 2026-01-01 → 2026-05-31
 -- Lógica: por cada día del rango, agrupa m3_prog y horas_prog
 -- del programa activo por origen de agua (Lago 7, Lago 2,
--- Ordeña, Lago 12). Las lecturas reales (lectura_inicio,
--- lectura_fin, m3_real) quedan NULL para captura manual.
--- ON CONFLICT DO NOTHING → idempotente (seguro re-ejecutar).
+-- Ordeña, Lago 12).
+-- m3_real se inicializa igual a m3_programado (consumo base).
+-- ON CONFLICT DO UPDATE → corrige filas existentes con m3_real NULL.
 -- ============================================================
 
 INSERT INTO golf.riego_consumo_diario (
@@ -22,7 +22,7 @@ SELECT
   p.origen,
   SUM(p.m3_prog)::NUMERIC(10,2)    AS m3_programado,
   SUM(p.horas_prog)::NUMERIC(6,2)  AS horas_bomba,
-  NULL::NUMERIC(10,2)               AS m3_real,
+  SUM(p.m3_prog)::NUMERIC(10,2)    AS m3_real,
   NULL::NUMERIC(12,2)               AS lectura_inicio,
   NULL::NUMERIC(12,2)               AS lectura_fin
 FROM generate_series(
@@ -42,4 +42,8 @@ JOIN golf.riego_programa p
                        WHEN 6 THEN 'Sabado'
                      END
 GROUP BY d.fecha, p.origen
-ON CONFLICT (fecha, origen) DO NOTHING;
+ON CONFLICT (fecha, origen) DO UPDATE
+  SET m3_programado = EXCLUDED.m3_programado,
+      horas_bomba   = EXCLUDED.horas_bomba,
+      m3_real       = EXCLUDED.m3_real,
+      updated_at    = NOW();
