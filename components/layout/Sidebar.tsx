@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, Truck, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark, MessageSquare,
-  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, Droplets, BookOpen, Store,
+  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, Droplets, BookOpen, Store, Leaf,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -96,6 +96,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
+      { label: 'Mantto. Campo',    href: '/golf/mantenimiento-campo',icon: Leaf          },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
       { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
@@ -139,6 +140,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
+      { label: 'Mantto. Campo',    href: '/golf/mantenimiento-campo',icon: Leaf          },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
       { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
@@ -181,6 +183,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
+      { label: 'Mantto. Campo',    href: '/golf/mantenimiento-campo',icon: Leaf          },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
       { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
@@ -215,6 +218,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
+      { label: 'Mantto. Campo',    href: '/golf/mantenimiento-campo',icon: Leaf          },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon     },
       { label: 'Hospitality',       href: '/hospitality',             icon: Star          },
@@ -395,6 +399,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',           href: '/golf',        icon: Flag     },
       { label: 'Torneos',        href: '/golf/torneos',icon: Flag     },
       { label: 'Riego',          href: '/golf/riego',  icon: Droplets },
+      { label: 'Mantto. Campo', href: '/golf/mantenimiento-campo', icon: Leaf },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
