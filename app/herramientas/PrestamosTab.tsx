@@ -79,6 +79,11 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
   useEffect(() => { fetchRegistros() }, [fetchRegistros])
 
   const handleDelete = async (id: number) => {
+    const reg = registros.find(r => r.id === id)
+    if (reg && reg.status === 'Prestado') {
+      alert('Este préstamo sigue abierto (la herramienta no ha sido devuelta).\n\nRegistra la devolución antes de eliminar el folio, para mantener correcto el control del equipo.')
+      return
+    }
     if (!confirm('¿Eliminar este registro de préstamo?')) return
     await dbCtrl.from('prestamos_herramientas').update({ activo: false }).eq('id', id)
     fetchRegistros()
@@ -332,6 +337,15 @@ function PrestamoModal({ p, herramientas, areas, onClose, onSaved }: {
     }
 
     if (isNew) {
+      // La solicitud de préstamo permanece abierta hasta registrar la devolución:
+      // no se permite un nuevo préstamo de la misma herramienta mientras exista uno abierto
+      const { data: abiertos } = await dbCtrl.from('prestamos_herramientas')
+        .select('id, folio').eq('id_herramienta_fk', idHerr).eq('status', 'Prestado').eq('activo', true).limit(1)
+      if (abiertos && abiertos.length > 0) {
+        setError(`Esta herramienta ya tiene un préstamo abierto (folio ${abiertos[0].folio}). Registra la devolución antes de generar uno nuevo.`)
+        setSaving(false); return
+      }
+
       const { count } = await dbCtrl.from('prestamos_herramientas').select('id', { count: 'exact', head: true })
       const folio = `PRES-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, '0')}`
       const { error: err } = await dbCtrl.from('prestamos_herramientas').insert({
