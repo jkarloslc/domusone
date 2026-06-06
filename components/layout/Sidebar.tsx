@@ -5,6 +5,7 @@ import {
   Home, Wrench, Truck, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark, MessageSquare,
   Flag, Star, DollarSign, MessageCircle, LayoutDashboard, Droplets, BookOpen, Store, Leaf,
+  Hammer,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -90,6 +91,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
+      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
@@ -134,6 +136,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
+      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
@@ -177,6 +180,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
+      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
@@ -253,6 +257,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
+      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -325,6 +330,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
       { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
+      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
     ]},
   ],
 

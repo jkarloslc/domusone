@@ -108,6 +108,8 @@ const ADMIN_MODULOS = [
   'hospitality',
   // Vehículos y Maquinaria
   'equipo-flota',
+  // Equipo y Herramienta
+  'herramientas',
 ]
 
 // Módulos Golf para rol dedicado
