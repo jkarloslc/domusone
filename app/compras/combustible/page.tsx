@@ -18,9 +18,10 @@ interface Movimiento {
   litros:           number
   precio_litro:     number | null
   monto_total:      number | null
-  proveedor:        string | null
-  vehiculo_equipo:  string | null
+  centro_costo:     string | null
   area:             string | null
+  frente:           string | null
+  vehiculo_equipo:  string | null
   referencia:       string | null
   observaciones:    string | null
   created_at:       string
@@ -46,9 +47,10 @@ const BLANK: Omit<Movimiento, 'id' | 'created_at' | 'created_by'> = {
   litros:           0,
   precio_litro:     null,
   monto_total:      null,
-  proveedor:        null,
-  vehiculo_equipo:  null,
+  centro_costo:     null,
   area:             null,
+  frente:           null,
+  vehiculo_equipo:  null,
   referencia:       null,
   observaciones:    null,
 }
@@ -140,10 +142,11 @@ export default function CombustiblePage() {
       litros:           Number(form.litros),
       precio_litro:     form.precio_litro ? Number(form.precio_litro) : null,
       monto_total:      form.monto_total  ? Number(form.monto_total)  : null,
-      proveedor:        form.proveedor    || null,
+      centro_costo:     form.centro_costo    || null,
+      area:             form.area            || null,
+      frente:           form.frente          || null,
       vehiculo_equipo:  form.vehiculo_equipo || null,
-      area:             form.area         || null,
-      referencia:       form.referencia   || null,
+      referencia:       form.referencia      || null,
       observaciones:    form.observaciones || null,
       created_by:       authUser?.nombre ?? authUser?.user?.email ?? null,
     }
@@ -298,7 +301,7 @@ export default function CombustiblePage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f8fafc' }}>
-                  {['Fecha', 'Tipo', 'Litros', 'Precio/L', 'Monto', 'Vehículo / Equipo', 'Área', 'Proveedor', 'Referencia', 'Saldo (L)'].map(h => (
+                  {['Fecha', 'Tipo', 'Litros', 'Precio/L', 'Monto', 'Centro de Costo', 'Área', 'Frente', 'Vehículo / Equipo', 'Referencia', 'Saldo (L)'].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', borderBottom: '1px solid #e2e8f0' }}>
                       {h}
                     </th>
@@ -335,14 +338,17 @@ export default function CombustiblePage() {
                       <td style={{ padding: '10px 14px', textAlign: 'right' }}>
                         {fmtMoney(m.monto_total)}
                       </td>
-                      <td style={{ padding: '10px 14px', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.vehiculo_equipo ?? '—'}
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {m.centro_costo ?? '—'}
                       </td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {m.area ?? '—'}
                       </td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.proveedor ?? '—'}
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {m.frente ?? '—'}
+                      </td>
+                      <td style={{ padding: '10px 14px', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {m.vehiculo_equipo ?? '—'}
                       </td>
                       <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {m.referencia ?? '—'}
@@ -445,35 +451,37 @@ export default function CombustiblePage() {
                   onChange={e => setForm(f => ({ ...f, monto_total: parseFloat(e.target.value) || null }))} />
               </label>
 
-              {/* Proveedor — solo en CARGA */}
-              {form.tipo_mov === 'CARGA' && (
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, gridColumn: '1 / -1' }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Proveedor</span>
-                  <input className="input" value={form.proveedor ?? ''}
-                    placeholder="ej. PEMEX Balvanera"
-                    onChange={e => setForm(f => ({ ...f, proveedor: e.target.value || null }))} />
-                </label>
-              )}
+              {/* Centro de Costo */}
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Centro de Costo</span>
+                <input className="input" value={form.centro_costo ?? ''}
+                  placeholder="ej. Golf, Hípico, Mantenimiento"
+                  onChange={e => setForm(f => ({ ...f, centro_costo: e.target.value || null }))} />
+              </label>
 
-              {/* Vehículo / Equipo — solo en CONSUMO */}
-              {form.tipo_mov === 'CONSUMO' && (
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Vehículo / Equipo</span>
-                  <input className="input" value={form.vehiculo_equipo ?? ''}
-                    placeholder="ej. F-150 | Tractor Golf"
-                    onChange={e => setForm(f => ({ ...f, vehiculo_equipo: e.target.value || null }))} />
-                </label>
-              )}
+              {/* Área */}
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Área</span>
+                <input className="input" value={form.area ?? ''}
+                  placeholder="ej. Cancha, Establos"
+                  onChange={e => setForm(f => ({ ...f, area: e.target.value || null }))} />
+              </label>
 
-              {/* Área — solo en CONSUMO */}
-              {form.tipo_mov === 'CONSUMO' && (
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Área</span>
-                  <input className="input" value={form.area ?? ''}
-                    placeholder="ej. Mantenimiento"
-                    onChange={e => setForm(f => ({ ...f, area: e.target.value || null }))} />
-                </label>
-              )}
+              {/* Frente */}
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Frente</span>
+                <input className="input" value={form.frente ?? ''}
+                  placeholder="ej. Frente 1, Fachada Norte"
+                  onChange={e => setForm(f => ({ ...f, frente: e.target.value || null }))} />
+              </label>
+
+              {/* Vehículo / Equipo */}
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Vehículo / Equipo</span>
+                <input className="input" value={form.vehiculo_equipo ?? ''}
+                  placeholder="ej. F-150 | Tractor Golf"
+                  onChange={e => setForm(f => ({ ...f, vehiculo_equipo: e.target.value || null }))} />
+              </label>
 
               {/* Referencia */}
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

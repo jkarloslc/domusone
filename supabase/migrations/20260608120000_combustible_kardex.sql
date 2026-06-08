@@ -7,9 +7,10 @@ CREATE TABLE IF NOT EXISTS comp.combustible_movimientos (
   litros            numeric(12,3) NOT NULL,  -- positivo para CARGA; positivo=ingresa/negativo=retira para AJUSTE; positivo para CONSUMO
   precio_litro      numeric(10,4),
   monto_total       numeric(12,2),
-  proveedor         text,
-  vehiculo_equipo   text,
+  centro_costo      text,
   area              text,
+  frente            text,
+  vehiculo_equipo   text,
   referencia        text,
   observaciones     text,
   created_at        timestamptz DEFAULT now(),
