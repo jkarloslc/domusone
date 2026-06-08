@@ -19,6 +19,10 @@ export type Seccion = {
   nombre: string
   clave_alfa: string | null
   activo: boolean
+  cantidad_lotes: number | null
+  descripcion: string | null
+  id_tipo_seccion_fk: number | null
+  fecha_autorizacion: string | null
 }
 
 export type Lote = {

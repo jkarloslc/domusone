@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbCat, dbCfg, type Lote, type Seccion } from '@/lib/supabase'
-import { Save, Loader } from 'lucide-react'
+import { Save, Loader, AlertTriangle, CheckCircle } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -17,6 +17,10 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const [tiposLote, setTiposLote]             = useState<{id: number; nombre: string}[]>([])
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
+
+  // Capacidad de sección seleccionada
+  const [capacidad, setCapacidad] = useState<{ actual: number; limite: number | null } | null>(null)
+  const [loadingCap, setLoadingCap] = useState(false)
 
   const [form, setForm] = useState({
     cve_lote:            lote?.cve_lote ?? '',
@@ -43,18 +47,46 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
   })
 
   useEffect(() => {
-    dbCfg.from('secciones').select('*').order('nombre')
-      .then(({ data }) => setSecciones(data ?? []))
+    dbCfg.from('secciones')
+      .select('id, nombre, clave_alfa, activo, cantidad_lotes, descripcion, id_tipo_seccion_fk, fecha_autorizacion')
+      .order('nombre')
+      .then(({ data }) => setSecciones((data ?? []) as Seccion[]))
     dbCfg.from('clasificacion').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setClasificaciones(data ?? []))
     dbCfg.from('tipos_lote').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setTiposLote(data ?? []))
   }, [])
 
+  // Verifica capacidad cuando cambia la sección seleccionada
+  useEffect(() => {
+    const seccionId = form.id_seccion_fk ? Number(form.id_seccion_fk) : null
+    if (!seccionId) { setCapacidad(null); return }
+
+    const sec = secciones.find(s => s.id === seccionId)
+    const limite = sec?.cantidad_lotes ?? null
+
+    setLoadingCap(true)
+    let q = dbCat.from('lotes').select('id', { count: 'exact', head: true }).eq('id_seccion_fk', seccionId)
+    // Al editar, excluir el lote actual del conteo
+    if (!isNew && lote.id) q = q.neq('id', lote.id)
+
+    q.then(({ count }) => {
+      setCapacidad({ actual: count ?? 0, limite })
+      setLoadingCap(false)
+    })
+  }, [form.id_seccion_fk, secciones, isNew, lote])
+
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
+  const seccionLlena = capacidad !== null && capacidad.limite !== null && capacidad.actual >= capacidad.limite
+
   const handleSubmit = async () => {
+    if (seccionLlena) {
+      setError(`La sección ya alcanzó su límite de ${capacidad!.limite} lotes.`)
+      return
+    }
+
     setSaving(true); setError('')
     const payload: Record<string, unknown> = {
       cve_lote:            form.cve_lote || null,
@@ -93,7 +125,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
       footer={
         <>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
+          <button className="btn-primary" onClick={handleSubmit} disabled={saving || seccionLlena}>
             {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
             {saving ? 'Guardando…' : 'Guardar'}
           </button>
@@ -109,10 +141,11 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
             </Row>
             <Row>
               <Field label="Sección">
-                <select className="select" value={form.id_seccion_fk} onChange={set('id_seccion_fk')}>
+                <select className="select" value={form.id_seccion_fk} onChange={e => { set('id_seccion_fk')(e) }}>
                   <option value="">— Sin sección —</option>
                   {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select>
+                <CapacidadIndicador capacidad={capacidad} loading={loadingCap} />
               </Field>
               <Field label="Tipo de Lote">
                 <select className="select" value={form.id_tipo_lote_fk} onChange={set('id_tipo_lote_fk')}>
@@ -199,6 +232,40 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
             </Field>
           </Section>
     </ModalShell>
+  )
+}
+
+// ── Indicador de capacidad ────────────────────────────────────
+function CapacidadIndicador({ capacidad, loading }: { capacidad: { actual: number; limite: number | null } | null; loading: boolean }) {
+  if (!capacidad || capacidad.limite === null) return null
+
+  const { actual, limite } = capacidad
+  const disponibles = limite - actual
+  const llena = disponibles <= 0
+  const pct = Math.min(100, Math.round((actual / limite) * 100))
+
+  return (
+    <div style={{ marginTop: 6, fontSize: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {/* Barra de progreso */}
+      <div style={{ height: 4, borderRadius: 4, background: '#e2e8f0', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%',
+          width: `${pct}%`,
+          background: llena ? '#dc2626' : pct >= 80 ? '#f59e0b' : '#22c55e',
+          borderRadius: 4,
+          transition: 'width 0.3s ease',
+        }} />
+      </div>
+      {/* Texto */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: llena ? '#dc2626' : pct >= 80 ? '#b45309' : '#15803d' }}>
+        {loading
+          ? <span style={{ color: 'var(--text-muted)' }}>Verificando capacidad…</span>
+          : llena
+            ? <><AlertTriangle size={11} /> Sección llena — {actual} / {limite} lotes (sin disponibles)</>
+            : <><CheckCircle size={11} /> {actual} / {limite} lotes · {disponibles} disponible{disponibles !== 1 ? 's' : ''}</>
+        }
+      </div>
+    </div>
   )
 }
 
