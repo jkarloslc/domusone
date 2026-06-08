@@ -221,21 +221,21 @@ export default function CombustiblePage() {
 
         {/* Filtro tipo */}
         <div style={{ display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid #f1f5f9', background: '#fafbfc', alignItems: 'center' }}>
-          <SlidersHorizontal size={13} style={{ color: 'var(--text-muted)' }} />
+          <SlidersHorizontal size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
           <select value={filterMov} onChange={e => setFilterMov(e.target.value as any)}
-            className="input" style={{ fontSize: 12, padding: '4px 8px', height: 30, minWidth: 140 }}>
+            className="input" style={{ fontSize: 12, padding: '4px 8px', height: 30, width: 180, flexShrink: 0 }}>
             <option value="">Todos los movimientos</option>
             <option value="ENTRADA">Solo Entradas</option>
             <option value="SALIDA">Solo Salidas</option>
             <option value="AJUSTE">Solo Ajustes</option>
           </select>
           {filterMov && (
-            <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 8px', height: 30 }}
+            <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 8px', height: 30, flexShrink: 0 }}
               onClick={() => setFilterMov('')}>
               Limpiar
             </button>
           )}
-          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
+          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
             {movsConSaldo.length} movimiento{movsConSaldo.length !== 1 ? 's' : ''}
           </span>
         </div>
