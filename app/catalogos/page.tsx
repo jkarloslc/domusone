@@ -1,12 +1,12 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { dbCfg, dbComp, dbGolf, supabase } from '@/lib/supabase'
+import { dbCfg, dbComp, dbGolf, dbCat, supabase } from '@/lib/supabase'
 import {
   BookOpen, Plus, Edit2, Trash2, X, Save,
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
   Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle, Building2,
-  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store, Flag, HardHat,
+  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store, Flag, HardHat, Search,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
@@ -39,12 +39,13 @@ type Campo = {
 
 const CATALOGOS: CatConfig[] = [
   {
-    key:   'secciones',
-    tabla: 'secciones',
-    label: 'Secciones',
-    icon:  MapPin,
-    color: '#2563eb',
-    desc:  'Secciones residenciales — se relacionan con lotes y cobranza',
+    key:       'secciones',
+    tabla:     'secciones',
+    label:     'Secciones',
+    icon:      MapPin,
+    color:     '#2563eb',
+    desc:      'Secciones residenciales — se relacionan con lotes y cobranza',
+    hasDetail: true,
     campos: [
       { key: 'nombre',              label: 'Nombre *',             type: 'text',   required: true },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
@@ -1071,6 +1072,12 @@ function CatalogoTable({ config }: { config: CatConfig }) {
           onSaved={() => { setModal(null); fetchData() }}
         />
       )}
+      {detailRow !== null && config.key === 'secciones' && (
+        <SeccionLotesDetail
+          seccion={detailRow}
+          onClose={() => { setDetailRow(null); fetchData() }}
+        />
+      )}
       {detailRow !== null && config.key === 'cuentas_bancarias' && (
         <CuentaBancariaDetail
           cuenta={detailRow}
@@ -1340,6 +1347,287 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
           )}
         </div>
 
+    </ModalShell>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// Detalle de Sección — lotes asignados y asignación masiva
+// ══════════════════════════════════════════════════════════════
+function SeccionLotesDetail({ seccion, onClose }: { seccion: any; onClose: () => void }) {
+  const [lotesAsignados, setLotesAsignados] = useState<any[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [showAsignar, setShowAsignar] = useState(false)
+  const [lotesDisp, setLotesDisp]    = useState<any[]>([])
+  const [loadingDisp, setLoadingDisp] = useState(false)
+  const [search, setSearch]          = useState('')
+  const [soloSinSeccion, setSoloSin] = useState(true)
+  const [asignando, setAsignando]    = useState<number | null>(null)
+  const [quitando,  setQuitando]     = useState<number | null>(null)
+  const [clasifs,   setClasifs]      = useState<Record<number, string>>({})
+  const [seccionesMap, setSeccionesMap] = useState<Record<number, string>>({})
+
+  const limite = seccion.cantidad_lotes ?? null
+
+  const fetchAsignados = useCallback(async () => {
+    setLoading(true)
+    const { data } = await dbCat
+      .from('lotes')
+      .select('id, cve_lote, lote, id_clasificacion_fk, status_lote, calle, numero')
+      .eq('id_seccion_fk', seccion.id)
+      .order('lote')
+    setLotesAsignados(data ?? [])
+    setLoading(false)
+  }, [seccion.id])
+
+  const fetchDisponibles = useCallback(async () => {
+    setLoadingDisp(true)
+    let q = dbCat
+      .from('lotes')
+      .select('id, cve_lote, lote, id_clasificacion_fk, status_lote, id_seccion_fk')
+      .neq('id_seccion_fk', seccion.id)
+      .order('lote')
+    if (soloSinSeccion) q = (q as any).is('id_seccion_fk', null)
+    const { data } = await q
+    setLotesDisp(data ?? [])
+    setLoadingDisp(false)
+  }, [seccion.id, soloSinSeccion])
+
+  useEffect(() => {
+    fetchAsignados()
+    dbCfg.from('clasificacion').select('id, nombre').then(({ data }) => {
+      const m: Record<number, string> = {}
+      ;(data ?? []).forEach((c: any) => { m[c.id] = c.nombre })
+      setClasifs(m)
+    })
+    dbCfg.from('secciones').select('id, nombre').then(({ data }) => {
+      const m: Record<number, string> = {}
+      ;(data ?? []).forEach((s: any) => { m[s.id] = s.nombre })
+      setSeccionesMap(m)
+    })
+  }, [fetchAsignados])
+
+  useEffect(() => {
+    if (showAsignar) fetchDisponibles()
+  }, [showAsignar, fetchDisponibles])
+
+  const asignar = async (loteId: number) => {
+    setAsignando(loteId)
+    await dbCat.from('lotes').update({ id_seccion_fk: seccion.id }).eq('id', loteId)
+    setAsignando(null)
+    fetchAsignados()
+    fetchDisponibles()
+  }
+
+  const quitar = async (loteId: number) => {
+    if (!confirm('¿Quitar este lote de la sección? Quedará sin sección asignada.')) return
+    setQuitando(loteId)
+    await dbCat.from('lotes').update({ id_seccion_fk: null }).eq('id', loteId)
+    setQuitando(null)
+    fetchAsignados()
+  }
+
+  const actual      = lotesAsignados.length
+  const disponibles = limite !== null ? limite - actual : null
+  const pct         = limite ? Math.min(100, Math.round((actual / limite) * 100)) : 0
+  const llena       = limite !== null && actual >= limite
+
+  const filteredDisp = search
+    ? lotesDisp.filter(l =>
+        (l.cve_lote ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        String(l.lote ?? '').includes(search)
+      )
+    : lotesDisp
+
+  const statusBadge = (s: string | null) => {
+    const map: Record<string, { bg: string; color: string }> = {
+      Libre:     { bg: '#dbeafe', color: '#1d4ed8' },
+      Vendido:   { bg: '#dcfce7', color: '#15803d' },
+      Bloqueado: { bg: '#fef3c7', color: '#b45309' },
+    }
+    const style = map[s ?? ''] ?? { bg: '#f1f5f9', color: '#64748b' }
+    return (
+      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, ...style }}>
+        {s ?? '—'}
+      </span>
+    )
+  }
+
+  return (
+    <ModalShell
+      modulo="residencial"
+      titulo={`Sección: ${seccion.nombre}`}
+      onClose={onClose}
+      maxWidth={820}
+      footer={
+        <>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            {actual} lote{actual !== 1 ? 's' : ''} asignado{actual !== 1 ? 's' : ''}
+            {limite ? ` de ${limite}` : ''}
+          </span>
+          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
+        </>
+      }
+    >
+      {/* Barra de capacidad */}
+      {limite !== null && (
+        <div style={{
+          padding: '12px 16px', borderRadius: 8, marginBottom: 16,
+          background: llena ? '#fef2f2' : pct >= 80 ? '#fffbeb' : '#f0fdf4',
+          border: `1px solid ${llena ? '#fecaca' : pct >= 80 ? '#fde68a' : '#bbf7d0'}`,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: llena ? '#dc2626' : pct >= 80 ? '#b45309' : '#15803d' }}>
+              {llena ? 'Sección llena' : pct >= 80 ? 'Capacidad casi agotada' : 'Capacidad'}
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: llena ? '#dc2626' : '#475569' }}>
+              {actual} / {limite} lotes
+              {disponibles !== null && disponibles > 0 && ` · ${disponibles} disponible${disponibles !== 1 ? 's' : ''}`}
+            </span>
+          </div>
+          <div style={{ height: 6, borderRadius: 6, background: '#e2e8f0' }}>
+            <div style={{
+              height: '100%', width: `${pct}%`, borderRadius: 6, transition: 'width 0.3s',
+              background: llena ? '#dc2626' : pct >= 80 ? '#f59e0b' : '#22c55e',
+            }} />
+          </div>
+        </div>
+      )}
+
+      {/* Cabecera panel con botón asignar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+          Lotes asignados a esta sección
+        </span>
+        {!llena && (
+          <button className={showAsignar ? 'btn-secondary' : 'btn-primary'} onClick={() => setShowAsignar(s => !s)}>
+            {showAsignar ? <X size={13} /> : <Plus size={13} />}
+            {showAsignar ? 'Cerrar búsqueda' : 'Asignar Lotes'}
+          </button>
+        )}
+      </div>
+
+      {/* Panel de búsqueda y asignación */}
+      {showAsignar && (
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', marginBottom: 10 }}>
+            Buscar lotes para asignar a «{seccion.nombre}»
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: '1 1 200px' }}>
+              <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input className="input" style={{ paddingLeft: 28 }}
+                placeholder="Buscar por clave o número…"
+                value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={soloSinSeccion} onChange={e => setSoloSin(e.target.checked)} />
+              Solo lotes sin sección
+            </label>
+            <button className="btn-ghost" style={{ padding: '6px 8px' }} onClick={fetchDisponibles} title="Actualizar">
+              <RefreshCw size={12} className={loadingDisp ? 'animate-spin' : ''} />
+            </button>
+          </div>
+
+          {loadingDisp ? (
+            <div style={{ textAlign: 'center', padding: 20 }}>
+              <RefreshCw size={14} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+            </div>
+          ) : filteredDisp.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 16, color: 'var(--text-muted)', fontSize: 12 }}>
+              {soloSinSeccion ? 'No hay lotes sin sección disponibles' : 'No se encontraron lotes'}
+            </div>
+          ) : (
+            <div style={{ maxHeight: 240, overflowY: 'auto', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Clave</th>
+                    <th style={{ width: 70 }}>No.</th>
+                    <th>Sección actual</th>
+                    <th>Status</th>
+                    <th style={{ width: 90 }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredDisp.map(l => (
+                    <tr key={l.id}>
+                      <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--gold-light)' }}>
+                        {l.cve_lote ?? `#${l.lote}`}
+                      </td>
+                      <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.lote ?? '—'}</td>
+                      <td style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: l.id_seccion_fk ? 'normal' : 'italic' }}>
+                        {l.id_seccion_fk ? (seccionesMap[l.id_seccion_fk] ?? '—') : 'Sin sección'}
+                      </td>
+                      <td>{statusBadge(l.status_lote)}</td>
+                      <td>
+                        <button className="btn-primary" style={{ padding: '4px 10px', fontSize: 12 }}
+                          disabled={asignando === l.id}
+                          onClick={() => asignar(l.id)}>
+                          {asignando === l.id ? <Loader size={11} className="animate-spin" /> : 'Asignar'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tabla de lotes ya asignados */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 40 }}>
+          <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+        </div>
+      ) : lotesAsignados.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
+          Esta sección no tiene lotes asignados aún
+        </div>
+      ) : (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Clave</th>
+                <th style={{ width: 70 }}>No.</th>
+                <th>Clasificación</th>
+                <th>Dirección</th>
+                <th>Status</th>
+                <th style={{ width: 50 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lotesAsignados.map(l => {
+                const dir = [l.calle, l.numero].filter(Boolean).join(' ') || '—'
+                return (
+                  <tr key={l.id}>
+                    <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--gold-light)' }}>
+                      {l.cve_lote ?? `#${l.lote}`}
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.lote ?? '—'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                      {l.id_clasificacion_fk ? (clasifs[l.id_clasificacion_fk] ?? '—') : '—'}
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{dir}</td>
+                    <td>{statusBadge(l.status_lote)}</td>
+                    <td>
+                      <button className="btn-ghost"
+                        style={{ padding: '4px 6px', color: '#dc2626' }}
+                        disabled={quitando === l.id}
+                        onClick={() => quitar(l.id)}
+                        title="Quitar de esta sección">
+                        {quitando === l.id ? <Loader size={11} className="animate-spin" /> : <X size={13} />}
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </ModalShell>
   )
 }
