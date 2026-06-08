@@ -4,7 +4,7 @@ import { dbComp } from '@/lib/supabase'
 import {
   ShoppingCart, Package, Users, Warehouse, ClipboardList,
   FileText, Truck, ArrowLeftRight, ChevronRight,
-  AlertTriangle, CheckCircle, Clock, Layers, Wallet
+  AlertTriangle, CheckCircle, Clock, Layers, Wallet, Fuel
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
@@ -24,6 +24,7 @@ const MODULOS = [
   { key: 'almacenes',     label: 'Almacenes',    icon: Warehouse,     color: '#0891b2', desc: 'Almacenes y centros de costo' },
   { key: 'areas',         label: 'Áreas Solicitantes',      icon: Layers,        color: '#7c3aed', desc: 'Áreas para requisiciones' },
   { key: 'caja-chica',   label: 'Caja Chica',              icon: Wallet,        color: '#d97706', desc: 'Fondos y reembolsos de gastos menores' },
+  { key: 'combustible',  label: 'Combustible',             icon: Fuel,          color: '#16a34a', desc: 'Kardex de Magna, Premium y Diesel' },
 ]
 
 export default function ComprasPage() {

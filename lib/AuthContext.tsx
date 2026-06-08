@@ -298,7 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (r === 'compras' || r === 'compras_supervisor') return 'compras'
     if (r === 'almacen') {
       // almacen ve sus módulos + caja chica
-      const MODS_ALMACEN = ['recepciones', 'transferencias', 'inventario', 'articulos', 'almacenes', 'caja-chica']
+      const MODS_ALMACEN = ['recepciones', 'transferencias', 'inventario', 'articulos', 'almacenes', 'caja-chica', 'combustible']
       if (!key) return 'almacen'
       return MODS_ALMACEN.includes(key) ? 'almacen' : false
     }
