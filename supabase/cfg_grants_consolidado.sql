@@ -15,7 +15,8 @@ DECLARE
     'areas','centros_costo','centros_ingreso','clasificacion',
     'configuracion','cuentas_bancarias','cuotas_estandar','equipos',
     'formas_pago','frentes','frentes_ingreso','marcas_vehiculos',
-    'origenes_incidencia','secciones','tipos_incidencia','tipos_lote','usuarios'
+    'origenes_incidencia','secciones','tipos_incidencia','tipos_lote','usuarios',
+    'herramientas'
   ];
 BEGIN
   FOREACH t IN ARRAY tables LOOP
@@ -50,7 +51,8 @@ DECLARE
     'secciones_id_seq',
     'tipos_incidencia_id_seq',
     'tipos_lote_id_seq',
-    'usuarios_id_seq'
+    'usuarios_id_seq',
+    'herramientas_id_seq'
   ];
 BEGIN
   FOREACH seq IN ARRAY seqs LOOP
@@ -70,7 +72,8 @@ DECLARE
     'areas','centros_costo','centros_ingreso','clasificacion',
     'configuracion','cuentas_bancarias','cuotas_estandar','equipos',
     'formas_pago','frentes','frentes_ingreso','marcas_vehiculos',
-    'origenes_incidencia','secciones','tipos_incidencia','tipos_lote','usuarios'
+    'origenes_incidencia','secciones','tipos_incidencia','tipos_lote','usuarios',
+    'herramientas'
   ];
 BEGIN
   FOREACH t IN ARRAY tables LOOP
