@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
 
-// ─── tipos ───────────────────────────────────────────────────────────────────
-type TipoComb  = 'magna' | 'premium' | 'diesel'
-type TipoMov   = 'CARGA' | 'CONSUMO' | 'AJUSTE'
+type TipoComb = 'magna' | 'premium' | 'diesel'
+type TipoMov  = 'ENTRADA' | 'SALIDA' | 'AJUSTE'
 
 interface Movimiento {
   id:               number
@@ -18,10 +17,6 @@ interface Movimiento {
   litros:           number
   precio_litro:     number | null
   monto_total:      number | null
-  centro_costo:     string | null
-  area:             string | null
-  frente:           string | null
-  vehiculo_equipo:  string | null
   referencia:       string | null
   observaciones:    string | null
   created_at:       string
@@ -34,28 +29,24 @@ const COMBUSTIBLES: { key: TipoComb; label: string; color: string; bg: string }[
   { key: 'diesel',  label: 'Diesel',           color: '#2563eb', bg: '#eff6ff' },
 ]
 
-const MOV_META: Record<TipoMov, { label: string; color: string; bg: string }> = {
-  CARGA:   { label: 'Carga',   color: '#15803d', bg: '#dcfce7' },
-  CONSUMO: { label: 'Consumo', color: '#dc2626', bg: '#fee2e2' },
-  AJUSTE:  { label: 'Ajuste',  color: '#7c3aed', bg: '#ede9fe' },
+const MOV_META: Record<TipoMov, { label: string; color: string; bg: string; signo: 1 | -1 }> = {
+  ENTRADA: { label: 'Entrada', color: '#15803d', bg: '#dcfce7', signo:  1 },
+  SALIDA:  { label: 'Salida',  color: '#dc2626', bg: '#fee2e2', signo: -1 },
+  AJUSTE:  { label: 'Ajuste',  color: '#7c3aed', bg: '#ede9fe', signo:  1 },
 }
 
-const BLANK: Omit<Movimiento, 'id' | 'created_at' | 'created_by'> = {
-  tipo_combustible: 'magna',
-  tipo_mov:         'CARGA',
+const BLANK = {
+  tipo_combustible: 'magna' as TipoComb,
+  tipo_mov:         'ENTRADA' as TipoMov,
   fecha:            new Date().toISOString().slice(0, 10),
-  litros:           0,
-  precio_litro:     null,
-  monto_total:      null,
-  centro_costo:     null,
-  area:             null,
-  frente:           null,
-  vehiculo_equipo:  null,
-  referencia:       null,
-  observaciones:    null,
+  litros:           '' as string | number,
+  precio_litro:     '' as string | number,
+  monto_total:      '' as string | number,
+  referencia:       '',
+  observaciones:    '',
 }
 
-const fmt2 = (n: number | null | undefined) =>
+const fmt3 = (n: number | null | undefined) =>
   n == null ? '—' : n.toLocaleString('es-MX', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 
 const fmtMoney = (n: number | null | undefined) =>
@@ -66,24 +57,19 @@ const fmtFecha = (d: string) => {
   return `${day}/${m}/${y}`
 }
 
-// ─── componente ──────────────────────────────────────────────────────────────
 export default function CombustiblePage() {
-  const router  = useRouter()
-  const { authUser } = useAuth()
+  const router        = useRouter()
+  const { authUser }  = useAuth()
+  const [tab,       setTab]      = useState<TipoComb>('magna')
+  const [movs,      setMovs]     = useState<Movimiento[]>([])
+  const [loading,   setLoading]  = useState(true)
+  const [saving,    setSaving]   = useState(false)
+  const [showForm,  setShowForm] = useState(false)
+  const [form,      setForm]     = useState({ ...BLANK })
+  const [error,     setError]    = useState<string | null>(null)
+  const [filterMov, setFilterMov] = useState<TipoMov | ''>('')
 
-  const [tab,      setTab]      = useState<TipoComb>('magna')
-  const [movs,     setMovs]     = useState<Movimiento[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [saving,   setSaving]   = useState(false)
-  const [showForm, setShowForm] = useState(false)
-  const [form,     setForm]     = useState({ ...BLANK })
-  const [error,    setError]    = useState<string | null>(null)
-
-  // filtros de la tabla
-  const [filterMov,   setFilterMov]   = useState<TipoMov | ''>('')
-  const [filterFecha, setFilterFecha] = useState('')
-
-  const fetch = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     const { data } = await dbComp
       .from('combustible_movimientos')
@@ -94,68 +80,53 @@ export default function CombustiblePage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => { load() }, [load])
 
-  // ── saldo acumulado por tipo ─────────────────────────────────────────────
-  const saldoPorTipo = (tipo: TipoComb): number => {
-    const filtered = movs.filter(m => m.tipo_combustible === tipo)
-    return filtered.reduce((acc, m) => {
-      if (m.tipo_mov === 'CARGA')   return acc + m.litros
-      if (m.tipo_mov === 'CONSUMO') return acc - m.litros
-      return acc + m.litros   // AJUSTE (puede ser negativo desde el form)
-    }, 0)
-  }
+  // saldo acumulado por tipo
+  const saldoPorTipo = (tipo: TipoComb) =>
+    movs
+      .filter(m => m.tipo_combustible === tipo)
+      .reduce((acc, m) => acc + MOV_META[m.tipo_mov].signo * m.litros, 0)
 
-  // ── movs filtrados para la tab activa (con saldo acumulado ascendente) ───
-  const movsTab = (() => {
-    const base = movs
+  // movimientos con saldo corriente para la tab activa
+  const movsConSaldo = (() => {
+    const enOrden = [...movs]
       .filter(m => m.tipo_combustible === tab)
-      .filter(m => !filterMov   || m.tipo_mov === filterMov)
-      .filter(m => !filterFecha || m.fecha === filterFecha)
-
-    // Calcular saldo corriente (del más antiguo al más reciente)
-    const todos = [...movs].filter(m => m.tipo_combustible === tab).reverse()
-    const saldoMap = new Map<number, number>()
+      .reverse()                        // más antiguo primero para acumular
     let acum = 0
-    for (const m of todos) {
-      if (m.tipo_mov === 'CARGA')   acum += m.litros
-      else if (m.tipo_mov === 'CONSUMO') acum -= m.litros
-      else acum += m.litros
-      saldoMap.set(m.id, acum)
+    const map = new Map<number, number>()
+    for (const m of enOrden) {
+      acum += MOV_META[m.tipo_mov].signo * m.litros
+      map.set(m.id, acum)
     }
-
-    return base.map(m => ({ ...m, saldo: saldoMap.get(m.id) ?? 0 }))
+    return movs
+      .filter(m => m.tipo_combustible === tab)
+      .filter(m => !filterMov || m.tipo_mov === filterMov)
+      .map(m => ({ ...m, saldo: map.get(m.id) ?? 0 }))
   })()
 
-  // ── guardar movimiento ────────────────────────────────────────────────────
   const handleSave = async () => {
     setError(null)
-    if (!form.litros || form.litros === 0) {
-      setError('Los litros no pueden ser cero.')
-      return
-    }
+    const litros = parseFloat(String(form.litros))
+    if (!litros || litros === 0) { setError('Los litros no pueden ser cero.'); return }
     setSaving(true)
-    const payload = {
+    const pl = parseFloat(String(form.precio_litro)) || null
+    const { error: err } = await dbComp.from('combustible_movimientos').insert([{
       tipo_combustible: form.tipo_combustible,
       tipo_mov:         form.tipo_mov,
       fecha:            form.fecha,
-      litros:           Number(form.litros),
-      precio_litro:     form.precio_litro ? Number(form.precio_litro) : null,
-      monto_total:      form.monto_total  ? Number(form.monto_total)  : null,
-      centro_costo:     form.centro_costo    || null,
-      area:             form.area            || null,
-      frente:           form.frente          || null,
-      vehiculo_equipo:  form.vehiculo_equipo || null,
-      referencia:       form.referencia      || null,
-      observaciones:    form.observaciones || null,
-      created_by:       authUser?.nombre ?? authUser?.user?.email ?? null,
-    }
-    const { error: err } = await dbComp.from('combustible_movimientos').insert([payload])
+      litros,
+      precio_litro:  pl,
+      monto_total:   parseFloat(String(form.monto_total)) || (pl ? parseFloat((pl * Math.abs(litros)).toFixed(2)) : null),
+      referencia:    form.referencia    || null,
+      observaciones: form.observaciones || null,
+      created_by:    authUser?.nombre ?? authUser?.user?.email ?? null,
+    }])
     setSaving(false)
     if (err) { setError(err.message); return }
     setShowForm(false)
     setForm({ ...BLANK })
-    await fetch()
+    await load()
   }
 
   const openForm = (tipo?: TipoComb) => {
@@ -168,6 +139,7 @@ export default function CombustiblePage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
         <button className="btn-ghost" onClick={() => router.push('/compras')}
@@ -180,13 +152,15 @@ export default function CombustiblePage() {
             <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Kardex de Combustible</h1>
           </div>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-            Control de cargas, consumos y ajustes por tipo de combustible
+            Control de resguardo — existencia física en tanque
           </p>
         </div>
-        <button className="btn-ghost" onClick={fetch} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+        <button className="btn-ghost" onClick={load}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <RefreshCw size={14} /> Actualizar
         </button>
-        <button className="btn-primary" onClick={() => openForm()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button className="btn-primary" onClick={() => openForm()}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Plus size={15} /> Registrar movimiento
         </button>
       </div>
@@ -194,19 +168,16 @@ export default function CombustiblePage() {
       {/* KPI cards — saldo por tipo */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
         {COMBUSTIBLES.map(c => {
-          const saldo = saldoPorTipo(c.key)
-          const cargas   = movs.filter(m => m.tipo_combustible === c.key && m.tipo_mov === 'CARGA').reduce((a, m) => a + m.litros, 0)
-          const consumos = movs.filter(m => m.tipo_combustible === c.key && m.tipo_mov === 'CONSUMO').reduce((a, m) => a + m.litros, 0)
+          const saldo   = saldoPorTipo(c.key)
+          const entradas = movs.filter(m => m.tipo_combustible === c.key && m.tipo_mov === 'ENTRADA').reduce((a, m) => a + m.litros, 0)
+          const salidas  = movs.filter(m => m.tipo_combustible === c.key && m.tipo_mov === 'SALIDA').reduce((a, m) => a + m.litros, 0)
           return (
-            <button key={c.key}
-              onClick={() => setTab(c.key)}
-              className="card"
+            <button key={c.key} onClick={() => setTab(c.key)} className="card"
               style={{
-                padding: '16px 20px', minWidth: 200, flex: '1 1 200px',
+                padding: '16px 20px', minWidth: 200, flex: '1 1 200px', textAlign: 'left',
                 background: tab === c.key ? c.bg : undefined,
                 border: tab === c.key ? `2px solid ${c.color}` : undefined,
-                cursor: 'pointer', textAlign: 'left',
-                transition: 'all 0.15s',
+                cursor: 'pointer', transition: 'all 0.15s',
               }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: c.color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
                 {c.label}
@@ -216,25 +187,21 @@ export default function CombustiblePage() {
                 <span style={{ fontSize: 13, fontWeight: 500, marginLeft: 4 }}>L</span>
               </div>
               <div style={{ display: 'flex', gap: 14, marginTop: 6 }}>
-                <span style={{ fontSize: 11, color: '#15803d' }}>
-                  +{cargas.toLocaleString('es-MX', { maximumFractionDigits: 1 })} L cargados
-                </span>
-                <span style={{ fontSize: 11, color: '#dc2626' }}>
-                  -{consumos.toLocaleString('es-MX', { maximumFractionDigits: 1 })} L consumidos
-                </span>
+                <span style={{ fontSize: 11, color: '#15803d' }}>↑ {entradas.toLocaleString('es-MX', { maximumFractionDigits: 1 })} L</span>
+                <span style={{ fontSize: 11, color: '#dc2626' }}>↓ {salidas.toLocaleString('es-MX',  { maximumFractionDigits: 1 })} L</span>
               </div>
             </button>
           )
         })}
       </div>
 
-      {/* Tab content */}
+      {/* Tabla */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+
         {/* Tab bar */}
         <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', padding: '0 20px' }}>
           {COMBUSTIBLES.map(c => (
-            <button key={c.key}
-              onClick={() => setTab(c.key)}
+            <button key={c.key} onClick={() => setTab(c.key)}
               style={{
                 padding: '12px 18px', fontSize: 13, fontWeight: 600,
                 border: 'none', background: 'none', cursor: 'pointer',
@@ -246,51 +213,42 @@ export default function CombustiblePage() {
             </button>
           ))}
           <div style={{ flex: 1 }} />
-          {/* Acceso rápido: Registrar para este tipo */}
-          <button className="btn-ghost"
-            onClick={() => openForm(tab)}
+          <button className="btn-ghost" onClick={() => openForm(tab)}
             style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, margin: '8px 0' }}>
-            <Plus size={13} /> Registrar {combActiva.label}
+            <Plus size={13} /> Registrar
           </button>
         </div>
 
-        {/* Filtros */}
-        <div style={{ display: 'flex', gap: 10, padding: '12px 20px', borderBottom: '1px solid #f1f5f9', background: '#fafbfc', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <SlidersHorizontal size={13} style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Filtros:</span>
-          </div>
+        {/* Filtro tipo */}
+        <div style={{ display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid #f1f5f9', background: '#fafbfc', alignItems: 'center' }}>
+          <SlidersHorizontal size={13} style={{ color: 'var(--text-muted)' }} />
           <select value={filterMov} onChange={e => setFilterMov(e.target.value as any)}
-            className="input" style={{ fontSize: 12, padding: '4px 8px', height: 30, minWidth: 130 }}>
-            <option value="">Todos los tipos</option>
-            <option value="CARGA">Carga</option>
-            <option value="CONSUMO">Consumo</option>
-            <option value="AJUSTE">Ajuste</option>
+            className="input" style={{ fontSize: 12, padding: '4px 8px', height: 30, minWidth: 140 }}>
+            <option value="">Todos los movimientos</option>
+            <option value="ENTRADA">Solo Entradas</option>
+            <option value="SALIDA">Solo Salidas</option>
+            <option value="AJUSTE">Solo Ajustes</option>
           </select>
-          <input type="date" value={filterFecha} onChange={e => setFilterFecha(e.target.value)}
-            className="input" style={{ fontSize: 12, padding: '4px 8px', height: 30 }} />
-          {(filterMov || filterFecha) && (
+          {filterMov && (
             <button className="btn-ghost" style={{ fontSize: 12, padding: '4px 8px', height: 30 }}
-              onClick={() => { setFilterMov(''); setFilterFecha('') }}>
+              onClick={() => setFilterMov('')}>
               Limpiar
             </button>
           )}
-          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>
-            {movsTab.length} movimiento{movsTab.length !== 1 ? 's' : ''}
+          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)' }}>
+            {movsConSaldo.length} movimiento{movsConSaldo.length !== 1 ? 's' : ''}
           </span>
         </div>
 
-        {/* Tabla kardex */}
+        {/* Contenido */}
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-            Cargando...
-          </div>
-        ) : movsTab.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Cargando...</div>
+        ) : movsConSaldo.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center' }}>
             <Fuel size={36} style={{ color: '#cbd5e1', marginBottom: 12 }} />
             <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>Sin movimientos</div>
             <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
-              Registra la primera carga de {combActiva.label}
+              Registra la primera entrada de {combActiva.label}
             </div>
             <button className="btn-primary" style={{ marginTop: 16 }} onClick={() => openForm(tab)}>
               <Plus size={14} style={{ marginRight: 4 }} /> Registrar movimiento
@@ -301,34 +259,39 @@ export default function CombustiblePage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f8fafc' }}>
-                  {['Fecha', 'Tipo', 'Litros', 'Precio/L', 'Monto', 'Centro de Costo', 'Área', 'Frente', 'Vehículo / Equipo', 'Referencia', 'Saldo (L)'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', borderBottom: '1px solid #e2e8f0' }}>
+                  {['Fecha', 'Tipo', 'Litros', 'Precio / L', 'Monto', 'Referencia', 'Observaciones', 'Saldo (L)'].map(h => (
+                    <th key={h} style={{
+                      padding: '10px 14px', textAlign: h === 'Litros' || h === 'Precio / L' || h === 'Monto' || h === 'Saldo (L)' ? 'right' : 'left',
+                      fontWeight: 600, fontSize: 11, color: 'var(--text-muted)',
+                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                      whiteSpace: 'nowrap', borderBottom: '1px solid #e2e8f0',
+                    }}>
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {movsTab.map((m, i) => {
+                {movsConSaldo.map((m, i) => {
                   const meta  = MOV_META[m.tipo_mov]
-                  const delta = m.tipo_mov === 'CONSUMO' ? -m.litros : m.litros
+                  const delta = meta.signo * m.litros
                   return (
                     <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? 'white' : '#fafbfc' }}>
                       <td style={{ padding: '10px 14px', whiteSpace: 'nowrap', fontWeight: 500 }}>
                         {fmtFecha(m.fecha)}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: meta.bg, color: meta.color }}>
+                        <span style={{ padding: '2px 9px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: meta.bg, color: meta.color }}>
                           {meta.label}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 14px', fontWeight: 700, fontFamily: 'var(--font-display)', textAlign: 'right' }}>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700 }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
                           {delta > 0
-                            ? <TrendingUp  size={13} style={{ color: '#15803d' }} />
+                            ? <TrendingUp   size={13} style={{ color: '#15803d' }} />
                             : <TrendingDown size={13} style={{ color: '#dc2626' }} />}
                           <span style={{ color: delta > 0 ? '#15803d' : '#dc2626' }}>
-                            {delta > 0 ? '+' : ''}{fmt2(delta)}
+                            {delta > 0 ? '+' : ''}{fmt3(delta)}
                           </span>
                         </span>
                       </td>
@@ -338,23 +301,14 @@ export default function CombustiblePage() {
                       <td style={{ padding: '10px 14px', textAlign: 'right' }}>
                         {fmtMoney(m.monto_total)}
                       </td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.centro_costo ?? '—'}
-                      </td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.area ?? '—'}
-                      </td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.frente ?? '—'}
-                      </td>
-                      <td style={{ padding: '10px 14px', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.vehiculo_equipo ?? '—'}
-                      </td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {m.referencia ?? '—'}
                       </td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontFamily: 'var(--font-display)', color: combActiva.color, whiteSpace: 'nowrap' }}>
-                        {fmt2((m as any).saldo)}
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {m.observaciones ?? '—'}
+                      </td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: combActiva.color, whiteSpace: 'nowrap', fontFamily: 'var(--font-display)' }}>
+                        {fmt3((m as any).saldo)}
                       </td>
                     </tr>
                   )
@@ -365,22 +319,22 @@ export default function CombustiblePage() {
         )}
       </div>
 
-      {/* Modal registro de movimiento */}
+      {/* Modal */}
       {showForm && (
-        <ModalShell modulo="compras" titulo="Registrar movimiento de combustible" icono={Fuel} onClose={() => { setShowForm(false); setError(null) }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 480 }}>
+        <ModalShell modulo="compras" titulo="Registrar movimiento de combustible" icono={Fuel}
+          onClose={() => { setShowForm(false); setError(null) }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 460 }}>
 
             {/* Tipo combustible */}
             <div style={{ display: 'flex', gap: 8 }}>
               {COMBUSTIBLES.map(c => (
-                <button key={c.key}
-                  type="button"
+                <button key={c.key} type="button"
                   onClick={() => setForm(f => ({ ...f, tipo_combustible: c.key }))}
                   style={{
-                    flex: 1, padding: '8px 0', borderRadius: 8, border: '2px solid',
-                    borderColor: form.tipo_combustible === c.key ? c.color : '#e2e8f0',
-                    background: form.tipo_combustible === c.key ? c.bg : 'white',
-                    color: form.tipo_combustible === c.key ? c.color : 'var(--text-muted)',
+                    flex: 1, padding: '9px 0', borderRadius: 8, border: '2px solid',
+                    borderColor:  form.tipo_combustible === c.key ? c.color : '#e2e8f0',
+                    background:   form.tipo_combustible === c.key ? c.bg    : 'white',
+                    color:        form.tipo_combustible === c.key ? c.color : 'var(--text-muted)',
                     fontWeight: 700, fontSize: 12, cursor: 'pointer',
                   }}>
                   {c.label}
@@ -390,17 +344,16 @@ export default function CombustiblePage() {
 
             {/* Tipo movimiento */}
             <div style={{ display: 'flex', gap: 8 }}>
-              {(['CARGA', 'CONSUMO', 'AJUSTE'] as TipoMov[]).map(t => {
+              {(['ENTRADA', 'SALIDA', 'AJUSTE'] as TipoMov[]).map(t => {
                 const meta = MOV_META[t]
                 return (
-                  <button key={t}
-                    type="button"
+                  <button key={t} type="button"
                     onClick={() => setForm(f => ({ ...f, tipo_mov: t }))}
                     style={{
-                      flex: 1, padding: '8px 0', borderRadius: 8, border: '2px solid',
+                      flex: 1, padding: '9px 0', borderRadius: 8, border: '2px solid',
                       borderColor: form.tipo_mov === t ? meta.color : '#e2e8f0',
-                      background: form.tipo_mov === t ? meta.bg : 'white',
-                      color: form.tipo_mov === t ? meta.color : 'var(--text-muted)',
+                      background:  form.tipo_mov === t ? meta.bg    : 'white',
+                      color:       form.tipo_mov === t ? meta.color : 'var(--text-muted)',
                       fontWeight: 700, fontSize: 12, cursor: 'pointer',
                     }}>
                     {meta.label}
@@ -409,95 +362,66 @@ export default function CombustiblePage() {
               })}
             </div>
 
+            {form.tipo_mov === 'AJUSTE' && (
+              <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#7c3aed' }}>
+                Ajuste: usa litros positivos para aumentar el stock, negativos para reducirlo.
+              </div>
+            )}
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {/* Fecha */}
+
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Fecha *</span>
                 <input type="date" className="input" value={form.fecha}
                   onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} />
               </label>
 
-              {/* Litros */}
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
-                  Litros * {form.tipo_mov === 'AJUSTE' ? '(negativo para reducir)' : ''}
-                </span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Litros *</span>
                 <input type="number" className="input" step="0.001"
-                  value={form.litros === 0 ? '' : form.litros}
-                  placeholder={form.tipo_mov === 'AJUSTE' ? 'ej. -50 o 100' : 'ej. 500'}
-                  onChange={e => setForm(f => ({ ...f, litros: parseFloat(e.target.value) || 0 }))} />
+                  value={form.litros}
+                  placeholder={form.tipo_mov === 'AJUSTE' ? 'ej. -50 o +100' : 'ej. 500'}
+                  onChange={e => setForm(f => ({ ...f, litros: e.target.value }))} />
               </label>
 
-              {/* Precio / litro */}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Precio por litro</span>
-                <input type="number" className="input" step="0.01" min="0"
-                  value={form.precio_litro ?? ''}
-                  placeholder="ej. 24.50"
-                  onChange={e => {
-                    const v = parseFloat(e.target.value)
-                    const pl = isNaN(v) ? null : v
-                    const litros = Math.abs(form.litros ?? 0)
-                    setForm(f => ({ ...f, precio_litro: pl, monto_total: pl && litros ? parseFloat((pl * litros).toFixed(2)) : f.monto_total }))
-                  }} />
-              </label>
+              {form.tipo_mov === 'ENTRADA' && (
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Precio / litro</span>
+                  <input type="number" className="input" step="0.0001" min="0"
+                    value={form.precio_litro}
+                    placeholder="ej. 24.50"
+                    onChange={e => {
+                      const pl  = e.target.value
+                      const lit = parseFloat(String(form.litros))
+                      const mt  = pl && lit ? parseFloat((parseFloat(pl) * Math.abs(lit)).toFixed(2)) : ''
+                      setForm(f => ({ ...f, precio_litro: pl, monto_total: mt }))
+                    }} />
+                </label>
+              )}
 
-              {/* Monto total */}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Monto total</span>
-                <input type="number" className="input" step="0.01" min="0"
-                  value={form.monto_total ?? ''}
-                  placeholder="ej. 12,250.00"
-                  onChange={e => setForm(f => ({ ...f, monto_total: parseFloat(e.target.value) || null }))} />
-              </label>
+              {form.tipo_mov === 'ENTRADA' && (
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Monto total</span>
+                  <input type="number" className="input" step="0.01" min="0"
+                    value={form.monto_total}
+                    placeholder="ej. 12,250.00"
+                    onChange={e => setForm(f => ({ ...f, monto_total: e.target.value }))} />
+                </label>
+              )}
 
-              {/* Centro de Costo */}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Centro de Costo</span>
-                <input className="input" value={form.centro_costo ?? ''}
-                  placeholder="ej. Golf, Hípico, Mantenimiento"
-                  onChange={e => setForm(f => ({ ...f, centro_costo: e.target.value || null }))} />
-              </label>
-
-              {/* Área */}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Área</span>
-                <input className="input" value={form.area ?? ''}
-                  placeholder="ej. Cancha, Establos"
-                  onChange={e => setForm(f => ({ ...f, area: e.target.value || null }))} />
-              </label>
-
-              {/* Frente */}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Frente</span>
-                <input className="input" value={form.frente ?? ''}
-                  placeholder="ej. Frente 1, Fachada Norte"
-                  onChange={e => setForm(f => ({ ...f, frente: e.target.value || null }))} />
-              </label>
-
-              {/* Vehículo / Equipo */}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Vehículo / Equipo</span>
-                <input className="input" value={form.vehiculo_equipo ?? ''}
-                  placeholder="ej. F-150 | Tractor Golf"
-                  onChange={e => setForm(f => ({ ...f, vehiculo_equipo: e.target.value || null }))} />
-              </label>
-
-              {/* Referencia */}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, gridColumn: form.tipo_mov !== 'ENTRADA' ? '1 / -1' : undefined }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Referencia / Folio</span>
-                <input className="input" value={form.referencia ?? ''}
+                <input className="input" value={form.referencia}
                   placeholder="ej. Factura #12345"
-                  onChange={e => setForm(f => ({ ...f, referencia: e.target.value || null }))} />
+                  onChange={e => setForm(f => ({ ...f, referencia: e.target.value }))} />
               </label>
 
-              {/* Observaciones */}
               <label style={{ display: 'flex', flexDirection: 'column', gap: 4, gridColumn: '1 / -1' }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Observaciones</span>
-                <textarea className="input" rows={2} value={form.observaciones ?? ''}
+                <textarea className="input" rows={2} value={form.observaciones}
                   placeholder="Notas adicionales..."
                   style={{ resize: 'vertical' }}
-                  onChange={e => setForm(f => ({ ...f, observaciones: e.target.value || null }))} />
+                  onChange={e => setForm(f => ({ ...f, observaciones: e.target.value }))} />
               </label>
             </div>
 
@@ -507,7 +431,7 @@ export default function CombustiblePage() {
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button className="btn-ghost" type="button" onClick={() => { setShowForm(false); setError(null) }}>
                 Cancelar
               </button>
