@@ -30,18 +30,18 @@ CREATE TABLE IF NOT EXISTS cfg.areas_comunes (
 );
 
 -- 4. Nuevas columnas en programas_mantenimiento
---    (id_seccion_fk ya existe en la tabla, solo necesita su FK reconstruida)
 ALTER TABLE ctrl.programas_mantenimiento
   ADD COLUMN IF NOT EXISTS id_cuadrante_fk  INTEGER REFERENCES cfg.cuadrantes(id),
+  ADD COLUMN IF NOT EXISTS id_seccion_fk    INTEGER,
   ADD COLUMN IF NOT EXISTS id_area_comun_fk INTEGER REFERENCES cfg.areas_comunes(id);
 
--- Reconectar id_seccion_fk → cfg.secciones (columna existe, FK fue eliminada antes)
+-- FK de id_seccion_fk → cfg.secciones (la columna se acaba de crear arriba)
 ALTER TABLE ctrl.programas_mantenimiento
   DROP CONSTRAINT IF EXISTS programas_mantenimiento_id_seccion_fk_fkey;
 ALTER TABLE ctrl.programas_mantenimiento
   ADD CONSTRAINT programas_mantenimiento_id_seccion_fk_fkey
   FOREIGN KEY (id_seccion_fk) REFERENCES cfg.secciones(id)
-  NOT VALID;  -- no valida filas existentes para evitar conflictos con datos antiguos
+  NOT VALID;
 
 -- 5. Permisos
 GRANT SELECT ON cfg.cuadrantes    TO anon;
