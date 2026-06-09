@@ -67,8 +67,9 @@ export default function MantenimientoPage() {
   const { canWrite, canDelete } = useAuth()
   const [tab,          setTab]        = useState<'programa' | 'ordenes' | 'ordenes_cuadrilla' | 'servicios'>('programa')
   const [programas,    setProgramas]  = useState<any[]>([])
-  const [cuadrantes,   setCuadrantes]   = useState<any[]>([])
-  const [cuadMap,      setCuadMap]      = useState<Record<number, string>>({})
+  const [cuadrantes,    setCuadrantes]    = useState<any[]>([])
+  const [cuadMap,       setCuadMap]       = useState<Record<number, string>>({})
+  const [cuadColorMap,  setCuadColorMap]  = useState<Record<number, string>>({})
   const [secciones,    setSecciones]    = useState<any[]>([])
   const [secMap,       setSecMap]       = useState<Record<number, string>>({})
   const [areasComunes, setAreasComunes] = useState<any[]>([])
@@ -84,7 +85,7 @@ export default function MantenimientoPage() {
 
   useEffect(() => {
     Promise.all([
-      dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('cuadrantes').select('id, nombre, color').eq('activo', true).order('nombre'),
       dbCfg.from('secciones').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
       dbCfg.from('areas_comunes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
     ]).then(([{ data: cuads }, { data: secs }, { data: acs }]) => {
@@ -92,9 +93,10 @@ export default function MantenimientoPage() {
       setSecciones(secs ?? [])
       setAreasComunes(acs ?? [])
       const cm: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
+      const cc: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { if (c.color) cc[c.id] = c.color })
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
       const am: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { am[a.id] = a.nombre })
-      setCuadMap(cm); setSecMap(sm); setAcMap(am)
+      setCuadMap(cm); setCuadColorMap(cc); setSecMap(sm); setAcMap(am)
     })
   }, [])
 
@@ -262,8 +264,9 @@ export default function MantenimientoPage() {
                   const comp   = tareas.filter((t: any) => t.status === 'Completada').length
                   const pct    = tareas.length ? Math.round((comp / tareas.length) * 100) : 0
                   const proxima = tareas.find((t: any) => t.status === 'Pendiente')
+                  const rowColor = prog.id_cuadrante_fk ? cuadColorMap[prog.id_cuadrante_fk] : undefined
                   return (
-                    <tr key={prog.id}>
+                    <tr key={prog.id} style={rowColor ? { borderLeft: `4px solid ${rowColor}` } : undefined}>
                       <td>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{prog.nombre}</div>
                         {prog.responsable && (
