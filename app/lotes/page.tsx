@@ -94,7 +94,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
       .order('lote', { ascending: true })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-    if (debouncedSearch) q = q.ilike('cve_lote', `%${debouncedSearch}%`)
+    if (debouncedSearch) q = q.or(`cve_lote.ilike.%${debouncedSearch}%,lote::text.ilike.%${debouncedSearch}%`)
     if (filterStatus)    q = q.eq('status_lote', filterStatus)
     if (filterSeccion)   q = q.eq('id_seccion_fk', Number(filterSeccion))
     if (filterClasif)    q = q.eq('id_clasificacion_fk', Number(filterClasif))
@@ -156,7 +156,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
           <input
             className="input"
             style={{ paddingLeft: 30 }}
-            placeholder="Buscar clave, tipo…"
+            placeholder="Buscar clave o no. lote…"
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(0) }}
           />
