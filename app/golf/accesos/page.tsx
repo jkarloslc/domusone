@@ -67,7 +67,7 @@ export default function AccesosPage() {
     if (qErr) console.error('[AccesosPage] query error:', qErr.message)
     // Deduplicar por id por si la join genera filas duplicadas
     const raw = (data as unknown as Acceso[]) ?? []
-    const all = [...new Map(raw.map(a => [a.id, a])).values()]
+    const all = Array.from(new Map(raw.map(a => [a.id, a])).values())
 
     const activosArr     = all.filter(a => !a.fecha_salida)
     const completadosArr = all.filter(a =>  a.fecha_salida)

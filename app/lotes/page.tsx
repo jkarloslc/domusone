@@ -48,7 +48,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const PAGE_SIZE = 20
 
-export default function LotesPage({ embedded }: { embedded?: boolean }) {
+function LotesContent({ embedded }: { embedded?: boolean }) {
   const { canWrite, canDelete } = useAuth()
   const [lotes, setLotes]               = useState<Lote[]>([])
   const [secciones, setSecciones]       = useState<Record<number, string>>({})
@@ -377,3 +377,4 @@ function StatsRow({ lotes }: { lotes: Lote[] }) {
     </div>
   )
 }
+export default function LotesPage() { return <LotesContent /> }

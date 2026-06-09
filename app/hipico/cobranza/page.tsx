@@ -750,7 +750,7 @@ export default function CobranzaPage() {
       .select('monto, ctrl_cargos(descripcion)')
       .eq('id_pago_fk', p.id)
 
-    const detList = (det ?? []) as { monto: number; ctrl_cargos?: { descripcion: string } }[]
+    const detList = (det ?? []) as unknown as { monto: number; ctrl_cargos?: { descripcion: string } | null }[]
     const conceptos = detList.length
       ? detList.map(d => ({ descripcion: d.ctrl_cargos?.descripcion ?? `Cobro Hípico ${p.folio}`, importe: d.monto }))
       : [{ descripcion: `Cobro Hípico ${p.folio}`, importe: p.monto_total }]

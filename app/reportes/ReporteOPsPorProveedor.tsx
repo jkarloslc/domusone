@@ -92,7 +92,7 @@ export default function ReporteOPsPorProveedor() {
   const pagadoGlobal = useMemo(() => opsFiltradas.reduce((s, o) => s + Math.max(0, (o.monto ?? 0) - (o.saldo ?? o.monto ?? 0)), 0), [opsFiltradas])
   const saldoGlobal  = useMemo(() => opsFiltradas.reduce((s, o) => s + (o.saldo ?? o.monto ?? 0), 0), [opsFiltradas])
 
-  const tiposGasto = useMemo(() => [...new Set(ops.map(o => o.tipo_gasto).filter(Boolean))].sort(), [ops])
+  const tiposGasto = useMemo(() => Array.from(new Set(ops.map(o => o.tipo_gasto).filter(Boolean))).sort(), [ops])
 
   const toggle = (id: number | null) =>
     setExpanded(prev => { const n = new Set(prev); n.has(id as number) ? n.delete(id as number) : n.add(id as number); return n })
@@ -136,7 +136,7 @@ export default function ReporteOPsPorProveedor() {
 
   return (
     <div>
-      <PrintBar titulo="Órdenes de Pago por Proveedor" />
+      <PrintBar title="Órdenes de Pago por Proveedor" count={opsFiltradas.length} />
 
       {/* Filtros */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16, alignItems: 'flex-end' }}>

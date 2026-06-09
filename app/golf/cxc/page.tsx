@@ -18,6 +18,7 @@ type Cuota = {
   monto_original: number
   descuento: number
   monto_final: number
+  saldo?: number
   status: string
   fecha_emision: string
   fecha_vencimiento: string | null

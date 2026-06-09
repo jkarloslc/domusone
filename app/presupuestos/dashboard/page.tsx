@@ -13,6 +13,7 @@ type Partida     = {
   id_area_fk:           number | null
   id_seccion_fk:        number | null
   id_concepto_fk:       number | null
+  tipo_gasto:           string | null
 }
 type DetMap      = Record<number, Record<number, number>>
 
@@ -125,9 +126,9 @@ export default function DashboardPpto() {
     const concParts = parts.filter(p => p.fuente_real === 'concepto' && p.id_concepto_fk)
     const areaParts = parts.filter(p => p.fuente_real === 'op_area'  && p.id_area_fk)
 
-    const secIds  = [...new Set(secParts.map(p => p.id_seccion_fk!))]
-    const concIds = [...new Set(concParts.map(p => p.id_concepto_fk!))]
-    const areaIds = [...new Set(areaParts.map(p => p.id_area_fk!))]
+    const secIds  = Array.from(new Set(secParts.map(p => p.id_seccion_fk!)))
+    const concIds = Array.from(new Set(concParts.map(p => p.id_concepto_fk!)))
+    const areaIds = Array.from(new Set(areaParts.map(p => p.id_area_fk!)))
 
     const [{ data: secData }, { data: concData }, { data: opsData }] = await Promise.all([
       secIds.length > 0

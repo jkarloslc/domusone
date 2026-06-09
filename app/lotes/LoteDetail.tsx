@@ -56,7 +56,7 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
 
   return (
     <ModalShell modulo="lotes" titulo={lote.cve_lote ?? `Lote #${lote.lote}`} subtitulo={`${tipoDisplay} · ${lote.superficie ? lote.superficie.toLocaleString('es-MX') + ' m²' : 'Sin superficie'}`} onClose={onClose} maxWidth={520}
-      tabs={tabs} activeTab={tab} onTabChange={setTab}
+      tabs={tabs} activeTab={tab} onTabChange={key => setTab(key as 'datos' | 'servicios')}
       footer={
         <div style={{ display: 'flex', gap: 6 }}>
           <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>

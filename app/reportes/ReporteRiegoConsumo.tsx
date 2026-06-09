@@ -142,7 +142,7 @@ export default function ReporteRiegoConsumo() {
 
   return (
     <div style={{ fontFamily: 'sans-serif' }}>
-      <PrintBar title="Reporte Consumo de Agua — Riego Golf" />
+      <PrintBar title="Reporte Consumo de Agua — Riego Golf" count={detalleFiltered.length} />
 
       {/* Filters */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 24, alignItems: 'flex-end' }}>

@@ -9,7 +9,7 @@ const TABS = [
   { id: 'afectaciones', label: 'Servidumbres y Afectaciones' },
 ]
 
-export default function ProyectosPage({ embedded }: { embedded?: boolean }) {
+function ProyectosContent({ embedded }: { embedded?: boolean }) {
   const [tab, setTab] = useState('proyectos')
 
   return (
@@ -43,3 +43,5 @@ export default function ProyectosPage({ embedded }: { embedded?: boolean }) {
     </div>
   )
 }
+
+export default function ProyectosPage() { return <ProyectosContent /> }

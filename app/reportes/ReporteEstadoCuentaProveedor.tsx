@@ -97,7 +97,7 @@ export default function ReporteEstadoCuentaProveedor() {
 
   return (
     <div>
-      <PrintBar titulo={`Estado de Cuenta — ${proveedor?.nombre ?? 'Proveedor'}`} />
+      <PrintBar title={`Estado de Cuenta — ${proveedor?.nombre ?? 'Proveedor'}`} count={ops.length} />
 
       {/* Selector de proveedor + filtros */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20, alignItems: 'flex-end' }}>

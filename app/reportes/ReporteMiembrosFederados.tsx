@@ -46,7 +46,7 @@ export default function ReporteMiembrosFederados() {
     if (periodo) q = q.eq('periodo', Number(periodo))
 
     const { data } = await q
-    setRows((data as FedRow[]) ?? [])
+    setRows((data as unknown as FedRow[]) ?? [])
     setLoading(false)
   }, [periodo])
 
@@ -116,7 +116,7 @@ export default function ReporteMiembrosFederados() {
         </div>
       </div>
 
-      <PrintBar title={`Miembros Federados${periodo ? ` – ${periodo}` : ''}`} tableId="reporte-table" />
+      <PrintBar title={`Miembros Federados${periodo ? ` – ${periodo}` : ''}`} count={filtered.length} />
 
       {/* Tabla */}
       <div id="reporte-print-area">

@@ -146,7 +146,7 @@ function PropietarioModal({ propietario, onClose }: { propietario: any; onClose:
 }
 
 // ════════════════════════════════════════════════════════════════
-export default function ExpedientePage({ embedded }: { embedded?: boolean }) {
+function ExpedienteContent({ embedded }: { embedded?: boolean }) {
   const [search, setSearch]       = useState('')
   const [results, setResults]     = useState<any[]>([])
   const [searching, setSearching] = useState(false)
@@ -486,3 +486,5 @@ export default function ExpedientePage({ embedded }: { embedded?: boolean }) {
     </div>
   )
 }
+
+export default function ExpedientePage() { return <ExpedienteContent /> }

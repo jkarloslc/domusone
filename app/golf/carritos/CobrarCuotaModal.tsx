@@ -13,7 +13,7 @@ type Cuota = {
   monto_original: number
   descuento: number
   monto_final: number
-  saldo: number          // saldo restante a pagar
+  saldo?: number         // saldo restante a pagar (puede no estar en todas las vistas)
   status: string
   fecha_vencimiento: string | null
   tipo: string
@@ -115,7 +115,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           if (r.clave === 'org_subtitulo') setOrgSub(r.valor ?? '')
           if (r.clave === 'org_logo_url')  setOrgLogo(r.valor ?? '')
         })
-      }).catch(() => {})
+      }).then(undefined, () => {})
     Promise.all([
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
       dbGolf.from('cat_socios')

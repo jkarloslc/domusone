@@ -11,7 +11,7 @@ const TABS = [
   { id: 'vehiculos',   label: 'Vehículos Autorizados' },
 ]
 
-export default function AccesosPage({ embedded }: { embedded?: boolean }) {
+function AccesosContent({ embedded }: { embedded?: boolean }) {
   const [tab, setTab] = useState('bitacora')
 
   return (
@@ -52,3 +52,5 @@ export default function AccesosPage({ embedded }: { embedded?: boolean }) {
     </div>
   )
 }
+
+export default function AccesosPage() { return <AccesosContent /> }

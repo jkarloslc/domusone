@@ -11,7 +11,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'recibos', label: 'Recibos', icon: <Receipt  size={14} /> },
 ]
 
-export default function CobranzaPage({ embedded }: { embedded?: boolean }) {
+function CobranzaContent({ embedded }: { embedded?: boolean }) {
   const [tab, setTab] = useState<Tab>('cargos')
 
   return (
@@ -51,3 +51,5 @@ export default function CobranzaPage({ embedded }: { embedded?: boolean }) {
     </div>
   )
 }
+
+export default function CobranzaPage() { return <CobranzaContent /> }
