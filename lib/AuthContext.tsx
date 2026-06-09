@@ -25,6 +25,7 @@ type Rol =
   | 'usuariohipico'
   | 'usuariohospitality'
   | 'usuario_nomina'
+  | 'usuario_organismo'
 
 type AuthUser = {
   user:   User
@@ -45,6 +46,7 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'vigilancia':
     case 'mantenimiento':
     case 'seguridad':
+    case 'usuario_organismo':
       return '/residencial'
     case 'compras':
     case 'compras_supervisor':
@@ -167,6 +169,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   usuariohipico:       HIPICO_MODULOS,
   usuariohospitality:  HOSPITALITY_MODULOS,
   usuario_nomina:      ['compras', 'ordenes-pago'],
+  usuario_organismo:   ['lotes', 'propietarios', 'reportes'],
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -196,6 +199,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   usuariohipico:       HIPICO_MODULOS,
   usuariohospitality:  HOSPITALITY_MODULOS,
   usuario_nomina:      ['ordenes-pago'],
+  usuario_organismo:   [],
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────

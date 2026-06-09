@@ -39,6 +39,7 @@ type Rol =
   | 'usuariohipico'
   | 'usuariohospitality'
   | 'usuario_nomina'
+  | 'usuario_organismo'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -65,6 +66,7 @@ const ROL_LABEL: Record<Rol, string> = {
   usuariohipico:       'Operador Hípico',
   usuariohospitality:  'Operador Hospitality',
   usuario_nomina:      'Usuario Nómina',
+  usuario_organismo:   'Organismo',
 }
 
 // Ítem de reportes con estilo diferenciado (pie de sección)
@@ -433,6 +435,13 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuario_nomina: [
     { section: 'Compras', items: [
       { label: 'Órdenes de Pago', href: '/compras/ordenes-pago', icon: Landmark },
+    ]},
+  ],
+
+  usuario_organismo: [
+    { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+      RPT('residencial'),
     ]},
   ],
 

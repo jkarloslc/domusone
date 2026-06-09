@@ -27,6 +27,7 @@ const ROLES = [
   { value: 'seguridad',           label: 'Seguridad',               desc: 'Accesos, incidencias y requisiciones en consulta' },
   { value: 'usuario_nomina',       label: 'Usuario Nómina',          desc: 'Solo puede crear y ver sus propias órdenes de pago de tipo Nómina' },
   { value: 'usuariogolf',         label: 'Usuario Golf',            desc: 'Acceso exclusivo al módulo Golf: miembros, reservaciones, POS, carritos y reportes' },
+  { value: 'usuario_organismo',   label: 'Usuario Organismo',       desc: 'Solo lectura: Lotes y Propietarios + reportes residenciales (lotes, secciones, propietarios)' },
 ]
 
 export default function UsuariosPage() {
