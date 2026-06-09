@@ -168,7 +168,7 @@ function ReportesContent() {
   const grupoParam    = searchParams.get('grupo')
   const [active, setActive] = useState<string | null>(null)
   const current  = ALL.find(r => r.id === active)
-  const { can }   = useAuth()
+  const { can, canReporte } = useAuth()
 
   // Solo grupos cuyo módulo el usuario puede ver
   const gruposPermitidos = GRUPOS.filter(g => can(g.modulo))
@@ -206,7 +206,10 @@ function ReportesContent() {
       </div>
 
       {/* Grid agrupado */}
-      {!active && gruposVisibles.map(grupo => (
+      {!active && gruposVisibles.map(grupo => {
+        const reportesVisibles = grupo.reportes.filter(r => canReporte(r.id))
+        if (reportesVisibles.length === 0) return null
+        return (
         <div key={grupo.label} style={{ marginBottom: 32 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <div style={{ width: 4, height: 16, borderRadius: 2, background: grupo.color }} />
@@ -215,7 +218,7 @@ function ReportesContent() {
             </span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-            {grupo.reportes.map(r => (
+            {reportesVisibles.map(r => (
               <button key={r.id} onClick={() => setActive(r.id)}
                 className="card card-hover"
                 style={{ padding: '18px 20px', cursor: 'pointer', textAlign: 'left', border: '1px solid #e2e8f0', background: '#fff', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
@@ -230,7 +233,8 @@ function ReportesContent() {
             ))}
           </div>
         </div>
-      ))}
+        )
+      })}
 
       {/* Reportes residencial */}
       {active === 'secciones-lotes'       && <ReporteSeccionesLotes />}

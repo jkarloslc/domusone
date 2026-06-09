@@ -87,6 +87,10 @@ type AuthCtx = {
   canCompras: (key?: string) => 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | 'nomina' | false
   /** ¿Puede AUTORIZAR documentos (Req, OC, Transferencias)? */
   canAuth:    (modulo?: string) => boolean
+  /** ¿Puede ver un reporte específico?
+   *  Si el rol tiene lista en REPORTES_PERMITIDOS solo ve los IDs listados.
+   *  Si no tiene lista (mayoría de roles), cae al permiso de grupo (can(modulo)). */
+  canReporte: (id: string) => boolean
 }
 
 // Módulos que admin puede ver/escribir (todo excepto usuarios y configuracion)
@@ -202,6 +206,20 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   usuario_organismo:   [],
 }
 
+// ── Reportes permitidos por rol (solo para roles con acceso restringido) ────────
+// Si el rol NO aparece aquí puede ver todos los reportes de los grupos que can() permite.
+// Si aparece, solo puede ver los IDs listados.
+const REPORTES_PERMITIDOS: Partial<Record<Rol, string[]>> = {
+  usuario_organismo: [
+    'secciones-lotes',
+    'lotes',
+    'lotes-seccion-clasif',
+    'lotes-resumen-clasif',
+    'propietarios-desglose',
+    'lotes-por-status',
+  ],
+}
+
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
 const ROLES_DELETE: Rol[] = ['superadmin', 'admin']
 
@@ -219,6 +237,7 @@ const AuthContext = createContext<AuthCtx>({
   canDelete:  () => false,
   canCompras: (_key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | 'nomina' | false => false,
   canAuth:    () => false,
+  canReporte: () => false,
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -337,8 +356,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return ROLES_AUTH.includes(authUser.rol)
   }
 
+  /**
+   * ¿Puede ver el reporte con ese ID?
+   * Si el rol tiene lista en REPORTES_PERMITIDOS solo ve los IDs de esa lista.
+   * Si no tiene lista, puede ver cualquier reporte cuyo grupo can() permita.
+   */
+  const canReporte = (id: string): boolean => {
+    if (!authUser) return false
+    const permitidos = REPORTES_PERMITIDOS[authUser.rol]
+    if (!permitidos) return true
+    return permitidos.includes(id)
+  }
+
   return (
-    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can, canWrite, canDelete, canCompras, canAuth }}>
+    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can, canWrite, canDelete, canCompras, canAuth, canReporte }}>
       {children}
     </AuthContext.Provider>
   )
