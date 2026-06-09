@@ -101,7 +101,7 @@ export default function MantenimientoPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('programas_mantenimiento').select('*')
-      .eq('anio', filterAnio).eq('activo', true).order('nombre')
+      .eq('anio', filterAnio).eq('activo', true).eq('modulo', 'mantenimiento').order('nombre')
     if (filterCuad) q = q.eq('id_cuadrante_fk',  Number(filterCuad))
     if (filterSec)  q = q.eq('id_seccion_fk',    Number(filterSec))
     if (filterAC)   q = q.eq('id_area_comun_fk', Number(filterAC))
@@ -525,6 +525,7 @@ function ProgramaModal({ cuadrantes, secciones, areasComunes, prog, onClose, onS
       presupuesto_est:  Number(form.presupuesto_est || 0),
       fecha_inicio:     form.fecha_inicio || null,
       fecha_fin:        form.fecha_fin    || null,
+      modulo:           'mantenimiento',
       updated_at:       new Date().toISOString(),
     }
     let progId = prog?.id

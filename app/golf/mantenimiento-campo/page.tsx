@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbCfg } from '@/lib/supabase'
+import { dbCtrl } from '@/lib/supabase'
 import {
   Leaf, ChevronLeft, ChevronRight, RefreshCw, ChevronDown, Search,
 } from 'lucide-react'
@@ -140,29 +140,15 @@ export default function MantenimientoCampoPage() {
 
   const loadProgramas = useCallback(async () => {
     setLoading(true)
-    const { data: ccs } = await dbCfg
-      .from('centros_costo')
-      .select('id')
-      .eq('nombre', 'Club de Golf')
-      .limit(1)
-    const ccId = ccs?.[0]?.id ?? null
-
-    let q = dbCtrl
+    const { data } = await dbCtrl
       .from('programas_mantenimiento')
       .select('id,nombre,tipo_trabajo,frecuencia,mes_inicio,fecha_fin,responsable,descripcion,activo')
       .eq('anio', anio)
       .eq('activo', true)
+      .eq('modulo', 'golf')
       .order('tipo_trabajo')
       .order('frecuencia')
       .order('nombre')
-
-    if (ccId !== null) {
-      q = q.eq('id_centro_costo_fk', ccId)
-    } else {
-      q = q.eq('created_by', 'programa_golf_2026')
-    }
-
-    const { data } = await q
     setProgramas(data ?? [])
     setLoading(false)
   }, [anio])
