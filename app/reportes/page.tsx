@@ -30,6 +30,7 @@ import ReporteComprasPorProveedor from './ReporteComprasPorProveedor'
 import ReporteIngresos from './ReporteIngresos'
 import ReporteIngresosPorFormaPago from './ReporteIngresosPorFormaPago'
 import ReporteIngresosCuotas from './ReporteIngresosCuotas'
+import ReporteIngresosConceptoCentro from './ReporteIngresosConceptoCentro'
 import ReporteHipicoEstadoCuenta from './ReporteHipicoEstadoCuenta'
 import ReporteHipicoServicios from './ReporteHipicoServicios'
 import ReporteGolfEstadoCuenta from './ReporteGolfEstadoCuenta'
@@ -100,10 +101,11 @@ const GRUPOS = [
     label: 'Ingresos',
     color: '#059669',
     reportes: [
-      { id: 'ingresos-tipo',       label: 'Ingresos por Tipo',              icon: TrendingDown, desc: 'Recibos agrupados por tipo de ingreso (Golf, Cuotas, Rentas, Caballerizas)' },
-      { id: 'ingresos-centro',     label: 'Ingresos por Centro',            icon: Building2,    desc: 'Recibos agrupados por centro de ingreso con desglose de forma de pago' },
-      { id: 'ingresos-formas-pago', label: 'Ingresos por Forma de Pago',   icon: Wallet,       desc: 'Matriz de ingresos por centro de ingreso con columnas por forma de pago — filtrable por centro y forma' },
-      { id: 'ingresos-cuotas',      label: 'Cuotas por Sección y Concepto', icon: Building2,    desc: 'Cuotas residenciales desglosadas por sección y concepto — solo centros de tipo Cuotas con desglose por sección' },
+      { id: 'ingresos-tipo',            label: 'Ingresos por Tipo',                       icon: TrendingDown, desc: 'Recibos agrupados por tipo de ingreso (Golf, Cuotas, Rentas, Caballerizas)' },
+      { id: 'ingresos-centro',          label: 'Ingresos por Centro',                     icon: Building2,    desc: 'Recibos agrupados por centro de ingreso con desglose de forma de pago' },
+      { id: 'ingresos-concepto-centro', label: 'Ingresos por Concepto y Centro',          icon: BarChart3,    desc: 'Ingresos desglosados por concepto de cobro dentro de cada centro de ingreso — vista jerárquica y pivot' },
+      { id: 'ingresos-formas-pago',     label: 'Ingresos por Forma de Pago',             icon: Wallet,       desc: 'Matriz de ingresos por centro de ingreso con columnas por forma de pago — filtrable por centro y forma' },
+      { id: 'ingresos-cuotas',          label: 'Cuotas por Sección y Concepto',          icon: Building2,    desc: 'Cuotas residenciales desglosadas por sección y concepto — solo centros de tipo Cuotas con desglose por sección' },
     ],
   },
   {
@@ -263,10 +265,11 @@ function ReportesContent() {
 
       {/* Reportes compras */}
       {/* Reportes ingresos */}
-      {active === 'ingresos-tipo'        && <ReporteIngresos />}
-      {active === 'ingresos-centro'      && <ReporteIngresos />}
-      {active === 'ingresos-formas-pago' && <ReporteIngresosPorFormaPago />}
-      {active === 'ingresos-cuotas'      && <ReporteIngresosCuotas />}
+      {active === 'ingresos-tipo'            && <ReporteIngresos />}
+      {active === 'ingresos-centro'          && <ReporteIngresos />}
+      {active === 'ingresos-concepto-centro' && <ReporteIngresosConceptoCentro />}
+      {active === 'ingresos-formas-pago'     && <ReporteIngresosPorFormaPago />}
+      {active === 'ingresos-cuotas'          && <ReporteIngresosCuotas />}
 
       {/* Reportes compras */}
       {active === 'consumo-cc'       && <ReporteConsumoCentroCosto />}
