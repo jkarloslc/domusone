@@ -1,0 +1,2 @@
+ALTER TABLE cfg.cuadrantes
+  ADD COLUMN IF NOT EXISTS color TEXT;

@@ -48,6 +48,7 @@ const CATALOGOS: CatConfig[] = [
     desc:         'Cuadrantes de mantenimiento — agrupan secciones para el Programa Anual',
     campos: [
       { key: 'nombre',      label: 'Nombre *',    type: 'text',    required: true },
+      { key: 'color',       label: 'Color (hex)', type: 'text' },
       { key: 'descripcion', label: 'Descripción', type: 'textarea' },
     ],
   },
