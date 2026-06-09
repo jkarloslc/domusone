@@ -264,13 +264,27 @@ export default function MantenimientoPage() {
                   const comp   = tareas.filter((t: any) => t.status === 'Completada').length
                   const pct    = tareas.length ? Math.round((comp / tareas.length) * 100) : 0
                   const proxima = tareas.find((t: any) => t.status === 'Pendiente')
-                  const rowColor = prog.id_cuadrante_fk ? cuadColorMap[prog.id_cuadrante_fk] : undefined
+                  const rowColor   = prog.id_cuadrante_fk ? cuadColorMap[prog.id_cuadrante_fk] : undefined
+                  const cuadNombre = prog.id_cuadrante_fk ? cuadMap[prog.id_cuadrante_fk]      : undefined
                   return (
-                    <tr key={prog.id} style={rowColor ? { borderLeft: `4px solid ${rowColor}` } : undefined}>
+                    <tr key={prog.id} style={rowColor ? {
+                      borderLeft:  `5px solid ${rowColor}`,
+                      background:  `${rowColor}12`,
+                    } : undefined}>
                       <td>
                         <div style={{ fontWeight: 600, fontSize: 13 }}>{prog.nombre}</div>
+                        {cuadNombre && rowColor && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                            marginTop: 4, background: rowColor, color: '#fff',
+                            letterSpacing: '0.04em', textTransform: 'uppercase',
+                          }}>
+                            {cuadNombre}
+                          </span>
+                        )}
                         {prog.responsable && (
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{prog.responsable}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>{prog.responsable}</div>
                         )}
                       </td>
                       <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{prog.tipo_trabajo ?? '—'}</td>
