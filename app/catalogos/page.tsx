@@ -907,6 +907,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
   const [detailRow, setDetailRow] = useState<any | null>(null)
+  const [detailAreasRow, setDetailAreasRow] = useState<any | null>(null)
   const [page, setPage]       = useState(1)
   // Mapa de selects: { campo_key: { id: nombre } }
   const [selectMaps, setSelectMaps] = useState<Record<string, Record<number, string>>>({})
@@ -1042,6 +1043,12 @@ function CatalogoTable({ config }: { config: CatConfig }) {
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                    {config.key === 'secciones' && (
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#059669' }}
+                        title="Áreas Comunes" onClick={() => setDetailAreasRow(row)}>
+                        <Flag size={13} />
+                      </button>
+                    )}
                     {config.hasDetail && (
                       <button className="btn-ghost" style={{ padding: '4px 6px', color: '#0f766e' }} onClick={() => setDetailRow(row)}>
                         <Eye size={13} />
@@ -1099,6 +1106,12 @@ function CatalogoTable({ config }: { config: CatConfig }) {
           row={modal === 'new' ? null : modal}
           onClose={() => setModal(null)}
           onSaved={() => { setModal(null); fetchData() }}
+        />
+      )}
+      {detailAreasRow !== null && config.key === 'secciones' && (
+        <SeccionAreasComunes
+          seccion={detailAreasRow}
+          onClose={() => { setDetailAreasRow(null); fetchData() }}
         />
       )}
       {detailRow !== null && config.key === 'cuadrantes' && (
@@ -1479,6 +1492,153 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
         padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           {seleccion.size} sección{seleccion.size !== 1 ? 'es' : ''} asignada{seleccion.size !== 1 ? 's' : ''}
+        </span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
+            Guardar
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// SeccionAreasComunes — asigna/quita áreas comunes de una sección
+// ══════════════════════════════════════════════════════════════
+function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () => void }) {
+  const [todas,     setTodas]     = useState<any[]>([])
+  const [seleccion, setSeleccion] = useState<Set<number>>(new Set())
+  const [inicial,   setInicial]   = useState<Set<number>>(new Set())
+  const [busqueda,  setBusqueda]  = useState('')
+  const [loading,   setLoading]   = useState(true)
+  const [saving,    setSaving]    = useState(false)
+  const [error,     setError]     = useState('')
+  const [nueva,     setNueva]     = useState('')
+  const [creando,   setCreando]   = useState(false)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    const { data } = await dbCfg
+      .from('areas_comunes')
+      .select('id, nombre, id_seccion_fk')
+      .eq('activo', true)
+      .order('nombre')
+    setTodas(data ?? [])
+    const asignadas = new Set<number>(
+      (data ?? []).filter((a: any) => a.id_seccion_fk === seccion.id).map((a: any) => Number(a.id))
+    )
+    setSeleccion(new Set(asignadas))
+    setInicial(new Set(asignadas))
+    setLoading(false)
+  }, [seccion.id])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const toggle = (id: number) =>
+    setSeleccion(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+
+  const crearYAsignar = async () => {
+    if (!nueva.trim()) return
+    setCreando(true)
+    const { data, error: e } = await dbCfg
+      .from('areas_comunes')
+      .insert({ nombre: nueva.trim(), id_seccion_fk: seccion.id, activo: true })
+      .select('id').single()
+    if (e) { setError(e.message); setCreando(false); return }
+    setNueva('')
+    setCreando(false)
+    fetchData()
+  }
+
+  const handleSave = async () => {
+    setSaving(true); setError('')
+    const added   = Array.from(seleccion).filter(id => !inicial.has(id))
+    const removed = Array.from(inicial).filter(id => !seleccion.has(id))
+    if (added.length === 0 && removed.length === 0) { onClose(); return }
+    if (added.length > 0) {
+      const { error: e } = await dbCfg.from('areas_comunes')
+        .update({ id_seccion_fk: seccion.id }).in('id', added)
+      if (e) { setError(e.message); setSaving(false); return }
+    }
+    if (removed.length > 0) {
+      const { error: e } = await dbCfg.from('areas_comunes')
+        .update({ id_seccion_fk: null }).in('id', removed)
+      if (e) { setError(e.message); setSaving(false); return }
+    }
+    setSaving(false); onClose()
+  }
+
+  const filtradas = todas.filter(a => a.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+
+  return (
+    <ModalShell modulo="residencial" titulo={`Áreas Comunes — ${seccion.nombre}`} onClose={onClose} maxWidth={480}>
+      {/* Crear nueva área común inline */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0',
+        display: 'flex', gap: 8 }}>
+        <input className="input" placeholder="Nueva área común…" value={nueva}
+          onChange={e => setNueva(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && crearYAsignar()}
+          style={{ fontSize: 13, flex: 1 }} />
+        <button className="btn-primary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}
+          onClick={crearYAsignar} disabled={creando || !nueva.trim()}>
+          {creando ? <Loader size={11} className="animate-spin" /> : <Plus size={11} />}
+          Crear
+        </button>
+      </div>
+      {/* Buscar entre existentes */}
+      <div style={{ padding: '8px 16px', borderBottom: '1px solid #f1f5f9' }}>
+        <input className="input" placeholder="Buscar área común existente…" value={busqueda}
+          onChange={e => setBusqueda(e.target.value)} style={{ fontSize: 13 }} />
+      </div>
+      <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 260px)', padding: '8px 0' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 32 }}>
+            <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+          </div>
+        ) : filtradas.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>
+            Sin áreas comunes
+          </div>
+        ) : filtradas.map(a => {
+          const checked = seleccion.has(a.id)
+          const otraSeccion = a.id_seccion_fk && a.id_seccion_fk !== seccion.id
+          return (
+            <label key={a.id} onClick={() => toggle(a.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
+                cursor: 'pointer', background: checked ? '#f0fdf4' : 'transparent',
+                borderLeft: `3px solid ${checked ? '#16a34a' : 'transparent'}`,
+                transition: 'background 0.15s', opacity: otraSeccion ? 0.5 : 1 }}>
+              <input type="checkbox" checked={checked} onChange={() => toggle(a.id)}
+                style={{ accentColor: '#16a34a', width: 15, height: 15 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400,
+                  color: checked ? '#15803d' : '#1e293b' }}>
+                  {a.nombre}
+                </span>
+                {otraSeccion && (
+                  <div style={{ fontSize: 11, color: '#d97706', marginTop: 1 }}>
+                    Asignada a otra sección
+                  </div>
+                )}
+              </div>
+              {checked && <CheckCircle size={14} style={{ color: '#16a34a', flexShrink: 0 }} />}
+            </label>
+          )
+        })}
+      </div>
+      {error && (
+        <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
+          border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>
+          {error}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          {seleccion.size} área{seleccion.size !== 1 ? 's' : ''} asignada{seleccion.size !== 1 ? 's' : ''}
         </span>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
