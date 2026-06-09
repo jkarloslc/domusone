@@ -39,17 +39,31 @@ type Campo = {
 
 const CATALOGOS: CatConfig[] = [
   {
+    key:          'cuadrantes',
+    tabla:        'cuadrantes',
+    label:        'Cuadrantes',
+    icon:         Grid3x3,
+    color:        '#0891b2',
+    sectionLabel: 'Mantenimiento',
+    desc:         'Cuadrantes de mantenimiento — agrupan secciones para el Programa Anual',
+    campos: [
+      { key: 'nombre',      label: 'Nombre *',    type: 'text',    required: true },
+      { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+    ],
+  },
+  {
     key:       'secciones',
     tabla:     'secciones',
     label:     'Secciones',
     icon:      MapPin,
     color:     '#2563eb',
-    desc:      'Secciones residenciales — se relacionan con lotes y cobranza',
+    desc:      'Secciones residenciales — se relacionan con lotes, cobranza y mantenimiento',
     hasDetail: true,
     campos: [
       { key: 'nombre',              label: 'Nombre *',             type: 'text',   required: true },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
+      { key: 'id_cuadrante_fk',     label: 'Cuadrante',            type: 'select', selectTabla: 'cuadrantes' },
       { key: 'fecha_autorizacion',  label: 'Fecha de Autorización',type: 'date' },
       { key: 'cantidad_lotes',      label: 'Cantidad de Lotes',    type: 'number' },
       { key: 'expediente_url',      label: 'Expediente Digital',   type: 'file',   bucket: 'expedientes' },
@@ -100,6 +114,19 @@ const CATALOGOS: CatConfig[] = [
     hasDetail: true,
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+    ],
+  },
+  {
+    key:   'areas_comunes',
+    tabla: 'areas_comunes',
+    label: 'Áreas Comunes',
+    icon:  Flag,
+    color: '#059669',
+    desc:  'Áreas comunes o frentes de mantenimiento dentro de una Sección — usadas en el Programa Anual',
+    campos: [
+      { key: 'nombre',        label: 'Nombre *',  type: 'text',    required: true },
+      { key: 'descripcion',   label: 'Descripción', type: 'textarea' },
+      { key: 'id_seccion_fk', label: 'Sección',   type: 'select',  selectTabla: 'secciones' },
     ],
   },
   {

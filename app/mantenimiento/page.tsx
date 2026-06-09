@@ -67,37 +67,34 @@ export default function MantenimientoPage() {
   const { canWrite, canDelete } = useAuth()
   const [tab,          setTab]        = useState<'programa' | 'ordenes' | 'ordenes_cuadrilla' | 'servicios'>('programa')
   const [programas,    setProgramas]  = useState<any[]>([])
-  const [areas,       setAreas]  = useState<any[]>([])
-  const [areaMap,     setAreaMap]     = useState<Record<number, string>>({})
-  const [centrosCosto, setCentros]    = useState<any[]>([])
-  const [ccMap,        setCcMap]      = useState<Record<number, string>>({})
-  const [frentes,      setFrentes]    = useState<any[]>([])
-  const [frMap,        setFrMap]      = useState<Record<number, string>>({})
-  const [relAF,        setRelAF]      = useState<{id_area: number; id_frente: number}[]>([])
+  const [cuadrantes,   setCuadrantes]   = useState<any[]>([])
+  const [cuadMap,      setCuadMap]      = useState<Record<number, string>>({})
+  const [secciones,    setSecciones]    = useState<any[]>([])
+  const [secMap,       setSecMap]       = useState<Record<number, string>>({})
+  const [areasComunes, setAreasComunes] = useState<any[]>([])
+  const [acMap,        setAcMap]        = useState<Record<number, string>>({})
   const [loading,      setLoading]    = useState(true)
   const [filterAnio,   setFilterAnio] = useState(new Date().getFullYear())
-  const [filterCC,     setFilterCC]   = useState('')
-  const [filterArea,  setFilterArea]  = useState('')
-  const [filterFr,     setFilterFr]   = useState('')
+  const [filterCuad,   setFilterCuad] = useState('')
+  const [filterSec,    setFilterSec]  = useState('')
+  const [filterAC,     setFilterAC]   = useState('')
   const [modal,        setModal]      = useState(false)
   const [editing,      setEditing]    = useState<any | null>(null)
   const [detail,       setDetail]     = useState<any | null>(null)
 
   useEffect(() => {
     Promise.all([
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-    ]).then(([{ data: secs }, { data: ccs }, { data: frs }, { data: relaf }]) => {
-      setAreas(secs ?? [])
-      setCentros(ccs ?? [])
-      setFrentes(frs ?? [])
-      setRelAF((relaf ?? []) as any)
+      dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('secciones').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas_comunes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
+    ]).then(([{ data: cuads }, { data: secs }, { data: acs }]) => {
+      setCuadrantes(cuads ?? [])
+      setSecciones(secs ?? [])
+      setAreasComunes(acs ?? [])
+      const cm: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
-      const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
-      const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
-      setAreaMap(sm); setCcMap(cm); setFrMap(fm)
+      const am: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { am[a.id] = a.nombre })
+      setCuadMap(cm); setSecMap(sm); setAcMap(am)
     })
   }, [])
 
@@ -105,9 +102,9 @@ export default function MantenimientoPage() {
     setLoading(true)
     let q = dbCtrl.from('programas_mantenimiento').select('*')
       .eq('anio', filterAnio).eq('activo', true).order('nombre')
-    if (filterCC)  q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
-    if (filterFr)  q = q.eq('id_frente_fk', Number(filterFr))
+    if (filterCuad) q = q.eq('id_cuadrante_fk',  Number(filterCuad))
+    if (filterSec)  q = q.eq('id_seccion_fk',    Number(filterSec))
+    if (filterAC)   q = q.eq('id_area_comun_fk', Number(filterAC))
     const { data: progs } = await q
 
     if (!progs?.length) { setProgramas([]); setLoading(false); return }
@@ -124,7 +121,7 @@ export default function MantenimientoPage() {
 
     setProgramas(progs.map((p: any) => ({ ...p, tareas: tMap[p.id] ?? [] })))
     setLoading(false)
-  }, [filterAnio, filterCC, filterArea, filterFr])
+  }, [filterAnio, filterCuad, filterSec, filterAC])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -207,34 +204,28 @@ export default function MantenimientoPage() {
               onChange={e => setFilterAnio(Number(e.target.value))}>
               {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
             </select>
-            <select className="select" style={{ width: 220 }} value={filterCC}
-              onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setFilterFr('') }}>
-              <option value="">Centro de costo</option>
-              {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            <select className="select" style={{ width: 200 }} value={filterCuad}
+              onChange={e => { setFilterCuad(e.target.value); setFilterSec(''); setFilterAC('') }}>
+              <option value="">Cuadrante</option>
+              {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
-            <select className="select" style={{ width: 190 }} value={filterArea}
-              onChange={e => { setFilterArea(e.target.value); setFilterFr('') }}>
-              <option value="">Área</option>
-              {(areas as any[])
-                .filter(s => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+            <select className="select" style={{ width: 190 }} value={filterSec}
+              onChange={e => { setFilterSec(e.target.value); setFilterAC('') }}>
+              <option value="">Sección</option>
+              {secciones
+                .filter(s => !filterCuad || s.id_cuadrante_fk === Number(filterCuad))
                 .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
-            <select className="select" style={{ width: 160 }} value={filterFr}
-              onChange={e => setFilterFr(e.target.value)}>
-              <option value="">Frente</option>
-              {(() => {
-                const aId = Number(filterArea)
-                const permitidos = filterArea
-                  ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
-                  : null
-                return frentes
-                  .filter(f => !permitidos || permitidos.has(f.id))
-                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
-              })()}
+            <select className="select" style={{ width: 190 }} value={filterAC}
+              onChange={e => setFilterAC(e.target.value)}>
+              <option value="">Área Común</option>
+              {areasComunes
+                .filter(a => !filterSec || a.id_seccion_fk === Number(filterSec))
+                .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
-            {(filterCC || filterArea || filterFr) && (
+            {(filterCuad || filterSec || filterAC) && (
               <button className="btn-ghost" style={{ color: '#dc2626' }}
-                onClick={() => { setFilterCC(''); setFilterArea(''); setFilterFr('') }}>
+                onClick={() => { setFilterCuad(''); setFilterSec(''); setFilterAC('') }}>
                 <X size={13} /> Limpiar
               </button>
             )}
@@ -251,7 +242,7 @@ export default function MantenimientoPage() {
                   <th>Programa</th>
                   <th>Tipo</th>
                   <th>Frecuencia</th>
-                  <th>Área</th>
+                  <th>Sección / Área Común</th>
                   <th>Periodo</th>
                   <th>Progreso</th>
                   <th style={{ width: 80 }}></th>
@@ -281,8 +272,14 @@ export default function MantenimientoPage() {
                       </td>
                       <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{prog.tipo_trabajo ?? '—'}</td>
                       <td style={{ fontSize: 13 }}>{prog.frecuencia}</td>
-                      <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                        {prog.id_area_fk ? areaMap[prog.id_area_fk] : '—'}
+                      <td style={{ fontSize: 13 }}>
+                        {prog.id_seccion_fk
+                          ? <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>{secMap[prog.id_seccion_fk] ?? '—'}</span>
+                          : null}
+                        {prog.id_seccion_fk && prog.id_area_comun_fk ? <br /> : null}
+                        {prog.id_area_comun_fk
+                          ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{acMap[prog.id_area_comun_fk]}</span>
+                          : (!prog.id_seccion_fk ? <span style={{ color: 'var(--text-muted)' }}>—</span> : null)}
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                         {prog.fecha_inicio ? fmtDate(prog.fecha_inicio) : '—'}
@@ -335,10 +332,10 @@ export default function MantenimientoPage() {
         </div>
       )}
 
-      {modal  && <ProgramaModal areas={areas} prog={editing}
+      {modal  && <ProgramaModal cuadrantes={cuadrantes} secciones={secciones} areasComunes={areasComunes} prog={editing}
         onClose={() => setModal(false)}
         onSaved={() => { setModal(false); fetchData() }} />}
-      {detail && <ProgramaDetail prog={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap}
+      {detail && <ProgramaDetail prog={detail} cuadMap={cuadMap} secMap={secMap} acMap={acMap}
         onClose={() => { setDetail(null); fetchData() }}
         onEdit={() => { setDetail(null); setEditing(detail); setModal(true) }} />}
     </div>
@@ -469,29 +466,27 @@ function MiniCalendario({ tareas, onRefresh, prog, areaMap }: {
 // ═══════════════════════════════════════════════════════════════
 // Modal Nuevo/Editar Programa
 // ═══════════════════════════════════════════════════════════════
-function ProgramaModal({ areas, prog, onClose, onSaved }: {
-  areas: any[]; prog: any; onClose: () => void; onSaved: () => void
+function ProgramaModal({ cuadrantes, secciones, areasComunes, prog, onClose, onSaved }: {
+  cuadrantes: any[]; secciones: any[]; areasComunes: any[]
+  prog: any; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
-  const [centrosCosto, setCentros] = useState<any[]>([])
-  const [frentes, setFrentes]      = useState<any[]>([])
-  const [relAF, setRelAFProg]      = useState<{id_area: number; id_frente: number}[]>([])
   const [form, setForm] = useState({
-    nombre:             prog?.nombre             ?? '',
-    anio:               prog?.anio?.toString()   ?? new Date().getFullYear().toString(),
-    id_area_fk:         prog?.id_area_fk?.toString() ?? '',
-    id_centro_costo_fk: prog?.id_centro_costo_fk?.toString() ?? '',
-    id_frente_fk:       prog?.id_frente_fk?.toString() ?? '',
-    tipo_trabajo:       prog?.tipo_trabajo       ?? '',
-    frecuencia:         prog?.frecuencia         ?? 'Mensual',
-    mes_inicio:         prog?.mes_inicio?.toString() ?? '1',
-    responsable:        prog?.responsable        ?? '',
-    descripcion:        prog?.descripcion        ?? '',
-    presupuesto_est:    prog?.presupuesto_est?.toString() ?? '0',
-    fecha_inicio:       prog?.fecha_inicio       ?? '',
-    fecha_fin:          prog?.fecha_fin          ?? '',
+    nombre:           prog?.nombre             ?? '',
+    anio:             prog?.anio?.toString()   ?? new Date().getFullYear().toString(),
+    id_cuadrante_fk:  prog?.id_cuadrante_fk?.toString()  ?? '',
+    id_seccion_fk:    prog?.id_seccion_fk?.toString()    ?? '',
+    id_area_comun_fk: prog?.id_area_comun_fk?.toString() ?? '',
+    tipo_trabajo:     prog?.tipo_trabajo       ?? '',
+    frecuencia:       prog?.frecuencia         ?? 'Mensual',
+    mes_inicio:       prog?.mes_inicio?.toString() ?? '1',
+    responsable:      prog?.responsable        ?? '',
+    descripcion:      prog?.descripcion        ?? '',
+    presupuesto_est:  prog?.presupuesto_est?.toString() ?? '0',
+    fecha_inicio:     prog?.fecha_inicio       ?? '',
+    fecha_fin:        prog?.fecha_fin          ?? '',
   })
   const [regenerarTareas, setRegenerarTareas] = useState(false)
 
@@ -511,38 +506,26 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.anio, form.frecuencia, form.mes_inicio])
 
-  useEffect(() => {
-    Promise.all([
-      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-    ]).then(([cc, fr, rel]) => {
-      setCentros(cc.data ?? [])
-      setFrentes(fr.data ?? [])
-      setRelAFProg((rel.data ?? []) as any)
-    })
-  }, [])
-
   const totalFechas = generarFechas(Number(form.anio), form.frecuencia, Number(form.mes_inicio)).length
 
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
     setSaving(true); setError('')
     const payload = {
-      nombre:             form.nombre.trim(),
-      anio:               Number(form.anio),
-      id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
-      id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
-      id_frente_fk:       form.id_frente_fk        ? Number(form.id_frente_fk)       : null,
-      tipo_trabajo:       form.tipo_trabajo || null,
-      frecuencia:         form.frecuencia,
-      mes_inicio:         Number(form.mes_inicio),
-      responsable:        form.responsable.trim() || null,
-      descripcion:        form.descripcion.trim() || null,
-      presupuesto_est:    Number(form.presupuesto_est || 0),
-      fecha_inicio:       form.fecha_inicio || null,
-      fecha_fin:          form.fecha_fin    || null,
-      updated_at:         new Date().toISOString(),
+      nombre:           form.nombre.trim(),
+      anio:             Number(form.anio),
+      id_cuadrante_fk:  form.id_cuadrante_fk  ? Number(form.id_cuadrante_fk)  : null,
+      id_seccion_fk:    form.id_seccion_fk    ? Number(form.id_seccion_fk)    : null,
+      id_area_comun_fk: form.id_area_comun_fk ? Number(form.id_area_comun_fk) : null,
+      tipo_trabajo:     form.tipo_trabajo || null,
+      frecuencia:       form.frecuencia,
+      mes_inicio:       Number(form.mes_inicio),
+      responsable:      form.responsable.trim() || null,
+      descripcion:      form.descripcion.trim() || null,
+      presupuesto_est:  Number(form.presupuesto_est || 0),
+      fecha_inicio:     form.fecha_inicio || null,
+      fecha_fin:        form.fecha_fin    || null,
+      updated_at:       new Date().toISOString(),
     }
     let progId = prog?.id
     if (prog) {
@@ -611,34 +594,29 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-            <div><label className="label" style={{ fontSize: 11 }}>Centro de Costo</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk}
-                onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
+            <div><label className="label" style={{ fontSize: 11 }}>Cuadrante</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_cuadrante_fk}
+                onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_seccion_fk: '', id_area_comun_fk: '' }))}>
                 <option value="">—</option>
-                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
-            <div><label className="label" style={{ fontSize: 11 }}>Área</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk}
-                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}>
+            <div><label className="label" style={{ fontSize: 11 }}>Sección</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_seccion_fk}
+                onChange={e => setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_area_comun_fk: '' }))}>
                 <option value="">—</option>
-                {(areas as any[])
-                  .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                {secciones
+                  .filter(s => !form.id_cuadrante_fk || s.id_cuadrante_fk === Number(form.id_cuadrante_fk))
                   .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </div>
-            <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk}
-                onChange={setF('id_frente_fk')} disabled={!form.id_area_fk}>
-                <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
-                {(() => {
-                  if (!form.id_area_fk) return null
-                  const aId = Number(form.id_area_fk)
-                  const permitidos = new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
-                  return frentes
-                    .filter(f => permitidos.has(f.id))
-                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
-                })()}
+            <div><label className="label" style={{ fontSize: 11 }}>Área Común</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_area_comun_fk}
+                onChange={setF('id_area_comun_fk')} disabled={!form.id_seccion_fk}>
+                <option value="">— {form.id_seccion_fk ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                {areasComunes
+                  .filter(a => !form.id_seccion_fk || a.id_seccion_fk === Number(form.id_seccion_fk))
+                  .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
           </div>
@@ -704,11 +682,11 @@ function ProgramaModal({ areas, prog, onClose, onSaved }: {
 // ═══════════════════════════════════════════════════════════════
 // Detalle del Programa
 // ═══════════════════════════════════════════════════════════════
-function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose, onEdit }: {
+function ProgramaDetail({ prog, cuadMap, secMap, acMap, onClose, onEdit }: {
   prog: any
-  areaMap: Record<number, string>
-  ccMap: Record<number, string>
-  frMap: Record<number, string>
+  cuadMap: Record<number, string>
+  secMap: Record<number, string>
+  acMap: Record<number, string>
   onClose: () => void
   onEdit?: () => void
 }) {
@@ -845,9 +823,9 @@ function ProgramaDetail({ prog, areaMap, ccMap, frMap, onClose, onEdit }: {
         ${prog.tipo_trabajo ? `<div><div class="lbl">Tipo de Trabajo</div><div class="val">${prog.tipo_trabajo}</div></div>` : ''}
         <div><div class="lbl">Frecuencia</div><div class="val">${prog.frecuencia}</div></div>
         ${prog.responsable ? `<div><div class="lbl">Responsable</div><div class="val">${prog.responsable}</div></div>` : ''}
-        ${prog.id_centro_costo_fk && ccMap[prog.id_centro_costo_fk] ? `<div><div class="lbl">Centro de Costo</div><div class="val">${ccMap[prog.id_centro_costo_fk]}</div></div>` : ''}
-        ${prog.id_area_fk && areaMap[prog.id_area_fk] ? `<div><div class="lbl">Área</div><div class="val">${areaMap[prog.id_area_fk]}</div></div>` : ''}
-        ${prog.id_frente_fk && frMap[prog.id_frente_fk] ? `<div><div class="lbl">Frente</div><div class="val">${frMap[prog.id_frente_fk]}</div></div>` : ''}
+        ${prog.id_cuadrante_fk && cuadMap[prog.id_cuadrante_fk] ? `<div><div class="lbl">Cuadrante</div><div class="val">${cuadMap[prog.id_cuadrante_fk]}</div></div>` : ''}
+        ${prog.id_seccion_fk && secMap[prog.id_seccion_fk] ? `<div><div class="lbl">Sección</div><div class="val">${secMap[prog.id_seccion_fk]}</div></div>` : ''}
+        ${prog.id_area_comun_fk && acMap[prog.id_area_comun_fk] ? `<div><div class="lbl">Área Común</div><div class="val">${acMap[prog.id_area_comun_fk]}</div></div>` : ''}
         ${prog.fecha_inicio ? `<div><div class="lbl">Fecha Inicio</div><div class="val">${fmtDate(prog.fecha_inicio)}</div></div>` : ''}
         ${prog.fecha_fin ? `<div><div class="lbl">Fecha Fin</div><div class="val">${fmtDate(prog.fecha_fin)}</div></div>` : ''}
         ${prog.presupuesto_est ? `<div><div class="lbl">Presupuesto Est.</div><div class="val">$${Number(prog.presupuesto_est).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div></div>` : ''}
