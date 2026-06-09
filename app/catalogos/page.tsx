@@ -46,6 +46,7 @@ const CATALOGOS: CatConfig[] = [
     color:        '#0891b2',
     sectionLabel: 'Mantenimiento',
     desc:         'Cuadrantes de mantenimiento — agrupan secciones para el Programa Anual',
+    hasDetail: true,
     campos: [
       { key: 'nombre',      label: 'Nombre *',    type: 'text',    required: true },
       { key: 'color',       label: 'Color (hex)', type: 'text' },
@@ -1100,6 +1101,12 @@ function CatalogoTable({ config }: { config: CatConfig }) {
           onSaved={() => { setModal(null); fetchData() }}
         />
       )}
+      {detailRow !== null && config.key === 'cuadrantes' && (
+        <CuadranteSecciones
+          cuadrante={detailRow}
+          onClose={() => { setDetailRow(null); fetchData() }}
+        />
+      )}
       {detailRow !== null && config.key === 'secciones' && (
         <SeccionLotesDetail
           seccion={detailRow}
@@ -1375,6 +1382,112 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
           )}
         </div>
 
+    </ModalShell>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// CuadranteSecciones — asigna/quita secciones de un cuadrante
+// ══════════════════════════════════════════════════════════════
+function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: () => void }) {
+  const [todas,     setTodas]     = useState<any[]>([])
+  const [seleccion, setSeleccion] = useState<Set<number>>(new Set())
+  const [inicial,   setInicial]   = useState<Set<number>>(new Set())
+  const [busqueda,  setBusqueda]  = useState('')
+  const [loading,   setLoading]   = useState(true)
+  const [saving,    setSaving]    = useState(false)
+  const [error,     setError]     = useState('')
+
+  useEffect(() => {
+    setLoading(true)
+    dbCfg.from('secciones').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => {
+        setTodas(data ?? [])
+        const asignadas = new Set<number>(
+          (data ?? []).filter((s: any) => s.id_cuadrante_fk === cuadrante.id).map((s: any) => Number(s.id))
+        )
+        setSeleccion(new Set(asignadas))
+        setInicial(new Set(asignadas))
+        setLoading(false)
+      })
+  }, [cuadrante.id])
+
+  const toggle = (id: number) =>
+    setSeleccion(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+
+  const handleSave = async () => {
+    setSaving(true); setError('')
+    const added   = Array.from(seleccion).filter(id => !inicial.has(id))
+    const removed = Array.from(inicial).filter(id => !seleccion.has(id))
+    if (added.length === 0 && removed.length === 0) { onClose(); return }
+    if (added.length > 0) {
+      const { error: e } = await dbCfg.from('secciones')
+        .update({ id_cuadrante_fk: cuadrante.id }).in('id', added)
+      if (e) { setError(e.message); setSaving(false); return }
+    }
+    if (removed.length > 0) {
+      const { error: e } = await dbCfg.from('secciones')
+        .update({ id_cuadrante_fk: null }).in('id', removed)
+      if (e) { setError(e.message); setSaving(false); return }
+    }
+    setSaving(false); onClose()
+  }
+
+  const filtradas = todas.filter(s => s.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+
+  return (
+    <ModalShell modulo="residencial" titulo={`Secciones — ${cuadrante.nombre}`} onClose={onClose} maxWidth={480}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
+        <input className="input" placeholder="Buscar sección…" value={busqueda}
+          onChange={e => setBusqueda(e.target.value)} style={{ fontSize: 13 }} />
+      </div>
+      <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 200px)', padding: '8px 0' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 32 }}>
+            <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+          </div>
+        ) : filtradas.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>
+            Sin secciones
+          </div>
+        ) : filtradas.map(s => {
+          const checked = seleccion.has(s.id)
+          return (
+            <label key={s.id} onClick={() => toggle(s.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
+                cursor: 'pointer', background: checked ? '#eff6ff' : 'transparent',
+                borderLeft: `3px solid ${checked ? 'var(--blue)' : 'transparent'}`,
+                transition: 'background 0.15s' }}>
+              <input type="checkbox" checked={checked} onChange={() => toggle(s.id)}
+                style={{ accentColor: 'var(--blue)', width: 15, height: 15 }} />
+              <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400,
+                color: checked ? '#1d4ed8' : '#1e293b' }}>
+                {s.nombre}
+              </span>
+              {checked && <CheckCircle size={14} style={{ color: '#2563eb', marginLeft: 'auto', flexShrink: 0 }} />}
+            </label>
+          )
+        })}
+      </div>
+      {error && (
+        <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
+          border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>
+          {error}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
+        padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          {seleccion.size} sección{seleccion.size !== 1 ? 'es' : ''} asignada{seleccion.size !== 1 ? 's' : ''}
+        </span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
+            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
+            Guardar
+          </button>
+        </div>
+      </div>
     </ModalShell>
   )
 }
