@@ -31,6 +31,8 @@ function getModulo(pathname: string): string | undefined {
   if (NO_CHECK.includes(first)) return undefined
 
   // Golf: sub-rutas usan 'golf-{sub}'
+  // Excepción: salidas-carritos comparte permiso con el módulo de carritos
+  if (first === 'golf' && parts[1] === 'salidas-carritos') return 'golf-carritos'
   if (first === 'golf' && parts[1]) return `golf-${parts[1]}`
 
   // compras/**  → 'compras'  (sub-rutas como /compras/requisiciones usan el mismo módulo)
