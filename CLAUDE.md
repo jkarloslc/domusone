@@ -87,7 +87,7 @@ ALTER TABLE cfg.usuarios ADD CONSTRAINT usuarios_rol_check CHECK (
 | `admin` | Administrador | Todo operativo, sin Usuarios/Config |
 | `admin_lector` | Admin Solo Lectura | Igual que admin, sin escritura/eliminar/autorizar |
 | `usuarioadmin` | Administrador (Op.) | Admin sin Mantenimiento |
-| `usuariomantto` | Administrador (Mant.) | Admin sin Tesorería |
+| `usuariomantto` | Administrador (Mant.) | Admin sin Tesorería ni Golf |
 | `fraccionamiento` | Fraccionamiento | Residencial + Compras + Tesorería + Reportes |
 | `atencion_residentes` | Atención a Residentes | Residencial, incidencias, mantenimiento |
 | `cobranza` | Cobranza | Lotes, propietarios, cobranza, facturas |
