@@ -2,9 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Car, Clock, Filter } from 'lucide-react'
+import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Car, Clock, Filter, Eye, Printer } from 'lucide-react'
 import Link from 'next/link'
 import SalidaCarritoModal from './SalidaCarritoModal'
+import { abrirTicketSalidaCarrito } from './ticket'
 
 type Salida = {
   id: number
@@ -88,6 +89,22 @@ export default function SalidasCarritosPage() {
   }
 
   const handleSaved = () => { setShowModal(false); fetchSalidas() }
+
+  const abrirTicket = (s: Salida, autoPrint: boolean) => {
+    abrirTicketSalidaCarrito({
+      id:               s.id,
+      fecha_salida:     s.fecha_salida,
+      fecha_regreso:    s.fecha_regreso,
+      carrito:          [s.cat_carritos?.marca, s.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito',
+      placa:            s.cat_carritos?.placa ?? null,
+      tipo:             s.cat_carritos?.tipo ?? null,
+      cajon:            s.ctrl_pensiones?.cat_slots ? `Cajón ${s.ctrl_pensiones.cat_slots.numero}` : null,
+      socio:            nc(s.cat_socios),
+      numero_socio:     s.cat_socios?.numero_socio ?? null,
+      observaciones:    s.observaciones,
+      usuario_registra: s.usuario_registra,
+    }, autoPrint)
+  }
 
   const esHoy = fecha === localToday()
 
@@ -233,16 +250,32 @@ export default function SalidasCarritosPage() {
                       {s.usuario_registra ?? '—'}
                     </td>
                     <td style={{ padding: '10px 14px' }}>
-                      {enRonda && puedeEscribir && (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button
                           className="btn-ghost"
-                          style={{ padding: '4px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#2563eb', opacity: isRegreso ? 0.5 : 1 }}
-                          onClick={() => registrarRegreso(s.id)}
-                          disabled={isRegreso}
-                          title="Registrar regreso a motor lobby">
-                          <LogIn size={13} /> Regreso
+                          style={{ padding: '4px 6px', color: '#64748b' }}
+                          onClick={() => abrirTicket(s, false)}
+                          title="Consultar ticket">
+                          <Eye size={13} />
                         </button>
-                      )}
+                        <button
+                          className="btn-ghost"
+                          style={{ padding: '4px 6px', color: '#64748b' }}
+                          onClick={() => abrirTicket(s, true)}
+                          title="Reimprimir ticket">
+                          <Printer size={13} />
+                        </button>
+                        {enRonda && puedeEscribir && (
+                          <button
+                            className="btn-ghost"
+                            style={{ padding: '4px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, color: '#2563eb', opacity: isRegreso ? 0.5 : 1 }}
+                            onClick={() => registrarRegreso(s.id)}
+                            disabled={isRegreso}
+                            title="Registrar regreso a motor lobby">
+                            <LogIn size={13} /> Regreso
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )

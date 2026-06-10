@@ -4,6 +4,7 @@ import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Save, Loader, AlertCircle, Car } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import { abrirTicketSalidaCarrito } from './ticket'
 
 type PensionCarrito = {
   id: number
@@ -110,16 +111,33 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
     if (seleccionado.enRonda) { setError('El carrito ya está en ronda de juego'); return }
     setSaving(true); setError('')
 
-    const { error: err } = await dbGolf.from('ctrl_salidas_carritos').insert({
+    const fechaSalida = new Date().toISOString()
+    const usuario = authUser?.nombre ?? null
+    const { data: salida, error: err } = await dbGolf.from('ctrl_salidas_carritos').insert({
       id_carrito_fk:    seleccionado.pension.id_carrito_fk,
       id_pension_fk:    seleccionado.pension.id,
       id_socio_fk:      seleccionado.pension.id_socio_fk,
-      fecha_salida:     new Date().toISOString(),
+      fecha_salida:     fechaSalida,
       observaciones:    observaciones.trim() || null,
-      usuario_registra: authUser?.nombre ?? null,
-    })
+      usuario_registra: usuario,
+    }).select('id').single()
 
-    if (err) { setError(err.message); setSaving(false); return }
+    if (err || !salida) { setError(err?.message ?? 'Error al guardar'); setSaving(false); return }
+
+    // Impresión obligatoria: Motor Lobby da salida física solo con el ticket
+    await abrirTicketSalidaCarrito({
+      id:               salida.id,
+      fecha_salida:     fechaSalida,
+      carrito:          [seleccionado.pension.cat_carritos?.marca, seleccionado.pension.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito',
+      placa:            seleccionado.pension.cat_carritos?.placa ?? null,
+      tipo:             seleccionado.pension.cat_carritos?.tipo ?? null,
+      cajon:            seleccionado.pension.cat_slots ? `Cajón ${seleccionado.pension.cat_slots.numero}` : null,
+      socio:            nc(seleccionado.pension.cat_socios),
+      numero_socio:     seleccionado.pension.cat_socios?.numero_socio ?? null,
+      observaciones:    observaciones.trim() || null,
+      usuario_registra: usuario,
+    }, true)
+
     onSaved()
   }
 
@@ -130,7 +148,7 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
         <button className="btn-primary" onClick={handleSave} disabled={saving || loading || !idPension}
           style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669' }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-          Registrar Salida
+          Registrar e Imprimir Ticket
         </button>
       </>}
     >
@@ -202,6 +220,10 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
           <textarea value={observaciones} onChange={e => setObs(e.target.value)} rows={2}
             placeholder="Opcional — condiciones del carrito, quién lo conduce, etc."
             style={{ ...inputStyle, resize: 'vertical' }} />
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+          🖨 Al registrar la salida se imprime el ticket automáticamente. Motor Lobby da salida física al carrito únicamente con el ticket.
         </div>
 
       </div>
