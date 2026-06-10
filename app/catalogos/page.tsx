@@ -46,7 +46,8 @@ const CATALOGOS: CatConfig[] = [
     color:        '#0891b2',
     sectionLabel: 'Mantenimiento',
     desc:         'Cuadrantes de mantenimiento — agrupan secciones para el Programa Anual',
-    hasDetail: true,
+    hasDetail:    true,
+    sortBy:       'id',
     campos: [
       { key: 'nombre',      label: 'Nombre *',    type: 'text',    required: true },
       { key: 'color',       label: 'Color (hex)', type: 'text' },
