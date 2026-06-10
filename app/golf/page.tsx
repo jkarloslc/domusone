@@ -89,6 +89,15 @@ const MODULOS = [
     activo: true,
   },
   {
+    key: 'salidas-carritos',
+    label: 'Entrada/Salida de Carritos',
+    desc: 'Salidas de motor lobby a ronda de juego y registro de regreso',
+    icon: ArrowRightLeft,
+    color: '#0d9488',
+    href: '/golf/salidas-carritos',
+    activo: true,
+  },
+  {
     key: 'cuotas',
     label: 'Cuotas',
     desc: 'Asignación de cuotas por socio — individual o masivo',
