@@ -79,6 +79,27 @@ ALTER TABLE cfg.usuarios ADD CONSTRAINT usuarios_rol_check CHECK (
 - [ ] `app/usuarios/page.tsx` → array `ROLES`
 - [ ] Migration SQL → CHECK constraint en `cfg.usuarios`
 
+### Regla crítica al agregar una nueva RUTA/página
+
+El guard de rutas vive en `components/layout/RootDashWrapper.tsx` → `getModulo(pathname)`.
+Deriva la clave de permiso desde la URL y `AuthGuard` la valida con `can(modulo)`;
+si la clave no existe en `LEER`, **redirige a TODOS los usuarios a su home** (la página
+queda inaccesible aunque compile y aparezca en el hub).
+
+Reglas de derivación actuales:
+- `/golf/{sub}` → `golf-{sub}` (excepción: `/golf/salidas-carritos` → `golf-carritos`)
+- `/compras/**`, `/ingresos/**`, `/tesoreria/**`, `/lotes/**` → primer segmento
+- `/residencial` → `lotes`, `/usuarios` → `admin`
+- Rutas sin control: `inicio`, `tablero`, `vehiculos`, `equipo-flota`, `mantenimiento`, `hipico`, `hospitality`
+- Default: primer segmento de la URL
+
+**Checklist al crear una página nueva** (bug vivido con `/golf/salidas-carritos`, 2026-06-10):
+- [ ] Verificar qué clave genera `getModulo()` para la nueva ruta
+- [ ] Si la clave NO existe en `LEER` de AuthContext: agregarla a los arrays de módulos
+      (`ADMIN_MODULOS`, `GOLF_MODULOS`, etc.) **o** mapear la ruta a una clave existente
+      en `getModulo()` (preferible si la página comparte permisos con un módulo existente)
+- [ ] Usar la misma clave en el `canWrite()` de la página y en el `modulo` de `ModalShell`
+
 ### Roles existentes (2026-05-11)
 
 | Valor | Label | Acceso |
