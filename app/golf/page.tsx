@@ -81,7 +81,7 @@ const MODULOS = [
   },
   {
     key: 'carritos',
-    label: 'Carritos',
+    label: 'Pensión de Carritos / Bitácora',
     desc: 'Pensiones, slots y cobros mensuales o anuales',
     icon: Car,
     color: '#059669',
