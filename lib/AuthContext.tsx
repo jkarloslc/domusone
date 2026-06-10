@@ -143,8 +143,8 @@ const HOSPITALITY_MODULOS = [
 ]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
-// usuariomantto: igual que admin pero sin tesoreria
-const USUARIOMANTTO_MODULOS = ADMIN_MODULOS.filter(m => m !== 'tesoreria')
+// usuariomantto: igual que admin pero sin tesoreria ni golf
+const USUARIOMANTTO_MODULOS = ADMIN_MODULOS.filter(m => m !== 'tesoreria' && m !== 'golf' && !m.startsWith('golf-'))
 
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
 const LEER: Record<Rol, string[] | '*'> = {

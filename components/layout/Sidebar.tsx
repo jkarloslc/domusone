@@ -266,7 +266,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       RPT('compras'),
     ]},
     { section: 'Finanzas', items: [
-      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
       RPT('ingresos'),
     ]},
     { section: 'Sistema', items: [
