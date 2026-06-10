@@ -160,7 +160,6 @@ export default function GolfPage() {
     cuotasVencidas: 0, montoCuotasVencidas: 0,
     ingresosMes: 0, cortesPendientes: 0,
   })
-  const [ingresosPorCentro, setIngresosPorCentro] = useState<IngresoPorCentro[]>([])
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -248,7 +247,6 @@ export default function GolfPage() {
         cuotasVencidas, montoCuotasVencidas,
         ingresosMes, cortesPendientes: 0,
       })
-      setIngresosPorCentro(ingresosPorCentroArr)
     } catch {
       // silencioso — KPIs son opcionales
     }
@@ -257,9 +255,6 @@ export default function GolfPage() {
   }, [hoy, iniMes])
 
   useEffect(() => { loadKpis() }, [loadKpis])
-
-  // Barra de progreso ingresos por centro
-  const maxCentro = Math.max(...ingresosPorCentro.map(c => c.monto), 1)
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -378,59 +373,6 @@ export default function GolfPage() {
         </div>
 
       </div>
-
-      {/* Ingresos por centro de venta ────────────────────── */}
-      {!loading && ingresosPorCentro.length > 0 && (
-        <div className="card" style={{ padding: '18px 22px', marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-                textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
-                Ingresos POS · Este mes
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-                Desglose por centro de venta
-              </div>
-            </div>
-            <button onClick={() => router.push('/golf/pos')}
-              style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-              Ver cortes <ChevronRight size={11} />
-            </button>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {ingresosPorCentro.map(centro => (
-              <div key={centro.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between',
-                  alignItems: 'center', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>
-                    {centro.nombre}
-                  </span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#059669',
-                    fontVariantNumeric: 'tabular-nums' }}>
-                    {fmt$(centro.monto)}
-                  </span>
-                </div>
-                <div style={{ height: 6, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%', borderRadius: 3, background: '#059669',
-                    width: `${(centro.monto / maxCentro) * 100}%`,
-                    transition: 'width 0.4s ease',
-                  }} />
-                </div>
-              </div>
-            ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between',
-              paddingTop: 10, borderTop: '1px solid #e2e8f0', marginTop: 4 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>Total</span>
-              <span style={{ fontSize: 14, fontWeight: 800, color: '#059669',
-                fontVariantNumeric: 'tabular-nums' }}>
-                {fmt$(kpis.ingresosMes)}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Grid de módulos ─────────────────────────────────── */}
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
