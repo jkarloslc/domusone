@@ -1507,7 +1507,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
 }
 
 // ══════════════════════════════════════════════════════════════
-// SeccionAreasComunes — asigna/quita áreas comunes de una sección
+// SeccionAreasComunes — N:M vía cfg.rel_seccion_area_comun
 // ══════════════════════════════════════════════════════════════
 function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () => void }) {
   const [todas,     setTodas]     = useState<any[]>([])
@@ -1522,15 +1522,12 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { data } = await dbCfg
-      .from('areas_comunes')
-      .select('id, nombre, id_seccion_fk')
-      .eq('activo', true)
-      .order('nombre')
-    setTodas(data ?? [])
-    const asignadas = new Set<number>(
-      (data ?? []).filter((a: any) => a.id_seccion_fk === seccion.id).map((a: any) => Number(a.id))
-    )
+    const [{ data: acs }, { data: rels }] = await Promise.all([
+      dbCfg.from('areas_comunes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_seccion_area_comun').select('id_area_comun_fk').eq('id_seccion_fk', seccion.id),
+    ])
+    setTodas(acs ?? [])
+    const asignadas = new Set<number>((rels ?? []).map((r: any) => Number(r.id_area_comun_fk)))
     setSeleccion(new Set(asignadas))
     setInicial(new Set(asignadas))
     setLoading(false)
@@ -1546,12 +1543,14 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
     setCreando(true)
     const { data, error: e } = await dbCfg
       .from('areas_comunes')
-      .insert({ nombre: nueva.trim(), id_seccion_fk: seccion.id, activo: true })
+      .insert({ nombre: nueva.trim(), activo: true })
       .select('id').single()
     if (e) { setError(e.message); setCreando(false); return }
-    setNueva('')
-    setCreando(false)
-    fetchData()
+    if (data) {
+      await dbCfg.from('rel_seccion_area_comun')
+        .insert({ id_seccion_fk: seccion.id, id_area_comun_fk: data.id })
+    }
+    setNueva(''); setCreando(false); fetchData()
   }
 
   const handleSave = async () => {
@@ -1560,13 +1559,13 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
     const removed = Array.from(inicial).filter(id => !seleccion.has(id))
     if (added.length === 0 && removed.length === 0) { onClose(); return }
     if (added.length > 0) {
-      const { error: e } = await dbCfg.from('areas_comunes')
-        .update({ id_seccion_fk: seccion.id }).in('id', added)
+      const { error: e } = await dbCfg.from('rel_seccion_area_comun')
+        .insert(added.map(id => ({ id_seccion_fk: seccion.id, id_area_comun_fk: id })))
       if (e) { setError(e.message); setSaving(false); return }
     }
     if (removed.length > 0) {
-      const { error: e } = await dbCfg.from('areas_comunes')
-        .update({ id_seccion_fk: null }).in('id', removed)
+      const { error: e } = await dbCfg.from('rel_seccion_area_comun')
+        .delete().eq('id_seccion_fk', seccion.id).in('id_area_comun_fk', removed)
       if (e) { setError(e.message); setSaving(false); return }
     }
     setSaving(false); onClose()
@@ -1576,9 +1575,7 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
 
   return (
     <ModalShell modulo="residencial" titulo={`Áreas Comunes — ${seccion.nombre}`} onClose={onClose} maxWidth={480}>
-      {/* Crear nueva área común inline */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0',
-        display: 'flex', gap: 8 }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 8 }}>
         <input className="input" placeholder="Nueva área común…" value={nueva}
           onChange={e => setNueva(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && crearYAsignar()}
@@ -1589,7 +1586,6 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
           Crear
         </button>
       </div>
-      {/* Buscar entre existentes */}
       <div style={{ padding: '8px 16px', borderBottom: '1px solid #f1f5f9' }}>
         <input className="input" placeholder="Buscar área común existente…" value={busqueda}
           onChange={e => setBusqueda(e.target.value)} style={{ fontSize: 13 }} />
@@ -1605,26 +1601,18 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
           </div>
         ) : filtradas.map(a => {
           const checked = seleccion.has(a.id)
-          const otraSeccion = a.id_seccion_fk && a.id_seccion_fk !== seccion.id
           return (
             <label key={a.id} onClick={() => toggle(a.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
                 cursor: 'pointer', background: checked ? '#f0fdf4' : 'transparent',
                 borderLeft: `3px solid ${checked ? '#16a34a' : 'transparent'}`,
-                transition: 'background 0.15s', opacity: otraSeccion ? 0.5 : 1 }}>
+                transition: 'background 0.15s' }}>
               <input type="checkbox" checked={checked} onChange={() => toggle(a.id)}
                 style={{ accentColor: '#16a34a', width: 15, height: 15 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400,
-                  color: checked ? '#15803d' : '#1e293b' }}>
-                  {a.nombre}
-                </span>
-                {otraSeccion && (
-                  <div style={{ fontSize: 11, color: '#d97706', marginTop: 1 }}>
-                    Asignada a otra sección
-                  </div>
-                )}
-              </div>
+              <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400,
+                color: checked ? '#15803d' : '#1e293b', flex: 1 }}>
+                {a.nombre}
+              </span>
               {checked && <CheckCircle size={14} style={{ color: '#16a34a', flexShrink: 0 }} />}
             </label>
           )

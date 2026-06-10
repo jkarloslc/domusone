@@ -74,6 +74,7 @@ export default function MantenimientoPage() {
   const [secMap,       setSecMap]       = useState<Record<number, string>>({})
   const [areasComunes, setAreasComunes] = useState<any[]>([])
   const [acMap,        setAcMap]        = useState<Record<number, string>>({})
+  const [secToAcs,     setSecToAcs]     = useState<Record<number, number[]>>({})
   const [loading,      setLoading]    = useState(true)
   const [filterAnio,   setFilterAnio] = useState(new Date().getFullYear())
   const [filterCuad,   setFilterCuad] = useState('')
@@ -87,8 +88,9 @@ export default function MantenimientoPage() {
     Promise.all([
       dbCfg.from('cuadrantes').select('id, nombre, color').eq('activo', true).order('nombre'),
       dbCfg.from('secciones').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('areas_comunes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
-    ]).then(([{ data: cuads }, { data: secs }, { data: acs }]) => {
+      dbCfg.from('areas_comunes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_seccion_area_comun').select('id_seccion_fk, id_area_comun_fk'),
+    ]).then(([{ data: cuads }, { data: secs }, { data: acs }, { data: rels }]) => {
       setCuadrantes(cuads ?? [])
       setSecciones(secs ?? [])
       setAreasComunes(acs ?? [])
@@ -96,7 +98,13 @@ export default function MantenimientoPage() {
       const cc: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { if (c.color) cc[c.id] = c.color })
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
       const am: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { am[a.id] = a.nombre })
-      setCuadMap(cm); setCuadColorMap(cc); setSecMap(sm); setAcMap(am)
+      const sta: Record<number, number[]> = {};
+      (rels ?? []).forEach((r: any) => {
+        const sid = Number(r.id_seccion_fk)
+        if (!sta[sid]) sta[sid] = []
+        sta[sid].push(Number(r.id_area_comun_fk))
+      })
+      setCuadMap(cm); setCuadColorMap(cc); setSecMap(sm); setAcMap(am); setSecToAcs(sta)
     })
   }, [])
 
@@ -222,7 +230,7 @@ export default function MantenimientoPage() {
               onChange={e => setFilterAC(e.target.value)}>
               <option value="">Área Común</option>
               {areasComunes
-                .filter(a => !filterSec || a.id_seccion_fk === Number(filterSec))
+                .filter(a => !filterSec || (secToAcs[Number(filterSec)] ?? []).includes(a.id))
                 .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
             {(filterCuad || filterSec || filterAC) && (
@@ -349,7 +357,7 @@ export default function MantenimientoPage() {
         </div>
       )}
 
-      {modal  && <ProgramaModal cuadrantes={cuadrantes} secciones={secciones} areasComunes={areasComunes} prog={editing}
+      {modal  && <ProgramaModal cuadrantes={cuadrantes} secciones={secciones} areasComunes={areasComunes} secToAcs={secToAcs} prog={editing}
         onClose={() => setModal(false)}
         onSaved={() => { setModal(false); fetchData() }} />}
       {detail && <ProgramaDetail prog={detail} cuadMap={cuadMap} secMap={secMap} acMap={acMap}
@@ -483,8 +491,8 @@ function MiniCalendario({ tareas, onRefresh, prog, areaMap }: {
 // ═══════════════════════════════════════════════════════════════
 // Modal Nuevo/Editar Programa
 // ═══════════════════════════════════════════════════════════════
-function ProgramaModal({ cuadrantes, secciones, areasComunes, prog, onClose, onSaved }: {
-  cuadrantes: any[]; secciones: any[]; areasComunes: any[]
+function ProgramaModal({ cuadrantes, secciones, areasComunes, secToAcs, prog, onClose, onSaved }: {
+  cuadrantes: any[]; secciones: any[]; areasComunes: any[]; secToAcs: Record<number, number[]>
   prog: any; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
@@ -633,7 +641,7 @@ function ProgramaModal({ cuadrantes, secciones, areasComunes, prog, onClose, onS
                 onChange={setF('id_area_comun_fk')} disabled={!form.id_seccion_fk}>
                 <option value="">— {form.id_seccion_fk ? 'Seleccionar' : 'Elige sección primero'} —</option>
                 {areasComunes
-                  .filter(a => !form.id_seccion_fk || a.id_seccion_fk === Number(form.id_seccion_fk))
+                  .filter(a => !form.id_seccion_fk || (secToAcs[Number(form.id_seccion_fk)] ?? []).includes(a.id))
                   .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
