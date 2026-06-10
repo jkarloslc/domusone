@@ -472,6 +472,7 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
     status:             eq?.status             ?? 'Activo',
     foto_url:           eq?.foto_url           ?? '',
     notas:              eq?.notas              ?? '',
+    operador_asignado:  eq?.operador_asignado  ?? '',
   })
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -518,6 +519,7 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
       status:            form.status,
       foto_url:          form.foto_url || null,
       notas:             form.notas.trim() || null,
+      operador_asignado: form.operador_asignado.trim() || null,
     }
     const { error: err } = eq
       ? await dbCfg.from('equipos').update(payload).eq('id', eq.id)
@@ -603,6 +605,10 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
                 {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <label className="label" style={{ fontSize: 11 }}>Operador Asignado</label>
+              <input className="input" style={{ fontSize: 13 }} value={form.operador_asignado} onChange={setF('operador_asignado')} placeholder="Nombre del operador" />
+            </div>
             <div>
               <label className="label" style={{ fontSize: 11 }}>Fecha adquisición</label>
               <input className="input" type="date" style={{ fontSize: 13 }} value={form.fecha_adquisicion} onChange={setF('fecha_adquisicion')} />
@@ -672,6 +678,7 @@ function EquipoDetail({ eq, areaMap, bitacora, onClose, onNewBit }: {
             <DI label="No. Serie" value={eq.no_serie} />
             <DI label="Área"    value={eq.id_area_fk ? areaMap[eq.id_area_fk] : null} />
             <DI label="Odómetro" value={eq.odometro_actual != null ? `${Number(eq.odometro_actual).toLocaleString('es-MX')} ${eq.unidad_odometro}` : null} />
+            <DI label="Operador Asignado" value={eq.operador_asignado} />
             <DI label="Adquisición" value={fmtF(eq.fecha_adquisicion)} />
             <DI label="Costo adquisición" value={fmt$(eq.costo_adquisicion)} />
           </div>
