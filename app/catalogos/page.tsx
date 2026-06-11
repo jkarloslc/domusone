@@ -34,6 +34,7 @@ type Campo = {
   selectTabla?:   string
   selectSchema?:  'cfg' | 'comp' | 'golf'
   selectFilter?:  Record<string, string | number | boolean>
+  hideInTable?:   boolean  // el campo solo aparece en el modal, no como columna del grid
   staticOptions?: string[]
   bucket?: string
 }
@@ -70,6 +71,8 @@ const CATALOGOS: CatConfig[] = [
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
       { key: 'id_cuadrante_fk',     label: 'Cuadrante',            type: 'select', selectTabla: 'cuadrantes' },
       { key: 'cantidad_lotes',      label: 'Cantidad de Lotes',    type: 'number' },
+      { key: 'fecha_autorizacion',  label: 'Fecha de Autorización',type: 'date',   hideInTable: true },
+      { key: 'expediente_url',      label: 'Expediente Digital',   type: 'file',   bucket: 'expedientes', hideInTable: true },
     ],
   },
   {
@@ -949,8 +952,9 @@ function CatalogoTable({ config }: { config: CatConfig }) {
   // Columnas visibles en tabla (excluye descripcion, file)
   const colsTabla = config.campos.filter(c =>
     !['descripcion', 'expediente_url'].includes(c.key) &&
-    c.type !== 'file' && c.type !== 'textarea'
+    c.type !== 'file' && c.type !== 'textarea' && !c.hideInTable
   )
+  const colFile = config.campos.find(c => c.type === 'file' && !c.hideInTable)
 
   const activos     = rows.filter(r => r.activo).length
   const inactivos   = rows.filter(r => !r.activo).length
@@ -1000,7 +1004,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
             <tr>
               <th style={{ width: 50 }}>ID</th>
               {colsTabla.map(c => <th key={c.key}>{c.label.replace(' *','')}</th>)}
-              {config.campos.find(c => c.type === 'file') && <th style={{ width: 90 }}>Expediente</th>}
+              {colFile && <th style={{ width: 90 }}>Expediente</th>}
               <th style={{ width: 80, textAlign: 'center' }}>Status</th>
               <th style={{ width: 90 }}></th>
             </tr>
@@ -1026,7 +1030,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
                         : (row[c.key] ?? '—')}
                   </td>
                 ))}
-                {config.campos.find(c => c.type === 'file') && (
+                {colFile && (
                   <td style={{ textAlign: 'center' }}>
                     {row.expediente_url
                       ? <a href={row.expediente_url} target="_blank" rel="noopener noreferrer"
