@@ -63,6 +63,7 @@ const CATALOGOS: CatConfig[] = [
     desc:      'Secciones residenciales — se relacionan con lotes, cobranza y mantenimiento',
     hasDetail: true,
     campos: [
+      { key: 'empresa',             label: 'Empresa',              type: 'text' },
       { key: 'nombre',              label: 'Nombre *',             type: 'text',   required: true },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
