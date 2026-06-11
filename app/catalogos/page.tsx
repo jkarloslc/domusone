@@ -33,6 +33,7 @@ type Campo = {
   required?: boolean
   selectTabla?:   string
   selectSchema?:  'cfg' | 'comp' | 'golf'
+  selectFilter?:  Record<string, string | number | boolean>
   staticOptions?: string[]
   bucket?: string
 }
@@ -63,7 +64,7 @@ const CATALOGOS: CatConfig[] = [
     desc:      'Secciones residenciales — se relacionan con lotes, cobranza y mantenimiento',
     hasDetail: true,
     campos: [
-      { key: 'empresa',             label: 'Empresa',              type: 'text' },
+      { key: 'id_empresa_fk',       label: 'Empresa',              type: 'select', selectTabla: 'proveedores', selectSchema: 'comp', selectFilter: { interno: true } },
       { key: 'nombre',              label: 'Nombre *',             type: 'text',   required: true },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
@@ -923,7 +924,9 @@ function CatalogoTable({ config }: { config: CatConfig }) {
     const maps: Record<string, Record<number, string>> = {}
     for (const c of config.campos.filter(f => f.type === 'select' && f.selectTabla)) {
       const sdb = c.selectSchema === 'comp' ? dbComp : c.selectSchema === 'golf' ? dbGolf : dbCfg
-      const { data: opts } = await sdb.from(c.selectTabla!).select('id, nombre').order('nombre')
+      let q = sdb.from(c.selectTabla!).select('id, nombre')
+      if (c.selectFilter) q = q.match(c.selectFilter)
+      const { data: opts } = await q.order('nombre')
       const m: Record<number, string> = {}
       ;(opts ?? []).forEach((o: any) => { m[o.id] = o.nombre })
       maps[c.key] = m
@@ -1949,7 +1952,9 @@ function CatalogoModal({ config, row, onClose, onSaved }:
     // Cargar opciones de todos los campos select
     config.campos.filter(c => c.type === 'select' && c.selectTabla).forEach(async c => {
       const sdb = c.selectSchema === 'comp' ? dbComp : c.selectSchema === 'golf' ? dbGolf : dbCfg
-      const { data } = await sdb.from(c.selectTabla!).select('id, nombre').eq('activo', true).order('nombre')
+      let q = sdb.from(c.selectTabla!).select('id, nombre').eq('activo', true)
+      if (c.selectFilter) q = q.match(c.selectFilter)
+      const { data } = await q.order('nombre')
       setSelectOpts(prev => ({ ...prev, [c.key]: data ?? [] }))
     })
   }, [])
