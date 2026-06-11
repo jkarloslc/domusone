@@ -206,6 +206,7 @@ export default function EventosPage() {
   const [loading,  setLoading]  = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
+  const [filtroTipo,   setFiltroTipo]   = useState('')
 
   // Modal
   const [modal,    setModal]    = useState(false)
@@ -318,10 +319,11 @@ export default function EventosPage() {
       .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, precio_pactado, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, objetivo, riesgos_operativos, montaje_carpas, montaje_escenario, montaje_pista_baile, montaje_mesas_sillas, montaje_iluminacion, montaje_audio, montaje_pantallas, montaje_generador, montaje_notas, seg_guardias, seg_control_accesos, seg_paramedicos, seg_ambulancia, seg_valet_parking, ayb_banquetero, ayb_tipo_servicio, ayb_num_comensales, ayb_barra_libre, ayb_permisos_sanitarios, golf_tipo_torneo, golf_num_jugadores, golf_tee_times, golf_caddies, golf_carritos, hip_tipo_evento, hip_num_caballos, hip_caballerizas, hip_veterinario, hip_trailers, chk_contrato_firmado, chk_anticipo_pagado, chk_layout_autorizado, chk_montaje_concluido, chk_revision_final, post_incidencias, post_danos, post_evaluacion, post_conclusion, justificacion_gasto_personal, notas_personal, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
       .order('fecha_inicio', { ascending: false })
     if (filtroStatus) q = q.eq('status', filtroStatus)
+    if (filtroTipo)   q = q.eq('id_tipo_evento_fk', Number(filtroTipo))
     const { data } = await q
     setEventos((data as unknown as Evento[]) ?? [])
     setLoading(false)
-  }, [filtroStatus])
+  }, [filtroStatus, filtroTipo])
 
   useEffect(() => { loadEventos() }, [loadEventos])
 
@@ -1299,6 +1301,10 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
         <input className="input" placeholder="Buscar por nombre, folio o cliente…"
           value={busqueda} onChange={e => setBusqueda(e.target.value)}
           style={{ flex: 1, fontSize: 13 }} />
+        <select className="input" value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ fontSize: 13, width: 180, flexShrink: 0 }}>
+          <option value="">Todos los tipos</option>
+          {tipos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+        </select>
         <select className="input" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ fontSize: 13, width: 180, flexShrink: 0 }}>
           <option value="">Todos los status</option>
           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
