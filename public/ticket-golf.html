@@ -56,7 +56,8 @@
     .leyenda { font-size: 10px; text-align: center; margin-top: 2mm; }
 
     @media print {
-      body { margin: 0; padding: 2mm 1mm; }
+      /* margin-left desplaza el contenido a la derecha: la impresora corta el borde izquierdo */
+      body { margin: 0 0 0 4mm; padding: 2mm 1mm; }
       .no-print { display: none !important; }
       @page { margin: 0; size: 80mm auto; }
     }
