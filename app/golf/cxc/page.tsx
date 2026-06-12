@@ -86,12 +86,13 @@ export default function CXCGolfPage() {
 
   const fetchCuotas = useCallback(async () => {
     setLoading(true)
-    // Solo cuotas PENDIENTE para la vista de cobro
+    // Solo cuotas PENDIENTE de membresías — las de pensión de carrito se cobran en Pensiones
     const { data } = await dbGolf.from('cxc_golf')
       .select(`id, id_socio_fk, concepto, periodo, monto_original, descuento, monto_final,
         status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo,
         cat_socios(nombre, apellido_paterno, apellido_materno, id_categoria_fk)`)
       .eq('status', 'PENDIENTE')
+      .neq('tipo', 'PENSION_CARRITO')
       .order('fecha_vencimiento', { ascending: true })
     const rows = (data as unknown as Cuota[]) ?? []
     setCuotas(rows)

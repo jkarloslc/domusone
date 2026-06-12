@@ -290,11 +290,12 @@ export default function CarritosPage() {
     setLoadingC(false)
   }, [mesCobranza])
 
-  // Cuotas pendientes del socio (para cobrar desde el tab de cobranza)
+  // Cuotas de pensión pendientes del socio (para cobrar desde el tab de cobranza)
   const abrirCobroSocio = async (idSocio: number, nombreSocio: string) => {
     const { data } = await dbGolf.from('cxc_golf')
       .select('id, concepto, periodo, monto_original, descuento, monto_final, saldo, status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo, id_socio_fk, cat_socios(nombre, apellido_paterno, apellido_materno)')
       .eq('id_socio_fk', idSocio)
+      .eq('tipo', 'PENSION_CARRITO')
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .order('fecha_vencimiento', { ascending: true })
     setShowCobrar({ cuotas: (data as unknown as Cuota[]) ?? [], nombreSocio, idSocio })
@@ -581,11 +582,12 @@ export default function CarritosPage() {
     fetchPensiones()
   }
 
-  // Cuotas pendientes del socio de una pensión
+  // Cuotas de pensión pendientes del socio — las de membresía se cobran en Cobro/CXC
   const abrirCobro = async (pension: Pension) => {
     const { data } = await dbGolf.from('cxc_golf')
       .select('id, concepto, periodo, monto_original, descuento, monto_final, saldo, status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo, id_socio_fk, cat_socios(nombre, apellido_paterno, apellido_materno)')
       .eq('id_socio_fk', pension.id_socio_fk)
+      .eq('tipo', 'PENSION_CARRITO')
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .order('fecha_vencimiento', { ascending: true })
     setShowCobrar({
