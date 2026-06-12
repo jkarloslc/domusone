@@ -4,6 +4,7 @@ import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Save, Loader } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import { cuotaExigible } from './adeudos'
 
 type TipoEvento = 'SALIDA_TALLER' | 'REGRESO_TALLER' | 'PRESTAMO_TERCERO' | 'INCIDENCIA' | 'SALIDA_DEFINITIVA'
 
@@ -57,6 +58,28 @@ export default function BitacoraModal({ idCarrito, idPension, idSlot, idSocio, n
     setSaving(true); setError('')
 
     const hoyISO = new Date().toISOString().split('T')[0]
+
+    // Salida definitiva: bloquear si hay adeudo exigible (regla del día 10).
+    // Hasta el día 10 solo bloquean cuotas de meses anteriores; del 11 en
+    // adelante la cuota del mes en curso también debe estar cobrada.
+    if (tipo === 'SALIDA_DEFINITIVA' && idPension) {
+      const { data: cxc, error: errCxc } = await dbGolf.from('cxc_golf')
+        .select('saldo, monto_final, periodo, fecha_vencimiento')
+        .eq('id_pension_fk', idPension)
+        .eq('tipo', 'PENSION_CARRITO')
+        .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+      if (errCxc) { setError('No se pudo validar el adeudo de cuotas: ' + errCxc.message); setSaving(false); return }
+
+      const exigibles = ((cxc ?? []) as { saldo: number | null; monto_final: number | null; periodo: string | null; fecha_vencimiento: string | null }[])
+        .filter(c => cuotaExigible(c))
+      if (exigibles.length > 0) {
+        const monto = exigibles.reduce((a, c) => a + (c.saldo ?? c.monto_final ?? 0), 0)
+        const periodos = exigibles.map(c => c.periodo).filter(Boolean).join(', ')
+        setError(`No se puede registrar la salida definitiva: el carrito tiene ${exigibles.length} cuota${exigibles.length !== 1 ? 's' : ''} exigible${exigibles.length !== 1 ? 's' : ''} por $${monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}${periodos ? ` (${periodos})` : ''}. Cobra la cuota antes de dar salida.`)
+        setSaving(false)
+        return
+      }
+    }
 
     const payload: Record<string, unknown> = {
       id_carrito_fk:    idCarrito,
@@ -156,7 +179,8 @@ export default function BitacoraModal({ idCarrito, idPension, idSlot, idSocio, n
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#5b21b6', lineHeight: 1.8 }}>
                   <li>La <strong>pensión quedará cerrada</strong> (inactiva) con fecha de salida hoy.</li>
                   <li>El <strong>slot asignado será liberado</strong> para un nuevo carrito.</li>
-                  <li>Todas las <strong>cuotas pendientes / parciales serán canceladas</strong> con saldo $0.</li>
+                  <li>Las <strong>cuotas futuras pendientes serán canceladas</strong> con saldo $0.</li>
+                  <li>Requiere <strong>no tener adeudo exigible</strong>: cuotas de meses anteriores y, a partir del día 11, también la del mes en curso.</li>
                 </ul>
               </div>
             </div>
