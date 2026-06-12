@@ -622,21 +622,6 @@ export default function CarritosPage() {
     fetchPensiones()
   }
 
-  // Cuotas de pensión pendientes del socio — las de membresía se cobran en Cobro/CXC
-  const abrirCobro = async (pension: Pension) => {
-    const { data } = await dbGolf.from('cxc_golf')
-      .select('id, concepto, periodo, monto_original, descuento, monto_final, saldo, status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo, id_socio_fk, cat_socios(nombre, apellido_paterno, apellido_materno)')
-      .eq('id_socio_fk', pension.id_socio_fk)
-      .eq('tipo', 'PENSION_CARRITO')
-      .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
-      .order('fecha_vencimiento', { ascending: true })
-    setShowCobrar({
-      cuotas: (data as unknown as Cuota[]) ?? [],
-      nombreSocio: nc(pension.cat_socios),
-      idSocio: pension.id_socio_fk,
-    })
-  }
-
   const pensionesF = pensiones.filter(p => {
     if (filtroSituacion === 'adeudo'    && !p.con_adeudo) return false
     if (filtroSituacion === 'corriente' &&  p.con_adeudo) return false
@@ -839,12 +824,6 @@ export default function CarritosPage() {
                                   {loadingEdit ? <Loader size={12} /> : <Settings size={12} />} Editar
                                 </button>
                               )}
-                              {puedeEscribir && p.activo && p.pendientes > 0 && (
-                                <button onClick={e => { e.stopPropagation(); abrirCobro(p) }}
-                                  style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                  <CreditCard size={12} /> {p.monto_pendiente > 0 ? 'Cobrar' : 'Ver cuotas'}
-                                </button>
-                              )}
                             </div>
                           </td>
                         </tr>
@@ -999,23 +978,22 @@ export default function CarritosPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                      {['Socio', 'Carrito', 'Cajón', 'Concepto', 'Monto', 'Cobrado', 'Saldo', 'Situación', 'Fecha de pago', ''].map(h => (
+                      {['Socio', 'Cajón', 'Concepto', 'Monto', 'Cobrado', 'Saldo', 'Situación', 'Fecha de pago', ''].map(h => (
                         <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {loadingC ? (
-                      <tr><td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                      <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
                     ) : cuotasF.length === 0 ? (
-                      <tr><td colSpan={10} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      <tr><td colSpan={9} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
                         <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin cuotas para {mesLabel}</div>
                         <div style={{ fontSize: 12 }}>Genera las cuotas del periodo desde la pensión o ajusta los filtros</div>
                       </td></tr>
                     ) : cuotasF.map(c => {
                       const sit = situacion(c)
                       const saldo = saldoCuota(c)
-                      const carDesc = [c.ctrl_pensiones?.cat_carritos?.marca, c.ctrl_pensiones?.cat_carritos?.modelo].filter(Boolean).join(' ') || '—'
                       return (
                         <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
@@ -1023,10 +1001,6 @@ export default function CarritosPage() {
                           <td style={{ padding: '10px 14px' }}>
                             <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nc(c.cat_socios)}</div>
                             {c.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{c.cat_socios.numero_socio}</div>}
-                          </td>
-                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
-                            <div>{carDesc}</div>
-                            {c.ctrl_pensiones?.cat_carritos?.placa && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Placa {c.ctrl_pensiones.cat_carritos.placa}</div>}
                           </td>
                           <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12, whiteSpace: 'nowrap' }}>
                             {c.ctrl_pensiones?.cat_slots ? `Cajón ${c.ctrl_pensiones.cat_slots.numero}` : '—'}
@@ -1060,7 +1034,7 @@ export default function CarritosPage() {
                   {!loadingC && cuotasF.length > 0 && (
                     <tfoot>
                       <tr style={{ background: 'var(--surface-alt)', borderTop: '2px solid var(--border)' }}>
-                        <td colSpan={4} style={{ padding: '10px 14px', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        <td colSpan={3} style={{ padding: '10px 14px', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           Total ({cuotasF.length} cuota{cuotasF.length !== 1 ? 's' : ''})
                         </td>
                         <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap' }}>{fmt$(fMonto)}</td>
