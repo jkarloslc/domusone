@@ -50,6 +50,29 @@ type Cuota = {
 
 type Slot = { id: number; numero: string }
 
+// ── Cobranza (seguimiento mensual) ─────────────────────────
+type CuotaCobranza = {
+  id: number
+  id_socio_fk: number
+  id_pension_fk: number | null
+  concepto: string
+  periodo: string | null
+  monto_final: number
+  saldo: number | null
+  status: string
+  fecha_vencimiento: string | null
+  fecha_pago: string | null
+  cat_socios: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null } | null
+  ctrl_pensiones: {
+    cat_slots: { numero: string } | null
+    cat_carritos: { marca: string | null; modelo: string | null; placa: string | null } | null
+  } | null
+}
+
+// Saldo efectivo de una cuota (PAGADO → 0; sin saldo registrado → monto completo)
+const saldoCuota = (c: { saldo: number | null; monto_final: number; status: string }) =>
+  c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
+
 type CarritoFull = {
   id: number
   id_socio_fk: number
@@ -117,7 +140,7 @@ const ncR = (s: ReciboCarrito['cat_socios']) =>
 const fechaFmtR = (d: string) =>
   new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
 
-type Tab = 'pensiones' | 'recibos' | 'config'
+type Tab = 'pensiones' | 'cobranza' | 'recibos' | 'config'
 
 export default function CarritosPage() {
   const { canWrite } = useAuth()
@@ -145,6 +168,14 @@ export default function CarritosPage() {
   const [carritoNuevo, setCarritoNuevo] = useState<{ id: number; id_socio_fk: number; id_familiar_fk?: number | null } | null>(null)
 
   const [showCobrar, setShowCobrar]     = useState<{ cuotas: Cuota[]; nombreSocio: string; idSocio: number } | null>(null)
+
+  // ── Cobranza ──────────────────────────────────────────────
+  const [mesCobranza, setMesCobranza]   = useState(new Date().toISOString().slice(0, 7))
+  const [cuotasMes, setCuotasMes]       = useState<CuotaCobranza[]>([])
+  const [carteraVencida, setCarteraVencida] = useState({ count: 0, monto: 0 })
+  const [loadingC, setLoadingC]         = useState(false)
+  const [busquedaC, setBusquedaC]       = useState('')
+  const [filtroStatusC, setFiltroStatusC] = useState<'todas' | 'por_cobrar' | 'pagadas'>('todas')
 
   // ── Recibos ───────────────────────────────────────────────
   const [recibos, setRecibos]           = useState<ReciboCarrito[]>([])
@@ -225,6 +256,49 @@ export default function CarritosPage() {
     const { data: sl } = await dbGolf.from('cat_slots').select('id, numero').eq('activo', true).order('numero')
     setSlots(sl ?? [])
   }, [])
+
+  // ── Fetch Cobranza del mes ────────────────────────────────
+  const fetchCobranza = useCallback(async () => {
+    setLoadingC(true)
+    const [{ data: mesData }, { data: pendData }] = await Promise.all([
+      // Cuotas emitidas del periodo seleccionado (canceladas fuera)
+      dbGolf.from('cxc_golf')
+        .select(`id, id_socio_fk, id_pension_fk, concepto, periodo, monto_final, saldo, status, fecha_vencimiento, fecha_pago,
+          cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio),
+          ctrl_pensiones(cat_slots(numero), cat_carritos(marca, modelo, placa))`)
+        .eq('tipo', 'PENSION_CARRITO')
+        .eq('periodo', mesCobranza)
+        .neq('status', 'CANCELADO'),
+      // Cartera vencida global: pendientes exigibles de cualquier mes (regla del día 10)
+      dbGolf.from('cxc_golf')
+        .select('saldo, monto_final, status, periodo, fecha_vencimiento')
+        .eq('tipo', 'PENSION_CARRITO')
+        .in('status', ['PENDIENTE', 'PAGO_PARCIAL']),
+    ])
+
+    const cuotas = ((mesData as unknown as CuotaCobranza[]) ?? [])
+      .sort((a, b) => nc(a.cat_socios).localeCompare(nc(b.cat_socios)))
+    setCuotasMes(cuotas)
+
+    const corte = periodoCorte()
+    const vencidas = (((pendData ?? []) as { saldo: number | null; monto_final: number; status: string; periodo: string | null; fecha_vencimiento: string | null }[]))
+      .filter(c => cuotaExigible(c, corte))
+    setCarteraVencida({
+      count: vencidas.length,
+      monto: vencidas.reduce((a, c) => a + saldoCuota(c), 0),
+    })
+    setLoadingC(false)
+  }, [mesCobranza])
+
+  // Cuotas pendientes del socio (para cobrar desde el tab de cobranza)
+  const abrirCobroSocio = async (idSocio: number, nombreSocio: string) => {
+    const { data } = await dbGolf.from('cxc_golf')
+      .select('id, concepto, periodo, monto_original, descuento, monto_final, saldo, status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo, id_socio_fk, cat_socios(nombre, apellido_paterno, apellido_materno)')
+      .eq('id_socio_fk', idSocio)
+      .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+      .order('fecha_vencimiento', { ascending: true })
+    setShowCobrar({ cuotas: (data as unknown as Cuota[]) ?? [], nombreSocio, idSocio })
+  }
 
   // ── Fetch Recibos Pensiones ───────────────────────────────
   const fetchRecibosCarritos = useCallback(async () => {
@@ -459,6 +533,7 @@ export default function CarritosPage() {
   useEffect(() => { fetchPensiones() }, [fetchPensiones])
   useEffect(() => { if (tab === 'config') fetchConfig() }, [tab, fetchConfig])
   useEffect(() => { if (tab === 'recibos') fetchRecibosCarritos() }, [tab, fetchRecibosCarritos])
+  useEffect(() => { if (tab === 'cobranza') fetchCobranza() }, [tab, fetchCobranza])
 
   const guardarTarifa = async () => {
     setSavingConfig(true)
@@ -531,9 +606,10 @@ export default function CarritosPage() {
   })
 
   const TABS: { key: Tab; label: string; icon: any }[] = [
-    { key: 'pensiones', label: 'Pensiones',     icon: Car      },
-    { key: 'recibos',   label: 'Recibos',       icon: Receipt  },
-    { key: 'config',    label: 'Configuración', icon: Settings },
+    { key: 'pensiones', label: 'Pensiones',     icon: Car        },
+    { key: 'cobranza',  label: 'Cobranza',      icon: CreditCard },
+    { key: 'recibos',   label: 'Recibos',       icon: Receipt    },
+    { key: 'config',    label: 'Configuración', icon: Settings   },
   ]
 
   return (
@@ -784,6 +860,174 @@ export default function CarritosPage() {
           </div>
         </>
       )}
+
+      {/* ── TAB: COBRANZA ────────────────────────────────── */}
+      {tab === 'cobranza' && (() => {
+        const mesExigible = mesCobranza <= periodoCorte()
+        const emitido   = cuotasMes.reduce((a, c) => a + c.monto_final, 0)
+        const porCobrar = cuotasMes.reduce((a, c) => a + saldoCuota(c), 0)
+        const cobrado   = emitido - porCobrar
+        const pagadas   = cuotasMes.filter(c => saldoCuota(c) === 0).length
+        const avance    = emitido > 0 ? Math.round((cobrado / emitido) * 100) : 0
+        const mesLabel  = new Date(`${mesCobranza}-15T12:00:00`).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
+
+        const cuotasF = cuotasMes.filter(c => {
+          if (filtroStatusC === 'por_cobrar' && saldoCuota(c) === 0) return false
+          if (filtroStatusC === 'pagadas'    && saldoCuota(c) > 0)  return false
+          if (!busquedaC.trim()) return true
+          const q = busquedaC.toLowerCase()
+          const placa = (c.ctrl_pensiones?.cat_carritos?.placa ?? '').toLowerCase()
+          return nc(c.cat_socios).toLowerCase().includes(q) || placa.includes(q)
+        })
+        const fMonto   = cuotasF.reduce((a, c) => a + c.monto_final, 0)
+        const fSaldo   = cuotasF.reduce((a, c) => a + saldoCuota(c), 0)
+
+        const situacion = (c: CuotaCobranza) => {
+          if (saldoCuota(c) === 0)        return { label: 'Pagada',     bg: '#dcfce7', color: '#15803d' }
+          if (c.status === 'PAGO_PARCIAL') return { label: 'Parcial',    bg: '#fffbeb', color: '#d97706' }
+          if (mesExigible)                 return { label: 'Vencida',    bg: '#fef2f2', color: '#dc2626' }
+          return                                  { label: 'Por vencer', bg: '#eff6ff', color: '#2563eb' }
+        }
+
+        return (
+          <>
+            {/* KPIs del mes */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+              {[
+                { label: `Emitido — ${mesLabel}`, value: fmt$(emitido), sub: `${cuotasMes.length} cuota${cuotasMes.length !== 1 ? 's' : ''}`, color: '#2563eb', bg: '#eff6ff' },
+                { label: 'Cobrado del mes', value: fmt$(cobrado), sub: `${pagadas} pagada${pagadas !== 1 ? 's' : ''} · ${avance}% de avance`, color: '#059669', bg: '#ecfdf5' },
+                {
+                  label: mesExigible ? 'Cartera vencida del mes' : 'Por cobrar del mes',
+                  value: fmt$(porCobrar),
+                  sub: mesExigible ? 'Exigible — regla del día 10' : 'Por vencer — exigible a partir del día 11',
+                  color: porCobrar > 0 ? (mesExigible ? '#dc2626' : '#d97706') : '#64748b',
+                  bg:    porCobrar > 0 ? (mesExigible ? '#fef2f2' : '#fffbeb') : '#f8fafc',
+                },
+                { label: 'Cartera vencida total', value: fmt$(carteraVencida.monto), sub: `${carteraVencida.count} cuota${carteraVencida.count !== 1 ? 's' : ''} de todos los meses`, color: carteraVencida.monto > 0 ? '#dc2626' : '#64748b', bg: carteraVencida.monto > 0 ? '#fef2f2' : '#f8fafc' },
+              ].map(c => (
+                <div key={c.label} className="card" style={{ flex: '1 1 200px', maxWidth: 280, padding: '14px 18px', background: c.bg, border: `1px solid ${c.color}22` }}>
+                  <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, textTransform: 'capitalize' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{loadingC ? '—' : c.value}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{loadingC ? '' : c.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Filtros */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input
+                type="month"
+                value={mesCobranza}
+                onChange={e => setMesCobranza(e.target.value)}
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }}
+              />
+              <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                {([
+                  { key: 'todas',      label: 'Todas',      color: '#059669' },
+                  { key: 'por_cobrar', label: 'Por cobrar', color: '#dc2626' },
+                  { key: 'pagadas',    label: 'Pagadas',    color: '#2563eb' },
+                ] as const).map(f => (
+                  <button key={f.key} onClick={() => setFiltroStatusC(f.key)} style={{
+                    padding: '7px 14px', fontSize: 12, fontWeight: filtroStatusC === f.key ? 600 : 400,
+                    background: filtroStatusC === f.key ? f.color : '#fff',
+                    color: filtroStatusC === f.key ? '#fff' : '#94a3b8',
+                    border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                  }}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 300 }}>
+                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="Buscar socio o placa…" value={busquedaC} onChange={e => setBusquedaC(e.target.value)} />
+                {busquedaC && <button onClick={() => setBusquedaC('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              </div>
+            </div>
+
+            {/* Tabla de cuotas del mes */}
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
+                      {['Socio', 'Carrito', 'Cajón', 'Concepto', 'Monto', 'Cobrado', 'Saldo', 'Situación', 'Fecha de pago', ''].map(h => (
+                        <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingC ? (
+                      <tr><td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                    ) : cuotasF.length === 0 ? (
+                      <tr><td colSpan={10} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin cuotas para {mesLabel}</div>
+                        <div style={{ fontSize: 12 }}>Genera las cuotas del periodo desde la pensión o ajusta los filtros</div>
+                      </td></tr>
+                    ) : cuotasF.map(c => {
+                      const sit = situacion(c)
+                      const saldo = saldoCuota(c)
+                      const carDesc = [c.ctrl_pensiones?.cat_carritos?.marca, c.ctrl_pensiones?.cat_carritos?.modelo].filter(Boolean).join(' ') || '—'
+                      return (
+                        <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nc(c.cat_socios)}</div>
+                            {c.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{c.cat_socios.numero_socio}</div>}
+                          </td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
+                            <div>{carDesc}</div>
+                            {c.ctrl_pensiones?.cat_carritos?.placa && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Placa {c.ctrl_pensiones.cat_carritos.placa}</div>}
+                          </td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12, whiteSpace: 'nowrap' }}>
+                            {c.ctrl_pensiones?.cat_slots ? `Cajón ${c.ctrl_pensiones.cat_slots.numero}` : '—'}
+                          </td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>{c.concepto}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#059669', whiteSpace: 'nowrap' }}>
+                            {c.monto_final - saldo > 0 ? fmt$(c.monto_final - saldo) : <span style={{ color: '#cbd5e1', fontWeight: 400 }}>—</span>}
+                          </td>
+                          <td style={{ padding: '10px 14px', fontWeight: 700, color: saldo > 0 ? '#dc2626' : '#cbd5e1', whiteSpace: 'nowrap' }}>
+                            {saldo > 0 ? fmt$(saldo) : '—'}
+                          </td>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sit.bg, color: sit.color }}>{sit.label}</span>
+                          </td>
+                          <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            {c.fecha_pago ? fechaFmtR(c.fecha_pago) : '—'}
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            {puedeEscribir && saldo > 0 && (
+                              <button onClick={() => abrirCobroSocio(c.id_socio_fk, nc(c.cat_socios))}
+                                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                <CreditCard size={12} /> Cobrar
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                  {!loadingC && cuotasF.length > 0 && (
+                    <tfoot>
+                      <tr style={{ background: 'var(--surface-alt)', borderTop: '2px solid var(--border)' }}>
+                        <td colSpan={4} style={{ padding: '10px 14px', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Total ({cuotasF.length} cuota{cuotasF.length !== 1 ? 's' : ''})
+                        </td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap' }}>{fmt$(fMonto)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>{fmt$(fMonto - fSaldo)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: fSaldo > 0 ? '#dc2626' : '#cbd5e1', whiteSpace: 'nowrap' }}>{fSaldo > 0 ? fmt$(fSaldo) : '—'}</td>
+                        <td colSpan={3} />
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            </div>
+          </>
+        )
+      })()}
 
       {/* ── TAB: RECIBOS ─────────────────────────────────── */}
       {tab === 'recibos' && (
@@ -1121,7 +1365,7 @@ export default function CarritosPage() {
           nombreSocio={showCobrar.nombreSocio}
           idSocio={showCobrar.idSocio}
           onClose={() => setShowCobrar(null)}
-          onSaved={() => { setShowCobrar(null); fetchPensiones() }}
+          onSaved={() => { setShowCobrar(null); fetchPensiones(); if (tab === 'cobranza') fetchCobranza() }}
         />
       )}
 
