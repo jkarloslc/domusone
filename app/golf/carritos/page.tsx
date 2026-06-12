@@ -143,8 +143,10 @@ const fechaFmtR = (d: string) =>
 type Tab = 'pensiones' | 'cobranza' | 'recibos' | 'config'
 
 export default function CarritosPage() {
-  const { canWrite } = useAuth()
+  const { canWrite, authUser } = useAuth()
   const puedeEscribir = canWrite('golf-carritos')
+  // Cambio/liberación de cajón restringido a administración
+  const puedeCambiarCajon = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
 
   const [tab, setTab] = useState<Tab>('pensiones')
 
@@ -864,7 +866,7 @@ export default function CarritosPage() {
                                       {p.observaciones && <span style={{ marginLeft: 8, fontStyle: 'italic' }}>{p.observaciones}</span>}
                                     </div>
                                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-                                      {puedeEscribir && p.activo && (
+                                      {puedeCambiarCajon && p.activo && (
                                         <button onClick={e => { e.stopPropagation(); abrirCambioSlot(p) }}
                                           style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                                           <MapPin size={12} /> {p.id_slot_fk ? 'Cambiar / liberar cajón' : 'Asignar cajón'}
