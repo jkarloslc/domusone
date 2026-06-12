@@ -6,7 +6,6 @@ import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Car, Clock, Filter, Eye, P
 import Link from 'next/link'
 import SalidaCarritoModal from './SalidaCarritoModal'
 import BitacoraModal from './BitacoraModal'
-import SeleccionCarritoModal from './SeleccionCarritoModal'
 import { abrirTicketSalidaCarrito } from './ticket'
 
 type Salida = {
@@ -105,7 +104,7 @@ export default function SalidasCarritosPage() {
   const [filtroTipoBit, setFiltroTipoBit] = useState('')
   const [soloAbiertos, setSoloAbiertos] = useState(false)
   const [pensionesBit, setPensionesBit] = useState<PensionBit[]>([])
-  const [showSeleccionCarrito, setShowSeleccionCarrito] = useState(false)
+  const [showNuevaBitacora, setShowNuevaBitacora] = useState(false)
   const [showBitacora, setShowBitacora] = useState<{ idCarrito: number; idPension: number | null; idSlot: number | null; idSocio: number | null; nombreSocio: string; descCarrito: string } | null>(null)
 
   const fetchSalidas = useCallback(async () => {
@@ -225,19 +224,6 @@ export default function SalidasCarritosPage() {
     }, autoPrint)
   }
 
-  const abrirNuevoRegistro = (p: PensionBit) => {
-    const descCarrito = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
-    setShowSeleccionCarrito(false)
-    setShowBitacora({
-      idCarrito: p.id_carrito_fk,
-      idPension: p.id,
-      idSlot: p.id_slot_fk,
-      idSocio: p.id_socio_fk,
-      nombreSocio: nc(p.cat_socios),
-      descCarrito: p.cat_carritos?.placa ? `${descCarrito} · ${p.cat_carritos.placa}` : descCarrito,
-    })
-  }
-
   const entriesBitF = entriesBit.filter(e => {
     if (soloAbiertos && e.resuelto) return false
     if (filtroTipoBit && e.tipo_evento !== filtroTipoBit) return false
@@ -288,7 +274,7 @@ export default function SalidasCarritosPage() {
             </button>
           )}
           {puedeEscribir && tab === 'bitacora' && (
-            <button className="btn-primary" onClick={() => setShowSeleccionCarrito(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669' }}>
+            <button className="btn-primary" onClick={() => setShowNuevaBitacora(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669' }}>
               <Plus size={14} /> Nuevo registro
             </button>
           )}
@@ -591,11 +577,11 @@ export default function SalidasCarritosPage() {
 
       {showModal && <SalidaCarritoModal onClose={() => setShowModal(false)} onSaved={handleSaved} />}
 
-      {showSeleccionCarrito && (
-        <SeleccionCarritoModal
+      {showNuevaBitacora && (
+        <BitacoraModal
           pensiones={pensionesBit}
-          onClose={() => setShowSeleccionCarrito(false)}
-          onConfirm={abrirNuevoRegistro}
+          onClose={() => setShowNuevaBitacora(false)}
+          onSaved={() => { setShowNuevaBitacora(false); fetchBitacora() }}
         />
       )}
 

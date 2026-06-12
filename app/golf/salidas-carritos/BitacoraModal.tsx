@@ -8,13 +8,26 @@ import { cuotaExigible } from './adeudos'
 
 type TipoEvento = 'SALIDA_TALLER' | 'REGRESO_TALLER' | 'PRESTAMO_TERCERO' | 'INCIDENCIA' | 'SALIDA_DEFINITIVA'
 
+type PensionOpt = {
+  id: number
+  id_socio_fk: number
+  id_carrito_fk: number
+  id_slot_fk: number | null
+  cat_socios: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null } | null
+  cat_carritos: { marca: string | null; modelo: string | null; placa: string | null } | null
+  cat_slots: { numero: string } | null
+}
+
 type Props = {
-  idCarrito: number
-  idPension: number | null
-  idSlot: number | null
-  idSocio: number | null
-  nombreSocio: string
-  descCarrito: string
+  // Modo A: carrito pre-seleccionado (desde una fila de pensión)
+  idCarrito?: number
+  idPension?: number | null
+  idSlot?: number | null
+  idSocio?: number | null
+  nombreSocio?: string
+  descCarrito?: string
+  // Modo B: selección dentro del modal (desde el botón "Nuevo registro")
+  pensiones?: PensionOpt[]
   onClose: () => void
   onSaved: () => void
 }
@@ -27,6 +40,9 @@ const TIPOS: { value: TipoEvento; label: string; color: string; bg: string; full
   { value: 'SALIDA_DEFINITIVA',  label: '🚗 Salida Definitiva',   color: '#7c3aed', bg: '#f5f3ff', full: true },
 ]
 
+const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null } | null) =>
+  s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—'
+
 const inp: React.CSSProperties = {
   width: '100%', padding: '8px 12px', fontSize: 13,
   border: '1px solid #e2e8f0', borderRadius: 8,
@@ -35,8 +51,16 @@ const inp: React.CSSProperties = {
 }
 const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
 
-export default function BitacoraModal({ idCarrito, idPension, idSlot, idSocio, nombreSocio, descCarrito, onClose, onSaved }: Props) {
+export default function BitacoraModal({
+  idCarrito, idPension, idSlot, idSocio, nombreSocio, descCarrito,
+  pensiones,
+  onClose, onSaved,
+}: Props) {
   const { authUser } = useAuth()
+
+  const modoSeleccion = !idCarrito && Array.isArray(pensiones)
+
+  const [selPension, setSelPension] = useState<PensionOpt | null>(null)
 
   const [tipo, setTipo]                   = useState<TipoEvento>('SALIDA_TALLER')
   const [descripcion, setDescripcion]     = useState('')
@@ -52,20 +76,33 @@ export default function BitacoraModal({ idCarrito, idPension, idSlot, idSocio, n
   const [saving, setSaving]               = useState(false)
   const [error, setError]                 = useState('')
 
+  // Valores efectivos según el modo
+  const efIdCarrito = modoSeleccion ? (selPension?.id_carrito_fk ?? null) : (idCarrito ?? null)
+  const efIdPension = modoSeleccion ? (selPension?.id ?? null)             : (idPension ?? null)
+  const efIdSocio   = modoSeleccion ? (selPension?.id_socio_fk ?? null)    : (idSocio ?? null)
+  const efDescCarrito = modoSeleccion
+    ? (() => {
+        if (!selPension) return ''
+        const car = [selPension.cat_carritos?.marca, selPension.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
+        return selPension.cat_carritos?.placa ? `${car} · ${selPension.cat_carritos.placa}` : car
+      })()
+    : (descCarrito ?? '')
+  const efNombreSocio = modoSeleccion ? nc(selPension?.cat_socios ?? null) : (nombreSocio ?? '')
+
+  const puedeGuardar = (modoSeleccion ? !!selPension : !!efIdCarrito) && !!descripcion.trim()
+
   const handleSave = async () => {
+    if (!efIdCarrito) { setError('Selecciona un carrito para continuar'); return }
     if (!descripcion.trim()) { setError('La descripción es obligatoria'); return }
-    if (tipo === 'SALIDA_DEFINITIVA' && !idPension) { setError('No hay pensión activa asociada a este carrito'); return }
+    if (tipo === 'SALIDA_DEFINITIVA' && !efIdPension) { setError('No hay pensión activa asociada a este carrito'); return }
     setSaving(true); setError('')
 
     const hoyISO = new Date().toISOString().split('T')[0]
 
-    // Salida definitiva: bloquear si hay adeudo exigible (regla del día 10).
-    // Hasta el día 10 solo bloquean cuotas de meses anteriores; del 11 en
-    // adelante la cuota del mes en curso también debe estar cobrada.
-    if (tipo === 'SALIDA_DEFINITIVA' && idPension) {
+    if (tipo === 'SALIDA_DEFINITIVA' && efIdPension) {
       const { data: cxc, error: errCxc } = await dbGolf.from('cxc_golf')
         .select('saldo, monto_final, periodo, fecha_vencimiento')
-        .eq('id_pension_fk', idPension)
+        .eq('id_pension_fk', efIdPension)
         .eq('tipo', 'PENSION_CARRITO')
         .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       if (errCxc) { setError('No se pudo validar el adeudo de cuotas: ' + errCxc.message); setSaving(false); return }
@@ -82,9 +119,9 @@ export default function BitacoraModal({ idCarrito, idPension, idSlot, idSocio, n
     }
 
     const payload: Record<string, unknown> = {
-      id_carrito_fk:    idCarrito,
-      id_pension_fk:    idPension ?? null,
-      id_socio_fk:      idSocio ?? null,
+      id_carrito_fk:    efIdCarrito,
+      id_pension_fk:    efIdPension ?? null,
+      id_socio_fk:      efIdSocio ?? null,
       tipo_evento:      tipo,
       descripcion:      descripcion.trim(),
       fecha_evento:     new Date(fechaEvento).toISOString(),
@@ -106,22 +143,18 @@ export default function BitacoraModal({ idCarrito, idPension, idSlot, idSocio, n
       payload.nivel_urgencia = urgencia
     }
 
-    // 1. Insertar entrada de bitácora
     const { error: err } = await dbGolf.from('bitacora_carritos').insert(payload)
     if (err) { setError(err.message); setSaving(false); return }
 
-    // 2. Salida definitiva: liberar slot + cerrar pensión + cancelar cuotas pendientes
-    if (tipo === 'SALIDA_DEFINITIVA' && idPension) {
-      // Cerrar pensión y liberar slot
+    if (tipo === 'SALIDA_DEFINITIVA' && efIdPension) {
       const { error: errP } = await dbGolf.from('ctrl_pensiones')
         .update({ activo: false, fecha_fin: hoyISO, id_slot_fk: null })
-        .eq('id', idPension)
+        .eq('id', efIdPension)
       if (errP) { setError('Bitácora guardada pero error al cerrar pensión: ' + errP.message); setSaving(false); return }
 
-      // Cancelar cuotas pendientes (saldo → 0, status → CANCELADO)
       const { error: errC } = await dbGolf.from('cxc_golf')
         .update({ saldo: 0, status: 'CANCELADO' })
-        .eq('id_pension_fk', idPension)
+        .eq('id_pension_fk', efIdPension)
         .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       if (errC) { setError('Pensión cerrada pero error al cancelar cuotas: ' + errC.message); setSaving(false); return }
     }
@@ -129,24 +162,54 @@ export default function BitacoraModal({ idCarrito, idPension, idSlot, idSocio, n
     onSaved()
   }
 
+  const subtitulo = efDescCarrito && efNombreSocio
+    ? `${efDescCarrito} · ${efNombreSocio}`
+    : modoSeleccion ? 'Selecciona el carrito para continuar' : ''
+
   return (
     <ModalShell
       modulo="golf-carritos"
       titulo="Nueva Entrada — Bitácora"
-      subtitulo={`${descCarrito} · ${nombreSocio}`}
+      subtitulo={subtitulo}
       maxWidth={560}
       onClose={onClose}
       footer={<>
         <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer', fontFamily: 'inherit' }}>
           Cancelar
         </button>
-        <button onClick={handleSave} disabled={saving || !descripcion.trim()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: tipo === 'SALIDA_DEFINITIVA' ? '#7c3aed' : '#059669', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', opacity: (saving || !descripcion.trim()) ? 0.6 : 1 }}>
+        <button onClick={handleSave} disabled={saving || !puedeGuardar} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: tipo === 'SALIDA_DEFINITIVA' ? '#7c3aed' : '#059669', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', opacity: (saving || !puedeGuardar) ? 0.6 : 1 }}>
           {saving ? <Loader size={14} /> : <Save size={14} />}
           {tipo === 'SALIDA_DEFINITIVA' ? 'Confirmar Salida Definitiva' : 'Guardar Registro'}
         </button>
       </>}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Select de carrito — solo en modo selección */}
+        {modoSeleccion && (
+          <div>
+            <label style={lbl}>Carrito *</label>
+            <select
+              value={selPension?.id ?? ''}
+              onChange={e => {
+                const p = (pensiones ?? []).find(x => x.id === Number(e.target.value)) ?? null
+                setSelPension(p)
+              }}
+              style={inp}
+              autoFocus>
+              <option value="">— Selecciona un carrito —</option>
+              {(pensiones ?? []).map(p => {
+                const car = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
+                const placa = p.cat_carritos?.placa ? ` · ${p.cat_carritos.placa}` : ''
+                return (
+                  <option key={p.id} value={p.id}>
+                    {p.cat_slots ? `Cajón ${p.cat_slots.numero} — ` : ''}{car}{placa} — {nc(p.cat_socios)}
+                  </option>
+                )
+              })}
+            </select>
+          </div>
+        )}
 
         {/* Tipo de evento */}
         <div>
