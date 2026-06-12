@@ -41,6 +41,8 @@ import ReporteOPsPorProveedor from './ReporteOPsPorProveedor'
 import ReporteEstadoCuentaProveedor from './ReporteEstadoCuentaProveedor'
 import ReportePagosAplicados from './ReportePagosAplicados'
 import ReporteGolfVentasHistoricas from './ReporteGolfVentasHistoricas'
+import ReporteGolfAuditoriaSlots from './ReporteGolfAuditoriaSlots'
+import ReporteGolfSlotsOcupacion from './ReporteGolfSlotsOcupacion'
 import ReporteRiegoConsumo from './ReporteRiegoConsumo'
 import ReporteLotesPorSeccionClasif from './ReporteLotesPorSeccionClasif'
 import ReporteLotesResumenClasif from './ReporteLotesResumenClasif'
@@ -139,6 +141,8 @@ const GRUPOS = [
       { id: 'golf-accesos',       label: 'Salidas al Campo',     icon: MapPin,    desc: 'Registro de rondas por socio, espacio y forma de juego' },
       { id: 'golf-caballos-servicios',  label: 'Caballos y Servicios',        icon: BarChart3, desc: 'Desglose por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
       { id: 'golf-ventas-historicas',   label: 'Ventas Históricas POS',       icon: Wallet,    desc: 'Ventas de cortes realizados por centro de venta, artículo/servicio y rango de fechas' },
+      { id: 'golf-auditoria-slots',     label: 'Auditoría de Slots',          icon: ClipboardList, desc: 'Comparativo sistema vs. físico de cajones asignados, vacantes y diferencias por categoría' },
+      { id: 'golf-slots-ocupacion',     label: 'Ocupación de Slots / Cajones', icon: BarChart3, desc: 'Porcentaje de ocupación y disponibilidad de cajones por categoría y período' },
       { id: 'golf-riego-consumo',       label: 'Consumo de Agua — Riego',     icon: Droplets,  desc: 'Consumo real vs. programado por origen de agua, semana y período con análisis de gap' },
     ],
   },
@@ -292,6 +296,8 @@ function ReportesContent() {
       {active === 'golf-accesos'       && <ReporteGolfAccesos />}
       {active === 'golf-caballos-servicios'  && <ReporteHipicoServicios />}
       {active === 'golf-ventas-historicas'   && <ReporteGolfVentasHistoricas />}
+      {active === 'golf-auditoria-slots'     && <ReporteGolfAuditoriaSlots />}
+      {active === 'golf-slots-ocupacion'     && <ReporteGolfSlotsOcupacion />}
       {active === 'golf-riego-consumo'       && <ReporteRiegoConsumo />}
 
       {/* Reportes hípico */}
