@@ -300,15 +300,18 @@ export default function CarritosPage() {
     setLoadingC(false)
   }, [mesCobranza])
 
-  // Cuotas de pensión pendientes del socio (para cobrar desde el tab de cobranza)
-  const abrirCobroSocio = async (idSocio: number, nombreSocio: string) => {
-    const { data } = await dbGolf.from('cxc_golf')
+  // Cuotas pendientes de UNA pensión (cobro por carrito, no agrupado por socio —
+  // un socio con dos carritos cobra cada pensión por separado)
+  const abrirCobroPension = async (c: CuotaCobranza) => {
+    let q = dbGolf.from('cxc_golf')
       .select('id, concepto, periodo, monto_original, descuento, monto_final, saldo, status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo, id_socio_fk, cat_socios(nombre, apellido_paterno, apellido_materno)')
-      .eq('id_socio_fk', idSocio)
       .eq('tipo', 'PENSION_CARRITO')
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .order('fecha_vencimiento', { ascending: true })
-    setShowCobrar({ cuotas: (data as unknown as Cuota[]) ?? [], nombreSocio, idSocio })
+    // Cuotas antiguas sin pensión ligada: caen al criterio por socio
+    q = c.id_pension_fk ? q.eq('id_pension_fk', c.id_pension_fk) : q.eq('id_socio_fk', c.id_socio_fk).is('id_pension_fk', null)
+    const { data } = await q
+    setShowCobrar({ cuotas: (data as unknown as Cuota[]) ?? [], nombreSocio: nc(c.cat_socios), idSocio: c.id_socio_fk })
   }
 
   // ── Fetch Recibos Pensiones ───────────────────────────────
@@ -1021,7 +1024,7 @@ export default function CarritosPage() {
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             {puedeEscribir && saldo > 0 && (
-                              <button onClick={() => abrirCobroSocio(c.id_socio_fk, nc(c.cat_socios))}
+                              <button onClick={() => abrirCobroPension(c)}
                                 style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#059669', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 <CreditCard size={12} /> Cobrar
                               </button>
