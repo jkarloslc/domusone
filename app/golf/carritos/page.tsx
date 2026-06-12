@@ -739,16 +739,16 @@ export default function CarritosPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                    {['', 'Socio', 'Carrito', 'Cajón', 'Placa', 'Tarifa/mes', 'Pendientes', 'Situación', 'Status', ''].map(h => (
+                    {['', 'Socio', 'Carrito', 'Cajón', 'Tarifa/mes', 'Pendientes', 'Situación', 'Status', ''].map(h => (
                       <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loadingP ? (
-                    <tr><td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                    <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
                   ) : pensionesF.length === 0 ? (
-                    <tr><td colSpan={10} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <tr><td colSpan={9} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
                       <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin pensiones registradas</div>
                       <div style={{ fontSize: 12 }}>Registra un nuevo carrito para comenzar</div>
                     </td></tr>
@@ -794,9 +794,6 @@ export default function CarritosPage() {
                           <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
                             {p.cat_slots ? `Cajón ${p.cat_slots.numero}` : '—'}
                           </td>
-                          <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
-                            {p.cat_carritos?.placa ?? '—'}
-                          </td>
                           <td style={{ padding: '10px 14px', fontWeight: 600, color: '#059669', whiteSpace: 'nowrap' }}>
                             {fmt$(p.monto_mensual)}
                           </td>
@@ -834,7 +831,7 @@ export default function CarritosPage() {
                           const carDesc2 = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
                           return (
                             <tr key={`${p.id}-det`}>
-                              <td colSpan={10} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
+                              <td colSpan={9} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
                                 <div style={{ background: '#f8fafc', padding: '16px 20px 20px 48px' }}>
 
                                   {/* Info de pensión + acciones */}
