@@ -7,6 +7,7 @@ import Link from 'next/link'
 import CarritoModal from './CarritoModal'
 import PensionModal from './PensionModal'
 import CobrarCuotaModal from './CobrarCuotaModal'
+import { periodoCorte, cuotaExigible } from '../salidas-carritos/adeudos'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Pension = {
@@ -184,8 +185,9 @@ export default function CarritosPage() {
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .eq('tipo', 'PENSION_CARRITO')
 
-    // Adeudo: cuota sin pagar del mes en curso o anteriores (las futuras no cuentan)
-    const mesActual = new Date().toISOString().slice(0, 7)
+    // Adeudo con regla del día 10 (misma que salidas y salida definitiva):
+    // hasta el día 10 la cuota del mes en curso aún no cuenta como adeudo
+    const corte = periodoCorte()
     const pendPorPension: Record<number, { count: number; monto: number }> = {}
     const adeudoPorPension: Record<number, boolean> = {}
     for (const c of (cxcData ?? []) as { id_pension_fk: number | null; saldo: number; periodo: string | null; fecha_vencimiento: string | null }[]) {
@@ -193,10 +195,7 @@ export default function CarritosPage() {
       if (!pendPorPension[c.id_pension_fk]) pendPorPension[c.id_pension_fk] = { count: 0, monto: 0 }
       pendPorPension[c.id_pension_fk].count++
       pendPorPension[c.id_pension_fk].monto += c.saldo
-      const vencidaMes = c.periodo
-        ? c.periodo <= mesActual
-        : (c.fecha_vencimiento != null && c.fecha_vencimiento < hoy)
-      if (vencidaMes) adeudoPorPension[c.id_pension_fk] = true
+      if (cuotaExigible(c, corte)) adeudoPorPension[c.id_pension_fk] = true
     }
 
     const result: Pension[] = (pData ?? []).map((p: any) => ({
