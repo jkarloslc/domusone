@@ -81,7 +81,7 @@ const MODULOS = [
   },
   {
     key: 'carritos',
-    label: 'Pensión de Carritos / Bitácora',
+    label: 'Pensiones',
     desc: 'Pensiones, slots y cobros mensuales o anuales',
     icon: Car,
     color: '#059669',
@@ -90,8 +90,8 @@ const MODULOS = [
   },
   {
     key: 'salidas-carritos',
-    label: 'Entrada/Salida de Carritos',
-    desc: 'Salidas de motor lobby a ronda de juego y registro de regreso',
+    label: 'Entrada / Salida y Bitácora de Carritos',
+    desc: 'Salidas a ronda de juego, regresos y bitácora del carrito',
     icon: ArrowRightLeft,
     color: '#0d9488',
     href: '/golf/salidas-carritos',
