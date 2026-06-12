@@ -1,12 +1,14 @@
 'use client'
 import { useState } from 'react'
-import { ChevronLeft, MapPin, CreditCard, FileText, BarChart2, Award } from 'lucide-react'
+import { ChevronLeft, MapPin, CreditCard, FileText, BarChart2, Award, ClipboardCheck, Warehouse } from 'lucide-react'
 import Link from 'next/link'
 import ReporteGolfAccesos         from '@/app/reportes/ReporteGolfAccesos'
 import ReporteGolfEstadoCuenta    from '@/app/reportes/ReporteGolfEstadoCuenta'
 import ReporteGolfCobranza        from '@/app/reportes/ReporteGolfCobranza'
 import ReporteHipicoServicios     from '@/app/reportes/ReporteHipicoServicios'
 import ReporteMiembrosFederados   from '@/app/reportes/ReporteMiembrosFederados'
+import ReporteGolfAuditoriaSlots  from '@/app/reportes/ReporteGolfAuditoriaSlots'
+import ReporteGolfSlotsOcupacion  from '@/app/reportes/ReporteGolfSlotsOcupacion'
 
 const REPORTES = [
   {
@@ -48,6 +50,22 @@ const REPORTES = [
     icon:  Award,
     color: '#d97706',
     bg:    '#fffbeb',
+  },
+  {
+    key:   'slots-ocupacion',
+    label: 'Ocupación de Slots / Cajones',
+    desc:  'Status de cada cajón con socio y familiar ocupante, tipo, marca y modelo del carrito',
+    icon:  Warehouse,
+    color: '#059669',
+    bg:    '#ecfdf5',
+  },
+  {
+    key:   'auditoria-slots',
+    label: 'Auditoría de Slots',
+    desc:  'Hoja de verificación: ocupación según sistema contra levantamiento físico en motor lobby',
+    icon:  ClipboardCheck,
+    color: '#0d9488',
+    bg:    '#f0fdfa',
   },
 ]
 
@@ -140,6 +158,8 @@ export default function GolfReportesPage() {
       {activo === 'estado-cuenta'      && <ReporteGolfEstadoCuenta />}
       {activo === 'caballos-servicios' && <ReporteHipicoServicios />}
       {activo === 'miembros-federados' && <ReporteMiembrosFederados />}
+      {activo === 'slots-ocupacion'    && <ReporteGolfSlotsOcupacion />}
+      {activo === 'auditoria-slots'    && <ReporteGolfAuditoriaSlots />}
     </div>
   )
 }
