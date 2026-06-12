@@ -6,6 +6,7 @@ import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Car, Clock, Filter, Eye, P
 import Link from 'next/link'
 import SalidaCarritoModal from './SalidaCarritoModal'
 import BitacoraModal from './BitacoraModal'
+import SeleccionCarritoModal from './SeleccionCarritoModal'
 import { abrirTicketSalidaCarrito } from './ticket'
 
 type Salida = {
@@ -104,7 +105,7 @@ export default function SalidasCarritosPage() {
   const [filtroTipoBit, setFiltroTipoBit] = useState('')
   const [soloAbiertos, setSoloAbiertos] = useState(false)
   const [pensionesBit, setPensionesBit] = useState<PensionBit[]>([])
-  const [idPensionBit, setIdPensionBit] = useState<number | ''>('')
+  const [showSeleccionCarrito, setShowSeleccionCarrito] = useState(false)
   const [showBitacora, setShowBitacora] = useState<{ idCarrito: number; idPension: number | null; idSlot: number | null; idSocio: number | null; nombreSocio: string; descCarrito: string } | null>(null)
 
   const fetchSalidas = useCallback(async () => {
@@ -161,11 +162,19 @@ export default function SalidasCarritosPage() {
     ])
     const entries = (bData as unknown as BitacoraEntry[]) ?? []
     setEntriesBit(entries)
-    // Orden por id de cajón (sin cajón al final), después por nombre de socio
+    // Orden por número de cajón/slot (numérico), sin cajón al final, luego por nombre
+    const parseCajon = (p: PensionBit) => {
+      if (!p.cat_slots) return Number.MAX_SAFE_INTEGER
+      const n = parseInt(p.cat_slots.numero, 10)
+      return isNaN(n) ? Number.MAX_SAFE_INTEGER - 1 : n
+    }
     const pensiones = ((pData as unknown as PensionBit[]) ?? [])
-      .sort((a, b) =>
-        ((a.id_slot_fk ?? Number.MAX_SAFE_INTEGER) - (b.id_slot_fk ?? Number.MAX_SAFE_INTEGER))
-        || nc(a.cat_socios).localeCompare(nc(b.cat_socios)))
+      .sort((a, b) => {
+        const diff = parseCajon(a) - parseCajon(b)
+        if (diff !== 0) return diff
+        if (a.cat_slots && b.cat_slots) return a.cat_slots.numero.localeCompare(b.cat_slots.numero, 'es', { numeric: true })
+        return nc(a.cat_socios).localeCompare(nc(b.cat_socios))
+      })
     setPensionesBit(pensiones)
 
     // Resolver carrito y socio de cada entrada por ID (sin depender de joins)
@@ -216,10 +225,9 @@ export default function SalidasCarritosPage() {
     }, autoPrint)
   }
 
-  const abrirNuevoRegistro = () => {
-    const p = pensionesBit.find(x => x.id === idPensionBit)
-    if (!p) return
+  const abrirNuevoRegistro = (p: PensionBit) => {
     const descCarrito = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
+    setShowSeleccionCarrito(false)
     setShowBitacora({
       idCarrito: p.id_carrito_fk,
       idPension: p.id,
@@ -277,6 +285,11 @@ export default function SalidasCarritosPage() {
           {puedeEscribir && tab === 'salidas' && (
             <button className="btn-primary" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669' }}>
               <Plus size={14} /> Registrar Salida
+            </button>
+          )}
+          {puedeEscribir && tab === 'bitacora' && (
+            <button className="btn-primary" onClick={() => setShowSeleccionCarrito(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669' }}>
+              <Plus size={14} /> Nuevo registro
             </button>
           )}
         </div>
@@ -474,29 +487,6 @@ export default function SalidasCarritosPage() {
             ))}
           </div>
 
-          {/* Nuevo registro */}
-          {puedeEscribir && (
-            <div className="card" style={{ padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Nuevo registro:</span>
-              <select
-                value={idPensionBit}
-                onChange={e => setIdPensionBit(e.target.value ? Number(e.target.value) : '')}
-                style={{ flex: '1 1 280px', maxWidth: 420, padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }}>
-                <option value="">— Selecciona carrito (pensión activa) —</option>
-                {pensionesBit.map(p => {
-                  const car = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
-                  const placa = p.cat_carritos?.placa ? ` · ${p.cat_carritos.placa}` : ''
-                  const cajon = p.cat_slots ? ` · Cajón ${p.cat_slots.numero}` : ''
-                  return <option key={p.id} value={p.id}>{`${car}${placa}${cajon} — ${nc(p.cat_socios)}`}</option>
-                })}
-              </select>
-              <button className="btn-primary" onClick={abrirNuevoRegistro} disabled={!idPensionBit}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', opacity: idPensionBit ? 1 : 0.5 }}>
-                <Plus size={14} /> Nuevo registro
-              </button>
-            </div>
-          )}
-
           {/* Filtros */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
@@ -601,6 +591,14 @@ export default function SalidasCarritosPage() {
 
       {showModal && <SalidaCarritoModal onClose={() => setShowModal(false)} onSaved={handleSaved} />}
 
+      {showSeleccionCarrito && (
+        <SeleccionCarritoModal
+          pensiones={pensionesBit}
+          onClose={() => setShowSeleccionCarrito(false)}
+          onConfirm={abrirNuevoRegistro}
+        />
+      )}
+
       {showBitacora && (
         <BitacoraModal
           idCarrito={showBitacora.idCarrito}
@@ -612,7 +610,6 @@ export default function SalidasCarritosPage() {
           onClose={() => setShowBitacora(null)}
           onSaved={() => {
             setShowBitacora(null)
-            setIdPensionBit('')
             fetchBitacora()
           }}
         />
