@@ -5,7 +5,7 @@ import { dbGolf } from '@/lib/supabase'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import {
   Users, Flag, MapPin, Calendar, Tag,
-  Car, Lock, CreditCard, Receipt, FileText,
+  Car, Lock, CreditCard, Receipt,
   ChevronRight, ArrowRightLeft, RefreshCw, AlertTriangle,
   TrendingUp, Activity,
 } from 'lucide-react'
@@ -113,15 +113,6 @@ const MODULOS = [
     icon: CreditCard,
     color: '#0891b2',
     href: '/golf/cxc',
-    activo: true,
-  },
-  {
-    key: 'recibos',
-    label: 'Recibos',
-    desc: 'Consulta, reimpresión y facturación de cobros emitidos',
-    icon: FileText,
-    color: '#0891b2',
-    href: '/golf/recibos',
     activo: true,
   },
   {
