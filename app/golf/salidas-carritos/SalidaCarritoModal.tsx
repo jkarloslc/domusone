@@ -105,7 +105,10 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
           montoVencido:   vencPorPension[p.id]?.monto ?? 0,
           enRonda:        enRondaSet.has(p.id_carrito_fk),
         }))
-        .sort((a, b) => nc(a.pension.cat_socios).localeCompare(nc(b.pension.cat_socios)))
+        // Orden por id de cajón (sin cajón al final), después por nombre de socio
+        .sort((a, b) =>
+          ((a.pension.id_slot_fk ?? Number.MAX_SAFE_INTEGER) - (b.pension.id_slot_fk ?? Number.MAX_SAFE_INTEGER))
+          || nc(a.pension.cat_socios).localeCompare(nc(b.pension.cat_socios)))
 
       setLista(result)
       setLoading(false)

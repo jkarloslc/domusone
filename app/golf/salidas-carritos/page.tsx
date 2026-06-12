@@ -161,8 +161,11 @@ export default function SalidasCarritosPage() {
     ])
     const entries = (bData as unknown as BitacoraEntry[]) ?? []
     setEntriesBit(entries)
+    // Orden por id de cajón (sin cajón al final), después por nombre de socio
     const pensiones = ((pData as unknown as PensionBit[]) ?? [])
-      .sort((a, b) => nc(a.cat_socios).localeCompare(nc(b.cat_socios)))
+      .sort((a, b) =>
+        ((a.id_slot_fk ?? Number.MAX_SAFE_INTEGER) - (b.id_slot_fk ?? Number.MAX_SAFE_INTEGER))
+        || nc(a.cat_socios).localeCompare(nc(b.cat_socios)))
     setPensionesBit(pensiones)
 
     // Resolver carrito y socio de cada entrada por ID (sin depender de joins)
