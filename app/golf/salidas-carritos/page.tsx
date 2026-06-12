@@ -26,13 +26,6 @@ type BitacoraEntry = {
   id_socio_fk: number | null
   tipo_evento: string
   descripcion: string
-  taller: string | null
-  tercero_nombre: string | null
-  tercero_telefono: string | null
-  costo_estimado: number | null
-  costo_real: number | null
-  nivel_urgencia: string | null
-  resuelto: boolean
   fecha_evento: string
   fecha_fin: string | null
   observaciones: string | null
@@ -102,7 +95,6 @@ export default function SalidasCarritosPage() {
   const [sociosMap, setSociosMap]       = useState<Record<number, SocioMini>>({})
   const [busquedaBit, setBusquedaBit]   = useState('')
   const [filtroTipoBit, setFiltroTipoBit] = useState('')
-  const [soloAbiertos, setSoloAbiertos] = useState(false)
   const [pensionesBit, setPensionesBit] = useState<PensionBit[]>([])
   const [showNuevaBitacora, setShowNuevaBitacora] = useState(false)
   const [showBitacora, setShowBitacora] = useState<{ idCarrito: number; idPension: number | null; idSlot: number | null; idSocio: number | null; nombreSocio: string; descCarrito: string } | null>(null)
@@ -149,7 +141,7 @@ export default function SalidasCarritosPage() {
     setLoadingBit(true)
     const [{ data: bData }, { data: pData }] = await Promise.all([
       dbGolf.from('bitacora_carritos')
-        .select('id, id_carrito_fk, id_socio_fk, tipo_evento, descripcion, taller, tercero_nombre, tercero_telefono, costo_estimado, costo_real, nivel_urgencia, resuelto, fecha_evento, fecha_fin, observaciones, usuario_registra')
+        .select('id, id_carrito_fk, id_socio_fk, tipo_evento, descripcion, fecha_evento, fecha_fin, observaciones, usuario_registra')
         .order('fecha_evento', { ascending: false })
         .limit(500),
       dbGolf.from('ctrl_pensiones')
@@ -225,7 +217,6 @@ export default function SalidasCarritosPage() {
   }
 
   const entriesBitF = entriesBit.filter(e => {
-    if (soloAbiertos && e.resuelto) return false
     if (filtroTipoBit && e.tipo_evento !== filtroTipoBit) return false
     if (busquedaBit.trim()) {
       const q = busquedaBit.toLowerCase()
@@ -237,8 +228,6 @@ export default function SalidasCarritosPage() {
     }
     return true
   })
-
-  const abiertosBit = entriesBit.filter(e => !e.resuelto).length
 
   const esHoy = fecha === localToday()
 
@@ -459,18 +448,13 @@ export default function SalidasCarritosPage() {
         <>
           {/* Stats */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-            {[
-              { label: 'Registros',          value: entriesBit.length, color: '#2563eb', bg: '#eff6ff' },
-              { label: 'Pendientes / Abiertos', value: abiertosBit,    color: abiertosBit > 0 ? '#d97706' : '#64748b', bg: abiertosBit > 0 ? '#fffbeb' : '#f8fafc' },
-            ].map(card => (
-              <div key={card.label} className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: card.bg, border: `1px solid ${card.color}22` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <BookOpen size={14} style={{ color: card.color }} />
-                  <span style={{ fontSize: 11, color: '#64748b' }}>{card.label}</span>
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: card.color, lineHeight: 1 }}>{loadingBit ? '—' : card.value}</div>
+            <div className="card" style={{ flex: '1 1 160px', maxWidth: 220, padding: '14px 18px', background: '#eff6ff', border: '1px solid #2563eb22' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <BookOpen size={14} style={{ color: '#2563eb' }} />
+                <span style={{ fontSize: 11, color: '#64748b' }}>Registros</span>
               </div>
-            ))}
+              <div style={{ fontSize: 28, fontWeight: 700, color: '#2563eb', lineHeight: 1 }}>{loadingBit ? '—' : entriesBit.length}</div>
+            </div>
           </div>
 
           {/* Filtros */}
@@ -488,10 +472,6 @@ export default function SalidasCarritosPage() {
               <option value="">Todos los tipos</option>
               {Object.entries(TIPO_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
-              <input type="checkbox" checked={soloAbiertos} onChange={e => setSoloAbiertos(e.target.checked)} />
-              Solo no resueltos
-            </label>
           </div>
 
           {/* Tabla */}
@@ -500,16 +480,16 @@ export default function SalidasCarritosPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                    {['Carrito', 'Socio', 'Tipo', 'Descripción', 'Detalle', 'Fecha', 'Resuelto', ''].map(h => (
+                    {['Carrito', 'Socio', 'Tipo', 'Descripción', 'Fecha'].map(h => (
                       <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loadingBit ? (
-                    <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                    <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
                   ) : entriesBitF.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <tr><td colSpan={5} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
                       <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin registros en bitácora</div>
                       <div style={{ fontSize: 12 }}>Usa "Nuevo registro" para agregar el primero</div>
                     </td></tr>
@@ -518,12 +498,6 @@ export default function SalidasCarritosPage() {
                     const car = carritosMap[e.id_carrito_fk]
                     const socio = e.id_socio_fk != null ? sociosMap[e.id_socio_fk] : null
                     const carDesc = car ? ([car.marca, car.modelo].filter(Boolean).join(' ') || 'Carrito') : `Carrito #${e.id_carrito_fk}`
-                    let detalle = ''
-                    if (e.taller) detalle = `Taller: ${e.taller}`
-                    if (e.costo_estimado) detalle += `${detalle ? ' · ' : ''}Est: $${e.costo_estimado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                    if (e.costo_real) detalle += `${detalle ? ' · ' : ''}Real: $${e.costo_real.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                    if (e.tercero_nombre) detalle = `${e.tercero_nombre}${e.tercero_telefono ? ` · ${e.tercero_telefono}` : ''}`
-                    if (e.nivel_urgencia) detalle = `Urgencia: ${e.nivel_urgencia}`
                     return (
                       <tr key={e.id} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '10px 14px' }}>
@@ -543,27 +517,9 @@ export default function SalidasCarritosPage() {
                           <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.descripcion}</div>
                           {e.observaciones && <div style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic', marginTop: 2 }}>{e.observaciones}</div>}
                         </td>
-                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 12 }}>{detalle || '—'}</td>
                         <td style={{ padding: '10px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontSize: 12 }}>
                           {fmtDt(e.fecha_evento)}
                           {e.fecha_fin && <div style={{ fontSize: 10, color: '#94a3b8' }}>→ {fmtDt(e.fecha_fin)}</div>}
-                        </td>
-                        <td style={{ padding: '10px 14px', textAlign: 'center' }}>
-                          {e.resuelto
-                            ? <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 20, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>✓</span>
-                            : <span style={{ color: '#cbd5e1', fontSize: 11 }}>—</span>}
-                        </td>
-                        <td style={{ padding: '10px 14px' }}>
-                          {!e.resuelto && puedeEscribir && (
-                            <button
-                              onClick={async () => {
-                                await dbGolf.from('bitacora_carritos').update({ resuelto: true }).eq('id', e.id)
-                                fetchBitacora()
-                              }}
-                              style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: 'none', border: '1px solid #e2e8f0', color: '#64748b', cursor: 'pointer', fontFamily: 'inherit' }}>
-                              Resolver
-                            </button>
-                          )}
                         </td>
                       </tr>
                     )
