@@ -945,12 +945,29 @@ export default function CarritosPage() {
 
             {/* Filtros */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input
-                type="month"
-                value={mesCobranza}
-                onChange={e => setMesCobranza(e.target.value)}
-                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }}
-              />
+              <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
+                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="Buscar socio o placa…" value={busquedaC} onChange={e => setBusquedaC(e.target.value)} />
+                {busquedaC && <button onClick={() => setBusquedaC('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+              </div>
+              {(() => {
+                const [anioSel, mesSel] = mesCobranza.split('-')
+                const anioActual = new Date().getFullYear()
+                const anios = Array.from({ length: anioActual + 1 - 2024 + 1 }, (_, i) => 2024 + i)
+                const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+                const selStyle: React.CSSProperties = { padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }
+                return (
+                  <>
+                    <select value={anioSel} onChange={e => setMesCobranza(`${e.target.value}-${mesSel}`)} style={selStyle}>
+                      {anios.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                    <select value={mesSel} onChange={e => setMesCobranza(`${anioSel}-${e.target.value}`)} style={selStyle}>
+                      {MESES.map((m, i) => <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>)}
+                    </select>
+                  </>
+                )
+              })()}
               <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
                 {([
                   { key: 'todas',      label: 'Todas',      color: '#059669' },
@@ -966,12 +983,6 @@ export default function CarritosPage() {
                     {f.label}
                   </button>
                 ))}
-              </div>
-              <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 300 }}>
-                <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
-                  placeholder="Buscar socio o placa…" value={busquedaC} onChange={e => setBusquedaC(e.target.value)} />
-                {busquedaC && <button onClick={() => setBusquedaC('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
               </div>
             </div>
 
