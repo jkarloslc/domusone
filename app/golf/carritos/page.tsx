@@ -131,6 +131,7 @@ export default function CarritosPage() {
   const [expandido, setExpandido]       = useState<number | null>(null)
   const [soloActivas, setSoloActivas]   = useState(true)
   const [busquedaP, setBusquedaP]       = useState('')
+  const [filtroSituacion, setFiltroSituacion] = useState<'todas' | 'adeudo' | 'corriente'>('todas')
 
   // modales
   const [showCarrito, setShowCarrito]   = useState(false)
@@ -520,6 +521,8 @@ export default function CarritosPage() {
   }
 
   const pensionesF = pensiones.filter(p => {
+    if (filtroSituacion === 'adeudo'    && !p.con_adeudo) return false
+    if (filtroSituacion === 'corriente' &&  p.con_adeudo) return false
     if (!busquedaP.trim()) return true
     const q = busquedaP.toLowerCase()
     const nombre = nc(p.cat_socios).toLowerCase()
@@ -605,6 +608,22 @@ export default function CarritosPage() {
               <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
                 placeholder="Buscar socio o placa…" value={busquedaP} onChange={e => setBusquedaP(e.target.value)} />
               {busquedaP && <button onClick={() => setBusquedaP('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+            </div>
+            <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+              {([
+                { key: 'todas',     label: 'Todas',        color: '#059669' },
+                { key: 'adeudo',    label: 'Con Adeudo',   color: '#dc2626' },
+                { key: 'corriente', label: 'Al corriente', color: '#2563eb' },
+              ] as const).map(f => (
+                <button key={f.key} onClick={() => setFiltroSituacion(f.key)} style={{
+                  padding: '7px 14px', fontSize: 12, fontWeight: filtroSituacion === f.key ? 600 : 400,
+                  background: filtroSituacion === f.key ? f.color : '#fff',
+                  color: filtroSituacion === f.key ? '#fff' : '#94a3b8',
+                  border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                }}>
+                  {f.label}
+                </button>
+              ))}
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
               <input type="checkbox" checked={soloActivas} onChange={e => setSoloActivas(e.target.checked)} />
