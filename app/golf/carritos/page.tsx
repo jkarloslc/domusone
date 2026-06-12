@@ -202,6 +202,7 @@ export default function CarritosPage() {
   const [tarifaEdit, setTarifaEdit]     = useState<number>(0)
   const [savingConfig, setSavingConfig] = useState(false)
   const [slots, setSlots]               = useState<Slot[]>([])
+  const [slotsOcupados, setSlotsOcupados] = useState<Set<number>>(new Set())
   const [nuevoSlot, setNuevoSlot]       = useState('')
   const [savingSlot, setSavingSlot]     = useState(false)
 
@@ -260,11 +261,16 @@ export default function CarritosPage() {
 
   // ── Fetch Config ──────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
-    const { data: cfg } = await dbGolf.from('cfg_carritos').select('tarifa_mensual').single()
+    const [{ data: cfg }, { data: sl }, { data: occ }] = await Promise.all([
+      dbGolf.from('cfg_carritos').select('tarifa_mensual').single(),
+      dbGolf.from('cat_slots').select('id, numero').eq('activo', true).order('numero'),
+      // Cajones ocupados por pensiones activas (solo informativo en la UI)
+      dbGolf.from('ctrl_pensiones').select('id_slot_fk').eq('activo', true).not('id_slot_fk', 'is', null),
+    ])
     const t = cfg?.tarifa_mensual ?? 0
     setTarifa(t); setTarifaEdit(t)
-    const { data: sl } = await dbGolf.from('cat_slots').select('id, numero').eq('activo', true).order('numero')
     setSlots(sl ?? [])
+    setSlotsOcupados(new Set(((occ ?? []) as { id_slot_fk: number }[]).map(o => o.id_slot_fk)))
   }, [])
 
   // ── Fetch Cobranza del mes ────────────────────────────────
@@ -640,9 +646,11 @@ export default function CarritosPage() {
     { key: 'pensiones', label: 'Pensiones',     icon: Car        },
     { key: 'cobranza',  label: 'Cobranza',      icon: CreditCard },
     { key: 'recibos',   label: 'Recibos',       icon: Receipt    },
-    { key: 'config',    label: 'Configuración', icon: Settings   },
     // Solo administración
-    ...(esAdmin ? [{ key: 'mesa' as Tab, label: 'Mesa de Control', icon: AlertCircle }] : []),
+    ...(esAdmin ? [
+      { key: 'config' as Tab, label: 'Configuración',   icon: Settings    },
+      { key: 'mesa' as Tab,   label: 'Mesa de Control', icon: AlertCircle },
+    ] : []),
   ]
 
   return (
@@ -1281,12 +1289,12 @@ export default function CarritosPage() {
         </>
       )}
 
-      {/* ── TAB: CONFIGURACIÓN ───────────────────────────── */}
-      {tab === 'config' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 560 }}>
+      {/* ── TAB: CONFIGURACIÓN (solo admin) ──────────────── */}
+      {tab === 'config' && esAdmin && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 860 }}>
 
           {/* Tarifa mensual */}
-          <div className="card" style={{ padding: 20 }}>
+          <div className="card" style={{ padding: 20, maxWidth: 560 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Tarifa de Pensión Mensual</div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
@@ -1306,8 +1314,16 @@ export default function CarritosPage() {
 
           {/* Slots */}
           <div className="card" style={{ padding: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Slots / Cajones ({slots.length})</div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>Slots / Cajones ({slots.length})</div>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#fef2f2', color: '#dc2626' }}>
+                {slots.filter(s => slotsOcupados.has(s.id)).length} ocupados
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#f0fdf4', color: '#15803d' }}>
+                {slots.filter(s => !slotsOcupados.has(s.id)).length} disponibles
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16, maxWidth: 520 }}>
               <input style={{ flex: 1, padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }}
                 placeholder="Número de cajón (ej. 42, A-12)…" value={nuevoSlot} onChange={e => setNuevoSlot(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && agregarSlot()} />
@@ -1316,13 +1332,29 @@ export default function CarritosPage() {
                 <Plus size={13} /> Agregar
               </button>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {slots.map(s => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', background: '#f0fdf4', border: '1px solid #a7f3d0', borderRadius: 20 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#065f46' }}>Cajón {s.numero}</span>
-                  <button onClick={() => desactivarSlot(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 1, lineHeight: 1 }}><X size={11} /></button>
-                </div>
-              ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(118px, 1fr))', gap: 8 }}>
+              {slots.map(s => {
+                const ocupado = slotsOcupados.has(s.id)
+                return (
+                  <div key={s.id} style={{
+                    padding: '10px 12px', borderRadius: 10,
+                    background: ocupado ? '#fef2f2' : '#f0fdf4',
+                    border: `1px solid ${ocupado ? '#fecaca' : '#a7f3d0'}`,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: ocupado ? '#991b1b' : '#065f46' }}>Cajón {s.numero}</span>
+                      <button onClick={() => desactivarSlot(s.id)} disabled={ocupado}
+                        title={ocupado ? 'No se puede desactivar un cajón ocupado' : 'Desactivar cajón'}
+                        style={{ background: 'none', border: 'none', cursor: ocupado ? 'default' : 'pointer', color: ocupado ? '#e2e8f0' : '#94a3b8', padding: 1, lineHeight: 1 }}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.04em', background: ocupado ? '#fee2e2' : '#dcfce7', color: ocupado ? '#dc2626' : '#15803d' }}>
+                      {ocupado ? 'Ocupado' : 'Disponible'}
+                    </span>
+                  </div>
+                )
+              })}
               {slots.length === 0 && <div style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>No hay slots configurados</div>}
             </div>
           </div>
