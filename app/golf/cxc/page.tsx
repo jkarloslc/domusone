@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import CobrarCuotaModal from '../carritos/CobrarCuotaModal'
+import RecibosGolf from '../recibos/RecibosGolf'
 
 // ── Tipos ────────────────────────────────────────────────────
 type Cuota = {
@@ -69,10 +70,13 @@ function agrupar(cuotas: Cuota[]): SocioGroup[] {
   return Array.from(map.values()).sort((a, b) => b.totalPendiente - a.totalPendiente)
 }
 
+type Tab = 'cobro' | 'recibos'
+
 export default function CXCGolfPage() {
   const { canWrite } = useAuth()
   const puedeEscribir = canWrite('golf-cxc')
 
+  const [tab, setTab]           = useState<Tab>('cobro')
   const [cuotas, setCuotas]     = useState<Cuota[]>([])
   const [loading, setLoading]   = useState(true)
   const [busqueda, setBusqueda] = useState('')
@@ -154,11 +158,41 @@ export default function CXCGolfPage() {
             Socios con saldo pendiente · <Link href="/golf/cuotas" style={{ color: '#7c3aed', textDecoration: 'none' }}>Administrar asignaciones →</Link>
           </p>
         </div>
-        <button className="btn-ghost" onClick={fetchCuotas} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <RefreshCw size={13} /> Actualizar
-        </button>
+        {tab === 'cobro' && (
+          <button className="btn-ghost" onClick={fetchCuotas} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <RefreshCw size={13} /> Actualizar
+          </button>
+        )}
       </div>
 
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
+        {([
+          { key: 'cobro',   label: 'Cobro',                  icon: CreditCard },
+          { key: 'recibos', label: 'Recibos de Membresías',  icon: Receipt    },
+        ] as { key: Tab; label: string; icon: any }[]).map(t => {
+          const Icon = t.icon
+          return (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 20px', fontSize: 13, background: 'none', border: 'none',
+              cursor: 'pointer', fontFamily: 'inherit',
+              fontWeight: tab === t.key ? 600 : 400,
+              color: tab === t.key ? '#059669' : '#94a3b8',
+              borderBottom: tab === t.key ? '2px solid #059669' : '2px solid transparent',
+              marginBottom: -1,
+            }}>
+              <Icon size={14} /> {t.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* ── TAB: RECIBOS DE MEMBRESÍAS ──────────────────── */}
+      {tab === 'recibos' && <RecibosGolf embedded soloMembresias />}
+
+      {tab === 'cobro' && (
+      <>
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
@@ -290,6 +324,8 @@ export default function CXCGolfPage() {
             )
           })}
         </div>
+      )}
+      </>
       )}
 
       {showCobrar && (
