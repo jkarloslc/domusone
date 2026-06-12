@@ -26,6 +26,7 @@ type Pension = {
   cat_slots: { numero: string } | null
   pendientes: number    // cuotas pendientes (calculado)
   monto_pendiente: number
+  con_adeudo: boolean   // cuota sin pagar del mes en curso o anteriores (calculado)
 }
 
 type Cuota = {
@@ -179,22 +180,30 @@ export default function CarritosPage() {
 
     // Cuotas pendientes por pensión (incluye PAGO_PARCIAL)
     const { data: cxcData } = await dbGolf.from('cxc_golf')
-      .select('id_pension_fk, saldo, status')
+      .select('id_pension_fk, saldo, status, periodo, fecha_vencimiento')
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .eq('tipo', 'PENSION_CARRITO')
 
+    // Adeudo: cuota sin pagar del mes en curso o anteriores (las futuras no cuentan)
+    const mesActual = new Date().toISOString().slice(0, 7)
     const pendPorPension: Record<number, { count: number; monto: number }> = {}
-    for (const c of cxcData ?? []) {
+    const adeudoPorPension: Record<number, boolean> = {}
+    for (const c of (cxcData ?? []) as { id_pension_fk: number | null; saldo: number; periodo: string | null; fecha_vencimiento: string | null }[]) {
       if (!c.id_pension_fk) continue
       if (!pendPorPension[c.id_pension_fk]) pendPorPension[c.id_pension_fk] = { count: 0, monto: 0 }
       pendPorPension[c.id_pension_fk].count++
       pendPorPension[c.id_pension_fk].monto += c.saldo
+      const vencidaMes = c.periodo
+        ? c.periodo <= mesActual
+        : (c.fecha_vencimiento != null && c.fecha_vencimiento < hoy)
+      if (vencidaMes) adeudoPorPension[c.id_pension_fk] = true
     }
 
     const result: Pension[] = (pData ?? []).map((p: any) => ({
       ...p,
       pendientes: pendPorPension[p.id]?.count ?? 0,
       monto_pendiente: pendPorPension[p.id]?.monto ?? 0,
+      con_adeudo: adeudoPorPension[p.id] ?? false,
     }))
 
     setPensiones(result)
@@ -609,16 +618,16 @@ export default function CarritosPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                    {['', 'Socio', 'Carrito', 'Cajón', 'Placa', 'Tarifa/mes', 'Pendientes', 'Status', ''].map(h => (
+                    {['', 'Socio', 'Carrito', 'Cajón', 'Placa', 'Tarifa/mes', 'Pendientes', 'Situación', 'Status', ''].map(h => (
                       <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loadingP ? (
-                    <tr><td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                    <tr><td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
                   ) : pensionesF.length === 0 ? (
-                    <tr><td colSpan={9} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <tr><td colSpan={10} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
                       <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin pensiones registradas</div>
                       <div style={{ fontSize: 12 }}>Registra un nuevo carrito para comenzar</div>
                     </td></tr>
@@ -675,6 +684,11 @@ export default function CarritosPage() {
                               ? <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{p.pendientes} · {fmt$(p.monto_pendiente)}</span>
                               : <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>}
                           </td>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: p.con_adeudo ? '#fef2f2' : '#eff6ff', color: p.con_adeudo ? '#dc2626' : '#2563eb' }}>
+                              {p.con_adeudo ? 'Con Adeudo' : 'Al corriente'}
+                            </span>
+                          </td>
                           <td style={{ padding: '10px 14px' }}>
                             <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: p.activo ? '#dcfce7' : '#f1f5f9', color: p.activo ? '#15803d' : '#64748b' }}>
                               {p.activo ? 'Activa' : 'Inactiva'}
@@ -705,7 +719,7 @@ export default function CarritosPage() {
                           const carDesc2 = [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
                           return (
                             <tr key={`${p.id}-det`}>
-                              <td colSpan={9} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
+                              <td colSpan={10} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
                                 <div style={{ background: '#f8fafc', padding: '16px 20px 20px 48px' }}>
 
                                   {/* Info de pensión + acciones */}
