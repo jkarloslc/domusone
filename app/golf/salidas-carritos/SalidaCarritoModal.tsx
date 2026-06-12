@@ -26,6 +26,20 @@ type Elegibilidad = {
 type Props = { onClose: () => void; onSaved: () => void }
 
 const hoy = new Date().toISOString().split('T')[0]
+
+// Corte de adeudos al día 10: hasta el día 10 inclusive, la cuota del mes en curso
+// aún no es exigible (solo bloquean meses anteriores); a partir del día 11 la cuota
+// del mes en curso también cuenta como adeudo.
+function periodoCorte(): string {
+  const now = new Date()
+  let y = now.getFullYear()
+  let m = now.getMonth() + 1
+  if (now.getDate() <= 10) {
+    m -= 1
+    if (m === 0) { m = 12; y -= 1 }
+  }
+  return `${y}-${String(m).padStart(2, '0')}`
+}
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 const nc = (s: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null } | null) =>
   s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—'
@@ -56,21 +70,27 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
             cat_carritos(marca, modelo, placa, tipo, activo),
             cat_slots(numero)`)
           .eq('activo', true),
-        // Cuotas de pensión de carrito pendientes y ya vencidas
+        // Cuotas de pensión de carrito pendientes — el corte por periodo se aplica abajo
         dbGolf.from('cxc_golf')
-          .select('id_pension_fk, saldo, fecha_vencimiento')
+          .select('id_pension_fk, saldo, fecha_vencimiento, periodo')
           .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
-          .eq('tipo', 'PENSION_CARRITO')
-          .lt('fecha_vencimiento', hoy),
+          .eq('tipo', 'PENSION_CARRITO'),
         // Carritos que siguen en ronda (salida sin regreso)
         dbGolf.from('ctrl_salidas_carritos')
           .select('id_carrito_fk')
           .is('fecha_regreso', null),
       ])
 
+      const corte = periodoCorte()
       const vencPorPension: Record<number, { count: number; monto: number }> = {}
-      for (const c of (cxcData ?? []) as { id_pension_fk: number | null; saldo: number }[]) {
+      for (const c of (cxcData ?? []) as { id_pension_fk: number | null; saldo: number; fecha_vencimiento: string | null; periodo: string | null }[]) {
         if (!c.id_pension_fk) continue
+        // Regla del día 10: cuenta como adeudo si el periodo es <= al periodo de corte.
+        // Cuotas sin periodo caen al criterio anterior (fecha de vencimiento ya pasada).
+        const exigible = c.periodo
+          ? c.periodo <= corte
+          : (c.fecha_vencimiento != null && c.fecha_vencimiento < hoy)
+        if (!exigible) continue
         if (!vencPorPension[c.id_pension_fk]) vencPorPension[c.id_pension_fk] = { count: 0, monto: 0 }
         vencPorPension[c.id_pension_fk].count++
         vencPorPension[c.id_pension_fk].monto += c.saldo ?? 0
