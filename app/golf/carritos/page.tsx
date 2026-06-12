@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, Receipt, FileText, Printer, Loader, XCircle } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, Receipt, FileText, Printer, Loader, XCircle, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import CarritoModal from './CarritoModal'
 import PensionModal from './PensionModal'
@@ -168,6 +168,13 @@ export default function CarritosPage() {
   const [carritoNuevo, setCarritoNuevo] = useState<{ id: number; id_socio_fk: number; id_familiar_fk?: number | null } | null>(null)
 
   const [showCobrar, setShowCobrar]     = useState<{ cuotas: Cuota[]; nombreSocio: string; idSocio: number } | null>(null)
+
+  // ── Cambio / liberación de cajón ──────────────────────────
+  const [showSlot, setShowSlot]         = useState<{ idPension: number; idSlotActual: number | null; nombreSocio: string; descCarrito: string } | null>(null)
+  const [slotsDisp, setSlotsDisp]       = useState<Slot[]>([])
+  const [slotSel, setSlotSel]           = useState<number | ''>('')
+  const [savingSlotSel, setSavingSlotSel] = useState(false)
+  const [errorSlot, setErrorSlot]       = useState('')
 
   // ── Cobranza ──────────────────────────────────────────────
   const [mesCobranza, setMesCobranza]   = useState(new Date().toISOString().slice(0, 7))
@@ -582,6 +589,37 @@ export default function CarritosPage() {
     fetchPensiones()
   }
 
+  // Abrir modal de cambio/liberación de cajón (solo slots libres + el actual)
+  const abrirCambioSlot = async (p: Pension) => {
+    const [{ data: sl }, { data: ocupados }] = await Promise.all([
+      dbGolf.from('cat_slots').select('id, numero').eq('activo', true).order('numero'),
+      dbGolf.from('ctrl_pensiones').select('id_slot_fk').eq('activo', true),
+    ])
+    const ocupadosIds = new Set(((ocupados ?? []) as { id_slot_fk: number | null }[]).map(x => x.id_slot_fk).filter(Boolean))
+    if (p.id_slot_fk) ocupadosIds.delete(p.id_slot_fk)  // el cajón actual sigue siendo opción
+    setSlotsDisp(((sl as Slot[]) ?? []).filter(s => !ocupadosIds.has(s.id)))
+    setSlotSel(p.id_slot_fk ?? '')
+    setErrorSlot('')
+    setShowSlot({
+      idPension: p.id,
+      idSlotActual: p.id_slot_fk,
+      nombreSocio: nc(p.cat_socios),
+      descCarrito: [p.cat_carritos?.marca, p.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito',
+    })
+  }
+
+  const guardarCambioSlot = async () => {
+    if (!showSlot) return
+    setSavingSlotSel(true)
+    const { error } = await dbGolf.from('ctrl_pensiones')
+      .update({ id_slot_fk: slotSel === '' ? null : slotSel })
+      .eq('id', showSlot.idPension)
+    setSavingSlotSel(false)
+    if (error) { setErrorSlot(error.message); return }
+    setShowSlot(null)
+    fetchPensiones()
+  }
+
   // Cuotas de pensión pendientes del socio — las de membresía se cobran en Cobro/CXC
   const abrirCobro = async (pension: Pension) => {
     const { data } = await dbGolf.from('cxc_golf')
@@ -826,6 +864,12 @@ export default function CarritosPage() {
                                       {p.observaciones && <span style={{ marginLeft: 8, fontStyle: 'italic' }}>{p.observaciones}</span>}
                                     </div>
                                     <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                                      {puedeEscribir && p.activo && (
+                                        <button onClick={e => { e.stopPropagation(); abrirCambioSlot(p) }}
+                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                          <MapPin size={12} /> {p.id_slot_fk ? 'Cambiar / liberar cajón' : 'Asignar cajón'}
+                                        </button>
+                                      )}
                                       {puedeEscribir && p.activo && (
                                         <button onClick={e => {
                                           e.stopPropagation()
@@ -1359,6 +1403,53 @@ export default function CarritosPage() {
           onClose={() => { setShowPension(null); setCarritoNuevo(null) }}
           onSaved={handlePensionSaved}
         />
+      )}
+
+      {/* Modal cambio / liberación de cajón */}
+      {showSlot && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <div style={{ background: '#eff6ff', borderRadius: 8, padding: 8 }}><MapPin size={18} color="#2563eb" /></div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>{showSlot.idSlotActual ? 'Cambiar / liberar cajón' : 'Asignar cajón'}</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>{showSlot.descCarrito} · {showSlot.nombreSocio}</div>
+              </div>
+            </div>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '12px 0 14px', lineHeight: 1.5 }}>
+              La pensión y sus cuotas no se modifican — solo la asignación del cajón.
+              {showSlot.idSlotActual ? ' Si lo liberas, el cajón queda disponible para otro carrito.' : ''}
+            </p>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Cajón</label>
+            <select
+              value={slotSel}
+              onChange={e => setSlotSel(e.target.value ? Number(e.target.value) : '')}
+              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', marginBottom: 16, boxSizing: 'border-box' }}>
+              <option value="">— Sin cajón (liberar) —</option>
+              {slotsDisp.map(s => (
+                <option key={s.id} value={s.id}>
+                  Cajón {s.numero}{s.id === showSlot.idSlotActual ? ' (actual)' : ''}
+                </option>
+              ))}
+            </select>
+            {errorSlot && (
+              <div style={{ marginBottom: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                {errorSlot}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setShowSlot(null)}
+                style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={guardarCambioSlot} disabled={savingSlotSel || slotSel === (showSlot.idSlotActual ?? '')}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#2563eb', color: '#fff', cursor: 'pointer', opacity: (savingSlotSel || slotSel === (showSlot.idSlotActual ?? '')) ? 0.6 : 1 }}>
+                {savingSlotSel ? <Loader size={14} className="animate-spin" /> : <MapPin size={14} />}
+                {slotSel === '' ? 'Liberar cajón' : 'Guardar cambio'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showCobrar && (
