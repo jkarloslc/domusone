@@ -115,7 +115,9 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
   const [error,  setError]  = useState('')
 
   useEffect(() => {
-    dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true).order('tipo').order('nombre')
+    dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true)
+      .neq('tipo', 'PENSION_CARRITO')   // pensiones se cargan desde PensionModal
+      .order('tipo').order('nombre')
       .then(({ data }) => { setConfigs((data as CuotaConfig[]) ?? []); setLoadingCfg(false) })
   }, [])
 
@@ -365,10 +367,11 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
           {!configSel && (
             <div style={{ marginTop: 8 }}>
               <label style={{ ...lbl, marginBottom: 2 }}>Categoría</label>
+              {/* Pensión Carrito excluido: esas cuotas se cargan desde la pensión
+                  (PensionModal) para que lleven id_pension_fk y se controlen por carrito */}
               <select style={inp} value={tipo} onChange={e => setTipo(e.target.value)}>
                 <option value="MENSUALIDAD">Mensualidad</option>
                 <option value="INSCRIPCION">Inscripción</option>
-                <option value="PENSION_CARRITO">Pensión Carrito</option>
               </select>
             </div>
           )}
@@ -528,7 +531,9 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
   const [error, setError]             = useState('')
 
   useEffect(() => {
-    dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true).order('nombre')
+    dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true)
+      .neq('tipo', 'PENSION_CARRITO')   // pensiones se cargan desde PensionModal
+      .order('nombre')
       .then(({ data }) => setConfigs((data as CuotaConfig[]) ?? []))
   }, [])
 
