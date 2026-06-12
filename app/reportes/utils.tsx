@@ -72,7 +72,6 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
     style.id = 'print-override'
     style.innerHTML = `
       @media print {
-        /* Ocultar chrome de la app */
         aside.sidebar,
         .sidebar-overlay,
         .mobile-topbar,
@@ -81,13 +80,16 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
         body * { visibility: hidden !important; }
         #reporte-print-area,
         #reporte-print-area * { visibility: visible !important; }
+
+        /* position: absolute (no fixed) para que el contenido fluya en múltiples páginas */
         #reporte-print-area {
-          position: fixed !important;
+          position: absolute !important;
           top: 0 !important;
           left: 0 !important;
-          width: 100vw !important;
+          right: 0 !important;
+          width: 100% !important;
           background: white !important;
-          padding: 16px !important;
+          padding: 0 !important;
           overflow: visible !important;
           border: none !important;
           border-radius: 0 !important;
@@ -96,10 +98,19 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
           max-height: none !important;
           z-index: 9999 !important;
         }
+
+        /* Resetear overflow en todos los wrappers internos (card, overflowX auto, etc.) */
+        #reporte-print-area div {
+          overflow: visible !important;
+          max-height: none !important;
+          height: auto !important;
+        }
+
         #reporte-print-area table {
-          font-size: 11px !important;
+          font-size: 10px !important;
           width: 100% !important;
           border-collapse: collapse !important;
+          table-layout: auto !important;
           page-break-inside: auto !important;
         }
         #reporte-print-area tr {
@@ -108,10 +119,11 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
         }
         #reporte-print-area th,
         #reporte-print-area td {
-          padding: 5px 7px !important;
+          padding: 4px 5px !important;
           border: 1px solid #cbd5e1 !important;
           color: #0f172a !important;
           background: white !important;
+          white-space: normal !important;
         }
         #reporte-print-area thead {
           display: table-header-group !important;
@@ -119,11 +131,11 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
         #reporte-print-area thead th {
           background: #f1f5f9 !important;
           font-weight: 700 !important;
-          font-size: 9px !important;
+          font-size: 8px !important;
           text-transform: uppercase !important;
           letter-spacing: 0.04em !important;
         }
-        @page { margin: 1.2cm; size: landscape; }
+        @page { margin: 1cm; size: A4 landscape; }
       }
     `
     document.head.appendChild(style)
