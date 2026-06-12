@@ -67,6 +67,7 @@ type CuotaCobranza = {
   ctrl_pensiones: {
     cat_slots: { numero: string } | null
     cat_carritos: { marca: string | null; modelo: string | null; placa: string | null } | null
+    cat_familiares: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null } | null
   } | null
 }
 
@@ -281,7 +282,7 @@ export default function CarritosPage() {
       dbGolf.from('cxc_golf')
         .select(`id, id_socio_fk, id_pension_fk, concepto, periodo, monto_final, saldo, status, fecha_vencimiento, fecha_pago,
           cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio),
-          ctrl_pensiones(cat_slots(numero), cat_carritos(marca, modelo, placa))`)
+          ctrl_pensiones(cat_slots(numero), cat_carritos(marca, modelo, placa), cat_familiares(nombre, apellido_paterno, apellido_materno, parentesco))`)
         .eq('tipo', 'PENSION_CARRITO')
         .eq('periodo', mesCobranza)
         .neq('status', 'CANCELADO'),
@@ -1023,6 +1024,11 @@ export default function CarritosPage() {
                           <td style={{ padding: '10px 14px' }}>
                             <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nc(c.cat_socios)}</div>
                             {c.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>#{c.cat_socios.numero_socio}</div>}
+                            {c.ctrl_pensiones?.cat_familiares && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, padding: '1px 6px', borderRadius: 20, background: '#f3e8ff', color: '#7c3aed', fontWeight: 600, marginTop: 2 }}>
+                                👤 {nc(c.ctrl_pensiones.cat_familiares)}{c.ctrl_pensiones.cat_familiares.parentesco ? ` · ${c.ctrl_pensiones.cat_familiares.parentesco}` : ''}
+                              </span>
+                            )}
                           </td>
                           <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12, whiteSpace: 'nowrap' }}>
                             {c.ctrl_pensiones?.cat_slots ? `Cajón ${c.ctrl_pensiones.cat_slots.numero}` : '—'}
