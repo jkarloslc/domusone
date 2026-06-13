@@ -186,7 +186,7 @@ function TabPOS({ socioId }: { socioId: number }) {
           <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: r.status === 'CANCELADA' ? '#f8fafc' : '#fff', borderRadius: 8, border: '1px solid #e2e8f0', opacity: r.status === 'CANCELADA' ? 0.6 : 1 }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>
-                {r.fecha ? new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                {r.fecha ? new Date(r.fecha.substring(0, 10) + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                 {r.folio_dia && <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>#{r.folio_dia}</span>}
               </div>
             </div>
