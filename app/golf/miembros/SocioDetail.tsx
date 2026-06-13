@@ -162,7 +162,7 @@ function TabPOS({ socioId }: { socioId: number }) {
 
   useEffect(() => {
     dbGolf.from('ctrl_ventas')
-      .select('id, folio_dia, fecha, total, status, id_centro_fk')
+      .select('id, folio_dia, fecha, total, status, id_centro_fk, ctrl_ventas_det(concepto)')
       .eq('id_socio_fk', socioId)
       .order('fecha', { ascending: false })
       .limit(50)
@@ -189,6 +189,11 @@ function TabPOS({ socioId }: { socioId: number }) {
                 {r.fecha ? new Date(r.fecha.substring(0, 10) + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                 {r.folio_dia && <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>#{r.folio_dia}</span>}
               </div>
+              {(r.ctrl_ventas_det ?? []).length > 0 && (
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                  {(r.ctrl_ventas_det as { concepto: string }[]).map(d => d.concepto).filter(Boolean).join(' · ')}
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {r.status === 'CANCELADA' && (
