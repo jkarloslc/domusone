@@ -5,7 +5,7 @@ import {
   Home, Wrench, Truck, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark, MessageSquare,
   Flag, Star, DollarSign, MessageCircle, LayoutDashboard, Droplets, BookOpen, Store, Leaf,
-  Hammer,
+  Hammer, Target,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -99,6 +99,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Tee de Práctica',   href: '/golf/tee-practica',       icon: Target        },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
       { label: 'Mantto. Campo',    href: '/golf/mantenimiento-campo',icon: Leaf          },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
@@ -144,6 +145,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Tee de Práctica',   href: '/golf/tee-practica',       icon: Target        },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
       { label: 'Mantto. Campo',    href: '/golf/mantenimiento-campo',icon: Leaf          },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
@@ -188,6 +190,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Tee de Práctica',   href: '/golf/tee-practica',       icon: Target        },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
       { label: 'Mantto. Campo',    href: '/golf/mantenimiento-campo',icon: Leaf          },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
@@ -223,6 +226,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Punto de Venta',    href: '/golf/pos',                icon: Store         },
       { label: 'Golf',              href: '/golf',                    icon: Flag          },
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag          },
+      { label: 'Tee de Práctica',   href: '/golf/tee-practica',       icon: Target        },
       { label: 'Riego',             href: '/golf/riego',              icon: Droplets      },
       { label: 'Mantto. Campo',    href: '/golf/mantenimiento-campo',icon: Leaf          },
       { label: 'Hípico',            href: '/hipico',                  icon: HorseIcon     },
@@ -402,10 +406,11 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   usuariogolf: [
     { section: 'Club', items: [
-      { label: 'Punto de Venta', href: '/golf/pos',    icon: Store    },
-      { label: 'Golf',           href: '/golf',        icon: Flag     },
-      { label: 'Torneos',        href: '/golf/torneos',icon: Flag     },
-      { label: 'Riego',          href: '/golf/riego',  icon: Droplets },
+      { label: 'Punto de Venta', href: '/golf/pos',          icon: Store    },
+      { label: 'Golf',           href: '/golf',              icon: Flag     },
+      { label: 'Torneos',        href: '/golf/torneos',      icon: Flag     },
+      { label: 'Tee de Práctica',href: '/golf/tee-practica', icon: Target   },
+      { label: 'Riego',          href: '/golf/riego',        icon: Droplets },
       { label: 'Mantto. Campo', href: '/golf/mantenimiento-campo', icon: Leaf },
       RPT('golf'),
     ]},

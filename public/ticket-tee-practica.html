@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Tee de Práctica</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px;
+      width: 72mm;
+      margin: 0 auto;
+      background: #fff;
+      color: #000;
+      padding: 4mm 2mm;
+    }
+    .center  { text-align: center; }
+    .right   { text-align: right; }
+    .bold    { font-weight: bold; }
+    .sm      { font-size: 10px; }
+    .lg      { font-size: 14px; }
+    .xl      { font-size: 22px; font-weight: bold; }
+    .divider { border-top: 1px dashed #000; margin: 3mm 0; }
+    .divider-solid { border-top: 1px solid #000; margin: 2mm 0; }
+
+    .header-logo { font-size: 15px; font-weight: bold; letter-spacing: 1px; }
+    .folio-box {
+      border: 1px solid #000;
+      display: inline-block;
+      padding: 1mm 4mm;
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin: 2mm 0;
+    }
+    .modulo-tag {
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border: 2px solid #000;
+      display: inline-block;
+      padding: 1.5mm 4mm;
+      margin-bottom: 1mm;
+    }
+    .bolas-box {
+      border: 2px solid #000;
+      border-radius: 2mm;
+      padding: 3mm 0;
+      margin: 2mm 0;
+    }
+    .bolas-label { font-size: 10px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 1mm; }
+    .bolas-num   { font-size: 32px; font-weight: bold; line-height: 1; }
+
+    table { width: 100%; border-collapse: collapse; }
+    .info-row td { padding: 0.5mm 0; font-size: 11px; vertical-align: top; }
+
+    .leyenda { font-size: 9px; text-align: center; margin-top: 2mm; line-height: 1.5; color: #444; }
+    .nota-concesion { font-size: 9px; text-align: center; margin-top: 2mm; font-style: italic; }
+
+    @media print {
+      body { margin: 0 0 0 4mm; padding: 2mm 1mm; }
+      .no-print { display: none !important; }
+      @page { margin: 0; size: 80mm auto; }
+    }
+
+    .btn-print {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: #059669;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .btn-print:hover { background: #047857; }
+  </style>
+</head>
+<body>
+
+  <!-- Cabecera del club -->
+  <div class="center">
+    <div class="header-logo" id="t-razon">CLUB DE GOLF</div>
+    <div class="sm" id="t-municipio"></div>
+    <div class="sm" id="t-direccion"></div>
+    <div class="sm" id="t-rfc"></div>
+    <div class="sm" id="t-tel"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Módulo y folio -->
+  <div class="center">
+    <div class="modulo-tag">TEE DE PRÁCTICA</div>
+    <br/>
+    <div class="folio-box" id="t-folio">#000000</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Datos del socio -->
+  <table>
+    <tr class="info-row"><td class="bold sm">Fecha:</td><td class="sm right" id="t-fecha"></td></tr>
+    <tr class="info-row"><td class="bold sm">Hora:</td><td class="sm right" id="t-hora"></td></tr>
+    <tr class="info-row"><td class="bold sm">Socio:</td><td class="sm right" id="t-socio"></td></tr>
+    <tr class="info-row"><td class="bold sm">No. Socio:</td><td class="sm right" id="t-num-socio"></td></tr>
+    <tr class="info-row"><td class="bold sm">Categoría:</td><td class="sm right" id="t-categoria"></td></tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <!-- Bolas asignadas (destacado) -->
+  <div class="bolas-box center">
+    <div class="bolas-label">Bolas Asignadas</div>
+    <div class="bolas-num" id="t-bolas">0</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Notas opcionales -->
+  <div id="t-notas-block" style="display:none">
+    <div class="bold sm">NOTAS:</div>
+    <div class="sm" id="t-notas" style="margin-top:1mm;word-wrap:break-word"></div>
+    <div class="divider"></div>
+  </div>
+
+  <!-- Leyenda -->
+  <div class="leyenda" id="t-leyenda">¡Buena práctica!</div>
+
+  <!-- Nota de concesión -->
+  <div class="nota-concesion">
+    Este ticket es válido únicamente para el<br/>
+    Tee de Práctica concesionado.
+  </div>
+
+  <!-- Botón de impresión (no se imprime) -->
+  <button class="btn-print no-print" onclick="window.print()">🖨 Imprimir</button>
+
+  <script>
+    const fmtFecha = d => new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+    const fmtHora  = d => new Date(d).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+
+    const params   = new URLSearchParams(window.location.search)
+    const dataParam = params.get('data')
+    const autoPrint = params.get('print') === '1'
+
+    if (dataParam) {
+      try {
+        const d = JSON.parse(decodeURIComponent(dataParam))
+        renderTicket(d)
+        if (autoPrint) setTimeout(() => window.print(), 400)
+      } catch(e) {
+        document.body.innerHTML = '<p style="color:red;padding:20px">Error al cargar datos del ticket.</p>'
+      }
+    } else {
+      document.body.innerHTML = '<p style="padding:20px;color:#888">Sin datos de ticket.</p>'
+    }
+
+    function renderTicket(d) {
+      set('t-razon',    d.razon_social || 'CLUB DE GOLF')
+      set('t-municipio',d.municipio    || '')
+      set('t-direccion',d.direccion    || '')
+      set('t-rfc',      d.rfc ? 'RFC: ' + d.rfc : '')
+      set('t-tel',      d.telefono ? 'Tel: ' + d.telefono : '')
+      set('t-folio',    '#' + String(d.id || 0).padStart(6, '0'))
+      set('t-fecha',    d.fecha ? fmtFecha(d.fecha) : '—')
+      set('t-hora',     d.fecha ? fmtHora(d.fecha)  : '—')
+      set('t-socio',    d.socio || '—')
+      set('t-num-socio',d.numero_socio ? '#' + d.numero_socio : '—')
+      set('t-categoria',d.categoria    || '—')
+      set('t-bolas',    String(d.num_bolas || 0))
+      set('t-leyenda',  d.leyenda || '¡Buena práctica!')
+
+      if (d.notas) {
+        document.getElementById('t-notas-block').style.display = ''
+        set('t-notas', d.notas)
+      }
+    }
+
+    function set(id, val) {
+      const el = document.getElementById(id)
+      if (el) el.textContent = val
+    }
+  </script>
+</body>
+</html>

@@ -7,7 +7,7 @@ import {
   Users, Flag, MapPin, Calendar, Tag,
   Car, Lock, CreditCard, Receipt,
   ChevronRight, ArrowRightLeft, RefreshCw, AlertTriangle,
-  TrendingUp, Activity,
+  TrendingUp, Activity, Target,
 } from 'lucide-react'
 
 // ── Formatters ────────────────────────────────────────────────
@@ -131,6 +131,15 @@ const MODULOS = [
     icon: ArrowRightLeft,
     color: '#2563eb',
     href: '/golf/intercambios',
+    activo: true,
+  },
+  {
+    key: 'tee-practica',
+    label: 'Tee de Práctica',
+    desc: 'Registro de entradas y emisión de tickets — área concesionada',
+    icon: Target,
+    color: '#d97706',
+    href: '/golf/tee-practica',
     activo: true,
   },
 ]

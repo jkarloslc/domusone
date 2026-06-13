@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
-import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt } from 'lucide-react'
+import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target } from 'lucide-react'
 import type { Socio } from './SocioModal'
 
 type Props = { socio: Socio; onClose: () => void; onEdit: () => void }
@@ -19,13 +19,14 @@ const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
 )
 
 const TABS = [
-  { key: 'info',       label: 'Información',      icon: FileText      },
-  { key: 'familiares', label: 'Familiares',        icon: Users         },
-  { key: 'accesos',    label: 'Accesos al Campo',  icon: MapPin        },
-  { key: 'pos',        label: 'Compras POS',       icon: ShoppingCart  },
-  { key: 'cuotas',     label: 'Cuotas',            icon: CreditCard    },
-  { key: 'notas',      label: 'Notas',             icon: NotebookText  },
-  { key: 'fiscal',     label: 'Datos Fiscales',    icon: Receipt       },
+  { key: 'info',        label: 'Información',      icon: FileText      },
+  { key: 'familiares',  label: 'Familiares',        icon: Users         },
+  { key: 'accesos',     label: 'Accesos al Campo',  icon: MapPin        },
+  { key: 'tee',         label: 'Tee de Práctica',   icon: Target        },
+  { key: 'pos',         label: 'Compras POS',       icon: ShoppingCart  },
+  { key: 'cuotas',      label: 'Cuotas',            icon: CreditCard    },
+  { key: 'notas',       label: 'Notas',             icon: NotebookText  },
+  { key: 'fiscal',      label: 'Datos Fiscales',    icon: Receipt       },
 ]
 
 // ── Tab Familiares ────────────────────────────────────────────
@@ -151,6 +152,60 @@ function TabAccesos({ socioId }: { socioId: number }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// ── Tab Tee de Práctica ──────────────────────────────────────
+function TabTeePractica({ socioId }: { socioId: number }) {
+  const [rows, setRows]     = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    dbGolf.from('ctrl_tee_practica')
+      .select('id, fecha, num_bolas, notas')
+      .eq('id_socio_fk', socioId)
+      .order('fecha', { ascending: false })
+      .limit(50)
+      .then(({ data }) => { setRows(data ?? []); setLoading(false) })
+  }, [socioId])
+
+  if (loading) return <Empty text="Cargando…" />
+  if (rows.length === 0) return <Empty text="Sin entradas registradas" emoji="🎯" />
+
+  const totalBolas = rows.reduce((a, r) => a + (r.num_bolas ?? 0), 0)
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <span style={{ fontSize: 12, color: '#64748b' }}>
+          Total bolas: <strong style={{ color: '#d97706' }}>{totalBolas.toLocaleString('es-MX')}</strong>
+          <span style={{ marginLeft: 10 }}>Visitas: <strong>{rows.length}</strong></span>
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {rows.map(r => {
+          const dt = new Date(r.fecha)
+          return (
+            <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>
+                  {dt.toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                </div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10 }}>
+                  <span>{dt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
+                  {r.notas && <span style={{ fontStyle: 'italic' }}>{r.notas}</span>}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#94a3b8' }}>#{String(r.id).padStart(6, '0')}</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#d97706', marginLeft: 8 }}>{r.num_bolas}</span>
+                <span style={{ fontSize: 11, color: '#92400e' }}>bolas</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -406,10 +461,11 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
             </>
           )}
 
-          {tab === 'familiares' && <TabFamiliares socioId={socio.id} />}
-          {tab === 'accesos'    && <TabAccesos   socioId={socio.id} />}
-          {tab === 'pos'        && <TabPOS        socioId={socio.id} />}
-          {tab === 'cuotas'     && <TabCuotas     socioId={socio.id} />}
+          {tab === 'familiares' && <TabFamiliares   socioId={socio.id} />}
+          {tab === 'accesos'    && <TabAccesos      socioId={socio.id} />}
+          {tab === 'tee'        && <TabTeePractica  socioId={socio.id} />}
+          {tab === 'pos'        && <TabPOS          socioId={socio.id} />}
+          {tab === 'cuotas'     && <TabCuotas       socioId={socio.id} />}
 
           {/* ── Notas ── */}
           {tab === 'notas' && (
