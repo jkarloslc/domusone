@@ -24,7 +24,7 @@ const PoloIcon = ({ size = 18 }: { size?: number }) => (
 const CABALLERIZAS_MODULOS = [
   {
     key: 'socios',
-    label: 'Socios',
+    label: 'Arrendatarios',
     desc: 'Propietarios de caballos, datos de contacto y expediente',
     icon: Users,
     color: '#7c3aed',
