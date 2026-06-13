@@ -1,8 +1,8 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbHip, dbCfg, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, DollarSign, ChevronLeft, CheckCircle, AlertCircle, Clock, Receipt, Zap, Printer, Trash2, FileCheck } from 'lucide-react'
+import { Plus, RefreshCw, DollarSign, ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Clock, Receipt, Zap, Printer, Trash2, FileCheck } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
@@ -274,7 +274,7 @@ export default function CobranzaPage() {
   const puedeEscribir = canWrite('hipico-cobranza')
   const puedeEliminar = canDelete()
 
-  const [tab, setTab] = useState<'cargos' | 'recibos' | 'generar'>('cargos')
+  const [tab, setTab] = useState<'asignaciones' | 'cobranza' | 'recibos'>('asignaciones')
 
   // ── Cargos ──
   const [cargos, setCargos]     = useState<Cargo[]>([])
@@ -332,6 +332,41 @@ export default function CobranzaPage() {
   const [loadingCargosArr, setLoadingCargosArr] = useState(false)
   const [montoParcialHip, setMontoParcialHip] = useState('')
 
+  // ── Asignaciones (contratos vigentes) ──
+  type Asignacion = {
+    id: number; folio: string; id_arrendatario_fk: number; id_caballeriza_fk: number | null
+    fecha_inicio: string; fecha_fin: string | null; renta_mensual: number; moneda: string
+    dia_pago: number | null; status: string; notas: string | null
+    cat_arrendatarios: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string } | null
+    cat_caballerizas: { clave: string; nombre: string | null } | null
+    pendientes: number; monto_pendiente: number; con_adeudo: boolean
+  }
+  const [asignaciones, setAsignaciones]     = useState<Asignacion[]>([])
+  const [loadingAsig, setLoadingAsig]       = useState(true)
+  const [expandedAsig, setExpandedAsig]     = useState<Set<number>>(new Set())
+  const [asigCargos, setAsigCargos]         = useState<Record<number, Cargo[]>>({})
+  const [filtroAsigArr, setFiltroAsigArr]   = useState<number | ''>('')
+
+  // ── Cobranza mensual ──
+  type CargoMes = {
+    id: number; id_arrendatario_fk: number; id_contrato_fk: number | null
+    descripcion: string; mes_aplicacion: string | null
+    monto: number; saldo: number; status: string; fecha_vencimiento: string | null
+    cat_arrendatarios: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string } | null
+    ctrl_contratos: { cat_caballerizas: { clave: string } | null } | null
+  }
+  const [mesCobranza, setMesCobranza] = useState<string>(() => {
+    const hoy = new Date()
+    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
+  })
+  const [cargosCobranza, setCargosCobranza] = useState<CargoMes[]>([])
+  const [loadingCobranza, setLoadingCobranza] = useState(false)
+  const [kpisCobranza, setKpisCobranza] = useState({ emitido: 0, cobrado: 0, porCobrar: 0, carteraVencida: 0 })
+
+  // ── Modal Generar + cobrarContratoId ──
+  const [showGenerar, setShowGenerar]           = useState(false)
+  const [cobrarContratoId, setCobrarContratoId] = useState<number | null>(null)
+
   // ── Generar cargos mensuales ──
   type ContratoPrev = {
     id: number
@@ -387,7 +422,7 @@ export default function CobranzaPage() {
     setLoadingContratos(false)
   }, [])
 
-  useEffect(() => { if (tab === 'generar') loadContratosVigentes(mesGenerar) }, [tab, mesGenerar, loadContratosVigentes])
+  useEffect(() => { /* Generar se abre desde modal, no desde tab */ }, [])
 
   const toggleContrato = (id: number) => {
     setSelectedContratos(prev => {
@@ -496,6 +531,85 @@ export default function CobranzaPage() {
   }, [page, filtroStatus, filtroArr])
 
   useEffect(() => { fetchCargos() }, [fetchCargos])
+
+  // ── Fetch asignaciones (contratos vigentes + cargos pendientes por contrato) ──
+  const fetchAsignaciones = useCallback(async () => {
+    setLoadingAsig(true)
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+    const [{ data: contratos }, { data: cargosData }] = await Promise.all([
+      dbHip.from('ctrl_contratos')
+        .select('id, folio, id_arrendatario_fk, id_caballeriza_fk, fecha_inicio, fecha_fin, renta_mensual, moneda, dia_pago, status, notas, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), cat_caballerizas(clave, nombre)')
+        .eq('status', 'Vigente').order('folio'),
+      dbHip.from('ctrl_cargos')
+        .select('id_contrato_fk, saldo, status, fecha_vencimiento')
+        .in('status', ['Pendiente', 'Vencido', 'Pago Parcial']),
+    ])
+    const pend: Record<number, { count: number; monto: number; con_adeudo: boolean }> = {}
+    for (const c of (cargosData ?? []) as { id_contrato_fk: number | null; saldo: number; status: string; fecha_vencimiento: string | null }[]) {
+      if (!c.id_contrato_fk) continue
+      if (!pend[c.id_contrato_fk]) pend[c.id_contrato_fk] = { count: 0, monto: 0, con_adeudo: false }
+      pend[c.id_contrato_fk].count++
+      pend[c.id_contrato_fk].monto += c.saldo
+      if (c.status === 'Vencido' || (c.fecha_vencimiento && new Date(c.fecha_vencimiento) < hoy)) pend[c.id_contrato_fk].con_adeudo = true
+    }
+    const asig = ((contratos ?? []) as any[]).map(ct => ({
+      ...ct,
+      pendientes:       pend[ct.id]?.count    ?? 0,
+      monto_pendiente:  pend[ct.id]?.monto    ?? 0,
+      con_adeudo:       pend[ct.id]?.con_adeudo ?? false,
+    }))
+    setAsignaciones(asig)
+    setLoadingAsig(false)
+  }, [])
+
+  useEffect(() => { fetchAsignaciones() }, [fetchAsignaciones])
+
+  const loadAsigCargos = async (contratoId: number, arrId: number) => {
+    const { data } = await dbHip.from('ctrl_cargos')
+      .select('*, cat_conceptos_cuota(nombre)')
+      .eq('id_arrendatario_fk', arrId)
+      .eq('id_contrato_fk', contratoId)
+      .neq('status', 'Cancelado')
+      .order('fecha_vencimiento', { ascending: true })
+    setAsigCargos(prev => ({ ...prev, [contratoId]: (data as Cargo[]) ?? [] }))
+  }
+
+  const toggleExpandAsig = (ct: { id: number; id_arrendatario_fk: number }) => {
+    setExpandedAsig(prev => {
+      const next = new Set(prev)
+      if (next.has(ct.id)) { next.delete(ct.id) }
+      else { next.add(ct.id); loadAsigCargos(ct.id, ct.id_arrendatario_fk) }
+      return next
+    })
+  }
+
+  // ── Fetch cobranza mensual ──
+  const fetchCobranzaMes = useCallback(async () => {
+    setLoadingCobranza(true)
+    const mesQuery = mesCobranza + '-01'
+    const hoyStr = new Date().toISOString().split('T')[0]
+    const [{ data: mesData }, { data: vencidaData }] = await Promise.all([
+      dbHip.from('ctrl_cargos')
+        .select('id, id_arrendatario_fk, id_contrato_fk, descripcion, mes_aplicacion, monto, saldo, status, fecha_vencimiento, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), ctrl_contratos(cat_caballerizas(clave))')
+        .eq('mes_aplicacion', mesQuery).neq('status', 'Cancelado')
+        .order('fecha_vencimiento', { ascending: true }),
+      dbHip.from('ctrl_cargos')
+        .select('saldo')
+        .in('status', ['Pendiente', 'Vencido', 'Pago Parcial'])
+        .lt('fecha_vencimiento', hoyStr),
+    ])
+    const cargos = (mesData ?? []) as any[]
+    setCargosCobranza(cargos)
+    setKpisCobranza({
+      emitido:         cargos.reduce((s: number, c: any) => s + c.monto, 0),
+      cobrado:         cargos.filter((c: any) => c.status === 'Pagado').reduce((s: number, c: any) => s + c.monto, 0),
+      porCobrar:       cargos.filter((c: any) => c.status !== 'Pagado').reduce((s: number, c: any) => s + c.saldo, 0),
+      carteraVencida:  ((vencidaData ?? []) as { saldo: number }[]).reduce((s, c) => s + c.saldo, 0),
+    })
+    setLoadingCobranza(false)
+  }, [mesCobranza])
+
+  useEffect(() => { if (tab === 'cobranza') fetchCobranzaMes() }, [fetchCobranzaMes, tab])
 
   // ── Fetch recibos ──
   const fetchPagos = useCallback(async () => {
@@ -774,27 +888,31 @@ export default function CobranzaPage() {
   }
 
   // ── Modal cobrar ──
-  const openCobrar = () => {
-    setCobrarArr('')
+  const openCobrar = (opts?: { idArr?: number; idContrato?: number | null }) => {
+    const idArr = opts?.idArr ?? ''
+    setCobrarArr(idArr)
+    setCobrarContratoId(opts?.idContrato ?? null)
     setCargosArrendatario([])
     setSelectedCargos(new Set())
     setPagosHip([{ id_forma_pago_fk: formasPago[0]?.id ?? 0, forma_nombre: formasPago[0]?.nombre ?? 'Transferencia', monto: '', referencia: '' }])
     setNotasPago('')
     setErrPago('')
     setMontoParcialHip('')
+    if (idArr) loadCargosArrendatario(idArr as number, opts?.idContrato)
     setShowCobrar(true)
   }
 
-  const loadCargosArrendatario = async (idArr: number) => {
+  const loadCargosArrendatario = async (idArr: number, idContrato?: number | null) => {
     setLoadingCargosArr(true)
-    const { data } = await dbHip
+    let q = dbHip
       .from('ctrl_cargos')
       .select('*, cat_conceptos_cuota(nombre)')
       .eq('id_arrendatario_fk', idArr)
       .in('status', ['Pendiente', 'Vencido', 'Pago Parcial'])
       .order('fecha_vencimiento', { ascending: true })
+    if (idContrato) q = q.eq('id_contrato_fk', idContrato)
+    const { data } = await q
     setCargosArrendatario((data as Cargo[]) ?? [])
-    // seleccionar todos por defecto
     setSelectedCargos(new Set(((data as Cargo[]) ?? []).map(c => c.id)))
     setMontoParcialHip('')
     setLoadingCargosArr(false)
@@ -935,7 +1053,10 @@ export default function CobranzaPage() {
     setSavingPago(false)
     setShowCobrar(false)
     fetchCargos()
+    fetchAsignaciones()
+    setAsigCargos({})
     if (tab === 'recibos') fetchPagos()
+    if (tab === 'cobranza') fetchCobranzaMes()
 
     // Mostrar success state con folio + botón Ticket POS
     const { data: pagoFull } = await dbHip
@@ -968,17 +1089,15 @@ export default function CobranzaPage() {
         </Link>
         <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Cobranza Hípico</h1>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <button className="btn-ghost" onClick={tab === 'cargos' ? fetchCargos : fetchPagos}><RefreshCw size={13} /></button>
-          {puedeEscribir && tab === 'cargos' && (
+          <button className="btn-ghost" onClick={tab === 'recibos' ? fetchPagos : fetchAsignaciones}><RefreshCw size={13} /></button>
+          {puedeEscribir && tab === 'asignaciones' && (
             <>
-              <button className="btn-ghost" onClick={openNuevoCargo}><Plus size={13} /> Cargo</button>
-              <button className="btn-primary" onClick={openCobrar}><Receipt size={13} /> Cobrar</button>
+              <button className="btn-ghost" onClick={() => { setShowGenerar(true); loadContratosVigentes(mesGenerar) }} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Zap size={13} /> Generar mes
+              </button>
+              <button className="btn-ghost" onClick={openNuevoCargo} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={13} /> Cargo</button>
+              <button className="btn-primary" onClick={() => openCobrar()} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Receipt size={13} /> Cobrar</button>
             </>
-          )}
-          {puedeEscribir && tab === 'generar' && (
-            <button className="btn-primary" onClick={handleGenerarCargos} disabled={generando || selectedContratos.size === 0}>
-              <Zap size={13} /> {generando ? 'Generando…' : `Generar ${selectedContratos.size} cargo${selectedContratos.size !== 1 ? 's' : ''}`}
-            </button>
           )}
         </div>
       </div>
@@ -1006,9 +1125,9 @@ export default function CobranzaPage() {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
         {([
-          ['cargos',  'Cargos'],
-          ['recibos', 'Recibos emitidos'],
-          ['generar', '⚡ Generar del mes'],
+          ['asignaciones', 'Asignaciones'],
+          ['cobranza',     'Cobranza'],
+          ['recibos',      'Recibos'],
         ] as const).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             style={{ padding: '8px 20px', fontSize: 13, fontWeight: tab === t ? 700 : 400,
@@ -1020,64 +1139,207 @@ export default function CobranzaPage() {
         ))}
       </div>
 
-      {/* ── TAB CARGOS ── */}
-      {tab === 'cargos' && (
+      {/* ── TAB ASIGNACIONES ── */}
+      {tab === 'asignaciones' && (
         <>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-            <select className="input" value={filtroStatus} onChange={e => { setFiltroStatus(e.target.value); setPage(0) }} style={{ fontSize: 12 }}>
-              <option value="">Todos los status</option>
-              {['Pendiente', 'Vencido', 'Pago Parcial', 'Pagado', 'Cancelado'].map(s => <option key={s}>{s}</option>)}
-            </select>
-            <select className="input" value={filtroArr} onChange={e => { setFiltroArr(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ fontSize: 12, minWidth: 200 }}>
-              <option value="">Todos los arrendatarios</option>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+            <select className="input" value={filtroAsigArr} onChange={e => setFiltroAsigArr(e.target.value ? Number(e.target.value) : '')} style={{ fontSize: 12, minWidth: 220 }}>
+              <option value="">Todos los socios</option>
               {arrendatarios.map(a => <option key={a.id} value={a.id}>{fmtNombreArr(a)}</option>)}
             </select>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {asignaciones.filter(a => filtroAsigArr === '' || a.id_arrendatario_fk === filtroAsigArr).length} asignaciones vigentes
+            </span>
           </div>
 
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>{total} cargo{total !== 1 ? 's' : ''}</div>
+          {loadingAsig ? (
+            <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Cargando asignaciones…</div>
+          ) : (
+            <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ width: 30 }}></th>
+                    {['Socio', 'Caballeriza', 'Renta Mensual', 'Día Pago', 'Pendientes', 'Por Cobrar', ''].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {asignaciones
+                    .filter(a => filtroAsigArr === '' || a.id_arrendatario_fk === filtroAsigArr)
+                    .map((ct, i) => {
+                      const expanded = expandedAsig.has(ct.id)
+                      const cargosExp = asigCargos[ct.id]
+                      return (
+                        <Fragment key={ct.id}>
+                          <tr onClick={() => toggleExpandAsig(ct)}
+                            style={{ borderBottom: expanded ? 'none' : '1px solid var(--border)', background: expanded ? 'rgba(180,83,9,0.05)' : (i % 2 === 0 ? 'transparent' : 'var(--surface-800)'), cursor: 'pointer' }}>
+                            <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                              <ChevronRight size={13} style={{ color: 'var(--text-muted)', transition: 'transform 0.2s', transform: expanded ? 'rotate(90deg)' : 'none' }} />
+                            </td>
+                            <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>{fmtNombreArr(ct.cat_arrendatarios ?? undefined)}</td>
+                            <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{ct.cat_caballerizas?.clave ?? '—'}</span>
+                              {ct.cat_caballerizas?.nombre ? ` — ${ct.cat_caballerizas.nombre}` : ''}
+                            </td>
+                            <td style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                              {fmt$(ct.renta_mensual)}{ct.moneda === 'USD' ? ' USD' : ''}
+                            </td>
+                            <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>Día {ct.dia_pago ?? '—'}</td>
+                            <td style={{ padding: '10px 14px' }}>
+                              {ct.pendientes > 0
+                                ? <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 20, fontWeight: 700, background: ct.con_adeudo ? '#fee2e2' : '#fef9c3', color: ct.con_adeudo ? '#dc2626' : '#ca8a04' }}>{ct.pendientes}</span>
+                                : <span style={{ fontSize: 11, color: '#16a34a', fontWeight: 600 }}>Al corriente</span>
+                              }
+                            </td>
+                            <td style={{ padding: '10px 14px', fontWeight: 700, color: ct.monto_pendiente > 0 ? '#dc2626' : '#16a34a' }}>
+                              {ct.monto_pendiente > 0 ? fmt$(ct.monto_pendiente) : '—'}
+                            </td>
+                            <td style={{ padding: '10px 14px' }}>
+                              {puedeEscribir && (
+                                <button className="btn-primary" onClick={e => { e.stopPropagation(); openCobrar({ idArr: ct.id_arrendatario_fk, idContrato: ct.id }) }}
+                                  style={{ padding: '4px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <Receipt size={12} /> Cobrar
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                          {expanded && (
+                            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                              <td colSpan={8} style={{ padding: 0, background: 'var(--surface-800)' }}>
+                                <div style={{ padding: '12px 20px 16px 48px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Contrato {ct.folio}</span>
+                                    {puedeEscribir && (
+                                      <button className="btn-ghost" onClick={e => { e.stopPropagation(); setFormCargo({ ...EMPTY_CARGO, id_arrendatario_fk: ct.id_arrendatario_fk }); setErr(''); setShowCargo(true) }}
+                                        style={{ fontSize: 11, padding: '3px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <Plus size={11} /> Agregar cargo
+                                      </button>
+                                    )}
+                                  </div>
+                                  {!cargosExp ? (
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Cargando…</div>
+                                  ) : cargosExp.length === 0 ? (
+                                    <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Sin cargos pendientes — al corriente</div>
+                                  ) : (
+                                    <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
+                                      {cargosExp.map((c, j) => {
+                                        const sc = STATUS_COLOR[c.status] ?? { bg: '#f8fafc', color: '#64748b' }
+                                        const esVencido = c.status === 'Vencido' || (c.fecha_vencimiento && new Date(c.fecha_vencimiento) < new Date())
+                                        return (
+                                          <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', borderBottom: j < cargosExp.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{c.descripcion}</div>
+                                              {c.mes_aplicacion && (
+                                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                                  {new Date(c.mes_aplicacion + 'T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtFecha(c.fecha_vencimiento)}</div>
+                                            {esVencido && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#fee2e2', color: '#dc2626', fontWeight: 600 }}>Vencido</span>}
+                                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{c.status}</span>
+                                            <div style={{ fontWeight: 700, color: c.saldo > 0 ? '#dc2626' : '#16a34a', fontSize: 13, flexShrink: 0 }}>{fmt$(c.saldo)}</div>
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      )
+                    })}
+                </tbody>
+              </table>
+              {asignaciones.filter(a => filtroAsigArr === '' || a.id_arrendatario_fk === filtroAsigArr).length === 0 && (
+                <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Sin asignaciones vigentes</div>
+              )}
+            </div>
+          )}
+        </>
+      )}
 
-          <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                  {['Arrendatario', 'Descripción', 'Mes', 'Vencimiento', 'Monto', 'Saldo', 'Status'].map(h => (
-                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
-                ) : cargos.length === 0 ? (
-                  <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin cargos</td></tr>
-                ) : cargos.map((c, i) => {
-                  const sc = STATUS_COLOR[c.status] ?? { bg: '#f8fafc', color: '#64748b' }
-                  const vencido = c.fecha_vencimiento && c.status === 'Pendiente' && new Date(c.fecha_vencimiento) < new Date()
-                  return (
-                    <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)' }}>{fmtNombreArr(c.cat_arrendatarios)}</td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{c.descripcion}</td>
-                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>
-                        {c.mes_aplicacion ? new Date(c.mes_aplicacion + 'T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : '—'}
-                      </td>
-                      <td style={{ padding: '10px 14px', color: vencido ? '#dc2626' : 'var(--text-muted)', fontWeight: vencido ? 600 : 400, fontSize: 12 }}>{fmtFecha(c.fecha_vencimiento)}</td>
-                      <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>{fmt$(c.monto)}</td>
-                      <td style={{ padding: '10px 14px', fontWeight: 600, color: c.saldo > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(c.saldo)}</td>
-                      <td style={{ padding: '10px 14px' }}>
-                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{c.status}</span>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+      {/* ── TAB COBRANZA MENSUAL ── */}
+      {tab === 'cobranza' && (
+        <>
+          {/* Selector de mes */}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>Mes:</label>
+            <input type="month" className="input"
+              value={mesCobranza}
+              onChange={e => setMesCobranza(e.target.value)}
+              style={{ fontSize: 13, width: 170 }} />
+            <button className="btn-ghost" onClick={fetchCobranzaMes} style={{ padding: '4px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <RefreshCw size={13} />
+            </button>
           </div>
 
-          {totalPags > 1 && (
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-              <button className="btn-ghost" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</button>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>Pág. {page + 1} / {totalPags}</span>
-              <button className="btn-ghost" disabled={page >= totalPags - 1} onClick={() => setPage(p => p + 1)}>Siguiente</button>
+          {/* KPIs del mes */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+            {[
+              { label: 'Emitido del mes', value: fmt$(kpisCobranza.emitido),        color: '#2563eb', bg: '#eff6ff' },
+              { label: 'Cobrado',          value: fmt$(kpisCobranza.cobrado),         color: '#16a34a', bg: '#f0fdf4' },
+              { label: 'Por cobrar',       value: fmt$(kpisCobranza.porCobrar),       color: '#ca8a04', bg: '#fefce8' },
+              { label: 'Cartera vencida',  value: fmt$(kpisCobranza.carteraVencida), color: '#dc2626', bg: '#fef2f2' },
+            ].map(k => (
+              <div key={k.label} className="card" style={{ flex: '1 1 150px', padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: k.color, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: k.color }}>{k.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabla */}
+          {loadingCobranza ? (
+            <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Cargando…</div>
+          ) : (
+            <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
+                    {['Socio', 'Caballeriza', 'Descripción', 'Vencimiento', 'Monto', 'Saldo', 'Status', ''].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {cargosCobranza.length === 0 ? (
+                    <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin cargos para este mes</td></tr>
+                  ) : cargosCobranza.map((c, i) => {
+                    const sc = STATUS_COLOR[c.status] ?? { bg: '#f8fafc', color: '#64748b' }
+                    const vencido = c.fecha_vencimiento && c.status !== 'Pagado' && new Date(c.fecha_vencimiento) < new Date()
+                    const cab = (c.ctrl_contratos as any)?.cat_caballerizas?.clave ?? '—'
+                    return (
+                      <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)' }}>{fmtNombreArr(c.cat_arrendatarios ?? undefined)}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'monospace', fontWeight: 700 }}>{cab}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{c.descripcion}</td>
+                        <td style={{ padding: '10px 14px', color: vencido ? '#dc2626' : 'var(--text-muted)', fontWeight: vencido ? 600 : 400, fontSize: 12 }}>{fmtFecha(c.fecha_vencimiento)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>{fmt$(c.monto)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: c.saldo > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(c.saldo)}</td>
+                        <td style={{ padding: '10px 14px' }}>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{c.status}</span>
+                        </td>
+                        <td style={{ padding: '10px 14px' }}>
+                          {puedeEscribir && c.status !== 'Pagado' && c.status !== 'Cancelado' && (
+                            <button className="btn-primary" onClick={() => openCobrar({ idArr: c.id_arrendatario_fk, idContrato: c.id_contrato_fk })}
+                              style={{ padding: '4px 10px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Receipt size={11} /> Cobrar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </>
@@ -1171,25 +1433,33 @@ export default function CobranzaPage() {
         </>
       )}
 
-      {/* ── TAB GENERAR CARGOS ── */}
-      {tab === 'generar' && (
-        <>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap' }}>
+      {/* ── Modal Generar cargos del mes ── */}
+      {showGenerar && (
+        <ModalShell modulo="hipico" titulo="⚡ Generar cargos del mes" onClose={() => setShowGenerar(false)} maxWidth={680}
+          footer={
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button className="btn-ghost" onClick={() => setShowGenerar(false)}>Cerrar</button>
+              <button className="btn-primary" onClick={handleGenerarCargos} disabled={generando || selectedContratos.size === 0}>
+                <Zap size={13} /> {generando ? 'Generando…' : `Generar ${selectedContratos.size} cargo${selectedContratos.size !== 1 ? 's' : ''}`}
+              </button>
+            </div>
+          }
+        >
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
             <div>
               <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Mes a generar</label>
               <input className="input" type="month"
                 value={mesGenerar.slice(0, 7)}
-                onChange={e => setMesGenerar(e.target.value + '-01')}
+                onChange={e => { const v = e.target.value + '-01'; setMesGenerar(v); loadContratosVigentes(v) }}
                 style={{ fontSize: 13 }} />
             </div>
-            <button className="btn-ghost" onClick={() => loadContratosVigentes(mesGenerar)} style={{ marginBottom: 0 }}>
+            <button className="btn-ghost" onClick={() => loadContratosVigentes(mesGenerar)} style={{ padding: '6px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
               <RefreshCw size={13} /> Recargar
             </button>
           </div>
 
-          {/* Resultado */}
           {resGenerar && (
-            <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 8,
+            <div style={{ marginBottom: 12, padding: '10px 16px', borderRadius: 8,
               background: resGenerar.ok > 0 ? '#f0fdf4' : '#fefce8',
               color: resGenerar.ok > 0 ? '#15803d' : '#ca8a04',
               fontSize: 13, fontWeight: 600, border: `1px solid ${resGenerar.ok > 0 ? '#bbf7d0' : '#fde68a'}` }}>
@@ -1197,12 +1467,9 @@ export default function CobranzaPage() {
               {resGenerar.skip > 0 && ` · ${resGenerar.skip} omitido${resGenerar.skip !== 1 ? 's' : ''} (ya existían o error)`}
             </div>
           )}
-          {errGenerar && (
-            <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', fontSize: 13 }}>{errGenerar}</div>
-          )}
+          {errGenerar && <div style={{ marginBottom: 12, padding: '10px 16px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', fontSize: 13 }}>{errGenerar}</div>}
 
-          {/* Lista contratos */}
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
             {loadingContratos ? 'Cargando contratos…' : `${contratosVigentes.length} contrato${contratosVigentes.length !== 1 ? 's' : ''} vigente${contratosVigentes.length !== 1 ? 's' : ''}`}
             {!loadingContratos && contratosVigentes.length > 0 && (
               <span style={{ marginLeft: 12 }}>
@@ -1220,13 +1487,13 @@ export default function CobranzaPage() {
           </div>
 
           {!loadingContratos && contratosVigentes.length > 0 && (
-            <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                    <th style={{ padding: '10px 14px', width: 36 }}></th>
-                    {['Contrato', 'Arrendatario', 'Caballeriza', 'Renta Mensual', 'Día Pago', 'Estado'].map(h => (
-                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
+                    <th style={{ padding: '9px 12px', width: 32 }}></th>
+                    {['Contrato', 'Socio', 'Caballeriza', 'Renta', 'Estado'].map(h => (
+                      <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1235,28 +1502,22 @@ export default function CobranzaPage() {
                     const checked = selectedContratos.has(ct.id)
                     const disabled = ct.ya_tiene_cargo
                     return (
-                      <tr key={ct.id}
-                        onClick={() => !disabled && toggleContrato(ct.id)}
+                      <tr key={ct.id} onClick={() => !disabled && toggleContrato(ct.id)}
                         style={{ borderBottom: '1px solid var(--border)',
                           background: ct.ya_tiene_cargo ? 'var(--surface-800)' : checked ? 'rgba(180,83,9,0.07)' : (i % 2 === 0 ? 'transparent' : 'var(--surface-800)'),
-                          cursor: disabled ? 'default' : 'pointer',
-                          opacity: disabled ? 0.6 : 1 }}>
-                        <td style={{ padding: '10px 14px' }}>
+                          cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.6 : 1 }}>
+                        <td style={{ padding: '9px 12px' }}>
                           <input type="checkbox" checked={checked} disabled={disabled}
                             onChange={() => !disabled && toggleContrato(ct.id)}
-                            onClick={e => e.stopPropagation()}
-                            style={{ accentColor: '#b45309' }} />
+                            onClick={e => e.stopPropagation()} style={{ accentColor: '#b45309' }} />
                         </td>
-                        <td style={{ padding: '10px 14px', fontWeight: 700, color: 'var(--gold-light)', fontFamily: 'monospace', fontSize: 12 }}>{ct.folio}</td>
-                        <td style={{ padding: '10px 14px', color: 'var(--text-primary)' }}>{fmtNombreArr(ct.cat_arrendatarios)}</td>
-                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
+                        <td style={{ padding: '9px 12px', fontWeight: 700, color: 'var(--gold-light)', fontFamily: 'monospace', fontSize: 12 }}>{ct.folio}</td>
+                        <td style={{ padding: '9px 12px', color: 'var(--text-primary)' }}>{fmtNombreArr(ct.cat_arrendatarios)}</td>
+                        <td style={{ padding: '9px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
                           {ct.cat_caballerizas?.clave}{ct.cat_caballerizas?.nombre ? ` — ${ct.cat_caballerizas.nombre}` : ''}
                         </td>
-                        <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {fmt$(ct.renta_mensual)}{ct.moneda === 'USD' ? ' USD' : ''}
-                        </td>
-                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>Día {ct.dia_pago}</td>
-                        <td style={{ padding: '10px 14px' }}>
+                        <td style={{ padding: '9px 12px', fontWeight: 600 }}>{fmt$(ct.renta_mensual)}</td>
+                        <td style={{ padding: '9px 12px' }}>
                           {ct.ya_tiene_cargo
                             ? <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#dcfce7', color: '#16a34a', fontWeight: 600 }}>✓ Ya generado</span>
                             : <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#fef9c3', color: '#ca8a04', fontWeight: 600 }}>Pendiente</span>
@@ -1269,13 +1530,10 @@ export default function CobranzaPage() {
               </table>
             </div>
           )}
-
           {!loadingContratos && contratosVigentes.length === 0 && (
-            <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
-              No hay contratos vigentes
-            </div>
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>No hay contratos vigentes</div>
           )}
-        </>
+        </ModalShell>
       )}
 
       {/* ── Modal nuevo cargo ── */}
