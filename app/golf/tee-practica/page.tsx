@@ -66,7 +66,7 @@ async function abrirTicket(entrada: Entrada, autoPrint = true) {
 
 // ── Modal Nueva Entrada ───────────────────────────────────────
 function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const { user: authUser } = useAuth()
+  const { authUser } = useAuth()
   const [busqueda, setBusqueda] = useState('')
   const [resultados, setResultados] = useState<Socio[]>([])
   const [buscando, setBuscando] = useState(false)
@@ -96,7 +96,7 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
         .or(`nombre.ilike.%${busqueda}%,apellido_paterno.ilike.%${busqueda}%,numero_socio.ilike.%${busqueda}%`)
         .order('nombre')
         .limit(8)
-      setResultados((data as Socio[]) ?? [])
+      setResultados((data as unknown as Socio[]) ?? [])
       setBuscando(false)
     }, 280)
   }, [busqueda])
