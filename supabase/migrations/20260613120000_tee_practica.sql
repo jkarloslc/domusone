@@ -14,10 +14,34 @@ CREATE TABLE IF NOT EXISTS golf.ctrl_tee_practica (
 CREATE INDEX IF NOT EXISTS ctrl_tee_practica_socio_idx ON golf.ctrl_tee_practica (id_socio_fk);
 CREATE INDEX IF NOT EXISTS ctrl_tee_practica_fecha_idx ON golf.ctrl_tee_practica (fecha DESC);
 
-ALTER TABLE golf.ctrl_tee_practica ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "golf_tee_practica_all" ON golf.ctrl_tee_practica
-  FOR ALL USING (true) WITH CHECK (true);
-
+-- Grants
 GRANT SELECT, INSERT, UPDATE, DELETE ON golf.ctrl_tee_practica TO authenticated;
 GRANT USAGE, SELECT ON SEQUENCE golf.ctrl_tee_practica_id_seq TO authenticated;
+
+-- RLS
+ALTER TABLE golf.ctrl_tee_practica ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "tee_practica_select" ON golf.ctrl_tee_practica;
+CREATE POLICY "tee_practica_select"
+  ON golf.ctrl_tee_practica FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "tee_practica_insert" ON golf.ctrl_tee_practica;
+CREATE POLICY "tee_practica_insert"
+  ON golf.ctrl_tee_practica FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "tee_practica_update" ON golf.ctrl_tee_practica;
+CREATE POLICY "tee_practica_update"
+  ON golf.ctrl_tee_practica FOR UPDATE
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "tee_practica_delete" ON golf.ctrl_tee_practica;
+CREATE POLICY "tee_practica_delete"
+  ON golf.ctrl_tee_practica FOR DELETE
+  TO authenticated
+  USING (true);
