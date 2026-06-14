@@ -22,11 +22,12 @@ type PagoLinea   = { id_forma_fk: number; forma_nombre: string; monto: string; r
 type PosCfg      = { razon_social: string | null; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string | null }
 
 type Props = {
-  cuotas:           CuotaPendiente[]
+  cuotas:             CuotaPendiente[]
   nombreArrendatario: string
-  idArrendatario:   number
-  onClose:          () => void
-  onSaved:          () => void
+  idArrendatario:     number
+  nombreCaballeriza?: string
+  onClose:            () => void
+  onSaved:            () => void
 }
 
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
@@ -152,7 +153,7 @@ export async function printReciboHip(reciboId: number, folio: string, nombreArre
 }
 
 // ── Componente ───────────────────────────────────────────────
-export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario, onClose, onSaved }: Props) {
+export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario, nombreCaballeriza, onClose, onSaved }: Props) {
   const { authUser } = useAuth()
 
   const [formasPago, setFormasPago] = useState<FormaPago[]>([])
@@ -377,7 +378,11 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
           <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>Cobro registrado</div>
           <div style={{ fontFamily: 'monospace', fontSize: 20, fontWeight: 700, color: '#b45309', letterSpacing: 1 }}>{exito.folio}</div>
-          <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>{nombreArrendatario} · {fmt$(montoCobrar)}</div>
+          <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
+            {nombreArrendatario}
+            {nombreCaballeriza && <span style={{ color: '#b45309' }}> · {nombreCaballeriza}</span>}
+            {' · '}{fmt$(montoCobrar)}
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handleImprimir} disabled={imprimiendo}
@@ -419,6 +424,11 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
 
         <div style={{ fontSize: 13, fontWeight: 600, color: '#b45309', padding: '8px 12px', background: '#fff7ed', borderRadius: 8, border: '1px solid #fed7aa' }}>
           {nombreArrendatario}
+          {nombreCaballeriza && (
+            <div style={{ fontSize: 11, fontWeight: 500, color: '#92400e', marginTop: 2 }}>
+              Caballeriza: {nombreCaballeriza}
+            </div>
+          )}
         </div>
 
         {/* Cuotas pendientes */}

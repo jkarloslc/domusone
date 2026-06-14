@@ -102,7 +102,7 @@ export default function CobranzaHipicoPage() {
   const [showAsig, setShowAsig]             = useState(false)
   const [editAsig, setEditAsig]             = useState<AsignacionData | undefined>()
   const [modoCuotas, setModoCuotas]         = useState<{ idAsig: number; monto: number } | null>(null)
-  const [showCobrar, setShowCobrar]         = useState<{ cuotas: CuotaPendiente[]; nombreArr: string; idArr: number } | null>(null)
+  const [showCobrar, setShowCobrar]         = useState<{ cuotas: CuotaPendiente[]; nombreArr: string; idArr: number; nombreCaballeriza: string } | null>(null)
   const [generandoCargo, setGenerandoCargo] = useState<number | null>(null)
 
   const [mesGenerar, setMesGenerar] = useState(() => {
@@ -155,24 +155,25 @@ export default function CobranzaHipicoPage() {
     const { data } = await q
 
     const { data: cxcData } = await dbHip.from('cxc_hip')
-      .select('id_arrendatario_fk, saldo, monto_final, status, fecha_vencimiento')
+      .select('id_asignacion_fk, saldo, monto_final, status, fecha_vencimiento')
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
 
-    const pendPorArr: Record<number, { count: number; monto: number }> = {}
-    const adeudoPorArr: Record<number, boolean> = {}
-    for (const c of (cxcData ?? []) as { id_arrendatario_fk: number; saldo: number | null; monto_final: number; status: string; fecha_vencimiento: string | null }[]) {
-      const arr = c.id_arrendatario_fk
-      if (!pendPorArr[arr]) pendPorArr[arr] = { count: 0, monto: 0 }
-      pendPorArr[arr].count++
-      pendPorArr[arr].monto += c.saldo ?? c.monto_final
-      if (c.fecha_vencimiento && c.fecha_vencimiento < hoy) adeudoPorArr[arr] = true
+    const pendPorAsig: Record<number, { count: number; monto: number }> = {}
+    const adeudoPorAsig: Record<number, boolean> = {}
+    for (const c of (cxcData ?? []) as { id_asignacion_fk: number | null; saldo: number | null; monto_final: number; status: string; fecha_vencimiento: string | null }[]) {
+      const asig = c.id_asignacion_fk
+      if (!asig) continue
+      if (!pendPorAsig[asig]) pendPorAsig[asig] = { count: 0, monto: 0 }
+      pendPorAsig[asig].count++
+      pendPorAsig[asig].monto += c.saldo ?? c.monto_final
+      if (c.fecha_vencimiento && c.fecha_vencimiento < hoy) adeudoPorAsig[asig] = true
     }
 
     const result: Asignacion[] = ((data ?? []) as any[]).map(a => ({
       ...a,
-      pendientes:      pendPorArr[a.id_arrendatario_fk]?.count ?? 0,
-      monto_pendiente: pendPorArr[a.id_arrendatario_fk]?.monto ?? 0,
-      con_adeudo:      adeudoPorArr[a.id_arrendatario_fk] ?? false,
+      pendientes:      pendPorAsig[a.id]?.count ?? 0,
+      monto_pendiente: pendPorAsig[a.id]?.monto ?? 0,
+      con_adeudo:      adeudoPorAsig[a.id] ?? false,
     }))
     setAsignaciones(result)
     const activas = result.filter(a => a.activo)
@@ -189,13 +190,17 @@ export default function CobranzaHipicoPage() {
   const abrirCobroAsig = async (a: Asignacion) => {
     const { data } = await dbHip.from('cxc_hip')
       .select('id, concepto, periodo, monto_final, saldo, status, fecha_vencimiento')
-      .eq('id_arrendatario_fk', a.id_arrendatario_fk)
+      .eq('id_asignacion_fk', a.id)
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .order('fecha_vencimiento', { ascending: true })
+    const cab = a.cat_caballerizas
+      ? `${a.cat_caballerizas.clave}${a.cat_caballerizas.nombre ? ` — ${a.cat_caballerizas.nombre}` : ''}`
+      : ''
     setShowCobrar({
       cuotas: ((data ?? []) as any[]).map(c => ({ ...c, saldo: c.saldo ?? c.monto_final })) as CuotaPendiente[],
       nombreArr: fmtNombre(a.cat_arrendatarios),
       idArr: a.id_arrendatario_fk,
+      nombreCaballeriza: cab,
     })
   }
 
@@ -259,15 +264,21 @@ export default function CobranzaHipicoPage() {
 
   // Cobrar desde cobranza
   const abrirCobroMes = async (c: CuotaMes) => {
-    const { data } = await dbHip.from('cxc_hip')
+    const base = dbHip.from('cxc_hip')
       .select('id, concepto, periodo, monto_final, saldo, status, fecha_vencimiento')
-      .eq('id_arrendatario_fk', c.id_arrendatario_fk)
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .order('fecha_vencimiento', { ascending: true })
+    const { data } = c.id_asignacion_fk
+      ? await base.eq('id_asignacion_fk', c.id_asignacion_fk)
+      : await base.eq('id_arrendatario_fk', c.id_arrendatario_fk)
+    const cab = c.ctrl_asignaciones?.cat_caballerizas
+      ? `${c.ctrl_asignaciones.cat_caballerizas.clave}${c.ctrl_asignaciones.cat_caballerizas.nombre ? ` — ${c.ctrl_asignaciones.cat_caballerizas.nombre}` : ''}`
+      : ''
     setShowCobrar({
       cuotas: ((data ?? []) as any[]).map(x => ({ ...x, saldo: x.saldo ?? x.monto_final })) as CuotaPendiente[],
       nombreArr: fmtNombre(c.cat_arrendatarios),
       idArr: c.id_arrendatario_fk,
+      nombreCaballeriza: cab,
     })
   }
 
@@ -932,6 +943,7 @@ export default function CobranzaHipicoPage() {
           cuotas={showCobrar.cuotas}
           nombreArrendatario={showCobrar.nombreArr}
           idArrendatario={showCobrar.idArr}
+          nombreCaballeriza={showCobrar.nombreCaballeriza}
           onClose={() => setShowCobrar(null)}
           onSaved={() => { fetchAsignaciones(); if (tab === 'cobranza') fetchCobranza(); fetchRecibos() }}
         />
