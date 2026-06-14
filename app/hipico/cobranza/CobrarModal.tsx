@@ -160,7 +160,10 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
   const [loading, setLoading]       = useState(true)
   const [seleccionados, setSeleccionados] = useState<Set<number>>(() => new Set(cuotas.map(c => c.id)))
   const [pagos, setPagos] = useState<PagoLinea[]>([{ id_forma_fk: 0, forma_nombre: '', monto: '', referencia: '' }])
-  const [montoParcial, setMontoParcial] = useState('')
+  const [montoParcial, setMontoParcial] = useState<string>(() => {
+    const t = cuotas.reduce((s, c) => s + c.saldo, 0)
+    return t > 0 ? t.toFixed(2) : ''
+  })
   const [notas, setNotas]   = useState('')
   const [saving, setSaving] = useState(false)
   const [err, setErr]       = useState('')
@@ -170,15 +173,30 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
   const [genTicket, setGenTicket]   = useState(false)
   const [ticketErr, setTicketErr]   = useState('')
 
+  // Cargar formas de pago y pre-llenar monto con el total inicial
   useEffect(() => {
+    const totalInicial = cuotas.reduce((s, c) => s + c.saldo, 0)
     dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => {
         const fps = (data as FormaPago[] | null) ?? []
         setFormasPago(fps)
-        if (fps.length > 0) setPagos([{ id_forma_fk: fps[0].id, forma_nombre: fps[0].nombre, monto: '', referencia: '' }])
+        if (fps.length > 0) {
+          setPagos([{ id_forma_fk: fps[0].id, forma_nombre: fps[0].nombre, monto: totalInicial > 0 ? totalInicial.toFixed(2) : '', referencia: '' }])
+        }
         setLoading(false)
       })
   }, [])
+
+  // Sincronizar montoParcial y la primera línea de pago al cambiar la selección
+  useEffect(() => {
+    const total = cuotas.filter(c => seleccionados.has(c.id)).reduce((s, c) => s + c.saldo, 0)
+    const totalStr = total > 0 ? total.toFixed(2) : ''
+    setMontoParcial(totalStr)
+    setPagos(prev => {
+      if (prev.length !== 1) return prev
+      return [{ ...prev[0], monto: totalStr }]
+    })
+  }, [seleccionados])
 
   const toggle = (id: number) =>
     setSeleccionados(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
@@ -470,7 +488,6 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
             </label>
             <input className="input" type="number" min={0} step={0.01} max={montoTotal}
               value={montoParcial} onChange={e => setMontoParcial(e.target.value)}
-              placeholder={`${montoTotal.toFixed(2)} (total)`}
               style={{ width: '100%', fontWeight: 700, border: esParcial ? '1px solid #fbbf24' : undefined }} />
             {esParcial && (
               <div style={{ marginTop: 6, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
