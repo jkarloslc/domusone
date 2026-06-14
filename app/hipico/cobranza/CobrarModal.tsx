@@ -164,6 +164,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     const t = cuotas.reduce((s, c) => s + c.saldo, 0)
     return t > 0 ? t.toFixed(2) : ''
   })
+  const [fechaPago, setFechaPago] = useState<string>(hoyLocal())
   const [notas, setNotas]   = useState('')
   const [saving, setSaving] = useState(false)
   const [err, setErr]       = useState('')
@@ -237,7 +238,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     // 1. Insertar recibo
     const { data: recData, error: e1 } = await dbHip.from('recibos_hip').insert({
       folio,
-      fecha_recibo:       fechaLocal(),
+      fecha_recibo:       fechaPago,
       id_arrendatario_fk: idArrendatario,
       subtotal:           montoCobrar,
       descuento:          0,
@@ -292,7 +293,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       await dbHip.from('cxc_hip').update({
         saldo:  nuevoSaldo,
         status: nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL',
-        fecha_pago:  fechaLocal(),
+        fecha_pago:  fechaPago,
         forma_pago:  formasNombre,
       }).eq('id', c.id)
       remaining = parseFloat((remaining - aplicar).toFixed(2))
@@ -539,11 +540,18 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
           </div>
         </div>
 
-        {/* Notas */}
-        <div>
-          <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notas</label>
-          <textarea className="input" rows={2} value={notas} onChange={e => setNotas(e.target.value)}
-            style={{ resize: 'vertical', width: '100%' }} />
+        {/* Fecha de pago + Notas */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Fecha de pago</label>
+            <input className="input" type="date" value={fechaPago} onChange={e => setFechaPago(e.target.value)}
+              style={{ width: '100%' }} />
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notas</label>
+            <textarea className="input" rows={1} value={notas} onChange={e => setNotas(e.target.value)}
+              style={{ resize: 'vertical', width: '100%' }} />
+          </div>
         </div>
 
         {err && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{err}</div>}
