@@ -960,8 +960,23 @@ export default function CobranzaHipicoPage() {
               Crea una cuota de renta para cada asignación activa que aún no tenga cuota en el periodo seleccionado.
             </div>
             <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Periodo</label>
-            <input type="month" value={mesGenerarAll} onChange={e => setMesGenerarAll(e.target.value)}
-              className="input" style={{ width: '100%', marginBottom: 16 }} />
+            {(() => {
+              const [anioSel, mesSel] = mesGenerarAll.split('-')
+              const anioActual = new Date().getFullYear()
+              const anios = Array.from({ length: anioActual - 2024 + 2 }, (_, i) => 2024 + i)
+              const MESES_L = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+              const sel: React.CSSProperties = { padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', flex: 1 }
+              return (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  <select value={anioSel} onChange={e => setMesGenerarAll(`${e.target.value}-${mesSel}`)} style={sel}>
+                    {anios.map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                  <select value={mesSel} onChange={e => setMesGenerarAll(`${anioSel}-${e.target.value}`)} style={sel}>
+                    {MESES_L.map((m, i) => <option key={m} value={String(i + 1).padStart(2, '0')}>{m}</option>)}
+                  </select>
+                </div>
+              )
+            })()}
             {generadosMsg && (
               <div style={{ fontSize: 13, padding: '10px 14px', background: generadosMsg.startsWith('✓') ? '#f0fdf4' : '#fef9c3', border: '1px solid', borderColor: generadosMsg.startsWith('✓') ? '#bbf7d0' : '#fde047', borderRadius: 8, marginBottom: 16, color: generadosMsg.startsWith('✓') ? '#15803d' : '#92400e' }}>
                 {generadosMsg}

@@ -202,6 +202,9 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
   const toggle = (id: number) =>
     setSeleccionados(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
 
+  const toggleTodas = () =>
+    setSeleccionados(prev => prev.size === cuotas.length ? new Set() : new Set(cuotas.map(c => c.id)))
+
   const cuotasSel      = cuotas.filter(c => seleccionados.has(c.id))
   const montoTotal     = cuotasSel.reduce((s, c) => s + c.saldo, 0)
   const montoCobrar    = Math.min(parseFloat(montoParcial) || montoTotal, montoTotal)
@@ -285,19 +288,20 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     )
     if (e3) { setSaving(false); setErr(e3.message); return }
 
-    // 4. Actualizar saldo de cuotas (greedy)
+    // 4. Actualizar saldo de cuotas (greedy, en paralelo)
     let remaining = montoCobrar
-    for (const c of cuotasSel) {
+    const cuotaUpdates = cuotasSel.map(c => {
       const aplicar    = Math.min(remaining, c.saldo)
       const nuevoSaldo = parseFloat((c.saldo - aplicar).toFixed(2))
-      await dbHip.from('cxc_hip').update({
-        saldo:  nuevoSaldo,
-        status: nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL',
-        fecha_pago:  fechaPago,
-        forma_pago:  formasNombre,
+      remaining        = parseFloat((remaining - aplicar).toFixed(2))
+      return dbHip.from('cxc_hip').update({
+        saldo:      nuevoSaldo,
+        status:     nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL',
+        fecha_pago: fechaPago,
+        forma_pago: formasNombre,
       }).eq('id', c.id)
-      remaining = parseFloat((remaining - aplicar).toFixed(2))
-    }
+    })
+    await Promise.all(cuotaUpdates)
 
     setSaving(false)
     setExito({ idRecibo, folio })
@@ -452,7 +456,14 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
 
         {/* Cuotas pendientes */}
         <div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Cuotas pendientes — selecciona las que se liquidan</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cuotas pendientes — selecciona las que se liquidan</span>
+            {cuotas.length > 1 && (
+              <button onClick={toggleTodas} style={{ fontSize: 11, fontWeight: 600, color: '#b45309', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
+                {seleccionados.size === cuotas.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
+              </button>
+            )}
+          </div>
           {cuotas.length === 0 ? (
             <div style={{ fontSize: 12, color: '#16a34a', padding: '12px 0' }}>Sin cuotas pendientes</div>
           ) : (
