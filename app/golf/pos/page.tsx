@@ -88,6 +88,7 @@ export default function POSPage() {
   const [facturas,      setFacturas]      = useState<any[]>([])
   const [loadingF,      setLoadingF]      = useState(false)
   const [fechaFact,     setFechaFact]     = useState(fechaLocal())
+  const [fechaFactFin,  setFechaFactFin]  = useState(fechaLocal())
   const [reenvEmail,    setReenvEmail]    = useState<number | null>(null)
   const [descargando,   setDescargando]   = useState<string | null>(null)  // 'id-pdf' | 'id-xml'
 
@@ -239,13 +240,14 @@ export default function POSPage() {
   // ── Fetch facturas emitidas ──────────────────────────────
   const fetchFacturas = useCallback(async () => {
     setLoadingF(true)
+    const fin = fechaFactFin >= fechaFact ? fechaFactFin : fechaFact
     // Fallback: si la columna facturada no existe aún (migración pendiente),
     // buscamos por folio_fiscal not null como alternativa
     let { data, error } = await dbGolf.from('ctrl_ventas')
       .select('id, folio_dia, fecha, nombre_cliente, total, folio_fiscal, pac_cfdi_id, id_centro_fk')
       .eq('facturada', true)
       .gte('fecha', inicioDelDia(fechaFact))
-      .lte('fecha', finDelDia(fechaFact))
+      .lte('fecha', finDelDia(fin))
       .order('fecha', { ascending: false })
     // Si la columna facturada no existe, hacer fallback por folio_fiscal
     if (error) {
@@ -253,7 +255,7 @@ export default function POSPage() {
         .select('id, folio_dia, fecha, nombre_cliente, total, folio_fiscal, pac_cfdi_id, id_centro_fk')
         .not('folio_fiscal', 'is', null)
         .gte('fecha', inicioDelDia(fechaFact))
-        .lte('fecha', finDelDia(fechaFact))
+        .lte('fecha', finDelDia(fin))
         .order('fecha', { ascending: false }))
     }
     const ids = (data ?? []).map((v: any) => v.id)
@@ -265,7 +267,7 @@ export default function POSPage() {
     }
     setFacturas((data ?? []).map((v: any) => ({ ...v, _cfdi: cfdiMap[v.id] ?? null })))
     setLoadingF(false)
-  }, [fechaFact])
+  }, [fechaFact, fechaFactFin])
 
   useEffect(() => { fetchStats() }, [fetchStats])
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
@@ -1262,8 +1264,17 @@ ${operaciones.length > 0 ? `
       {tab === 'facturas' && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-            <input type="date" value={fechaFact} onChange={e => setFechaFact(e.target.value)}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>Del</span>
+              <input type="date" value={fechaFact} onChange={e => setFechaFact(e.target.value)}
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>al</span>
+              <input type="date" value={fechaFactFin} onChange={e => setFechaFactFin(e.target.value)}
+                min={fechaFact}
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            </div>
             <button className="btn-ghost" onClick={fetchFacturas} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
               <RefreshCw size={12} className={loadingF ? 'animate-spin' : ''} /> Actualizar
             </button>
@@ -1274,7 +1285,7 @@ ${operaciones.length > 0 ? `
           ) : facturas.length === 0 ? (
             <div className="card" style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
               <FileCheck size={32} style={{ margin: '0 auto 10px' }} />
-              <div style={{ fontWeight: 500 }}>Sin facturas emitidas en esta fecha</div>
+              <div style={{ fontWeight: 500 }}>Sin facturas emitidas en el período seleccionado</div>
             </div>
           ) : (
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
