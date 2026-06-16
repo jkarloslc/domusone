@@ -823,7 +823,7 @@ export default function CuotasGolfPage() {
           <ChevronDown size={12} /> Expandir todo
         </button>
         <button className="btn-ghost" onClick={colapsarTodo} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '7px 10px' }}>
-          <ChevronRight size={12} /> Colapsar todo
+          <ChevronRight size={12} /> Contraer todo
         </button>
         <span style={{ fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>
           {grupos.length} socio{grupos.length !== 1 ? 's' : ''} · {cuotasF.length} cuota{cuotasF.length !== 1 ? 's' : ''}
