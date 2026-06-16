@@ -17,6 +17,7 @@ type Det = { id?: number; id_articulo_fk: number | null; descripcion: string; ca
 
 export default function RequisicionesPage() {
   const { authUser, canWrite, canDelete, canAuth: canAuthFn } = useAuth()
+  const esAdminPleno = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
   const router  = useRouter()
   const [rows, setRows]       = useState<any[]>([])
   const [total, setTotal]     = useState(0)
@@ -153,7 +154,7 @@ export default function RequisicionesPage() {
                 <td>
                   <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                     <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetail(r)} title="Ver"><Eye size={13} /></button>
-                    {r.status === 'Borrador' && (
+                    {(r.status === 'Borrador' || esAdminPleno) && canWrite('requisiciones') && (
                       <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal(r)} title="Editar"><Edit2 size={13} /></button>
                     )}
                   </div>
@@ -173,7 +174,7 @@ export default function RequisicionesPage() {
         )}
       </div>
 
-      {modal !== null && <RequisicionModal row={modal==='new'?null:modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}
+      {modal !== null && <RequisicionModal row={modal==='new'?null:modal} esAdminPleno={esAdminPleno} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}
       {detail && <RequisicionDetail key={detail.id} req={detail} canAuth={canAuth} onClose={() => setDetail(null)} onAuth={handleAuth} />}
     </div>
   )
@@ -321,9 +322,10 @@ async function imprimirRequisicion(req: any, det: any[]) {
 }
 
 // ── Modal crear/editar requisición ──────────────────────────
-function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose: () => void; onSaved: () => void }) {
+function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | null; esAdminPleno: boolean; onClose: () => void; onSaved: () => void }) {
   const { authUser } = useAuth()
   const isNew = !row
+  const esBorrador = !row || row.status === 'Borrador'
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
   const [articulos, setArticulos] = useState<Articulo[]>([])
@@ -360,7 +362,11 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
     if (!isNew && row?.id) {
       dbComp.from('requisiciones_det').select('*').eq('id_requisicion_fk', row.id)
         .then(({ data }) => {
-          if (data?.length) setDet(data.map((d: any) => ({ id: d.id, id_articulo_fk: d.id_articulo_fk, descripcion: d.descripcion, cantidad: d.cantidad?.toString(), unidad: d.unidad, notas: d.notas ?? '' })))
+          if (data?.length) {
+            setDet(data.map((d: any) => ({ id: d.id, id_articulo_fk: d.id_articulo_fk, descripcion: d.descripcion, cantidad: d.cantidad?.toString(), unidad: d.unidad, notas: d.notas ?? '' })))
+            setArtSearches(data.map(() => ''))
+            setArtOptions(data.map(() => []))
+          }
         })
     }
   }, [])
@@ -472,11 +478,13 @@ function RequisicionModal({ row, onClose, onSaved }: { row: any | null; onClose:
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button className="btn-secondary" onClick={() => handleSave(false)} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar Borrador
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} {esBorrador ? 'Guardar Borrador' : 'Guardar'}
           </button>
-          <button className="btn-primary" onClick={() => handleSave(true)} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Enviar para Autorización
-          </button>
+          {esBorrador && (
+            <button className="btn-primary" onClick={() => handleSave(true)} disabled={saving}>
+              {saving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />} Enviar para Autorización
+            </button>
+          )}
         </div>
       </>}
     >
