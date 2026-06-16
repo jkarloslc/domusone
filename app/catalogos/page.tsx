@@ -608,8 +608,10 @@ function CuotaPreciosModal({ cuota, puedeEscribir, onClose }: {
       activo:              true,
     })
     setSaving(false)
-    if (error?.code === '23505') {
-      setErrorNew('Ya existe un precio para esa sección y clasificación')
+    if (error) {
+      setErrorNew(error.code === '23505'
+        ? 'Ya existe un precio para esa sección y clasificación'
+        : error.message)
       return
     }
     setNewLine({ id_seccion_fk: '', id_clasificacion_fk: '', monto: '' })
