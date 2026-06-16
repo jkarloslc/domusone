@@ -21,8 +21,9 @@ type CatConfig = {
   color:    string
   campos:   Campo[]
   desc:     string
-  sortBy?:      string
-  hasDetail?:   boolean
+  sortBy?:       string
+  clientSortBy?: string  // campo key de un select FK; ordena por su label resuelto en el cliente
+  hasDetail?:    boolean
   sectionLabel?: string  // renders a group header above this item in the sidebar
 }
 
@@ -159,12 +160,13 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
-    key:   'cuotas_estandar',
-    tabla: 'cuotas_estandar',
-    label: 'Cuotas Estándar',
-    icon:  DollarSign,
-    color: '#059669',
-    desc:  'Plantillas de cuotas de mantenimiento aplicables a lotes',
+    key:          'cuotas_estandar',
+    tabla:        'cuotas_estandar',
+    label:        'Cuotas Estándar',
+    icon:         DollarSign,
+    color:        '#059669',
+    clientSortBy: 'id_seccion_fk',
+    desc:         'Plantillas de cuotas de mantenimiento aplicables a lotes',
     campos: [
       { key: 'nombre',              label: 'Nombre *',        type: 'text',    required: true },
       { key: 'id_seccion_fk',       label: 'Sección *',       type: 'select',  selectTabla: 'secciones',      required: true },
@@ -934,8 +936,14 @@ function CatalogoTable({ config }: { config: CatConfig }) {
       maps[c.key] = m
     }
     setSelectMaps(maps)
+    if (config.clientSortBy && maps[config.clientSortBy]) {
+      const m = maps[config.clientSortBy]
+      setRows(r => [...r].sort((a, b) =>
+        (m[a[config.clientSortBy!]] ?? '').localeCompare(m[b[config.clientSortBy!]] ?? '', 'es')
+      ))
+    }
     setLoading(false)
-  }, [config.tabla])
+  }, [config.tabla, config.clientSortBy])
 
   useEffect(() => { fetchData() }, [fetchData])
 
