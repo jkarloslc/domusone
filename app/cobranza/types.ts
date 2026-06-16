@@ -31,6 +31,7 @@ export type Cargo = {
   id: number
   id_lote_fk: number
   id_cuota_lote_fk: number | null
+  id_cuota_estandar_fk: number | null
   concepto: string
   monto: number
   periodo_mes: string | null
@@ -79,6 +80,7 @@ export type CuotaLote = {
   periodicidad: string | null
   activo: boolean
   notas: string | null
+  motivo_excepcion: string | null
   cuotas_estandar?: { nombre: string }
 }
 

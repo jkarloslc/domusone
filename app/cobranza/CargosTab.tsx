@@ -159,6 +159,8 @@ export default function CargosTab() {
 }
 
 // ─── Modal: Generar Cargos del Mes ───────────────────────────────────────────
+type PreviewLote = { id: number; cve_lote: string | null; lote: number | null; monto: number; esExcepcion: boolean }
+
 function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [step, setStep]               = useState<1 | 2>(1)
   const [saving, setSaving]           = useState(false)
@@ -167,19 +169,17 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
   const [cuotaSel, setCuotaSel]       = useState<any>(null)
   const [periodoMes, setPeriodoMes]   = useState(MESES[new Date().getMonth()])
   const [periodoAnio, setPeriodoAnio] = useState(new Date().getFullYear().toString())
-  const [preview, setPreview]         = useState<any[]>([])
+  const [preview, setPreview]         = useState<PreviewLote[]>([])
   const [loadingPreview, setLoadingPreview] = useState(false)
   const [duplicados, setDuplicados]   = useState(0)
+  const [sinLineas, setSinLineas]     = useState(false)
 
   const ANIOS = Array.from({ length: 4 }, (_, i) => new Date().getFullYear() - 1 + i)
 
-  // Cargar catálogo de cuotas con clasificación y sección
   useEffect(() => {
     dbCfg.from('cuotas_estandar')
-      .select('id, nombre, monto, periodicidad, id_clasificacion_fk, id_seccion_fk, clasificacion(nombre), secciones(nombre)')
+      .select('id, nombre, periodicidad')
       .eq('activo', true)
-      .not('id_clasificacion_fk', 'is', null)
-      .not('id_seccion_fk', 'is', null)
       .order('nombre')
       .then(({ data }) => setCuotas(data ?? []))
   }, [])
@@ -188,33 +188,67 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
     setCuotaId(id)
     setCuotaSel(cuotas.find(c => c.id === Number(id)) ?? null)
     setPreview([])
+    setSinLineas(false)
     setStep(1)
   }
 
-  // Generar preview: lotes del tipo correcto que NO tienen ya ese cargo en ese período
   const generarPreview = async () => {
     if (!cuotaSel || !periodoMes || !periodoAnio) return
     setLoadingPreview(true)
+    setSinLineas(false)
 
-    // 1. Lotes que cumplen AMBAS condiciones: sección Y clasificación
-    const { data: lotesData } = await dbCat.from('lotes')
-      .select('id, cve_lote, lote')
-      .eq('id_seccion_fk',       cuotaSel.id_seccion_fk)
-      .eq('id_clasificacion_fk', cuotaSel.id_clasificacion_fk)
+    // 1. Líneas de precio activas para esta cuota
+    const { data: detLines } = await dbCfg.from('cuotas_estandar_det')
+      .select('id_seccion_fk, id_clasificacion_fk, monto')
+      .eq('id_cuota_fk', cuotaSel.id)
+      .eq('activo', true)
 
-    const lotes = lotesData ?? []
+    if (!detLines?.length) {
+      setPreview([])
+      setDuplicados(0)
+      setSinLineas(true)
+      setLoadingPreview(false)
+      setStep(2)
+      return
+    }
 
-    // 2. Cargos ya existentes para esa cuota en ese período
+    // 2. Lotes que coinciden con alguna línea de precio (una query por línea)
+    const allLotes: PreviewLote[] = []
+    for (const det of detLines) {
+      const { data: lotes } = await dbCat.from('lotes')
+        .select('id, cve_lote, lote')
+        .eq('id_seccion_fk', det.id_seccion_fk)
+        .eq('id_clasificacion_fk', det.id_clasificacion_fk)
+      ;(lotes ?? []).forEach((l: any) => allLotes.push({ ...l, monto: det.monto, esExcepcion: false }))
+    }
+
+    // 3. Tarifas excepcionales activas para esta cuota
+    const { data: excepciones } = await dbCtrl.from('cuotas_lotes')
+      .select('id_lote_fk, monto')
+      .eq('id_cuota_estandar_fk', cuotaSel.id)
+      .eq('activo', true)
+    const excMap = new Map<number, number>((excepciones ?? []).map((e: any) => [e.id_lote_fk, e.monto]))
+
+    // 4. Deduplicar + aplicar excepciones
+    const seen = new Set<number>()
+    const lotesConMonto = allLotes
+      .filter(l => { if (seen.has(l.id)) return false; seen.add(l.id); return true })
+      .map(l => ({
+        ...l,
+        monto:       excMap.has(l.id) ? excMap.get(l.id)! : l.monto,
+        esExcepcion: excMap.has(l.id),
+      }))
+
+    // 5. Excluir los que ya tienen cargo para esta cuota en este período
     const { data: existentes } = await dbCtrl.from('cargos')
       .select('id_lote_fk')
+      .eq('id_cuota_estandar_fk', cuotaSel.id)
       .eq('periodo_mes', periodoMes)
       .eq('periodo_anio', Number(periodoAnio))
-      .ilike('concepto', cuotaSel.nombre)
 
     const lotesCargados = new Set((existentes ?? []).map((e: any) => e.id_lote_fk))
-
-    const aptos    = lotes.filter(l => !lotesCargados.has(l.id))
-    const saltados = lotes.filter(l =>  lotesCargados.has(l.id))
+    const aptos    = lotesConMonto.filter(l => !lotesCargados.has(l.id))
+    const saltados = lotesConMonto.filter(l =>  lotesCargados.has(l.id))
 
     setPreview(aptos)
     setDuplicados(saltados.length)
@@ -228,30 +262,34 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
     const hoy = new Date().toISOString().split('T')[0]
     await dbCtrl.from('cargos').insert(
       preview.map(l => ({
-        id_lote_fk:   l.id,
-        concepto:     cuotaSel.nombre,
-        monto:        cuotaSel.monto,
-        monto_pagado: 0,
-        periodo_mes:  periodoMes,
-        periodo_anio: Number(periodoAnio),
-        fecha_cargo:  hoy,
-        status:       'Pendiente',
+        id_lote_fk:          l.id,
+        id_cuota_estandar_fk: cuotaSel.id,
+        concepto:            cuotaSel.nombre,
+        monto:               l.monto,
+        monto_pagado:        0,
+        periodo_mes:         periodoMes,
+        periodo_anio:        Number(periodoAnio),
+        fecha_cargo:         hoy,
+        status:              'Pendiente',
       }))
     )
     setSaving(false)
     onSaved()
   }
 
+  const totalPreview = preview.reduce((a, l) => a + l.monto, 0)
+  const excepcionesCount = preview.filter(l => l.esExcepcion).length
+
   return (
-    <ModalShell modulo="cobranza" titulo="Modal" onClose={onClose} maxWidth={580}
+    <ModalShell modulo="cobranza" titulo="Modal" onClose={onClose} maxWidth={600}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Cancelar</button>
         {step === 2 && preview.length > 0 && (
-        <button className="btn-primary" onClick={handleGenerar} disabled={saving}>
-        {saving
-        ? <><Loader size={13} className="animate-spin" /> Generando…</>
-        : <><Zap size={13} /> Confirmar — {preview.length} cargos</>}
-        </button>
+          <button className="btn-primary" onClick={handleGenerar} disabled={saving}>
+            {saving
+              ? <><Loader size={13} className="animate-spin" /> Generando…</>
+              : <><Zap size={13} /> Confirmar — {preview.length} cargos</>}
+          </button>
         )}
       </>}
     >
@@ -268,89 +306,114 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* Step 1: configuración */}
-          <>
-            {/* Cuota */}
+          {/* Cuota */}
+          <div>
+            <label className="label">Cuota a aplicar *</label>
+            <select className="select" value={cuotaId} onChange={e => seleccionarCuota(e.target.value)}>
+              <option value="">— Selecciona una cuota —</option>
+              {cuotas.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}{c.periodicidad ? ` · ${c.periodicidad}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Info cuota */}
+          {cuotaSel && (
+            <div style={{ display: 'flex', gap: 16, padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+              <InfoChip label="Cuota"        value={cuotaSel.nombre} />
+              <InfoChip label="Periodicidad" value={cuotaSel.periodicidad ?? '—'} />
+            </div>
+          )}
+
+          {/* Período */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div>
-              <label className="label">Cuota a aplicar *</label>
-              <select className="select" value={cuotaId} onChange={e => seleccionarCuota(e.target.value)}>
-                <option value="">— Selecciona una cuota —</option>
-                {cuotas.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre} · {fmt(c.monto)} · {(c as any).secciones?.nombre} / {(c as any).clasificacion?.nombre}
-                  </option>
-                ))}
+              <label className="label">Mes *</label>
+              <select className="select" value={periodoMes}
+                onChange={e => { setPeriodoMes(e.target.value); setStep(1); setPreview([]) }}>
+                {MESES.map(m => <option key={m}>{m}</option>)}
               </select>
             </div>
-
-            {/* Info de la cuota seleccionada */}
-            {cuotaSel && (
-              <div style={{ display: 'flex', gap: 16, padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8 }}>
-                <InfoChip label="Sección"       value={(cuotaSel as any).secciones?.nombre    ?? '—'} />
-                <InfoChip label="Clasificación" value={(cuotaSel as any).clasificacion?.nombre ?? '—'} />
-                <InfoChip label="Monto"        value={fmt(cuotaSel.monto)} />
-                <InfoChip label="Periodicidad" value={cuotaSel.periodicidad ?? '—'} />
-              </div>
-            )}
-
-            {/* Período */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div>
-                <label className="label">Mes *</label>
-                <select className="select" value={periodoMes} onChange={e => { setPeriodoMes(e.target.value); setStep(1); setPreview([]) }}>
-                  {MESES.map(m => <option key={m}>{m}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">Año *</label>
-                <select className="select" value={periodoAnio} onChange={e => { setPeriodoAnio(e.target.value); setStep(1); setPreview([]) }}>
-                  {ANIOS.map(a => <option key={a}>{a}</option>)}
-                </select>
-              </div>
+            <div>
+              <label className="label">Año *</label>
+              <select className="select" value={periodoAnio}
+                onChange={e => { setPeriodoAnio(e.target.value); setStep(1); setPreview([]) }}>
+                {ANIOS.map(a => <option key={a}>{a}</option>)}
+              </select>
             </div>
+          </div>
 
-            {step === 1 && (
-              <button className="btn-primary" disabled={!cuotaId || !periodoMes || !periodoAnio || loadingPreview}
-                onClick={generarPreview}
-                style={{ alignSelf: 'flex-end' }}>
-                {loadingPreview ? <><Loader size={13} className="animate-spin" /> Calculando…</> : <><Search size={13} /> Ver vista previa</>}
-              </button>
-            )}
-          </>
+          {step === 1 && (
+            <button className="btn-primary" disabled={!cuotaId || !periodoMes || !periodoAnio || loadingPreview}
+              onClick={generarPreview} style={{ alignSelf: 'flex-end' }}>
+              {loadingPreview
+                ? <><Loader size={13} className="animate-spin" /> Calculando…</>
+                : <><Search size={13} /> Ver vista previa</>}
+            </button>
+          )}
 
           {/* Step 2: preview */}
           {step === 2 && (
             <>
-              {duplicados > 0 && (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 13, color: '#92400e' }}>
+              {sinLineas && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '12px 16px',
+                  background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
                   <AlertTriangle size={14} />
-                  {duplicados} lote(s) ya tienen este cargo en {periodoMes} {periodoAnio} — se omitirán.
+                  Esta cuota no tiene líneas de precio configuradas. Define los precios por sección/clasificación en Catálogos → Cuotas Estándar.
                 </div>
               )}
 
-              {preview.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: 13, background: '#f8fafc', borderRadius: 8 }}>
-                  Todos los lotes de este tipo ya tienen el cargo generado para este período.
+              {duplicados > 0 && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 14px',
+                  background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 13, color: '#92400e' }}>
+                  <AlertTriangle size={14} />
+                  {duplicados} lote(s) ya tienen cargo para esta cuota en {periodoMes} {periodoAnio} — se omitirán.
                 </div>
-              ) : (
-                <div className="card" style={{ overflow: 'hidden', maxHeight: 280, overflowY: 'auto' }}>
+              )}
+
+              {excepcionesCount > 0 && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 14px',
+                  background: '#fefce8', border: '1px solid #fef08a', borderRadius: 8, fontSize: 13, color: '#713f12' }}>
+                  <AlertTriangle size={14} />
+                  {excepcionesCount} lote(s) usarán su <strong>tarifa excepcional</strong> en lugar del precio estándar.
+                </div>
+              )}
+
+              {!sinLineas && preview.length === 0 && (
+                <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 13, background: '#f8fafc', borderRadius: 8 }}>
+                  Todos los lotes aplicables ya tienen este cargo generado para el período seleccionado.
+                </div>
+              )}
+
+              {preview.length > 0 && (
+                <div className="card" style={{ overflow: 'hidden', maxHeight: 300, overflowY: 'auto' }}>
                   <table>
                     <thead>
                       <tr>
                         <th>Lote</th>
-                        <th style={{ textAlign: 'right' }}>Monto a cargar</th>
-                        <th style={{ textAlign: 'center' }}>Status</th>
+                        <th style={{ textAlign: 'right' }}>Monto</th>
+                        <th style={{ textAlign: 'center' }}>Tipo</th>
                       </tr>
                     </thead>
                     <tbody>
                       {preview.map(l => (
                         <tr key={l.id}>
                           <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{l.cve_lote ?? `#${l.lote}`}</td>
-                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>{fmt(cuotaSel?.monto)}</td>
+                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600,
+                            color: l.esExcepcion ? '#d97706' : 'var(--text-primary)' }}>
+                            {fmt(l.monto)}
+                          </td>
                           <td style={{ textAlign: 'center' }}>
-                            <span style={{ fontSize: 11, color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                              <CheckCircle size={11} /> Por generar
-                            </span>
+                            {l.esExcepcion ? (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                                background: '#fef3c7', color: '#d97706' }}>Excepción</span>
+                            ) : (
+                              <span style={{ fontSize: 10, color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+                                <CheckCircle size={10} /> Estándar
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -360,8 +423,9 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
                         <td style={{ padding: '10px 14px', fontWeight: 700, fontSize: 13 }}>
                           Total — {preview.length} lotes
                         </td>
-                        <td style={{ textAlign: 'right', padding: '10px 14px', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>
-                          {fmt((cuotaSel?.monto ?? 0) * preview.length)}
+                        <td style={{ textAlign: 'right', padding: '10px 14px', fontWeight: 700,
+                          fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>
+                          {fmt(totalPreview)}
                         </td>
                         <td />
                       </tr>
@@ -372,7 +436,6 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
             </>
           )}
         </div>
-
     </ModalShell>
   )
 }

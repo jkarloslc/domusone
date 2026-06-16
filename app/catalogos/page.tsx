@@ -160,21 +160,13 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
-    key:          'cuotas_estandar',
-    tabla:        'cuotas_estandar',
-    label:        'Cuotas Estándar',
-    icon:         DollarSign,
-    color:        '#059669',
-    clientSortBy: 'id_seccion_fk',
-    desc:         'Plantillas de cuotas de mantenimiento aplicables a lotes',
-    campos: [
-      { key: 'nombre',              label: 'Nombre *',        type: 'text',    required: true },
-      { key: 'id_seccion_fk',       label: 'Sección *',       type: 'select',  selectTabla: 'secciones',      required: true },
-      { key: 'id_clasificacion_fk', label: 'Clasificación *', type: 'select',  selectTabla: 'clasificacion',  required: true },
-      { key: 'monto',               label: 'Monto',           type: 'number' },
-      { key: 'periodicidad', label: 'Periodicidad', type: 'select', staticOptions: ['Mensual', 'Anual', 'Única'] },
-      { key: 'descripcion',         label: 'Descripción',     type: 'textarea' },
-    ],
+    key:   'cuotas_estandar',
+    tabla: '__custom__',
+    label: 'Cuotas Estándar',
+    icon:  DollarSign,
+    color: '#059669',
+    desc:  'Cuotas de mantenimiento con precios por sección y clasificación',
+    campos: [],
   },
   {
     key:   'formas_pago',
@@ -326,6 +318,453 @@ const CATALOGOS: CatConfig[] = [
     campos: [],
   },
 ]
+
+// ══════════════════════════════════════════════════════════════
+// Cuotas Estándar — cabecera + detalle de precios
+// ══════════════════════════════════════════════════════════════
+const PERIODICIDADES_CEP = ['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual', 'Única']
+
+type CuotaHeader = {
+  id: number
+  nombre: string
+  periodicidad: string | null
+  descripcion: string | null
+  activo: boolean
+  _lineCount?: number
+}
+
+type CuotaDetLine = {
+  id: number
+  id_cuota_fk: number
+  id_seccion_fk: number
+  id_clasificacion_fk: number
+  monto: number
+  activo: boolean
+  secciones?: { nombre: string }
+  clasificacion?: { nombre: string }
+}
+
+function CuotasEstandarPanel() {
+  const { authUser } = useAuth()
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const [cuotas, setCuotas]         = useState<CuotaHeader[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [formOpen, setFormOpen]     = useState(false)
+  const [editing, setEditing]       = useState<CuotaHeader | null>(null)
+  const [saving, setSaving]         = useState(false)
+  const [preciosFor, setPreciosFor] = useState<CuotaHeader | null>(null)
+  const [form, setForm] = useState({ nombre: '', periodicidad: 'Mensual', descripcion: '' })
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    const [{ data: rows }, { data: dets }] = await Promise.all([
+      dbCfg.from('cuotas_estandar').select('id, nombre, periodicidad, descripcion, activo').order('nombre'),
+      dbCfg.from('cuotas_estandar_det').select('id_cuota_fk').eq('activo', true),
+    ])
+    const countMap = new Map<number, number>()
+    ;(dets ?? []).forEach((d: any) => countMap.set(d.id_cuota_fk, (countMap.get(d.id_cuota_fk) ?? 0) + 1))
+    setCuotas((rows ?? []).map((c: any) => ({ ...c, _lineCount: countMap.get(c.id) ?? 0 })))
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  const openNew = () => {
+    setEditing(null)
+    setForm({ nombre: '', periodicidad: 'Mensual', descripcion: '' })
+    setFormOpen(true)
+  }
+
+  const openEdit = (c: CuotaHeader) => {
+    setEditing(c)
+    setForm({ nombre: c.nombre, periodicidad: c.periodicidad ?? 'Mensual', descripcion: c.descripcion ?? '' })
+    setFormOpen(true)
+  }
+
+  const handleSave = async () => {
+    if (!form.nombre.trim()) return
+    setSaving(true)
+    const payload = {
+      nombre:       form.nombre.trim(),
+      periodicidad: form.periodicidad || null,
+      descripcion:  form.descripcion.trim() || null,
+    }
+    if (editing) await dbCfg.from('cuotas_estandar').update(payload).eq('id', editing.id)
+    else          await dbCfg.from('cuotas_estandar').insert({ ...payload, activo: true })
+    setSaving(false)
+    setFormOpen(false)
+    fetchAll()
+  }
+
+  const toggleActivo = async (c: CuotaHeader) => {
+    await dbCfg.from('cuotas_estandar').update({ activo: !c.activo }).eq('id', c.id)
+    fetchAll()
+  }
+
+  const activas   = cuotas.filter(c => c.activo).length
+  const inactivas = cuotas.filter(c => !c.activo).length
+  const labelSt: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#05996920',
+              display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DollarSign size={15} style={{ color: '#059669' }} />
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Cuotas Estándar</h2>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 40 }}>
+            Cuotas de mantenimiento con precios por sección y clasificación
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-ghost" onClick={fetchAll} style={{ padding: '7px 10px' }}>
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+          {puedeEscribir && (
+            <button className="btn-primary" onClick={openNew}>
+              <Plus size={14} /> Nueva Cuota
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+        <div className="card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CheckCircle size={13} style={{ color: '#15803d' }} />
+          <span style={{ fontSize: 12 }}><strong style={{ color: '#15803d' }}>{activas}</strong> activas</span>
+        </div>
+        {inactivas > 0 && (
+          <div className="card" style={{ padding: '8px 16px' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}><strong>{inactivas}</strong> inactivas</span>
+          </div>
+        )}
+      </div>
+
+      {/* Formulario inline */}
+      {formOpen && (
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{editing ? 'Editar cuota' : 'Nueva cuota'}</span>
+            <button onClick={() => setFormOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: '10px 16px' }}>
+            <div>
+              <label style={labelSt}>Nombre *</label>
+              <input className="input" value={form.nombre} autoFocus
+                onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+                placeholder="Ej. Cuota de Mantenimiento 2026" />
+            </div>
+            <div>
+              <label style={labelSt}>Periodicidad</label>
+              <select className="select" value={form.periodicidad}
+                onChange={e => setForm(f => ({ ...f, periodicidad: e.target.value }))}>
+                {PERIODICIDADES_CEP.map(p => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelSt}>Descripción</label>
+              <input className="input" value={form.descripcion}
+                onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
+                placeholder="Descripción opcional" />
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+            <button className="btn-secondary" onClick={() => setFormOpen(false)}>Cancelar</button>
+            <button className="btn-primary" disabled={saving || !form.nombre.trim()} onClick={handleSave}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+              {editing ? 'Guardar' : 'Crear'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tabla */}
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <table>
+          <thead>
+            <tr>
+              <th style={{ width: 50 }}>ID</th>
+              <th>Nombre</th>
+              <th style={{ width: 130 }}>Periodicidad</th>
+              <th>Descripción</th>
+              <th style={{ width: 120, textAlign: 'center' }}>Precios</th>
+              <th style={{ width: 80, textAlign: 'center' }}>Status</th>
+              {puedeEscribir && <th style={{ width: 60 }}></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
+                <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+              </td></tr>
+            ) : cuotas.length === 0 ? (
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                Sin cuotas. Haz clic en "Nueva Cuota" para agregar.
+              </td></tr>
+            ) : cuotas.map(c => (
+              <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45 }}>
+                <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{c.id}</td>
+                <td style={{ fontWeight: 500 }}>{c.nombre}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.periodicidad ?? '—'}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 180,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {c.descripcion ?? '—'}
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <button onClick={() => setPreciosFor(c)}
+                    title="Ver / editar precios por sección y clasificación"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11,
+                      padding: '3px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 600,
+                      background: (c._lineCount ?? 0) > 0 ? '#dcfce7' : '#fef3c7',
+                      color:      (c._lineCount ?? 0) > 0 ? '#15803d' : '#92400e' }}>
+                    <Eye size={11} />
+                    {c._lineCount ?? 0} línea{(c._lineCount ?? 0) !== 1 ? 's' : ''}
+                  </button>
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <button onClick={() => puedeEscribir && toggleActivo(c)}
+                    style={{ background: 'none', border: 'none', cursor: puedeEscribir ? 'pointer' : 'default', display: 'flex', margin: '0 auto' }}>
+                    {c.activo
+                      ? <ToggleRight size={20} style={{ color: '#15803d' }} />
+                      : <ToggleLeft  size={20} style={{ color: '#cbd5e1' }} />}
+                  </button>
+                </td>
+                {puedeEscribir && (
+                  <td>
+                    <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => openEdit(c)}>
+                      <Edit2 size={13} />
+                    </button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {preciosFor && (
+        <CuotaPreciosModal
+          cuota={preciosFor}
+          puedeEscribir={puedeEscribir}
+          onClose={() => { setPreciosFor(null); fetchAll() }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Modal de líneas de precio ──────────────────────────────────────────────────
+function CuotaPreciosModal({ cuota, puedeEscribir, onClose }: {
+  cuota: CuotaHeader; puedeEscribir: boolean; onClose: () => void
+}) {
+  const [lines, setLines]         = useState<CuotaDetLine[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [secciones, setSecciones] = useState<any[]>([])
+  const [clasifs, setClasifs]     = useState<any[]>([])
+  const [saving, setSaving]       = useState(false)
+  const [editId, setEditId]       = useState<number | null>(null)
+  const [editMonto, setEditMonto] = useState('')
+  const [newLine, setNewLine]     = useState({ id_seccion_fk: '', id_clasificacion_fk: '', monto: '' })
+  const [errorNew, setErrorNew]   = useState('')
+
+  const fetchLines = useCallback(async () => {
+    setLoading(true)
+    const { data } = await dbCfg.from('cuotas_estandar_det')
+      .select('*, secciones(nombre), clasificacion(nombre)')
+      .eq('id_cuota_fk', cuota.id)
+      .order('id')
+    setLines((data as CuotaDetLine[]) ?? [])
+    setLoading(false)
+  }, [cuota.id])
+
+  useEffect(() => {
+    Promise.all([
+      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('clasificacion').select('id, nombre').eq('activo', true).order('nombre'),
+    ]).then(([{ data: secs }, { data: cls }]) => {
+      setSecciones(secs ?? [])
+      setClasifs(cls ?? [])
+    })
+    fetchLines()
+  }, [fetchLines])
+
+  const handleAdd = async () => {
+    setErrorNew('')
+    if (!newLine.id_seccion_fk || !newLine.id_clasificacion_fk || !newLine.monto) {
+      setErrorNew('Completa todos los campos'); return
+    }
+    setSaving(true)
+    const { error } = await dbCfg.from('cuotas_estandar_det').insert({
+      id_cuota_fk:         cuota.id,
+      id_seccion_fk:       Number(newLine.id_seccion_fk),
+      id_clasificacion_fk: Number(newLine.id_clasificacion_fk),
+      monto:               Number(newLine.monto),
+      activo:              true,
+    })
+    setSaving(false)
+    if (error?.code === '23505') {
+      setErrorNew('Ya existe un precio para esa sección y clasificación')
+      return
+    }
+    setNewLine({ id_seccion_fk: '', id_clasificacion_fk: '', monto: '' })
+    fetchLines()
+  }
+
+  const handleSaveEdit = async (id: number) => {
+    if (!editMonto) return
+    await dbCfg.from('cuotas_estandar_det').update({ monto: Number(editMonto) }).eq('id', id)
+    setEditId(null)
+    fetchLines()
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Eliminar esta línea de precio?')) return
+    await dbCfg.from('cuotas_estandar_det').delete().eq('id', id)
+    fetchLines()
+  }
+
+  const toggleLine = async (l: CuotaDetLine) => {
+    await dbCfg.from('cuotas_estandar_det').update({ activo: !l.activo }).eq('id', l.id)
+    fetchLines()
+  }
+
+  const fmtM = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const labelSt: React.CSSProperties = { fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }
+
+  return (
+    <ModalShell modulo="residencial" titulo={`Precios — ${cuota.nombre}`} onClose={onClose} maxWidth={660}
+      footer={<button className="btn-secondary" onClick={onClose}>Cerrar</button>}
+    >
+      <div style={{ padding: '0 24px 24px' }}>
+        {/* Info cabecera */}
+        <div style={{ display: 'flex', gap: 20, padding: '12px 0 16px', borderBottom: '1px solid #f1f5f9', marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 10, color: '#059669', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Periodicidad</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{cuota.periodicidad ?? '—'}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: '#059669', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2 }}>Líneas activas</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{lines.filter(l => l.activo).length}</div>
+          </div>
+        </div>
+
+        {/* Tabla de líneas */}
+        <div className="card" style={{ overflow: 'hidden', marginBottom: puedeEscribir ? 16 : 0 }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Sección</th>
+                <th>Clasificación</th>
+                <th style={{ textAlign: 'right' }}>Monto</th>
+                <th style={{ width: 64, textAlign: 'center' }}>Activo</th>
+                {puedeEscribir && <th style={{ width: 52 }}></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32 }}>
+                  <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+                </td></tr>
+              ) : lines.length === 0 ? (
+                <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>
+                  Sin líneas de precio. Agrega secciones abajo.
+                </td></tr>
+              ) : lines.map(l => (
+                <tr key={l.id} style={{ opacity: l.activo ? 1 : 0.45 }}>
+                  <td style={{ fontWeight: 500 }}>{(l as any).secciones?.nombre ?? '—'}</td>
+                  <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{(l as any).clasificacion?.nombre ?? '—'}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {editId === l.id ? (
+                      <input className="input" type="number" step="0.01" value={editMonto} autoFocus
+                        style={{ width: 110, textAlign: 'right', padding: '4px 8px' }}
+                        onChange={e => setEditMonto(e.target.value)}
+                        onBlur={() => handleSaveEdit(l.id)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(l.id); if (e.key === 'Escape') setEditId(null) }}
+                      />
+                    ) : (
+                      <button onClick={() => { if (puedeEscribir) { setEditId(l.id); setEditMonto(l.monto.toString()) } }}
+                        style={{ background: 'none', border: 'none', fontWeight: 600, fontSize: 13,
+                          color: 'var(--blue)', fontVariantNumeric: 'tabular-nums',
+                          cursor: puedeEscribir ? 'pointer' : 'default' }}
+                        title={puedeEscribir ? 'Haz clic para editar el monto' : undefined}>
+                        {fmtM(l.monto)}
+                      </button>
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button onClick={() => toggleLine(l)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', margin: '0 auto' }}>
+                      {l.activo
+                        ? <ToggleRight size={18} style={{ color: '#15803d' }} />
+                        : <ToggleLeft  size={18} style={{ color: '#cbd5e1' }} />}
+                    </button>
+                  </td>
+                  {puedeEscribir && (
+                    <td>
+                      <button className="btn-ghost" style={{ padding: '3px 6px', color: '#dc2626' }}
+                        onClick={() => handleDelete(l.id)}>
+                        <Trash2 size={12} />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Agregar línea */}
+        {puedeEscribir && (
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '14px 16px' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 10 }}>
+              Agregar línea de precio
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 120px auto', gap: 8, alignItems: 'flex-end' }}>
+              <div>
+                <label style={labelSt}>Sección</label>
+                <select className="select" value={newLine.id_seccion_fk}
+                  onChange={e => setNewLine(n => ({ ...n, id_seccion_fk: e.target.value }))}>
+                  <option value="">— Sección —</option>
+                  {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelSt}>Clasificación</label>
+                <select className="select" value={newLine.id_clasificacion_fk}
+                  onChange={e => setNewLine(n => ({ ...n, id_clasificacion_fk: e.target.value }))}>
+                  <option value="">— Clasificación —</option>
+                  {clasifs.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelSt}>Monto *</label>
+                <input className="input" type="number" step="0.01" placeholder="0.00"
+                  value={newLine.monto}
+                  onChange={e => setNewLine(n => ({ ...n, monto: e.target.value }))}
+                  onKeyDown={e => e.key === 'Enter' && handleAdd()} />
+              </div>
+              <button className="btn-primary" onClick={handleAdd} disabled={saving}
+                style={{ padding: '8px 14px', alignSelf: 'flex-end' }}>
+                {saving ? <Loader size={13} className="animate-spin" /> : <Plus size={13} />}
+              </button>
+            </div>
+            {errorNew && (
+              <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <AlertTriangle size={12} /> {errorNew}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </ModalShell>
+  )
+}
 
 // ══════════════════════════════════════════════════════════════
 // Centros de Venta POS — panel custom con mapeo a Centro de Ingreso
@@ -896,6 +1335,8 @@ export default function CatalogosPage() {
           ? <CentrosVentaPOSPanel key="centros_venta_pos" />
           : activeKey === 'golf_cuotas'
           ? <CuotasGolfPanel key="golf_cuotas" />
+          : activeKey === 'cuotas_estandar'
+          ? <CuotasEstandarPanel key="cuotas_estandar" />
           : <CatalogoTable config={active} key={activeKey} />
         }
       </div>

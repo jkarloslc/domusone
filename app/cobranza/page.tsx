@@ -1,14 +1,16 @@
 'use client'
 import { useState } from 'react'
-import CargosTab  from './CargosTab'
-import RecibosTab from './RecibosTab'
-import { FileText, Receipt } from 'lucide-react'
+import CargosTab    from './CargosTab'
+import RecibosTab   from './RecibosTab'
+import CuotasTab    from './CuotasTab'
+import { FileText, Receipt, AlertTriangle } from 'lucide-react'
 
-type Tab = 'cargos' | 'recibos'
+type Tab = 'cargos' | 'recibos' | 'excepciones'
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
-  { key: 'cargos',  label: 'Cargos',  icon: <FileText size={14} /> },
-  { key: 'recibos', label: 'Recibos', icon: <Receipt  size={14} /> },
+  { key: 'cargos',      label: 'Cargos',               icon: <FileText      size={14} /> },
+  { key: 'recibos',     label: 'Recibos',              icon: <Receipt       size={14} /> },
+  { key: 'excepciones', label: 'Tarifas Excepcionales', icon: <AlertTriangle size={14} /> },
 ]
 
 function CobranzaContent({ embedded }: { embedded?: boolean }) {
@@ -46,8 +48,9 @@ function CobranzaContent({ embedded }: { embedded?: boolean }) {
         ))}
       </div>
 
-      {tab === 'cargos'  && <CargosTab />}
-      {tab === 'recibos' && <RecibosTab />}
+      {tab === 'cargos'      && <CargosTab />}
+      {tab === 'recibos'     && <RecibosTab />}
+      {tab === 'excepciones' && <CuotasTab />}
     </div>
   )
 }
