@@ -752,6 +752,8 @@ export default function CuotasGolfPage() {
   const toggleGrupo = (sid: number) =>
     setExpandidos(prev => ({ ...prev, [sid]: !(prev[sid] ?? true) }))
   const isExpanded = (sid: number) => expandidos[sid] ?? true
+  const expandirTodo = () => setExpandidos(Object.fromEntries(grupos.map(g => [g.socioId, true])))
+  const colapsarTodo = () => setExpandidos(Object.fromEntries(grupos.map(g => [g.socioId, false])))
 
   const totalPendiente = cuotasF.filter(c => c.status === 'PENDIENTE').reduce((a, c) => a + c.monto_final, 0)
 
@@ -817,6 +819,12 @@ export default function CuotasGolfPage() {
           <option value="">Todos los status</option>
           {STATUS_OPTS.filter(Boolean).map(s => <option key={s} value={s}>{s === 'PENDIENTE' ? 'Pendiente' : s === 'PAGADO' ? 'Pagado' : 'Cancelado'}</option>)}
         </select>
+        <button className="btn-ghost" onClick={expandirTodo} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '7px 10px' }}>
+          <ChevronDown size={12} /> Expandir todo
+        </button>
+        <button className="btn-ghost" onClick={colapsarTodo} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '7px 10px' }}>
+          <ChevronRight size={12} /> Colapsar todo
+        </button>
         <span style={{ fontSize: 12, color: '#94a3b8', whiteSpace: 'nowrap' }}>
           {grupos.length} socio{grupos.length !== 1 ? 's' : ''} · {cuotasF.length} cuota{cuotasF.length !== 1 ? 's' : ''}
           {totalPendiente > 0 && <span style={{ marginLeft: 8, color: '#d97706', fontWeight: 600 }}>· Pendiente: {fmt$(totalPendiente)}</span>}
