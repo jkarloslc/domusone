@@ -523,7 +523,7 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
 function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => void; onSaved: () => void; authUser: any }) {
   const [configs, setConfigs]         = useState<CuotaConfig[]>([])
   const [configSel, setConfigSel]     = useState<number | ''>('')
-  const [periodo, setPeriodo]         = useState(new Date().toISOString().slice(0, 7))
+  const [periodo, setPeriodo]         = useState(() => { const n = new Date(); return periodoKey(n.getFullYear(), n.getMonth() + 1) })
   const [preview, setPreview]         = useState<{ socioId: number; nombre: string; existente: boolean }[]>([])
   const [loadingPrev, setLoadingPrev] = useState(false)
   const [saving, setSaving]           = useState(false)
