@@ -166,6 +166,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
   })
   const [fechaPago, setFechaPago] = useState<string>(hoyLocal())
   const [notas, setNotas]   = useState('')
+  const [facturable, setFacturable] = useState(false)
   const [saving, setSaving] = useState(false)
   const [err, setErr]       = useState('')
 
@@ -252,6 +253,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       usuario_cobra:      authUser?.user?.email ?? null,
       status:             'VIGENTE',
       id_forma_pago_fk:   primerFormaId,
+      facturable,
     }).select('id').single()
     if (e1 || !recData) { setSaving(false); setErr(e1?.message ?? 'Error al crear recibo'); return }
     const idRecibo = (recData as { id: number }).id
@@ -290,17 +292,21 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
 
     // 4. Actualizar saldo de cuotas (greedy, en paralelo)
     let remaining = montoCobrar
-    const cuotaUpdates = cuotasSel.map(c => {
-      const aplicar    = Math.min(remaining, c.saldo)
+    const cuotaUpdates: PromiseLike<any>[] = []
+    for (const c of cuotasSel) {
+      const aplicar = Math.min(remaining, c.saldo)
+      remaining = parseFloat((remaining - aplicar).toFixed(2))
+      if (aplicar <= 0) continue // no se le aplicó nada: no tocar su status/saldo/fecha_pago
       const nuevoSaldo = parseFloat((c.saldo - aplicar).toFixed(2))
-      remaining        = parseFloat((remaining - aplicar).toFixed(2))
-      return dbHip.from('cxc_hip').update({
-        saldo:      nuevoSaldo,
-        status:     nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL',
-        fecha_pago: fechaPago,
-        forma_pago: formasNombre,
-      }).eq('id', c.id)
-    })
+      cuotaUpdates.push(
+        dbHip.from('cxc_hip').update({
+          saldo:      nuevoSaldo,
+          status:     nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL',
+          fecha_pago: fechaPago,
+          forma_pago: formasNombre,
+        }).eq('id', c.id)
+      )
+    }
     await Promise.all(cuotaUpdates)
 
     setSaving(false)
@@ -327,8 +333,8 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       const centroHip = centrosPos.find(c => { const n = norm(c.nombre); return n.includes('hipico') || n.includes('caballeriza') }) ?? centrosPos[0]
 
       const { data: recFull } = await dbHip.from('recibos_hip')
-        .select('total, fecha_recibo, id_venta_pos_fk').eq('id', exito.idRecibo).single()
-      const rf = recFull as { total: number; fecha_recibo: string; id_venta_pos_fk: number | null } | null
+        .select('total, fecha_recibo, id_venta_pos_fk, facturable').eq('id', exito.idRecibo).single()
+      const rf = recFull as { total: number; fecha_recibo: string; id_venta_pos_fk: number | null; facturable: boolean | null } | null
       if (!rf) throw new Error('No se encontró el recibo.')
 
       let ventaId = rf.id_venta_pos_fk
@@ -346,7 +352,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
           folio_dia: folioDia, id_centro_fk: centroHip.id, fecha: fechaIso,
           nombre_cliente: nombreArrendatario, es_socio: false,
           subtotal: rf.total, descuento: 0, iva: 0, total: rf.total,
-          status: 'PAGADA', usuario_crea: authUser?.user?.email ?? 'hipico',
+          status: 'PAGADA', facturable: rf.facturable ?? false, usuario_crea: authUser?.user?.email ?? 'hipico',
           notas: `Ticket POS desde recibo hípico ${exito.folio}`,
         }).select('id, folio_dia').single()
         if (ev || !venta) throw new Error(ev?.message ?? 'Error al crear venta POS')
@@ -562,6 +568,16 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
             <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notas</label>
             <textarea className="input" rows={1} value={notas} onChange={e => setNotas(e.target.value)}
               style={{ resize: 'vertical', width: '100%' }} />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: facturable ? '#fff7ed' : 'var(--surface-800)', border: `1px solid ${facturable ? '#fed7aa' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer' }}
+          onClick={() => setFacturable(f => !f)}>
+          <input type="checkbox" checked={facturable} onChange={() => setFacturable(f => !f)}
+            onClick={e => e.stopPropagation()} style={{ accentColor: '#b45309', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: facturable ? '#b45309' : 'var(--text-secondary)' }}>Solicita factura</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Marca este cobro como facturable para emisión posterior</div>
           </div>
         </div>
 

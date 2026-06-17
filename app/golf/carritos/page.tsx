@@ -122,6 +122,7 @@ type ReciboCarrito = {
   id_venta_pos_fk: number | null
   id_forma_pago_fk: number | null
   id_socio_fk: number
+  facturable: boolean
   cat_socios: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null } | null
   recibos_golf_det: DetRecibo[]
 }
@@ -206,6 +207,10 @@ export default function CarritosPage() {
   const [slotsOcupados, setSlotsOcupados] = useState<Set<number>>(new Set())
   const [nuevoSlot, setNuevoSlot]       = useState('')
   const [savingSlot, setSavingSlot]     = useState(false)
+  const [centrosVenta, setCentrosVenta] = useState<{ id: number; nombre: string }[]>([])
+  const [idCentroMembresias, setIdCentroMembresias] = useState<number | null>(null)
+  const [idCentroPension, setIdCentroPension]       = useState<number | null>(null)
+  const [savingCentros, setSavingCentros] = useState(false)
 
   // ── Stats ─────────────────────────────────────────────────
   const [stats, setStats] = useState({ pensionesActivas: 0, cuotasPendientes: 0, montoPendiente: 0, vencidas: 0 })
@@ -262,16 +267,20 @@ export default function CarritosPage() {
 
   // ── Fetch Config ──────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
-    const [{ data: cfg }, { data: sl }, { data: occ }] = await Promise.all([
-      dbGolf.from('cfg_carritos').select('tarifa_mensual').single(),
+    const [{ data: cfg }, { data: sl }, { data: occ }, { data: cv }] = await Promise.all([
+      dbGolf.from('cfg_carritos').select('tarifa_mensual, id_centro_membresias_fk, id_centro_pension_fk').single(),
       dbGolf.from('cat_slots').select('id, numero').eq('activo', true).order('numero'),
       // Cajones ocupados por pensiones activas (solo informativo en la UI)
       dbGolf.from('ctrl_pensiones').select('id_slot_fk').eq('activo', true).not('id_slot_fk', 'is', null),
+      dbGolf.from('cat_centros_venta').select('id, nombre').eq('activo', true).order('orden'),
     ])
     const t = cfg?.tarifa_mensual ?? 0
     setTarifa(t); setTarifaEdit(t)
     setSlots(sl ?? [])
     setSlotsOcupados(new Set(((occ ?? []) as { id_slot_fk: number }[]).map(o => o.id_slot_fk)))
+    setCentrosVenta(cv ?? [])
+    setIdCentroMembresias((cfg as any)?.id_centro_membresias_fk ?? null)
+    setIdCentroPension((cfg as any)?.id_centro_pension_fk ?? null)
   }, [])
 
   // ── Fetch Cobranza del mes ────────────────────────────────
@@ -327,7 +336,7 @@ export default function CarritosPage() {
     const q = dbGolf.from('recibos_golf')
       .select(`id, folio, fecha_recibo, subtotal, descuento, total,
         forma_pago_nombre, referencia_pago, observaciones, usuario_cobra,
-        status, id_socio_fk, id_venta_pos_fk, id_forma_pago_fk,
+        status, id_socio_fk, id_venta_pos_fk, id_forma_pago_fk, facturable,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio),
         recibos_golf_det(id, concepto, tipo, periodo, monto_original, descuento, monto_final)`)
       .order('created_at', { ascending: false })
@@ -345,14 +354,17 @@ export default function CarritosPage() {
     setGenerandoTicketR(true)
     setTicketErrR('')
     try {
-      const [{ data: centros }, { data: cfg }] = await Promise.all([
+      const [{ data: centros }, { data: cfg }, { data: cfgCarritos }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+        dbGolf.from('cfg_carritos').select('id_centro_membresias_fk, id_centro_pension_fk').single(),
       ])
       const centrosPos = (centros as { id: number; nombre: string; activo: boolean }[]) ?? []
       if (centrosPos.length === 0) throw new Error('No hay centros de venta POS activos.')
-      // Buscar centro "Carritos/Pensiones" — fallback Membresías — fallback primero
-      const centroSel = centrosPos.find(c => {
+      // Estos recibos siempre son de pensión carrito (filtrados arriba) → centro configurado para pensión.
+      // Mapeo explícito por ID (Configuración → Centros de venta); si no está configurado, fallback por nombre.
+      const cfgC = cfgCarritos as { id_centro_membresias_fk: number | null; id_centro_pension_fk: number | null } | null
+      const centroSel = (cfgC?.id_centro_pension_fk ? centrosPos.find(c => c.id === cfgC.id_centro_pension_fk) : null) ?? centrosPos.find(c => {
         const n = normR(c.nombre)
         return n.includes('carrito') || n.includes('pension') || n.includes('pensiones')
       }) ?? centrosPos.find(c => {
@@ -376,7 +388,7 @@ export default function CarritosPage() {
           folio_dia: folioDia, id_centro_fk: centroSel.id, fecha: fechaVentaIso,
           id_socio_fk: r.id_socio_fk, nombre_cliente: ncR(r.cat_socios), es_socio: true,
           subtotal: r.subtotal, descuento: r.descuento, iva: 0, total: r.total,
-          status: 'PAGADA', usuario_crea: 'sistema',
+          status: 'PAGADA', facturable: r.facturable ?? false, usuario_crea: 'sistema',
           notas: `Ticket POS regenerado desde recibo pensión ${r.folio} (#${r.id})`,
         }).select('id, folio_dia').single()
         if (errVenta || !ventaData) throw new Error(errVenta?.message ?? 'No se pudo crear la venta POS')
@@ -561,6 +573,16 @@ export default function CarritosPage() {
     await dbGolf.from('cfg_carritos').update({ tarifa_mensual: tarifaEdit, updated_at: new Date().toISOString() }).eq('id', 1)
     setTarifa(tarifaEdit)
     setSavingConfig(false)
+  }
+
+  const guardarCentros = async () => {
+    setSavingCentros(true)
+    await dbGolf.from('cfg_carritos').update({
+      id_centro_membresias_fk: idCentroMembresias,
+      id_centro_pension_fk:    idCentroPension,
+      updated_at: new Date().toISOString(),
+    }).eq('id', 1)
+    setSavingCentros(false)
   }
 
   const agregarSlot = async () => {
@@ -1315,6 +1337,40 @@ export default function CarritosPage() {
             </div>
             <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
               Esta tarifa se usa como valor predeterminado al crear nuevas pensiones. Las pensiones existentes mantienen su tarifa original.
+            </div>
+          </div>
+
+          {/* Centros de venta POS */}
+          <div className="card" style={{ padding: 20, maxWidth: 560 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Centros de venta POS</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Cuotas de membresía / inscripción</label>
+                <select
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                  value={idCentroMembresias ?? ''}
+                  onChange={e => setIdCentroMembresias(e.target.value ? Number(e.target.value) : null)}>
+                  <option value="">— Sin configurar (usa heurística por nombre) —</option>
+                  {centrosVenta.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Pensión de carrito</label>
+                <select
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                  value={idCentroPension ?? ''}
+                  onChange={e => setIdCentroPension(e.target.value ? Number(e.target.value) : null)}>
+                  <option value="">— Sin configurar (usa heurística por nombre) —</option>
+                  {centrosVenta.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
+              <button onClick={guardarCentros} disabled={savingCentros}
+                style={{ alignSelf: 'flex-start', padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: savingCentros ? 0.6 : 1 }}>
+                {savingCentros ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
+              Define a qué centro de venta se postean los tickets POS generados al cobrar cuotas. Si no se configura, se intenta adivinar por nombre del centro (menos confiable).
             </div>
           </div>
 

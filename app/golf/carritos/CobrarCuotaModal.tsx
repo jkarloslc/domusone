@@ -254,6 +254,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     for (const c of cuotasSelec) {
       const cuotaSaldo = c.saldo ?? c.monto_final
       const aplicar = Math.min(remaining, cuotaSaldo)
+      remaining = parseFloat((remaining - aplicar).toFixed(2))
+      if (aplicar <= 0) continue // no se le aplicó nada: no tocar su status/saldo
       const nuevoSaldo = parseFloat((cuotaSaldo - aplicar).toFixed(2))
       const nuevoStatus = nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL'
       updates.push(
@@ -268,7 +270,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           id_recibo_fk:    reciboId,
         }).eq('id', c.id).select('id')
       )
-      remaining = parseFloat((remaining - aplicar).toFixed(2))
     }
     const results = await Promise.all(updates)
     const updateError = results.find(r => r.error)?.error
@@ -285,19 +286,23 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     setTicketErr('')
 
     try {
-      const [{ data: reciboDB, error: errRec }, { data: centros }, { data: cfg }] = await Promise.all([
+      const [{ data: reciboDB, error: errRec }, { data: centros }, { data: cfg }, { data: cfgCarritos }] = await Promise.all([
         dbGolf.from('recibos_golf').select('id, folio, id_venta_pos_fk').eq('id', recibo.id).single(),
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+        dbGolf.from('cfg_carritos').select('id_centro_membresias_fk, id_centro_pension_fk').single(),
       ])
       if (errRec || !reciboDB) throw new Error(errRec?.message ?? 'No se pudo leer el recibo para generar ticket')
 
       const centrosPos = (centros as PosCentro[]) ?? []
       if (centrosPos.length === 0) throw new Error('No hay centros de venta POS activos.')
 
-      // Si las cuotas son de pensión carrito, buscar centro "Carritos/Pensiones"; si no, "Membresías"
+      // Si las cuotas son de pensión carrito, usar el centro configurado para pensión; si no, el de membresías.
+      // Mapeo explícito por ID (Configuración → Centros de venta); si no está configurado, fallback por nombre.
       const esPension = cuotas.some(c => c.tipo === 'PENSION_CARRITO')
-      const centroSel = centrosPos.find(c => {
+      const cfgC = cfgCarritos as { id_centro_membresias_fk: number | null; id_centro_pension_fk: number | null } | null
+      const idCentroCfg = esPension ? cfgC?.id_centro_pension_fk : cfgC?.id_centro_membresias_fk
+      const centroSel = (idCentroCfg ? centrosPos.find(c => c.id === idCentroCfg) : null) ?? centrosPos.find(c => {
         const n = norm(c.nombre)
         return esPension
           ? (n.includes('carrito') || n.includes('pension') || n.includes('pensiones'))
@@ -330,6 +335,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           iva: 0,
           total: montoParcial,
           status: 'PAGADA',
+          facturable,
           usuario_crea: authUser?.nombre ?? 'sistema',
           notas: `Ticket POS generado desde recibo golf ${recibo.folio} (#${recibo.id})${esParcial ? ' [PAGO PARCIAL]' : ''}`,
         }).select('id, folio_dia').single()
