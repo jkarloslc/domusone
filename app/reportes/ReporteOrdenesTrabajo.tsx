@@ -142,12 +142,11 @@ export default function ReporteOrdenesTrabajo() {
       </div>
 
       <div id="reporte-print-area">
-        <div className="card" style={{ overflow: 'hidden' }}>
+        <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
           <table id="reporte-table">
             <thead>
               <tr>
                 <th>Folio</th>
-                <th>Empresa</th>
                 <th>Título</th>
                 <th>Centro de Costo</th>
                 <th>Área</th>
@@ -163,22 +162,14 @@ export default function ReporteOrdenesTrabajo() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={13} style={{ textAlign: 'center', padding: 40 }}>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40 }}>
                   <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
                 </td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={13} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
               ) : rows.map((r, i) => (
                 <tr key={i}>
                   <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.folio}</td>
-                  <td>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 20,
-                      background: r.empresa === 'Oitydisa' ? '#eff6ff' : '#f0fdf4',
-                      color: r.empresa === 'Oitydisa' ? '#2563eb' : '#15803d',
-                      border: `1px solid ${r.empresa === 'Oitydisa' ? '#bfdbfe' : '#bbf7d0'}` }}>
-                      {r.empresa ?? 'Balvanera'}
-                    </span>
-                  </td>
                   <td style={{ fontSize: 13, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.titulo}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_centro_costo_fk ? (ccMap[r.id_centro_costo_fk] ?? `#${r.id_centro_costo_fk}`) : '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.id_area_fk ? (areaMap[r.id_area_fk] ?? `#${r.id_area_fk}`) : '—'}</td>
