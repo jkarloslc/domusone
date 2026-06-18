@@ -583,10 +583,14 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
   const [catMO,       setCatMO]      = useState<Record<number, string>>({})
   const [evidencias,  setEvidencias] = useState<any[]>([])
   const [loading,     setLoading]    = useState(true)
-  const [uploading,   setUploading]  = useState(false)
+  const [uploadingAntes,   setUploadingAntes]   = useState(false)
+  const [uploadingDespues, setUploadingDespues] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [currentStatus,  setCurrentStatus]  = useState(ot.status)
-  const fileRef = useRef<HTMLInputElement>(null)
+  const fileRefAntes   = useRef<HTMLInputElement>(null)
+  const fileRefDespues = useRef<HTMLInputElement>(null)
+  const fotosAntes   = evidencias.filter(e => e.tipo === 'antes')
+  const fotosDespues = evidencias.filter(e => e.tipo !== 'antes')
 
   const fetchDetalle = useCallback(async () => {
     setLoading(true)
@@ -623,17 +627,18 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
     setUpdatingStatus(false)
   }
 
-  const subirFoto = async (file: File) => {
+  const subirFoto = async (file: File, tipo: 'antes' | 'despues') => {
+    const setUploading = tipo === 'antes' ? setUploadingAntes : setUploadingDespues
     setUploading(true)
     const ext  = file.name.split('.').pop()
-    const path = `ot-${ot.id}/${Date.now()}.${ext}`
+    const path = `ot-${ot.id}/${tipo}-${Date.now()}.${ext}`
     const { error: upErr } = await supabase.storage.from('ot-evidencias').upload(path, file, { upsert: true })
     if (upErr) {
       alert(`Error: ${upErr.message}\nVerifica bucket "ot-evidencias" en Supabase Storage.`)
       setUploading(false); return
     }
     const { data: { publicUrl } } = supabase.storage.from('ot-evidencias').getPublicUrl(path)
-    await dbCtrl.from('ot_evidencias').insert({ id_ot_fk: ot.id, url: publicUrl, nombre: file.name, created_by: authUser?.nombre ?? null })
+    await dbCtrl.from('ot_evidencias').insert({ id_ot_fk: ot.id, url: publicUrl, nombre: file.name, tipo, created_by: authUser?.nombre ?? null })
     setUploading(false); fetchDetalle()
   }
 
@@ -971,60 +976,25 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
             </div>
           )}
 
-          {/* Evidencias */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                Evidencias ({evidencias.length})
-              </div>
-              <div>
-                <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
-                  onChange={async e => {
-                    for (const file of Array.from(e.target.files ?? [])) await subirFoto(file)
-                    if (fileRef.current) fileRef.current.value = ''
-                  }} />
-                <button className="btn-secondary" style={{ fontSize: 12 }}
-                  onClick={() => fileRef.current?.click()} disabled={uploading}>
-                  {uploading ? <Loader size={12} className="animate-spin" /> : <Camera size={12} />}
-                  {uploading ? 'Subiendo…' : 'Agregar fotos'}
-                </button>
-              </div>
-            </div>
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: 20 }}>
-                <RefreshCw size={14} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
-              </div>
-            ) : evidencias.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-muted)', fontSize: 13,
-                border: '2px dashed #e2e8f0', borderRadius: 10, cursor: 'pointer' }}
-                onClick={() => fileRef.current?.click()}>
-                <Camera size={20} style={{ margin: '0 auto 6px', display: 'block', opacity: 0.4 }} />
-                Sin evidencias
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                {evidencias.map(e => (
-                  <div key={e.id} style={{ position: 'relative', aspectRatio: '4/3', borderRadius: 8,
-                    overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                    <img src={e.url} alt={e.nombre ?? 'Evidencia'}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 4 }}>
-                      <a href={e.url} target="_blank" rel="noopener noreferrer"
-                        style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(0,0,0,0.5)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <ExternalLink size={12} style={{ color: '#fff' }} />
-                      </a>
-                      <button onClick={() => eliminarEvidencia(e.id, e.url)}
-                        style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(220,38,38,0.8)',
-                          border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Trash2 size={12} style={{ color: '#fff' }} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Fotos Antes */}
+          <FotosSection
+            titulo="Fotos Antes" fotos={fotosAntes} loading={loading} uploading={uploadingAntes}
+            fileRef={fileRefAntes}
+            onPick={async files => {
+              for (const file of files) await subirFoto(file, 'antes')
+            }}
+            onDelete={eliminarEvidencia}
+          />
+
+          {/* Fotos Después */}
+          <FotosSection
+            titulo="Fotos Después" fotos={fotosDespues} loading={loading} uploading={uploadingDespues}
+            fileRef={fileRefDespues}
+            onPick={async files => {
+              for (const file of files) await subirFoto(file, 'despues')
+            }}
+            onDelete={eliminarEvidencia}
+          />
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end',
           padding: '10px 24px', borderTop: '1px solid #e2e8f0' }}>
@@ -1036,6 +1006,73 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
           </button>
         </div>
     </ModalShell>
+  )
+}
+
+// ── FotosSection ──────────────────────────────────────────────
+function FotosSection({ titulo, fotos, loading, uploading, fileRef, onPick, onDelete }: {
+  titulo: string
+  fotos: any[]
+  loading: boolean
+  uploading: boolean
+  fileRef: React.RefObject<HTMLInputElement>
+  onPick: (files: File[]) => Promise<void>
+  onDelete: (id: number, url: string) => void
+}) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          {titulo} ({fotos.length})
+        </div>
+        <div>
+          <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+            onChange={async e => {
+              await onPick(Array.from(e.target.files ?? []))
+              if (fileRef.current) fileRef.current.value = ''
+            }} />
+          <button className="btn-secondary" style={{ fontSize: 12 }}
+            onClick={() => fileRef.current?.click()} disabled={uploading}>
+            {uploading ? <Loader size={12} className="animate-spin" /> : <Camera size={12} />}
+            {uploading ? 'Subiendo…' : 'Agregar fotos'}
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 20 }}>
+          <RefreshCw size={14} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+        </div>
+      ) : fotos.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-muted)', fontSize: 13,
+          border: '2px dashed #e2e8f0', borderRadius: 10, cursor: 'pointer' }}
+          onClick={() => fileRef.current?.click()}>
+          <Camera size={20} style={{ margin: '0 auto 6px', display: 'block', opacity: 0.4 }} />
+          Sin fotos
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {fotos.map(e => (
+            <div key={e.id} style={{ position: 'relative', aspectRatio: '4/3', borderRadius: 8,
+              overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+              <img src={e.url} alt={e.nombre ?? titulo}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <div style={{ position: 'absolute', top: 4, right: 4, display: 'flex', gap: 4 }}>
+                <a href={e.url} target="_blank" rel="noopener noreferrer"
+                  style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ExternalLink size={12} style={{ color: '#fff' }} />
+                </a>
+                <button onClick={() => onDelete(e.id, e.url)}
+                  style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(220,38,38,0.8)',
+                    border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Trash2 size={12} style={{ color: '#fff' }} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
