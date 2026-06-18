@@ -1193,38 +1193,38 @@ function ColaboradoresPanel() {
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', flex: '1 1 160px', maxWidth: 200 }}>
           <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input className="input" style={{ paddingLeft: 28, minWidth: 180 }} placeholder="Buscar nombre…"
+          <input className="input" style={{ paddingLeft: 28 }} placeholder="Buscar nombre…"
             value={busqueda} onChange={e => setBusqueda(e.target.value)} />
         </div>
-        <select className="select" style={{ minWidth: 150 }} value={filtroAsignado} onChange={e => setFA(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 130px', maxWidth: 160 }} value={filtroAsignado} onChange={e => setFA(e.target.value)}>
           <option value="all">Asignado: todos</option>
           <option value="true">Solo asignables</option>
           <option value="false">No asignables</option>
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroSupervisor} onChange={e => setFS(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 130px', maxWidth: 160 }} value={filtroSupervisor} onChange={e => setFS(e.target.value)}>
           <option value="all">Supervisor: todos</option>
           <option value="true">Solo supervisores</option>
           <option value="false">No supervisores</option>
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filtroCC} onChange={e => { setFCC(e.target.value); setFArea('') }}>
+        <select className="select" style={{ flex: '1 1 120px', maxWidth: 170 }} value={filtroCC} onChange={e => { setFCC(e.target.value); setFArea('') }}>
           <option value="">Todos los CC</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroArea} onChange={e => setFArea(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 110px', maxWidth: 160 }} value={filtroArea} onChange={e => setFArea(e.target.value)}>
           <option value="">Todas las áreas</option>
           {areas.filter(a => !filtroCC || a.id_centro_costo_fk === Number(filtroCC)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroSeccion} onChange={e => setFSecc(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 110px', maxWidth: 160 }} value={filtroSeccion} onChange={e => setFSecc(e.target.value)}>
           <option value="">Todas las secciones</option>
           {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroCuadrante} onChange={e => setFCuad(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 110px', maxWidth: 160 }} value={filtroCuadrante} onChange={e => setFCuad(e.target.value)}>
           <option value="">Todos los cuadrantes</option>
           {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 130 }} value={filtroStatus} onChange={e => setFStatus(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 100px', maxWidth: 140 }} value={filtroStatus} onChange={e => setFStatus(e.target.value)}>
           <option value="activos">Solo activos</option>
           <option value="inactivos">Solo inactivos</option>
           <option value="all">Todos</option>
