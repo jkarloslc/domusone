@@ -720,6 +720,10 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
         </tr>`
       : ''
 
+    const fotosHtml = (fotos: any[]) => fotos.map(f =>
+      `<div class="foto"><img src="${f.url}" /></div>`
+    ).join('')
+
     const html = `<!DOCTYPE html><html><head><title>OT ${ot.folio}</title>
       <style>
         body { font-family: Arial, sans-serif; padding: 36px; font-size: 13px; color: #1e293b; }
@@ -739,6 +743,9 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
         .notas { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 10px; }
         .firmas { display: flex; gap: 50px; margin-top: 50px; }
         .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 160px; font-size: 11px; color: #64748b; }
+        .fotos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0; }
+        .foto { aspect-ratio: 4/3; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+        .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
         @page { margin: 1.2cm; }
       </style></head><body>
       <div class="org-header">
@@ -802,7 +809,13 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
         <tbody>${granTotalHtml}</tbody>
       </table>` : ''}
 
-      ${evidencias.length > 0 ? `<p style="font-size:12px;color:#64748b;">${evidencias.length} evidencia(s) fotográfica(s) adjuntas en el sistema.</p>` : ''}
+      ${fotosAntes.length > 0 ? `
+      <h2>Fotos Antes</h2>
+      <div class="fotos-grid">${fotosHtml(fotosAntes)}</div>` : ''}
+
+      ${fotosDespues.length > 0 ? `
+      <h2>Fotos Después</h2>
+      <div class="fotos-grid">${fotosHtml(fotosDespues)}</div>` : ''}
 
       <div class="firmas">
         <div class="firma">Elaboró</div>
