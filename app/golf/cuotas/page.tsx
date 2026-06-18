@@ -114,12 +114,34 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
 
+  // Resolución de precio por categoría del socio (Mensualidad/Inscripción)
+  const [precioMissing, setPrecioMissing] = useState(false)
+
   useEffect(() => {
     dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true)
       .neq('tipo', 'PENSION_CARRITO')   // pensiones se cargan desde PensionModal
       .order('tipo').order('nombre')
       .then(({ data }) => { setConfigs((data as CuotaConfig[]) ?? []); setLoadingCfg(false) })
   }, [])
+
+  // Resuelve el monto automáticamente según la categoría del socio seleccionado
+  useEffect(() => {
+    if (!configSel || !socioSel) { setPrecioMissing(false); return }
+    if (!socioSel.id_categoria_fk) { setPrecioMissing(true); return }
+    let cancelled = false
+    dbGolf.from('cat_cuotas_config_det')
+      .select('monto')
+      .eq('id_cuota_config_fk', configSel.id)
+      .eq('id_categoria_fk', socioSel.id_categoria_fk)
+      .eq('activo', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return
+        if (data) { setMonto(String(data.monto)); setPrecioMissing(false) }
+        else { setPrecioMissing(true) }
+      })
+    return () => { cancelled = true }
+  }, [configSel, socioSel])
 
   // Búsqueda de socios
   useEffect(() => {
@@ -143,10 +165,11 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
     setConfigSel(c)
     setTipo(c.tipo)
     setConcepto(c.nombre)
-    setMonto(String(c.monto))
+    setMonto('')   // se resuelve solo según la categoría del socio
     setDiaVenc(String(c.dia_vencimiento))
     setShowPicker(false)
     setPickerSearch('')
+    setPrecioMissing(false)
     // Si es inscripción, cambiar a cuota única automáticamente
     if (c.tipo === 'INSCRIPCION') setModalidad('UNICA')
     else setModalidad('RANGO')
@@ -159,6 +182,7 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
     setMonto('')
     setDescuento('0')
     setDiaVenc('10')
+    setPrecioMissing(false)
   }
 
   // ── Preview de cuotas a generar ───────────────────────────
@@ -264,13 +288,17 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
                   </span>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: '#3b0764' }}>{configSel.nombre}</div>
-                    {configSel.cat_categorias_socios && (
-                      <div style={{ fontSize: 11, color: '#7c3aed' }}>{configSel.cat_categorias_socios.nombre}</div>
+                    {!socioSel && (
+                      <div style={{ fontSize: 11, color: '#94a3b8' }}>Selecciona un socio para calcular el monto</div>
                     )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed' }}>{fmt$(configSel.monto)}</span>
+                  {socioSel && (
+                    <span style={{ fontSize: 14, fontWeight: 700, color: precioMissing ? '#dc2626' : '#7c3aed' }}>
+                      {precioMissing ? 'Sin precio' : fmt$(parseFloat(monto) || 0)}
+                    </span>
+                  )}
                   <button onClick={() => { clearConfig(); setShowPicker(true) }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}>
                     <X size={14} />
@@ -319,13 +347,10 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
                           </span>
                           <div>
                             <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c.nombre}</div>
-                            {c.cat_categorias_socios && (
-                              <div style={{ fontSize: 11, color: '#64748b' }}>{c.cat_categorias_socios.nombre}</div>
-                            )}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: '#059669' }}>{fmt$(c.monto)}</div>
+                          <div style={{ fontSize: 11, color: '#7c3aed', fontWeight: 600 }}>Según categoría</div>
                           <div style={{ fontSize: 10, color: '#94a3b8' }}>vence día {c.dia_vencimiento}</div>
                         </div>
                       </button>
@@ -362,6 +387,12 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
               <input style={inp} type="number" min={1} max={31} value={diaVenc} onChange={e => setDiaVenc(e.target.value)} />
             </div>
           </div>
+
+          {configSel && socioSel && precioMissing && (
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+              No hay precio configurado para la categoría de este socio en «{configSel.nombre}». Captura el monto manualmente o agrega la línea de precio en el catálogo de Cuotas.
+            </div>
+          )}
 
           {/* Tipo (select) — solo manual */}
           {!configSel && (
@@ -520,14 +551,16 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
 }
 
 // ── GenerarMasivoModal ───────────────────────────────────────
+type PreviewRow = { socioId: number; nombre: string; existente: boolean; monto: number | null }
+
 function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => void; onSaved: () => void; authUser: any }) {
   const [configs, setConfigs]         = useState<CuotaConfig[]>([])
   const [configSel, setConfigSel]     = useState<number | ''>('')
   const [periodo, setPeriodo]         = useState(() => { const n = new Date(); return periodoKey(n.getFullYear(), n.getMonth() + 1) })
-  const [preview, setPreview]         = useState<{ socioId: number; nombre: string; existente: boolean }[]>([])
+  const [preview, setPreview]         = useState<PreviewRow[]>([])
   const [loadingPrev, setLoadingPrev] = useState(false)
   const [saving, setSaving]           = useState(false)
-  const [done, setDone]               = useState<{ creadas: number; omitidas: number } | null>(null)
+  const [done, setDone]               = useState<{ creadas: number; omitidas: number; sinPrecio: number } | null>(null)
   const [error, setError]             = useState('')
 
   useEffect(() => {
@@ -543,12 +576,14 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
     if (!configSel || !periodo) { setError('Selecciona tipo de cuota y periodo'); return }
     setError(''); setLoadingPrev(true)
     const cfg = configs.find(c => c.id === Number(configSel))!
-    const { data: sociosData } = await dbGolf.from('cat_socios')
-      .select('id, nombre, apellido_paterno, apellido_materno')
-      .eq('activo', true).eq('id_categoria_fk', cfg.id_categoria_fk!)
+    const [{ data: sociosData }, { data: detData }] = await Promise.all([
+      dbGolf.from('cat_socios').select('id, nombre, apellido_paterno, apellido_materno, id_categoria_fk').eq('activo', true),
+      dbGolf.from('cat_cuotas_config_det').select('id_categoria_fk, monto').eq('id_cuota_config_fk', cfg.id).eq('activo', true),
+    ])
     if (!sociosData || sociosData.length === 0) {
-      setPreview([]); setLoadingPrev(false); setError('No hay socios activos en esta categoría'); return
+      setPreview([]); setLoadingPrev(false); setError('No hay socios activos'); return
     }
+    const precioPorCategoria = new Map<number, number>((detData ?? []).map((d: any) => [d.id_categoria_fk, d.monto]))
     const { data: existentes } = await dbGolf.from('cxc_golf')
       .select('id_socio_fk').eq('periodo', periodo).eq('id_cuota_config_fk', cfg.id)
       .in('id_socio_fk', sociosData.map((s: any) => s.id))
@@ -557,6 +592,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
       socioId: s.id,
       nombre: [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' '),
       existente: existSet.has(s.id),
+      monto: s.id_categoria_fk != null ? (precioPorCategoria.get(s.id_categoria_fk) ?? null) : null,
     })))
     setLoadingPrev(false)
   }
@@ -565,36 +601,39 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
     if (preview.length === 0) return
     setSaving(true); setError('')
     const cfg    = configObj!
-    const nuevos = preview.filter(p => !p.existente)
+    const nuevos = preview.filter(p => !p.existente && p.monto != null)
     const [anio, mes] = periodo.split('-').map(Number)
     const fechaVenc   = `${anio}-${String(mes).padStart(2,'0')}-${String(cfg.dia_vencimiento).padStart(2,'0')}`
     const rows = nuevos.map(p => ({
       id_socio_fk: p.socioId, tipo: cfg.tipo, concepto: cfg.nombre, periodo,
-      monto_original: cfg.monto, descuento: 0, status: 'PENDIENTE', fecha_emision: hoy,
+      monto_original: p.monto, descuento: 0, status: 'PENDIENTE', fecha_emision: hoy,
       fecha_vencimiento: fechaVenc, id_cuota_config_fk: cfg.id, usuario_crea: authUser?.nombre ?? null,
     }))
     if (rows.length > 0) {
       const { error: err } = await dbGolf.from('cxc_golf').insert(rows)
       if (err) { setError(err.message); setSaving(false); return }
     }
-    setDone({ creadas: rows.length, omitidas: preview.filter(p => p.existente).length })
+    const sinPrecio = preview.filter(p => !p.existente && p.monto == null).length
+    setDone({ creadas: rows.length, omitidas: preview.filter(p => p.existente).length, sinPrecio })
     setSaving(false)
   }
+
+  const aCrear = preview.filter(p => !p.existente && p.monto != null)
 
   return (
     <ModalShell
       modulo="golf-miembros"
       titulo="Generación Masiva"
-      subtitulo="Genera cuotas para todos los socios de una categoría"
+      subtitulo="Genera cuotas para todos los socios activos según el precio de su categoría"
       onClose={onClose}
       maxWidth={560}
       footer={<>
         <button className="btn-ghost" onClick={done ? onSaved : onClose}>{done ? 'Listo' : 'Cancelar'}</button>
-        {!done && preview.filter(p => !p.existente).length > 0 && (
+        {!done && aCrear.length > 0 && (
           <button onClick={handleGenerar} disabled={saving}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saving ? <Loader size={13} className="animate-spin" /> : <Zap size={13} />}
-            Generar {preview.filter(p => !p.existente).length} cuotas
+            Generar {aCrear.length} cuotas
           </button>
         )}
       </>}
@@ -606,6 +645,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
               <div style={{ fontSize: 16, fontWeight: 600, color: '#16a34a', marginBottom: 6 }}>Generación completada</div>
               <div style={{ fontSize: 13, color: '#64748b' }}>
                 <strong>{done.creadas}</strong> cuotas creadas · <strong>{done.omitidas}</strong> omitidas (ya existían)
+                {done.sinPrecio > 0 && <> · <strong>{done.sinPrecio}</strong> omitidas (sin precio configurado)</>}
               </div>
             </div>
           ) : (
@@ -617,7 +657,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
                     <option value="">— Seleccionar —</option>
                     {configs.map(c => (
                       <option key={c.id} value={c.id}>
-                        {c.nombre} · {TIPOS_LABEL[c.tipo] ?? c.tipo} · {fmt$(c.monto)} {c.cat_categorias_socios ? `(${c.cat_categorias_socios.nombre})` : ''}
+                        {c.nombre} · {TIPOS_LABEL[c.tipo] ?? c.tipo} · vence día {c.dia_vencimiento}
                       </option>
                     ))}
                   </select>
@@ -637,21 +677,31 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
               {preview.length > 0 && (
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
-                    {preview.filter(p => !p.existente).length} a crear · {preview.filter(p => p.existente).length} ya existentes
+                    {aCrear.length} a crear · {preview.filter(p => p.existente).length} ya existentes · {preview.filter(p => !p.existente && p.monto == null).length} sin precio configurado
                   </div>
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', maxHeight: 240, overflowY: 'auto' }}>
-                    {preview.map((p, i) => (
-                      <div key={p.socioId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', borderBottom: i < preview.length - 1 ? '1px solid #f1f5f9' : 'none', background: p.existente ? '#f8fafc' : '#fff' }}>
-                        <span style={{ fontSize: 13, color: p.existente ? '#94a3b8' : '#1e293b' }}>{p.nombre}</span>
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: p.existente ? '#f1f5f9' : '#f0fdf4', color: p.existente ? '#94a3b8' : '#16a34a' }}>
-                          {p.existente ? 'Ya existe' : 'Crear'}
-                        </span>
-                      </div>
-                    ))}
+                    {preview.map((p, i) => {
+                      const sinPrecio = !p.existente && p.monto == null
+                      return (
+                        <div key={p.socioId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', borderBottom: i < preview.length - 1 ? '1px solid #f1f5f9' : 'none', background: p.existente ? '#f8fafc' : '#fff' }}>
+                          <span style={{ fontSize: 13, color: p.existente ? '#94a3b8' : '#1e293b' }}>{p.nombre}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {!p.existente && p.monto != null && (
+                              <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>{fmt$(p.monto)}</span>
+                            )}
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 20,
+                              background: p.existente ? '#f1f5f9' : sinPrecio ? '#fef2f2' : '#f0fdf4',
+                              color:      p.existente ? '#94a3b8' : sinPrecio ? '#dc2626' : '#16a34a' }}>
+                              {p.existente ? 'Ya existe' : sinPrecio ? 'Sin precio' : 'Crear'}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                   {configObj && (
                     <div style={{ marginTop: 8, fontSize: 12, color: '#64748b', padding: '8px 12px', background: '#f8fafc', borderRadius: 8 }}>
-                      Monto: <strong>{fmt$(configObj.monto)}</strong> · Vencimiento día <strong>{configObj.dia_vencimiento}</strong> de {periodo}
+                      Vencimiento día <strong>{configObj.dia_vencimiento}</strong> de {periodo} · el monto se calcula según la categoría de cada socio
                     </div>
                   )}
                 </div>
