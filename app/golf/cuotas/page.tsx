@@ -560,7 +560,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
   const [preview, setPreview]         = useState<PreviewRow[]>([])
   const [loadingPrev, setLoadingPrev] = useState(false)
   const [saving, setSaving]           = useState(false)
-  const [done, setDone]               = useState<{ creadas: number; omitidas: number; sinPrecio: number } | null>(null)
+  const [done, setDone]               = useState<{ creadas: number; omitidas: number; sinPrecio: number; total: number } | null>(null)
   const [error, setError]             = useState('')
 
   useEffect(() => {
@@ -614,11 +614,13 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
       if (err) { setError(err.message); setSaving(false); return }
     }
     const sinPrecio = preview.filter(p => !p.existente && p.monto == null).length
-    setDone({ creadas: rows.length, omitidas: preview.filter(p => p.existente).length, sinPrecio })
+    const total = nuevos.reduce((a, p) => a + (p.monto ?? 0), 0)
+    setDone({ creadas: rows.length, omitidas: preview.filter(p => p.existente).length, sinPrecio, total })
     setSaving(false)
   }
 
-  const aCrear = preview.filter(p => !p.existente && p.monto != null)
+  const aCrear      = preview.filter(p => !p.existente && p.monto != null)
+  const totalACrear = aCrear.reduce((a, p) => a + (p.monto ?? 0), 0)
 
   return (
     <ModalShell
@@ -647,6 +649,11 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
                 <strong>{done.creadas}</strong> cuotas creadas · <strong>{done.omitidas}</strong> omitidas (ya existían)
                 {done.sinPrecio > 0 && <> · <strong>{done.sinPrecio}</strong> omitidas (sin precio configurado)</>}
               </div>
+              {done.creadas > 0 && (
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', marginTop: 10 }}>
+                  Total generado: <span style={{ color: '#7c3aed' }}>{fmt$(done.total)}</span>
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -676,8 +683,13 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
               {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{error}</div>}
               {preview.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
-                    {aCrear.length} a crear · {preview.filter(p => p.existente).length} ya existentes · {preview.filter(p => !p.existente && p.monto == null).length} sin precio configurado
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+                      {aCrear.length} a crear · {preview.filter(p => p.existente).length} ya existentes · {preview.filter(p => !p.existente && p.monto == null).length} sin precio configurado
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>
+                      Total: {fmt$(totalACrear)}
+                    </div>
                   </div>
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', maxHeight: 240, overflowY: 'auto' }}>
                     {preview.map((p, i) => {
