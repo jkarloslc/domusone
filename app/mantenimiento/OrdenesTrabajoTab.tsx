@@ -8,6 +8,7 @@ import {
   Camera, Trash2, ExternalLink, CheckCircle, Wrench, ChevronDown, Printer, Filter
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import ColaboradorPicker from '@/components/ui/ColaboradorPicker'
 
 const TIPOS      = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Herrería','Carpintería','Mantto. Lineas Sanitarias','Otro']
 const PRIORIDADES = ['Urgente','Alta','Media','Baja']
@@ -485,8 +486,12 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
           <div><label className="label" style={{ fontSize: 11 }}>Descripción</label>
             <textarea className="input" rows={2} value={form.descripcion} onChange={setF('descripcion')} style={{ fontSize: 13, resize: 'vertical' }} /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div><label className="label" style={{ fontSize: 11 }}>Asignado a</label><input className="input" style={{ fontSize: 13 }} value={form.asignado_a} onChange={setF('asignado_a')} /></div>
-            <div><label className="label" style={{ fontSize: 11 }}>Supervisor</label><input className="input" style={{ fontSize: 13 }} value={form.supervisor} onChange={setF('supervisor')} /></div>
+            <div><label className="label" style={{ fontSize: 11 }}>Asignado a</label>
+              <ColaboradorPicker value={form.asignado_a} filtro="es_asignado" label="Seleccionar — Asignado a"
+                onChange={v => setForm(f => ({ ...f, asignado_a: v }))} /></div>
+            <div><label className="label" style={{ fontSize: 11 }}>Supervisor</label>
+              <ColaboradorPicker value={form.supervisor} filtro="es_supervisor" label="Seleccionar — Supervisor"
+                onChange={v => setForm(f => ({ ...f, supervisor: v }))} /></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 70px', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>F. Inicio</label><input className="input" style={{ fontSize: 13 }} type="date" value={form.fecha_inicio} onChange={setF('fecha_inicio')} /></div>

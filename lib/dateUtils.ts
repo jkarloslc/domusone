@@ -40,3 +40,19 @@ export const fmtFechaLocal = (s: string | null | undefined): string => {
     day: '2-digit', month: 'short', year: 'numeric',
   })
 }
+
+/** Antigüedad legible ("2 años 3 meses") entre una fecha de ingreso (YYYY-MM-DD) y hoy. */
+export const antiguedad = (fechaIngreso: string | null | undefined): string => {
+  if (!fechaIngreso) return '—'
+  const ingreso = new Date(fechaIngreso + 'T00:00:00')
+  const hoy = new Date()
+  if (ingreso > hoy) return '—'
+  let years  = hoy.getFullYear() - ingreso.getFullYear()
+  let months = hoy.getMonth() - ingreso.getMonth()
+  if (hoy.getDate() < ingreso.getDate()) months--
+  if (months < 0) { years--; months += 12 }
+  const partes: string[] = []
+  if (years > 0)  partes.push(`${years} año${years !== 1 ? 's' : ''}`)
+  partes.push(`${months} mes${months !== 1 ? 'es' : ''}`)
+  return partes.join(' ')
+}

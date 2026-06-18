@@ -10,6 +10,7 @@ import {
   ChevronDown, Printer, Edit2,
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import ColaboradorPicker from '@/components/ui/ColaboradorPicker'
 
 // ── Catálogos ──────────────────────────────────────────────────
 const TIPOS    = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Otro']
@@ -508,10 +509,12 @@ function OTModal({ areas, ot, onClose, onSaved }: {
           {/* Asignación */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div><label className="label">Asignado a</label>
-              <input className="input" value={form.asignado_a} onChange={setF('asignado_a')} />
+              <ColaboradorPicker value={form.asignado_a} filtro="es_asignado" label="Seleccionar — Asignado a"
+                onChange={v => setForm(f => ({ ...f, asignado_a: v }))} />
             </div>
             <div><label className="label">Supervisor</label>
-              <input className="input" value={form.supervisor} onChange={setF('supervisor')} />
+              <ColaboradorPicker value={form.supervisor} filtro="es_supervisor" label="Seleccionar — Supervisor"
+                onChange={v => setForm(f => ({ ...f, supervisor: v }))} />
             </div>
           </div>
 

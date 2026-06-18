@@ -3,6 +3,7 @@ import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
 import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star, Droplets } from 'lucide-react'
+import ReporteColaboradores from './ReporteColaboradores'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
 import ReportePropietarios from './ReportePropietarios'
@@ -82,6 +83,7 @@ const GRUPOS = [
       { id: 'ot-financiero',          label: 'OT Financiero CC/Área',       icon: Wallet,        desc: 'Costo de MO y recursos por Centro de Costo, Área y Frente' },
       { id: 'ot-cumplimiento',        label: 'OT Cumplimiento',             icon: BarChart3,     desc: 'Tasa de completado, cumplimiento de fecha límite y desglose por CC/Área/Tipo' },
       { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Programas con sus tareas, responsable y semanas asignadas' },
+      { id: 'colaboradores',          label: 'Colaboradores',               icon: Users,         desc: 'Personal operativo filtrable por cuadrante, sección, CC, área y rol (asignado/supervisor)' },
     ],
   },
   {
@@ -262,6 +264,7 @@ function ReportesContent() {
       {active === 'ot-financiero'           && <ReporteOTFinanciero />}
       {active === 'ot-cumplimiento'         && <ReporteOTCumplimiento />}
       {active === 'programas-mantenimiento' && <ReporteProgramasMantenimiento />}
+      {active === 'colaboradores'           && <ReporteColaboradores />}
 
       {/* Reportes tesorería */}
       {active === 'estado-cuenta'    && <ReporteEstadoCuenta />}
