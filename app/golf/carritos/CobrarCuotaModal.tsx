@@ -147,9 +147,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const pagosValidos    = pagosLineas.filter(p => p.id_forma_pago_fk > 0)
   const totalDistribuido = pagosValidos.reduce((a, p) => a + (parseFloat(p.monto) || 0), 0)
   const balancePagos    = parseFloat((montoParcial - totalDistribuido).toFixed(2))
-  // Para backward compat en header del recibo y POS
-  const idFormaPago     = pagosLineas[0]?.id_forma_pago_fk ?? 0
-  const formaPagoNombre = pagosLineas[0]?.forma_nombre ?? ''
 
   const setPagoLinea = (i: number, partial: Partial<PagoLinea>) =>
     setPagosLineas(ls => ls.map((l, j) => j !== i ? l : { ...l, ...partial }))
@@ -671,8 +668,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       </div>
       <div style={{ display: 'flex', gap: 10, marginLeft: 'auto' }}>
         <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-        <button onClick={handleSave} disabled={saving || cuotasSelec.length === 0}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: esParcial ? '#d97706' : '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || cuotasSelec.length === 0 || !idFormaPago) ? 0.6 : 1 }}>
+        <button onClick={handleSave} disabled={saving || cuotasSelec.length === 0 || pagosValidos.length === 0}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: esParcial ? '#d97706' : '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || cuotasSelec.length === 0 || pagosValidos.length === 0) ? 0.6 : 1 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
           {esParcial ? 'Registrar pago parcial' : 'Registrar cobro'}
         </button>

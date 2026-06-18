@@ -18,6 +18,7 @@ type Cuota = {
   monto_original: number
   descuento: number
   monto_final: number
+  saldo?: number
   status: string
   fecha_emision: string
   fecha_vencimiento: string | null
@@ -46,16 +47,20 @@ const nc   = (s: { nombre: string; apellido_paterno: string | null; apellido_mat
   s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—'
 const vencida = (f: string | null) => !!f && f < hoy
 
-const STATUS_OPTS = ['', 'PENDIENTE', 'PAGADO', 'CANCELADO']
+const STATUS_OPTS = ['', 'PENDIENTE', 'PAGO_PARCIAL', 'PAGADO', 'CANCELADO']
 const TIPO_OPTS   = ['', 'INSCRIPCION', 'MENSUALIDAD', 'PENSION_CARRITO']
 const TIPOS_LABEL: Record<string, string> = {
   INSCRIPCION: 'Inscripción', MENSUALIDAD: 'Mensualidad', PENSION_CARRITO: 'Pensión Carrito',
 }
+const STATUS_LABEL: Record<string, string> = {
+  PENDIENTE: 'Pendiente', PAGO_PARCIAL: 'Pago Parcial', PAGADO: 'Pagado', CANCELADO: 'Cancelado',
+}
 const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
-  PENDIENTE:  { color: '#d97706', bg: '#fffbeb' },
-  PAGADO:     { color: '#15803d', bg: '#f0fdf4' },
-  CANCELADO:  { color: '#64748b', bg: '#f8fafc' },
-  VENCIDA:    { color: '#dc2626', bg: '#fef2f2' },
+  PENDIENTE:     { color: '#d97706', bg: '#fffbeb' },
+  PAGO_PARCIAL:  { color: '#d97706', bg: '#fffbeb' },
+  PAGADO:        { color: '#15803d', bg: '#f0fdf4' },
+  CANCELADO:     { color: '#64748b', bg: '#f8fafc' },
+  VENCIDA:       { color: '#dc2626', bg: '#fef2f2' },
 }
 
 const inp = { width: '100%', padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' } as React.CSSProperties
@@ -606,7 +611,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
     const fechaVenc   = `${anio}-${String(mes).padStart(2,'0')}-${String(cfg.dia_vencimiento).padStart(2,'0')}`
     const rows = nuevos.map(p => ({
       id_socio_fk: p.socioId, tipo: cfg.tipo, concepto: cfg.nombre, periodo,
-      monto_original: p.monto, descuento: 0, status: 'PENDIENTE', fecha_emision: hoy,
+      monto_original: p.monto, descuento: 0, saldo: p.monto, status: 'PENDIENTE', fecha_emision: hoy,
       fecha_vencimiento: fechaVenc, id_cuota_config_fk: cfg.id, usuario_crea: authUser?.nombre ?? null,
     }))
     if (rows.length > 0) {
@@ -751,7 +756,7 @@ export default function CuotasGolfPage() {
     let from = 0
     while (true) {
       let q = dbGolf.from('cxc_golf')
-        .select(`id, id_socio_fk, concepto, periodo, monto_original, descuento, monto_final,
+        .select(`id, id_socio_fk, concepto, periodo, monto_original, descuento, monto_final, saldo,
           status, fecha_emision, fecha_vencimiento, fecha_pago, tipo,
           cat_socios(nombre, apellido_paterno, apellido_materno, id_categoria_fk)`)
         .order('id', { ascending: true })
@@ -806,7 +811,7 @@ export default function CuotasGolfPage() {
       const g = map.get(sid)!
       g.cuotas.push(c)
       g.totalTotal += c.monto_final
-      if (c.status === 'PENDIENTE') g.totalPendiente += c.monto_final
+      if (c.status === 'PENDIENTE' || c.status === 'PAGO_PARCIAL') g.totalPendiente += (c.saldo ?? c.monto_final)
     }
     return Array.from(map.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
   }, [cuotasF])
@@ -817,7 +822,7 @@ export default function CuotasGolfPage() {
   const expandirTodo = () => setExpandidos(Object.fromEntries(grupos.map(g => [g.socioId, true])))
   const colapsarTodo = () => setExpandidos(Object.fromEntries(grupos.map(g => [g.socioId, false])))
 
-  const totalPendiente = cuotasF.filter(c => c.status === 'PENDIENTE').reduce((a, c) => a + c.monto_final, 0)
+  const totalPendiente = cuotasF.filter(c => c.status === 'PENDIENTE' || c.status === 'PAGO_PARCIAL').reduce((a, c) => a + (c.saldo ?? c.monto_final), 0)
 
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -879,7 +884,7 @@ export default function CuotasGolfPage() {
         <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
           style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los status</option>
-          {STATUS_OPTS.filter(Boolean).map(s => <option key={s} value={s}>{s === 'PENDIENTE' ? 'Pendiente' : s === 'PAGADO' ? 'Pagado' : 'Cancelado'}</option>)}
+          {STATUS_OPTS.filter(Boolean).map(s => <option key={s} value={s}>{STATUS_LABEL[s] ?? s}</option>)}
         </select>
         <button className="btn-ghost" onClick={expandirTodo} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '7px 10px' }}>
           <ChevronDown size={12} /> Expandir todo
@@ -939,9 +944,10 @@ export default function CuotasGolfPage() {
                     </thead>
                     <tbody>
                       {g.cuotas.map(c => {
-                        const venc = vencida(c.fecha_vencimiento) && c.status === 'PENDIENTE'
+                        const venc = vencida(c.fecha_vencimiento) && (c.status === 'PENDIENTE' || c.status === 'PAGO_PARCIAL')
                         const stKey = venc ? 'VENCIDA' : c.status
                         const st = STATUS_STYLE[stKey] ?? STATUS_STYLE.PENDIENTE
+                        const saldo = c.saldo ?? c.monto_final
                         return (
                           <tr key={c.id} style={{ borderTop: '1px solid #f1f5f9' }}
                             onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#fafffe'}
@@ -957,12 +963,17 @@ export default function CuotasGolfPage() {
                               {c.fecha_vencimiento ? new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                             </td>
                             <td style={{ padding: '8px 14px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
-                              {fmt$(c.monto_final)}
-                              {c.descuento > 0 && <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4, textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</span>}
+                              {fmt$(saldo)}
+                              {c.status === 'PAGO_PARCIAL' && saldo !== c.monto_final && (
+                                <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4, textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</span>
+                              )}
+                              {c.status !== 'PAGO_PARCIAL' && c.descuento > 0 && (
+                                <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4, textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</span>
+                              )}
                             </td>
                             <td style={{ padding: '8px 14px' }}>
                               <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: st.bg, color: st.color }}>
-                                {venc ? 'Vencida' : c.status === 'PENDIENTE' ? 'Pendiente' : c.status === 'PAGADO' ? 'Pagado' : 'Cancelado'}
+                                {venc ? 'Vencida' : STATUS_LABEL[c.status] ?? c.status}
                               </span>
                             </td>
                             {esSuperAdmin && (

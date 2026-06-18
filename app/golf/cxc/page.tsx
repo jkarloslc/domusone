@@ -62,9 +62,10 @@ function agrupar(cuotas: Cuota[]): SocioGroup[] {
     }
     const g = map.get(c.id_socio_fk)!
     g.cuotas.push(c)
-    if (c.status === 'PENDIENTE') {
-      g.totalPendiente += c.monto_final
-      if (vencida(c.fecha_vencimiento)) g.totalVencido += c.monto_final
+    if (c.status === 'PENDIENTE' || c.status === 'PAGO_PARCIAL') {
+      const saldo = c.saldo ?? c.monto_final
+      g.totalPendiente += saldo
+      if (vencida(c.fecha_vencimiento)) g.totalVencido += saldo
     }
   }
   return Array.from(map.values()).sort((a, b) => b.totalPendiente - a.totalPendiente)
@@ -86,25 +87,25 @@ export default function CXCGolfPage() {
 
   const fetchCuotas = useCallback(async () => {
     setLoading(true)
-    // Solo cuotas PENDIENTE de membresías — las de pensión de carrito se cobran en Pensiones
+    // Cuotas PENDIENTE o con PAGO_PARCIAL de membresías — las de pensión de carrito se cobran en Pensiones
     const { data } = await dbGolf.from('cxc_golf')
-      .select(`id, id_socio_fk, concepto, periodo, monto_original, descuento, monto_final,
+      .select(`id, id_socio_fk, concepto, periodo, monto_original, descuento, monto_final, saldo,
         status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo,
         cat_socios(nombre, apellido_paterno, apellido_materno, id_categoria_fk)`)
-      .eq('status', 'PENDIENTE')
+      .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .neq('tipo', 'PENSION_CARRITO')
       .order('fecha_vencimiento', { ascending: true })
     const rows = (data as unknown as Cuota[]) ?? []
     setCuotas(rows)
 
-    const pend  = rows.filter(r => r.status === 'PENDIENTE')
+    const pend  = rows.filter(r => r.status === 'PENDIENTE' || r.status === 'PAGO_PARCIAL')
     const venc  = pend.filter(r => vencida(r.fecha_vencimiento))
     const sociosUniq = new Set(pend.map(r => r.id_socio_fk))
     setStats({
       socios:         sociosUniq.size,
       pendiente:      pend.length,
       vencidas:       venc.length,
-      montoPendiente: pend.reduce((a, r) => a + r.monto_final, 0),
+      montoPendiente: pend.reduce((a, r) => a + (r.saldo ?? r.monto_final), 0),
     })
     setLoading(false)
   }, [])
@@ -130,7 +131,7 @@ export default function CXCGolfPage() {
 
   const abrirCobro = (g: SocioGroup) => {
     setShowCobrar({
-      cuotas: g.cuotas.filter(c => c.status === 'PENDIENTE'),
+      cuotas: g.cuotas.filter(c => c.status === 'PENDIENTE' || c.status === 'PAGO_PARCIAL'),
       nombreSocio: g.nombre,
       idSocio: g.id,
     })
@@ -296,6 +297,8 @@ export default function CXCGolfPage() {
                   <div style={{ borderTop: '1px solid #f1f5f9' }}>
                     {g.cuotas.map((c, i) => {
                       const venc = vencida(c.fecha_vencimiento)
+                      const esParcial = c.status === 'PAGO_PARCIAL'
+                      const saldo = c.saldo ?? c.monto_final
                       return (
                         <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 18px 10px 68px', borderBottom: i < g.cuotas.length - 1 ? '1px solid #f8fafc' : 'none', background: venc ? '#fff5f5' : '#fafafa' }}>
                           <div style={{ flex: 1 }}>
@@ -312,9 +315,17 @@ export default function CXCGolfPage() {
                           <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#475569', flexShrink: 0 }}>
                             {TIPOS_LABEL[c.tipo] ?? c.tipo}
                           </span>
+                          {esParcial && (
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#fffbeb', color: '#d97706', flexShrink: 0 }}>
+                              Pago Parcial
+                            </span>
+                          )}
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            {c.descuento > 0 && <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>}
-                            <div style={{ fontSize: 14, fontWeight: 700, color: venc ? '#dc2626' : '#1e293b' }}>{fmt$(c.monto_final)}</div>
+                            {esParcial && c.monto_final !== saldo && (
+                              <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_final)}</div>
+                            )}
+                            {!esParcial && c.descuento > 0 && <div style={{ fontSize: 10, color: '#94a3b8', textDecoration: 'line-through' }}>{fmt$(c.monto_original)}</div>}
+                            <div style={{ fontSize: 14, fontWeight: 700, color: venc ? '#dc2626' : (esParcial ? '#d97706' : '#1e293b') }}>{fmt$(saldo)}</div>
                           </div>
                         </div>
                       )
