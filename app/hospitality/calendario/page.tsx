@@ -4,7 +4,7 @@ import { dbCtrl } from '@/lib/supabase'
 import ModalShell from '@/components/ui/ModalShell'
 import {
   ChevronLeft, ChevronRight, Star, MapPin, Users,
-  Clock, DollarSign, ShoppingBag, Phone, Mail, Calendar,
+  Clock, DollarSign, ShoppingBag, Phone, Mail, Calendar, Lock,
 } from 'lucide-react'
 
 // ── Types ────────────────────────────────────────────────────
@@ -71,6 +71,17 @@ function eventoEnDia(ev: Evento, year: number, month: number, day: number): bool
   const start = new Date(ev.fecha_inicio + 'T12:00:00')
   const end   = ev.fecha_fin ? new Date(ev.fecha_fin + 'T12:00:00') : start
   return d >= start && d <= end
+}
+
+// Día de preparación/limpieza: 1 día antes del inicio o 1 día después del fin
+function bufferEnDia(ev: Evento, year: number, month: number, day: number): boolean {
+  if (ev.status === 'Cancelado') return false
+  const d     = new Date(year, month, day, 12, 0, 0)
+  const start = new Date(ev.fecha_inicio + 'T12:00:00')
+  const end   = ev.fecha_fin ? new Date(ev.fecha_fin + 'T12:00:00') : start
+  const antes = new Date(start); antes.setDate(antes.getDate() - 1)
+  const despues = new Date(end); despues.setDate(despues.getDate() + 1)
+  return d.getTime() === antes.getTime() || d.getTime() === despues.getTime()
 }
 
 function sortEventos(a: Evento, b: Evento) {
@@ -172,6 +183,10 @@ export default function CalendarioPage() {
             <span style={{ color: 'var(--text-muted)' }}>{s}</span>
           </div>
         ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
+          <div style={{ width: 10, height: 10, borderRadius: 3, border: '1px dashed var(--text-muted)' }} />
+          <span style={{ color: 'var(--text-muted)' }}>Bloqueado (preparación/limpieza)</span>
+        </div>
       </div>
 
       {/* Calendario */}
@@ -195,6 +210,9 @@ export default function CalendarioPage() {
           {dias.map((dia, idx) => {
             const isHoy = dia !== null && dia === hoy.getDate() && month === hoy.getMonth() && year === hoy.getFullYear()
             const evsDia = dia !== null ? eventos.filter(ev => eventoEnDia(ev, year, month, dia)) : []
+            const bufferDia = dia !== null
+              ? eventos.filter(ev => bufferEnDia(ev, year, month, dia) && !evsDia.some(e => e.id_lugar_fk === ev.id_lugar_fk))
+              : []
             return (
               <div
                 key={idx}
@@ -245,6 +263,27 @@ export default function CalendarioPage() {
                             </span>
                             {ev.nombre}
                           </button>
+                        )
+                      })}
+                      {bufferDia.map(ev => {
+                        const tipo  = ev.cat_tipos_evento
+                        const color = tipo?.color ?? '#9333ea'
+                        return (
+                          <div
+                            key={'buf-' + ev.id}
+                            title={`Bloqueado por preparación/limpieza de "${ev.nombre}" (${ev.cat_lugares?.nombre ?? 'lugar'})`}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 3, width: '100%',
+                              border: `1px dashed ${color}55`,
+                              borderRadius: 5, padding: '3px 6px',
+                              fontSize: 9, lineHeight: 1.3,
+                              color: 'var(--text-muted)',
+                              overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                            }}
+                          >
+                            <Lock size={9} style={{ flexShrink: 0, color }} />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.cat_lugares?.nombre ?? 'Lugar'} ocupado</span>
+                          </div>
                         )
                       })}
                     </div>

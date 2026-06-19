@@ -568,10 +568,37 @@ export default function EventosPage() {
     setViewLoad(false)
   }
 
+  // ── Validar disponibilidad de lugar (bloquea 1 día antes / 1 día después) ──
+  const checkConflictoLugar = async (): Promise<string | null> => {
+    if (!form.id_lugar_fk) return null
+    const start = form.fecha_inicio
+    const end   = form.fecha_fin || form.fecha_inicio
+    let q = dbCtrl.from('eventos')
+      .select('id, nombre, folio, fecha_inicio, fecha_fin, status')
+      .eq('id_lugar_fk', form.id_lugar_fk)
+      .neq('status', 'Cancelado')
+    if (editEvt) q = q.neq('id', editEvt.id)
+    const { data } = await q
+    const startD = new Date(start + 'T12:00:00')
+    const endD   = new Date(end + 'T12:00:00')
+    for (const ex of (data ?? []) as { id: number; nombre: string; folio: string; fecha_inicio: string; fecha_fin: string | null; status: string }[]) {
+      const exStart = new Date(ex.fecha_inicio + 'T12:00:00')
+      const exEnd   = new Date((ex.fecha_fin ?? ex.fecha_inicio) + 'T12:00:00')
+      const exStartMenos1 = new Date(exStart); exStartMenos1.setDate(exStartMenos1.getDate() - 1)
+      const exEndMas1     = new Date(exEnd);   exEndMas1.setDate(exEndMas1.getDate() + 1)
+      if (startD <= exEndMas1 && endD >= exStartMenos1) {
+        return `El lugar ya está ocupado por "${ex.nombre}" (${ex.folio}), del ${fmtFecha(ex.fecha_inicio)}${ex.fecha_fin && ex.fecha_fin !== ex.fecha_inicio ? ' al ' + fmtFecha(ex.fecha_fin) : ''}. Se requiere 1 día de preparación/limpieza antes y después del evento.`
+      }
+    }
+    return null
+  }
+
   // ── Save evento ────────────────────────────────────────────
   const saveEvento = async () => {
     if (!form.nombre.trim()) { setErr('El nombre del evento es obligatorio'); return }
     if (!form.fecha_inicio)  { setErr('La fecha de inicio es obligatoria'); return }
+    const conflicto = await checkConflictoLugar()
+    if (conflicto) { setErr(conflicto); return }
     setSaving(true); setErr('')
     const payload = {
       nombre:              form.nombre.trim(),
