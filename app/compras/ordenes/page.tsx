@@ -890,7 +890,7 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
               <div style={{ marginTop: 10 }}><label className="label">Tipo de Gasto (opcional)</label>
                 <select className="select" value={opForm.tipo_gasto} onChange={e => setOpForm(f => ({ ...f, tipo_gasto: e.target.value }))}>
                   <option value="">— Sin clasificar —</option>
-                  {['Servicios Profesionales','Mantenimiento','Reparación','Arrendamiento','Seguros','Publicidad','Combustible','Electricidad','Agua','Telefonía / Internet','Honorarios','Asesoría','Capacitación','Otro'].map(t => <option key={t}>{t}</option>)}
+                  {['Servicios Profesionales','Mantenimiento','Reparación','Arrendamiento','Seguros','Publicidad','Combustible','Electricidad','Agua','Telefonía / Internet','Honorarios','Asesoría','Capacitación','Servicios de Vigilancia','Otro'].map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>

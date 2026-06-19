@@ -16,7 +16,7 @@ const TIPOS_GASTO = [
   'Honorarios', 'Asesoría', 'Capacitación',
   'Nómina Semanal', 'Nómina Quincenal',
   'ISR', 'IMSS', 'IVA', 'IEPS', '3% SN',
-  'Renta de Mobiliario', 'Otro',
+  'Renta de Mobiliario', 'Servicios de Vigilancia', 'Otro',
 ]
 
 const statusColor = (s: string) =>
