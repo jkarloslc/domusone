@@ -349,6 +349,51 @@ function TabCuotas({ socioId }: { socioId: number }) {
   )
 }
 
+// ── Tab Datos Fiscales ───────────────────────────────────────
+function TabDatosFiscales({ socioId }: { socioId: number }) {
+  const [rows, setRows]     = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    dbGolf.from('cat_socios_datos_fiscales')
+      .select('id, alias, rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal, es_principal')
+      .eq('id_socio_fk', socioId)
+      .order('es_principal', { ascending: false })
+      .order('created_at')
+      .then(({ data }) => { setRows(data ?? []); setLoading(false) })
+  }, [socioId])
+
+  if (loading) return <Empty text="Cargando…" />
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ padding: '10px 14px', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
+        Datos utilizados para pre-llenar el formulario CFDI al emitir recibos. Al facturar se puede elegir cuál usar.
+      </div>
+      {rows.length === 0 ? (
+        <Empty text="Sin datos fiscales registrados" emoji="🧾" />
+      ) : (
+        rows.map(f => (
+          <div key={f.id} style={{ border: `1px solid ${f.es_principal ? '#ddd6fe' : '#e2e8f0'}`, background: f.es_principal ? '#faf5ff' : '#f8fafc', borderRadius: 10, padding: '12px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{f.alias || f.razon_social_fiscal}</span>
+              {f.es_principal && (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#7c3aed', color: '#fff', letterSpacing: '0.04em' }}>PRINCIPAL</span>
+              )}
+            </div>
+            <Row label="RFC"                value={f.rfc} />
+            <Row label="Razón Social Fiscal" value={f.razon_social_fiscal} />
+            <Row label="C.P. Fiscal"        value={f.cp_fiscal} />
+            <Row label="Régimen Fiscal"     value={f.regimen_fiscal} />
+            <Row label="Uso CFDI"           value={f.uso_cfdi} />
+            <Row label="Email Fiscal"       value={f.email_fiscal} />
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
 function Empty({ text, emoji }: { text: string; emoji?: string }) {
   return (
     <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
@@ -485,20 +530,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           )}
 
           {/* ── Datos Fiscales ── */}
-          {tab === 'fiscal' && (
-            <div>
-              <div style={{ marginBottom: 6, padding: '10px 14px', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
-                Datos utilizados para pre-llenar el formulario CFDI al emitir recibos.
-              </div>
-              <Row label="RFC"                value={socio.rfc} />
-              <Row label="CURP"               value={socio.curp} />
-              <Row label="Razón Social Fiscal" value={socio.razon_social_fiscal} />
-              <Row label="C.P. Fiscal"        value={socio.cp_fiscal} />
-              <Row label="Régimen Fiscal"     value={socio.regimen_fiscal} />
-              <Row label="Uso CFDI"           value={socio.uso_cfdi} />
-              <Row label="Email Fiscal"       value={socio.email_fiscal} />
-            </div>
-          )}
+          {tab === 'fiscal' && <TabDatosFiscales socioId={socio.id} />}
         </div>
 
         <div style={{ padding: '12px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>

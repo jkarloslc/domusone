@@ -98,6 +98,34 @@ type Federacion = {
   created_at: string
 }
 
+type DatoFiscal = {
+  id: number
+  id_socio_fk: number
+  alias: string | null
+  rfc: string
+  razon_social_fiscal: string
+  cp_fiscal: string | null
+  regimen_fiscal: string | null
+  uso_cfdi: string | null
+  email_fiscal: string | null
+  es_principal: boolean
+  created_at: string
+}
+
+type DatoFiscalForm = {
+  alias: string
+  rfc: string
+  razon_social_fiscal: string
+  cp_fiscal: string
+  regimen_fiscal: string
+  uso_cfdi: string
+  email_fiscal: string
+}
+
+const DATO_FISCAL_VACIO: DatoFiscalForm = {
+  alias: '', rfc: '', razon_social_fiscal: '', cp_fiscal: '', regimen_fiscal: '626', uso_cfdi: 'G03', email_fiscal: '',
+}
+
 type FederacionForm = {
   clave: string
   periodo: string
@@ -184,6 +212,16 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const [uploadingFed, setUploadingFed]         = useState(false)
   const [comprobanteFedUrl, setComprobanteFedUrl] = useState('')
 
+  // ── Datos Fiscales ──
+  const [fiscales, setFiscales]                 = useState<DatoFiscal[]>([])
+  const [loadingFiscal, setLoadingFiscal]       = useState(false)
+  const [showFormFiscal, setShowFormFiscal]     = useState(false)
+  const [savingFiscal, setSavingFiscal]         = useState(false)
+  const [errorFiscal, setErrorFiscal]           = useState('')
+  const [nuevoFiscal, setNuevoFiscal]           = useState<DatoFiscalForm>(DATO_FISCAL_VACIO)
+  const [eliminandoFiscal, setEliminandoFiscal] = useState<number | null>(null)
+  const [marcandoPrincipal, setMarcandoPrincipal] = useState<number | null>(null)
+
   const [form, setForm] = useState({
     numero_socio:      socio?.numero_socio      ?? '',
     nombre:            socio?.nombre            ?? '',
@@ -201,18 +239,13 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     activo:                 socio?.activo                ?? true,
     derecho_intercambios:   socio?.derecho_intercambios  ?? false,
     observaciones:          socio?.observaciones         ?? '',
-    // Datos fiscales SAT
-    razon_social_fiscal: (socio as any)?.razon_social_fiscal ?? '',
-    cp_fiscal:           (socio as any)?.cp_fiscal           ?? '',
-    regimen_fiscal:      (socio as any)?.regimen_fiscal      ?? '626',
-    uso_cfdi:            (socio as any)?.uso_cfdi            ?? 'G03',
-    email_fiscal:        (socio as any)?.email_fiscal        ?? '',
   })
 
   const set    = (k: keyof typeof form, v: any)     => setForm(f => ({ ...f, [k]: v }))
   const setFam = (k: keyof FamiliarForm, v: string)  => setNuevoFam(f => ({ ...f, [k]: v }))
   const setCon = (k: keyof ContratoForm, v: string)  => setNuevoCon(f => ({ ...f, [k]: v }))
   const setFed = (k: keyof FederacionForm, v: string) => setNuevoFed(f => ({ ...f, [k]: v }))
+  const setFiscal = (k: keyof DatoFiscalForm, v: string) => setNuevoFiscal(f => ({ ...f, [k]: v }))
 
   useEffect(() => {
     dbGolf.from('cat_categorias_socios').select('id, nombre, descripcion').eq('activo', true).order('nombre')
@@ -278,6 +311,24 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     if (tab === 7 && !isNew) fetchFederaciones()
   }, [tab])
 
+  // ── Datos Fiscales ──
+  const fetchFiscales = async () => {
+    if (!socio) return
+    setLoadingFiscal(true)
+    const { data } = await dbGolf
+      .from('cat_socios_datos_fiscales')
+      .select('id, id_socio_fk, alias, rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal, es_principal, created_at')
+      .eq('id_socio_fk', socio.id)
+      .order('es_principal', { ascending: false })
+      .order('created_at')
+    setFiscales((data as DatoFiscal[]) ?? [])
+    setLoadingFiscal(false)
+  }
+
+  useEffect(() => {
+    if (tab === 6 && !isNew) fetchFiscales()
+  }, [tab])
+
   // ── handleSave (datos generales) ──
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
@@ -300,12 +351,6 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       derecho_intercambios: (form as any).derecho_intercambios ?? false,
       observaciones:        form.observaciones         || null,
       identificacion_url:  idUrl,
-      // Datos fiscales SAT
-      razon_social_fiscal: form.razon_social_fiscal   || null,
-      cp_fiscal:           form.cp_fiscal             || null,
-      regimen_fiscal:      form.regimen_fiscal        || null,
-      uso_cfdi:            form.uso_cfdi              || null,
-      email_fiscal:        form.email_fiscal          || null,
     }
     const { error: err } = isNew
       ? await dbGolf.from('cat_socios').insert(payload)
@@ -444,10 +489,48 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     fetchContratos()
   }
 
+  // ── Datos Fiscales CRUD ──
+  const handleGuardarFiscal = async () => {
+    if (!nuevoFiscal.rfc.trim()) { setErrorFiscal('El RFC es obligatorio'); return }
+    if (!nuevoFiscal.razon_social_fiscal.trim()) { setErrorFiscal('La razón social es obligatoria'); return }
+    setSavingFiscal(true); setErrorFiscal('')
+    const { error: err } = await dbGolf.from('cat_socios_datos_fiscales').insert({
+      id_socio_fk:         socio!.id,
+      alias:               nuevoFiscal.alias.trim()               || null,
+      rfc:                 nuevoFiscal.rfc.toUpperCase().trim(),
+      razon_social_fiscal: nuevoFiscal.razon_social_fiscal.trim(),
+      cp_fiscal:           nuevoFiscal.cp_fiscal               || null,
+      regimen_fiscal:      nuevoFiscal.regimen_fiscal          || null,
+      uso_cfdi:            nuevoFiscal.uso_cfdi                || null,
+      email_fiscal:        nuevoFiscal.email_fiscal            || null,
+      es_principal:        fiscales.length === 0,
+    })
+    if (err) { setErrorFiscal(err.message); setSavingFiscal(false); return }
+    setNuevoFiscal(DATO_FISCAL_VACIO); setShowFormFiscal(false); setSavingFiscal(false)
+    fetchFiscales()
+  }
+
+  const handleMarcarPrincipal = async (id: number) => {
+    if (!socio) return
+    setMarcandoPrincipal(id)
+    await dbGolf.from('cat_socios_datos_fiscales').update({ es_principal: false }).eq('id_socio_fk', socio.id)
+    await dbGolf.from('cat_socios_datos_fiscales').update({ es_principal: true }).eq('id', id)
+    setMarcandoPrincipal(null)
+    fetchFiscales()
+  }
+
+  const handleEliminarFiscal = async (id: number) => {
+    if (!confirm('¿Eliminar este dato fiscal?')) return
+    setEliminandoFiscal(id)
+    await dbGolf.from('cat_socios_datos_fiscales').delete().eq('id', id)
+    setEliminandoFiscal(null)
+    fetchFiscales()
+  }
+
   const nombreCompleto = (f: Familiar) =>
     [f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ')
 
-  const isTabDisabled = (i: number) => (i === 2 || i === 3 || i === 4 || i === 7) && isNew
+  const isTabDisabled = (i: number) => (i === 2 || i === 3 || i === 4 || i === 6 || i === 7) && isNew
 
   const inputStyle = {
     width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
@@ -456,8 +539,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   }
   const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' as const }
 
-  // Footer: ocultar guardar en tabs Familiares (2), Identificación (3), Contratos (4), Federación (7)
-  const showSaveBtn = tab !== 2 && tab !== 3 && tab !== 4 && tab !== 7
+  // Footer: ocultar guardar en tabs Familiares (2), Identificación (3), Contratos (4), Datos Fiscales (6), Federación (7)
+  const showSaveBtn = tab !== 2 && tab !== 3 && tab !== 4 && tab !== 6 && tab !== 7
 
   return (
     <div style={{
@@ -526,6 +609,13 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                       background: active ? '#dbeafe' : 'rgba(255,255,255,0.2)',
                       color: active ? '#1d4ed8' : '#fff' }}>
                       {contratos.length}
+                    </span>
+                  )}
+                  {i === 6 && !isNew && fiscales.length > 0 && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
+                      background: active ? '#faf5ff' : 'rgba(255,255,255,0.2)',
+                      color: active ? '#7c3aed' : '#fff' }}>
+                      {fiscales.length}
                     </span>
                   )}
                   {i === 7 && !isNew && federaciones.length > 0 && (
@@ -1077,49 +1167,147 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
           )}
 
           {/* ── Tab 6: Datos Fiscales ── */}
-          {tab === 6 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {tab === 6 && !isNew && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ padding: '10px 14px', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#6d28d9' }}>
-                Estos datos se utilizan para pre-llenar el formulario de facturación CFDI al emitir recibos.
+                Un socio puede tener varios datos fiscales (p. ej. personal y de empresa). Al facturar, se podrá elegir a cuál de ellos se factura.
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={labelStyle}>RFC</label>
-                  <input style={{ ...inputStyle, fontFamily: 'monospace', textTransform: 'uppercase' }}
-                    value={form.rfc} onChange={e => set('rfc', e.target.value.toUpperCase())}
-                    placeholder="XAXX010101000" />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <FileText size={15} style={{ color: '#7c3aed' }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Datos fiscales registrados</span>
+                  {!loadingFiscal && <span style={{ fontSize: 11, color: '#64748b' }}>({fiscales.length})</span>}
                 </div>
-                <div>
-                  <label style={labelStyle}>Código Postal (CFDI)</label>
-                  <input style={inputStyle} type="text" maxLength={5}
-                    value={form.cp_fiscal} onChange={e => set('cp_fiscal', e.target.value)}
-                    placeholder="76001" />
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={labelStyle}>Nombre / Razón Social Fiscal</label>
-                  <input style={inputStyle}
-                    value={form.razon_social_fiscal} onChange={e => set('razon_social_fiscal', e.target.value)}
-                    placeholder="Igual a nombre del socio si no hay razón social diferente" />
-                </div>
-                <div>
-                  <label style={labelStyle}>Régimen Fiscal SAT</label>
-                  <select style={inputStyle} value={form.regimen_fiscal} onChange={e => set('regimen_fiscal', e.target.value)}>
-                    {REGIMENES_FISCALES_SAT.map(r => <option key={r.clave} value={r.clave}>{r.clave} — {r.desc}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={labelStyle}>Uso CFDI por defecto</label>
-                  <select style={inputStyle} value={form.uso_cfdi} onChange={e => set('uso_cfdi', e.target.value)}>
-                    {USOS_CFDI_SAT.map(u => <option key={u.clave} value={u.clave}>{u.clave} — {u.desc}</option>)}
-                  </select>
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={labelStyle}>Correo electrónico para envío de facturas</label>
-                  <input style={inputStyle} type="email"
-                    value={form.email_fiscal} onChange={e => set('email_fiscal', e.target.value)}
-                    placeholder="facturacion@ejemplo.com" />
-                </div>
+                {!showFormFiscal && (
+                  <button onClick={() => { setShowFormFiscal(true); setErrorFiscal(''); setNuevoFiscal(DATO_FISCAL_VACIO) }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#7c3aed', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                    <Plus size={13} /> Agregar dato fiscal
+                  </button>
+                )}
               </div>
+
+              {/* Formulario nuevo dato fiscal */}
+              {showFormFiscal && (
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Nuevo dato fiscal</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={labelStyle}>Alias</label>
+                      <input style={inputStyle} value={nuevoFiscal.alias} onChange={e => setFiscal('alias', e.target.value)}
+                        placeholder="Ej. Personal, Empresa S.A. de C.V." />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>RFC *</label>
+                      <input style={{ ...inputStyle, fontFamily: 'monospace', textTransform: 'uppercase' }}
+                        value={nuevoFiscal.rfc} onChange={e => setFiscal('rfc', e.target.value.toUpperCase())}
+                        placeholder="XAXX010101000" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Código Postal (CFDI)</label>
+                      <input style={inputStyle} type="text" maxLength={5}
+                        value={nuevoFiscal.cp_fiscal} onChange={e => setFiscal('cp_fiscal', e.target.value)}
+                        placeholder="76001" />
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={labelStyle}>Nombre / Razón Social Fiscal *</label>
+                      <input style={inputStyle}
+                        value={nuevoFiscal.razon_social_fiscal} onChange={e => setFiscal('razon_social_fiscal', e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Régimen Fiscal SAT</label>
+                      <select style={inputStyle} value={nuevoFiscal.regimen_fiscal} onChange={e => setFiscal('regimen_fiscal', e.target.value)}>
+                        {REGIMENES_FISCALES_SAT.map(r => <option key={r.clave} value={r.clave}>{r.clave} — {r.desc}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Uso CFDI por defecto</label>
+                      <select style={inputStyle} value={nuevoFiscal.uso_cfdi} onChange={e => setFiscal('uso_cfdi', e.target.value)}>
+                        {USOS_CFDI_SAT.map(u => <option key={u.clave} value={u.clave}>{u.clave} — {u.desc}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={labelStyle}>Correo electrónico para envío de facturas</label>
+                      <input style={inputStyle} type="email"
+                        value={nuevoFiscal.email_fiscal} onChange={e => setFiscal('email_fiscal', e.target.value)}
+                        placeholder="facturacion@ejemplo.com" />
+                    </div>
+                  </div>
+                  {errorFiscal && (
+                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errorFiscal}</div>
+                  )}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+                    <button onClick={() => { setShowFormFiscal(false); setNuevoFiscal(DATO_FISCAL_VACIO); setErrorFiscal('') }}
+                      style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
+                      Cancelar
+                    </button>
+                    <button onClick={handleGuardarFiscal} disabled={savingFiscal}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: savingFiscal ? 0.7 : 1 }}>
+                      {savingFiscal ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Lista de datos fiscales */}
+              {loadingFiscal ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+              ) : fiscales.length === 0 && !showFormFiscal ? (
+                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>🧾</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin datos fiscales registrados</div>
+                  <div style={{ fontSize: 12, color: '#94a3b8' }}>Agrega el RFC y razón social que se usarán al facturar</div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {fiscales.map(f => (
+                    <div key={f.id} style={{
+                      border: `1px solid ${f.es_principal ? '#ddd6fe' : '#e2e8f0'}`,
+                      background: f.es_principal ? '#faf5ff' : '#fff',
+                      borderRadius: 10, padding: '12px 16px',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{f.alias || f.razon_social_fiscal}</span>
+                          {f.es_principal && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#7c3aed', color: '#fff', letterSpacing: '0.04em' }}>
+                              PRINCIPAL
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#64748b', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'monospace' }}>{f.rfc}</span>
+                          {f.alias && <span>{f.razon_social_fiscal}</span>}
+                          {f.cp_fiscal && <span>CP {f.cp_fiscal}</span>}
+                          {f.regimen_fiscal && <span>Rég. {f.regimen_fiscal}</span>}
+                          {f.uso_cfdi && <span>Uso {f.uso_cfdi}</span>}
+                          {f.email_fiscal && <span>{f.email_fiscal}</span>}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        {!f.es_principal && (
+                          <button
+                            onClick={() => handleMarcarPrincipal(f.id)}
+                            disabled={marcandoPrincipal === f.id}
+                            title="Marcar como principal"
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', border: '1px solid #ddd6fe', borderRadius: 7, background: '#faf5ff', color: '#6d28d9', cursor: 'pointer', opacity: marcandoPrincipal === f.id ? 0.6 : 1 }}>
+                            {marcandoPrincipal === f.id ? <Loader size={10} className="animate-spin" /> : <CheckCircle size={11} />}
+                            Principal
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleEliminarFiscal(f.id)}
+                          disabled={eliminandoFiscal === f.id}
+                          title="Eliminar"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, opacity: eliminandoFiscal === f.id ? 0.5 : 1 }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

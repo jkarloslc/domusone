@@ -20,6 +20,8 @@ export type ReceptorPreFill = {
 
 type Concepto = { descripcion: string; importe: number; tasa_iva?: number }
 
+export type FiscalOption = ReceptorPreFill & { id: number | string; alias: string }
+
 export type Props = {
   titulo:            string       // e.g. "Facturar Recibo RG-2026-001"
   folio:             string       // folio interno del recibo
@@ -28,6 +30,7 @@ export type Props = {
   conceptos:         Concepto[]
   receptorInit?:     ReceptorPreFill
   genericRfcPrefill?: ReceptorPreFill  // datos para el botón "Público en General"
+  fiscalOptions?:    FiscalOption[]    // datos fiscales del socio entre los que se puede elegir
   formaPagoStr?:     string       // nombre de la forma de pago (para mapear al SAT)
   onClose:           () => void
   onSaved:           (folio_fiscal: string) => void
@@ -63,7 +66,7 @@ const PASOS = ['Receptor', 'Comprobante', 'Confirmar', 'Emitida']
 
 export default function FacturaUniversalModal({
   titulo, folio, total, fecha, conceptos,
-  receptorInit = {}, genericRfcPrefill, formaPagoStr = '',
+  receptorInit = {}, genericRfcPrefill, fiscalOptions, formaPagoStr = '',
   onClose, onSaved, saveFactura,
 }: Props) {
   const [paso, setPaso] = useState(1)
@@ -326,6 +329,37 @@ export default function FacturaUniversalModal({
         {paso === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>Datos del Receptor (Quien recibe la factura)</div>
+
+            {fiscalOptions && fiscalOptions.length > 1 && (
+              <div>
+                <label style={labelStyle}>Facturar a</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {fiscalOptions.map(opt => {
+                    const active = receptor.rfc === opt.rfc && receptor.razon_social === opt.razon_social
+                    return (
+                      <button key={opt.id}
+                        onClick={() => setReceptor({
+                          rfc:            opt.rfc            ?? '',
+                          razon_social:   opt.razon_social   ?? '',
+                          cp:             opt.cp              ?? '',
+                          regimen_fiscal: opt.regimen_fiscal  ?? '626',
+                          uso_cfdi:       opt.uso_cfdi        ?? 'G03',
+                          email:          opt.email           ?? '',
+                        })}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2,
+                          padding: '6px 12px', fontSize: 12, border: `1px solid ${active ? '#7c3aed' : '#e2e8f0'}`,
+                          borderRadius: 8, background: active ? '#f5f3ff' : '#fff',
+                          color: active ? '#6d28d9' : '#475569', cursor: 'pointer',
+                        }}>
+                        <span style={{ fontWeight: 700 }}>{opt.alias}</span>
+                        <span style={{ fontSize: 10.5, fontFamily: 'monospace', opacity: 0.8 }}>{opt.rfc}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {genericRfcPrefill && (
               <button

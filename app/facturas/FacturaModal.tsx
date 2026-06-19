@@ -44,6 +44,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
   const [socioSearch, setSocioSearch]       = useState('')
   const [socioResults, setSocioResults]     = useState<any[]>([])
   const [socioFiscalMsg, setSocioFiscalMsg] = useState('')   // confirmación al precargar
+  const [fiscalOptionsSocio, setFiscalOptionsSocio] = useState<any[]>([])  // datos fiscales del socio elegido, si tiene 2+
   const socioSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Datos CFDI
@@ -114,19 +115,38 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
     }, 300)
   }, [socioSearch])
 
-  const precargarFiscalSocio = (s: any) => {
-    const nombreCompleto = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
+  const aplicarFiscalOpcion = (opt: any, nombreCompleto: string) => {
     setReceptor(r => ({
       ...r,
-      rfc:            s.rfc            || r.rfc,
-      razon_social:   s.razon_social_fiscal || nombreCompleto,
-      regimen_fiscal: s.regimen_fiscal || '626',
-      uso_cfdi:       s.uso_cfdi       || 'G03',
-      cp:             s.cp_fiscal      || r.cp,
+      rfc:            opt.rfc            || r.rfc,
+      razon_social:   opt.razon_social_fiscal || nombreCompleto,
+      regimen_fiscal: opt.regimen_fiscal || '626',
+      uso_cfdi:       opt.uso_cfdi       || 'G03',
+      cp:             opt.cp_fiscal      || r.cp,
     }))
-    setSocioFiscalMsg(`✓ Datos fiscales de ${nombreCompleto} precargados`)
+    setSocioFiscalMsg(`✓ Datos fiscales de ${opt.alias || nombreCompleto} precargados`)
     setSocioSearch('')
     setSocioResults([])
+    setFiscalOptionsSocio([])
+  }
+
+  const precargarFiscalSocio = async (s: any) => {
+    const nombreCompleto = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
+    const { data: fiscales } = await dbGolf.from('cat_socios_datos_fiscales')
+      .select('id, alias, rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi')
+      .eq('id_socio_fk', s.id)
+      .order('es_principal', { ascending: false })
+      .order('created_at')
+
+    if (fiscales && fiscales.length > 1) {
+      // El socio tiene varios datos fiscales: dejar que el usuario elija
+      setFiscalOptionsSocio(fiscales.map(f => ({ ...f, _nombreSocio: nombreCompleto })))
+      setSocioResults([])
+      return
+    }
+
+    const opt = fiscales && fiscales.length === 1 ? fiscales[0] : s
+    aplicarFiscalOpcion(opt, nombreCompleto)
   }
 
   // Calcular IVA y totales (dinámico)
@@ -413,6 +433,24 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
                         </button>
                       )
                     })}
+                  </div>
+                )}
+                {fiscalOptionsSocio.length > 0 && (
+                  <div className="card" style={{ marginTop: 4, padding: '8px 0' }}>
+                    <div style={{ padding: '0 14px 6px', fontSize: 11.5, fontWeight: 600, color: '#0369a1' }}>
+                      Elige el dato fiscal a facturar
+                    </div>
+                    {fiscalOptionsSocio.map(opt => (
+                      <button key={opt.id} onClick={() => aplicarFiscalOpcion(opt, opt._nombreSocio)}
+                        style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '8px 14px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                        <div>
+                          <span style={{ fontWeight: 600, fontSize: 13 }}>{opt.alias || opt.razon_social_fiscal}</span>
+                        </div>
+                        <span style={{ fontSize: 11, color: '#15803d', fontFamily: 'monospace' }}>{opt.rfc}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
                 {socioFiscalMsg && (

@@ -83,6 +83,7 @@ export default function POSPage() {
   const [receptorPOS,     setReceptorPOS]     = useState<any>({})
   const [conceptosPOS,    setConceptosPOS]    = useState<{ descripcion: string; importe: number }[]>([])
   const [genericRfcData,  setGenericRfcData]  = useState<any>(null)
+  const [fiscalOptionsPOS, setFiscalOptionsPOS] = useState<any[]>([])
 
   // Tab Facturas
   const [facturas,      setFacturas]      = useState<any[]>([])
@@ -300,23 +301,34 @@ export default function POSPage() {
     setGenericRfcData({ rfc: 'XAXX010101000', razon_social: 'PUBLICO EN GENERAL', cp: cpOrg, regimen_fiscal: '616', uso_cfdi: 'S01', email: '' })
 
     let receptor: any = { razon_social: v.nombre_cliente }
+    let opciones: any[] = []
     if (v.id_socio_fk) {
-      const { data: soc } = await dbGolf.from('cat_socios')
-        .select('rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal, email, nombre, apellido_paterno, apellido_materno')
-        .eq('id', v.id_socio_fk)
-        .maybeSingle()
-      if (soc) {
-        const nombreCompleto = [(soc as any).nombre, (soc as any).apellido_paterno, (soc as any).apellido_materno].filter(Boolean).join(' ')
-        receptor = {
-          rfc:            (soc as any).rfc            ?? '',
-          razon_social:   (soc as any).razon_social_fiscal || nombreCompleto || v.nombre_cliente,
-          cp:             (soc as any).cp_fiscal      ?? '',
-          regimen_fiscal: (soc as any).regimen_fiscal ?? '626',
-          uso_cfdi:       (soc as any).uso_cfdi       ?? 'G03',
-          email:          (soc as any).email_fiscal   || (soc as any).email || '',
-        }
+      const [{ data: soc }, { data: fiscales }] = await Promise.all([
+        dbGolf.from('cat_socios').select('email, nombre, apellido_paterno, apellido_materno').eq('id', v.id_socio_fk).maybeSingle(),
+        dbGolf.from('cat_socios_datos_fiscales')
+          .select('id, alias, rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal')
+          .eq('id_socio_fk', v.id_socio_fk)
+          .order('es_principal', { ascending: false })
+          .order('created_at'),
+      ])
+      opciones = (fiscales ?? []).map(f => ({
+        id:             f.id,
+        alias:          f.alias || f.razon_social_fiscal,
+        rfc:            f.rfc,
+        razon_social:   f.razon_social_fiscal,
+        cp:             f.cp_fiscal      ?? '',
+        regimen_fiscal: f.regimen_fiscal ?? '626',
+        uso_cfdi:       f.uso_cfdi       ?? 'G03',
+        email:          f.email_fiscal   ?? '',
+      }))
+      const nombreCompleto = soc
+        ? [(soc as any).nombre, (soc as any).apellido_paterno, (soc as any).apellido_materno].filter(Boolean).join(' ')
+        : ''
+      receptor = opciones[0] ?? {
+        rfc: '', razon_social: nombreCompleto || v.nombre_cliente, cp: '', regimen_fiscal: '626', uso_cfdi: 'G03', email: (soc as any)?.email || '',
       }
     }
+    setFiscalOptionsPOS(opciones)
     const primeraPago = ((pagos ?? []) as { forma_nombre: string }[])[0]?.forma_nombre ?? ''
     setReceptorPOS({ ...receptor, _formaPago: primeraPago })
     setFacturandoPOS(v)
@@ -1778,6 +1790,7 @@ ${operaciones.length > 0 ? `
           fecha={facturandoPOS.fecha.split('T')[0]}
           conceptos={conceptosPOS}
           receptorInit={receptorPOS}
+          fiscalOptions={fiscalOptionsPOS}
           genericRfcPrefill={genericRfcData}
           formaPagoStr={receptorPOS._formaPago ?? ''}
           onClose={() => setFacturandoPOS(null)}

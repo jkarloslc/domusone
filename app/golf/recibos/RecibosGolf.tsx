@@ -100,6 +100,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
   // Modal facturar
   const [facturando, setFacturando]   = useState<Recibo | null>(null)
   const [receptorFact, setReceptorFact] = useState<any>({})
+  const [fiscalOptionsFact, setFiscalOptionsFact] = useState<any[]>([])
 
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -183,22 +184,31 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
 
   // ── Abrir modal de facturación ─────────────────────────────
   const abrirFacturar = async (r: Recibo) => {
-    // Cargar datos fiscales del socio
-    const { data: soc } = await dbGolf
-      .from('cat_socios')
-      .select('rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal, nombre, apellido_paterno, apellido_materno, email')
-      .eq('id', r.id_socio_fk)
-      .single()
+    // Cargar datos fiscales del socio (puede tener varios)
+    const [{ data: soc }, { data: fiscales }] = await Promise.all([
+      dbGolf.from('cat_socios').select('nombre, apellido_paterno, apellido_materno, email').eq('id', r.id_socio_fk).single(),
+      dbGolf.from('cat_socios_datos_fiscales')
+        .select('id, alias, rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal')
+        .eq('id_socio_fk', r.id_socio_fk)
+        .order('es_principal', { ascending: false })
+        .order('created_at'),
+    ])
     const nombreCompleto = soc
       ? [soc.nombre, soc.apellido_paterno, soc.apellido_materno].filter(Boolean).join(' ')
       : ''
-    setReceptorFact({
-      rfc:            (soc as any)?.rfc               ?? '',
-      razon_social:   (soc as any)?.razon_social_fiscal || nombreCompleto,
-      cp:             (soc as any)?.cp_fiscal          ?? '',
-      regimen_fiscal: (soc as any)?.regimen_fiscal     ?? '626',
-      uso_cfdi:       (soc as any)?.uso_cfdi           ?? 'G03',
-      email:          (soc as any)?.email_fiscal       || (soc as any)?.email || '',
+    const opciones = (fiscales ?? []).map(f => ({
+      id:             f.id,
+      alias:          f.alias || f.razon_social_fiscal,
+      rfc:            f.rfc,
+      razon_social:   f.razon_social_fiscal,
+      cp:             f.cp_fiscal      ?? '',
+      regimen_fiscal: f.regimen_fiscal ?? '626',
+      uso_cfdi:       f.uso_cfdi       ?? 'G03',
+      email:          f.email_fiscal   ?? '',
+    }))
+    setFiscalOptionsFact(opciones)
+    setReceptorFact(opciones[0] ?? {
+      rfc: '', razon_social: nombreCompleto, cp: '', regimen_fiscal: '626', uso_cfdi: 'G03', email: (soc as any)?.email || '',
     })
     setFacturando(r)
   }
@@ -750,6 +760,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
             importe:     d.monto_final,
           }))}
           receptorInit={receptorFact}
+          fiscalOptions={fiscalOptionsFact}
           formaPagoStr={facturando.forma_pago_nombre ?? ''}
           onClose={() => setFacturando(null)}
           onSaved={() => { setFacturando(null); cargar() }}
