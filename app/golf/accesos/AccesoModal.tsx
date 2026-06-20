@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
+import { useAuth } from '@/lib/AuthContext'
 import { X, Save, Loader, Plus, Trash2, Search, Users, CheckCircle, Printer } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -30,6 +31,7 @@ const nombreCompleto = (x: { nombre: string; apellido_paterno: string | null; ap
   [x.nombre, x.apellido_paterno, x.apellido_materno].filter(Boolean).join(' ')
 
 export default function AccesoModal({ onClose, onSaved }: Props) {
+  const { authUser } = useAuth()
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
   const [espacios, setEspacios]   = useState<Espacio[]>([])
@@ -207,6 +209,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           cantidad:     -1,
           motivo:       `Invitado: ${ext.nombre.trim()}`,
           id_acceso_fk: acceso.id,
+          created_by:   authUser?.nombre ?? null,
         }).select('id').single()
 
         if (mov) movIds.push(mov.id)

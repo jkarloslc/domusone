@@ -36,6 +36,7 @@ type Movimiento = {
   cantidad: number
   motivo: string | null
   created_at: string
+  created_by: string | null
   ctrl_accesos?: { fecha_entrada: string } | null
 }
 
@@ -120,7 +121,7 @@ export default function PasesPage() {
     setLoadingMov(socioId)
     const { data } = await dbGolf
       .from('ctrl_pases_movimientos')
-      .select('id, tipo, cantidad, motivo, created_at, ctrl_accesos(fecha_entrada)')
+      .select('id, tipo, cantidad, motivo, created_at, created_by, ctrl_accesos(fecha_entrada)')
       .eq('id_socio_fk', socioId)
       .order('created_at', { ascending: false })
       .limit(20)
@@ -316,7 +317,7 @@ export default function PasesPage() {
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                   <thead>
                                     <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                      {['Tipo', 'Cantidad', 'Motivo', 'Fecha'].map(h => (
+                                      {['Tipo', 'Cantidad', 'Motivo', 'Fecha', 'Registrado por'].map(h => (
                                         <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                       ))}
                                     </tr>
@@ -332,6 +333,7 @@ export default function PasesPage() {
                                         <td style={{ padding: '6px 10px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
                                           {new Date(m.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </td>
+                                        <td style={{ padding: '6px 10px', color: '#64748b' }}>{m.created_by ?? '—'}</td>
                                       </tr>
                                     ))}
                                   </tbody>

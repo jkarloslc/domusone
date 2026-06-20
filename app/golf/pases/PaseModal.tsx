@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
+import { useAuth } from '@/lib/AuthContext'
 import { X, Save, Loader, Search } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -35,6 +36,7 @@ const mesActual = () => {
 }
 
 export default function PaseModal({ socioInicial, onClose, onSaved }: Props) {
+  const { authUser } = useAuth()
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
   const [configs, setConfigs] = useState<Config[]>([])
@@ -101,6 +103,7 @@ export default function PaseModal({ socioInicial, onClose, onSaved }: Props) {
         fecha_inicio:      form.fecha_inicio,
         fecha_vencimiento: form.fecha_vencimiento,
         observaciones:     form.observaciones || null,
+        created_by:        authUser?.nombre ?? null,
       })
       .select('id')
       .single()
@@ -113,6 +116,7 @@ export default function PaseModal({ socioInicial, onClose, onSaved }: Props) {
       tipo:        'ASIGNACION',
       cantidad:    form.cantidad,
       motivo:      `Asignación ${form.periodo || ''}`.trim(),
+      created_by:  authUser?.nombre ?? null,
     })
 
     onSaved()
