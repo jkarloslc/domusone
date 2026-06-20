@@ -1,12 +1,14 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, dbCtrl, dbComp, dbGolf, dbCfg } from '@/lib/supabase'
+import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
 import {
   Plus, Flag, MapPin, Calendar, Users, DollarSign,
   FileText, Trash2, Edit2, ChevronLeft, Receipt, ShoppingBag,
   Printer, X, Check, Eye, TrendingUp, TrendingDown,
   Settings, ClipboardCheck, Upload, Loader, ExternalLink,
+  UserPlus, CreditCard,
 } from 'lucide-react'
 
 const MODULE = 'golf' as const
@@ -64,6 +66,31 @@ type PersonalItem = {
   dia: string
   turno: string | null
   compensacion: number
+}
+
+type Jugador = {
+  id: number
+  id_evento_fk: number
+  tipo: 'Miembro' | 'Invitado'
+  id_socio_fk: number | null
+  nombre_completo: string
+  tel_contacto: string | null
+  handicap: number | null
+  hoyo: string | null
+  status: 'Pagado' | 'Pendiente' | 'Cancelado'
+  inscripcion: number
+  pago: number
+  por_cobrar: number
+  id_venta_pos_fk: number | null
+  notas: string | null
+}
+
+type SocioBusqueda = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null }
+
+const JUGADOR_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  'Pagado':    { bg: '#f0fdf4', color: '#15803d' },
+  'Pendiente': { bg: '#fffbeb', color: '#d97706' },
+  'Cancelado': { bg: '#fef2f2', color: '#dc2626' },
 }
 
 type Ingreso = {
@@ -299,6 +326,26 @@ export default function EventosPage() {
   const [personalForm, setPersonalForm] = useState({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
   const [savingPersonal, setSavingPersonal] = useState(false)
 
+  // Inscripciones a Torneo (jugadores)
+  const { authUser } = useAuth()
+  const blankJugadorForm = () => ({
+    id: null as number | null,
+    tipo: 'Invitado' as 'Miembro' | 'Invitado',
+    id_socio_fk: null as number | null,
+    nombre_completo: '', tel_contacto: '',
+    handicap: '' as number | '', hoyo: '',
+    status: 'Pendiente' as 'Pagado' | 'Pendiente' | 'Cancelado',
+    inscripcion: '' as number | '', pago: '' as number | '',
+  })
+  const [jugadores, setJugadores] = useState<Jugador[]>([])
+  const [jugadorForm, setJugadorForm] = useState(blankJugadorForm())
+  const [savingJugador, setSavingJugador] = useState(false)
+  const [errJugador, setErrJugador] = useState('')
+  const [busqSocio, setBusqSocio] = useState('')
+  const [sociosResult, setSociosResult] = useState<SocioBusqueda[]>([])
+  const [loadingSocios, setLoadingSocios] = useState(false)
+  const [cobrandoJugadorId, setCobrandoJugadorId] = useState<number | null>(null)
+
   // ── Load catálogos ─────────────────────────────────────────
   useEffect(() => {
     dbCtrl.from('cat_tipos_evento').select('id, nombre, color').eq('activo', true).order('nombre')
@@ -351,12 +398,14 @@ export default function EventosPage() {
 
   // ── Load ingresos y OPs del evento seleccionado ────────────
   const loadEventoDetalle = useCallback(async (evtId: number) => {
-    const [{ data: ing }, { data: eops }, { data: pers }] = await Promise.all([
+    const [{ data: ing }, { data: eops }, { data: pers }, { data: jugs }] = await Promise.all([
       dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas, id_venta_pos_fk').eq('id_evento_fk', evtId).order('fecha_pago'),
       dbCtrl.from('eventos_ops').select('id, id_op_fk').eq('id_evento_fk', evtId),
       dbCtrl.from('eventos_personal').select('id, nombre_empleado, dia, turno, compensacion').eq('id_evento_fk', evtId).order('dia').order('created_at'),
+      dbCtrl.from('torneo_jugadores').select('id, id_evento_fk, tipo, id_socio_fk, nombre_completo, tel_contacto, handicap, hoyo, status, inscripcion, pago, por_cobrar, id_venta_pos_fk, notas').eq('id_evento_fk', evtId).order('created_at'),
     ])
     setPersonal((pers as unknown as PersonalItem[]) ?? [])
+    setJugadores((jugs as unknown as Jugador[]) ?? [])
     const ingRows = (ing as unknown as Ingreso[]) ?? []
     setIngresos(ingRows)
 
@@ -472,6 +521,11 @@ export default function EventosPage() {
     setIngresos([]); setOps([]); setEvtOps([])
     setPersonal([])
     setPersonalForm({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
+    setJugadores([])
+    setJugadorForm(blankJugadorForm())
+    setErrJugador('')
+    setBusqSocio('')
+    setSociosResult([])
     setActiveTab('info')
     setErr('')
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
@@ -531,6 +585,11 @@ export default function EventosPage() {
     })
     setPersonal([])
     setPersonalForm({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
+    setJugadores([])
+    setJugadorForm(blankJugadorForm())
+    setErrJugador('')
+    setBusqSocio('')
+    setSociosResult([])
     setActiveTab('info')
     setErr('')
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
@@ -756,6 +815,158 @@ export default function EventosPage() {
     if (!editEvt) return
     await dbCtrl.from('eventos_personal').delete().eq('id', id)
     loadEventoDetalle(editEvt.id)
+  }
+
+  // ── Inscripciones a Torneo (jugadores) ─────────────────────
+  const buscarSocios = async () => {
+    if (!busqSocio.trim()) { setSociosResult([]); return }
+    setLoadingSocios(true)
+    const t = busqSocio.trim()
+    const { data, error } = await dbGolf.from('cat_socios')
+      .select('id, nombre, apellido_paterno, apellido_materno, numero_socio')
+      .eq('activo', true)
+      .or(`nombre.ilike.%${t}%,apellido_paterno.ilike.%${t}%,numero_socio.ilike.%${t}%`)
+      .limit(20)
+    if (error) console.error('Error buscando socios:', error)
+    setSociosResult((data as unknown as SocioBusqueda[]) ?? [])
+    setLoadingSocios(false)
+  }
+
+  const seleccionarSocio = (s: SocioBusqueda) => {
+    const nombreCompleto = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
+    setJugadorForm(f => ({ ...f, id_socio_fk: s.id, nombre_completo: nombreCompleto }))
+    setBusqSocio('')
+    setSociosResult([])
+  }
+
+  const editJugador = (j: Jugador) => {
+    setJugadorForm({
+      id: j.id, tipo: j.tipo, id_socio_fk: j.id_socio_fk,
+      nombre_completo: j.nombre_completo, tel_contacto: j.tel_contacto ?? '',
+      handicap: j.handicap ?? '', hoyo: j.hoyo ?? '',
+      status: j.status, inscripcion: j.inscripcion ?? '', pago: j.pago ?? '',
+    })
+    setErrJugador('')
+  }
+
+  const cancelEditJugador = () => {
+    setJugadorForm(blankJugadorForm())
+    setErrJugador('')
+  }
+
+  const saveJugador = async () => {
+    if (!editEvt) return
+    if (!jugadorForm.nombre_completo.trim()) { setErrJugador('El nombre del jugador es obligatorio'); return }
+    if (jugadorForm.tipo === 'Miembro' && !jugadorForm.id_socio_fk) { setErrJugador('Selecciona un socio del catálogo'); return }
+    setSavingJugador(true); setErrJugador('')
+    const payload = {
+      id_evento_fk:    editEvt.id,
+      tipo:            jugadorForm.tipo,
+      id_socio_fk:     jugadorForm.tipo === 'Miembro' ? jugadorForm.id_socio_fk : null,
+      nombre_completo: jugadorForm.nombre_completo.trim(),
+      tel_contacto:    jugadorForm.tel_contacto || null,
+      handicap:        jugadorForm.handicap === '' ? null : jugadorForm.handicap,
+      hoyo:            jugadorForm.hoyo || null,
+      status:          jugadorForm.status,
+      inscripcion:     jugadorForm.inscripcion === '' ? 0 : jugadorForm.inscripcion,
+      pago:            jugadorForm.pago === '' ? 0 : jugadorForm.pago,
+    }
+    if (jugadorForm.id) {
+      const { error } = await dbCtrl.from('torneo_jugadores').update(payload).eq('id', jugadorForm.id)
+      if (error) { setErrJugador(error.message); setSavingJugador(false); return }
+    } else {
+      const { error } = await dbCtrl.from('torneo_jugadores').insert(payload)
+      if (error) { setErrJugador(error.message); setSavingJugador(false); return }
+    }
+    setSavingJugador(false)
+    setJugadorForm(blankJugadorForm())
+    await loadEventoDetalle(editEvt.id)
+  }
+
+  const deleteJugador = async (id: number) => {
+    if (!editEvt) return
+    if (!confirm('¿Eliminar esta inscripción?')) return
+    await dbCtrl.from('torneo_jugadores').delete().eq('id', id)
+    loadEventoDetalle(editEvt.id)
+  }
+
+  // Cobra la inscripción completa generando un ticket POS en el centro "Torneos"
+  const cobrarInscripcionPOS = async (j: Jugador) => {
+    if (!editEvt) return
+    if (j.por_cobrar <= 0) return
+    setCobrandoJugadorId(j.id)
+    setErrJugador('')
+    try {
+      const { data: centros, error: errCentros } = await dbGolf.from('cat_centros_venta')
+        .select('id, nombre, activo').eq('activo', true).order('orden')
+      if (errCentros) throw new Error(errCentros.message)
+      const centrosPos = (centros as { id: number; nombre: string; activo: boolean }[]) ?? []
+      if (centrosPos.length === 0) throw new Error('No hay centros de venta POS activos.')
+      const centroSel = centrosPos.find(c => c.nombre.trim().toLowerCase() === 'torneos') ?? centrosPos[0]
+
+      const hoy = new Date().toLocaleDateString('en-CA')
+      const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
+        .select('folio_dia')
+        .eq('id_centro_fk', centroSel.id)
+        .gte('fecha', `${hoy}T00:00:00`)
+        .lte('fecha', `${hoy}T23:59:59`)
+        .order('folio_dia', { ascending: false })
+        .limit(1)
+      const folioDia = maxFolio && maxFolio.length > 0 ? ((maxFolio[0] as { folio_dia: number }).folio_dia + 1) : 1
+
+      const montoCobrar = j.por_cobrar
+      const { data: venta, error: errVenta } = await dbGolf.from('ctrl_ventas').insert({
+        folio_dia: folioDia,
+        id_centro_fk: centroSel.id,
+        fecha: `${hoy}T12:00:00`,
+        id_socio_fk: j.id_socio_fk,
+        nombre_cliente: j.nombre_completo,
+        es_socio: j.tipo === 'Miembro',
+        subtotal: montoCobrar,
+        descuento: 0,
+        iva: 0,
+        total: montoCobrar,
+        status: 'PAGADA',
+        usuario_crea: authUser?.nombre ?? 'sistema',
+        notas: `Inscripción torneo — ${editEvt.nombre} (${editEvt.folio})`,
+      }).select('id').single()
+      if (errVenta || !venta) throw new Error(errVenta?.message ?? 'No se pudo crear la venta POS')
+      const ventaId = (venta as { id: number }).id
+
+      const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert({
+        id_venta_fk: ventaId,
+        id_producto_fk: null,
+        concepto: `Inscripción torneo — ${editEvt.nombre}`,
+        cantidad: 1,
+        precio_unitario: montoCobrar,
+        descuento: 0,
+        iva_pct: 0,
+        iva: 0,
+        subtotal: montoCobrar,
+        total: montoCobrar,
+        notas: null,
+      })
+      if (errDet) throw new Error(errDet.message)
+
+      const { error: errPago } = await dbGolf.from('ctrl_ventas_pagos').insert({
+        id_venta_fk: ventaId,
+        id_forma_fk: null,
+        forma_nombre: 'Efectivo',
+        monto: montoCobrar,
+      })
+      if (errPago) throw new Error(errPago.message)
+
+      const { error: errUpd } = await dbCtrl.from('torneo_jugadores').update({
+        pago: j.inscripcion, status: 'Pagado', id_venta_pos_fk: ventaId,
+      }).eq('id', j.id)
+      if (errUpd) throw new Error(errUpd.message)
+
+      await loadEventoDetalle(editEvt.id)
+    } catch (e: any) {
+      setErrJugador(e?.message ?? 'No se pudo generar el ticket POS')
+    } finally {
+      setCobrandoJugadorId(null)
+    }
   }
 
   const printPersonal = async () => {
@@ -1386,6 +1597,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             { key: 'ingresos',  label: 'Ingresos',    icon: DollarSign, badge: editEvt ? ingresos.length || undefined : undefined, disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
             { key: 'gastos',    label: 'Gastos / OPs', icon: ShoppingBag, badge: editEvt ? ((gastos.length + ops.length) || undefined) : undefined,    disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
             { key: 'personal',  label: 'Personal Op.', icon: Users, badge: editEvt ? personal.length || undefined : undefined,    disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
+            { key: 'jugadores', label: 'Inscripciones', icon: UserPlus, badge: editEvt ? jugadores.length || undefined : undefined, disabled: !editEvt, disabledHint: 'Guarda el evento primero' },
           ]}
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -1419,6 +1631,16 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               {editEvt && personal.length > 0 && (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Total compensaciones: <strong style={{ color: '#16a34a' }}>{fmt$(personal.reduce((s, p) => s + (p.compensacion ?? 0), 0))}</strong>
+                </div>
+              )}
+            </>
+          ) : activeTab === 'jugadores' ? (
+            <>
+              {editEvt && jugadores.length > 0 && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16 }}>
+                  <span>{jugadores.length} inscrito{jugadores.length !== 1 ? 's' : ''}</span>
+                  <span>Pagados: <strong style={{ color: '#15803d' }}>{jugadores.filter(j => j.status === 'Pagado').length}</strong></span>
+                  <span style={{ fontWeight: 700 }}>Por cobrar: <strong style={{ color: '#d97706' }}>{fmt$(jugadores.reduce((s, j) => s + (j.por_cobrar ?? 0), 0))}</strong></span>
                 </div>
               )}
             </>
@@ -2348,6 +2570,185 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                           <td style={{ padding: '8px 10px', fontWeight: 700, color: '#16a34a' }}>{fmt$(personal.reduce((s, p) => s + (p.compensacion ?? 0), 0))}</td>
                           <td></td>
                         </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB INSCRIPCIONES (jugadores) ── */}
+          {activeTab === 'jugadores' && editEvt && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Formulario para agregar/editar jugador */}
+              <div className="card" style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#b45309', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
+                  {jugadorForm.id ? 'Editar Inscripción' : 'Agregar Jugador'}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 16 }}>
+                    {(['Invitado', 'Miembro'] as const).map(t => (
+                      <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                        <input type="radio" checked={jugadorForm.tipo === t}
+                          onChange={() => setJugadorForm(f => ({ ...f, tipo: t, id_socio_fk: null, nombre_completo: t === 'Invitado' ? '' : f.nombre_completo }))}
+                        />
+                        {t}
+                      </label>
+                    ))}
+                  </div>
+
+                  {jugadorForm.tipo === 'Miembro' ? (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Socio *</label>
+                      {jugadorForm.id_socio_fk && jugadorForm.nombre_completo ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', border: '1px solid #fde68a', borderRadius: 8, background: '#fff' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>{jugadorForm.nombre_completo}</span>
+                          <button className="btn-ghost" onClick={() => setJugadorForm(f => ({ ...f, id_socio_fk: null, nombre_completo: '' }))} style={{ marginLeft: 'auto', padding: '2px 6px', fontSize: 11, color: '#dc2626' }}>Cambiar</button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <input className="input" style={{ fontSize: 13, flex: 1 }}
+                              value={busqSocio} onChange={e => setBusqSocio(e.target.value)}
+                              onKeyDown={e => e.key === 'Enter' && buscarSocios()}
+                              placeholder="Buscar por nombre o número de socio…"
+                            />
+                            <button className="btn-secondary" onClick={buscarSocios} disabled={loadingSocios} style={{ fontSize: 12 }}>
+                              {loadingSocios ? '...' : 'Buscar'}
+                            </button>
+                          </div>
+                          {sociosResult.length > 0 && (
+                            <div style={{ marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 8, maxHeight: 160, overflowY: 'auto', background: '#fff' }}>
+                              {sociosResult.map(s => (
+                                <div key={s.id} onClick={() => seleccionarSocio(s)}
+                                  style={{ padding: '7px 10px', fontSize: 12, cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
+                                  <strong>{[s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')}</strong>
+                                  {s.numero_socio && <span style={{ color: 'var(--text-muted)' }}> · #{s.numero_socio}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nombre completo *</label>
+                        <input className="input" style={{ fontSize: 13, width: '100%' }}
+                          value={jugadorForm.nombre_completo}
+                          onChange={e => setJugadorForm(f => ({ ...f, nombre_completo: e.target.value }))}
+                          placeholder="Nombre completo del invitado…"
+                        />
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Teléfono de contacto</label>
+                        <input className="input" style={{ fontSize: 13, width: '100%' }}
+                          value={jugadorForm.tel_contacto}
+                          onChange={e => setJugadorForm(f => ({ ...f, tel_contacto: e.target.value }))}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Handicap</label>
+                    <input className="input" type="number" step="0.1" style={{ fontSize: 13, width: '100%' }}
+                      value={jugadorForm.handicap}
+                      onChange={e => setJugadorForm(f => ({ ...f, handicap: e.target.value ? Number(e.target.value) : '' }))}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hoyo de salida</label>
+                    <input className="input" style={{ fontSize: 13, width: '100%' }}
+                      value={jugadorForm.hoyo}
+                      onChange={e => setJugadorForm(f => ({ ...f, hoyo: e.target.value }))}
+                      placeholder="ej. 1, 10A…"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Inscripción ($)</label>
+                    <input className="input" type="number" min="0" step="0.01" style={{ fontSize: 13, width: '100%' }}
+                      value={jugadorForm.inscripcion}
+                      onChange={e => setJugadorForm(f => ({ ...f, inscripcion: e.target.value ? Number(e.target.value) : '' }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
+                    <select className="input" style={{ fontSize: 13, width: '100%' }}
+                      value={jugadorForm.status}
+                      onChange={e => setJugadorForm(f => ({ ...f, status: e.target.value as Jugador['status'] }))}>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="Pagado">Pagado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  {jugadorForm.id && (
+                    <button className="btn-ghost" onClick={cancelEditJugador} style={{ fontSize: 12 }}>Cancelar</button>
+                  )}
+                  <button className="btn-primary" onClick={saveJugador} disabled={savingJugador} style={{ fontSize: 12, background: '#b45309' }}>
+                    {savingJugador ? 'Guardando…' : jugadorForm.id ? 'Guardar cambios' : '+ Agregar'}
+                  </button>
+                </div>
+                {errJugador && <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '6px 10px', borderRadius: 6 }}>{errJugador}</div>}
+              </div>
+
+              {/* Tabla de jugadores inscritos */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                  Jugadores inscritos ({jugadores.length})
+                </div>
+                {jugadores.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>Sin jugadores inscritos</div>
+                ) : (
+                  <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
+                          {['Jugador', 'Tipo', 'Hoyo', 'Hcp', 'Inscripción', 'Pago', 'Por cobrar', 'Status', ''].map(h => (
+                            <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jugadores.map((j, i) => {
+                          const sc = JUGADOR_STATUS_COLORS[j.status] ?? { bg: '#f8fafc', color: '#64748b' }
+                          return (
+                            <tr key={j.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                              <td style={{ padding: '8px 10px', fontWeight: 600 }}>{j.nombre_completo}</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{j.tipo}</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{j.hoyo ?? '—'}</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>{j.handicap ?? '—'}</td>
+                              <td style={{ padding: '8px 10px' }}>{fmt$(j.inscripcion ?? 0)}</td>
+                              <td style={{ padding: '8px 10px', color: '#16a34a' }}>{fmt$(j.pago ?? 0)}</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: (j.por_cobrar ?? 0) > 0 ? '#d97706' : 'var(--text-muted)' }}>{fmt$(j.por_cobrar ?? 0)}</td>
+                              <td style={{ padding: '8px 10px' }}>
+                                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color }}>{j.status}</span>
+                                {j.id_venta_pos_fk && <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>Ticket #{String(j.id_venta_pos_fk).padStart(6, '0')}</div>}
+                              </td>
+                              <td style={{ padding: '8px 10px' }}>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  {(j.por_cobrar ?? 0) > 0 && (
+                                    <button className="btn-ghost" onClick={() => cobrarInscripcionPOS(j)} disabled={cobrandoJugadorId === j.id}
+                                      style={{ padding: '4px 8px', fontSize: 11, color: '#b45309' }} title="Cobrar / Generar Ticket POS">
+                                      {cobrandoJugadorId === j.id ? <Loader size={12} className="animate-spin" /> : <CreditCard size={12} />}
+                                    </button>
+                                  )}
+                                  <button className="btn-ghost" onClick={() => editJugador(j)} style={{ padding: '4px 8px', fontSize: 11 }} title="Editar">
+                                    <Edit2 size={12} />
+                                  </button>
+                                  <button className="btn-ghost" onClick={() => deleteJugador(j.id)} style={{ padding: '4px 8px', fontSize: 11, color: '#dc2626' }} title="Eliminar">
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
