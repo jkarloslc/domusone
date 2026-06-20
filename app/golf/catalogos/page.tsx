@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { ChevronLeft, Plus, Edit2, ToggleLeft, ToggleRight, Save, X, Loader, BookOpen, MapPin, Flag, Tag, DollarSign, Store, Ticket } from 'lucide-react'
+import { ChevronLeft, Plus, Edit2, ToggleLeft, ToggleRight, Save, X, Loader, BookOpen, MapPin, Flag, Tag, DollarSign, Store } from 'lucide-react'
 import Link from 'next/link'
 import CuotasConfigPanel from '@/components/golf/CuotasConfigPanel'
 
@@ -409,16 +409,6 @@ const TABS = [
     tabla: 'cat_formas_juego',
     campos: [
       { key: 'nombre' as const, label: 'Nombre', required: true, placeholder: 'Ej. 18 Hoyos' },
-    ],
-  },
-  {
-    key: 'tipos_pase',
-    label: 'Tipos de Pase',
-    icon: Ticket,
-    tabla: 'cat_pases_config',
-    campos: [
-      { key: 'nombre' as const,      label: 'Nombre',      required: true, placeholder: 'Ej. Cupones' },
-      { key: 'descripcion' as const, label: 'Descripción', placeholder: 'Descripción opcional' },
     ],
   },
   {
