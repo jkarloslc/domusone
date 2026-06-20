@@ -1597,7 +1597,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
           titulo={editEvt ? `${editEvt.folio} — ${editEvt.nombre}` : 'Nuevo Evento'}
           subtitulo={editEvt ? editEvt.status : 'Golf — Torneos'}
           icono={Flag}
-          maxWidth={820}
+          maxWidth={980}
           onClose={() => setModal(false)}
           tabs={[
             { key: 'info',      label: 'Información', icon: Flag },
@@ -2791,7 +2791,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
             subtitulo="Resumen del evento"
             icono={Eye}
             onClose={() => setViewEvt(null)}
-            maxWidth={760}
+            maxWidth={860}
             footer={
               <div style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button className="btn-primary" onClick={printFichaMaestra} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#166534', fontSize: 13 }}>
