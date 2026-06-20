@@ -8,7 +8,7 @@ import {
   FileText, Trash2, Edit2, ChevronLeft, Receipt, ShoppingBag,
   Printer, X, Check, Eye, TrendingUp, TrendingDown,
   Settings, ClipboardCheck, Upload, Loader, ExternalLink,
-  UserPlus, CreditCard,
+  UserPlus, CreditCard, Search,
 } from 'lucide-react'
 
 const MODULE = 'golf' as const
@@ -818,19 +818,25 @@ export default function EventosPage() {
   }
 
   // ── Inscripciones a Torneo (jugadores) ─────────────────────
-  const buscarSocios = async () => {
-    if (!busqSocio.trim()) { setSociosResult([]); return }
-    setLoadingSocios(true)
-    const t = busqSocio.trim()
-    const { data, error } = await dbGolf.from('cat_socios')
-      .select('id, nombre, apellido_paterno, apellido_materno, numero_socio')
-      .eq('activo', true)
-      .or(`nombre.ilike.%${t}%,apellido_paterno.ilike.%${t}%,numero_socio.ilike.%${t}%`)
-      .limit(20)
-    if (error) console.error('Error buscando socios:', error)
-    setSociosResult((data as unknown as SocioBusqueda[]) ?? [])
-    setLoadingSocios(false)
-  }
+  // Autobúsqueda de socios (mismo patrón que golf/cuotas y golf/pos): debounce 300ms, min 2 caracteres
+  useEffect(() => {
+    if (busqSocio.trim().length < 2) { setSociosResult([]); return }
+    const t = setTimeout(async () => {
+      setLoadingSocios(true)
+      const words = busqSocio.trim().split(/\s+/).filter(Boolean)
+      let qb: any = dbGolf.from('cat_socios')
+        .select('id, nombre, apellido_paterno, apellido_materno, numero_socio')
+        .eq('activo', true)
+      for (const w of words) {
+        qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%,numero_socio.ilike.%${w}%`)
+      }
+      const { data, error } = await qb.limit(8)
+      if (error) console.error('Error buscando socios:', error)
+      setSociosResult((data as unknown as SocioBusqueda[]) ?? [])
+      setLoadingSocios(false)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [busqSocio])
 
   const seleccionarSocio = (s: SocioBusqueda) => {
     const nombreCompleto = [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
@@ -2607,27 +2613,29 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     <div>
                       <label style={jlblSt}>Socio *</label>
                       {jugadorForm.id_socio_fk && jugadorForm.nombre_completo ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', border: '1px solid #fde68a', borderRadius: 7, background: '#fff' }}>
-                          <span style={{ fontSize: 12, fontWeight: 600 }}>{jugadorForm.nombre_completo}</span>
-                          <button className="btn-ghost" onClick={() => setJugadorForm(f => ({ ...f, id_socio_fk: null, nombre_completo: '' }))} style={{ marginLeft: 'auto', padding: '2px 6px', fontSize: 10, color: '#dc2626' }}>Cambiar</button>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 9px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 7 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#166534' }}>{jugadorForm.nombre_completo}</span>
+                          <button onClick={() => setJugadorForm(f => ({ ...f, id_socio_fk: null, nombre_completo: '' }))}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}>
+                            <X size={12} />
+                          </button>
                         </div>
                       ) : (
-                        <div>
-                          <div style={{ display: 'flex', gap: 5 }}>
-                            <input className="input" style={jinpSt}
-                              value={busqSocio} onChange={e => setBusqSocio(e.target.value)}
-                              onKeyDown={e => e.key === 'Enter' && buscarSocios()}
-                              placeholder="Buscar por nombre o número de socio…"
-                            />
-                            <button className="btn-secondary" onClick={buscarSocios} disabled={loadingSocios} style={{ fontSize: 11, padding: '0 10px' }}>
-                              {loadingSocios ? '...' : 'Buscar'}
-                            </button>
-                          </div>
+                        <div style={{ position: 'relative' }}>
+                          <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                          <input className="input" style={{ ...jinpSt, paddingLeft: 26 }}
+                            value={busqSocio} onChange={e => setBusqSocio(e.target.value)}
+                            placeholder="Buscar por nombre o número de socio…"
+                            autoFocus
+                          />
+                          {loadingSocios && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
                           {sociosResult.length > 0 && (
-                            <div style={{ marginTop: 5, border: '1px solid #e2e8f0', borderRadius: 7, maxHeight: 140, overflowY: 'auto', background: '#fff' }}>
+                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', zIndex: 20, maxHeight: 160, overflowY: 'auto' }}>
                               {sociosResult.map(s => (
                                 <div key={s.id} onClick={() => seleccionarSocio(s)}
-                                  style={{ padding: '6px 8px', fontSize: 11, cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
+                                  style={{ padding: '7px 9px', cursor: 'pointer', fontSize: 12, borderBottom: '1px solid #f1f5f9' }}
+                                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#fff'}>
                                   <strong>{[s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')}</strong>
                                   {s.numero_socio && <span style={{ color: 'var(--text-muted)' }}> · #{s.numero_socio}</span>}
                                 </div>
