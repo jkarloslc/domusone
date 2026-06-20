@@ -130,11 +130,16 @@ export default function ReporteGolfAccesos() {
       .then(({ data }: any) => setSocios(data ?? []))
   }, [])
 
-  // Socios filtrados por categoría para el select individual
-  const sociosFiltrados =
+  // Socios filtrados por categoría para el select individual, ordenados por nombre A-Z descendente
+  const sociosFiltrados = (
     filtroCat !== ''
       ? socios.filter(s => s.id_categoria_fk === filtroCat)
       : socios
+  ).slice().sort((a, b) => {
+    const nombreA = [a.nombre, a.apellido_paterno].filter(Boolean).join(' ')
+    const nombreB = [b.nombre, b.apellido_paterno].filter(Boolean).join(' ')
+    return nombreB.localeCompare(nombreA)
+  })
 
   const fetchData = useCallback(async () => {
     setLoading(true)
