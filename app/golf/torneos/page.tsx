@@ -1261,6 +1261,9 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
     borderRadius: 8, background: checked ? color + '15' : '#fff',
     color: checked ? color : '#475569', fontWeight: checked ? 600 : 400, userSelect: 'none',
   })
+  // Estilos compactos para el formulario de Inscripciones (tab jugadores)
+  const jlblSt: React.CSSProperties = { fontSize: 10, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }
+  const jinpSt: React.CSSProperties = { fontSize: 12, width: '100%', padding: '6px 9px' }
 
   // ── Imprimir Ficha Maestra ─────────────────────────────────
   const printFichaMaestra = async () => {
@@ -2582,14 +2585,14 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
           {activeTab === 'jugadores' && editEvt && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Formulario para agregar/editar jugador */}
-              <div className="card" style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#b45309', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
-                  {jugadorForm.id ? 'Editar Inscripción' : 'Agregar Jugador'}
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                  <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 16 }}>
+              <div className="card" style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#b45309', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    {jugadorForm.id ? 'Editar Inscripción' : 'Agregar Jugador'}
+                  </div>
+                  <div style={{ display: 'flex', gap: 12 }}>
                     {(['Invitado', 'Miembro'] as const).map(t => (
-                      <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                      <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, cursor: 'pointer' }}>
                         <input type="radio" checked={jugadorForm.tipo === t}
                           onChange={() => setJugadorForm(f => ({ ...f, tipo: t, id_socio_fk: null, nombre_completo: t === 'Invitado' ? '' : f.nombre_completo }))}
                         />
@@ -2597,32 +2600,34 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                       </label>
                     ))}
                   </div>
+                </div>
 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
                   {jugadorForm.tipo === 'Miembro' ? (
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Socio *</label>
+                    <div>
+                      <label style={jlblSt}>Socio *</label>
                       {jugadorForm.id_socio_fk && jugadorForm.nombre_completo ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', border: '1px solid #fde68a', borderRadius: 8, background: '#fff' }}>
-                          <span style={{ fontSize: 13, fontWeight: 600 }}>{jugadorForm.nombre_completo}</span>
-                          <button className="btn-ghost" onClick={() => setJugadorForm(f => ({ ...f, id_socio_fk: null, nombre_completo: '' }))} style={{ marginLeft: 'auto', padding: '2px 6px', fontSize: 11, color: '#dc2626' }}>Cambiar</button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', border: '1px solid #fde68a', borderRadius: 7, background: '#fff' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600 }}>{jugadorForm.nombre_completo}</span>
+                          <button className="btn-ghost" onClick={() => setJugadorForm(f => ({ ...f, id_socio_fk: null, nombre_completo: '' }))} style={{ marginLeft: 'auto', padding: '2px 6px', fontSize: 10, color: '#dc2626' }}>Cambiar</button>
                         </div>
                       ) : (
                         <div>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <input className="input" style={{ fontSize: 13, flex: 1 }}
+                          <div style={{ display: 'flex', gap: 5 }}>
+                            <input className="input" style={jinpSt}
                               value={busqSocio} onChange={e => setBusqSocio(e.target.value)}
                               onKeyDown={e => e.key === 'Enter' && buscarSocios()}
                               placeholder="Buscar por nombre o número de socio…"
                             />
-                            <button className="btn-secondary" onClick={buscarSocios} disabled={loadingSocios} style={{ fontSize: 12 }}>
+                            <button className="btn-secondary" onClick={buscarSocios} disabled={loadingSocios} style={{ fontSize: 11, padding: '0 10px' }}>
                               {loadingSocios ? '...' : 'Buscar'}
                             </button>
                           </div>
                           {sociosResult.length > 0 && (
-                            <div style={{ marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 8, maxHeight: 160, overflowY: 'auto', background: '#fff' }}>
+                            <div style={{ marginTop: 5, border: '1px solid #e2e8f0', borderRadius: 7, maxHeight: 140, overflowY: 'auto', background: '#fff' }}>
                               {sociosResult.map(s => (
                                 <div key={s.id} onClick={() => seleccionarSocio(s)}
-                                  style={{ padding: '7px 10px', fontSize: 12, cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
+                                  style={{ padding: '6px 8px', fontSize: 11, cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
                                   <strong>{[s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')}</strong>
                                   {s.numero_socio && <span style={{ color: 'var(--text-muted)' }}> · #{s.numero_socio}</span>}
                                 </div>
@@ -2633,68 +2638,71 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                       )}
                     </div>
                   ) : (
-                    <>
-                      <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nombre completo *</label>
-                        <input className="input" style={{ fontSize: 13, width: '100%' }}
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
+                      <div>
+                        <label style={jlblSt}>Nombre completo *</label>
+                        <input className="input" style={jinpSt}
                           value={jugadorForm.nombre_completo}
                           onChange={e => setJugadorForm(f => ({ ...f, nombre_completo: e.target.value }))}
                           placeholder="Nombre completo del invitado…"
                         />
                       </div>
-                      <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Teléfono de contacto</label>
-                        <input className="input" style={{ fontSize: 13, width: '100%' }}
+                      <div>
+                        <label style={jlblSt}>Teléfono</label>
+                        <input className="input" style={jinpSt}
                           value={jugadorForm.tel_contacto}
                           onChange={e => setJugadorForm(f => ({ ...f, tel_contacto: e.target.value }))}
                         />
                       </div>
-                    </>
+                    </div>
                   )}
 
-                  <div>
-                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Handicap</label>
-                    <input className="input" type="number" step="0.1" style={{ fontSize: 13, width: '100%' }}
-                      value={jugadorForm.handicap}
-                      onChange={e => setJugadorForm(f => ({ ...f, handicap: e.target.value ? Number(e.target.value) : '' }))}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hoyo de salida</label>
-                    <input className="input" style={{ fontSize: 13, width: '100%' }}
-                      value={jugadorForm.hoyo}
-                      onChange={e => setJugadorForm(f => ({ ...f, hoyo: e.target.value }))}
-                      placeholder="ej. 1, 10A…"
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Inscripción ($)</label>
-                    <input className="input" type="number" min="0" step="0.01" style={{ fontSize: 13, width: '100%' }}
-                      value={jugadorForm.inscripcion}
-                      onChange={e => setJugadorForm(f => ({ ...f, inscripcion: e.target.value ? Number(e.target.value) : '' }))}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Status</label>
-                    <select className="input" style={{ fontSize: 13, width: '100%' }}
-                      value={jugadorForm.status}
-                      onChange={e => setJugadorForm(f => ({ ...f, status: e.target.value as Jugador['status'] }))}>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="Pagado">Pagado</option>
-                      <option value="Cancelado">Cancelado</option>
-                    </select>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                    <div>
+                      <label style={jlblSt}>Handicap</label>
+                      <input className="input" type="number" step="0.1" style={jinpSt}
+                        value={jugadorForm.handicap}
+                        onChange={e => setJugadorForm(f => ({ ...f, handicap: e.target.value ? Number(e.target.value) : '' }))}
+                      />
+                    </div>
+                    <div>
+                      <label style={jlblSt}>Hoyo</label>
+                      <input className="input" style={jinpSt}
+                        value={jugadorForm.hoyo}
+                        onChange={e => setJugadorForm(f => ({ ...f, hoyo: e.target.value }))}
+                        placeholder="1, 10A…"
+                      />
+                    </div>
+                    <div>
+                      <label style={jlblSt}>Inscripción ($)</label>
+                      <input className="input" type="number" min="0" step="0.01" style={jinpSt}
+                        value={jugadorForm.inscripcion}
+                        onChange={e => setJugadorForm(f => ({ ...f, inscripcion: e.target.value ? Number(e.target.value) : '' }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label style={jlblSt}>Status</label>
+                      <select className="input" style={jinpSt}
+                        value={jugadorForm.status}
+                        onChange={e => setJugadorForm(f => ({ ...f, status: e.target.value as Jugador['status'] }))}>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Pagado">Pagado</option>
+                        <option value="Cancelado">Cancelado</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
+
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                   {jugadorForm.id && (
-                    <button className="btn-ghost" onClick={cancelEditJugador} style={{ fontSize: 12 }}>Cancelar</button>
+                    <button className="btn-ghost" onClick={cancelEditJugador} style={{ fontSize: 11 }}>Cancelar</button>
                   )}
-                  <button className="btn-primary" onClick={saveJugador} disabled={savingJugador} style={{ fontSize: 12, background: '#b45309' }}>
+                  <button className="btn-primary" onClick={saveJugador} disabled={savingJugador} style={{ fontSize: 11, padding: '6px 14px', background: '#b45309' }}>
                     {savingJugador ? 'Guardando…' : jugadorForm.id ? 'Guardar cambios' : '+ Agregar'}
                   </button>
                 </div>
-                {errJugador && <div style={{ marginTop: 8, fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '6px 10px', borderRadius: 6 }}>{errJugador}</div>}
+                {errJugador && <div style={{ marginTop: 8, fontSize: 11, color: '#dc2626', background: '#fef2f2', padding: '5px 8px', borderRadius: 6 }}>{errJugador}</div>}
               </div>
 
               {/* Tabla de jugadores inscritos */}
