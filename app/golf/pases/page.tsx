@@ -2,9 +2,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight, Settings, Save, Loader } from 'lucide-react'
 import Link from 'next/link'
 import PaseModal from './PaseModal'
+
+type Politica = {
+  id?: number
+  anio: number
+  pases_anuales_12_cuotas: number
+  pases_mensuales_pronto_pago: number
+  dia_limite_pronto_pago: number
+}
 
 type LotePase = {
   id: number
@@ -66,6 +74,35 @@ export default function PasesPage() {
   const [loadingMov, setLoadingMov] = useState<number | null>(null)
 
   const [stats, setStats] = useState({ socios: 0, disponibles: 0, usados: 0, vencidos: 0 })
+
+  const anioActual = new Date().getFullYear()
+  const [showPolitica, setShowPolitica] = useState(false)
+  const [politica, setPolitica]         = useState<Politica>({ anio: anioActual, pases_anuales_12_cuotas: 0, pases_mensuales_pronto_pago: 0, dia_limite_pronto_pago: 5 })
+  const [loadingPolitica, setLoadingPolitica] = useState(false)
+  const [savingPolitica, setSavingPolitica]   = useState(false)
+
+  const fetchPolitica = useCallback(async (anio: number) => {
+    setLoadingPolitica(true)
+    const { data } = await dbGolf.from('cfg_pases_politica').select('*').eq('anio', anio).maybeSingle()
+    setPolitica(data as Politica ?? { anio, pases_anuales_12_cuotas: 0, pases_mensuales_pronto_pago: 0, dia_limite_pronto_pago: 5 })
+    setLoadingPolitica(false)
+  }, [])
+
+  useEffect(() => { if (showPolitica) fetchPolitica(politica.anio) }, [showPolitica]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const guardarPolitica = async () => {
+    setSavingPolitica(true)
+    const payload = {
+      anio: politica.anio,
+      pases_anuales_12_cuotas: politica.pases_anuales_12_cuotas,
+      pases_mensuales_pronto_pago: politica.pases_mensuales_pronto_pago,
+      dia_limite_pronto_pago: politica.dia_limite_pronto_pago,
+      updated_at: new Date().toISOString(),
+    }
+    const { data } = await dbGolf.from('cfg_pases_politica').upsert(payload, { onConflict: 'anio' }).select('*').single()
+    if (data) setPolitica(data as Politica)
+    setSavingPolitica(false)
+  }
 
   const fetchPases = useCallback(async () => {
     setLoading(true)
@@ -173,12 +210,62 @@ export default function PasesPage() {
             <RefreshCw size={13} /> Actualizar
           </button>
           {puedeEscribir && (
+            <button className="btn-ghost" onClick={() => setShowPolitica(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Settings size={13} /> Política de Pases
+            </button>
+          )}
+          {puedeEscribir && (
             <button className="btn-primary" onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#d97706' }}>
               <Plus size={14} /> Asignar Pases
             </button>
           )}
         </div>
       </div>
+
+      {/* Política de pases (cuántos pases otorga cada año por 12 cuotas / pronto pago) */}
+      {showPolitica && puedeEscribir && (
+        <div className="card" style={{ marginBottom: 20, padding: '16px 20px', background: '#fffbeb', border: '1px solid #fde68a' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>Política de Pases por Año</div>
+          <div style={{ fontSize: 11, color: '#78716c', marginBottom: 14 }}>
+            Define cuántos pases de invitado se sugieren al cobrar cuotas: por completar las 12 mensualidades del año y por pagar la mensualidad antes del día límite de pronto pago.
+          </div>
+          {loadingPolitica ? (
+            <div style={{ padding: 12 }}><Loader size={16} className="animate-spin" color="#d97706" /></div>
+          ) : (
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 4, display: 'block' }}>Año</label>
+                <input type="number" value={politica.anio}
+                  onChange={e => { const a = Number(e.target.value); setPolitica(p => ({ ...p, anio: a })); fetchPolitica(a) }}
+                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #fde68a', borderRadius: 8, fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 4, display: 'block' }}>Pases por 12 cuotas pagadas (anual)</label>
+                <input type="number" min={0} value={politica.pases_anuales_12_cuotas}
+                  onChange={e => setPolitica(p => ({ ...p, pases_anuales_12_cuotas: Math.max(0, Number(e.target.value)) }))}
+                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #fde68a', borderRadius: 8, fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 4, display: 'block' }}>Pases por pronto pago (mensual)</label>
+                <input type="number" min={0} value={politica.pases_mensuales_pronto_pago}
+                  onChange={e => setPolitica(p => ({ ...p, pases_mensuales_pronto_pago: Math.max(0, Number(e.target.value)) }))}
+                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #fde68a', borderRadius: 8, fontFamily: 'inherit' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 4, display: 'block' }}>Día límite de pronto pago</label>
+                <input type="number" min={1} max={28} value={politica.dia_limite_pronto_pago}
+                  onChange={e => setPolitica(p => ({ ...p, dia_limite_pronto_pago: Math.max(1, Number(e.target.value)) }))}
+                  style={{ width: 90, padding: '7px 10px', fontSize: 13, border: '1px solid #fde68a', borderRadius: 8, fontFamily: 'inherit' }} />
+              </div>
+              <button onClick={guardarPolitica} disabled={savingPolitica}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', opacity: savingPolitica ? 0.7 : 1 }}>
+                {savingPolitica ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+                Guardar
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>

@@ -2,9 +2,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Save, Loader, CheckCircle, Printer, Receipt, Plus, Trash2 } from 'lucide-react'
+import { Save, Loader, CheckCircle, Printer, Receipt, Plus, Trash2, Gift } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
+import PaseModal from '../pases/PaseModal'
 
 type Cuota = {
   id: number
@@ -17,6 +18,15 @@ type Cuota = {
   status: string
   fecha_vencimiento: string | null
   tipo: string
+}
+
+type PaseSugerido = {
+  label: string
+  cantidad: number
+  idConfig: number | null
+  periodo: string
+  fechaInicio: string
+  fechaVencimiento: string
 }
 
 type FormaPago = { id: number; nombre: string }
@@ -46,6 +56,11 @@ const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigit
 // hoy como fecha local (no UTC) — se recalcula en tiempo de ejecución
 const hoyLocal = () => new Date().toLocaleDateString('en-CA')
 const vencida = (f: string | null) => !!f && f < hoyLocal()
+// último día del mes para un periodo 'YYYY-MM'
+const finDeMes = (yyyyMM: string) => {
+  const [y, m] = yyyyMM.split('-').map(Number)
+  return new Date(y, m, 0).toLocaleDateString('en-CA')
+}
 
 const TIPOS_LABEL: Record<string, string> = {
   INSCRIPCION:     'Inscripción',
@@ -99,6 +114,10 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const [idVentaPos, setIdVentaPos] = useState<number | null>(null)
   const [generandoTicket, setGenerandoTicket] = useState(false)
   const [ticketErr, setTicketErr] = useState('')
+
+  const [pasesSugeridos, setPasesSugeridos]       = useState<PaseSugerido[]>([])
+  const [paseAasignar, setPaseAasignar]           = useState<PaseSugerido | null>(null)
+  const [pasesOmitidos, setPasesOmitidos]         = useState(false)
 
   const printRef = useRef<HTMLDivElement>(null)
   const [orgNombre, setOrgNombre]   = useState('Organización')
@@ -248,6 +267,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     // 5. Aplicar pago greedy a cuotas
     let remaining = montoParcial
     const updates: PromiseLike<any>[] = []
+    const mensualidadesPagadasCompleto: Cuota[] = []
     for (const c of cuotasSelec) {
       const cuotaSaldo = c.saldo ?? c.monto_final
       const aplicar = Math.min(remaining, cuotaSaldo)
@@ -255,6 +275,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       if (aplicar <= 0) continue // no se le aplicó nada: no tocar su status/saldo
       const nuevoSaldo = parseFloat((cuotaSaldo - aplicar).toFixed(2))
       const nuevoStatus = nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL'
+      if (nuevoStatus === 'PAGADO' && c.tipo === 'MENSUALIDAD') mensualidadesPagadasCompleto.push(c)
       updates.push(
         dbGolf.from('cxc_golf').update({
           saldo:           nuevoSaldo,
@@ -275,6 +296,72 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     setSaving(false)
     setTicketErr('')
     setRecibo({ id: reciboId, folio: folioFinal })
+    if (mensualidadesPagadasCompleto.length > 0) calcularPasesSugeridos(mensualidadesPagadasCompleto)
+  }
+
+  // ── Pases de invitados sugeridos por política de cuotas ─────
+  const calcularPasesSugeridos = async (mensualidadesPagadas: Cuota[]) => {
+    const mesPago = fechaPago.slice(0, 7)        // 'YYYY-MM'
+    const diaPago = Number(fechaPago.slice(8, 10))
+    const anioRef = Number((mensualidadesPagadas[0].periodo ?? mesPago).slice(0, 4))
+
+    const [{ data: politica }, { data: configs }] = await Promise.all([
+      dbGolf.from('cfg_pases_politica')
+        .select('pases_anuales_12_cuotas, pases_mensuales_pronto_pago, dia_limite_pronto_pago')
+        .eq('anio', anioRef).maybeSingle(),
+      dbGolf.from('cat_pases_config').select('id, nombre').eq('activo', true),
+    ])
+    if (!politica) return
+
+    const idAnual   = (configs ?? []).find((c: any) => c.nombre === 'Pases Pago Cuotas Anual')?.id ?? null
+    const idMensual = (configs ?? []).find((c: any) => c.nombre === 'Pase Pago Cuota Mensual')?.id ?? null
+
+    const sugerencias: PaseSugerido[] = []
+
+    // 1. Pronto pago: mensualidad del mes en curso pagada antes del día límite
+    const diaLimite = politica.dia_limite_pronto_pago ?? 5
+    const prontoPagoCount = mensualidadesPagadas.filter(c => c.periodo === mesPago && diaPago <= diaLimite).length
+    if (prontoPagoCount > 0 && politica.pases_mensuales_pronto_pago > 0) {
+      sugerencias.push({
+        label: `Pronto pago: ${prontoPagoCount} mensualidad${prontoPagoCount > 1 ? 'es' : ''} de ${mesPago} pagada${prontoPagoCount > 1 ? 's' : ''} antes del día ${diaLimite}`,
+        cantidad: prontoPagoCount * politica.pases_mensuales_pronto_pago,
+        idConfig: idMensual,
+        periodo: mesPago,
+        fechaInicio: `${mesPago}-01`,
+        fechaVencimiento: finDeMes(mesPago),
+      })
+    }
+
+    // 2. Las 12 mensualidades del año quedaron pagadas
+    if (politica.pases_anuales_12_cuotas > 0) {
+      const { count } = await dbGolf.from('cxc_golf')
+        .select('id', { count: 'exact', head: true })
+        .eq('id_socio_fk', idSocio)
+        .eq('tipo', 'MENSUALIDAD')
+        .eq('status', 'PAGADO')
+        .like('periodo', `${anioRef}-%`)
+
+      if ((count ?? 0) >= 12) {
+        const { data: yaAsignado } = await dbGolf.from('ctrl_pases')
+          .select('id')
+          .eq('id_socio_fk', idSocio)
+          .eq('id_config_fk', idAnual)
+          .eq('periodo', String(anioRef))
+          .limit(1)
+        if (!yaAsignado || yaAsignado.length === 0) {
+          sugerencias.push({
+            label: `¡Completó las 12 mensualidades de ${anioRef}!`,
+            cantidad: politica.pases_anuales_12_cuotas,
+            idConfig: idAnual,
+            periodo: String(anioRef),
+            fechaInicio: `${anioRef}-01-01`,
+            fechaVencimiento: `${anioRef}-12-31`,
+          })
+        }
+      }
+    }
+
+    setPasesSugeridos(sugerencias)
   }
 
   const generarTicketPOS = async () => {
@@ -490,6 +577,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   // ── Panel de recibo emitido ────────────────────────────────
   if (recibo) {
     return (
+    <>
       <ModalShell modulo="golf-carritos" titulo="Cobro registrado" subtitulo={`Folio: ${recibo.folio}`} maxWidth={680} icono={CheckCircle} onClose={onSaved} footer={<>
         <div style={{ fontSize: 12, color: '#64748b' }}>
           {cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} cobrada{cuotasSelec.length !== 1 ? 's' : ''} · {fmt$(montoParcial)}
@@ -509,6 +597,34 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           </button>
         </div>
       </>}>
+        {/* ¿Cargar Pases para Invitados? */}
+        {!pasesOmitidos && pasesSugeridos.length > 0 && (
+          <div style={{ marginBottom: 18, padding: '14px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <Gift size={16} color="#d97706" />
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#92400e' }}>¿Cargar Pases para Invitados?</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {pasesSugeridos.map((s, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 12px', background: '#fff', border: '1px solid #fde68a', borderRadius: 8 }}>
+                  <div style={{ fontSize: 12, color: '#78716c' }}>
+                    {s.label}<br />
+                    <strong style={{ color: '#92400e', fontSize: 13 }}>{s.cantidad} pase{s.cantidad !== 1 ? 's' : ''}</strong>
+                  </div>
+                  <button onClick={() => setPaseAasignar(s)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#fff', background: '#d97706', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', flexShrink: 0 }}>
+                    <Gift size={12} /> Cargar pases
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setPasesOmitidos(true)}
+              style={{ marginTop: 8, fontSize: 11, color: '#92400e', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+              Ahora no
+            </button>
+          </div>
+        )}
+
         {/* Vista previa del recibo */}
             <div ref={printRef}>
               {/* ── RECIBO IMPRIMIBLE ── */}
@@ -652,6 +768,23 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
             </div>
         {/* Vista previa del recibo */}
       </ModalShell>
+      {paseAasignar && (
+        <PaseModal
+          socioInicial={socioInfo as unknown as { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; cat_categorias_socios?: { nombre: string } | null } | null}
+          cantidadInicial={paseAasignar.cantidad}
+          idConfigInicial={paseAasignar.idConfig ?? ''}
+          periodoInicial={paseAasignar.periodo}
+          fechaInicioInicial={paseAasignar.fechaInicio}
+          fechaVencimientoInicial={paseAasignar.fechaVencimiento}
+          observacionesInicial={`Generado automáticamente desde recibo ${recibo.folio} — ${paseAasignar.label}`}
+          onClose={() => setPaseAasignar(null)}
+          onSaved={() => {
+            setPasesSugeridos(prev => prev.filter(s => s !== paseAasignar))
+            setPaseAasignar(null)
+          }}
+        />
+      )}
+    </>
     )
   }
 

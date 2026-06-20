@@ -10,6 +10,12 @@ type Config = { id: number; nombre: string }
 
 type Props = {
   socioInicial?: Socio | null   // si se abre desde detalle de un socio
+  cantidadInicial?: number
+  idConfigInicial?: number | ''
+  periodoInicial?: string
+  fechaInicioInicial?: string
+  fechaVencimientoInicial?: string
+  observacionesInicial?: string
   onClose: () => void
   onSaved: () => void
 }
@@ -35,7 +41,11 @@ const mesActual = () => {
     .replace(/^\w/, c => c.toUpperCase())
 }
 
-export default function PaseModal({ socioInicial, onClose, onSaved }: Props) {
+export default function PaseModal({
+  socioInicial, cantidadInicial, idConfigInicial, periodoInicial,
+  fechaInicioInicial, fechaVencimientoInicial, observacionesInicial,
+  onClose, onSaved,
+}: Props) {
   const { authUser } = useAuth()
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
@@ -48,12 +58,12 @@ export default function PaseModal({ socioInicial, onClose, onSaved }: Props) {
   const [buscando, setBuscando]         = useState(false)
 
   const [form, setForm] = useState({
-    id_config_fk:      '' as number | '',
-    cantidad:          1,
-    periodo:           mesActual(),
-    fecha_inicio:      new Date().toISOString().split('T')[0],
-    fecha_vencimiento: finDeMesActual(),
-    observaciones:     '',
+    id_config_fk:      idConfigInicial ?? ('' as number | ''),
+    cantidad:          cantidadInicial ?? 1,
+    periodo:           periodoInicial ?? mesActual(),
+    fecha_inicio:      fechaInicioInicial ?? new Date().toISOString().split('T')[0],
+    fecha_vencimiento: fechaVencimientoInicial ?? finDeMesActual(),
+    observaciones:     observacionesInicial ?? '',
   })
 
   const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }))
