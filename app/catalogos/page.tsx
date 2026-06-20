@@ -6,7 +6,7 @@ import {
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
   Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle, Building2,
-  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store, Flag, HardHat, Search, Users,
+  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store, Flag, HardHat, Search, Users, Ticket,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { antiguedad } from '@/lib/dateUtils'
@@ -309,6 +309,19 @@ const CATALOGOS: CatConfig[] = [
     desc:   'Modalidades de juego (18 Hoyos, 9 Hoyos, Práctica, etc.)',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+    ],
+  },
+  {
+    key:    'golf_tipos_pase',
+    tabla:  'cat_pases_config',
+    schema: 'golf',
+    label:  'Tipos de Pase',
+    icon:   Ticket,
+    color:  '#d97706',
+    desc:   'Tipos de pase de invitación disponibles al asignar pases a socios',
+    campos: [
+      { key: 'nombre',      label: 'Nombre *',    type: 'text',     required: true },
+      { key: 'descripcion', label: 'Descripción', type: 'textarea' },
     ],
   },
   {
