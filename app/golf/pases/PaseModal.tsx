@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Save, Loader, Search } from 'lucide-react'
+import { X, Save, Loader, Search, Printer, CheckCircle } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; cat_categorias_socios?: { nombre: string } | null }
@@ -40,6 +40,7 @@ export default function PaseModal({ socioInicial, onClose, onSaved }: Props) {
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
   const [configs, setConfigs] = useState<Config[]>([])
+  const [success, setSuccess] = useState<{ id: number } | null>(null)
 
   const [socioSearch, setSocioSearch]   = useState('')
   const [socioResults, setSocioResults] = useState<Socio[]>([])
@@ -119,8 +120,63 @@ export default function PaseModal({ socioInicial, onClose, onSaved }: Props) {
       created_by:  authUser?.nombre ?? null,
     })
 
-    onSaved()
+    setSaving(false)
+    setSuccess({ id: pase.id })
   }
+
+  const abrirTicket = async (autoPrint = false) => {
+    if (!success || !socioSelec) return
+    const { data: cfg } = await dbGolf.from('cfg_pos').select('*').single()
+    const ticketData = {
+      id:              success.id,
+      fecha_registro:  new Date().toISOString(),
+      socio:           nombreCompleto(socioSelec),
+      numero_socio:    socioSelec.numero_socio ?? null,
+      categoria:       socioSelec.cat_categorias_socios?.nombre ?? null,
+      tipo_pase:       configs.find(c => c.id === form.id_config_fk)?.nombre ?? null,
+      cantidad:        form.cantidad,
+      periodo:         form.periodo || null,
+      fecha_inicio:    form.fecha_inicio,
+      fecha_vencimiento: form.fecha_vencimiento,
+      observaciones:   form.observaciones || null,
+      registrado_por:  authUser?.nombre ?? null,
+      razon_social:    cfg?.razon_social ?? 'Club de Golf',
+      municipio:       cfg?.municipio ?? '',
+      direccion:       cfg?.direccion ?? '',
+      rfc:             cfg?.rfc ?? '',
+      telefono:        cfg?.telefono ?? '',
+    }
+    const encoded = encodeURIComponent(JSON.stringify(ticketData))
+    const url = `/ticket-pase.html?data=${encoded}${autoPrint ? '&print=1' : ''}`
+    window.open(url, '_blank', 'width=400,height=700')
+  }
+
+  if (success) return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+      <div style={{ background: '#fff', borderRadius: 16, padding: '40px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+        <CheckCircle size={52} color="#d97706" style={{ margin: '0 auto 16px' }} />
+        <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>¡Pases asignados!</div>
+        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>
+          {socioSelec && <span style={{ fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(socioSelec)}</span>}
+        </div>
+        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 24 }}>Folio #{String(success.id).padStart(6, '0')}</div>
+        <div style={{ display: 'flex', gap: 10, flexDirection: 'column' }}>
+          <button onClick={() => abrirTicket(true)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', background: '#d97706', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            <Printer size={15} /> Imprimir Comprobante
+          </button>
+          <button onClick={() => abrirTicket(false)}
+            style={{ padding: '8px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
+            Ver Comprobante
+          </button>
+          <button onClick={onSaved}
+            style={{ padding: '8px', background: '#fff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <ModalShell
