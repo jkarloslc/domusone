@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbGolf } from '@/lib/supabase'
-import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target } from 'lucide-react'
+import { dbGolf, dbCtrl } from '@/lib/supabase'
+import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag } from 'lucide-react'
 import type { Socio } from './SocioModal'
 
 type Props = { socio: Socio; onClose: () => void; onEdit: () => void }
@@ -23,6 +23,7 @@ const TABS = [
   { key: 'familiares',  label: 'Familiares',        icon: Users         },
   { key: 'accesos',     label: 'Accesos al Campo',  icon: MapPin        },
   { key: 'tee',         label: 'Tee de Práctica',   icon: Target        },
+  { key: 'torneos',     label: 'Torneos',           icon: Flag          },
   { key: 'pos',         label: 'Compras POS',       icon: ShoppingCart  },
   { key: 'cuotas',      label: 'Cuotas',            icon: CreditCard    },
   { key: 'notas',       label: 'Notas',             icon: NotebookText  },
@@ -201,6 +202,69 @@ function TabTeePractica({ socioId }: { socioId: number }) {
                 <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#94a3b8' }}>#{String(r.id).padStart(6, '0')}</span>
                 <span style={{ fontSize: 15, fontWeight: 800, color: '#d97706', marginLeft: 8 }}>{r.num_bolas}</span>
                 <span style={{ fontSize: 11, color: '#92400e' }}>bolas</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Tab Torneos ──────────────────────────────────────────────
+const TORNEO_STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  Pagado:    { bg: '#dcfce7', color: '#16a34a' },
+  Pendiente: { bg: '#fef3c7', color: '#d97706' },
+  Cancelado: { bg: '#fee2e2', color: '#dc2626' },
+}
+
+function TabTorneos({ socioId }: { socioId: number }) {
+  const [rows, setRows]       = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    dbCtrl.from('torneo_jugadores')
+      .select('id, hoyo, handicap, status, inscripcion, pago, por_cobrar, eventos(folio, nombre, fecha_inicio, status)')
+      .eq('id_socio_fk', socioId)
+      .order('id', { ascending: false })
+      .then(({ data }) => { setRows(data ?? []); setLoading(false) })
+  }, [socioId])
+
+  if (loading) return <Empty text="Cargando…" />
+  if (rows.length === 0) return <Empty text="Sin torneos registrados" emoji="🏌️" />
+
+  const sorted = [...rows].sort((a, b) => (b.eventos?.fecha_inicio ?? '').localeCompare(a.eventos?.fecha_inicio ?? ''))
+  const totalPorCobrar = rows.reduce((a, r) => a + (r.por_cobrar ?? 0), 0)
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+        <span style={{ fontSize: 12, color: '#64748b' }}>
+          Torneos jugados: <strong>{rows.length}</strong>
+          {totalPorCobrar > 0 && <span style={{ marginLeft: 10 }}>Por cobrar: <strong style={{ color: '#d97706' }}>{fmt$(totalPorCobrar)}</strong></span>}
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {sorted.map(r => {
+          const sc = TORNEO_STATUS_COLORS[r.status] ?? { bg: '#f1f5f9', color: '#64748b' }
+          return (
+            <div key={r.id} style={{ padding: '10px 14px', background: '#fff', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{r.eventos?.nombre ?? '—'}</div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {r.eventos?.fecha_inicio && <span>{fmt(r.eventos.fecha_inicio)}</span>}
+                    {r.eventos?.folio && <span>{r.eventos.folio}</span>}
+                    {r.hoyo && <span>Hoyo {r.hoyo}</span>}
+                    {r.handicap != null && <span>Hcp {r.handicap}</span>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, marginLeft: 12 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{fmt$(r.inscripcion ?? 0)}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20, background: sc.bg, color: sc.color }}>
+                    {r.status}
+                  </span>
+                </div>
               </div>
             </div>
           )
@@ -509,6 +573,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           {tab === 'familiares' && <TabFamiliares   socioId={socio.id} />}
           {tab === 'accesos'    && <TabAccesos      socioId={socio.id} />}
           {tab === 'tee'        && <TabTeePractica  socioId={socio.id} />}
+          {tab === 'torneos'    && <TabTorneos      socioId={socio.id} />}
           {tab === 'pos'        && <TabPOS          socioId={socio.id} />}
           {tab === 'cuotas'     && <TabCuotas       socioId={socio.id} />}
 
