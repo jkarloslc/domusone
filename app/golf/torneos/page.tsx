@@ -896,6 +896,118 @@ export default function EventosPage() {
     loadEventoDetalle(editEvt.id)
   }
 
+  const printJugadores = async () => {
+    if (!editEvt) return
+    const totalInsc = jugadores.reduce((s, j) => s + (j.inscripcion ?? 0), 0)
+    const totalPago = jugadores.reduce((s, j) => s + (j.pago ?? 0), 0)
+    const totalPorCobrar = jugadores.reduce((s, j) => s + (j.por_cobrar ?? 0), 0)
+    const lugar = editEvt.cat_lugares?.nombre ?? ''
+    const fmtD = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+    const STATUS_PRINT_COLOR: Record<string, string> = { Pagado: '#15803d', Pendiente: '#d97706', Cancelado: '#dc2626' }
+    const win = window.open('', '_blank', 'width=900,height=1050')
+    if (!win) return
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Inscripciones — ${editEvt.folio}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; padding: 36px; color: #1e1e1e; background: #fff; font-size: 13px; }
+.org-header { display:flex; align-items:center; gap:16px; padding-bottom:14px; border-bottom:2px solid #0D4F80; margin-bottom:22px; }
+.org-nombre { font-size:18px; font-weight:700; color:#0D4F80; margin:0 0 2px; }
+.org-sub { font-size:11px; color:#64748b; }
+.doc-title { font-size:14px; font-weight:600; color:#0D4F80; margin-bottom:2px; }
+.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; padding: 14px 16px; background: #fffbeb; border-radius: 8px; border: 1px solid #fde68a; }
+.meta .f label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #b45309; display: block; margin-bottom: 2px; }
+.meta .f span { font-size: 12px; }
+.sec-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px; margin-bottom: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: #eff6ff; padding: 7px 10px; text-align: left; font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: #0D4F80; border-bottom: 2px solid #bfdbfe; }
+td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; }
+tr:last-child td { border-bottom: none; }
+.tr-total { background: #fffbeb; font-weight: 700; }
+.tr-total td { border-top: 2px solid #fde68a; font-weight: 700; }
+.num { text-align: right; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 9px; font-weight: 700; }
+.firma { margin-top: 44px; display: flex; gap: 40px; }
+.firma-line { flex: 1; border-top: 1px solid #ccc; padding-top: 8px; font-size: 10px; color: #888; text-align: center; }
+@media print { body { padding: 20px; } }
+</style></head><body>
+<div class="org-header">
+  ${logoHtml}
+  <div>
+    <div class="org-nombre">${orgNombre}</div>
+    ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div class="doc-title">Inscripciones a Torneo</div>
+    <div style="font-size:11px;color:#64748b">${editEvt.nombre} · ${editEvt.folio}</div>
+  </div>
+</div>
+<div class="meta">
+  <div class="f"><label>Evento</label><span>${editEvt.nombre}</span></div>
+  <div class="f"><label>Folio</label><span>${editEvt.folio}</span></div>
+  <div class="f"><label>Fecha de inicio</label><span>${fmtD(editEvt.fecha_inicio)}</span></div>
+  ${lugar ? `<div class="f"><label>Lugar</label><span>${lugar}</span></div>` : ''}
+</div>
+<div class="sec-title">Jugadores Inscritos (${jugadores.length})</div>
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Jugador</th>
+      <th>Tipo</th>
+      <th>Hoyo</th>
+      <th>Hcp</th>
+      <th class="num">Inscripción</th>
+      <th class="num">Pago</th>
+      <th class="num">Por cobrar</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${jugadores.map((j, i) => `
+    <tr>
+      <td style="color:#9ca3af;font-size:10px">${i + 1}</td>
+      <td style="font-weight:600">${j.nombre_completo}</td>
+      <td>${j.tipo}</td>
+      <td>${j.hoyo ?? '—'}</td>
+      <td>${j.handicap ?? '—'}</td>
+      <td class="num">${'$' + (j.inscripcion ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td class="num" style="color:#16a34a">${'$' + (j.pago ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td class="num" style="color:${(j.por_cobrar ?? 0) > 0 ? '#d97706' : '#94a3b8'}">${'$' + (j.por_cobrar ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td><span class="badge" style="background:${STATUS_PRINT_COLOR[j.status] ?? '#64748b'}22;color:${STATUS_PRINT_COLOR[j.status] ?? '#64748b'}">${j.status}</span></td>
+    </tr>`).join('')}
+    <tr class="tr-total">
+      <td colspan="5" style="text-align:right;padding-right:10px;font-size:11px;color:#b45309;letter-spacing:.05em">TOTALES</td>
+      <td class="num" style="color:#1e293b;font-size:13px">${'$' + totalInsc.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td class="num" style="color:#16a34a;font-size:13px">${'$' + totalPago.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td class="num" style="color:#d97706;font-size:13px">${'$' + totalPorCobrar.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+<div class="firma">
+  <div class="firma-line">Elaboró</div>
+  <div class="firma-line">Golf</div>
+  <div class="firma-line">Vo. Bo. Dirección Operaciones</div>
+</div>
+</body></html>`)
+    win.document.close()
+    setTimeout(() => win.print(), 400)
+  }
+
   // Cobra la inscripción completa generando un ticket POS en el centro "Torneos"
   const cobrarInscripcionPOS = async (j: Jugador) => {
     if (!editEvt) return
@@ -2715,8 +2827,15 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
 
               {/* Tabla de jugadores inscritos */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-                  Jugadores inscritos ({jugadores.length})
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    Jugadores inscritos ({jugadores.length})
+                  </div>
+                  {jugadores.length > 0 && (
+                    <button className="btn-ghost" onClick={printJugadores} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#b45309', border: '1px solid #fde68a', borderRadius: 6, padding: '4px 10px' }}>
+                      <Printer size={12} /> Imprimir
+                    </button>
+                  )}
                 </div>
                 {jugadores.length === 0 ? (
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>Sin jugadores inscritos</div>
