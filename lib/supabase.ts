@@ -78,6 +78,7 @@ export type LoteFormData = Omit<Lote, 'id' | 'created_at' | 'updated_at' | 'secc
 
 export type Propietario = {
   id: number
+  clave: string | null
   nombre: string
   apellido_paterno: string | null
   apellido_materno: string | null

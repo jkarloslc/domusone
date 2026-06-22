@@ -42,6 +42,7 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
 
           {/* Datos personales */}
           <Group icon={<User size={14} />} label="Datos Personales">
+            <Row2 label="Clave"         value={p.clave} mono />
             <Row2 label="RFC"           value={p.rfc} mono />
             <Row2 label="CURP"          value={(p as any).curp} mono />
             <Row2 label="Fecha Nac."    value={(p as any).fecha_nacimiento} />

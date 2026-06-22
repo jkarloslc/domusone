@@ -36,7 +36,7 @@ export default function PropietariosPage() {
     if (debouncedSearch) {
       const words = debouncedSearch.trim().split(/\s+/).filter(Boolean)
       for (const w of words) {
-        q = (q as any).or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,rfc.ilike.%${w}%`)
+        q = (q as any).or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,rfc.ilike.%${w}%,clave.ilike.%${w}%`)
       }
     }
 
@@ -90,7 +90,7 @@ export default function PropietariosPage() {
           <input
             className="input"
             style={{ paddingLeft: 30 }}
-            placeholder="Buscar nombre, RFC…"
+            placeholder="Buscar nombre, RFC, clave…"
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(0) }}
           />
@@ -111,6 +111,7 @@ export default function PropietariosPage() {
           <table>
             <thead>
               <tr>
+                <th>Clave</th>
                 <th>Nombre</th>
                 <th>Tipo</th>
                 <th>RFC</th>
@@ -122,15 +123,18 @@ export default function PropietariosPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                   <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} />
                 </td></tr>
               ) : propietarios.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                   No se encontraron propietarios
                 </td></tr>
               ) : propietarios.map(p => (
                 <tr key={p.id}>
+                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>
+                    {p.clave ?? '—'}
+                  </td>
                   <td>
                     <div style={{ fontWeight: 500 }}>
                       {[p.nombre, p.apellido_paterno, p.apellido_materno].filter(Boolean).join(' ')}

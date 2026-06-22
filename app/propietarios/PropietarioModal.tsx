@@ -23,6 +23,7 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
   const [error, setError]   = useState('')
 
   const [form, setForm] = useState({
+    clave:                   propietario?.clave ?? '',
     nombre:                  propietario?.nombre ?? '',
     apellido_paterno:        (propietario as any)?.apellido_paterno ?? '',
     apellido_materno:        (propietario as any)?.apellido_materno ?? '',
@@ -92,6 +93,7 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
     setSaving(true); setError('')
 
     const payload = {
+      clave:                form.clave.trim() || null,
       nombre:               form.nombre.trim(),
       apellido_paterno:     form.apellido_paterno.trim() || null,
       apellido_materno:     form.apellido_materno.trim() || null,
@@ -193,18 +195,22 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
           {tab === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Row2>
+                <Field label="Clave"><input className="input" value={form.clave} onChange={set('clave')} placeholder="Clave del propietario" style={{ fontFamily: 'monospace' }} /></Field>
                 <Field label="Tipo de Persona">
                   <select className="select" value={form.tipo_persona} onChange={set('tipo_persona')}>
                     <option>Física</option>
                     <option>Moral</option>
                   </select>
                 </Field>
+              </Row2>
+              <Row2>
                 <Field label="Activo">
                   <select className="select" value={form.activo ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, activo: e.target.value === 'true' }))}>
                     <option value="true">Sí</option>
                     <option value="false">No</option>
                   </select>
                 </Field>
+                <div />
               </Row2>
 
               {/* Campo Asociación de Condóminos */}
