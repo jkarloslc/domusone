@@ -56,6 +56,20 @@ export type Lote = {
   usuario_ult_mod: string | null
   created_at: string
   updated_at: string
+  // Cuotas
+  tipo_cuota: string | null
+  segmento: string | null
+  motivo_detalle: string | null
+  motivo_incobrable: string | null
+  domiciliacion: boolean
+  plan_pago_activo: boolean
+  plan_pago_enganche: number | null
+  plan_pago_plazo: number | null
+  // Jurídico
+  base_juridica: string | null
+  convenio_firmado: boolean
+  convenio_fecha: string | null
+  escritura_clausula: boolean
   // joins
   secciones?: Seccion
 }

@@ -106,7 +106,7 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
 // ════════════════════════════════════════════════════════════
 // Tab Servicios
 // ════════════════════════════════════════════════════════════
-function ServiciosTab({ loteId }: { loteId: number }) {
+export function ServiciosTab({ loteId }: { loteId: number }) {
   const [cfe,     setCfe]     = useState<any[]>([])
   const [agua,    setAgua]    = useState<any[]>([])
   const [loading, setLoading] = useState(true)

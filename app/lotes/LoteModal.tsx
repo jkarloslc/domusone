@@ -1,17 +1,22 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbCat, dbCfg, type Lote, type Seccion } from '@/lib/supabase'
-import { Save, Loader, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Save, Loader, AlertTriangle, CheckCircle, MapPin, Wallet, Scale, Wrench } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import ModalShell from '@/components/ui/ModalShell'
+import { ServiciosTab } from './LoteDetail'
 
 type Props = { lote: Lote | null; onClose: () => void; onSaved: () => void }
 
-const STATUS_LOTE = ['Libre', 'Vendido', 'Bloqueado']
-const STATUS_JUR  = ['Limpio', 'Litigio', 'Pendiente', 'Escriturado']
+const STATUS_LOTE      = ['Libre', 'Vendido', 'Bloqueado']
+const STATUS_JUR       = ['Limpio', 'Litigio', 'Pendiente', 'Escriturado']
+const STATUS_COBRANZA  = ['Al corriente', 'Atrasado', 'Moroso', 'Incobrable', 'En convenio']
+
+type TabKey = 'identificacion' | 'cuotas' | 'juridico' | 'servicios'
 
 export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const isNew = !lote
+  const [tab, setTab] = useState<TabKey>('identificacion')
   const [secciones, setSecciones]             = useState<Seccion[]>([])
   const [clasificaciones, setClasificaciones] = useState<{id: number; nombre: string}[]>([])
   const [tiposLote, setTiposLote]             = useState<{id: number; nombre: string}[]>([])
@@ -35,15 +40,28 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
     superficie:          lote?.superficie?.toString() ?? '',
     sup_construccion:    lote?.sup_construccion?.toString() ?? '',
     status_lote:         lote?.status_lote ?? 'Libre',
-    status_juridico:     lote?.status_juridico ?? '',
-    status_cobranza:     lote?.status_cobranza ?? '',
-    clasificacion_cobranza: lote?.clasificacion_cobranza ?? '',
-    paga_cuotas:         lote?.paga_cuotas ?? '',
     clave_catastral:     lote?.clave_catastral ?? '',
     valor_catastral:     lote?.valor_catastral?.toString() ?? '',
     observaciones:       lote?.observaciones ?? '',
     notas:               lote?.notas ?? '',
     imagen_lote:         lote?.imagen_lote ?? '',
+    // Cuotas
+    status_cobranza:     lote?.status_cobranza ?? '',
+    paga_cuotas:         lote?.paga_cuotas ?? '',
+    tipo_cuota:          lote?.tipo_cuota ?? '',
+    segmento:            lote?.segmento ?? '',
+    motivo_detalle:      lote?.motivo_detalle ?? '',
+    motivo_incobrable:   lote?.motivo_incobrable ?? '',
+    domiciliacion:       lote?.domiciliacion ?? false,
+    plan_pago_activo:    lote?.plan_pago_activo ?? false,
+    plan_pago_enganche:  lote?.plan_pago_enganche?.toString() ?? '',
+    plan_pago_plazo:     lote?.plan_pago_plazo?.toString() ?? '',
+    // Jurídico
+    status_juridico:     lote?.status_juridico ?? '',
+    base_juridica:       lote?.base_juridica ?? '',
+    convenio_firmado:    lote?.convenio_firmado ?? false,
+    convenio_fecha:      lote?.convenio_fecha ?? '',
+    escritura_clausula:  lote?.escritura_clausula ?? false,
   })
 
   useEffect(() => {
@@ -79,6 +97,9 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
+  const setBool = (k: string) => (e: React.ChangeEvent<HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value === 'Sí' }))
+
   const seccionLlena = capacidad !== null && capacidad.limite !== null && capacidad.actual >= capacidad.limite
 
   const handleSubmit = async () => {
@@ -100,15 +121,28 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
       superficie:          form.superficie ? Number(form.superficie) : null,
       sup_construccion:    form.sup_construccion ? Number(form.sup_construccion) : null,
       status_lote:         form.status_lote || null,
-      status_juridico:     form.status_juridico || null,
-      status_cobranza:     form.status_cobranza || null,
-      clasificacion_cobranza: form.clasificacion_cobranza || null,
-      paga_cuotas:         form.paga_cuotas || null,
       clave_catastral:     form.clave_catastral || null,
       valor_catastral:     form.valor_catastral ? Number(form.valor_catastral) : null,
       observaciones:       form.observaciones || null,
       notas:               form.notas || null,
       imagen_lote:         form.imagen_lote || null,
+      // Cuotas
+      status_cobranza:     form.status_cobranza || null,
+      paga_cuotas:         form.paga_cuotas || null,
+      tipo_cuota:          form.tipo_cuota.trim() || null,
+      segmento:            form.segmento.trim() || null,
+      motivo_detalle:      form.motivo_detalle.trim() || null,
+      motivo_incobrable:   form.motivo_incobrable.trim() || null,
+      domiciliacion:       form.domiciliacion,
+      plan_pago_activo:    form.plan_pago_activo,
+      plan_pago_enganche:  form.plan_pago_enganche ? Number(form.plan_pago_enganche) : null,
+      plan_pago_plazo:     form.plan_pago_plazo ? Number(form.plan_pago_plazo) : null,
+      // Jurídico
+      status_juridico:     form.status_juridico || null,
+      base_juridica:       form.base_juridica.trim() || null,
+      convenio_firmado:    form.convenio_firmado,
+      convenio_fecha:      form.convenio_fecha || null,
+      escritura_clausula:  form.escritura_clausula,
     }
 
     const { error: err } = isNew
@@ -120,8 +154,16 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
     onSaved()
   }
 
+  const tabs = [
+    { key: 'identificacion', label: 'Identificación', icon: MapPin },
+    { key: 'cuotas',         label: 'Cuotas',          icon: Wallet },
+    { key: 'juridico',       label: 'Jurídico',        icon: Scale },
+    { key: 'servicios',      label: 'Servicios',       icon: Wrench, disabled: isNew, disabledHint: 'Guarda el lote primero' },
+  ]
+
   return (
     <ModalShell modulo="lotes" titulo={isNew ? 'Nuevo Lote' : `Editar ${lote.cve_lote ?? '#' + lote.lote}`} onClose={onClose} maxWidth={680}
+      tabs={tabs} activeTab={tab} onTabChange={key => setTab(key as TabKey)}
       footer={
         <>
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
@@ -134,6 +176,9 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
     >
       {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
+      {/* ── Tab: Identificación ── */}
+      {tab === 'identificacion' && (
+        <>
           <Section label="Identificación">
             <Row>
               <Field label="Clave Lote"><input className="input" value={form.cve_lote} onChange={set('cve_lote')} placeholder="GR-001" /></Field>
@@ -169,6 +214,11 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
                   {clasificaciones.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </Field>
+              <Field label="Status Lote">
+                <select className="select" value={form.status_lote} onChange={set('status_lote')}>
+                  {STATUS_LOTE.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </Field>
             </Row>
           </Section>
 
@@ -176,32 +226,6 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
             <Row>
               <Field label="Superficie (m²)"><input className="input" type="number" step="0.01" value={form.superficie} onChange={set('superficie')} /></Field>
               <Field label="Sup. Construcción (m²)"><input className="input" type="number" step="0.01" value={form.sup_construccion} onChange={set('sup_construccion')} /></Field>
-            </Row>
-          </Section>
-
-          <Section label="Status">
-            <Row>
-              <Field label="Status Lote">
-                <select className="select" value={form.status_lote} onChange={set('status_lote')}>
-                  {STATUS_LOTE.map(s => <option key={s}>{s}</option>)}
-                </select>
-              </Field>
-              <Field label="Status Jurídico">
-                <select className="select" value={form.status_juridico} onChange={set('status_juridico')}>
-                  <option value="">— Seleccionar —</option>
-                  {STATUS_JUR.map(s => <option key={s}>{s}</option>)}
-                </select>
-              </Field>
-            </Row>
-            <Row>
-              <Field label="Cobranza"><input className="input" value={form.clasificacion_cobranza} onChange={set('clasificacion_cobranza')} placeholder="Al corriente, Moroso…" /></Field>
-              <Field label="Paga Cuotas">
-                <select className="select" value={form.paga_cuotas} onChange={set('paga_cuotas')}>
-                  <option value="">—</option>
-                  <option value="Sí">Sí</option>
-                  <option value="No">No</option>
-                </select>
-              </Field>
             </Row>
           </Section>
 
@@ -231,6 +255,101 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
               <textarea className="input" rows={2} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} />
             </Field>
           </Section>
+        </>
+      )}
+
+      {/* ── Tab: Cuotas ── */}
+      {tab === 'cuotas' && (
+        <>
+          <Section label="Cobranza">
+            <Row>
+              <Field label="Status Cobranza">
+                <select className="select" value={form.status_cobranza} onChange={set('status_cobranza')}>
+                  <option value="">— Seleccionar —</option>
+                  {STATUS_COBRANZA.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </Field>
+              <Field label="Paga Cuotas">
+                <select className="select" value={form.paga_cuotas} onChange={set('paga_cuotas')}>
+                  <option value="">—</option>
+                  <option value="Sí">Sí</option>
+                  <option value="No">No</option>
+                </select>
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Tipo de Cuota"><input className="input" value={form.tipo_cuota} onChange={set('tipo_cuota')} /></Field>
+              <Field label="Segmento"><input className="input" value={form.segmento} onChange={set('segmento')} /></Field>
+            </Row>
+            <Row>
+              <Field label="Domiciliación">
+                <select className="select" value={form.domiciliacion ? 'Sí' : 'No'} onChange={setBool('domiciliacion')}>
+                  <option value="No">No</option>
+                  <option value="Sí">Sí</option>
+                </select>
+              </Field>
+              <Field label="Motivo Incobrable"><input className="input" value={form.motivo_incobrable} onChange={set('motivo_incobrable')} /></Field>
+            </Row>
+            <Field label="Motivo (detalle)">
+              <textarea className="input" rows={2} value={form.motivo_detalle} onChange={set('motivo_detalle')} style={{ resize: 'vertical' }} />
+            </Field>
+          </Section>
+
+          <Section label="Plan de Pago">
+            <Row>
+              <Field label="Plan de Pago Activo">
+                <select className="select" value={form.plan_pago_activo ? 'Sí' : 'No'} onChange={setBool('plan_pago_activo')}>
+                  <option value="No">No</option>
+                  <option value="Sí">Sí</option>
+                </select>
+              </Field>
+              <Field label="Plazo (meses)"><input className="input" type="number" value={form.plan_pago_plazo} onChange={set('plan_pago_plazo')} /></Field>
+            </Row>
+            <Row>
+              <Field label="Enganche"><input className="input" type="number" step="0.01" value={form.plan_pago_enganche} onChange={set('plan_pago_enganche')} /></Field>
+              <div />
+            </Row>
+          </Section>
+        </>
+      )}
+
+      {/* ── Tab: Jurídico ── */}
+      {tab === 'juridico' && (
+        <Section label="Jurídico">
+          <Row>
+            <Field label="Status Jurídico">
+              <select className="select" value={form.status_juridico} onChange={set('status_juridico')}>
+                <option value="">— Seleccionar —</option>
+                {STATUS_JUR.map(s => <option key={s}>{s}</option>)}
+              </select>
+            </Field>
+            <Field label="Base Jurídica"><input className="input" value={form.base_juridica} onChange={set('base_juridica')} /></Field>
+          </Row>
+          <Row>
+            <Field label="Convenio Firmado">
+              <select className="select" value={form.convenio_firmado ? 'Sí' : 'No'} onChange={setBool('convenio_firmado')}>
+                <option value="No">No</option>
+                <option value="Sí">Sí</option>
+              </select>
+            </Field>
+            <Field label="Fecha de Convenio"><input className="input" type="date" value={form.convenio_fecha} onChange={set('convenio_fecha')} /></Field>
+          </Row>
+          <Row>
+            <Field label="Cláusula de Escritura">
+              <select className="select" value={form.escritura_clausula ? 'Sí' : 'No'} onChange={setBool('escritura_clausula')}>
+                <option value="No">No</option>
+                <option value="Sí">Sí</option>
+              </select>
+            </Field>
+            <div />
+          </Row>
+        </Section>
+      )}
+
+      {/* ── Tab: Servicios ── */}
+      {tab === 'servicios' && !isNew && (
+        <ServiciosTab loteId={lote.id} />
+      )}
     </ModalShell>
   )
 }
