@@ -11,6 +11,8 @@ type Props = { lote: Lote | null; onClose: () => void; onSaved: () => void }
 const STATUS_LOTE      = ['Libre', 'Vendido', 'Bloqueado']
 const STATUS_JUR       = ['Limpio', 'Litigio', 'Pendiente', 'Escriturado']
 const STATUS_COBRANZA  = ['Al corriente', 'Atrasado', 'Moroso', 'Incobrable', 'En convenio']
+const TIPO_CUOTA        = ['Condominal', 'Cuota de Servicios']
+const SEGMENTO          = ['Fricción_Admin', 'Moroso_Flujo', 'Opositor', 'Disputa por Servicios', 'Ausente No localizable', 'Incobrable definitivo']
 
 type TabKey = 'identificacion' | 'cuotas' | 'juridico' | 'servicios'
 
@@ -278,8 +280,18 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
               </Field>
             </Row>
             <Row>
-              <Field label="Tipo de Cuota"><input className="input" value={form.tipo_cuota} onChange={set('tipo_cuota')} /></Field>
-              <Field label="Segmento"><input className="input" value={form.segmento} onChange={set('segmento')} /></Field>
+              <Field label="Tipo de Cuota">
+                <select className="select" value={form.tipo_cuota} onChange={set('tipo_cuota')}>
+                  <option value="">— Seleccionar —</option>
+                  {TIPO_CUOTA.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </Field>
+              <Field label="Segmento">
+                <select className="select" value={form.segmento} onChange={set('segmento')}>
+                  <option value="">— Seleccionar —</option>
+                  {SEGMENTO.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </Field>
             </Row>
             <Row>
               <Field label="Domiciliación">
