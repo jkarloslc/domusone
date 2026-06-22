@@ -13,6 +13,14 @@
 
 BEGIN;
 
+-- 0) El UNIQUE sobre cve_lote no es diferible, así que el UPDATE masivo de abajo
+--    puede chocar transitoriamente contra valores que otra fila todavía no ha
+--    cambiado (aunque el resultado final sea único). Se quita aquí y se vuelve
+--    a crear al final, dentro de la misma transacción: si al recrearlo SÍ hay
+--    una colisión real de datos, este paso falla con el detalle del duplicado
+--    y toda la transacción hace rollback sin dejar nada a medias.
+ALTER TABLE cat.lotes DROP CONSTRAINT IF EXISTS lotes_cve_lote_key;
+
 -- 1) Columna donde queda la clave rescatada del propietario
 ALTER TABLE cat.propietarios ADD COLUMN IF NOT EXISTS clave text;
 
@@ -49,5 +57,10 @@ UPDATE cat.lotes l
    AND l.lote IS NOT NULL
    AND s.clave_alfa IS NOT NULL
    AND length(TRIM(s.clave_alfa)) >= 3;
+
+-- 4) Restaura el UNIQUE. Si quedó algún cve_lote duplicado (dos lotes con el
+--    mismo No. Lote en la misma sección, o dos secciones cuyo clave_alfa
+--    truncado a 3 caracteres coincide), esta línea falla y revierte todo.
+ALTER TABLE cat.lotes ADD CONSTRAINT lotes_cve_lote_key UNIQUE (cve_lote);
 
 COMMIT;
