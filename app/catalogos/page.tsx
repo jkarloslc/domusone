@@ -71,6 +71,7 @@ const CATALOGOS: CatConfig[] = [
     campos: [
       { key: 'id_empresa_fk',       label: 'Empresa',              type: 'select', selectTabla: 'proveedores', selectSchema: 'comp', selectFilter: { interno: true } },
       { key: 'nombre',              label: 'Nombre *',             type: 'text',   required: true },
+      { key: 'clave_alfa',          label: 'Abreviatura',          type: 'text' },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
       { key: 'id_cuadrante_fk',     label: 'Cuadrante',            type: 'select', selectTabla: 'cuadrantes' },
