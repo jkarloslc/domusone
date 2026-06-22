@@ -269,6 +269,7 @@ export default function EventosPage() {
   const [busqVentaPOS, setBusqVentaPOS] = useState('')
   const [ventasPOS, setVentasPOS] = useState<VentaPOS[]>([])
   const [loadingVentasPOS, setLoadingVentasPOS] = useState(false)
+  const [tipoIngreso, setTipoIngreso] = useState<'pos' | 'manual'>('pos')
   const [ventaPosMap, setVentaPosMap] = useState<Record<number, VentaPOS>>({})
 
   // OPs
@@ -476,6 +477,7 @@ export default function EventosPage() {
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
     setBusqVentaPOS('')
     setVentasPOS([])
+    setTipoIngreso('pos')
     setVentaPosMap({})
     setChecklistFiles(emptyChecklistFiles())
     setChecklistLoading(emptyChecklistLoading())
@@ -535,6 +537,7 @@ export default function EventosPage() {
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
     setBusqVentaPOS('')
     setVentasPOS([])
+    setTipoIngreso('pos')
     setChecklistFiles(emptyChecklistFiles())
     setChecklistLoading(emptyChecklistLoading())
     setLoadingChecklistFiles(false)
@@ -750,6 +753,7 @@ export default function EventosPage() {
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
     setBusqVentaPOS('')
     setVentasPOS([])
+    setTipoIngreso('pos')
     await loadEventoDetalle(editEvt.id)
   }
 
@@ -1804,16 +1808,47 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               {/* Formulario nuevo ingreso */}
               <div className="card" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#9333ea', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Registrar ingreso</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 10 }}>
-                  <input className="input" placeholder="Buscar venta POS por folio, día o cliente…"
-                    value={busqVentaPOS} onChange={e => setBusqVentaPOS(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && buscarVentasPOS()} style={{ fontSize: 12, width: '100%' }} />
-                  <button className="btn-primary" onClick={buscarVentasPOS} disabled={loadingVentasPOS} style={{ fontSize: 12, background: '#7e22ce' }}>
-                    {loadingVentasPOS ? '…' : 'Buscar POS'}
+
+                <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                  <button type="button"
+                    onClick={() => setTipoIngreso('pos')}
+                    style={{
+                      flex: 1, fontSize: 12, fontWeight: 600, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
+                      border: tipoIngreso === 'pos' ? '1px solid #9333ea' : '1px solid #e5e7eb',
+                      background: tipoIngreso === 'pos' ? '#f3e8ff' : '#fff',
+                      color: tipoIngreso === 'pos' ? '#7e22ce' : 'var(--text-muted)',
+                    }}>
+                    {tipoIngreso === 'pos' ? '✓ ' : ''}POS Ventas
+                  </button>
+                  <button type="button"
+                    onClick={() => {
+                      setTipoIngreso('manual')
+                      setBusqVentaPOS('')
+                      setVentasPOS([])
+                      setIngresoForm(f => ({ ...f, id_venta_pos_fk: null }))
+                    }}
+                    style={{
+                      flex: 1, fontSize: 12, fontWeight: 600, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
+                      border: tipoIngreso === 'manual' ? '1px solid #9333ea' : '1px solid #e5e7eb',
+                      background: tipoIngreso === 'manual' ? '#f3e8ff' : '#fff',
+                      color: tipoIngreso === 'manual' ? '#7e22ce' : 'var(--text-muted)',
+                    }}>
+                    {tipoIngreso === 'manual' ? '✓ ' : ''}Manual
                   </button>
                 </div>
 
-                {ventasPOS.length > 0 && (
+                {tipoIngreso === 'pos' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 10 }}>
+                    <input className="input" placeholder="Buscar venta POS por folio, día o cliente…"
+                      value={busqVentaPOS} onChange={e => setBusqVentaPOS(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && buscarVentasPOS()} style={{ fontSize: 12, width: '100%' }} />
+                    <button className="btn-primary" onClick={buscarVentasPOS} disabled={loadingVentasPOS} style={{ fontSize: 12, background: '#7e22ce' }}>
+                      {loadingVentasPOS ? '…' : 'Buscar POS'}
+                    </button>
+                  </div>
+                )}
+
+                {tipoIngreso === 'pos' && ventasPOS.length > 0 && (
                   <div style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid #e9d5ff', borderRadius: 8, marginBottom: 10, background: '#fff' }}>
                     {ventasPOS.map(v => (
                       <button key={v.id}
@@ -1831,7 +1866,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   </div>
                 )}
 
-                {ingresoForm.id_venta_pos_fk && (
+                {tipoIngreso === 'pos' && ingresoForm.id_venta_pos_fk && (
                   <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', border: '1px solid #ddd6fe', borderRadius: 8, background: '#f5f3ff' }}>
                     <div style={{ fontSize: 12, color: '#6d28d9' }}>
                       Venta POS asociada: <strong>#{String(ingresoForm.id_venta_pos_fk).padStart(6, '0')}</strong>
