@@ -21,6 +21,13 @@ BEGIN;
 --    y toda la transacción hace rollback sin dejar nada a medias.
 ALTER TABLE cat.lotes DROP CONSTRAINT IF EXISTS lotes_cve_lote_key;
 
+-- 0.5) Corrige el No. Lote mal cargado en 3 registros de Cordillera II
+--      (id_seccion_fk = 15) que compartían lote = 2 por error de captura.
+--      Números correctos confirmados manualmente, 2026-06-22.
+UPDATE cat.lotes SET lote = 51 WHERE id = 652;
+UPDATE cat.lotes SET lote = 52 WHERE id = 677;
+UPDATE cat.lotes SET lote = 53 WHERE id = 1519;
+
 -- 1) Columna donde queda la clave rescatada del propietario
 ALTER TABLE cat.propietarios ADD COLUMN IF NOT EXISTS clave text;
 
