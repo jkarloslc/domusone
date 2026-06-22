@@ -1516,6 +1516,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
   const [modal, setModal]     = useState<any | null | 'new'>(null)
   const [detailRow, setDetailRow] = useState<any | null>(null)
   const [detailAreasRow, setDetailAreasRow] = useState<any | null>(null)
+  const [detailAdminRow, setDetailAdminRow] = useState<any | null>(null)
   const [page, setPage]       = useState(1)
   // Mapa de selects: { campo_key: { id: nombre } }
   const [selectMaps, setSelectMaps] = useState<Record<string, Record<number, string>>>({})
@@ -1666,6 +1667,13 @@ function CatalogoTable({ config }: { config: CatConfig }) {
                         <Flag size={13} />
                       </button>
                     )}
+                    {config.key === 'secciones' &&
+                      (selectMaps['id_tipo_seccion_fk']?.[row.id_tipo_seccion_fk] ?? '').toLowerCase() === 'condominio' && (
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#7c3aed' }}
+                        title="Administración Interna" onClick={() => setDetailAdminRow(row)}>
+                        <Building2 size={13} />
+                      </button>
+                    )}
                     {config.hasDetail && (
                       <button className="btn-ghost" style={{ padding: '4px 6px', color: '#0f766e' }} onClick={() => setDetailRow(row)}>
                         <Eye size={13} />
@@ -1729,6 +1737,12 @@ function CatalogoTable({ config }: { config: CatConfig }) {
         <SeccionAreasComunes
           seccion={detailAreasRow}
           onClose={() => { setDetailAreasRow(null); fetchData() }}
+        />
+      )}
+      {detailAdminRow !== null && config.key === 'secciones' && (
+        <SeccionAdministracion
+          seccion={detailAdminRow}
+          onClose={() => { setDetailAdminRow(null); fetchData() }}
         />
       )}
       {detailRow !== null && config.key === 'cuadrantes' && (
@@ -2253,6 +2267,191 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
           </button>
         </div>
       </div>
+    </ModalShell>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// Administración Interna del Condominio — por periodo, por sección
+// ══════════════════════════════════════════════════════════════
+const ADMIN_FORM_VACIO = {
+  nombre_administrador: '',
+  telefono:              '',
+  correo:                '',
+  periodo_inicio:        '',
+  periodo_fin:           '',
+  notas:                 '',
+}
+
+function SeccionAdministracion({ seccion, onClose }: { seccion: any; onClose: () => void }) {
+  const [periodos, setPeriodos] = useState<any[]>([])
+  const [loading,  setLoading]  = useState(true)
+  const [saving,   setSaving]   = useState(false)
+  const [error,    setError]    = useState('')
+  const [editId,   setEditId]   = useState<number | null>(null)
+  const [form,     setForm]     = useState(ADMIN_FORM_VACIO)
+
+  const hoy = new Date().toISOString().slice(0, 10)
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    const { data } = await dbCfg.from('seccion_administracion')
+      .select('*').eq('id_seccion_fk', seccion.id).order('periodo_inicio', { ascending: false })
+    setPeriodos(data ?? [])
+    setLoading(false)
+  }, [seccion.id])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const editar = (p: any) => {
+    setEditId(p.id)
+    setForm({
+      nombre_administrador: p.nombre_administrador ?? '',
+      telefono:              p.telefono ?? '',
+      correo:                p.correo ?? '',
+      periodo_inicio:        p.periodo_inicio ?? '',
+      periodo_fin:           p.periodo_fin ?? '',
+      notas:                 p.notas ?? '',
+    })
+    setError('')
+  }
+
+  const cancelarEdicion = () => { setEditId(null); setForm(ADMIN_FORM_VACIO); setError('') }
+
+  const guardar = async () => {
+    if (!form.nombre_administrador.trim() || !form.periodo_inicio) {
+      setError('Nombre del Administrador y Fecha de Inicio son obligatorios.')
+      return
+    }
+    if (form.periodo_fin && form.periodo_fin < form.periodo_inicio) {
+      setError('La fecha de fin no puede ser anterior a la fecha de inicio.')
+      return
+    }
+    setSaving(true); setError('')
+    const payload = {
+      id_seccion_fk:        seccion.id,
+      nombre_administrador: form.nombre_administrador.trim(),
+      telefono:              form.telefono.trim() || null,
+      correo:                form.correo.trim() || null,
+      periodo_inicio:        form.periodo_inicio,
+      periodo_fin:           form.periodo_fin || null,
+      notas:                 form.notas.trim() || null,
+    }
+    const { error: e } = editId
+      ? await dbCfg.from('seccion_administracion').update(payload).eq('id', editId)
+      : await dbCfg.from('seccion_administracion').insert(payload)
+    setSaving(false)
+    if (e) { setError(e.message); return }
+    cancelarEdicion()
+    fetchData()
+  }
+
+  const eliminar = async (id: number) => {
+    if (!confirm('¿Eliminar este periodo de administración?')) return
+    await dbCfg.from('seccion_administracion').delete().eq('id', id)
+    fetchData()
+  }
+
+  const esVigente = (p: any) => p.periodo_inicio <= hoy && (!p.periodo_fin || p.periodo_fin >= hoy)
+
+  return (
+    <ModalShell modulo="residencial" titulo={`Administración Interna — ${seccion.nombre}`} onClose={onClose} maxWidth={620}
+      footer={<button className="btn-secondary" onClick={onClose}>Cerrar</button>}
+    >
+      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 14, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue)', marginBottom: 10 }}>
+          {editId ? 'Editar periodo' : 'Nuevo periodo de administración'}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div><label className="label">Nombre del Administrador *</label>
+            <input className="input" value={form.nombre_administrador} onChange={set('nombre_administrador')} placeholder="Nombre completo" />
+          </div>
+          <div><label className="label">Teléfono</label>
+            <input className="input" value={form.telefono} onChange={set('telefono')} />
+          </div>
+          <div><label className="label">Correo</label>
+            <input className="input" type="email" value={form.correo} onChange={set('correo')} />
+          </div>
+          <div />
+          <div><label className="label">Periodo — Inicio *</label>
+            <input className="input" type="date" value={form.periodo_inicio} onChange={set('periodo_inicio')} />
+          </div>
+          <div><label className="label">Periodo — Fin</label>
+            <input className="input" type="date" value={form.periodo_fin} onChange={set('periodo_fin')} placeholder="Dejar vacío si sigue vigente" />
+          </div>
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          <label className="label">Notas</label>
+          <textarea className="input" rows={2} value={form.notas} onChange={set('notas')} style={{ resize: 'vertical' }} />
+        </div>
+        {error && (
+          <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
+            borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>
+            {error}
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          {editId && <button className="btn-secondary" style={{ fontSize: 12 }} onClick={cancelarEdicion}>Cancelar</button>}
+          <button className="btn-primary" style={{ fontSize: 12 }} onClick={guardar} disabled={saving}>
+            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
+            {editId ? 'Guardar cambios' : 'Agregar'}
+          </button>
+        </div>
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Historial de administraciones</div>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 24 }}>
+          <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+        </div>
+      ) : periodos.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 13 }}>
+          Sin periodos registrados
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {periodos.map(p => {
+            const vigente = esVigente(p)
+            return (
+              <div key={p.id} style={{
+                padding: 12, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                background: vigente ? '#f0fdf4' : '#fff', border: `1px solid ${vigente ? '#bbf7d0' : '#e2e8f0'}`,
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{p.nombre_administrador}</span>
+                    {vigente && (
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 10, background: '#dcfce7', color: '#15803d' }}>
+                        Vigente
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    {p.periodo_inicio} → {p.periodo_fin ?? 'actual'}
+                  </div>
+                  {(p.telefono || p.correo) && (
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {[p.telefono, p.correo].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                  {p.notas && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{p.notas}</div>}
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => editar(p)}>
+                    <Edit2 size={13} />
+                  </button>
+                  <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }} onClick={() => eliminar(p.id)}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </ModalShell>
   )
 }
