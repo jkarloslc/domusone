@@ -7,18 +7,20 @@
 -- 2) Recalcula cve_lote = 3 caracteres de cfg.secciones.clave_alfa
 --    + No. Lote a 3 dígitos (ej. "GR-001").
 --
--- Antes de correr este archivo en producción, ejecutar los SELECTs de
--- diagnóstico (ver mensaje del chat) para revisar secciones con
--- clave_alfa inválida y lotes sin sección/numero.
+-- IMPORTANTE (2026-06-22): el diagnóstico encontró ~90 grupos de colisión
+-- en cat.lotes.lote (No. Lote) repartidos en 12 secciones — el campo
+-- numérico "lote" está mal cargado a gran escala, no solo en casos
+-- aislados. Se decidió quitar el UNIQUE de cve_lote y dejarlo así
+-- A PROPÓSITO: el resultado de este recálculo va a tener duplicados.
+-- La corrección de "lote" se hace manualmente caso por caso después de
+-- correr este archivo, y el UNIQUE se vuelve a crear en una migración
+-- aparte una vez que ya no haya colisiones (ver query de validación
+-- en el mensaje del chat: agrupar por id_seccion_fk + lote, HAVING > 1).
 
 BEGIN;
 
--- 0) El UNIQUE sobre cve_lote no es diferible, así que el UPDATE masivo de abajo
---    puede chocar transitoriamente contra valores que otra fila todavía no ha
---    cambiado (aunque el resultado final sea único). Se quita aquí y se vuelve
---    a crear al final, dentro de la misma transacción: si al recrearlo SÍ hay
---    una colisión real de datos, este paso falla con el detalle del duplicado
---    y toda la transacción hace rollback sin dejar nada a medias.
+-- 0) Se quita el UNIQUE para permitir el recálculo aunque queden
+--    duplicados temporales. NO se vuelve a crear en este archivo.
 ALTER TABLE cat.lotes DROP CONSTRAINT IF EXISTS lotes_cve_lote_key;
 
 -- 0.5) Corrige el No. Lote mal cargado en 3 registros de Cordillera II
@@ -65,9 +67,9 @@ UPDATE cat.lotes l
    AND s.clave_alfa IS NOT NULL
    AND length(TRIM(s.clave_alfa)) >= 3;
 
--- 4) Restaura el UNIQUE. Si quedó algún cve_lote duplicado (dos lotes con el
---    mismo No. Lote en la misma sección, o dos secciones cuyo clave_alfa
---    truncado a 3 caracteres coincide), esta línea falla y revierte todo.
-ALTER TABLE cat.lotes ADD CONSTRAINT lotes_cve_lote_key UNIQUE (cve_lote);
+-- 4) El UNIQUE se queda fuera intencionalmente (ver nota arriba).
+--    Pendiente: corregir manualmente los "lote" duplicados y correr
+--    en una migración aparte:
+--      ALTER TABLE cat.lotes ADD CONSTRAINT lotes_cve_lote_key UNIQUE (cve_lote);
 
 COMMIT;
