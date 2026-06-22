@@ -216,10 +216,11 @@ export default function EventosPage() {
   const [err,      setErr]      = useState('')
 
   // Modal de consulta (read-only)
-  const [viewEvt,  setViewEvt]  = useState<Evento | null>(null)
-  const [viewIng,  setViewIng]  = useState<Ingreso[]>([])
-  const [viewOps,  setViewOps]  = useState<OP[]>([])
-  const [viewLoad, setViewLoad] = useState(false)
+  const [viewEvt,    setViewEvt]    = useState<Evento | null>(null)
+  const [viewIng,    setViewIng]    = useState<Ingreso[]>([])
+  const [viewOps,    setViewOps]    = useState<OP[]>([])
+  const [viewGastos, setViewGastos] = useState<EventoGasto[]>([])
+  const [viewLoad,   setViewLoad]   = useState(false)
   const [viewChecklist, setViewChecklist] = useState<Record<ChecklistKey, boolean>>(emptyChecklistLoading())
 
   // Formulario
@@ -551,15 +552,18 @@ export default function EventosPage() {
     setViewEvt(ev)
     setViewIng([])
     setViewOps([])
+    setViewGastos([])
     setViewChecklist(emptyChecklistLoading())
     setViewLoad(true)
-    const [{ data: ing }, { data: eops }, checklistStatus] = await Promise.all([
+    const [{ data: ing }, { data: eops }, { data: gas }, checklistStatus] = await Promise.all([
       dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas, id_venta_pos_fk').eq('id_evento_fk', ev.id),
       dbCtrl.from('eventos_ops').select('id, id_op_fk').eq('id_evento_fk', ev.id),
+      dbCtrl.from('eventos_gastos').select('id, id_evento_fk, concepto, proveedor, tipo_gasto, monto, fecha, notas, id_op_fk').eq('id_evento_fk', ev.id),
       fetchChecklistStatus(ev.id),
     ])
     setViewChecklist(checklistStatus)
     setViewIng((ing as unknown as Ingreso[]) ?? [])
+    setViewGastos((gas as unknown as EventoGasto[]) ?? [])
     const evOps = (eops as unknown as EventoOP[]) ?? []
     if (evOps.length > 0) {
       const ids = evOps.map(e => e.id_op_fk)
@@ -1102,7 +1106,7 @@ ${ing.notas ? `<p style="font-size:12px;color:#666;margin-bottom:20px;"><strong>
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
     const totalIng    = viewIng.reduce((s, i) => s + (i.monto ?? 0), 0)
-    const totalGastos = viewOps.reduce((s, o) => s + (o.monto ?? 0), 0)
+    const totalGastos = viewOps.reduce((s, o) => s + (o.monto ?? 0), 0) + viewGastos.reduce((s, g) => s + (g.monto ?? 0), 0)
     const utilidad    = totalIng - totalGastos
     const tipo        = viewEvt.cat_tipos_evento
     const fmtD = (s?: string | null) => s ? new Date(s + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : '—'
@@ -1254,11 +1258,12 @@ ${viewEvt.hip_tipo_evento || viewEvt.hip_num_caballos ? `
   <div class="sec-title">Información Financiera</div>
   <div class="kpis">
     <div class="kpi" style="background:#f0fdf4"><div class="lbl" style="color:#166534">Total Ingresos</div><div class="val" style="color:#16a34a">$${totalIng.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#64748b">${viewIng.length} pago(s)</div></div>
-    <div class="kpi" style="background:#fef2f2"><div class="lbl" style="color:#991b1b">Total Gastos</div><div class="val" style="color:#dc2626">$${totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#64748b">${viewOps.length} OP(s)</div></div>
+    <div class="kpi" style="background:#fef2f2"><div class="lbl" style="color:#991b1b">Total Gastos</div><div class="val" style="color:#dc2626">$${totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div><div style="font-size:10px;color:#64748b">${viewOps.length} OP(s) + ${viewGastos.length} manual(es)</div></div>
     <div class="kpi" style="background:${utilidad >= 0 ? '#eff6ff' : '#fef2f2'}"><div class="lbl" style="color:${utilidad >= 0 ? '#1e40af' : '#991b1b'}">Utilidad</div><div class="val" style="color:${utilidad >= 0 ? '#2563eb' : '#dc2626'}">$${utilidad.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</div></div>
   </div>
   ${viewIng.length > 0 ? `<div class="tw"><table><thead><tr><th>Folio</th><th>Descripción</th><th>Forma de pago</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead><tbody>${viewIng.map(i => `<tr><td style="font-family:monospace;color:#7e22ce">${i.folio}</td><td>${i.descripcion}</td><td>${i.forma_pago}</td><td>${new Date(i.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX')}</td><td style="text-align:right;font-weight:600">$${i.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
   ${viewOps.length > 0 ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Folio</th><th>Concepto</th><th>Proveedor</th><th>Status</th><th style="text-align:right">Monto</th><th style="text-align:right">Saldo</th></tr></thead><tbody>${viewOps.map(o => `<tr><td style="font-family:monospace;color:#16a34a">${o.folio}</td><td>${o.concepto}</td><td>${o.id_proveedor_fk ? (provMap[o.id_proveedor_fk] ?? '—') : '—'}</td><td>${o.status}</td><td style="text-align:right;font-weight:600">$${(o.monto ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td><td style="text-align:right;color:${(o.saldo ?? 0) > 0 ? '#dc2626' : '#16a34a'}">$${(o.saldo ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
+  ${viewGastos.length > 0 ? `<div class="tw" style="margin-top:8px"><table><thead><tr><th>Concepto</th><th>Proveedor</th><th>Tipo</th><th>Fecha</th><th style="text-align:right">Monto</th></tr></thead><tbody>${viewGastos.map(g => `<tr><td>${g.concepto}</td><td>${g.proveedor ?? '—'}</td><td>${g.tipo_gasto ?? '—'}</td><td>${g.fecha ? new Date(g.fecha + 'T12:00:00').toLocaleDateString('es-MX') : '—'}</td><td style="text-align:right;font-weight:600">$${(g.monto ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td></tr>`).join('')}</tbody></table></div>` : ''}
 </div>
 ${viewEvt.post_incidencias || viewEvt.post_evaluacion || viewEvt.post_conclusion ? `
 <div class="sec">
@@ -2404,10 +2409,12 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
 
       {/* ── MODAL DE CONSULTA (read-only) ── */}
       {viewEvt && (() => {
-        const totalIng    = viewIng.reduce((s, i) => s + (i.monto ?? 0), 0)
-        const totalGastos = viewOps.reduce((s, o) => s + (o.monto ?? 0), 0)
-        const saldoGastos = viewOps.reduce((s, o) => s + (o.saldo ?? 0), 0)
-        const utilidad    = totalIng - totalGastos
+        const totalIng       = viewIng.reduce((s, i) => s + (i.monto ?? 0), 0)
+        const totalGastosOps = viewOps.reduce((s, o) => s + (o.monto ?? 0), 0)
+        const totalGastosMan = viewGastos.reduce((s, g) => s + (g.monto ?? 0), 0)
+        const totalGastos    = totalGastosOps + totalGastosMan
+        const saldoGastos    = viewOps.reduce((s, o) => s + (o.saldo ?? 0), 0)
+        const utilidad       = totalIng - totalGastos
         const sc          = STATUS_COLORS[viewEvt.status] ?? { bg: '#f8fafc', color: '#64748b' }
         const tipo        = viewEvt.cat_tipos_evento
 
@@ -2492,11 +2499,11 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     <div className="card" style={{ padding: '12px 14px', background: '#fef2f2' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <TrendingDown size={13} style={{ color: '#dc2626' }} />
-                        <span style={{ fontSize: 10, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Gastos (OPs)</span>
+                        <span style={{ fontSize: 10, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '.05em', fontWeight: 600 }}>Gastos</span>
                       </div>
                       <div style={{ fontSize: 20, fontWeight: 700, color: '#dc2626' }}>{fmt$(totalGastos)}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {viewOps.length} OP{viewOps.length !== 1 ? 's' : ''}
+                        {viewOps.length} OP{viewOps.length !== 1 ? 's' : ''} + {viewGastos.length} manual{viewGastos.length !== 1 ? 'es' : ''}
                         {saldoGastos > 0 && <> · saldo {fmt$(saldoGastos)}</>}
                       </div>
                     </div>
@@ -2575,7 +2582,38 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                     </div>
                   )}
 
-                  {viewIng.length === 0 && viewOps.length === 0 && (
+                  {/* Detalle compacto de Gastos manuales */}
+                  {viewGastos.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                        Detalle de Gastos Manuales
+                      </div>
+                      <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                          <thead>
+                            <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
+                              {['Concepto', 'Proveedor', 'Tipo', 'Fecha', 'Monto'].map(h => (
+                                <th key={h} style={{ padding: '7px 10px', textAlign: 'left', fontWeight: 600, fontSize: 10, color: 'var(--text-muted)' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {viewGastos.map((g, i) => (
+                              <tr key={g.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                                <td style={{ padding: '6px 10px' }}>{g.concepto}</td>
+                                <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{g.proveedor ?? '—'}</td>
+                                <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{g.tipo_gasto ?? '—'}</td>
+                                <td style={{ padding: '6px 10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{g.fecha ? fmtFecha(g.fecha) : '—'}</td>
+                                <td style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>{fmt$(g.monto)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {viewIng.length === 0 && viewOps.length === 0 && viewGastos.length === 0 && (
                     <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 13 }}>
                       Sin movimientos financieros registrados
                     </div>
