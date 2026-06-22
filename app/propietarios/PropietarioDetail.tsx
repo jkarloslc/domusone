@@ -1,8 +1,10 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { dbCat, dbCtrl, type Propietario } from '@/lib/supabase'
+import { useEffect, useState, useCallback } from 'react'
+import { dbCat, dbCtrl, type Propietario, type Lote } from '@/lib/supabase'
 import { Edit2, User, Phone, Mail, MapPin, FileText, Home } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import LoteDetail from '@/app/lotes/LoteDetail'
+import LoteModal from '@/app/lotes/LoteModal'
 
 type Props = { propietario: Propietario; onClose: () => void; onEdit: () => void }
 
@@ -10,29 +12,35 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
   const [telefonos, setTelefonos] = useState<any[]>([])
   const [correos, setCorreos]     = useState<any[]>([])
   const [lotes, setLotes]         = useState<any[]>([])
+  const [loteDetail, setLoteDetail] = useState<Lote | null>(null)
+  const [loteEdit, setLoteEdit]     = useState<Lote | null>(null)
+
+  const loadLotes = useCallback(() => {
+    dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', Number(p.id))
+      .then(async ({ data }) => {
+        const rows = data ?? []
+        if (!rows.length) { setLotes([]); return }
+        const loteIds = rows.map((r: any) => r.id_lote_fk).filter(Boolean)
+        const { data: lotesData } = await dbCat.from('lotes').select('*').in('id', loteIds)
+        const lotesMap: Record<number, Lote> = {}
+        ;(lotesData ?? []).forEach((l: any) => { lotesMap[l.id] = l })
+        setLotes(rows.map((r: any) => ({ ...r, lotes: lotesMap[r.id_lote_fk] ?? null })))
+      })
+  }, [p.id])
 
   useEffect(() => {
     dbCat.from('propietarios_telefonos').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
       .then(({ data }) => setTelefonos(data ?? []))
     dbCat.from('propietarios_correos').select('*').eq('id_propietario_fk', p.id).eq('activo', true)
       .then(({ data }) => setCorreos(data ?? []))
-    dbCtrl.from('propietarios_lotes').select('*').eq('id_propietario_fk', Number(p.id))
-      .then(async ({ data }) => {
-        const rows = data ?? []
-        if (!rows.length) { setLotes([]); return }
-        const loteIds = rows.map((r: any) => r.id_lote_fk).filter(Boolean)
-        const { data: lotesData } = await dbCat.from('lotes')
-          .select('id, cve_lote, lote, status_lote').in('id', loteIds)
-        const lotesMap: Record<number, any> = {}
-        ;(lotesData ?? []).forEach((l: any) => { lotesMap[l.id] = l })
-        setLotes(rows.map((r: any) => ({ ...r, lotes: lotesMap[r.id_lote_fk] ?? null })))
-      })
-  }, [p.id])
+    loadLotes()
+  }, [p.id, loadLotes])
 
   const nombre = [p.nombre, (p as any).apellido_paterno, (p as any).apellido_materno].filter(Boolean).join(' ')
   const subtitulo = [(p as any).razon_social, (p as any).tipo_persona ?? 'Física', p.activo ? 'Activo' : 'Inactivo'].filter(Boolean).join(' • ')
 
   return (
+    <>
     <ModalShell modulo="propietarios" titulo={nombre} subtitulo={subtitulo} onClose={onClose} maxWidth={500}
       footer={
         <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>
@@ -74,9 +82,16 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
               ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Sin lotes asignados</span>
               : lotes.map((l: any, i: number) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'var(--surface-700)', borderRadius: 6 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>
-                    {l.lotes?.cve_lote ?? '—'}
-                  </span>
+                  {l.lotes ? (
+                    <button
+                      onClick={() => setLoteDetail(l.lotes)}
+                      style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                    >
+                      {l.lotes.cve_lote ?? `#${l.lotes.lote}`}
+                    </button>
+                  ) : (
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>—</span>
+                  )}
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.lotes?.status_lote}</span>
                   {l.es_principal && <span className="badge badge-vendido" style={{ marginLeft: 'auto', fontSize: 10 }}>Principal</span>}
                   {l.porcentaje && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.porcentaje}%</span>}
@@ -87,6 +102,23 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
 
       </div>
     </ModalShell>
+
+    {loteDetail && (
+      <LoteDetail
+        lote={loteDetail}
+        onClose={() => setLoteDetail(null)}
+        onEdit={() => { setLoteEdit(loteDetail); setLoteDetail(null) }}
+      />
+    )}
+
+    {loteEdit && (
+      <LoteModal
+        lote={loteEdit}
+        onClose={() => setLoteEdit(null)}
+        onSaved={() => { setLoteEdit(null); loadLotes() }}
+      />
+    )}
+    </>
   )
 }
 
