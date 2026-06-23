@@ -100,6 +100,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   type PagoLinea = { id_forma_pago_fk: number; forma_nombre: string; monto: string; referencia: string }
 
   const [descuentoExtra, setDescuentoExtra] = useState('')
+  const [cargoAdicionalStr, setCargoAdicionalStr] = useState('')
   const [pagosLineas, setPagosLineas] = useState<PagoLinea[]>([
     { id_forma_pago_fk: 0, forma_nombre: '', monto: '', referencia: '' }
   ])
@@ -154,8 +155,10 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   // ── Cálculos ───────────────────────────────────────────────
   const cuotasSelec   = cuotas.filter(c => seleccionadas.has(c.id))
   const subtotalBruto = cuotasSelec.reduce((a, c) => a + (c.saldo ?? c.monto_final), 0)
-  const descExtra     = Math.min(parseFloat(descuentoExtra) || 0, subtotalBruto)
-  const totalCobro    = Math.max(0, subtotalBruto - descExtra)
+  const cargoAdicional   = Math.max(0, parseFloat(cargoAdicionalStr) || 0)
+  const subtotalConCargo = subtotalBruto + cargoAdicional
+  const descExtra     = Math.min(parseFloat(descuentoExtra) || 0, subtotalConCargo)
+  const totalCobro    = Math.max(0, subtotalConCargo - descExtra)
 
   // Cobro parcial
   const montoParcial  = Math.min(parseFloat(montoParcialStr) || totalCobro, totalCobro)
@@ -214,7 +217,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       folio,
       id_socio_fk:       idSocio,
       fecha_recibo:      fechaPago,
-      subtotal:          subtotalBruto,
+      subtotal:          subtotalConCargo,
       descuento:         descExtra,
       total:             montoParcial,
       id_forma_pago_fk:  pagosOk[0]?.id_forma_pago_fk ?? null,
@@ -231,8 +234,10 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     const folioFinal = (reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).folio
     setIdVentaPos((reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).id_venta_pos_fk ?? null)
 
-    // 3. Insertar detalle del recibo — monto aplicado por cuota (greedy)
+    // 3. Insertar detalle del recibo — el cargo adicional se cobra primero, luego cuotas (greedy)
     let rem2 = montoParcial
+    const cargoAplicado = cargoAdicional > 0 ? Math.min(rem2, cargoAdicional) : 0
+    rem2 = parseFloat((rem2 - cargoAplicado).toFixed(2))
     const detRows = cuotasSelec.map(c => {
       const cuotaSaldo = c.saldo ?? c.monto_final
       const aplicar = Math.min(rem2, cuotaSaldo)
@@ -248,6 +253,18 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         monto_final:    parseFloat(aplicar.toFixed(2)),
       }
     }).filter(d => d.monto_final > 0)
+    if (cargoAplicado > 0) {
+      detRows.unshift({
+        id_recibo_fk:   reciboId,
+        id_cuota_fk:    null,
+        concepto:       'Cargo adicional',
+        tipo:           null,
+        periodo:        null,
+        monto_original: cargoAdicional,
+        descuento:      0,
+        monto_final:    parseFloat(cargoAplicado.toFixed(2)),
+      } as any)
+    }
 
     const { error: e2 } = await dbGolf.from('recibos_golf_det').insert(detRows)
     if (e2) { setError(e2.message); setSaving(false); return }
@@ -264,8 +281,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     )
     if (ePagos) { setError(ePagos.message); setSaving(false); return }
 
-    // 5. Aplicar pago greedy a cuotas
-    let remaining = montoParcial
+    // 5. Aplicar pago greedy a cuotas (lo cobrado del cargo adicional no reduce saldo de ninguna cuota)
+    let remaining = parseFloat((montoParcial - cargoAplicado).toFixed(2))
     const updates: PromiseLike<any>[] = []
     const mensualidadesPagadasCompleto: Cuota[] = []
     for (const c of cuotasSelec) {
@@ -414,7 +431,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           id_socio_fk: idSocio,
           nombre_cliente: nc(socioInfo),
           es_socio: true,
-          subtotal: subtotalBruto,
+          subtotal: subtotalConCargo,
           descuento: descExtra,
           iva: 0,
           total: montoParcial,
@@ -441,6 +458,21 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           total: c.saldo ?? c.monto_final,
           notas: c.periodo ?? null,
         }))
+        if (cargoAdicional > 0) {
+          detInsert.push({
+            id_venta_fk: ventaId!,
+            id_producto_fk: null,
+            concepto: `Cargo adicional (${recibo.folio})`,
+            cantidad: 1,
+            precio_unitario: cargoAdicional,
+            descuento: 0,
+            iva_pct: 0,
+            iva: 0,
+            subtotal: cargoAdicional,
+            total: cargoAdicional,
+            notas: null,
+          })
+        }
         if (descExtra > 0) {
           detInsert.push({
             id_venta_fk: ventaId!,
@@ -486,6 +518,15 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         iva: 0,
         total: c.saldo ?? c.monto_final,
       }))
+      if (cargoAdicional > 0) {
+        itemsTicket.push({
+          concepto: `Cargo adicional (${recibo.folio})`,
+          cantidad: 1,
+          precio_unitario: cargoAdicional,
+          iva: 0,
+          total: cargoAdicional,
+        })
+      }
       if (descExtra > 0) {
         itemsTicket.push({
           concepto: `Descuento adicional (${recibo.folio})`,
@@ -704,6 +745,16 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                         <td className="right" style={{ fontWeight: 600 }}>{fmt$(c.saldo ?? c.monto_final)}</td>
                       </tr>
                     ))}
+                    {cargoAdicional > 0 && (
+                      <tr>
+                        <td>Cargo adicional</td>
+                        <td>—</td>
+                        <td>—</td>
+                        <td className="right">{fmt$(cargoAdicional)}</td>
+                        <td className="right">—</td>
+                        <td className="right" style={{ fontWeight: 600 }}>{fmt$(cargoAdicional)}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
 
@@ -712,6 +763,12 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                     <span>Subtotal adeudado</span>
                     <span>{fmt$(subtotalBruto)}</span>
                   </div>
+                  {cargoAdicional > 0 && (
+                    <div className="totales-row">
+                      <span>Cargo adicional</span>
+                      <span style={{ color: '#059669' }}>+ {fmt$(cargoAdicional)}</span>
+                    </div>
+                  )}
                   {descExtra > 0 && (
                     <div className="totales-row">
                       <span>Descuento adicional</span>
@@ -793,6 +850,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     <ModalShell modulo="golf-carritos" titulo="Cobrar Cuotas" subtitulo={nombreSocio} maxWidth={520} icono={Receipt} onClose={onClose} footer={<>
       <div>
         <div style={{ fontSize: 11, color: '#64748b' }}>{cuotasSelec.length} cuota{cuotasSelec.length !== 1 ? 's' : ''} · subtotal {fmt$(subtotalBruto)}</div>
+        {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#059669' }}>+ cargo adicional {fmt$(cargoAdicional)}</div>}
         {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626' }}>– descuento {fmt$(descExtra)}</div>}
         <div style={{ fontSize: 22, fontWeight: 700, color: esParcial ? '#d97706' : '#059669' }}>
           {fmt$(montoParcial)}
@@ -875,8 +933,21 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                 </div>
               </div>
 
-              {/* Descuento adicional */}
+              {/* Cargo adicional + Descuento adicional */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Cargo adicional ($)</label>
+                  <input
+                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                    type="number" min="0" step="0.01"
+                    value={cargoAdicionalStr}
+                    onChange={e => setCargoAdicionalStr(e.target.value)}
+                    placeholder="0.00"
+                  />
+                  {cargoAdicional > 0 && (
+                    <div style={{ fontSize: 11, color: '#059669', marginTop: 3 }}>+ {fmt$(cargoAdicional)} sobre el total</div>
+                  )}
+                </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Descuento adicional ($)</label>
                   <input
@@ -890,13 +961,14 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                     <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>– {fmt$(descExtra)} sobre el total</div>
                   )}
                 </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Fecha de pago</label>
-                  <input
-                    style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
-                    type="date" value={fechaPago} onChange={e => setFechaPago(e.target.value)}
-                  />
-                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Fecha de pago</label>
+                <input
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                  type="date" value={fechaPago} onChange={e => setFechaPago(e.target.value)}
+                />
               </div>
 
               {/* Formas de pago — multi-línea */}
