@@ -26,12 +26,16 @@ type Cuota = {
   fecha_pago: string | null
   forma_pago: string | null
   tipo: string
-  cat_socios: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; id_categoria_fk: number | null } | null
+  cat_socios: {
+    nombre: string; apellido_paterno: string | null; apellido_materno: string | null; id_categoria_fk: number | null
+    cat_categorias_socios?: { nombre: string } | null
+  } | null
 }
 
 type SocioGroup = {
   id: number
   nombre: string
+  categoria: string | null
   cuotas: Cuota[]
   totalPendiente: number
   totalVencido: number
@@ -55,6 +59,7 @@ function agrupar(cuotas: Cuota[]): SocioGroup[] {
       map.set(c.id_socio_fk, {
         id: c.id_socio_fk,
         nombre: nc(c.cat_socios),
+        categoria: c.cat_socios?.cat_categorias_socios?.nombre ?? null,
         cuotas: [],
         totalPendiente: 0,
         totalVencido: 0,
@@ -91,7 +96,7 @@ export default function CXCGolfPage() {
     const { data } = await dbGolf.from('cxc_golf')
       .select(`id, id_socio_fk, concepto, periodo, monto_original, descuento, monto_final, saldo,
         status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago, tipo,
-        cat_socios(nombre, apellido_paterno, apellido_materno, id_categoria_fk)`)
+        cat_socios(nombre, apellido_paterno, apellido_materno, id_categoria_fk, cat_categorias_socios(nombre))`)
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .neq('tipo', 'PENSION_CARRITO')
       .order('fecha_vencimiento', { ascending: true })
@@ -269,7 +274,14 @@ export default function CXCGolfPage() {
 
                   {/* Nombre + conteo */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: '#1e293b' }}>{g.nombre}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 600, fontSize: 14, color: '#1e293b' }}>{g.nombre}</span>
+                      {g.categoria && (
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: '#475569', flexShrink: 0 }}>
+                          {g.categoria}
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: 12, color: '#64748b', marginTop: 1 }}>
                       {g.cuotas.length} cuota{g.cuotas.length !== 1 ? 's' : ''} pendiente{g.cuotas.length !== 1 ? 's' : ''}
                       {hasVenc && <span style={{ marginLeft: 8, color: '#dc2626', fontWeight: 600 }}>· {fmt$(g.totalVencido)} vencido</span>}
