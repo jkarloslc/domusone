@@ -106,7 +106,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   ])
   const [fechaPago, setFechaPago] = useState(hoyLocal)
   const [observaciones, setObservaciones] = useState('')
-  const [facturable, setFacturable]     = useState(false)
   const [montoParcialStr, setMontoParcialStr] = useState('')
 
   const [saving, setSaving]     = useState(false)
@@ -226,7 +225,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       observaciones:     observaciones || null,
       usuario_cobra:     authUser?.nombre ?? 'sistema',
       status:            'VIGENTE',
-      facturable,
     }).select('id, folio, id_venta_pos_fk').single()
 
     if (e1 || !reciboData) { setError(e1?.message ?? 'Error al crear recibo'); setSaving(false); return }
@@ -436,7 +434,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           iva: 0,
           total: montoParcial,
           status: 'PAGADA',
-          facturable,
           usuario_crea: authUser?.nombre ?? 'sistema',
           notas: `Ticket POS generado desde recibo golf ${recibo.folio} (#${recibo.id})${esParcial ? ' [PAGO PARCIAL]' : ''}`,
         }).select('id, folio_dia').single()
@@ -682,7 +679,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                   <div className="doc-title">Recibo de Cobro</div>
                   <div style={{ fontSize: 11, color: '#64748b' }}>Folio: <strong>{recibo.folio}</strong></div>
                   <div style={{ fontSize: 11, color: '#64748b' }}>{fechaFmt(fechaPago)}</div>
-                  {facturable && <span className="badge badge-fact" style={{ marginTop: 4, display: 'inline-block' }}>Facturable</span>}
                 </div>
               </div>
 
@@ -1043,24 +1039,13 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                 )}
               </div>
 
-              {/* Observaciones y facturable */}
+              {/* Observaciones */}
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Observaciones</label>
                 <textarea
                   style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', height: 52, resize: 'vertical' }}
                   value={observaciones} onChange={e => setObservaciones(e.target.value)}
                 />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: facturable ? '#eff6ff' : '#f8fafc', border: `1px solid ${facturable ? '#bfdbfe' : '#e2e8f0'}`, borderRadius: 8, cursor: 'pointer' }}
-                onClick={() => setFacturable(f => !f)}>
-                <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${facturable ? '#2563eb' : '#cbd5e1'}`, background: facturable ? '#2563eb' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {facturable && <CheckCircle size={12} color="#fff" />}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: facturable ? '#1d4ed8' : '#475569' }}>Solicita factura</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>Marca este cobro como facturable para emisión posterior</div>
-                </div>
               </div>
 
               {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>}

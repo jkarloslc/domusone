@@ -3,11 +3,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  RefreshCw, Search, Receipt, Printer, FileCheck,
+  RefreshCw, Search, Receipt, Printer,
   XCircle, ChevronLeft, FileText, AlertTriangle, Loader,
 } from 'lucide-react'
 import Link from 'next/link'
-import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 // ── Tipos ─────────────────────────────────────────────────────
@@ -23,8 +22,6 @@ type Recibo = {
   observaciones: string | null
   usuario_cobra: string | null
   status: string               // VIGENTE | CANCELADO
-  facturable: boolean
-  folio_fiscal: string | null
   created_at: string
   id_socio_fk: number
   id_venta_pos_fk: number | null
@@ -86,7 +83,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
   const [loading, setLoading]         = useState(true)
   const [busqueda, setBusqueda]       = useState('')
   const [filtroStatus, setFiltroStatus] = useState('VIGENTE')
-  const [filtroFact, setFiltroFact]   = useState<'todos' | 'si' | 'no'>('todos')
   const [pagina, setPagina]           = useState(1)
 
   // Modal detalle
@@ -96,11 +92,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
   const [cancelando, setCancelando]   = useState<Recibo | null>(null)
   const [motivoCancel, setMotivoCancel] = useState('')
   const [savingCancel, setSavingCancel] = useState(false)
-
-  // Modal facturar
-  const [facturando, setFacturando]   = useState<Recibo | null>(null)
-  const [receptorFact, setReceptorFact] = useState<any>({})
-  const [fiscalOptionsFact, setFiscalOptionsFact] = useState<any[]>([])
 
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -114,7 +105,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       .select(`
         id, folio, fecha_recibo, subtotal, descuento, total,
         forma_pago_nombre, referencia_pago, observaciones,
-        usuario_cobra, status, facturable, folio_fiscal, created_at, id_socio_fk,
+        usuario_cobra, status, created_at, id_socio_fk,
         id_venta_pos_fk, id_forma_pago_fk,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, email,
           cat_categorias_socios(nombre)),
@@ -141,8 +132,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
     const folio  = r.folio.toLowerCase()
     const q      = busqueda.toLowerCase()
     if (q && !nombre.includes(q) && !folio.includes(q)) return false
-    if (filtroFact === 'si'  && !r.facturable)  return false
-    if (filtroFact === 'no'  &&  r.facturable)  return false
     return true
   })
 
@@ -152,8 +141,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
   // KPIs
   const totalVigente   = recibos.filter(r => r.status === 'VIGENTE').reduce((a, r) => a + r.total, 0)
   const countVigente   = recibos.filter(r => r.status === 'VIGENTE').length
-  const countFacturable = recibos.filter(r => r.status === 'VIGENTE' && r.facturable && !r.folio_fiscal).length
-  const countFacturado  = recibos.filter(r => !!r.folio_fiscal).length
 
   // ── Cancelar recibo ────────────────────────────────────────
   const handleCancelar = async () => {
@@ -180,37 +167,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
     setCancelando(null)
     setMotivoCancel('')
     cargar()
-  }
-
-  // ── Abrir modal de facturación ─────────────────────────────
-  const abrirFacturar = async (r: Recibo) => {
-    // Cargar datos fiscales del socio (puede tener varios)
-    const [{ data: soc }, { data: fiscales }] = await Promise.all([
-      dbGolf.from('cat_socios').select('nombre, apellido_paterno, apellido_materno, email').eq('id', r.id_socio_fk).single(),
-      dbGolf.from('cat_socios_datos_fiscales')
-        .select('id, alias, rfc, razon_social_fiscal, cp_fiscal, regimen_fiscal, uso_cfdi, email_fiscal')
-        .eq('id_socio_fk', r.id_socio_fk)
-        .order('es_principal', { ascending: false })
-        .order('created_at'),
-    ])
-    const nombreCompleto = soc
-      ? [soc.nombre, soc.apellido_paterno, soc.apellido_materno].filter(Boolean).join(' ')
-      : ''
-    const opciones = (fiscales ?? []).map(f => ({
-      id:             f.id,
-      alias:          f.alias || f.razon_social_fiscal,
-      rfc:            f.rfc,
-      razon_social:   f.razon_social_fiscal,
-      cp:             f.cp_fiscal      ?? '',
-      regimen_fiscal: f.regimen_fiscal ?? '626',
-      uso_cfdi:       f.uso_cfdi       ?? 'G03',
-      email:          f.email_fiscal   ?? '',
-    }))
-    setFiscalOptionsFact(opciones)
-    setReceptorFact(opciones[0] ?? {
-      rfc: '', razon_social: nombreCompleto, cp: '', regimen_fiscal: '626', uso_cfdi: 'G03', email: (soc as any)?.email || '',
-    })
-    setFacturando(r)
   }
 
   // ── Imprimir recibo ────────────────────────────────────────
@@ -269,7 +225,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         .firma-line{border-top:1px solid #1e293b;padding-top:4px;font-size:10px;color:#64748b;text-align:center}
         .footer{margin-top:32px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}
         .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
-        .badge-fact{background:#eff6ff;color:#1d4ed8}
         .badge-cancel{background:#fee2e2;color:#dc2626}
         @page{margin:1.2cm}
       </style></head><body>
@@ -283,9 +238,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
           <div class="doc-title">Recibo de Cobro</div>
           <div style="font-size:11px;color:#64748b">Folio: <strong>${r.folio}</strong></div>
           <div style="font-size:11px;color:#64748b">${fechaFmt(r.fecha_recibo)}</div>
-          ${r.facturable ? '<span class="badge badge-fact" style="margin-top:4px">Facturable</span>' : ''}
           ${r.status === 'CANCELADO' ? '<span class="badge badge-cancel" style="margin-top:4px">CANCELADO</span>' : ''}
-          ${r.folio_fiscal ? `<div style="font-size:10px;color:#7c3aed;margin-top:4px">UUID: ${r.folio_fiscal}</div>` : ''}
         </div>
       </div>
       <div class="section">
@@ -455,7 +408,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
                 <Receipt size={20} color="#0891b2" />
                 <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1e293b' }}>Recibos de Cobro</h1>
               </div>
-              <p style={{ fontSize: 13, color: '#64748b' }}>Consulta, reimpresión y facturación de cobros de cuotas</p>
+              <p style={{ fontSize: 13, color: '#64748b' }}>Consulta y reimpresión de cobros de cuotas</p>
             </div>
             <button onClick={cargar}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
@@ -469,8 +422,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
           { label: 'Recibos vigentes', value: countVigente, sub: fmt$(totalVigente), color: '#15803d', bg: '#dcfce7' },
-          { label: 'Por facturar', value: countFacturable, sub: 'Marcados facturable sin UUID', color: '#d97706', bg: '#fef3c7' },
-          { label: 'Facturados', value: countFacturado, sub: 'Con folio fiscal capturado', color: '#7c3aed', bg: '#ede9fe' },
         ].map(k => (
           <div key={k.label} style={{ flex: '1 1 180px', minWidth: 160, background: k.bg, borderRadius: 12, padding: '14px 18px' }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: k.color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{k.label}</div>
@@ -497,13 +448,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
           <option value="VIGENTE">Vigentes</option>
           <option value="CANCELADO">Cancelados</option>
         </select>
-        <select
-          style={{ padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', outline: 'none' }}
-          value={filtroFact} onChange={e => { setFiltroFact(e.target.value as 'todos'|'si'|'no'); setPagina(1) }}>
-          <option value="todos">Todos (facturación)</option>
-          <option value="si">Solo facturables</option>
-          <option value="no">No facturables</option>
-        </select>
         {embedded && (
           <button onClick={cargar}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
@@ -517,16 +461,16 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f8fafc' }}>
-              {['Folio', 'Socio', 'Fecha', 'Cuotas', 'Total', 'Forma pago', 'Status', 'Facturación', 'Acciones'].map(h => (
+              {['Folio', 'Socio', 'Fecha', 'Cuotas', 'Total', 'Forma pago', 'Status', 'Acciones'].map(h => (
                 <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 13 }}>Cargando recibos…</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 13 }}>Cargando recibos…</td></tr>
             ) : recibosPag.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 13 }}>Sin recibos con los filtros actuales</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: '#94a3b8', fontSize: 13 }}>Sin recibos con los filtros actuales</td></tr>
             ) : recibosPag.map((r, i) => {
               const sc  = STATUS_COLOR[r.status] ?? STATUS_COLOR['VIGENTE']
               const cancelado = r.status === 'CANCELADO'
@@ -566,19 +510,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
                       {sc.label}
                     </span>
                   </td>
-                  {/* Facturación */}
-                  <td style={{ padding: '12px 14px' }}>
-                    {r.folio_fiscal ? (
-                      <div>
-                        <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, background: '#ede9fe', color: '#7c3aed' }}>Facturado</span>
-                        <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 2, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.folio_fiscal}</div>
-                      </div>
-                    ) : r.facturable ? (
-                      <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, background: '#fef3c7', color: '#d97706' }}>Por facturar</span>
-                    ) : (
-                      <span style={{ fontSize: 11, color: '#cbd5e1' }}>—</span>
-                    )}
-                  </td>
                   {/* Acciones */}
                   <td style={{ padding: '12px 14px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -586,12 +517,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
                         style={{ padding: '5px 8px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center' }}>
                         <Printer size={13} />
                       </button>
-                      {!cancelado && r.facturable && !r.folio_fiscal && (
-                        <button onClick={() => abrirFacturar(r)} title="Generar CFDI"
-                          style={{ padding: '5px 8px', border: '1px solid #ddd6fe', borderRadius: 6, background: '#f5f3ff', cursor: 'pointer', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
-                          <FileCheck size={13} /> Facturar
-                        </button>
-                      )}
                       {!cancelado && (
                         <button onClick={() => { setCancelando(r); setMotivoCancel('') }} title="Cancelar recibo"
                           style={{ padding: '5px 8px', border: '1px solid #fecaca', borderRadius: 6, background: '#fef2f2', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center' }}>
@@ -679,12 +604,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
                 <div><div style={{ fontSize: 10, color: '#15803d', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Forma de pago</div><div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{detalle.forma_pago_nombre ?? '—'}</div></div>
                 {detalle.referencia_pago && <div><div style={{ fontSize: 10, color: '#15803d', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Referencia</div><div style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>{detalle.referencia_pago}</div></div>}
               </div>
-              {/* Factura */}
-              {detalle.folio_fiscal && (
-                <div style={{ padding: '8px 14px', background: '#ede9fe', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#7c3aed', marginBottom: 12 }}>
-                  <strong>UUID Fiscal:</strong> {detalle.folio_fiscal}
-                </div>
-              )}
               {detalle.observaciones && (
                 <div style={{ padding: '8px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
                   <strong>Observaciones:</strong> {detalle.observaciones}
@@ -746,28 +665,6 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
             </div>
           </div>
         </div>
-      )}
-
-      {/* ── Modal Facturar ─────────────────────────────────────── */}
-      {facturando && (
-        <FacturaUniversalModal
-          titulo={`Facturar Recibo ${facturando.folio}`}
-          folio={facturando.folio}
-          total={facturando.total}
-          fecha={facturando.fecha_recibo}
-          conceptos={facturando.recibos_golf_det.map(d => ({
-            descripcion: d.concepto,
-            importe:     d.monto_final,
-          }))}
-          receptorInit={receptorFact}
-          fiscalOptions={fiscalOptionsFact}
-          formaPagoStr={facturando.forma_pago_nombre ?? ''}
-          onClose={() => setFacturando(null)}
-          onSaved={() => { setFacturando(null); cargar() }}
-          saveFactura={async (folio_fiscal) => {
-            await dbGolf.from('recibos_golf').update({ folio_fiscal }).eq('id', facturando.id)
-          }}
-        />
       )}
 
     </div>
