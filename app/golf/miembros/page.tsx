@@ -111,7 +111,10 @@ export default function MiembrosPage() {
       }
     })
 
-    setStats({ total: data.length, activos, inactivos, vencidos })
+    const CATEGORIAS_EXCLUIDAS_TOTAL = [14, 16, 17]
+    const totalSinExcluidos = data.filter((s: any) => !CATEGORIAS_EXCLUIDAS_TOTAL.includes(s.id_categoria_fk)).length
+
+    setStats({ total: totalSinExcluidos, activos, inactivos, vencidos })
     setStatsCat(
       Object.entries(catMap)
         .map(([id, v]) => ({ id: Number(id), nombre: v.nombre, count: v.count }))
