@@ -6,11 +6,11 @@ import { RefreshCw, Filter } from 'lucide-react'
 
 export default function ReporteConsumoFrente() {
   const [rows, setRows]           = useState<any[]>([])
-  const [secciones, setSecciones] = useState<any[]>([])
+  const [areas, setAreas]         = useState<any[]>([])
   const [frentes, setFrentes]     = useState<any[]>([])
   const [provMap, setProvMap]     = useState<Record<number, string>>({})
   const [loading, setLoading]     = useState(true)
-  const [filtroSec, setFiltroSec]   = useState('')
+  const [filtroArea, setFiltroArea] = useState('')
   const [filtroFre, setFiltroFre]   = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroDe, setFiltroDe]     = useState('')
@@ -19,18 +19,18 @@ export default function ReporteConsumoFrente() {
   const fetchData = useCallback(async () => {
     setLoading(true)
 
-    const [{ data: secs }, { data: fres }, { data: provs }, { data: ops }] = await Promise.all([
-      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_seccion_fk').eq('activo', true).order('nombre'),
+    const [{ data: ars }, { data: fres }, { data: provs }, { data: ops }] = await Promise.all([
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, id_frente_fk, id_seccion_fk, id_proveedor_fk, concepto, tipo_gasto, monto, saldo, fecha_op, status')
+        .select('id, folio, id_frente_fk, id_area_fk, id_proveedor_fk, concepto, tipo_gasto, monto, saldo, fecha_op, status')
         .not('id_frente_fk', 'is', null)
         .neq('status', 'Cancelada')
         .order('fecha_op', { ascending: false }),
     ])
 
-    setSecciones(secs ?? [])
+    setAreas(ars ?? [])
     setFrentes(fres ?? [])
 
     const pm: Record<number, string> = {}
@@ -39,15 +39,10 @@ export default function ReporteConsumoFrente() {
 
     const freMap: Record<number, any> = {}
     ;(fres ?? []).forEach((f: any) => { freMap[f.id] = f })
-    const secMap: Record<number, string> = {}
-    ;(secs ?? []).forEach((s: any) => { secMap[s.id] = s.nombre })
 
     // Filtrar
     let opsFiltradas = ops ?? []
-    if (filtroSec)  opsFiltradas = opsFiltradas.filter((r: any) => {
-      const fre = freMap[r.id_frente_fk]
-      return fre?.id_seccion_fk === Number(filtroSec)
-    })
+    if (filtroArea) opsFiltradas = opsFiltradas.filter((r: any) => r.id_area_fk === Number(filtroArea))
     if (filtroFre)  opsFiltradas = opsFiltradas.filter((r: any) => r.id_frente_fk === Number(filtroFre))
     if (filtroTipo) opsFiltradas = opsFiltradas.filter((r: any) => r.tipo_gasto === filtroTipo)
     if (filtroDe)   opsFiltradas = opsFiltradas.filter((r: any) => r.fecha_op >= filtroDe)
@@ -62,7 +57,6 @@ export default function ReporteConsumoFrente() {
         grouped[fid] = {
           id_frente_fk:  fid,
           nombre:        fre?.nombre ?? `Frente #${fid}`,
-          seccion:       secMap[fre?.id_seccion_fk] ?? '—',
           total:         0,
           pagado:        0,
           saldo:         0,
@@ -82,14 +76,9 @@ export default function ReporteConsumoFrente() {
     const result = Object.values(grouped).sort((a: any, b: any) => b.total - a.total)
     setRows(result)
     setLoading(false)
-  }, [filtroSec, filtroFre, filtroTipo, filtroDe, filtroA])
+  }, [filtroArea, filtroFre, filtroTipo, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
-
-  // Frentes filtrados según sección elegida
-  const frentesFiltrados = filtroSec
-    ? frentes.filter(f => f.id_seccion_fk === Number(filtroSec))
-    : frentes
 
   const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
   const fmtF = (s: string | null) => s ? new Date(s + 'T00:00:00').toLocaleDateString('es-MX') : '—'
@@ -115,17 +104,16 @@ export default function ReporteConsumoFrente() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-          <select className="select" style={{ minWidth: 180 }} value={filtroSec}
-            onChange={e => { setFiltroSec(e.target.value); setFiltroFre('') }}>
-            <option value="">Todas las secciones</option>
-            {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          <select className="select" style={{ minWidth: 180 }} value={filtroArea}
+            onChange={e => setFiltroArea(e.target.value)}>
+            <option value="">Todas las áreas</option>
+            {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
           </select>
         </div>
         <select className="select" style={{ minWidth: 180 }} value={filtroFre}
-          onChange={e => setFiltroFre(e.target.value)}
-          disabled={frentesFiltrados.length === 0}>
+          onChange={e => setFiltroFre(e.target.value)}>
           <option value="">Todos los frentes</option>
-          {frentesFiltrados.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+          {frentes.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
         <select className="select" style={{ minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
@@ -178,8 +166,6 @@ export default function ReporteConsumoFrente() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: '#7c3aed' }}>{fre.nombre}</span>
-              <span style={{ fontSize: 11, color: '#7c3aed', background: '#ede9fe',
-                padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{fre.seccion}</span>
               <span style={{ fontSize: 12, color: 'var(--text-muted)', background: '#f1f5f9',
                 padding: '2px 8px', borderRadius: 20 }}>{fre.docs} OP{fre.docs !== 1 ? 's' : ''}</span>
             </div>
