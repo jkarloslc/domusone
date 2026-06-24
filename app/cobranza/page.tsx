@@ -3,14 +3,16 @@ import { useState } from 'react'
 import CargosTab    from './CargosTab'
 import RecibosTab   from './RecibosTab'
 import CuotasTab    from './CuotasTab'
-import { FileText, Receipt, AlertTriangle } from 'lucide-react'
+import AgendaCobranza from '@/components/cobranza/AgendaCobranza'
+import { FileText, Receipt, AlertTriangle, Calendar } from 'lucide-react'
 
-type Tab = 'cargos' | 'recibos' | 'excepciones'
+type Tab = 'cargos' | 'recibos' | 'excepciones' | 'agenda'
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'cargos',      label: 'Cargos',               icon: <FileText      size={14} /> },
   { key: 'recibos',     label: 'Recibos',              icon: <Receipt       size={14} /> },
   { key: 'excepciones', label: 'Tarifas Excepcionales', icon: <AlertTriangle size={14} /> },
+  { key: 'agenda',      label: 'Agenda Cobranza',      icon: <Calendar      size={14} /> },
 ]
 
 function CobranzaContent({ embedded }: { embedded?: boolean }) {
@@ -51,6 +53,7 @@ function CobranzaContent({ embedded }: { embedded?: boolean }) {
       {tab === 'cargos'      && <CargosTab />}
       {tab === 'recibos'     && <RecibosTab />}
       {tab === 'excepciones' && <CuotasTab />}
+      {tab === 'agenda'      && <AgendaCobranza modulo="residencial" />}
     </div>
   )
 }

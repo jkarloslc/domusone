@@ -4,14 +4,16 @@ import { dbHip, dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight,
-  CreditCard, Receipt, Settings, AlertCircle, Loader, Printer, DollarSign, Zap, FileText,
+  CreditCard, Receipt, Settings, AlertCircle, Loader, Printer, DollarSign, Zap, FileText, ClipboardList, Calendar,
 } from 'lucide-react'
 import Link from 'next/link'
 import AsignacionModal, { type AsignacionData } from './AsignacionModal'
 import CobrarModal, { type CuotaPendiente, printReciboHip } from './CobrarModal'
+import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
+import AgendaCobranza from '@/components/cobranza/AgendaCobranza'
 
 // ── Tipos ──────────────────────────────────────────────────────
-type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'config'
+type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'config' | 'agenda'
 
 type Asignacion = {
   id: number
@@ -104,6 +106,7 @@ export default function CobranzaHipicoPage() {
   const [modoCuotas, setModoCuotas]         = useState<{ idAsig: number; monto: number } | null>(null)
   const [showCobrar, setShowCobrar]         = useState<{ cuotas: CuotaPendiente[]; nombreArr: string; idArr: number; nombreCaballeriza: string } | null>(null)
   const [generandoCargo, setGenerandoCargo] = useState<number | null>(null)
+  const [showBitacora, setShowBitacora]     = useState<{ idArr: number; nombre: string } | null>(null)
 
   const [mesGenerar, setMesGenerar] = useState(() => {
     const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -474,9 +477,10 @@ export default function CobranzaHipicoPage() {
   )
 
   const TABS: { key: Tab; label: string; icon: any }[] = [
-    { key: 'asignaciones', label: 'Asignaciones', icon: AlertCircle },
-    { key: 'cobranza',     label: 'Cobranza',     icon: CreditCard  },
-    { key: 'recibos',      label: 'Recibos',      icon: Receipt     },
+    { key: 'asignaciones', label: 'Asignaciones',    icon: AlertCircle  },
+    { key: 'cobranza',     label: 'Cobranza',        icon: CreditCard   },
+    { key: 'recibos',      label: 'Recibos',         icon: Receipt      },
+    { key: 'agenda',       label: 'Agenda Cobranza', icon: Calendar     },
     ...(esAdmin ? [{ key: 'config' as Tab, label: 'Configuración', icon: Settings }] : []),
   ]
 
@@ -701,6 +705,10 @@ export default function CobranzaHipicoPage() {
                                       <DollarSign size={12} /> Cobrar ({fmt$(a.monto_pendiente)})
                                     </button>
                                   )}
+                                  <button onClick={e => { e.stopPropagation(); setShowBitacora({ idArr: a.id_arrendatario_fk, nombre: fmtNombre(a.cat_arrendatarios) }) }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, padding: '4px 10px', borderRadius: 7, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+                                    <ClipboardList size={11} /> Seguimiento
+                                  </button>
                                 </div>
                               </div>
                             </td>
@@ -898,6 +906,11 @@ export default function CobranzaHipicoPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════
+          TAB: AGENDA COBRANZA
+      ══════════════════════════════════════════════════════ */}
+      {tab === 'agenda' && <AgendaCobranza modulo="hipico" />}
+
+      {/* ══════════════════════════════════════════════════════
           TAB: CONFIG
       ══════════════════════════════════════════════════════ */}
       {tab === 'config' && esAdmin && (
@@ -935,6 +948,32 @@ export default function CobranzaHipicoPage() {
           onClose={() => { setShowAsig(false); setEditAsig(undefined); setModoCuotas(null) }}
           onSaved={() => { setShowAsig(false); setEditAsig(undefined); setModoCuotas(null); fetchAsignaciones(); if (tab === 'cobranza') fetchCobranza() }}
         />
+      )}
+
+      {/* Modal Bitácora de Seguimiento */}
+      {showBitacora && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}
+          onClick={e => e.target === e.currentTarget && setShowBitacora(null)}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 600, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.22)', overflow: 'hidden' }}>
+            <div style={{ background: 'linear-gradient(135deg, #44200d 0%, #92400e 100%)', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Seguimiento de Cobranza</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{showBitacora.nombre}</div>
+              </div>
+              <button onClick={() => setShowBitacora(null)} style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 7, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>×</span>
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+              <BitacoraCobranzaTab
+                entidad="arrendatario"
+                idEntidad={showBitacora.idArr}
+                nombreEntidad={showBitacora.nombre}
+                puedeEscribir={puedeEscribir}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal Cobrar */}

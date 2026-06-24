@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { dbGolf, dbCtrl } from '@/lib/supabase'
-import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag } from 'lucide-react'
+import { useAuth } from '@/lib/AuthContext'
+import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag, ClipboardList } from 'lucide-react'
 import type { Socio } from './SocioModal'
+import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 
 type Props = { socio: Socio; onClose: () => void; onEdit: () => void }
 
@@ -26,6 +28,7 @@ const TABS = [
   { key: 'torneos',     label: 'Torneos',           icon: Flag          },
   { key: 'pos',         label: 'Compras POS',       icon: ShoppingCart  },
   { key: 'cuotas',      label: 'Cuotas',            icon: CreditCard    },
+  { key: 'seguimiento', label: 'Seguimiento',        icon: ClipboardList },
   { key: 'notas',       label: 'Notas',             icon: NotebookText  },
   { key: 'fiscal',      label: 'Datos Fiscales',    icon: Receipt       },
 ]
@@ -469,6 +472,7 @@ function Empty({ text, emoji }: { text: string; emoji?: string }) {
 
 // ── Main ─────────────────────────────────────────────────────
 export default function SocioDetail({ socio, onClose, onEdit }: Props) {
+  const { canWrite } = useAuth()
   const [tab, setTab] = useState('info')
   const nombre  = [socio.nombre, socio.apellido_paterno, socio.apellido_materno].filter(Boolean).join(' ')
   const vencido = socio.fecha_vencimiento && new Date(socio.fecha_vencimiento) < new Date()
@@ -570,12 +574,20 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
             </>
           )}
 
-          {tab === 'familiares' && <TabFamiliares   socioId={socio.id} />}
-          {tab === 'accesos'    && <TabAccesos      socioId={socio.id} />}
-          {tab === 'tee'        && <TabTeePractica  socioId={socio.id} />}
-          {tab === 'torneos'    && <TabTorneos      socioId={socio.id} />}
-          {tab === 'pos'        && <TabPOS          socioId={socio.id} />}
-          {tab === 'cuotas'     && <TabCuotas       socioId={socio.id} />}
+          {tab === 'familiares'  && <TabFamiliares   socioId={socio.id} />}
+          {tab === 'accesos'     && <TabAccesos      socioId={socio.id} />}
+          {tab === 'tee'         && <TabTeePractica  socioId={socio.id} />}
+          {tab === 'torneos'     && <TabTorneos      socioId={socio.id} />}
+          {tab === 'pos'         && <TabPOS          socioId={socio.id} />}
+          {tab === 'cuotas'      && <TabCuotas       socioId={socio.id} />}
+          {tab === 'seguimiento' && (
+            <BitacoraCobranzaTab
+              entidad="socio"
+              idEntidad={socio.id}
+              nombreEntidad={nombre}
+              puedeEscribir={canWrite('golf-cxc')}
+            />
+          )}
 
           {/* ── Notas ── */}
           {tab === 'notas' && (

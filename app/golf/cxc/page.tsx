@@ -4,11 +4,13 @@ import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   RefreshCw, CreditCard, Search, X, ChevronLeft,
-  ChevronDown, ChevronRight, Receipt,
+  ChevronDown, ChevronRight, Receipt, ClipboardList, Calendar,
 } from 'lucide-react'
 import Link from 'next/link'
 import CobrarCuotaModal from '../carritos/CobrarCuotaModal'
 import RecibosGolf from '../recibos/RecibosGolf'
+import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
+import AgendaCobranza from '@/components/cobranza/AgendaCobranza'
 
 // ── Tipos ────────────────────────────────────────────────────
 type Cuota = {
@@ -76,7 +78,7 @@ function agrupar(cuotas: Cuota[]): SocioGroup[] {
   return Array.from(map.values()).sort((a, b) => b.totalPendiente - a.totalPendiente)
 }
 
-type Tab = 'cobro' | 'recibos'
+type Tab = 'cobro' | 'recibos' | 'agenda'
 
 export default function CXCGolfPage() {
   const { canWrite } = useAuth()
@@ -87,7 +89,8 @@ export default function CXCGolfPage() {
   const [loading, setLoading]   = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
-  const [showCobrar, setShowCobrar] = useState<{ cuotas: Cuota[]; nombreSocio: string; idSocio: number } | null>(null)
+  const [showCobrar, setShowCobrar]       = useState<{ cuotas: Cuota[]; nombreSocio: string; idSocio: number } | null>(null)
+  const [showBitacora, setShowBitacora]   = useState<{ idSocio: number; nombre: string } | null>(null)
   const [stats, setStats] = useState({ socios: 0, pendiente: 0, vencidas: 0, montoPendiente: 0 })
 
   const fetchCuotas = useCallback(async () => {
@@ -175,8 +178,9 @@ export default function CXCGolfPage() {
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
         {([
-          { key: 'cobro',   label: 'Cobro',                  icon: CreditCard },
-          { key: 'recibos', label: 'Recibos de Membresías',  icon: Receipt    },
+          { key: 'cobro',   label: 'Cobro',                  icon: CreditCard  },
+          { key: 'recibos', label: 'Recibos de Membresías',  icon: Receipt     },
+          { key: 'agenda',  label: 'Agenda Cobranza',        icon: Calendar    },
         ] as { key: Tab; label: string; icon: any }[]).map(t => {
           const Icon = t.icon
           return (
@@ -197,6 +201,9 @@ export default function CXCGolfPage() {
 
       {/* ── TAB: RECIBOS DE MEMBRESÍAS ──────────────────── */}
       {tab === 'recibos' && <RecibosGolf embedded soloMembresias />}
+
+      {/* ── TAB: AGENDA DE COBRANZA ─────────────────────── */}
+      {tab === 'agenda' && <AgendaCobranza modulo="golf" />}
 
       {tab === 'cobro' && (
       <>
@@ -294,6 +301,11 @@ export default function CXCGolfPage() {
                       <div style={{ fontSize: 11, color: '#94a3b8' }}>Total pendiente</div>
                       <div style={{ fontSize: 18, fontWeight: 700, color: hasVenc ? '#dc2626' : '#059669' }}>{fmt$(g.totalPendiente)}</div>
                     </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); setShowBitacora({ idSocio: g.id, nombre: g.nombre }) }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', fontSize: 11, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer', flexShrink: 0 }}>
+                      <ClipboardList size={12} /> Seguimiento
+                    </button>
                     {puedeEscribir && (
                       <button
                         onClick={e => { e.stopPropagation(); abrirCobro(g) }}
@@ -360,6 +372,32 @@ export default function CXCGolfPage() {
           onClose={() => setShowCobrar(null)}
           onSaved={() => { setShowCobrar(null); fetchCuotas() }}
         />
+      )}
+
+      {/* Modal Bitácora de Seguimiento */}
+      {showBitacora && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}
+          onClick={e => e.target === e.currentTarget && setShowBitacora(null)}>
+          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 600, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.22)', overflow: 'hidden' }}>
+            <div style={{ background: 'linear-gradient(135deg, #14532d 0%, #16a34a 100%)', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Seguimiento de Cobranza</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{showBitacora.nombre}</div>
+              </div>
+              <button onClick={() => setShowBitacora(null)} style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 7, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>×</span>
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+              <BitacoraCobranzaTab
+                entidad="socio"
+                idEntidad={showBitacora.idSocio}
+                nombreEntidad={showBitacora.nombre}
+                puedeEscribir={puedeEscribir}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

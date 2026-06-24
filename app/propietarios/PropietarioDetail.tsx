@@ -1,14 +1,19 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl, type Propietario, type Lote } from '@/lib/supabase'
-import { Edit2, User, Phone, Mail, MapPin, FileText, Home } from 'lucide-react'
+import { useAuth } from '@/lib/AuthContext'
+import { Edit2, User, Phone, Mail, MapPin, FileText, Home, ClipboardList } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import LoteDetail from '@/app/lotes/LoteDetail'
 import LoteModal from '@/app/lotes/LoteModal'
+import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 
 type Props = { propietario: Propietario; onClose: () => void; onEdit: () => void }
+type TabKey = 'datos' | 'seguimiento'
 
 export default function PropietarioDetail({ propietario: p, onClose, onEdit }: Props) {
+  const { canWrite } = useAuth()
+  const [tab, setTab]             = useState<TabKey>('datos')
   const [telefonos, setTelefonos] = useState<any[]>([])
   const [correos, setCorreos]     = useState<any[]>([])
   const [lotes, setLotes]         = useState<any[]>([])
@@ -39,13 +44,28 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
   const nombre = [p.nombre, (p as any).apellido_paterno, (p as any).apellido_materno].filter(Boolean).join(' ')
   const subtitulo = [(p as any).razon_social, (p as any).tipo_persona ?? 'Física', p.activo ? 'Activo' : 'Inactivo'].filter(Boolean).join(' • ')
 
+  const TABS_PROP = [
+    { key: 'datos' as TabKey,      label: 'Datos',       icon: User          },
+    { key: 'seguimiento' as TabKey, label: 'Seguimiento', icon: ClipboardList },
+  ]
+
   return (
     <>
-    <ModalShell modulo="propietarios" titulo={nombre} subtitulo={subtitulo} onClose={onClose} maxWidth={500}
+    <ModalShell modulo="propietarios" titulo={nombre} subtitulo={subtitulo} onClose={onClose} maxWidth={520}
+      tabs={TABS_PROP} activeTab={tab} onTabChange={k => setTab(k as TabKey)}
       footer={
         <button className="btn-secondary" onClick={onEdit}><Edit2 size={13} /> Editar</button>
       }
     >
+      {tab === 'seguimiento' && (
+        <BitacoraCobranzaTab
+          entidad="propietario"
+          idEntidad={Number(p.id)}
+          nombreEntidad={nombre}
+          puedeEscribir={canWrite('cobranza')}
+        />
+      )}
+      {tab === 'datos' && (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
           {/* Datos personales */}
@@ -101,6 +121,7 @@ export default function PropietarioDetail({ propietario: p, onClose, onEdit }: P
           </Group>
 
       </div>
+      )}
     </ModalShell>
 
     {loteDetail && (
