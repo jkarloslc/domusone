@@ -53,7 +53,7 @@ async function abrirTicket(entrada: Entrada, autoPrint = true) {
     numero_socio: entrada.cat_socios?.numero_socio ?? null,
     categoria:    entrada.cat_socios?.cat_categorias_socios?.nombre ?? null,
     notas:        entrada.notas ?? null,
-    razon_social: cfg?.razon_social ?? 'Club de Golf',
+    razon_social: cfg?.razon_social ?? 'Balvanera Golf, Polo & Country Club',
     municipio:    cfg?.municipio ?? '',
     direccion:    cfg?.direccion ?? '',
     rfc:          cfg?.rfc ?? '',

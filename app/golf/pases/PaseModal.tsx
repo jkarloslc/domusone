@@ -150,7 +150,7 @@ export default function PaseModal({
       fecha_vencimiento: form.fecha_vencimiento,
       observaciones:   form.observaciones || null,
       registrado_por:  authUser?.nombre ?? null,
-      razon_social:    cfg?.razon_social ?? 'Club de Golf',
+      razon_social:    cfg?.razon_social ?? 'Balvanera Golf, Polo & Country Club',
       municipio:       cfg?.municipio ?? '',
       direccion:       cfg?.direccion ?? '',
       rfc:             cfg?.rfc ?? '',

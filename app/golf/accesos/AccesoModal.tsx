@@ -265,7 +265,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       espacio:      espacios.find(e => e.id === idEspacio)?.nombre ?? '—',
       hoyo_inicio:  hoyoInicio || null,
       observaciones: observaciones || null,
-      razon_social:  cfg?.razon_social ?? 'Club de Golf',
+      razon_social:  cfg?.razon_social ?? 'Balvanera Golf, Polo & Country Club',
       municipio:     cfg?.municipio ?? '',
       direccion:     cfg?.direccion ?? '',
       rfc:           cfg?.rfc ?? '',

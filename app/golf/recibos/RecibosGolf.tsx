@@ -59,7 +59,7 @@ const TIPOS_LABEL: Record<string, string> = {
 }
 
 const INSTITUCION = {
-  nombre:    'Club de Golf Balvanera',
+  nombre:    'Balvanera Golf, Polo & Country Club',
   rfc:       'CGB000101AAA',
   domicilio: 'Balvanera, Corregidora, Querétaro',
 }

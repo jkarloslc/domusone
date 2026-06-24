@@ -146,7 +146,7 @@ export default function AccesosPage() {
       espacio:       a.cat_espacios_deportivos?.nombre ?? '—',
       hoyo_inicio:   a.hoyo_inicio ?? null,
       observaciones: a.observaciones ?? null,
-      razon_social:  cfg?.razon_social ?? 'Club de Golf',
+      razon_social:  cfg?.razon_social ?? 'Balvanera Golf, Polo & Country Club',
       municipio:     cfg?.municipio ?? '',
       direccion:     cfg?.direccion ?? '',
       rfc:           cfg?.rfc ?? '',

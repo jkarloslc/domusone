@@ -129,7 +129,7 @@ type ReciboCarrito = {
 type PosCfg = { razon_social: string | null; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string | null }
 
 const INSTITUCION = {
-  nombre:    'Club de Golf Balvanera',
+  nombre:    'Balvanera Golf, Polo & Country Club',
   rfc:       'CGB000101AAA',
   domicilio: 'Balvanera, Corregidora, Querétaro',
 }

@@ -22,7 +22,7 @@ export async function abrirTicketSalidaCarrito(t: TicketSalidaCarrito, autoPrint
 
   const ticketData = {
     ...t,
-    razon_social: cfg?.razon_social ?? 'Club de Golf',
+    razon_social: cfg?.razon_social ?? 'Balvanera Golf, Polo & Country Club',
     municipio:    cfg?.municipio ?? '',
     direccion:    cfg?.direccion ?? '',
     rfc:          cfg?.rfc ?? '',

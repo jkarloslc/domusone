@@ -57,7 +57,7 @@ const fmtFecha = (d: string | null) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
 // ── Texto base por defecto ─────────────────────────────────────
-const TEXTO_BASE = `Por medio de la presente, Club de Golf Balvanera se complace en presentar a su distinguido socio, quien visitará sus instalaciones en la fecha indicada.
+const TEXTO_BASE = `Por medio de la presente, Balvanera Golf, Polo & Country Club se complace en presentar a su distinguido socio, quien visitará sus instalaciones en la fecha indicada.
 
 Hacemos constar que el portador cuenta con los derechos plenos de socio activo de este club y que la presente carta tiene una vigencia de 30 días naturales a partir de su fecha de elaboración.
 
@@ -195,7 +195,7 @@ function CartaModal({
               <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>
                 {isNew ? 'Nueva Carta de Intercambio' : `Editar — ${carta?.folio ?? ''}`}
               </div>
-              <div style={{ fontSize: 11, color: '#93c5fd' }}>Club de Golf Balvanera</div>
+              <div style={{ fontSize: 11, color: '#93c5fd' }}>Balvanera Golf, Polo & Country Club</div>
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none',
@@ -617,7 +617,7 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
     <div class="firma-bloque">
       <div class="firma-linea">
         <div class="firma-nombre">${carta.elaborado_por ?? 'Dirección General'}</div>
-        <div class="firma-cargo">Club de Golf Balvanera</div>
+        <div class="firma-cargo">Balvanera Golf, Polo & Country Club</div>
       </div>
     </div>
     <div class="firma-bloque">
@@ -632,7 +632,7 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
 
   <!-- Pie de página -->
   <div class="pie">
-    Club de Golf Balvanera · Balvanera Polo &amp; Country Club, Corregidora, Querétaro, México<br/>
+    Balvanera Golf, Polo &amp; Country Club, Corregidora, Querétaro, México<br/>
     Folio: ${carta.folio ?? '—'} · Emitida: ${fmtFecha(carta.fecha_elaboracion)}
   </div>
 </div>

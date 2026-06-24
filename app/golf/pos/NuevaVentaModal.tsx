@@ -321,7 +321,7 @@ export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVen
       cliente:     socioSelec ? nc(socioSelec) : 'Público en General',
       cajero:      authUser?.nombre ?? '—',
       centro:      nombreCentro,
-      razon_social: cfg?.razon_social ?? 'Club de Golf',
+      razon_social: cfg?.razon_social ?? 'Balvanera Golf, Polo & Country Club',
       municipio:   cfg?.municipio ?? '',
       direccion:   cfg?.direccion ?? '',
       rfc:         cfg?.rfc ?? '',

@@ -74,7 +74,7 @@ const norm = (s: string) => s
 
 // ── Config de la institución (ajusta a tu realidad) ──────────
 const INSTITUCION = {
-  nombre:    'Club de Golf Balvanera',
+  nombre:    'Balvanera Golf, Polo & Country Club',
   rfc:       'CGB000101AAA',
   domicilio: 'Balvanera, Corregidora, Querétaro',
   tel:       '',

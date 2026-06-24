@@ -215,7 +215,7 @@ export default function POSPage() {
     // Asegurar fila en cfg_pos
     const { data: cfgCheck } = await dbGolf.from('cfg_pos').select('id').limit(1)
     if (!cfgCheck || cfgCheck.length === 0) {
-      await dbGolf.from('cfg_pos').insert({ razon_social: 'Club de Golf Balvanera', leyenda_ticket: '¡Gracias por su visita!' })
+      await dbGolf.from('cfg_pos').insert({ razon_social: 'Balvanera Golf, Polo & Country Club', leyenda_ticket: '¡Gracias por su visita!' })
     }
 
     const [{ data: prods }, { data: fps }, { data: cfg }, { data: cis }, { data: maps }, { data: cfgClaves }] = await Promise.all([
@@ -473,7 +473,7 @@ export default function POSPage() {
       cliente:     v.nombre_cliente,
       cajero:      v.usuario_crea ?? '—',
       centro:      centro?.nombre ?? '—',
-      razon_social: (cfg as any)?.razon_social ?? 'Club de Golf',
+      razon_social: (cfg as any)?.razon_social ?? 'Balvanera Golf, Polo & Country Club',
       municipio:   (cfg as any)?.municipio ?? '',
       direccion:   (cfg as any)?.direccion ?? '',
       rfc:         (cfg as any)?.rfc ?? '',
@@ -505,7 +505,7 @@ export default function POSPage() {
         .order('fecha', { ascending: true }),
     ])
 
-    const rs = (cfg as any)?.razon_social ?? 'Club de Golf Balvanera'
+    const rs = (cfg as any)?.razon_social ?? 'Balvanera Golf, Polo & Country Club'
     const dir = (cfg as any)?.direccion ?? ''
     const tel = (cfg as any)?.telefono ?? ''
     const rfc = (cfg as any)?.rfc ?? ''
