@@ -107,6 +107,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const [fechaPago, setFechaPago] = useState(hoyLocal)
   const [observaciones, setObservaciones] = useState('')
   const [montoParcialStr, setMontoParcialStr] = useState('')
+  const [parcialHabilitado, setParcialHabilitado] = useState(false)
 
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState('')
@@ -160,9 +161,20 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const totalCobro    = Math.max(0, subtotalConCargo - descExtra)
 
   // Cobro parcial
-  const montoParcial  = Math.min(parseFloat(montoParcialStr) || totalCobro, totalCobro)
+  const montoParcial  = parcialHabilitado
+    ? Math.min(parseFloat(montoParcialStr) || totalCobro, totalCobro)
+    : totalCobro
   const saldoQuedara  = Math.max(0, parseFloat((totalCobro - montoParcial).toFixed(2)))
   const esParcial     = saldoQuedara > 0
+
+  const toggleParcial = () => {
+    if (parcialHabilitado) {
+      setParcialHabilitado(false)
+      setMontoParcialStr('')
+    } else {
+      setParcialHabilitado(true)
+    }
+  }
 
   // Multi-forma de pago
   const pagosValidos    = pagosLineas.filter(p => p.id_forma_pago_fk > 0)
@@ -967,6 +979,53 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                 />
               </div>
 
+              {/* ── Cobro parcial ───────────────────────────────── */}
+              <div style={{ border: `1px solid ${parcialHabilitado ? '#fde68a' : '#e2e8f0'}`, borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.2s' }}>
+                <div
+                  onClick={toggleParcial}
+                  style={{ padding: '10px 14px', background: parcialHabilitado ? '#fffbeb' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', borderBottom: parcialHabilitado ? '1px solid #fde68a' : 'none' }}>
+                  <div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: parcialHabilitado ? '#92400e' : '#475569' }}>Cobro parcial</span>
+                    {!parcialHabilitado && <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>Cobrar menos del total adeudado</span>}
+                  </div>
+                  {/* Toggle switch */}
+                  <div style={{ width: 40, height: 22, borderRadius: 11, background: parcialHabilitado ? '#d97706' : '#cbd5e1', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
+                    <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: parcialHabilitado ? 20 : 2, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
+                  </div>
+                </div>
+
+                {parcialHabilitado && (
+                  <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ fontSize: 11, color: '#92400e', marginBottom: 4, display: 'block', fontWeight: 600 }}>Monto a cobrar ahora</label>
+                        <input
+                          // eslint-disable-next-line jsx-a11y/no-autofocus
+                          autoFocus
+                          style={{ width: '100%', padding: '8px 12px', fontSize: 14, fontWeight: 700, border: '1px solid #fbbf24', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
+                          type="number" min="0.01" step="0.01" max={totalCobro}
+                          value={montoParcialStr}
+                          onChange={e => setMontoParcialStr(e.target.value)}
+                          placeholder={`Máx. ${fmt$(totalCobro)}`}
+                        />
+                      </div>
+                      <button
+                        onClick={() => setMontoParcialStr(totalCobro.toFixed(2))}
+                        style={{ padding: '8px 10px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                        Total
+                      </button>
+                    </div>
+                    {esParcial ? (
+                      <div style={{ padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                        ⚠ Saldo pendiente: <strong>{fmt$(saldoQuedara)}</strong> · Las cuotas quedarán en PAGO PARCIAL
+                      </div>
+                    ) : montoParcialStr ? (
+                      <div style={{ fontSize: 11, color: '#15803d' }}>✓ Cubre el total adeudado</div>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+
               {/* Formas de pago — multi-línea */}
               <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
                 <div style={{ padding: '8px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1017,26 +1076,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                     {Math.abs(balancePagos) < 0.01 ? fmt$(montoParcial) : `${fmt$(Math.abs(balancePagos))}`}
                   </span>
                 </div>
-              </div>
-
-              {/* Monto parcial */}
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>
-                  Monto a cobrar ahora
-                  {esParcial && <span style={{ marginLeft: 6, fontSize: 11, color: '#d97706', fontWeight: 600 }}>(PAGO PARCIAL)</span>}
-                </label>
-                <input
-                  style={{ width: '100%', padding: '8px 12px', fontSize: 14, fontWeight: 700, border: `1px solid ${esParcial ? '#fbbf24' : '#e2e8f0'}`, borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
-                  type="number" min="0" step="0.01" max={totalCobro}
-                  value={montoParcialStr}
-                  onChange={e => setMontoParcialStr(e.target.value)}
-                  placeholder={fmt$(totalCobro)}
-                />
-                {esParcial && (
-                  <div style={{ marginTop: 6, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
-                    ⚠ Quedará un saldo pendiente de <strong>{fmt$(saldoQuedara)}</strong>. Las cuotas no liquidadas quedarán en estado PAGO PARCIAL.
-                  </div>
-                )}
               </div>
 
               {/* Observaciones */}
