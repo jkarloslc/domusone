@@ -6,7 +6,7 @@ import { dbComp, supabase } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, Edit2, X, Save, Loader,
   ArrowLeft, Phone, Mail, Upload, ExternalLink, Trash2,
-  FileText, CheckCircle, ChevronLeft, ChevronRight
+  FileText, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Proveedor, CONDICIONES_PAGO_PROV, nextFolio } from '../types'
@@ -184,6 +184,8 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
   const [error, setError]           = useState('')
   const [uploading, setUploading]   = useState<string | null>(null)
   const [tab, setTab]               = useState<'datos'|'documentos'>('datos')
+  const [rfcDuplicate, setRfcDuplicate] = useState<{ id: number; nombre: string; clave: string } | null>(null)
+  const [rfcChecking, setRfcChecking]   = useState(false)
 
   const generarClave = useCallback(async () => {
     setLoadingClave(true)
@@ -220,6 +222,20 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
     acta_const_url:   row?.acta_const_url   ?? '',
     comp_dom_url:     row?.comp_dom_url     ?? '',
   })
+
+  useEffect(() => {
+    const rfc = form.rfc.trim().toUpperCase()
+    if (rfc.length < 10) { setRfcDuplicate(null); return }
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setRfcChecking(true)
+      let q = dbComp.from('proveedores').select('id, nombre, clave').ilike('rfc', rfc)
+      if (!isNew) q = q.neq('id', row.id)
+      const { data } = await (q.limit(1).maybeSingle())
+      if (!cancelled) { setRfcDuplicate(data ?? null); setRfcChecking(false) }
+    }, 400)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [form.rfc, isNew, row?.id])
 
   // Refs para inputs de archivo
   const fileRefs: Record<string, React.RefObject<HTMLInputElement>> = {
@@ -258,6 +274,10 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
   const handleSave = async () => {
     if (!isNew && !form.clave.trim()) { setError('La clave es obligatoria'); return }
     if (!form.nombre.trim()) { setError('Nombre es obligatorio'); return }
+    if (rfcDuplicate) {
+      setError(`RFC duplicado: ya existe "${rfcDuplicate.clave} – ${rfcDuplicate.nombre}"`)
+      return
+    }
     setSaving(true); setError('')
 
     const payload: any = {
@@ -363,7 +383,34 @@ function ProveedorModal({ row, onClose, onSaved }: { row: any | null; onClose: (
                   </div>
                   <F label="Nombre *" value={form.nombre} onChange={set('nombre')} />
                 </G>
-                <G><F label="Razón Social" value={form.razon_social} onChange={set('razon_social')} /><F label="RFC" value={form.rfc} onChange={set('rfc')} mono /></G>
+                <G>
+                  <F label="Razón Social" value={form.razon_social} onChange={set('razon_social')} />
+                  <div>
+                    <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      RFC
+                      {rfcChecking && <Loader size={10} className="animate-spin" style={{ color: 'var(--text-muted)' }} />}
+                    </label>
+                    <input
+                      className="input"
+                      value={form.rfc}
+                      onChange={set('rfc')}
+                      style={{
+                        fontFamily: 'monospace',
+                        textTransform: 'uppercase',
+                        borderColor: rfcDuplicate ? '#dc2626' : undefined,
+                        boxShadow: rfcDuplicate ? '0 0 0 2px #fecaca' : undefined,
+                      }}
+                    />
+                    {rfcDuplicate && (
+                      <div style={{ marginTop: 5, padding: '6px 10px', background: '#fef2f2',
+                        border: '1px solid #fecaca', borderRadius: 6, fontSize: 11,
+                        color: '#dc2626', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                        <AlertTriangle size={12} style={{ marginTop: 1, flexShrink: 0 }} />
+                        <span>RFC duplicado: ya existe <strong>{rfcDuplicate.clave} – {rfcDuplicate.nombre}</strong></span>
+                      </div>
+                    )}
+                  </div>
+                </G>
               </Sec>
               <Sec label="Contacto">
                 <G><F label="Contacto" value={form.contacto} onChange={set('contacto')} /><F label="Teléfono" value={form.telefono} onChange={set('telefono')} /></G>
