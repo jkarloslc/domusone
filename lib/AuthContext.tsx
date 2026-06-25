@@ -116,6 +116,8 @@ const ADMIN_MODULOS = [
   'equipo-flota',
   // Equipo y Herramienta
   'herramientas',
+  // Proyectos CAPEX
+  'capex',
 ]
 
 // Módulos Golf para rol dedicado
