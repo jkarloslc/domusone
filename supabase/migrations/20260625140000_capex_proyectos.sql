@@ -95,24 +95,61 @@ CREATE INDEX IF NOT EXISTS idx_capex_insumos_tipo      ON ctrl.capex_insumos(tip
 CREATE INDEX IF NOT EXISTS idx_capex_proyectos_cc      ON ctrl.capex_proyectos(id_centro_costo_fk);
 CREATE INDEX IF NOT EXISTS idx_capex_proyectos_area    ON ctrl.capex_proyectos(id_area_fk);
 
+-- ── GRANTs ───────────────────────────────────────────────────────────────────
+GRANT SELECT, INSERT, UPDATE, DELETE ON ctrl.capex_proyectos TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE ctrl.capex_proyectos_id_seq TO authenticated;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ctrl.capex_frentes   TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE ctrl.capex_frentes_id_seq   TO authenticated;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ctrl.capex_partidas  TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE ctrl.capex_partidas_id_seq  TO authenticated;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ctrl.capex_insumos   TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE ctrl.capex_insumos_id_seq   TO authenticated;
+
 -- ── RLS ───────────────────────────────────────────────────────────────────────
 ALTER TABLE ctrl.capex_proyectos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ctrl.capex_frentes   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ctrl.capex_partidas  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ctrl.capex_insumos   ENABLE ROW LEVEL SECURITY;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='capex_proyectos' AND schemaname='ctrl') THEN
-    CREATE POLICY "capex_proyectos_auth" ON ctrl.capex_proyectos USING (auth.role() = 'authenticated');
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='capex_frentes' AND schemaname='ctrl') THEN
-    CREATE POLICY "capex_frentes_auth"   ON ctrl.capex_frentes   USING (auth.role() = 'authenticated');
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='capex_partidas' AND schemaname='ctrl') THEN
-    CREATE POLICY "capex_partidas_auth"  ON ctrl.capex_partidas  USING (auth.role() = 'authenticated');
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='capex_insumos' AND schemaname='ctrl') THEN
-    CREATE POLICY "capex_insumos_auth"   ON ctrl.capex_insumos   USING (auth.role() = 'authenticated');
-  END IF;
-END $$;
+-- capex_proyectos
+CREATE POLICY "capex_proyectos_select" ON ctrl.capex_proyectos
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "capex_proyectos_insert" ON ctrl.capex_proyectos
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "capex_proyectos_update" ON ctrl.capex_proyectos
+  FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "capex_proyectos_delete" ON ctrl.capex_proyectos
+  FOR DELETE TO authenticated USING (true);
+
+-- capex_frentes
+CREATE POLICY "capex_frentes_select" ON ctrl.capex_frentes
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "capex_frentes_insert" ON ctrl.capex_frentes
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "capex_frentes_update" ON ctrl.capex_frentes
+  FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "capex_frentes_delete" ON ctrl.capex_frentes
+  FOR DELETE TO authenticated USING (true);
+
+-- capex_partidas
+CREATE POLICY "capex_partidas_select" ON ctrl.capex_partidas
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "capex_partidas_insert" ON ctrl.capex_partidas
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "capex_partidas_update" ON ctrl.capex_partidas
+  FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "capex_partidas_delete" ON ctrl.capex_partidas
+  FOR DELETE TO authenticated USING (true);
+
+-- capex_insumos
+CREATE POLICY "capex_insumos_select" ON ctrl.capex_insumos
+  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "capex_insumos_insert" ON ctrl.capex_insumos
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "capex_insumos_update" ON ctrl.capex_insumos
+  FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "capex_insumos_delete" ON ctrl.capex_insumos
+  FOR DELETE TO authenticated USING (true);
