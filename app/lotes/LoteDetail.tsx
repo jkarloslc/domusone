@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCfg, dbCtrl, type Lote } from '@/lib/supabase'
-import { Edit2, MapPin, FileText, Zap, Droplets, Plus, Trash2, Save, Loader } from 'lucide-react'
+import { useAuth } from '@/lib/AuthContext'
+import { Edit2, MapPin, FileText, Zap, Droplets, Plus, Trash2, Save, Loader, ClipboardList } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 
 type Props = { lote: Lote; onClose: () => void; onEdit: () => void }
 
@@ -34,7 +36,8 @@ function Row2({ label, value, badge }: { label: string; value?: string | null; b
 }
 
 export default function LoteDetail({ lote, onClose, onEdit }: Props) {
-  const [tab, setTab] = useState<'datos' | 'servicios'>('datos')
+  const { canWrite } = useAuth()
+  const [tab, setTab] = useState<'datos' | 'servicios' | 'seguimiento'>('datos')
   const [tipoNombre, setTipoNombre] = useState<string | null>(null)
 
   useEffect(() => {
@@ -50,8 +53,9 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
     v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 
   const tabs = [
-    { key: 'datos', label: 'Datos Generales' },
-    { key: 'servicios', label: 'Servicios' },
+    { key: 'datos',       label: 'Datos Generales' },
+    { key: 'servicios',   label: 'Servicios'       },
+    { key: 'seguimiento', label: 'Seguimiento',  icon: ClipboardList },
   ]
 
   return (
@@ -98,6 +102,16 @@ export default function LoteDetail({ lote, onClose, onEdit }: Props) {
         {/* Tab: Servicios */}
         {tab === 'servicios' && (
           <ServiciosTab loteId={lote.id} />
+        )}
+
+        {/* Tab: Seguimiento de Cobranza */}
+        {tab === 'seguimiento' && (
+          <BitacoraCobranzaTab
+            entidad="lote"
+            idEntidad={lote.id}
+            nombreEntidad={lote.cve_lote ?? `Lote #${lote.lote}`}
+            puedeEscribir={canWrite('cobranza')}
+          />
         )}
     </ModalShell>
   )

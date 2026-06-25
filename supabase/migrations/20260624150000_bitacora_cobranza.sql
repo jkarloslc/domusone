@@ -1,7 +1,7 @@
 -- ── Bitácora de Seguimiento de Cobranza ──────────────────────
 -- Tres tablas separadas (una por módulo) para mantener FK estricta.
--- Campos comunes: fecha_contacto, canal, respuesta, seguimiento,
---                 fecha_proximo_contacto, notas, usuario_nombre, created_at.
+-- Residencial: la entidad deudora es el LOTE (no el propietario,
+--   que puede cambiar), con FK a cat.lotes(id).
 -- Cada tabla incluye RLS habilitado + GRANT + políticas para authenticated.
 
 -- ════════════════════════════════════════════════════════════
@@ -46,11 +46,12 @@ CREATE POLICY "bitacora_cobranza_golf_delete"
   ON golf.bitacora_cobranza FOR DELETE TO authenticated USING (true);
 
 -- ════════════════════════════════════════════════════════════
--- Residencial: seguimiento por propietario
+-- Residencial: seguimiento por LOTE (entidad deudora)
+-- El propietario puede cambiar; el adeudo pertenece al lote.
 -- ════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS ctrl.bitacora_cobranza_res (
   id                     BIGSERIAL PRIMARY KEY,
-  id_propietario_fk      INT NOT NULL REFERENCES cat.propietarios(id) ON DELETE CASCADE,
+  id_lote_fk             INT NOT NULL REFERENCES cat.lotes(id) ON DELETE CASCADE,
   fecha_contacto         DATE         NOT NULL DEFAULT CURRENT_DATE,
   canal                  VARCHAR(20)  NOT NULL DEFAULT 'Llamada',
   respuesta              TEXT,
@@ -61,7 +62,7 @@ CREATE TABLE IF NOT EXISTS ctrl.bitacora_cobranza_res (
   created_at             TIMESTAMPTZ  DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_bit_cob_res_prop ON ctrl.bitacora_cobranza_res(id_propietario_fk);
+CREATE INDEX IF NOT EXISTS idx_bit_cob_res_lote ON ctrl.bitacora_cobranza_res(id_lote_fk);
 CREATE INDEX IF NOT EXISTS idx_bit_cob_res_next ON ctrl.bitacora_cobranza_res(fecha_proximo_contacto)
   WHERE seguimiento <> 'Cerrado';
 

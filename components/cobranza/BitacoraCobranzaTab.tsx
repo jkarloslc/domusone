@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 
 // ── Tipos ────────────────────────────────────────────────────
-export type EntidadCobranza = 'socio' | 'propietario' | 'arrendatario'
+export type EntidadCobranza = 'socio' | 'lote' | 'arrendatario'
 
 type Registro = {
   id: number
@@ -56,12 +56,12 @@ function getDb(entidad: EntidadCobranza) {
   return dbCtrl
 }
 function getTable(entidad: EntidadCobranza) {
-  return entidad === 'propietario' ? 'bitacora_cobranza_res' : 'bitacora_cobranza'
+  return entidad === 'lote' ? 'bitacora_cobranza_res' : 'bitacora_cobranza'
 }
 function getFk(entidad: EntidadCobranza) {
   if (entidad === 'socio')        return 'id_socio_fk'
   if (entidad === 'arrendatario') return 'id_arrendatario_fk'
-  return 'id_propietario_fk'
+  return 'id_lote_fk'
 }
 
 // ── Helpers UI ───────────────────────────────────────────────

@@ -71,17 +71,16 @@ async function cargarRegistrosGolf(): Promise<RegistroAgenda[]> {
 async function cargarRegistrosResidencial(): Promise<RegistroAgenda[]> {
   const { data } = await dbCtrl
     .from('bitacora_cobranza_res')
-    .select('id, id_propietario_fk, fecha_contacto, canal, respuesta, seguimiento, fecha_proximo_contacto, notas, usuario_nombre, created_at, cat_propietarios(nombre, apellido_paterno, apellido_materno, razon_social, tipo_persona)')
+    .select('id, id_lote_fk, fecha_contacto, canal, respuesta, seguimiento, fecha_proximo_contacto, notas, usuario_nombre, created_at, cat_lotes(cve_lote, lote, manzana, secciones(nombre))')
     .neq('seguimiento', 'Cerrado')
     .order('fecha_proximo_contacto', { ascending: true, nullsFirst: false })
   return ((data ?? []) as any[]).map(r => {
-    const p = r.cat_propietarios
-    const nombre = p?.tipo_persona === 'Moral' && p?.razon_social
-      ? p.razon_social
-      : [p?.nombre, p?.apellido_paterno, p?.apellido_materno].filter(Boolean).join(' ') || '—'
+    const l = r.cat_lotes
+    const fallback = [l?.secciones?.nombre, l?.manzana ? `Mz ${l.manzana}` : null, l?.lote ? `L ${l.lote}` : null].filter(Boolean).join(' ') || `Lote #${r.id_lote_fk}`
+    const nombre = l?.cve_lote ?? fallback
     return {
       id:                    r.id,
-      id_entidad:            r.id_propietario_fk,
+      id_entidad:            r.id_lote_fk,
       nombre_entidad:        nombre,
       fecha_contacto:        r.fecha_contacto,
       canal:                 r.canal,
