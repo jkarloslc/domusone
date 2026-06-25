@@ -16,6 +16,7 @@ type Registro = {
   canal: string
   respuesta: string | null
   seguimiento: string
+  monto_prometido: number | null
   fecha_proximo_contacto: string | null
   notas: string | null
   usuario_nombre: string | null
@@ -74,9 +75,12 @@ const EMPTY_FORM = {
   canal:                  'Llamada',
   respuesta:              '',
   seguimiento:            'Contactar de nuevo',
+  monto_prometido:        '',
   fecha_proximo_contacto: '',
   notas:                  '',
 }
+
+const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 
 // ── Props ────────────────────────────────────────────────────
 type Props = {
@@ -123,12 +127,14 @@ export default function BitacoraCobranzaTab({
     if (!form.canal)          { setErr('El canal es requerido.'); return }
     if (!form.seguimiento)    { setErr('El seguimiento es requerido.'); return }
     setSaving(true); setErr('')
+    const montoNum = form.monto_prometido ? parseFloat(form.monto_prometido.replace(/,/g, '')) : null
     const payload: Record<string, any> = {
       [fk]:            idEntidad,
       fecha_contacto:  form.fecha_contacto,
       canal:           form.canal,
       respuesta:       form.respuesta || null,
       seguimiento:     form.seguimiento,
+      monto_prometido: montoNum && montoNum > 0 ? montoNum : null,
       fecha_proximo_contacto: form.seguimiento !== 'Cerrado' && form.fecha_proximo_contacto
         ? form.fecha_proximo_contacto : null,
       notas:           form.notas || null,
@@ -185,6 +191,7 @@ export default function BitacoraCobranzaTab({
       'Canal':                  r.canal,
       'Respuesta':              r.respuesta ?? '',
       'Seguimiento':            r.seguimiento,
+      'Monto prometido':        r.monto_prometido ?? '',
       'Próx. contacto':         r.fecha_proximo_contacto ?? '',
       'Notas':                  r.notas ?? '',
       'Registrado por':         r.usuario_nombre ?? '',
@@ -276,15 +283,23 @@ export default function BitacoraCobranzaTab({
                 {SEGUIMIENTOS.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
-            {form.seguimiento !== 'Cerrado' && (
-              <div>
-                <label style={labelStyle}>Próx. contacto</label>
-                <input type="date" value={form.fecha_proximo_contacto}
-                  onChange={e => setForm(f => ({ ...f, fecha_proximo_contacto: e.target.value }))}
-                  style={inputStyle} />
-              </div>
-            )}
+            <div>
+              <label style={labelStyle}>Monto prometido</label>
+              <input type="number" min="0" step="0.01" placeholder="0.00"
+                value={form.monto_prometido}
+                onChange={e => setForm(f => ({ ...f, monto_prometido: e.target.value }))}
+                style={inputStyle} />
+            </div>
           </div>
+
+          {form.seguimiento !== 'Cerrado' && (
+            <div style={{ marginBottom: 10 }}>
+              <label style={labelStyle}>Próx. contacto</label>
+              <input type="date" value={form.fecha_proximo_contacto}
+                onChange={e => setForm(f => ({ ...f, fecha_proximo_contacto: e.target.value }))}
+                style={{ ...inputStyle, maxWidth: 200 }} />
+            </div>
+          )}
 
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>Notas internas</label>
@@ -373,6 +388,13 @@ export default function BitacoraCobranzaTab({
                   {r.respuesta && (
                     <div style={{ fontSize: 13, color: '#1e293b', lineHeight: 1.5, marginBottom: 4, fontStyle: 'italic' }}>
                       "{r.respuesta}"
+                    </div>
+                  )}
+
+                  {/* Monto prometido */}
+                  {r.monto_prometido != null && r.monto_prometido > 0 && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '2px 9px', marginBottom: 4 }}>
+                      💰 {fmt$(r.monto_prometido)}
                     </div>
                   )}
 

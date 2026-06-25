@@ -14,11 +14,14 @@ type RegistroAgenda = {
   canal: string
   respuesta: string | null
   seguimiento: string
+  monto_prometido: number | null
   fecha_proximo_contacto: string | null
   notas: string | null
   usuario_nombre: string | null
   created_at: string
 }
+
+const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 
 const SEG_STYLE: Record<string, { bg: string; color: string }> = {
   'Contactar de nuevo': { bg: '#fffbeb', color: '#d97706' },
@@ -50,7 +53,7 @@ type Props = {
 async function cargarRegistrosGolf(): Promise<RegistroAgenda[]> {
   const { data } = await dbGolf
     .from('bitacora_cobranza')
-    .select('id, id_socio_fk, fecha_contacto, canal, respuesta, seguimiento, fecha_proximo_contacto, notas, usuario_nombre, created_at, cat_socios(nombre, apellido_paterno, apellido_materno)')
+    .select('id, id_socio_fk, fecha_contacto, canal, respuesta, seguimiento, monto_prometido, fecha_proximo_contacto, notas, usuario_nombre, created_at, cat_socios(nombre, apellido_paterno, apellido_materno)')
     .neq('seguimiento', 'Cerrado')
     .order('fecha_proximo_contacto', { ascending: true, nullsFirst: false })
   return ((data ?? []) as any[]).map(r => ({
@@ -61,6 +64,7 @@ async function cargarRegistrosGolf(): Promise<RegistroAgenda[]> {
     canal:                 r.canal,
     respuesta:             r.respuesta,
     seguimiento:           r.seguimiento,
+    monto_prometido:       r.monto_prometido ?? null,
     fecha_proximo_contacto: r.fecha_proximo_contacto,
     notas:                 r.notas,
     usuario_nombre:        r.usuario_nombre,
@@ -71,7 +75,7 @@ async function cargarRegistrosGolf(): Promise<RegistroAgenda[]> {
 async function cargarRegistrosResidencial(): Promise<RegistroAgenda[]> {
   const { data } = await dbCtrl
     .from('bitacora_cobranza_res')
-    .select('id, id_lote_fk, fecha_contacto, canal, respuesta, seguimiento, fecha_proximo_contacto, notas, usuario_nombre, created_at, cat_lotes(cve_lote, lote, manzana, secciones(nombre))')
+    .select('id, id_lote_fk, fecha_contacto, canal, respuesta, seguimiento, monto_prometido, fecha_proximo_contacto, notas, usuario_nombre, created_at, cat_lotes(cve_lote, lote, manzana, secciones(nombre))')
     .neq('seguimiento', 'Cerrado')
     .order('fecha_proximo_contacto', { ascending: true, nullsFirst: false })
   return ((data ?? []) as any[]).map(r => {
@@ -86,6 +90,7 @@ async function cargarRegistrosResidencial(): Promise<RegistroAgenda[]> {
       canal:                 r.canal,
       respuesta:             r.respuesta,
       seguimiento:           r.seguimiento,
+      monto_prometido:       r.monto_prometido ?? null,
       fecha_proximo_contacto: r.fecha_proximo_contacto,
       notas:                 r.notas,
       usuario_nombre:        r.usuario_nombre,
@@ -97,7 +102,7 @@ async function cargarRegistrosResidencial(): Promise<RegistroAgenda[]> {
 async function cargarRegistrosHipico(): Promise<RegistroAgenda[]> {
   const { data } = await dbHip
     .from('bitacora_cobranza')
-    .select('id, id_arrendatario_fk, fecha_contacto, canal, respuesta, seguimiento, fecha_proximo_contacto, notas, usuario_nombre, created_at, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona)')
+    .select('id, id_arrendatario_fk, fecha_contacto, canal, respuesta, seguimiento, monto_prometido, fecha_proximo_contacto, notas, usuario_nombre, created_at, cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona)')
     .neq('seguimiento', 'Cerrado')
     .order('fecha_proximo_contacto', { ascending: true, nullsFirst: false })
   return ((data ?? []) as any[]).map(r => {
@@ -113,6 +118,7 @@ async function cargarRegistrosHipico(): Promise<RegistroAgenda[]> {
       canal:                 r.canal,
       respuesta:             r.respuesta,
       seguimiento:           r.seguimiento,
+      monto_prometido:       r.monto_prometido ?? null,
       fecha_proximo_contacto: r.fecha_proximo_contacto,
       notas:                 r.notas,
       usuario_nombre:        r.usuario_nombre,
@@ -176,6 +182,7 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
         <td>${r.nombre_entidad}</td>
         <td><span style="background:${seg.bg};color:${seg.color};padding:1px 6px;border-radius:10px;font-size:10px;font-weight:bold">${r.seguimiento}</span></td>
         <td style="color:${proxV ? '#dc2626' : '#334155'};font-weight:${proxV ? 'bold' : 'normal'}">${fmtFecha(r.fecha_proximo_contacto)}</td>
+        <td style="font-weight:bold;color:#7c3aed">${r.monto_prometido ? fmt$(r.monto_prometido) : '—'}</td>
         <td>${r.canal}</td>
         <td>${r.respuesta ?? '—'}</td>
         <td>${fmtFecha(r.fecha_contacto)}</td>
@@ -186,7 +193,7 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
     </head><body>
     <h2>Agenda de Seguimiento de Cobranza</h2>
     <div class="sub">Generado: ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })} · ${filtrados.length} registros</div>
-    <table><thead><tr><th>Nombre</th><th>Seguimiento</th><th>Próx. contacto</th><th>Canal</th><th>Último comentario</th><th>Último contacto</th></tr></thead>
+    <table><thead><tr><th>Nombre</th><th>Seguimiento</th><th>Próx. contacto</th><th>Monto prometido</th><th>Canal</th><th>Último comentario</th><th>Último contacto</th></tr></thead>
     <tbody>${rowsHtml}</tbody></table>
     </body></html>`)
     w.document.close(); w.focus()
@@ -198,6 +205,7 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
     const data = filtrados.map(r => ({
       'Nombre':             r.nombre_entidad,
       'Seguimiento':        r.seguimiento,
+      'Monto prometido':    r.monto_prometido ?? '',
       'Próx. contacto':     r.fecha_proximo_contacto ?? '',
       'Canal':              r.canal,
       'Último comentario':  r.respuesta ?? '',
@@ -269,7 +277,7 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr>
-                {['Nombre', 'Seguimiento', 'Próx. contacto', 'Último canal', 'Comentario', 'Ult. contacto'].map(h => (
+                {['Nombre', 'Seguimiento', 'Próx. contacto', 'Monto prometido', 'Último canal', 'Comentario', 'Ult. contacto'].map(h => (
                   <th key={h} style={{ textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 10px', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
                 {onVerEntidad && <th style={{ textAlign: 'right', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 10px', borderBottom: '1px solid #e2e8f0' }}></th>}
@@ -301,6 +309,9 @@ export default function AgendaCobranza({ modulo, onVerEntidad }: Props) {
                           {proxVenc && '⚠ '}{fmtFecha(proxFecha)}
                         </span>
                       ) : '—'}
+                    </td>
+                    <td style={{ padding: '9px 10px', whiteSpace: 'nowrap', fontWeight: r.monto_prometido ? 700 : 400, color: r.monto_prometido ? '#7c3aed' : '#94a3b8' }}>
+                      {r.monto_prometido ? fmt$(r.monto_prometido) : '—'}
                     </td>
                     <td style={{ padding: '9px 10px', color: '#64748b' }}>{r.canal}</td>
                     <td style={{ padding: '9px 10px', color: '#475569', maxWidth: 220 }}>
