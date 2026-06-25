@@ -347,8 +347,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [serviciosCatalogo, setServiciosCatalogo] = useState<any[]>([])
   const [savedOpForConsumo, setSavedOpForConsumo] = useState<{ opId: number; servicioId: number; monto: number } | null>(null)
 
-  const pdfRef = useRef<HTMLInputElement>(null)
-  const xmlRef = useRef<HTMLInputElement>(null)
+  const pdfRef     = useRef<HTMLInputElement>(null)
+  const xmlRef     = useRef<HTMLInputElement>(null)
+  const soporteRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     id_proveedor_fk:    opEdit?.id_proveedor_fk?.toString() ?? '',
@@ -366,6 +367,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     monto_manual:      opEdit?.monto?.toString() ?? '',
     pdf_factura:       opEdit?.pdf_factura       ?? '',
     xml_factura:       opEdit?.xml_factura       ?? '',
+    soporte_url:       opEdit?.soporte_url       ?? '',
     id_servicio_fk:    opEdit?.id_servicio_fk?.toString() ?? '',
   })
 
@@ -506,7 +508,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     : ocsDisp.filter(o => !ocsSelected.some(s => s.id === o.id))
 
   // Upload archivo a Supabase Storage
-  const uploadFile = async (file: File, campo: 'pdf_factura' | 'xml_factura') => {
+  const uploadFile = async (file: File, campo: 'pdf_factura' | 'xml_factura' | 'soporte_url') => {
     setUploading(campo)
     const ext  = file.name.split('.').pop()
     const opId = opEdit?.id ?? 'new'
@@ -519,7 +521,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   }
 
   const FileDoc = ({ campo, label, accept, refEl }: {
-    campo: 'pdf_factura' | 'xml_factura'
+    campo: 'pdf_factura' | 'xml_factura' | 'soporte_url'
     label: string
     accept: string
     refEl: React.RefObject<HTMLInputElement>
@@ -589,6 +591,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       monto:             montoTotal,
       pdf_factura:       form.pdf_factura || null,
       xml_factura:       form.xml_factura || null,
+      soporte_url:       form.soporte_url || null,
       id_servicio_fk:    form.id_servicio_fk ? Number(form.id_servicio_fk) : null,
     }
 
@@ -999,6 +1002,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               <FileDoc campo="pdf_factura" label="PDF Factura" accept=".pdf" refEl={pdfRef} />
               <FileDoc campo="xml_factura" label="XML Factura (CFDI)" accept=".xml" refEl={xmlRef} />
             </div>
+            <FileDoc campo="soporte_url" label="Soporte (cotización, contrato, correo, etc.)" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" refEl={soporteRef} />
           </Sec>
 
           {/* Resumen monto */}
@@ -1028,8 +1032,9 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const puedeSubirFacturaPagada = op.status === 'Pagada' && canWrite('ordenes-pago')
   const [localOp, setLocalOp]   = useState(op)
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null)
-  const pdfDetailRef = useRef<HTMLInputElement>(null)
-  const xmlDetailRef = useRef<HTMLInputElement>(null)
+  const pdfDetailRef     = useRef<HTMLInputElement>(null)
+  const xmlDetailRef     = useRef<HTMLInputElement>(null)
+  const soporteDetailRef = useRef<HTMLInputElement>(null)
 
   const [ocsRel, setOcsRel]       = useState<any[]>([])
   const [detLinesView, setDetLinesView] = useState<any[]>([])
@@ -1051,7 +1056,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
 
   useEffect(() => { setLocalOp(op) }, [op])
 
-  const uploadFacturaPagada = async (file: File, campo: 'pdf_factura' | 'xml_factura') => {
+  const uploadFacturaPagada = async (file: File, campo: 'pdf_factura' | 'xml_factura' | 'soporte_url') => {
     setUploadingDoc(campo)
     const ext = file.name.split('.').pop()
     const path = `op-${op.id}/${campo}-${Date.now()}.${ext}`
@@ -1072,7 +1077,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     setUploadingDoc(null)
   }
 
-  const clearFacturaPagada = async (campo: 'pdf_factura' | 'xml_factura') => {
+  const clearFacturaPagada = async (campo: 'pdf_factura' | 'xml_factura' | 'soporte_url') => {
     if (!confirm('¿Quitar este archivo de la orden de pago?')) return
     const { error: dbErr } = await dbComp.from('ordenes_pago').update({ [campo]: null }).eq('id', op.id)
     if (dbErr) { alert(dbErr.message); return }
@@ -1525,8 +1530,33 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                   )}
                 </div>
               </div>
+              {/* Soporte — disponible en cualquier estado */}
+              <div>
+                <label className="label">Soporte (cotización, contrato, correo, etc.)</label>
+                <input ref={soporteDetailRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style={{ display: 'none' }}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadFacturaPagada(f, 'soporte_url'); e.target.value = '' }} />
+                {localOp.soporte_url ? (
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <a href={localOp.soporte_url} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: 12, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '5px 10px', background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                      <ExternalLink size={11} /> Ver Soporte
+                    </a>
+                    <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                      onClick={() => clearFacturaPagada('soporte_url')} disabled={!!uploadingDoc}>
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <button type="button" className="btn-secondary" style={{ fontSize: 11, width: '100%' }}
+                    onClick={() => soporteDetailRef.current?.click()} disabled={uploadingDoc === 'soporte_url'}>
+                    {uploadingDoc === 'soporte_url' ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+                    {uploadingDoc === 'soporte_url' ? 'Subiendo…' : 'Adjuntar Soporte'}
+                  </button>
+                )}
+              </div>
             </Sec>
-          ) : (op.pdf_factura || op.xml_factura) ? (
+          ) : (op.pdf_factura || op.xml_factura || localOp.soporte_url || canWrite('ordenes-pago')) ? (
             <Sec label="Documentos de la Operación">
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {op.pdf_factura && (
@@ -1544,11 +1574,36 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                   </a>
                 )}
               </div>
-            </Sec>
-          ) : op.status === 'Pagada' ? (
-            <Sec label="Documentos de la Operación">
-              <div style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)' }}>
-                Sin factura PDF ni XML registrada para esta orden pagada.
+              {/* Soporte — siempre editable si tiene permiso de escritura */}
+              <div>
+                <label className="label">Soporte (cotización, contrato, correo, etc.)</label>
+                <input ref={soporteDetailRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style={{ display: 'none' }}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadFacturaPagada(f, 'soporte_url'); e.target.value = '' }} />
+                {localOp.soporte_url ? (
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <a href={localOp.soporte_url} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: 12, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '5px 10px', background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none', flex: 1, justifyContent: 'center' }}>
+                      <ExternalLink size={11} /> Ver Soporte
+                    </a>
+                    {canWrite('ordenes-pago') && (
+                      <button type="button" className="btn-ghost" style={{ padding: '5px 8px', color: '#dc2626' }}
+                        onClick={() => clearFacturaPagada('soporte_url')} disabled={!!uploadingDoc}>
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                ) : canWrite('ordenes-pago') ? (
+                  <button type="button" className="btn-secondary" style={{ fontSize: 11, width: '100%' }}
+                    onClick={() => soporteDetailRef.current?.click()} disabled={uploadingDoc === 'soporte_url'}>
+                    {uploadingDoc === 'soporte_url' ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+                    {uploadingDoc === 'soporte_url' ? 'Subiendo…' : 'Adjuntar Soporte'}
+                  </button>
+                ) : (
+                  <div style={{ padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+                    Sin soporte registrado.
+                  </div>
+                )}
               </div>
             </Sec>
           ) : null}
