@@ -1,7 +1,7 @@
 'use client'
 import ModalShell from '@/components/ui/ModalShell'
 import { useState, useEffect, useRef } from 'react'
-import { dbComp, dbCfg, supabase } from '@/lib/supabase'
+import { dbComp, dbCfg } from '@/lib/supabase'
 import { Save, Loader, Plus, Trash2, Upload, FileText, Image as ImageIcon, XCircle } from 'lucide-react'
 import { folioGen } from '../types'
 
@@ -46,12 +46,15 @@ export default function ReembolsoModal({ reembolso, fondo, authUser, onClose, on
 
   const uploadComprobante = async (file: File, idx: number) => {
     setUploadingIdx(idx)
-    const ext  = file.name.split('.').pop()
     const path = `reembolsos/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
-    const { error: upErr } = await supabase.storage.from('comprobantes').upload(path, file, { upsert: true })
-    if (upErr) { setError('Error al subir archivo: ' + upErr.message); setUploadingIdx(null); return }
-    const { data } = supabase.storage.from('comprobantes').getPublicUrl(path)
-    setDet(idx, 'url_comprobante', data.publicUrl)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('path', path)
+    fd.append('bucket', 'comprobantes')
+    const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    const json = await res.json()
+    if (!res.ok) { setError('Error al subir archivo: ' + json.error); setUploadingIdx(null); return }
+    setDet(idx, 'url_comprobante', json.url)
     setUploadingIdx(null)
   }
 
