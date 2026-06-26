@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
   const bucket = (form.get('bucket') as string) || 'comprobantes'
   const path   = form.get('path') as string | null
 
+  console.log('[upload] bucket:', bucket, 'path:', path, 'file:', file?.name)
   if (!file || !path) {
     return NextResponse.json({ error: 'file y path son requeridos' }, { status: 400 })
   }
@@ -23,7 +24,10 @@ export async function POST(req: NextRequest) {
     .from(bucket)
     .upload(path, buffer, { contentType: file.type, upsert: true })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[upload] storage error:', JSON.stringify(error))
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path)
   return NextResponse.json({ url: data.publicUrl })
