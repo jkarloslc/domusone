@@ -83,7 +83,8 @@ const fmtFecha = (d: string | null | undefined) =>
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function CapexPage() {
-  const { canWrite, canDelete } = useAuth()
+  const { canWrite, authUser } = useAuth()
+  const puedeEliminar = authUser?.rol === 'superadmin'
 
   const [proyectos, setProyectos] = useState<CapexProyecto[]>([])
   const [total, setTotal]         = useState(0)
@@ -267,7 +268,7 @@ export default function CapexPage() {
                               <Edit2 size={13} />
                             </button>
                           )}
-                          {canDelete() && (
+                          {puedeEliminar && (
                             <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => handleDelete(p)} title="Eliminar">
                               <Trash2 size={13} />
                             </button>

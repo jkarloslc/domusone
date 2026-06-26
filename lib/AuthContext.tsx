@@ -192,7 +192,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   compras:             ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores', 'articulos'],
   compras_supervisor:  ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores', 'articulos'],
   almacen:             ['compras', 'articulos', 'almacenes', 'areas'],
-  mantenimiento:       ['mantenimiento'],
+  mantenimiento:       ['mantenimiento', 'capex'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'proyectos', 'mantenimiento', 'accesos', 'incidencias',
                         'cobranza', 'facturas', 'compras', 'tesoreria', 'ingresos',
