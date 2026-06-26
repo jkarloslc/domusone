@@ -238,7 +238,8 @@ export default function CapexPage() {
                 : proyectos.map(p => {
                   const sc = STATUS_COLOR[p.status] ?? { bg: '#f1f5f9', color: '#475569' }
                   return (
-                    <tr key={p.id}>
+                    <tr key={p.id} style={{ cursor: 'pointer' }}
+                      onClick={() => { setEditing(p); setModal(true) }}>
                       <td style={{ fontFamily: 'var(--font-display)', fontSize: 12, color: 'var(--blue)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                         {p.folio ?? `#${p.id}`}
                       </td>
@@ -260,7 +261,7 @@ export default function CapexPage() {
                         {fmt(p.monto_presupuestado)}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
                           {canWrite('capex') && (
                             <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(p); setModal(true) }} title="Editar">
                               <Edit2 size={13} />
