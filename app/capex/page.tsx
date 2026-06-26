@@ -31,14 +31,17 @@ type CapexFrente = {
 type CapexPartida = {
   id: number; id_frente_fk: number; clave: string | null; descripcion: string
   unidad: string; cantidad: number
-  pu_materiales: number; pu_mano_obra: number; pu_maquinaria: number
+  pu_materiales: number; pu_mano_obra: number; pu_maquinaria: number; pu_equipo_menor: number
   pu_total: number; monto_materiales: number; monto_mano_obra: number
-  monto_maquinaria: number; monto_total: number; orden: number
+  monto_maquinaria: number; monto_equipo_menor: number; monto_total: number; orden: number
 }
 
+type TipoInsumo = 'material' | 'mano_obra' | 'maquinaria' | 'equipo_menor'
+
 type CapexInsumo = {
-  id: number; id_partida_fk: number; tipo: 'material' | 'mano_obra' | 'maquinaria'
+  id: number; id_partida_fk: number; tipo: TipoInsumo
   id_articulo_fk: number | null; id_colaborador_fk: number | null
+  id_equipo_fk: number | null; id_herramienta_fk: number | null
   descripcion: string; unidad: string | null
   cantidad: number; precio_unitario: number; monto: number; orden: number
 }
@@ -744,13 +747,14 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
         <thead>
           <tr style={{ background: '#f8fafc' }}>
             <th style={thSt}>Clave</th>
-            <th style={{ ...thSt, textAlign: 'left', minWidth: 200 }}>Descripción</th>
+            <th style={{ ...thSt, textAlign: 'left', minWidth: 180 }}>Descripción</th>
             <th style={thSt}>Und</th>
             <th style={{ ...thSt, textAlign: 'right' }}>Cant.</th>
-            <th style={{ ...thSt, textAlign: 'right' }}>PU Mat.</th>
-            <th style={{ ...thSt, textAlign: 'right' }}>PU M.O.</th>
-            <th style={{ ...thSt, textAlign: 'right' }}>PU Maq.</th>
-            <th style={{ ...thSt, textAlign: 'right', color: '#1d4ed8' }}>PU Total</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#1d4ed8' }}>PU Mat.</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#7c3aed' }}>PU M.O.</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#15803d' }}>PU Maq.</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#d97706' }}>PU Eq.M</th>
+            <th style={{ ...thSt, textAlign: 'right', color: '#0f766e' }}>PU Total</th>
             <th style={{ ...thSt, textAlign: 'right', color: '#15803d' }}>Monto</th>
             <th style={{ ...thSt, width: 60 }}></th>
           </tr>
@@ -781,10 +785,11 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
                 <td style={{ ...tdSt, textAlign: 'right' }}>
                   <InlineNum value={p.cantidad} disabled={!puedeEscribir} onChange={v => saveEditPartida(p, 'cantidad', v)} />
                 </td>
-                <td style={{ ...tdSt, textAlign: 'right', color: '#475569' }}>{fmtC(p.pu_materiales)}</td>
-                <td style={{ ...tdSt, textAlign: 'right', color: '#475569' }}>{fmtC(p.pu_mano_obra)}</td>
-                <td style={{ ...tdSt, textAlign: 'right', color: '#475569' }}>{fmtC(p.pu_maquinaria)}</td>
-                <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600, color: '#1d4ed8' }}>{fmtC(p.pu_total)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', color: '#1d4ed8' }}>{fmtC(p.pu_materiales)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', color: '#7c3aed' }}>{fmtC(p.pu_mano_obra)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', color: '#15803d' }}>{fmtC(p.pu_maquinaria)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', color: '#d97706' }}>{fmtC(p.pu_equipo_menor)}</td>
+                <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600, color: '#0f766e' }}>{fmtC(p.pu_total)}</td>
                 <td style={{ ...tdSt, textAlign: 'right', fontWeight: 600, color: '#15803d' }}>{fmt(p.monto_total)}</td>
                 <td style={tdSt}>
                   <div style={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
@@ -817,8 +822,8 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
           {/* Total frente */}
           {partidas.length > 0 && (
             <tr style={{ background: '#eff6ff', borderTop: '2px solid #bfdbfe' }}>
-              <td colSpan={8} style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: '#1d4ed8', fontSize: 12 }}>Total frente</td>
-              <td style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: '#1d4ed8', fontSize: 13 }}>{fmt(totalFrente)}</td>
+              <td colSpan={9} style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: '#0f766e', fontSize: 12 }}>Total frente</td>
+              <td style={{ ...tdSt, textAlign: 'right', fontWeight: 700, color: '#15803d', fontSize: 13 }}>{fmt(totalFrente)}</td>
               <td style={tdSt}></td>
             </tr>
           )}
@@ -866,16 +871,20 @@ type InsumosPanelProps = {
   onChanged: () => void
 }
 
-const TIPO_COLOR: Record<string, { bg: string; color: string; label: string }> = {
-  material:   { bg: '#dbeafe', color: '#1d4ed8', label: 'Material' },
-  mano_obra:  { bg: '#ede9fe', color: '#7c3aed', label: 'Mano de Obra' },
-  maquinaria: { bg: '#dcfce7', color: '#15803d', label: 'Maquinaria' },
+const TIPO_COLOR: Record<TipoInsumo, { bg: string; color: string; label: string }> = {
+  material:      { bg: '#dbeafe', color: '#1d4ed8', label: 'Material' },
+  mano_obra:     { bg: '#ede9fe', color: '#7c3aed', label: 'Mano de Obra' },
+  maquinaria:    { bg: '#dcfce7', color: '#15803d', label: 'Maquinaria' },
+  equipo_menor:  { bg: '#fef3c7', color: '#d97706', label: 'Equipo Menor' },
 }
 
 const EMPTY_INS = {
-  tipo: 'material' as 'material' | 'mano_obra' | 'maquinaria', descripcion: '', unidad: 'pza',
+  tipo: 'material' as TipoInsumo, descripcion: '', unidad: 'pza',
   cantidad: '', precio_unitario: '', search: '',
-  id_articulo_fk: null as number | null, id_colaborador_fk: null as number | null,
+  id_articulo_fk:    null as number | null,
+  id_colaborador_fk: null as number | null,
+  id_equipo_fk:      null as number | null,
+  id_herramienta_fk: null as number | null,
 }
 
 function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPanelProps) {
@@ -893,6 +902,14 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
       dbCfg.from('colaboradores').select('id, nombre, apellido_paterno, apellido_materno, puesto')
         .eq('activo', true).ilike('nombre', `%${dSearch}%`).limit(8)
         .then(({ data }) => { setResults(data ?? []); setSearching(false) })
+    } else if (form.tipo === 'maquinaria') {
+      dbCfg.from('equipos').select('id, nombre, unidad_odometro')
+        .eq('activo', true).ilike('nombre', `%${dSearch}%`).limit(8)
+        .then(({ data }) => { setResults(data ?? []); setSearching(false) })
+    } else if (form.tipo === 'equipo_menor') {
+      dbCfg.from('herramientas').select('id, descripcion, tipo')
+        .eq('activo', true).ilike('descripcion', `%${dSearch}%`).limit(8)
+        .then(({ data }) => { setResults(data ?? []); setSearching(false) })
     } else {
       dbComp.from('articulos').select('id, clave, nombre, unidad, precio_ref')
         .eq('activo', true)
@@ -905,13 +922,22 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
   const selectResult = (r: any) => {
     if (form.tipo === 'mano_obra') {
       setForm(f => ({
-        ...f, id_colaborador_fk: r.id, id_articulo_fk: null,
-        descripcion: nombreCompletoColaborador(r),
-        unidad: 'hr', search: nombreCompletoColaborador(r),
+        ...f, id_colaborador_fk: r.id, id_articulo_fk: null, id_equipo_fk: null, id_herramienta_fk: null,
+        descripcion: nombreCompletoColaborador(r), unidad: 'hr', search: nombreCompletoColaborador(r),
+      }))
+    } else if (form.tipo === 'maquinaria') {
+      setForm(f => ({
+        ...f, id_equipo_fk: r.id, id_articulo_fk: null, id_colaborador_fk: null, id_herramienta_fk: null,
+        descripcion: r.nombre, unidad: r.unidad_odometro ?? 'hr', search: r.nombre,
+      }))
+    } else if (form.tipo === 'equipo_menor') {
+      setForm(f => ({
+        ...f, id_herramienta_fk: r.id, id_articulo_fk: null, id_colaborador_fk: null, id_equipo_fk: null,
+        descripcion: r.descripcion, unidad: 'hr', search: r.descripcion,
       }))
     } else {
       setForm(f => ({
-        ...f, id_articulo_fk: r.id, id_colaborador_fk: null,
+        ...f, id_articulo_fk: r.id, id_colaborador_fk: null, id_equipo_fk: null, id_herramienta_fk: null,
         descripcion: r.nombre, unidad: r.unidad ?? 'pza',
         precio_unitario: r.precio_ref ? String(r.precio_ref) : f.precio_unitario,
         search: `${r.clave} — ${r.nombre}`,
@@ -921,13 +947,15 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
   }
 
   const recalcPU = async () => {
-    // Recalcular PU del APU en la partida a partir de los insumos actuales
     const { data } = await dbCtrl.from('capex_insumos').select('tipo, monto').eq('id_partida_fk', partida.id)
     const insList = (data ?? []) as { tipo: string; monto: number }[]
-    const pu_mat = insList.filter(i => i.tipo === 'material').reduce((s, i) => s + (i.monto ?? 0), 0)
-    const pu_mo  = insList.filter(i => i.tipo === 'mano_obra').reduce((s, i) => s + (i.monto ?? 0), 0)
-    const pu_maq = insList.filter(i => i.tipo === 'maquinaria').reduce((s, i) => s + (i.monto ?? 0), 0)
-    await dbCtrl.from('capex_partidas').update({ pu_materiales: pu_mat, pu_mano_obra: pu_mo, pu_maquinaria: pu_maq }).eq('id', partida.id)
+    const sum = (t: string) => insList.filter(i => i.tipo === t).reduce((s, i) => s + (i.monto ?? 0), 0)
+    await dbCtrl.from('capex_partidas').update({
+      pu_materiales:  sum('material'),
+      pu_mano_obra:   sum('mano_obra'),
+      pu_maquinaria:  sum('maquinaria'),
+      pu_equipo_menor: sum('equipo_menor'),
+    }).eq('id', partida.id)
   }
 
   const addInsumo = async () => {
@@ -936,8 +964,10 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
     await dbCtrl.from('capex_insumos').insert({
       id_partida_fk:     partida.id,
       tipo:              form.tipo,
-      id_articulo_fk:    form.id_articulo_fk,
-      id_colaborador_fk: form.id_colaborador_fk,
+      id_articulo_fk:    form.tipo === 'material'     ? form.id_articulo_fk    : null,
+      id_colaborador_fk: form.tipo === 'mano_obra'    ? form.id_colaborador_fk : null,
+      id_equipo_fk:      form.tipo === 'maquinaria'   ? form.id_equipo_fk      : null,
+      id_herramienta_fk: form.tipo === 'equipo_menor' ? form.id_herramienta_fk : null,
       descripcion:       form.descripcion.trim(),
       unidad:            form.unidad || null,
       cantidad:          Number(form.cantidad),
@@ -966,7 +996,7 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
       </div>
 
       {/* Grupos por tipo */}
-      {(['material', 'mano_obra', 'maquinaria'] as const).map(tipo => {
+      {(['material', 'mano_obra', 'maquinaria', 'equipo_menor'] as const).map(tipo => {
         const list = byTipo(tipo)
         const tc = TIPO_COLOR[tipo]
         const subtotal = list.reduce((s, i) => s + (i.monto ?? 0), 0)
@@ -1024,17 +1054,27 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
                 <option value="material">Material</option>
                 <option value="mano_obra">Mano de Obra</option>
                 <option value="maquinaria">Maquinaria</option>
+                <option value="equipo_menor">Equipo Menor</option>
               </select>
             </div>
             {/* Búsqueda de catálogo */}
             <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>
-                {form.tipo === 'mano_obra' ? 'Colaborador' : 'Artículo del catálogo'}
+                {form.tipo === 'mano_obra' ? 'Colaborador'
+                  : form.tipo === 'maquinaria' ? 'Equipo (catálogo)'
+                  : form.tipo === 'equipo_menor' ? 'Herramienta (catálogo)'
+                  : 'Artículo del catálogo'}
               </div>
               <input className="input" style={{ fontSize: 11 }}
-                placeholder={form.tipo === 'mano_obra' ? 'Buscar colaborador…' : 'Buscar artículo…'}
+                placeholder={form.tipo === 'mano_obra' ? 'Buscar colaborador…'
+                  : form.tipo === 'maquinaria' ? 'Buscar equipo/maquinaria…'
+                  : form.tipo === 'equipo_menor' ? 'Buscar herramienta…'
+                  : 'Buscar artículo…'}
                 value={form.search}
-                onChange={e => { setForm(f => ({ ...f, search: e.target.value, descripcion: e.target.value, id_articulo_fk: null, id_colaborador_fk: null })); }}
+                onChange={e => setForm(f => ({
+                  ...f, search: e.target.value, descripcion: e.target.value,
+                  id_articulo_fk: null, id_colaborador_fk: null, id_equipo_fk: null, id_herramienta_fk: null,
+                }))}
               />
               {results.length > 0 && (
                 <div className="card" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, maxHeight: 180, overflowY: 'auto', padding: '4px 0' }}>
@@ -1045,7 +1085,11 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
                       onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
                       {form.tipo === 'mano_obra'
                         ? <><span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{nombreCompletoColaborador(r)}</span><span style={{ color: 'var(--text-muted)' }}>{r.puesto ?? ''}</span></>
-                        : <><span style={{ color: 'var(--blue)', fontWeight: 600, minWidth: 60 }}>{r.clave}</span><span style={{ flex: 1 }}>{r.nombre}</span><span style={{ color: 'var(--text-muted)' }}>{r.unidad}</span></>
+                        : form.tipo === 'maquinaria'
+                          ? <><span style={{ color: '#15803d', fontWeight: 600 }}>{r.nombre}</span><span style={{ color: 'var(--text-muted)' }}>{r.unidad_odometro ?? 'hr'}</span></>
+                          : form.tipo === 'equipo_menor'
+                            ? <><span style={{ color: '#d97706', fontWeight: 600 }}>{r.descripcion}</span><span style={{ color: 'var(--text-muted)' }}>{r.tipo ?? ''}</span></>
+                            : <><span style={{ color: 'var(--blue)', fontWeight: 600, minWidth: 60 }}>{r.clave}</span><span style={{ flex: 1 }}>{r.nombre}</span><span style={{ color: 'var(--text-muted)' }}>{r.unidad}</span></>
                       }
                     </button>
                   ))}
@@ -1092,7 +1136,7 @@ function InsumosPanel({ partida, insumos, puedeEscribir, onChanged }: InsumosPan
 function ExplosionTab({ proyectoId }: { proyectoId: number }) {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<{ tipo: string; descripcion: string; unidad: string | null; cantTotal: number; pu: number; monto: number; clave: string }[]>([])
-  const [tabTipo, setTabTipo] = useState<'material' | 'mano_obra' | 'maquinaria'>('material')
+  const [tabTipo, setTabTipo] = useState<TipoInsumo>('material')
 
   useEffect(() => {
     (async () => {
@@ -1120,7 +1164,7 @@ function ExplosionTab({ proyectoId }: { proyectoId: number }) {
         const cantPartida = cantMap[i.id_partida_fk] ?? 0
         const key = `${i.tipo}|${i.descripcion}|${i.unidad}`
         if (!map[key]) {
-          map[key] = { tipo: i.tipo, descripcion: i.descripcion, unidad: i.unidad, cantTotal: 0, monto: 0, pu: i.precio_unitario, clave: String(i.id_articulo_fk ?? i.id_colaborador_fk ?? '') }
+          map[key] = { tipo: i.tipo, descripcion: i.descripcion, unidad: i.unidad, cantTotal: 0, monto: 0, pu: i.precio_unitario, clave: String(i.id_articulo_fk ?? i.id_colaborador_fk ?? i.id_equipo_fk ?? i.id_herramienta_fk ?? '') }
         }
         map[key].cantTotal += i.cantidad * cantPartida
         map[key].monto     += i.monto * cantPartida
@@ -1133,10 +1177,11 @@ function ExplosionTab({ proyectoId }: { proyectoId: number }) {
   const filtered = data.filter(d => d.tipo === tabTipo)
   const subtotal  = filtered.reduce((s, d) => s + d.monto, 0)
 
-  const TIPO_TABS: { id: typeof tabTipo; label: string }[] = [
-    { id: 'material',   label: 'Materiales' },
-    { id: 'mano_obra',  label: 'Mano de Obra' },
-    { id: 'maquinaria', label: 'Maquinaria' },
+  const TIPO_TABS: { id: TipoInsumo; label: string }[] = [
+    { id: 'material',     label: 'Materiales' },
+    { id: 'mano_obra',    label: 'Mano de Obra' },
+    { id: 'maquinaria',   label: 'Maquinaria' },
+    { id: 'equipo_menor', label: 'Equipo Menor' },
   ]
 
   return (
