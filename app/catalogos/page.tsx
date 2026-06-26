@@ -133,11 +133,11 @@ const CATALOGOS: CatConfig[] = [
     label: 'Áreas Comunes',
     icon:  Flag,
     color: '#059669',
-    desc:  'Áreas comunes o frentes de mantenimiento dentro de una Sección — usadas en el Programa Anual',
+    desc:  'Áreas comunes de mantenimiento dentro de un Área — usadas en el Programa Anual',
     campos: [
-      { key: 'nombre',        label: 'Nombre *',  type: 'text',    required: true },
-      { key: 'descripcion',   label: 'Descripción', type: 'textarea' },
-      { key: 'id_seccion_fk', label: 'Sección',   type: 'select',  selectTabla: 'secciones' },
+      { key: 'nombre',      label: 'Nombre *',    type: 'text',    required: true },
+      { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+      { key: 'id_area_fk',  label: 'Área',        type: 'select',  selectTabla: 'areas' },
     ],
   },
   {
@@ -1661,7 +1661,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                    {config.key === 'secciones' && (
+                    {config.key === 'areas' && (
                       <button className="btn-ghost" style={{ padding: '4px 6px', color: '#059669' }}
                         title="Áreas Comunes" onClick={() => setDetailAreasRow(row)}>
                         <Flag size={13} />
@@ -1733,9 +1733,9 @@ function CatalogoTable({ config }: { config: CatConfig }) {
           onSaved={() => { setModal(null); fetchData() }}
         />
       )}
-      {detailAreasRow !== null && config.key === 'secciones' && (
-        <SeccionAreasComunes
-          seccion={detailAreasRow}
+      {detailAreasRow !== null && config.key === 'areas' && (
+        <AreaAreasComunes
+          area={detailAreasRow}
           onClose={() => { setDetailAreasRow(null); fetchData() }}
         />
       )}
@@ -2122,7 +2122,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
       <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
         padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          {seleccion.size} sección{seleccion.size !== 1 ? 'es' : ''} asignada{seleccion.size !== 1 ? 's' : ''}
+          {seleccion.size} área{seleccion.size !== 1 ? 's' : ''} común{seleccion.size !== 1 ? 'es' : ''} asignada{seleccion.size !== 1 ? 's' : ''}
         </span>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
@@ -2137,9 +2137,9 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
 }
 
 // ══════════════════════════════════════════════════════════════
-// SeccionAreasComunes — N:M vía cfg.rel_seccion_area_comun
+// AreaAreasComunes — N:M vía cfg.rel_area_area_comun
 // ══════════════════════════════════════════════════════════════
-function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () => void }) {
+function AreaAreasComunes({ area, onClose }: { area: any; onClose: () => void }) {
   const [todas,     setTodas]     = useState<any[]>([])
   const [seleccion, setSeleccion] = useState<Set<number>>(new Set())
   const [inicial,   setInicial]   = useState<Set<number>>(new Set())
@@ -2154,14 +2154,14 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
     setLoading(true)
     const [{ data: acs }, { data: rels }] = await Promise.all([
       dbCfg.from('areas_comunes').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_seccion_area_comun').select('id_area_comun_fk').eq('id_seccion_fk', seccion.id),
+      dbCfg.from('rel_area_area_comun').select('id_area_comun').eq('id_area', area.id),
     ])
     setTodas(acs ?? [])
-    const asignadas = new Set<number>((rels ?? []).map((r: any) => Number(r.id_area_comun_fk)))
+    const asignadas = new Set<number>((rels ?? []).map((r: any) => Number(r.id_area_comun)))
     setSeleccion(new Set(asignadas))
     setInicial(new Set(asignadas))
     setLoading(false)
-  }, [seccion.id])
+  }, [area.id])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -2177,8 +2177,8 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
       .select('id').single()
     if (e) { setError(e.message); setCreando(false); return }
     if (data) {
-      await dbCfg.from('rel_seccion_area_comun')
-        .insert({ id_seccion_fk: seccion.id, id_area_comun_fk: data.id })
+      await dbCfg.from('rel_area_area_comun')
+        .insert({ id_area: area.id, id_area_comun: data.id })
     }
     setNueva(''); setCreando(false); fetchData()
   }
@@ -2189,13 +2189,13 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
     const removed = Array.from(inicial).filter(id => !seleccion.has(id))
     if (added.length === 0 && removed.length === 0) { onClose(); return }
     if (added.length > 0) {
-      const { error: e } = await dbCfg.from('rel_seccion_area_comun')
-        .insert(added.map(id => ({ id_seccion_fk: seccion.id, id_area_comun_fk: id })))
+      const { error: e } = await dbCfg.from('rel_area_area_comun')
+        .insert(added.map(id => ({ id_area: area.id, id_area_comun: id })))
       if (e) { setError(e.message); setSaving(false); return }
     }
     if (removed.length > 0) {
-      const { error: e } = await dbCfg.from('rel_seccion_area_comun')
-        .delete().eq('id_seccion_fk', seccion.id).in('id_area_comun_fk', removed)
+      const { error: e } = await dbCfg.from('rel_area_area_comun')
+        .delete().eq('id_area', area.id).in('id_area_comun', removed)
       if (e) { setError(e.message); setSaving(false); return }
     }
     setSaving(false); onClose()
@@ -2204,7 +2204,7 @@ function SeccionAreasComunes({ seccion, onClose }: { seccion: any; onClose: () =
   const filtradas = todas.filter(a => a.nombre.toLowerCase().includes(busqueda.toLowerCase()))
 
   return (
-    <ModalShell modulo="residencial" titulo={`Áreas Comunes — ${seccion.nombre}`} onClose={onClose} maxWidth={480}>
+    <ModalShell modulo="mantenimiento" titulo={`Áreas Comunes — ${area.nombre}`} onClose={onClose} maxWidth={480}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 8 }}>
         <input className="input" placeholder="Nueva área común…" value={nueva}
           onChange={e => setNueva(e.target.value)}
