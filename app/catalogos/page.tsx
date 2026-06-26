@@ -2031,7 +2031,7 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
 }
 
 // ══════════════════════════════════════════════════════════════
-// CuadranteSecciones — asigna/quita secciones de un cuadrante
+// CuadranteAreas — asigna/quita áreas de un cuadrante
 // ══════════════════════════════════════════════════════════════
 function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: () => void }) {
   const [todas,     setTodas]     = useState<any[]>([])
@@ -2044,11 +2044,11 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
 
   useEffect(() => {
     setLoading(true)
-    dbCfg.from('secciones').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre')
+    dbCfg.from('areas').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre')
       .then(({ data }) => {
         setTodas(data ?? [])
         const asignadas = new Set<number>(
-          (data ?? []).filter((s: any) => s.id_cuadrante_fk === cuadrante.id).map((s: any) => Number(s.id))
+          (data ?? []).filter((a: any) => a.id_cuadrante_fk === cuadrante.id).map((a: any) => Number(a.id))
         )
         setSeleccion(new Set(asignadas))
         setInicial(new Set(asignadas))
@@ -2065,24 +2065,24 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
     const removed = Array.from(inicial).filter(id => !seleccion.has(id))
     if (added.length === 0 && removed.length === 0) { onClose(); return }
     if (added.length > 0) {
-      const { error: e } = await dbCfg.from('secciones')
+      const { error: e } = await dbCfg.from('areas')
         .update({ id_cuadrante_fk: cuadrante.id }).in('id', added)
       if (e) { setError(e.message); setSaving(false); return }
     }
     if (removed.length > 0) {
-      const { error: e } = await dbCfg.from('secciones')
+      const { error: e } = await dbCfg.from('areas')
         .update({ id_cuadrante_fk: null }).in('id', removed)
       if (e) { setError(e.message); setSaving(false); return }
     }
     setSaving(false); onClose()
   }
 
-  const filtradas = todas.filter(s => s.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+  const filtradas = todas.filter(a => a.nombre.toLowerCase().includes(busqueda.toLowerCase()))
 
   return (
-    <ModalShell modulo="residencial" titulo={`Secciones — ${cuadrante.nombre}`} onClose={onClose} maxWidth={480}>
+    <ModalShell modulo="mantenimiento" titulo={`Áreas — ${cuadrante.nombre}`} onClose={onClose} maxWidth={480}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
-        <input className="input" placeholder="Buscar sección…" value={busqueda}
+        <input className="input" placeholder="Buscar área…" value={busqueda}
           onChange={e => setBusqueda(e.target.value)} style={{ fontSize: 13 }} />
       </div>
       <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 200px)', padding: '8px 0' }}>
@@ -2092,21 +2092,21 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
           </div>
         ) : filtradas.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>
-            Sin secciones
+            Sin áreas
           </div>
-        ) : filtradas.map(s => {
-          const checked = seleccion.has(s.id)
+        ) : filtradas.map(a => {
+          const checked = seleccion.has(a.id)
           return (
-            <label key={s.id} onClick={() => toggle(s.id)}
+            <label key={a.id} onClick={() => toggle(a.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
                 cursor: 'pointer', background: checked ? '#eff6ff' : 'transparent',
                 borderLeft: `3px solid ${checked ? 'var(--blue)' : 'transparent'}`,
                 transition: 'background 0.15s' }}>
-              <input type="checkbox" checked={checked} onChange={() => toggle(s.id)}
+              <input type="checkbox" checked={checked} onChange={() => toggle(a.id)}
                 style={{ accentColor: 'var(--blue)', width: 15, height: 15 }} />
               <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400,
                 color: checked ? '#1d4ed8' : '#1e293b' }}>
-                {s.nombre}
+                {a.nombre}
               </span>
               {checked && <CheckCircle size={14} style={{ color: '#2563eb', marginLeft: 'auto', flexShrink: 0 }} />}
             </label>
@@ -2122,7 +2122,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
       <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
         padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          {seleccion.size} área{seleccion.size !== 1 ? 's' : ''} común{seleccion.size !== 1 ? 'es' : ''} asignada{seleccion.size !== 1 ? 's' : ''}
+          {seleccion.size} área{seleccion.size !== 1 ? 's' : ''} asignada{seleccion.size !== 1 ? 's' : ''}
         </span>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
