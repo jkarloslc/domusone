@@ -70,15 +70,15 @@ export default function MantenimientoPage() {
   const [cuadrantes,    setCuadrantes]    = useState<any[]>([])
   const [cuadMap,       setCuadMap]       = useState<Record<number, string>>({})
   const [cuadColorMap,  setCuadColorMap]  = useState<Record<number, string>>({})
-  const [secciones,    setSecciones]    = useState<any[]>([])
-  const [secMap,       setSecMap]       = useState<Record<number, string>>({})
+  const [areas,        setAreas]        = useState<any[]>([])
+  const [areaMap,      setAreaMap]      = useState<Record<number, string>>({})
   const [areasComunes, setAreasComunes] = useState<any[]>([])
   const [acMap,        setAcMap]        = useState<Record<number, string>>({})
-  const [secToAcs,     setSecToAcs]     = useState<Record<number, number[]>>({})
+  const [areaToAcs,    setAreaToAcs]    = useState<Record<number, number[]>>({})
   const [loading,      setLoading]    = useState(true)
   const [filterAnio,   setFilterAnio] = useState(new Date().getFullYear())
   const [filterCuad,   setFilterCuad] = useState('')
-  const [filterSec,    setFilterSec]  = useState('')
+  const [filterArea,   setFilterArea] = useState('')
   const [filterAC,     setFilterAC]   = useState('')
   const [modal,        setModal]      = useState(false)
   const [editing,      setEditing]    = useState<any | null>(null)
@@ -87,24 +87,24 @@ export default function MantenimientoPage() {
   useEffect(() => {
     Promise.all([
       dbCfg.from('cuadrantes').select('id, nombre, color').eq('activo', true).order('nombre'),
-      dbCfg.from('secciones').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
       dbCfg.from('areas_comunes').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_seccion_area_comun').select('id_seccion_fk, id_area_comun_fk'),
-    ]).then(([{ data: cuads }, { data: secs }, { data: acs }, { data: rels }]) => {
+      dbCfg.from('rel_area_area_comun').select('id_area, id_area_comun'),
+    ]).then(([{ data: cuads }, { data: areasData }, { data: acs }, { data: rels }]) => {
       setCuadrantes(cuads ?? [])
-      setSecciones(secs ?? [])
+      setAreas(areasData ?? [])
       setAreasComunes(acs ?? [])
       const cm: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const cc: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { if (c.color) cc[c.id] = c.color })
-      const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
-      const am: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { am[a.id] = a.nombre })
-      const sta: Record<number, number[]> = {};
+      const am2: Record<number, string> = {}; (areasData ?? []).forEach((a: any) => { am2[a.id] = a.nombre })
+      const acm: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { acm[a.id] = a.nombre })
+      const ata: Record<number, number[]> = {};
       (rels ?? []).forEach((r: any) => {
-        const sid = Number(r.id_seccion_fk)
-        if (!sta[sid]) sta[sid] = []
-        sta[sid].push(Number(r.id_area_comun_fk))
+        const aid = Number(r.id_area)
+        if (!ata[aid]) ata[aid] = []
+        ata[aid].push(Number(r.id_area_comun))
       })
-      setCuadMap(cm); setCuadColorMap(cc); setSecMap(sm); setAcMap(am); setSecToAcs(sta)
+      setCuadMap(cm); setCuadColorMap(cc); setAreaMap(am2); setAcMap(acm); setAreaToAcs(ata)
     })
   }, [])
 
@@ -113,7 +113,7 @@ export default function MantenimientoPage() {
     let q = dbCtrl.from('programas_mantenimiento').select('*')
       .eq('anio', filterAnio).eq('activo', true).eq('modulo', 'mantenimiento').order('nombre')
     if (filterCuad) q = q.eq('id_cuadrante_fk',  Number(filterCuad))
-    if (filterSec)  q = q.eq('id_seccion_fk',    Number(filterSec))
+    if (filterArea) q = q.eq('id_area_fk',       Number(filterArea))
     if (filterAC)   q = q.eq('id_area_comun_fk', Number(filterAC))
     const { data: progs } = await q
 
@@ -131,7 +131,7 @@ export default function MantenimientoPage() {
 
     setProgramas(progs.map((p: any) => ({ ...p, tareas: tMap[p.id] ?? [] })))
     setLoading(false)
-  }, [filterAnio, filterCuad, filterSec, filterAC])
+  }, [filterAnio, filterCuad, filterArea, filterAC])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -215,27 +215,27 @@ export default function MantenimientoPage() {
               {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
             </select>
             <select className="select" style={{ width: 200 }} value={filterCuad}
-              onChange={e => { setFilterCuad(e.target.value); setFilterSec(''); setFilterAC('') }}>
+              onChange={e => { setFilterCuad(e.target.value); setFilterArea(''); setFilterAC('') }}>
               <option value="">Cuadrante</option>
               {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
-            <select className="select" style={{ width: 190 }} value={filterSec}
-              onChange={e => { setFilterSec(e.target.value); setFilterAC('') }}>
-              <option value="">Sección</option>
-              {secciones
-                .filter(s => !filterCuad || s.id_cuadrante_fk === Number(filterCuad))
-                .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            <select className="select" style={{ width: 190 }} value={filterArea}
+              onChange={e => { setFilterArea(e.target.value); setFilterAC('') }}>
+              <option value="">Área</option>
+              {areas
+                .filter(a => !filterCuad || a.id_cuadrante_fk === Number(filterCuad))
+                .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
             <select className="select" style={{ width: 190 }} value={filterAC}
               onChange={e => setFilterAC(e.target.value)}>
               <option value="">Área Común</option>
               {areasComunes
-                .filter(a => !filterSec || (secToAcs[Number(filterSec)] ?? []).includes(a.id))
+                .filter(a => !filterArea || (areaToAcs[Number(filterArea)] ?? []).includes(a.id))
                 .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
-            {(filterCuad || filterSec || filterAC) && (
+            {(filterCuad || filterArea || filterAC) && (
               <button className="btn-ghost" style={{ color: '#dc2626' }}
-                onClick={() => { setFilterCuad(''); setFilterSec(''); setFilterAC('') }}>
+                onClick={() => { setFilterCuad(''); setFilterArea(''); setFilterAC('') }}>
                 <X size={13} /> Limpiar
               </button>
             )}
@@ -252,7 +252,7 @@ export default function MantenimientoPage() {
                   <th>Programa</th>
                   <th>Tipo</th>
                   <th>Frecuencia</th>
-                  <th>Sección / Área Común</th>
+                  <th>Área / Área Común</th>
                   <th>Periodo</th>
                   <th>Progreso</th>
                   <th style={{ width: 80 }}></th>
@@ -298,13 +298,13 @@ export default function MantenimientoPage() {
                       <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{prog.tipo_trabajo ?? '—'}</td>
                       <td style={{ fontSize: 13 }}>{prog.frecuencia}</td>
                       <td style={{ fontSize: 13 }}>
-                        {prog.id_seccion_fk
-                          ? <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>{secMap[prog.id_seccion_fk] ?? '—'}</span>
+                        {prog.id_area_fk
+                          ? <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>{areaMap[prog.id_area_fk] ?? '—'}</span>
                           : null}
-                        {prog.id_seccion_fk && prog.id_area_comun_fk ? <br /> : null}
+                        {prog.id_area_fk && prog.id_area_comun_fk ? <br /> : null}
                         {prog.id_area_comun_fk
                           ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{acMap[prog.id_area_comun_fk]}</span>
-                          : (!prog.id_seccion_fk ? <span style={{ color: 'var(--text-muted)' }}>—</span> : null)}
+                          : (!prog.id_area_fk ? <span style={{ color: 'var(--text-muted)' }}>—</span> : null)}
                       </td>
                       <td style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                         {prog.fecha_inicio ? fmtDate(prog.fecha_inicio) : '—'}
@@ -357,10 +357,10 @@ export default function MantenimientoPage() {
         </div>
       )}
 
-      {modal  && <ProgramaModal cuadrantes={cuadrantes} secciones={secciones} areasComunes={areasComunes} secToAcs={secToAcs} prog={editing}
+      {modal  && <ProgramaModal cuadrantes={cuadrantes} areas={areas} areasComunes={areasComunes} areaToAcs={areaToAcs} prog={editing}
         onClose={() => setModal(false)}
         onSaved={() => { setModal(false); fetchData() }} />}
-      {detail && <ProgramaDetail prog={detail} cuadMap={cuadMap} secMap={secMap} acMap={acMap}
+      {detail && <ProgramaDetail prog={detail} cuadMap={cuadMap} areaMap={areaMap} acMap={acMap}
         onClose={() => { setDetail(null); fetchData() }}
         onEdit={() => { setDetail(null); setEditing(detail); setModal(true) }} />}
     </div>
@@ -491,8 +491,8 @@ function MiniCalendario({ tareas, onRefresh, prog, areaMap }: {
 // ═══════════════════════════════════════════════════════════════
 // Modal Nuevo/Editar Programa
 // ═══════════════════════════════════════════════════════════════
-function ProgramaModal({ cuadrantes, secciones, areasComunes, secToAcs, prog, onClose, onSaved }: {
-  cuadrantes: any[]; secciones: any[]; areasComunes: any[]; secToAcs: Record<number, number[]>
+function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClose, onSaved }: {
+  cuadrantes: any[]; areas: any[]; areasComunes: any[]; areaToAcs: Record<number, number[]>
   prog: any; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
@@ -502,7 +502,7 @@ function ProgramaModal({ cuadrantes, secciones, areasComunes, secToAcs, prog, on
     nombre:           prog?.nombre             ?? '',
     anio:             prog?.anio?.toString()   ?? new Date().getFullYear().toString(),
     id_cuadrante_fk:  prog?.id_cuadrante_fk?.toString()  ?? '',
-    id_seccion_fk:    prog?.id_seccion_fk?.toString()    ?? '',
+    id_area_fk:       prog?.id_area_fk?.toString()       ?? '',
     id_area_comun_fk: prog?.id_area_comun_fk?.toString() ?? '',
     tipo_trabajo:     prog?.tipo_trabajo       ?? '',
     frecuencia:       prog?.frecuencia         ?? 'Mensual',
@@ -540,7 +540,7 @@ function ProgramaModal({ cuadrantes, secciones, areasComunes, secToAcs, prog, on
       nombre:           form.nombre.trim(),
       anio:             Number(form.anio),
       id_cuadrante_fk:  form.id_cuadrante_fk  ? Number(form.id_cuadrante_fk)  : null,
-      id_seccion_fk:    form.id_seccion_fk    ? Number(form.id_seccion_fk)    : null,
+      id_area_fk:       form.id_area_fk       ? Number(form.id_area_fk)       : null,
       id_area_comun_fk: form.id_area_comun_fk ? Number(form.id_area_comun_fk) : null,
       tipo_trabajo:     form.tipo_trabajo || null,
       frecuencia:       form.frecuencia,
@@ -622,26 +622,26 @@ function ProgramaModal({ cuadrantes, secciones, areasComunes, secToAcs, prog, on
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>Cuadrante</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_cuadrante_fk}
-                onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_seccion_fk: '', id_area_comun_fk: '' }))}>
+                onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '', id_area_comun_fk: '' }))}>
                 <option value="">—</option>
                 {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
-            <div><label className="label" style={{ fontSize: 11 }}>Sección</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_seccion_fk}
-                onChange={e => setForm(f => ({ ...f, id_seccion_fk: e.target.value, id_area_comun_fk: '' }))}>
+            <div><label className="label" style={{ fontSize: 11 }}>Área</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk}
+                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_area_comun_fk: '' }))}>
                 <option value="">—</option>
-                {secciones
-                  .filter(s => !form.id_cuadrante_fk || s.id_cuadrante_fk === Number(form.id_cuadrante_fk))
-                  .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                {areas
+                  .filter(a => !form.id_cuadrante_fk || a.id_cuadrante_fk === Number(form.id_cuadrante_fk))
+                  .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
             <div><label className="label" style={{ fontSize: 11 }}>Área Común</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_area_comun_fk}
-                onChange={setF('id_area_comun_fk')} disabled={!form.id_seccion_fk}>
-                <option value="">— {form.id_seccion_fk ? 'Seleccionar' : 'Elige sección primero'} —</option>
+                onChange={setF('id_area_comun_fk')} disabled={!form.id_area_fk}>
+                <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
                 {areasComunes
-                  .filter(a => !form.id_seccion_fk || (secToAcs[Number(form.id_seccion_fk)] ?? []).includes(a.id))
+                  .filter(a => !form.id_area_fk || (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
                   .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
@@ -708,10 +708,10 @@ function ProgramaModal({ cuadrantes, secciones, areasComunes, secToAcs, prog, on
 // ═══════════════════════════════════════════════════════════════
 // Detalle del Programa
 // ═══════════════════════════════════════════════════════════════
-function ProgramaDetail({ prog, cuadMap, secMap, acMap, onClose, onEdit }: {
+function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit }: {
   prog: any
   cuadMap: Record<number, string>
-  secMap: Record<number, string>
+  areaMap: Record<number, string>
   acMap: Record<number, string>
   onClose: () => void
   onEdit?: () => void
@@ -850,7 +850,7 @@ function ProgramaDetail({ prog, cuadMap, secMap, acMap, onClose, onEdit }: {
         <div><div class="lbl">Frecuencia</div><div class="val">${prog.frecuencia}</div></div>
         ${prog.responsable ? `<div><div class="lbl">Responsable</div><div class="val">${prog.responsable}</div></div>` : ''}
         ${prog.id_cuadrante_fk && cuadMap[prog.id_cuadrante_fk] ? `<div><div class="lbl">Cuadrante</div><div class="val">${cuadMap[prog.id_cuadrante_fk]}</div></div>` : ''}
-        ${prog.id_seccion_fk && secMap[prog.id_seccion_fk] ? `<div><div class="lbl">Sección</div><div class="val">${secMap[prog.id_seccion_fk]}</div></div>` : ''}
+        ${prog.id_area_fk && areaMap[prog.id_area_fk] ? `<div><div class="lbl">Área</div><div class="val">${areaMap[prog.id_area_fk]}</div></div>` : ''}
         ${prog.id_area_comun_fk && acMap[prog.id_area_comun_fk] ? `<div><div class="lbl">Área Común</div><div class="val">${acMap[prog.id_area_comun_fk]}</div></div>` : ''}
         ${prog.fecha_inicio ? `<div><div class="lbl">Fecha Inicio</div><div class="val">${fmtDate(prog.fecha_inicio)}</div></div>` : ''}
         ${prog.fecha_fin ? `<div><div class="lbl">Fecha Fin</div><div class="val">${fmtDate(prog.fecha_fin)}</div></div>` : ''}
