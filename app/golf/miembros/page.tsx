@@ -50,6 +50,7 @@ export default function MiembrosPage() {
   // stats
   const [stats, setStats]         = useState({ total: 0, activos: 0, inactivos: 0, vencidos: 0 })
   const [statsCat, setStatsCat]   = useState<StatCat[]>([])
+  const [adeudos, setAdeudos]     = useState<Set<number>>(new Set())
 
   // Cargar categorías una sola vez
   useEffect(() => {
@@ -79,8 +80,23 @@ export default function MiembrosPage() {
     }
 
     const { data, count } = await q
-    setSocios((data as Socio[]) ?? [])
+    const lista = (data as Socio[]) ?? []
+    setSocios(lista)
     setTotal(count ?? 0)
+
+    // Detectar socios con cuotas pendientes en esta página
+    if (lista.length > 0) {
+      const ids = lista.map(s => s.id)
+      const { data: pend } = await dbGolf
+        .from('cxc_golf')
+        .select('id_socio_fk')
+        .in('id_socio_fk', ids)
+        .eq('status', 'PENDIENTE')
+      setAdeudos(new Set((pend ?? []).map((r: any) => r.id_socio_fk as number)))
+    } else {
+      setAdeudos(new Set())
+    }
+
     setLoading(false)
   }, [page, search, filtroCat])
 
@@ -297,7 +313,7 @@ export default function MiembrosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                {['Memb.', 'Nombre', 'Categoría', 'Ghin', 'Vencimiento', 'Estatus', ''].map(h => (
+                {['Memb.', 'Nombre', 'Categoría', 'Ghin', 'Vencimiento', 'Estatus', 'Cobranza', ''].map(h => (
                   <th key={h} style={{
                     padding: '10px 14px', textAlign: 'left', fontSize: 11,
                     fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em',
@@ -308,9 +324,9 @@ export default function MiembrosPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
               ) : socios.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   {search || filtroCat !== '' ? 'Sin resultados para los filtros aplicados.' : 'No hay socios registrados.'}
                 </td></tr>
               ) : socios.map(s => {
@@ -320,6 +336,7 @@ export default function MiembrosPage() {
                 // color de categoría
                 const catIdx = statsCat.findIndex(c => c.id === s.id_categoria_fk)
                 const catPalette = catIdx >= 0 ? CAT_COLORS[catIdx % CAT_COLORS.length] : null
+                const tieneAdeudo = adeudos.has(s.id)
                 return (
                   <tr key={s.id} style={{ borderBottom: '1px solid var(--border)', opacity: isDel ? 0.4 : 1, transition: 'background 0.1s' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
@@ -353,6 +370,12 @@ export default function MiembrosPage() {
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <span className={badgeClass(status)}>{badgeLabel(status)}</span>
+                    </td>
+                    <td style={{ padding: '10px 14px' }}>
+                      {tieneAdeudo
+                        ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}>Con adeudo</span>
+                        : <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', whiteSpace: 'nowrap' }}>Al corriente</span>
+                      }
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
