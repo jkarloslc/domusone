@@ -38,9 +38,10 @@ export default function MiembrosPage() {
   const [loading, setLoading]         = useState(true)
   const [deleting, setDeleting]       = useState<number | null>(null)
 
-  // Filtro por categoría
-  const [categorias, setCategorias]       = useState<Categoria[]>([])
-  const [filtroCat, setFiltroCat]         = useState<number | ''>('')
+  // Filtros
+  const [categorias, setCategorias]         = useState<Categoria[]>([])
+  const [filtroCat, setFiltroCat]           = useState<number | ''>('')
+  const [filtroCobranza, setFiltroCobranza] = useState<'todos' | 'adeudo' | 'corriente'>('todos')
 
   // modals
   const [showModal, setShowModal]       = useState(false)
@@ -63,6 +64,17 @@ export default function MiembrosPage() {
     const from = page * PAGE_SIZE
     const to   = from + PAGE_SIZE - 1
 
+    // Obtener IDs con adeudo si el filtro de cobranza lo requiere
+    let idsConAdeudo: number[] | null = null
+    if (filtroCobranza !== 'todos') {
+      const { data: pendData } = await dbGolf
+        .from('cxc_golf')
+        .select('id_socio_fk')
+        .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+      const set = new Set((pendData ?? []).map((r: any) => r.id_socio_fk as number))
+      idsConAdeudo = Array.from(set)
+    }
+
     let q = dbGolf
       .from('cat_socios')
       .select('*, cat_categorias_socios(nombre)', { count: 'exact' })
@@ -77,6 +89,12 @@ export default function MiembrosPage() {
     }
     if (filtroCat !== '') {
       q = q.eq('id_categoria_fk', filtroCat)
+    }
+    if (filtroCobranza === 'adeudo' && idsConAdeudo !== null) {
+      q = idsConAdeudo.length > 0 ? q.in('id', idsConAdeudo) : q.eq('id', -1)
+    }
+    if (filtroCobranza === 'corriente' && idsConAdeudo !== null) {
+      q = idsConAdeudo.length > 0 ? (q as any).not('id', 'in', `(${idsConAdeudo.join(',')})`) : q
     }
 
     const { data, count } = await q
@@ -98,7 +116,7 @@ export default function MiembrosPage() {
     }
 
     setLoading(false)
-  }, [page, search, filtroCat])
+  }, [page, search, filtroCat, filtroCobranza])
 
   const fetchStats = useCallback(async () => {
     const { data } = await dbGolf
@@ -147,8 +165,8 @@ export default function MiembrosPage() {
     return () => clearTimeout(t)
   }, [searchInput])
 
-  // reset page when filter changes
-  useEffect(() => { setPage(0) }, [filtroCat])
+  // reset page when filters change
+  useEffect(() => { setPage(0) }, [filtroCat, filtroCobranza])
 
   const handleDelete = async (s: Socio) => {
     if (!confirm(`¿Eliminar al socio ${s.nombre} ${s.apellido_paterno ?? ''}? Esta acción no se puede deshacer.`)) return
@@ -300,7 +318,24 @@ export default function MiembrosPage() {
           {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
 
-        {(search || filtroCat !== '') && (
+        {/* Filtro cobranza */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {([
+            { key: 'todos',     label: 'Todos',        color: '#64748b', bg: '#f8fafc', activeBg: '#f1f5f9',  activeBorder: '#94a3b8' },
+            { key: 'adeudo',    label: 'Con adeudo',   color: '#dc2626', bg: '#fef2f2', activeBg: '#fee2e2',  activeBorder: '#fca5a5' },
+            { key: 'corriente', label: 'Al corriente', color: '#15803d', bg: '#f0fdf4', activeBg: '#dcfce7',  activeBorder: '#86efac' },
+          ] as const).map(opt => {
+            const active = filtroCobranza === opt.key
+            return (
+              <button key={opt.key} onClick={() => setFiltroCobranza(opt.key)}
+                style={{ padding: '7px 12px', fontSize: 12, fontWeight: active ? 700 : 500, borderRadius: 8, cursor: 'pointer', border: `1px solid ${active ? opt.activeBorder : 'var(--border)'}`, background: active ? opt.activeBg : '#fff', color: active ? opt.color : 'var(--text-muted)', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {(search || filtroCat !== '' || filtroCobranza !== 'todos') && (
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {total} resultado{total !== 1 ? 's' : ''}
           </span>
