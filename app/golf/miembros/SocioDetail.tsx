@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag, ClipboardList, ExternalLink } from 'lucide-react'
+import TabCobranzaSocio from './TabCobranzaSocio'
 import type { Socio } from './SocioModal'
 import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 
@@ -32,6 +33,7 @@ const TABS = [
   { key: 'notas',       label: 'Notas',             icon: NotebookText  },
   { key: 'fiscal',      label: 'Datos Fiscales',    icon: Receipt       },
   { key: 'facturas',   label: 'Facturas',           icon: FileText      },
+  { key: 'cobranza',  label: 'Cobranza',           icon: CreditCard    },
 ]
 
 // ── Tab Familiares ────────────────────────────────────────────
@@ -705,7 +707,15 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           {tab === 'fiscal'   && <TabDatosFiscales socioId={socio.id} />}
 
           {/* ── Facturas ── */}
-          {tab === 'facturas' && <TabFacturas      socioId={socio.id} />}
+          {tab === 'facturas'  && <TabFacturas      socioId={socio.id} />}
+
+          {/* ── Cobranza ── */}
+          {tab === 'cobranza' && (
+            <TabCobranzaSocio
+              socioId={socio.id}
+              nombreSocio={nombre}
+            />
+          )}
         </div>
 
         <div style={{ padding: '12px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>

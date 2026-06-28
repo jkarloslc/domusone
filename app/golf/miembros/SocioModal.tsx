@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { supabase, dbGolf, dbCtrl } from '@/lib/supabase'
+import TabCobranzaSocio from './TabCobranzaSocio'
 import { X, Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt } from 'lucide-react'
 
 export type Socio = {
@@ -144,7 +145,7 @@ type Props = {
   onSaved: () => void
 }
 
-const TABS = ['Datos Personales', 'Membresía', 'Familiares', 'Identificación', 'Contratos', 'Notas', 'Datos Fiscales', 'Federación', 'Facturas']
+const TABS = ['Datos Personales', 'Membresía', 'Familiares', 'Identificación', 'Contratos', 'Notas', 'Datos Fiscales', 'Federación', 'Facturas', 'Cobranza']
 
 const REGIMENES_FISCALES_SAT = [
   { clave: '601', desc: 'General de Ley Personas Morales' },
@@ -558,7 +559,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const nombreCompleto = (f: Familiar) =>
     [f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ')
 
-  const isTabDisabled = (i: number) => (i === 2 || i === 3 || i === 4 || i === 6 || i === 7 || i === 8) && isNew
+  const isTabDisabled = (i: number) => (i === 2 || i === 3 || i === 4 || i === 6 || i === 7 || i === 8 || i === 9) && isNew
 
   const inputStyle = {
     width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
@@ -567,8 +568,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   }
   const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' as const }
 
-  // Footer: ocultar guardar en tabs Familiares (2), Identificación (3), Contratos (4), Datos Fiscales (6), Federación (7), Facturas (8)
-  const showSaveBtn = tab !== 2 && tab !== 3 && tab !== 4 && tab !== 6 && tab !== 7 && tab !== 8
+  // Footer: ocultar guardar en tabs Familiares (2), Identificación (3), Contratos (4), Datos Fiscales (6), Federación (7), Facturas (8), Cobranza (9)
+  const showSaveBtn = tab !== 2 && tab !== 3 && tab !== 4 && tab !== 6 && tab !== 7 && tab !== 8 && tab !== 9
 
   return (
     <div style={{
@@ -1346,6 +1347,14 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
             </div>
           )}
 
+          {/* ── Tab 9: Cobranza ── */}
+          {tab === 9 && !isNew && (
+            <TabCobranzaSocio
+              socioId={socio!.id}
+              nombreSocio={[form.nombre, form.apellido_paterno, form.apellido_materno].filter(Boolean).join(' ')}
+            />
+          )}
+
           {/* ── Tab 8: Facturas ── */}
           {tab === 8 && !isNew && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1434,7 +1443,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
         {/* Footer */}
         <div style={{ padding: '14px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10, background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>
           <button className="btn-secondary" onClick={onClose}>
-            {(tab === 2 || tab === 3 || tab === 4 || tab === 7 || tab === 8) ? 'Cerrar' : 'Cancelar'}
+            {(tab === 2 || tab === 3 || tab === 4 || tab === 7 || tab === 8 || tab === 9) ? 'Cerrar' : 'Cancelar'}
           </button>
           {showSaveBtn && (
             <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
