@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { supabase, dbGolf } from '@/lib/supabase'
-import { X, Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award } from 'lucide-react'
+import { supabase, dbGolf, dbCtrl } from '@/lib/supabase'
+import { X, Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt } from 'lucide-react'
 
 export type Socio = {
   id: number
@@ -144,7 +144,7 @@ type Props = {
   onSaved: () => void
 }
 
-const TABS = ['Datos Personales', 'Membresía', 'Familiares', 'Identificación', 'Contratos', 'Notas', 'Datos Fiscales', 'Federación']
+const TABS = ['Datos Personales', 'Membresía', 'Familiares', 'Identificación', 'Contratos', 'Notas', 'Datos Fiscales', 'Federación', 'Facturas']
 
 const REGIMENES_FISCALES_SAT = [
   { clave: '601', desc: 'General de Ley Personas Morales' },
@@ -221,6 +221,10 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const [nuevoFiscal, setNuevoFiscal]           = useState<DatoFiscalForm>(DATO_FISCAL_VACIO)
   const [eliminandoFiscal, setEliminandoFiscal] = useState<number | null>(null)
   const [marcandoPrincipal, setMarcandoPrincipal] = useState<number | null>(null)
+
+  // ── Facturas del socio ──
+  const [facturasSocio, setFacturasSocio]   = useState<any[]>([])
+  const [loadingFact, setLoadingFact]       = useState(false)
 
   const [form, setForm] = useState({
     numero_socio:      socio?.numero_socio      ?? '',
@@ -327,6 +331,30 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
 
   useEffect(() => {
     if (tab === 6 && !isNew) fetchFiscales()
+  }, [tab])
+
+  // ── Facturas del socio ──
+  const fetchFacturasSocio = async () => {
+    if (!socio) return
+    setLoadingFact(true)
+    // Obtener los RFCs registrados para este socio
+    const { data: fiscData } = await dbGolf
+      .from('cat_socios_datos_fiscales')
+      .select('rfc')
+      .eq('id_socio_fk', socio.id)
+    const rfcs = (fiscData ?? []).map((f: any) => f.rfc as string)
+    if (rfcs.length === 0) { setFacturasSocio([]); setLoadingFact(false); return }
+    const { data } = await dbCtrl
+      .from('facturas')
+      .select('id, folio_interno, folio_fiscal, rfc_receptor, razon_social_receptor, total, status, created_at, pdf_url')
+      .in('rfc_receptor', rfcs)
+      .order('created_at', { ascending: false })
+    setFacturasSocio(data ?? [])
+    setLoadingFact(false)
+  }
+
+  useEffect(() => {
+    if (tab === 8 && !isNew) fetchFacturasSocio()
   }, [tab])
 
   // ── handleSave (datos generales) ──
@@ -530,7 +558,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const nombreCompleto = (f: Familiar) =>
     [f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ')
 
-  const isTabDisabled = (i: number) => (i === 2 || i === 3 || i === 4 || i === 6 || i === 7) && isNew
+  const isTabDisabled = (i: number) => (i === 2 || i === 3 || i === 4 || i === 6 || i === 7 || i === 8) && isNew
 
   const inputStyle = {
     width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0',
@@ -539,8 +567,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   }
   const labelStyle = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' as const }
 
-  // Footer: ocultar guardar en tabs Familiares (2), Identificación (3), Contratos (4), Datos Fiscales (6), Federación (7)
-  const showSaveBtn = tab !== 2 && tab !== 3 && tab !== 4 && tab !== 6 && tab !== 7
+  // Footer: ocultar guardar en tabs Familiares (2), Identificación (3), Contratos (4), Datos Fiscales (6), Federación (7), Facturas (8)
+  const showSaveBtn = tab !== 2 && tab !== 3 && tab !== 4 && tab !== 6 && tab !== 7 && tab !== 8
 
   return (
     <div style={{
@@ -623,6 +651,13 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                       background: active ? '#fef3c7' : 'rgba(245,158,11,0.3)',
                       color: active ? '#92400e' : '#fde68a' }}>
                       {federaciones.length}
+                    </span>
+                  )}
+                  {i === 8 && !isNew && facturasSocio.length > 0 && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
+                      background: active ? '#dcfce7' : 'rgba(34,197,94,0.25)',
+                      color: active ? '#15803d' : '#86efac' }}>
+                      {facturasSocio.length}
                     </span>
                   )}
                   {isTabDisabled(i) && (
@@ -1311,6 +1346,84 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
             </div>
           )}
 
+          {/* ── Tab 8: Facturas ── */}
+          {tab === 8 && !isNew && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Receipt size={15} style={{ color: '#15803d' }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Facturas emitidas al socio</span>
+                {!loadingFact && <span style={{ fontSize: 11, color: '#64748b' }}>({facturasSocio.length})</span>}
+              </div>
+              <div style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#166534' }}>
+                Se muestran las facturas cuyos RFC receptor coinciden con los datos fiscales registrados para este socio.
+              </div>
+              {loadingFact ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
+              ) : facturasSocio.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>🧾</div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin facturas emitidas</div>
+                  <div style={{ fontSize: 12, color: '#94a3b8' }}>No se encontraron CFDIs asociados a los RFC de este socio</div>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                        {['Folio', 'RFC Receptor', 'Razón Social', 'Total', 'Status', 'Fecha', ''].map(h => (
+                          <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {facturasSocio.map(f => {
+                        const statusColor: Record<string, { bg: string; color: string }> = {
+                          Vigente:   { bg: '#dcfce7', color: '#15803d' },
+                          Cancelada: { bg: '#fee2e2', color: '#dc2626' },
+                          Simulada:  { bg: '#fef9c3', color: '#92400e' },
+                        }
+                        const sc = statusColor[f.status] ?? { bg: '#f1f5f9', color: '#475569' }
+                        return (
+                          <tr key={f.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                              {f.folio_interno ?? '—'}
+                            </td>
+                            <td style={{ padding: '8px 10px', fontFamily: 'monospace', color: '#475569', whiteSpace: 'nowrap' }}>
+                              {f.rfc_receptor ?? '—'}
+                            </td>
+                            <td style={{ padding: '8px 10px', color: '#475569', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {f.razon_social_receptor ?? '—'}
+                            </td>
+                            <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                              {f.total != null ? '$' + Number(f.total).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}
+                            </td>
+                            <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color }}>
+                                {f.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                              {f.created_at ? new Date(f.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                            </td>
+                            <td style={{ padding: '8px 10px' }}>
+                              {f.pdf_url && (
+                                <a href={f.pdf_url} target="_blank" rel="noopener noreferrer"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
+                                  title="Ver PDF">
+                                  <ExternalLink size={12} /> PDF
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {error && (
             <div style={{ marginTop: 12, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
               {error}
@@ -1321,7 +1434,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
         {/* Footer */}
         <div style={{ padding: '14px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10, background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>
           <button className="btn-secondary" onClick={onClose}>
-            {(tab === 2 || tab === 3 || tab === 4 || tab === 7) ? 'Cerrar' : 'Cancelar'}
+            {(tab === 2 || tab === 3 || tab === 4 || tab === 7 || tab === 8) ? 'Cerrar' : 'Cancelar'}
           </button>
           {showSaveBtn && (
             <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
