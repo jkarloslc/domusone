@@ -45,6 +45,7 @@ import ReporteGolfVentasHistoricas from './ReporteGolfVentasHistoricas'
 import ReporteGolfAuditoriaSlots from './ReporteGolfAuditoriaSlots'
 import ReporteGolfSlotsOcupacion from './ReporteGolfSlotsOcupacion'
 import ReporteRiegoConsumo from './ReporteRiegoConsumo'
+import ReporteProyeccionCobranza from './ReporteProyeccionCobranza'
 import ReporteLotesPorSeccionClasif from './ReporteLotesPorSeccionClasif'
 import ReporteLotesResumenClasif from './ReporteLotesResumenClasif'
 import ReportePropietariosDesgloseLotes from './ReportePropietariosDesgloseLotes'
@@ -140,6 +141,7 @@ const GRUPOS = [
     reportes: [
       { id: 'golf-estado-cuenta', label: 'Estado de Cuenta',    icon: FileText,  desc: 'Cuotas y recibos por socio en un período' },
       { id: 'golf-cobranza',      label: 'Cobranza / CXC',      icon: Wallet,    desc: 'Cuotas por categoría, tipo y status con resumen y detalle' },
+      { id: 'golf-proyeccion-cobranza', label: 'Proyección de Cobranza', icon: TrendingDown, desc: 'Membresías y pensiones por mes: cargo total, cobrado y por cobrar con avance de cobranza' },
       { id: 'golf-accesos',       label: 'Salidas al Campo',     icon: MapPin,    desc: 'Registro de rondas por socio, espacio y forma de juego' },
       { id: 'golf-caballos-servicios',  label: 'Caballos y Servicios',        icon: BarChart3, desc: 'Desglose por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
       { id: 'golf-ventas-historicas',   label: 'Ventas Históricas POS',       icon: Wallet,    desc: 'Ventas de cortes realizados por centro de venta, artículo/servicio y rango de fechas' },
@@ -295,7 +297,8 @@ function ReportesContent() {
 
       {/* Reportes golf */}
       {active === 'golf-estado-cuenta' && <ReporteGolfEstadoCuenta />}
-      {active === 'golf-cobranza'      && <ReporteGolfCobranza />}
+      {active === 'golf-cobranza'               && <ReporteGolfCobranza />}
+      {active === 'golf-proyeccion-cobranza'    && <ReporteProyeccionCobranza />}
       {active === 'golf-accesos'       && <ReporteGolfAccesos />}
       {active === 'golf-caballos-servicios'  && <ReporteHipicoServicios />}
       {active === 'golf-ventas-historicas'   && <ReporteGolfVentasHistoricas />}
