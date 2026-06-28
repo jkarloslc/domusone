@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag, ClipboardList } from 'lucide-react'
+import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag, ClipboardList, ExternalLink } from 'lucide-react'
 import type { Socio } from './SocioModal'
 import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 
@@ -31,6 +31,7 @@ const TABS = [
   { key: 'seguimiento', label: 'Seguimiento',        icon: ClipboardList },
   { key: 'notas',       label: 'Notas',             icon: NotebookText  },
   { key: 'fiscal',      label: 'Datos Fiscales',    icon: Receipt       },
+  { key: 'facturas',   label: 'Facturas',           icon: FileText      },
 ]
 
 // ── Tab Familiares ────────────────────────────────────────────
@@ -461,6 +462,100 @@ function TabDatosFiscales({ socioId }: { socioId: number }) {
   )
 }
 
+// ── Tab Facturas ─────────────────────────────────────────────
+function TabFacturas({ socioId }: { socioId: number }) {
+  const [rows, setRows]       = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: fiscData } = await dbGolf
+        .from('cat_socios_datos_fiscales')
+        .select('rfc')
+        .eq('id_socio_fk', socioId)
+      const rfcs = (fiscData ?? []).map((f: any) => f.rfc as string)
+      if (rfcs.length === 0) { setRows([]); setLoading(false); return }
+      const { data } = await dbCtrl
+        .from('facturas')
+        .select('id, folio_interno, folio_fiscal, rfc_receptor, razon_social_receptor, total, status, created_at, pdf_url')
+        .in('rfc_receptor', rfcs)
+        .order('created_at', { ascending: false })
+      setRows(data ?? [])
+      setLoading(false)
+    }
+    load()
+  }, [socioId])
+
+  if (loading) return <Empty text="Cargando…" />
+
+  const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
+    Vigente:   { bg: '#dcfce7', color: '#15803d' },
+    Cancelada: { bg: '#fee2e2', color: '#dc2626' },
+    Simulada:  { bg: '#fef9c3', color: '#92400e' },
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#166534' }}>
+        Facturas cuyos RFC receptor coinciden con los datos fiscales registrados para este socio.
+      </div>
+      {rows.length === 0 ? (
+        <Empty text="Sin facturas emitidas" emoji="🧾" />
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                {['Folio', 'RFC Receptor', 'Razón Social', 'Total', 'Status', 'Fecha', ''].map(h => (
+                  <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(f => {
+                const sc = STATUS_COLOR[f.status] ?? { bg: '#f1f5f9', color: '#475569' }
+                return (
+                  <tr key={f.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                      {f.folio_interno ?? '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', fontFamily: 'monospace', color: '#475569', whiteSpace: 'nowrap' }}>
+                      {f.rfc_receptor ?? '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#475569', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {f.razon_social_receptor ?? '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
+                      {f.total != null ? '$' + Number(f.total).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color }}>
+                        {f.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                      {f.created_at ? new Date(f.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      {f.pdf_url && (
+                        <a href={f.pdf_url} target="_blank" rel="noopener noreferrer"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
+                          title="Ver PDF">
+                          <ExternalLink size={12} /> PDF
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Empty({ text, emoji }: { text: string; emoji?: string }) {
   return (
     <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
@@ -607,7 +702,10 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           )}
 
           {/* ── Datos Fiscales ── */}
-          {tab === 'fiscal' && <TabDatosFiscales socioId={socio.id} />}
+          {tab === 'fiscal'   && <TabDatosFiscales socioId={socio.id} />}
+
+          {/* ── Facturas ── */}
+          {tab === 'facturas' && <TabFacturas      socioId={socio.id} />}
         </div>
 
         <div style={{ padding: '12px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>
