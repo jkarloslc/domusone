@@ -1,17 +1,18 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Eye, X, Save, Loader, Printer,
   Calendar, CheckCircle, Edit2, Trash2,
-  ClipboardList, Wrench, Zap
+  ClipboardList, Wrench, Zap, User, Search, ChevronDown
 } from 'lucide-react'
 import OrdenesTrabajoTab from './OrdenesTrabajoTab'
 import ServiciosTab from './ServiciosTab'
 import ModalShell from '@/components/ui/ModalShell'
+import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 
-const FRECUENCIAS = ['Semanal','Quincenal','Mensual','Bimestral','Trimestral','Semestral','Anual']
+const FRECUENCIAS = ['Diario','Semanal','Quincenal','Mensual','Bimestral','Trimestral','Semestral','Anual']
 const TIPOS       = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Mantto. Lineas Sanitarias','Otro']
 const MESES       = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
@@ -40,6 +41,10 @@ function generarFechas(anio: number, frecuencia: string, mesInicio: number): Dat
     for (let m = mesInicio - 1; m < 12; m += paso) {
       fechas.push(new Date(anio, m, 1))
     }
+  } else if (frecuencia === 'Diario') {
+    let d = new Date(anio, mesInicio - 1, 1)
+    const fin = new Date(anio, 11, 31)
+    while (d <= fin) { fechas.push(new Date(d)); d = new Date(d.getTime() + 86400000) }
   } else {
     const dias = frecuencia === 'Quincenal' ? 14 : 7
     let d = new Date(anio, mesInicio - 1, 1)
@@ -489,6 +494,91 @@ function MiniCalendario({ tareas, onRefresh, prog, areaMap }: {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Popup selector de Colaborador
+// ═══════════════════════════════════════════════════════════════
+function ColaboradorPopup({ value, onChange }: {
+  value: { id: number | null; nombre: string }
+  onChange: (c: { id: number; nombre: string } | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
+  const [query, setQuery] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    dbCfg.from('colaboradores').select('*').eq('activo', true).order('nombre')
+      .then(({ data }) => setColaboradores(data ?? []))
+  }, [open])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const filtrados = colaboradores.filter(c => {
+    const full = nombreCompletoColaborador(c).toLowerCase()
+    return full.includes(query.toLowerCase())
+  })
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+          background: 'var(--input-bg, #fff)', border: '1px solid var(--border)',
+          borderRadius: 6, padding: '6px 10px', fontSize: 13, cursor: 'pointer',
+          color: value.nombre ? 'var(--text)' : 'var(--text-muted)' }}>
+        <User size={13} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
+        <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {value.nombre || 'Seleccionar responsable…'}
+        </span>
+        {value.nombre && (
+          <span onClick={e => { e.stopPropagation(); onChange(null) }}
+            style={{ color: 'var(--text-muted)', lineHeight: 1 }}>
+            <X size={12} />
+          </span>
+        )}
+        <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
+          background: '#fff', border: '1px solid var(--border)', borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,.12)', marginTop: 4, overflow: 'hidden' }}>
+          <div style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Search size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar colaborador…"
+              style={{ border: 'none', outline: 'none', width: '100%', fontSize: 12, background: 'transparent' }} />
+          </div>
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filtrados.length === 0 ? (
+              <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-muted)' }}>Sin resultados</div>
+            ) : filtrados.map(c => {
+              const nombre = nombreCompletoColaborador(c)
+              const selected = c.id === value.id
+              return (
+                <button key={c.id} type="button"
+                  onClick={() => { onChange({ id: c.id, nombre }); setOpen(false); setQuery('') }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px',
+                    fontSize: 13, background: selected ? '#eff6ff' : 'transparent',
+                    color: selected ? 'var(--blue)' : 'var(--text)',
+                    border: 'none', cursor: 'pointer' }}>
+                  {nombre}
+                  {c.puesto && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>{c.puesto}</span>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Modal Nuevo/Editar Programa
 // ═══════════════════════════════════════════════════════════════
 function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClose, onSaved }: {
@@ -507,6 +597,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
     tipo_trabajo:     prog?.tipo_trabajo       ?? '',
     frecuencia:       prog?.frecuencia         ?? 'Mensual',
     mes_inicio:       prog?.mes_inicio?.toString() ?? '1',
+    id_responsable_fk: prog?.id_responsable_fk ?? null as number | null,
     responsable:      prog?.responsable        ?? '',
     descripcion:      prog?.descripcion        ?? '',
     presupuesto_est:  prog?.presupuesto_est?.toString() ?? '0',
@@ -545,6 +636,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
       tipo_trabajo:     form.tipo_trabajo || null,
       frecuencia:       form.frecuencia,
       mes_inicio:       Number(form.mes_inicio),
+      id_responsable_fk: form.id_responsable_fk ?? null,
       responsable:      form.responsable.trim() || null,
       descripcion:      form.descripcion.trim() || null,
       presupuesto_est:  Number(form.presupuesto_est || 0),
@@ -682,7 +774,14 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
           )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>Responsable</label>
-              <input className="input" style={{ fontSize: 13 }} value={form.responsable} onChange={setF('responsable')} />
+              <ColaboradorPopup
+                value={{ id: form.id_responsable_fk, nombre: form.responsable }}
+                onChange={c => setForm(f => ({
+                  ...f,
+                  id_responsable_fk: c ? c.id : null,
+                  responsable: c ? c.nombre : '',
+                }))}
+              />
             </div>
             <div><label className="label" style={{ fontSize: 11 }}>Presupuesto estimado</label>
               <input className="input" style={{ fontSize: 13 }} type="number" value={form.presupuesto_est} onChange={setF('presupuesto_est')} />
