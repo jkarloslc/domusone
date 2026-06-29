@@ -88,7 +88,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
 
     let q = dbCtrl.from('ordenes_trabajo').select('*', { count: 'exact' })
       .eq('empresa', empresa)
-      .order('created_at', { ascending: false })
+      .order('fecha_inicio', { ascending: false, nullsFirst: false })
     if (debouncedSearch)  q = q.or(`folio.ilike.%${debouncedSearch}%,titulo.ilike.%${debouncedSearch}%,asignado_a.ilike.%${debouncedSearch}%`)
     if (filterStatus)     q = q.eq('status', filterStatus)
     if (filterTipo)       q = q.eq('tipo_trabajo', filterTipo)
