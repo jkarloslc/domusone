@@ -93,7 +93,7 @@ export default function MantenimientoPage() {
     Promise.all([
       dbCfg.from('cuadrantes').select('id, nombre, color').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('areas_comunes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas_comunes').select('id, nombre, descripcion').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_area_comun').select('id_area, id_area_comun'),
     ]).then(([{ data: cuads }, { data: areasData }, { data: acs }, { data: rels }]) => {
       setCuadrantes(cuads ?? [])
@@ -734,7 +734,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
                 <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
                 {areasComunes
                   .filter(a => !form.id_area_fk || (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
-                  .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                  .map(a => <option key={a.id} value={a.id}>{a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}</option>)}
               </select>
             </div>
           </div>
