@@ -2011,107 +2011,218 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
 }
 
 // ══════════════════════════════════════════════════════════════
-// CuadranteAreas — asigna/quita áreas de un cuadrante
+// CuadranteSecciones — asigna áreas y colaboradores a un cuadrante
 // ══════════════════════════════════════════════════════════════
 function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: () => void }) {
-  const [todas,     setTodas]     = useState<any[]>([])
-  const [seleccion, setSeleccion] = useState<Set<number>>(new Set())
-  const [inicial,   setInicial]   = useState<Set<number>>(new Set())
-  const [busqueda,  setBusqueda]  = useState('')
-  const [loading,   setLoading]   = useState(true)
-  const [saving,    setSaving]    = useState(false)
-  const [error,     setError]     = useState('')
+  const [tab, setTab] = useState<'areas' | 'colaboradores'>('areas')
+
+  // ── Áreas ──
+  const [todasAreas,     setTodasAreas]     = useState<any[]>([])
+  const [selAreas,       setSelAreas]       = useState<Set<number>>(new Set())
+  const [inicialAreas,   setInicialAreas]   = useState<Set<number>>(new Set())
+  const [busqAreas,      setBusqAreas]      = useState('')
+  const [loadingAreas,   setLoadingAreas]   = useState(true)
+  const [savingAreas,    setSavingAreas]    = useState(false)
+  const [errorAreas,     setErrorAreas]     = useState('')
+
+  // ── Colaboradores ──
+  const [todasColabs,    setTodasColabs]    = useState<any[]>([])
+  const [selColabs,      setSelColabs]      = useState<Set<number>>(new Set())
+  const [inicialColabs,  setInicialColabs]  = useState<Set<number>>(new Set())
+  const [busqColabs,     setBusqColabs]     = useState('')
+  const [loadingColabs,  setLoadingColabs]  = useState(true)
+  const [savingColabs,   setSavingColabs]   = useState(false)
+  const [errorColabs,    setErrorColabs]    = useState('')
 
   useEffect(() => {
-    setLoading(true)
+    setLoadingAreas(true)
     dbCfg.from('areas').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre')
       .then(({ data }) => {
-        setTodas(data ?? [])
+        setTodasAreas(data ?? [])
         const asignadas = new Set<number>(
           (data ?? []).filter((a: any) => a.id_cuadrante_fk === cuadrante.id).map((a: any) => Number(a.id))
         )
-        setSeleccion(new Set(asignadas))
-        setInicial(new Set(asignadas))
-        setLoading(false)
+        setSelAreas(new Set(asignadas)); setInicialAreas(new Set(asignadas))
+        setLoadingAreas(false)
       })
   }, [cuadrante.id])
 
-  const toggle = (id: number) =>
-    setSeleccion(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  useEffect(() => {
+    setLoadingColabs(true)
+    dbCfg.from('colaboradores').select('id, nombre, apellido_paterno, apellido_materno, puesto, id_cuadrante_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => {
+        setTodasColabs(data ?? [])
+        const asignados = new Set<number>(
+          (data ?? []).filter((c: any) => c.id_cuadrante_fk === cuadrante.id).map((c: any) => Number(c.id))
+        )
+        setSelColabs(new Set(asignados)); setInicialColabs(new Set(asignados))
+        setLoadingColabs(false)
+      })
+  }, [cuadrante.id])
 
-  const handleSave = async () => {
-    setSaving(true); setError('')
-    const added   = Array.from(seleccion).filter(id => !inicial.has(id))
-    const removed = Array.from(inicial).filter(id => !seleccion.has(id))
-    if (added.length === 0 && removed.length === 0) { onClose(); return }
+  const toggleArea  = (id: number) => setSelAreas(prev  => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggleColab = (id: number) => setSelColabs(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+
+  const saveAreas = async () => {
+    setSavingAreas(true); setErrorAreas('')
+    const added   = Array.from(selAreas).filter(id => !inicialAreas.has(id))
+    const removed = Array.from(inicialAreas).filter(id => !selAreas.has(id))
+    if (added.length === 0 && removed.length === 0) { setSavingAreas(false); return }
     if (added.length > 0) {
-      const { error: e } = await dbCfg.from('areas')
-        .update({ id_cuadrante_fk: cuadrante.id }).in('id', added)
-      if (e) { setError(e.message); setSaving(false); return }
+      const { error: e } = await dbCfg.from('areas').update({ id_cuadrante_fk: cuadrante.id }).in('id', added)
+      if (e) { setErrorAreas(e.message); setSavingAreas(false); return }
     }
     if (removed.length > 0) {
-      const { error: e } = await dbCfg.from('areas')
-        .update({ id_cuadrante_fk: null }).in('id', removed)
-      if (e) { setError(e.message); setSaving(false); return }
+      const { error: e } = await dbCfg.from('areas').update({ id_cuadrante_fk: null }).in('id', removed)
+      if (e) { setErrorAreas(e.message); setSavingAreas(false); return }
     }
-    setSaving(false); onClose()
+    setInicialAreas(new Set(selAreas)); setSavingAreas(false)
   }
 
-  const filtradas = todas.filter(a => a.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+  const saveColabs = async () => {
+    setSavingColabs(true); setErrorColabs('')
+    const added   = Array.from(selColabs).filter(id => !inicialColabs.has(id))
+    const removed = Array.from(inicialColabs).filter(id => !selColabs.has(id))
+    if (added.length === 0 && removed.length === 0) { setSavingColabs(false); return }
+    if (added.length > 0) {
+      const { error: e } = await dbCfg.from('colaboradores').update({ id_cuadrante_fk: cuadrante.id, updated_at: new Date().toISOString() }).in('id', added)
+      if (e) { setErrorColabs(e.message); setSavingColabs(false); return }
+    }
+    if (removed.length > 0) {
+      const { error: e } = await dbCfg.from('colaboradores').update({ id_cuadrante_fk: null, updated_at: new Date().toISOString() }).in('id', removed)
+      if (e) { setErrorColabs(e.message); setSavingColabs(false); return }
+    }
+    setInicialColabs(new Set(selColabs)); setSavingColabs(false)
+  }
+
+  const filtAreas  = todasAreas.filter(a => a.nombre.toLowerCase().includes(busqAreas.toLowerCase()))
+  const filtColabs = todasColabs.filter(c =>
+    nombreCompletoColaborador(c).toLowerCase().includes(busqColabs.toLowerCase())
+  )
+
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    padding: '8px 18px', fontSize: 13, fontWeight: active ? 600 : 400,
+    color: active ? '#1d4ed8' : 'var(--text-muted)',
+    borderBottom: `2px solid ${active ? '#2563eb' : 'transparent'}`,
+    background: 'none', border: 'none', borderBottomWidth: 2,
+    borderBottomStyle: 'solid', borderBottomColor: active ? '#2563eb' : 'transparent',
+    cursor: 'pointer', transition: 'all 0.15s',
+  })
 
   return (
-    <ModalShell modulo="mantenimiento" titulo={`Áreas — ${cuadrante.nombre}`} onClose={onClose} maxWidth={480}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
-        <input className="input" placeholder="Buscar área…" value={busqueda}
-          onChange={e => setBusqueda(e.target.value)} style={{ fontSize: 13 }} />
+    <ModalShell modulo="mantenimiento" titulo={cuadrante.nombre} onClose={onClose} maxWidth={520}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', paddingLeft: 8 }}>
+        <button style={tabStyle(tab === 'areas')} onClick={() => setTab('areas')}>
+          Áreas {selAreas.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#dbeafe', color: '#1d4ed8', borderRadius: 10, padding: '1px 6px' }}>{selAreas.size}</span>}
+        </button>
+        <button style={tabStyle(tab === 'colaboradores')} onClick={() => setTab('colaboradores')}>
+          Colaboradores {selColabs.size > 0 && <span style={{ marginLeft: 4, fontSize: 11, background: '#ede9fe', color: '#7c3aed', borderRadius: 10, padding: '1px 6px' }}>{selColabs.size}</span>}
+        </button>
       </div>
-      <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 200px)', padding: '8px 0' }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: 32 }}>
-            <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+
+      {/* Tab Áreas */}
+      {tab === 'areas' && (
+        <>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
+            <input className="input" placeholder="Buscar área…" value={busqAreas}
+              onChange={e => setBusqAreas(e.target.value)} style={{ fontSize: 13 }} />
           </div>
-        ) : filtradas.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>
-            Sin áreas
+          <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 240px)', padding: '8px 0' }}>
+            {loadingAreas ? (
+              <div style={{ textAlign: 'center', padding: 32 }}>
+                <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+              </div>
+            ) : filtAreas.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>Sin áreas</div>
+            ) : filtAreas.map(a => {
+              const checked = selAreas.has(a.id)
+              return (
+                <label key={a.id} onClick={() => toggleArea(a.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
+                    cursor: 'pointer', background: checked ? '#eff6ff' : 'transparent',
+                    borderLeft: `3px solid ${checked ? '#2563eb' : 'transparent'}`, transition: 'background 0.15s' }}>
+                  <input type="checkbox" checked={checked} onChange={() => toggleArea(a.id)}
+                    style={{ accentColor: 'var(--blue)', width: 15, height: 15 }} />
+                  <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#1d4ed8' : '#1e293b' }}>
+                    {a.nombre}
+                  </span>
+                  {checked && <CheckCircle size={14} style={{ color: '#2563eb', marginLeft: 'auto', flexShrink: 0 }} />}
+                </label>
+              )
+            })}
           </div>
-        ) : filtradas.map(a => {
-          const checked = seleccion.has(a.id)
-          return (
-            <label key={a.id} onClick={() => toggle(a.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
-                cursor: 'pointer', background: checked ? '#eff6ff' : 'transparent',
-                borderLeft: `3px solid ${checked ? 'var(--blue)' : 'transparent'}`,
-                transition: 'background 0.15s' }}>
-              <input type="checkbox" checked={checked} onChange={() => toggle(a.id)}
-                style={{ accentColor: 'var(--blue)', width: 15, height: 15 }} />
-              <span style={{ fontSize: 13, fontWeight: checked ? 600 : 400,
-                color: checked ? '#1d4ed8' : '#1e293b' }}>
-                {a.nombre}
-              </span>
-              {checked && <CheckCircle size={14} style={{ color: '#2563eb', marginLeft: 'auto', flexShrink: 0 }} />}
-            </label>
-          )
-        })}
-      </div>
-      {error && (
-        <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
-          border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>
-          {error}
-        </div>
+          {errorAreas && (
+            <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
+              border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{errorAreas}</div>
+          )}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
+            padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {selAreas.size} área{selAreas.size !== 1 ? 's' : ''} asignada{selAreas.size !== 1 ? 's' : ''}
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cerrar</button>
+              <button className="btn-primary" style={{ fontSize: 12 }} onClick={saveAreas} disabled={savingAreas}>
+                {savingAreas ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
+              </button>
+            </div>
+          </div>
+        </>
       )}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
-        padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          {seleccion.size} área{seleccion.size !== 1 ? 's' : ''} asignada{seleccion.size !== 1 ? 's' : ''}
-        </span>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleSave} disabled={saving}>
-            {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
-            Guardar
-          </button>
-        </div>
-      </div>
+
+      {/* Tab Colaboradores */}
+      {tab === 'colaboradores' && (
+        <>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
+            <input className="input" placeholder="Buscar colaborador…" value={busqColabs}
+              onChange={e => setBusqColabs(e.target.value)} style={{ fontSize: 13 }} />
+          </div>
+          <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 240px)', padding: '8px 0' }}>
+            {loadingColabs ? (
+              <div style={{ textAlign: 'center', padding: 32 }}>
+                <RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
+              </div>
+            ) : filtColabs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>Sin colaboradores</div>
+            ) : filtColabs.map(c => {
+              const checked = selColabs.has(c.id)
+              return (
+                <label key={c.id} onClick={() => toggleColab(c.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
+                    cursor: 'pointer', background: checked ? '#f5f3ff' : 'transparent',
+                    borderLeft: `3px solid ${checked ? '#7c3aed' : 'transparent'}`, transition: 'background 0.15s' }}>
+                  <input type="checkbox" checked={checked} onChange={() => toggleColab(c.id)}
+                    style={{ accentColor: '#7c3aed', width: 15, height: 15 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400, color: checked ? '#6d28d9' : '#1e293b' }}>
+                      {nombreCompletoColaborador(c)}
+                    </div>
+                    {c.puesto && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.puesto}</div>}
+                  </div>
+                  {checked && <CheckCircle size={14} style={{ color: '#7c3aed', flexShrink: 0 }} />}
+                </label>
+              )
+            })}
+          </div>
+          {errorColabs && (
+            <div style={{ margin: '0 16px 8px', padding: '8px 12px', background: '#fef2f2',
+              border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{errorColabs}</div>
+          )}
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center',
+            padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {selColabs.size} colaborador{selColabs.size !== 1 ? 'es' : ''} asignado{selColabs.size !== 1 ? 's' : ''}
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cerrar</button>
+              <button className="btn-primary" style={{ fontSize: 12 }} onClick={saveColabs} disabled={savingColabs}>
+                {savingColabs ? <Loader size={11} className="animate-spin" /> : <Save size={11} />} Guardar
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </ModalShell>
   )
 }
