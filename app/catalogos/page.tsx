@@ -817,48 +817,29 @@ const emptyColabForm = () => ({
   nombre: '', apellido_paterno: '', apellido_materno: '', fecha_ingreso: '', puesto: '',
   sueldo_bruto_mensual: '', sueldo_neto_mensual: '',
   es_asignado: false, es_supervisor: false,
-  id_cuadrante_fk: '' as string | number, id_seccion_fk: '' as string | number,
-  id_centro_costo_fk: '' as string | number, id_area_fk: '' as string | number,
 })
 
 function ColaboradoresPanel() {
   const { authUser } = useAuth()
   const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
-  const [items, setItems]           = useState<Colaborador[]>([])
-  const [cuadrantes, setCuadrantes] = useState<{ id: number; nombre: string }[]>([])
-  const [secciones, setSecciones]   = useState<{ id: number; nombre: string }[]>([])
-  const [centrosCosto, setCC]       = useState<{ id: number; nombre: string }[]>([])
-  const [areas, setAreas]           = useState<{ id: number; nombre: string; id_centro_costo_fk?: number }[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [showForm, setShowForm]     = useState(false)
-  const [editing, setEditing]       = useState<Colaborador | null>(null)
-  const [saving, setSaving]         = useState(false)
-  const [error, setError]           = useState('')
-  const [form, setForm]             = useState(emptyColabForm())
+  const [items, setItems]       = useState<Colaborador[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [viewing, setViewing]   = useState<Colaborador | null>(null)
+  const [editing, setEditing]   = useState<Colaborador | null>(null)
+  const [saving, setSaving]     = useState(false)
+  const [error, setError]       = useState('')
+  const [form, setForm]         = useState(emptyColabForm())
 
-  const [busqueda, setBusqueda]         = useState('')
-  const [filtroAsignado, setFA]         = useState('all')
-  const [filtroSupervisor, setFS]       = useState('all')
-  const [filtroCuadrante, setFCuad]     = useState('')
-  const [filtroSeccion, setFSecc]       = useState('')
-  const [filtroCC, setFCC]              = useState('')
-  const [filtroArea, setFArea]          = useState('')
-  const [filtroStatus, setFStatus]      = useState('activos')
+  const [busqueda, setBusqueda]     = useState('')
+  const [filtroAsignado, setFA]     = useState('all')
+  const [filtroSupervisor, setFS]   = useState('all')
+  const [filtroStatus, setFStatus]  = useState('activos')
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [{ data: colabs }, { data: cuads }, { data: secs }, { data: ccs }, { data: ars }] = await Promise.all([
-      dbCfg.from('colaboradores').select('*').order('nombre'),
-      dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
-    ])
+    const { data: colabs } = await dbCfg.from('colaboradores').select('*').order('nombre')
     setItems((colabs as Colaborador[]) ?? [])
-    setCuadrantes(cuads ?? [])
-    setSecciones(secs ?? [])
-    setCC(ccs ?? [])
-    setAreas(ars ?? [])
     setLoading(false)
   }, [])
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -871,10 +852,8 @@ function ColaboradoresPanel() {
       fecha_ingreso: c.fecha_ingreso ?? '', puesto: c.puesto ?? '',
       sueldo_bruto_mensual: c.sueldo_bruto_mensual?.toString() ?? '', sueldo_neto_mensual: c.sueldo_neto_mensual?.toString() ?? '',
       es_asignado: c.es_asignado, es_supervisor: c.es_supervisor,
-      id_cuadrante_fk: c.id_cuadrante_fk ?? '', id_seccion_fk: c.id_seccion_fk ?? '',
-      id_centro_costo_fk: c.id_centro_costo_fk ?? '', id_area_fk: c.id_area_fk ?? '',
     })
-    setError(''); setShowForm(true)
+    setError(''); setViewing(null); setShowForm(true)
   }
 
   const handleSave = async () => {
@@ -890,10 +869,6 @@ function ColaboradoresPanel() {
       sueldo_neto_mensual: form.sueldo_neto_mensual ? Number(form.sueldo_neto_mensual) : null,
       es_asignado: form.es_asignado,
       es_supervisor: form.es_supervisor,
-      id_cuadrante_fk: form.id_cuadrante_fk ? Number(form.id_cuadrante_fk) : null,
-      id_seccion_fk: form.id_seccion_fk ? Number(form.id_seccion_fk) : null,
-      id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
-      id_area_fk: form.id_area_fk ? Number(form.id_area_fk) : null,
       updated_at: new Date().toISOString(),
     }
     if (editing) {
@@ -909,31 +884,32 @@ function ColaboradoresPanel() {
 
   const toggleActivo = async (c: Colaborador) => {
     await dbCfg.from('colaboradores').update({ activo: !c.activo, updated_at: new Date().toISOString() }).eq('id', c.id)
+    setViewing(null)
     fetchAll()
   }
-
-  const cuadMap = Object.fromEntries(cuadrantes.map(c => [c.id, c.nombre]))
-  const seccMap = Object.fromEntries(secciones.map(s => [s.id, s.nombre]))
-  const ccMap   = Object.fromEntries(centrosCosto.map(c => [c.id, c.nombre]))
-  const areaMap = Object.fromEntries(areas.map(a => [a.id, a.nombre]))
 
   const filtered = items.filter(c => {
     if (busqueda.trim() && !nombreCompletoColaborador(c).toLowerCase().includes(busqueda.trim().toLowerCase())) return false
     if (filtroAsignado   !== 'all' && c.es_asignado   !== (filtroAsignado === 'true'))   return false
     if (filtroSupervisor !== 'all' && c.es_supervisor !== (filtroSupervisor === 'true')) return false
-    if (filtroCuadrante && c.id_cuadrante_fk    !== Number(filtroCuadrante)) return false
-    if (filtroSeccion   && c.id_seccion_fk      !== Number(filtroSeccion))   return false
-    if (filtroCC        && c.id_centro_costo_fk !== Number(filtroCC))        return false
-    if (filtroArea      && c.id_area_fk         !== Number(filtroArea))      return false
     if (filtroStatus === 'activos'   && !c.activo) return false
     if (filtroStatus === 'inactivos' && c.activo)  return false
     return true
   })
 
   const fmt$ = (v: number | null) => v == null ? '—' : '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  const activos     = items.filter(i => i.activo).length
-  const asignados   = items.filter(i => i.activo && i.es_asignado).length
+  const activos      = items.filter(i => i.activo).length
+  const asignados    = items.filter(i => i.activo && i.es_asignado).length
   const supervisores = items.filter(i => i.activo && i.es_supervisor).length
+
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+  }
+  const modalStyle: React.CSSProperties = {
+    background: '#fff', borderRadius: 12, padding: '24px 28px', width: '100%', maxWidth: 560,
+    boxShadow: '0 20px 60px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto',
+  }
 
   return (
     <div>
@@ -978,38 +954,22 @@ function ColaboradoresPanel() {
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 160px', maxWidth: 200 }}>
+        <div style={{ position: 'relative', flex: '1 1 160px', maxWidth: 220 }}>
           <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input className="input" style={{ paddingLeft: 28 }} placeholder="Buscar nombre…"
             value={busqueda} onChange={e => setBusqueda(e.target.value)} />
         </div>
-        <select className="select" style={{ flex: '1 1 130px', maxWidth: 160 }} value={filtroAsignado} onChange={e => setFA(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 130px', maxWidth: 170 }} value={filtroAsignado} onChange={e => setFA(e.target.value)}>
           <option value="all">Asignado: todos</option>
           <option value="true">Solo asignables</option>
           <option value="false">No asignables</option>
         </select>
-        <select className="select" style={{ flex: '1 1 130px', maxWidth: 160 }} value={filtroSupervisor} onChange={e => setFS(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 130px', maxWidth: 170 }} value={filtroSupervisor} onChange={e => setFS(e.target.value)}>
           <option value="all">Supervisor: todos</option>
           <option value="true">Solo supervisores</option>
           <option value="false">No supervisores</option>
         </select>
-        <select className="select" style={{ flex: '1 1 120px', maxWidth: 170 }} value={filtroCC} onChange={e => { setFCC(e.target.value); setFArea('') }}>
-          <option value="">Todos los CC</option>
-          {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
-        <select className="select" style={{ flex: '1 1 110px', maxWidth: 160 }} value={filtroArea} onChange={e => setFArea(e.target.value)}>
-          <option value="">Todas las áreas</option>
-          {areas.filter(a => !filtroCC || a.id_centro_costo_fk === Number(filtroCC)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-        </select>
-        <select className="select" style={{ flex: '1 1 110px', maxWidth: 160 }} value={filtroSeccion} onChange={e => setFSecc(e.target.value)}>
-          <option value="">Todas las secciones</option>
-          {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-        </select>
-        <select className="select" style={{ flex: '1 1 110px', maxWidth: 160 }} value={filtroCuadrante} onChange={e => setFCuad(e.target.value)}>
-          <option value="">Todos los cuadrantes</option>
-          {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
-        <select className="select" style={{ flex: '1 1 100px', maxWidth: 140 }} value={filtroStatus} onChange={e => setFStatus(e.target.value)}>
+        <select className="select" style={{ flex: '1 1 110px', maxWidth: 150 }} value={filtroStatus} onChange={e => setFStatus(e.target.value)}>
           <option value="activos">Solo activos</option>
           <option value="inactivos">Solo inactivos</option>
           <option value="all">Todos</option>
@@ -1017,92 +977,128 @@ function ColaboradoresPanel() {
         <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{filtered.length} registros</span>
       </div>
 
-      {/* Formulario inline */}
+      {/* Modal de captura / edición */}
       {showForm && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px 20px', marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#1e293b' }}>{editing ? 'Editar colaborador' : 'Nuevo colaborador'}</span>
-            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={16} /></button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px 20px' }}>
-            <div>
-              <label className="label">Nombre *</label>
-              <input className="input" value={form.nombre} autoFocus onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Nombre(s)" />
+        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) setShowForm(false) }}>
+          <div style={modalStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#1e293b' }}>
+                {editing ? 'Editar colaborador' : 'Nuevo colaborador'}
+              </span>
+              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
             </div>
-            <div>
-              <label className="label">Apellido Paterno</label>
-              <input className="input" value={form.apellido_paterno} onChange={e => setForm(f => ({ ...f, apellido_paterno: e.target.value }))} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="label">Nombre(s) *</label>
+                <input className="input" value={form.nombre} autoFocus onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Nombre(s)" />
+              </div>
+              <div>
+                <label className="label">Apellido Paterno</label>
+                <input className="input" value={form.apellido_paterno} onChange={e => setForm(f => ({ ...f, apellido_paterno: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Apellido Materno</label>
+                <input className="input" value={form.apellido_materno} onChange={e => setForm(f => ({ ...f, apellido_materno: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Fecha de Ingreso</label>
+                <input className="input" type="date" value={form.fecha_ingreso} onChange={e => setForm(f => ({ ...f, fecha_ingreso: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Antigüedad</label>
+                <input className="input" value={antiguedad(form.fecha_ingreso)} disabled style={{ color: 'var(--text-muted)' }} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="label">Puesto / Cargo</label>
+                <input className="input" value={form.puesto} onChange={e => setForm(f => ({ ...f, puesto: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Sueldo Bruto Mensual</label>
+                <input className="input" type="number" min="0" step="0.01" value={form.sueldo_bruto_mensual} onChange={e => setForm(f => ({ ...f, sueldo_bruto_mensual: e.target.value }))} placeholder="0.00" />
+              </div>
+              <div>
+                <label className="label">Sueldo Neto Mensual</label>
+                <input className="input" type="number" min="0" step="0.01" value={form.sueldo_neto_mensual} onChange={e => setForm(f => ({ ...f, sueldo_neto_mensual: e.target.value }))} placeholder="0.00" />
+              </div>
+              <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 24, paddingTop: 4 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
+                  <input type="checkbox" checked={form.es_asignado} onChange={e => setForm(f => ({ ...f, es_asignado: e.target.checked }))} style={{ width: 16, height: 16 }} />
+                  Es Asignado <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>(en "Asignado a" de OT)</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
+                  <input type="checkbox" checked={form.es_supervisor} onChange={e => setForm(f => ({ ...f, es_supervisor: e.target.checked }))} style={{ width: 16, height: 16 }} />
+                  Es Supervisor <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>(en "Supervisor" de OT)</span>
+                </label>
+              </div>
             </div>
-            <div>
-              <label className="label">Apellido Materno</label>
-              <input className="input" value={form.apellido_materno} onChange={e => setForm(f => ({ ...f, apellido_materno: e.target.value }))} />
-            </div>
-            <div>
-              <label className="label">Fecha de Ingreso</label>
-              <input className="input" type="date" value={form.fecha_ingreso} onChange={e => setForm(f => ({ ...f, fecha_ingreso: e.target.value }))} />
-            </div>
-            <div>
-              <label className="label">Antigüedad</label>
-              <input className="input" value={antiguedad(form.fecha_ingreso)} disabled style={{ color: 'var(--text-muted)' }} />
-            </div>
-            <div>
-              <label className="label">Puesto / Cargo</label>
-              <input className="input" value={form.puesto} onChange={e => setForm(f => ({ ...f, puesto: e.target.value }))} />
-            </div>
-            <div>
-              <label className="label">Sueldo Bruto Mensual</label>
-              <input className="input" type="number" min="0" step="0.01" value={form.sueldo_bruto_mensual} onChange={e => setForm(f => ({ ...f, sueldo_bruto_mensual: e.target.value }))} placeholder="0.00" />
-            </div>
-            <div>
-              <label className="label">Sueldo Neto Mensual</label>
-              <input className="input" type="number" min="0" step="0.01" value={form.sueldo_neto_mensual} onChange={e => setForm(f => ({ ...f, sueldo_neto_mensual: e.target.value }))} placeholder="0.00" />
-            </div>
-            <div>
-              <label className="label">Centro de Costo</label>
-              <select className="select" value={String(form.id_centro_costo_fk)} onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '' }))}>
-                <option value="">— Sin asignar —</option>
-                {centrosCosto.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Área</label>
-              <select className="select" value={String(form.id_area_fk)} onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value }))}>
-                <option value="">— Sin asignar —</option>
-                {areas.filter(a => !form.id_centro_costo_fk || a.id_centro_costo_fk === Number(form.id_centro_costo_fk)).map(a => <option key={a.id} value={String(a.id)}>{a.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Sección</label>
-              <select className="select" value={String(form.id_seccion_fk)} onChange={e => setForm(f => ({ ...f, id_seccion_fk: e.target.value }))}>
-                <option value="">— Sin asignar —</option>
-                {secciones.map(s => <option key={s.id} value={String(s.id)}>{s.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Cuadrante</label>
-              <select className="select" value={String(form.id_cuadrante_fk)} onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value }))}>
-                <option value="">— Sin asignar —</option>
-                {cuadrantes.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
-              </select>
-            </div>
-            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 24, paddingTop: 6 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
-                <input type="checkbox" checked={form.es_asignado} onChange={e => setForm(f => ({ ...f, es_asignado: e.target.checked }))} style={{ width: 16, height: 16 }} />
-                Es Asignado <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>(disponible en "Asignado a" de OT)</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
-                <input type="checkbox" checked={form.es_supervisor} onChange={e => setForm(f => ({ ...f, es_supervisor: e.target.checked }))} style={{ width: 16, height: 16 }} />
-                Es Supervisor <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>(disponible en "Supervisor" de OT)</span>
-              </label>
+            {error && <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+              <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+                {editing ? 'Guardar cambios' : 'Crear colaborador'}
+              </button>
             </div>
           </div>
-          {error && <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-            <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
-            <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-              {editing ? 'Guardar cambios' : 'Crear colaborador'}
-            </button>
+        </div>
+      )}
+
+      {/* Modal de consulta */}
+      {viewing && (
+        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) setViewing(null) }}>
+          <div style={modalStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b' }}>{nombreCompletoColaborador(viewing)}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{viewing.puesto ?? 'Sin puesto asignado'}</div>
+              </div>
+              <button onClick={() => setViewing(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+              {viewing.es_asignado && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#eff6ff', color: '#0369a1' }}>
+                  <CheckCircle size={11} /> Asignado a OT
+                </span>
+              )}
+              {viewing.es_supervisor && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed' }}>
+                  <CheckCircle size={11} /> Supervisor OT
+                </span>
+              )}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: viewing.activo ? '#f0fdf4' : '#f8fafc', color: viewing.activo ? '#15803d' : '#94a3b8' }}>
+                {viewing.activo ? 'Activo' : 'Inactivo'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px', fontSize: 13 }}>
+              {[
+                { label: 'Fecha de Ingreso', value: viewing.fecha_ingreso ? new Date(viewing.fecha_ingreso + 'T00:00:00').toLocaleDateString('es-MX') : '—' },
+                { label: 'Antigüedad', value: antiguedad(viewing.fecha_ingreso) || '—' },
+                { label: 'Sueldo Bruto', value: fmt$(viewing.sueldo_bruto_mensual) },
+                { label: 'Sueldo Neto', value: fmt$(viewing.sueldo_neto_mensual) },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
+                  <div style={{ color: '#1e293b', fontWeight: 500 }}>{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
+              {puedeEscribir ? (
+                <button className="btn-ghost" style={{ fontSize: 12, color: viewing.activo ? '#dc2626' : '#15803d' }}
+                  onClick={() => toggleActivo(viewing)}>
+                  {viewing.activo ? 'Dar de baja' : 'Reactivar'}
+                </button>
+              ) : <div />}
+              {puedeEscribir && (
+                <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                  onClick={() => openEdit(viewing)}>
+                  <Edit2 size={13} /> Editar
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1120,25 +1116,20 @@ function ColaboradoresPanel() {
               <th style={{ textAlign: 'right' }}>Sueldo Neto</th>
               <th style={{ textAlign: 'center' }}>Asignado</th>
               <th style={{ textAlign: 'center' }}>Supervisor</th>
-              <th>Cuadrante</th>
-              <th>Sección</th>
-              <th>CC</th>
-              <th>Área</th>
               <th style={{ textAlign: 'center', width: 80 }}>Status</th>
-              {puedeEscribir && <th style={{ width: 60 }}></th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={14} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={14} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 {items.length === 0 ? 'Sin colaboradores. Crea el primero.' : 'Sin resultados con los filtros aplicados.'}
               </td></tr>
             ) : filtered.map(c => (
-              <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45 }}>
+              <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45, cursor: 'pointer' }} onClick={() => setViewing(c)}>
                 <td style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>{nombreCompletoColaborador(c)}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.puesto ?? '—'}</td>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{c.fecha_ingreso ? new Date(c.fecha_ingreso + 'T00:00:00').toLocaleDateString('es-MX') : '—'}</td>
@@ -1147,20 +1138,9 @@ function ColaboradoresPanel() {
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_neto_mensual)}</td>
                 <td style={{ textAlign: 'center' }}>{c.es_asignado ? <CheckCircle size={15} style={{ color: '#0369a1' }} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                 <td style={{ textAlign: 'center' }}>{c.es_supervisor ? <CheckCircle size={15} style={{ color: '#7c3aed' }} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.id_cuadrante_fk ? (cuadMap[c.id_cuadrante_fk] ?? '—') : '—'}</td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.id_seccion_fk ? (seccMap[c.id_seccion_fk] ?? '—') : '—'}</td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.id_centro_costo_fk ? (ccMap[c.id_centro_costo_fk] ?? '—') : '—'}</td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.id_area_fk ? (areaMap[c.id_area_fk] ?? '—') : '—'}</td>
                 <td style={{ textAlign: 'center' }}>
-                  <button onClick={() => puedeEscribir && toggleActivo(c)} style={{ background: 'none', border: 'none', cursor: puedeEscribir ? 'pointer' : 'default', display: 'flex', margin: '0 auto' }}>
-                    {c.activo ? <ToggleRight size={20} style={{ color: '#15803d' }} /> : <ToggleLeft size={20} style={{ color: '#cbd5e1' }} />}
-                  </button>
+                  {c.activo ? <ToggleRight size={20} style={{ color: '#15803d' }} /> : <ToggleLeft size={20} style={{ color: '#cbd5e1' }} />}
                 </td>
-                {puedeEscribir && (
-                  <td>
-                    <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => openEdit(c)}><Edit2 size={13} /></button>
-                  </td>
-                )}
               </tr>
             ))}
           </tbody>
