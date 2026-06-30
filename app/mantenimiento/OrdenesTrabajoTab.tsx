@@ -47,7 +47,16 @@ const semanaActual = () => {
 const fmtFecha = (d: string | null) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?: 'Balvanera' | 'Cuadrilla' }) {
+type Modulo = 'mantenimiento' | 'golf' | 'generales'
+const MODULO_LABEL: Record<Modulo, string> = {
+  mantenimiento: 'Mantenimiento',
+  golf:          'Campo de Golf',
+  generales:     'Generales',
+}
+
+export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
+  empresa?: 'Balvanera' | 'Cuadrilla'; modulo: Modulo
+}) {
   const { canWrite, canDelete } = useAuth()
   const PAGE_SIZE = 20
   const [rows, setRows]           = useState<any[]>([])
@@ -80,7 +89,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
 
     // Conteos sin filtros de status/tipo para KPIs exactos
     const { data: todos } = await dbCtrl.from('ordenes_trabajo')
-      .select('status, prioridad').eq('empresa', empresa)
+      .select('status, prioridad').eq('empresa', empresa).eq('modulo', modulo)
     setKpis({
       pendientes:  (todos ?? []).filter(r => r.status === 'Pendiente').length,
       enProceso:   (todos ?? []).filter(r => r.status === 'En Proceso').length,
@@ -89,7 +98,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
     })
 
     let q = dbCtrl.from('ordenes_trabajo').select('*', { count: 'exact' })
-      .eq('empresa', empresa)
+      .eq('empresa', empresa).eq('modulo', modulo)
       .order('fecha_inicio', { ascending: false, nullsFirst: false })
     if (debouncedSearch)  q = q.or(`folio.ilike.%${debouncedSearch}%,titulo.ilike.%${debouncedSearch}%,asignado_a.ilike.%${debouncedSearch}%`)
     if (filterStatus)     q = q.eq('status', filterStatus)
@@ -101,7 +110,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
     const { data, count } = await q.range(from, from + PAGE_SIZE - 1)
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [empresa, debouncedSearch, filterStatus, filterTipo, filterCuad, filterArea, filterAC, page])
+  }, [empresa, modulo, debouncedSearch, filterStatus, filterTipo, filterCuad, filterArea, filterAC, page])
 
   useEffect(() => {
     Promise.all([
@@ -266,7 +275,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
         <PaginationNav page={page} total={total} pageSize={PAGE_SIZE} onChange={setPage} />
       )}
 
-      {modal  && <OTModal areas={areas} cuadrantes={cuadrantes} areasComunes={areasComunes} areaToAcs={areaToAcs} ot={editingOT} empresa={empresa}
+      {modal  && <OTModal areas={areas} cuadrantes={cuadrantes} areasComunes={areasComunes} areaToAcs={areaToAcs} ot={editingOT} empresa={empresa} modulo={modulo}
         onClose={() => { setModal(false); setEditingOT(null) }}
         onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
       {detail && <OTDetail ot={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap} cuadMap={cuadMap} acMap={acMap}
@@ -277,9 +286,9 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
 }
 
 // ── OTModal ────────────────────────────────────────────────────
-function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Balvanera', onClose, onSaved }: {
+function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Balvanera', modulo, onClose, onSaved }: {
   areas: any[]; cuadrantes: any[]; areasComunes: any[]; areaToAcs: Record<number, number[]>
-  ot?: any; empresa?: 'Balvanera' | 'Cuadrilla'; onClose: () => void; onSaved: () => void
+  ot?: any; empresa?: 'Balvanera' | 'Cuadrilla'; modulo: Modulo; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
@@ -345,13 +354,13 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Ba
     const isNew = !ot
     let otId = ot?.id
     if (isNew) {
-      const prefijo = empresa === 'Cuadrilla' ? 'OTC' : 'OTB'
+      const prefijo = { mantenimiento: 'OTM', golf: 'OTG', generales: 'OTC' }[modulo]
       const { count } = await dbCtrl.from('ordenes_trabajo')
-        .select('id', { count: 'exact', head: true }).eq('empresa', empresa)
+        .select('id', { count: 'exact', head: true }).eq('modulo', modulo)
       const anio  = new Date().getFullYear()
       const folio = `${prefijo}-${anio}-${String((count ?? 0) + 1).padStart(4, '0')}`
       const { data: newOT, error: err } = await dbCtrl.from('ordenes_trabajo').insert({
-        folio, empresa, titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
+        folio, empresa, modulo, titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
         prioridad: form.prioridad, status: form.status,
         id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
         id_cuadrante_fk:    form.id_cuadrante_fk   ? Number(form.id_cuadrante_fk)   : null,

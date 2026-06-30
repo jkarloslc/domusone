@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl } from '@/lib/supabase'
+import OrdenesTrabajoTab from '@/app/mantenimiento/OrdenesTrabajoTab'
 import {
   Leaf, ChevronLeft, ChevronRight, RefreshCw, ChevronDown, Search,
 } from 'lucide-react'
@@ -143,7 +144,7 @@ function rangoMeses(p: Programa): string {
 
 export default function MantenimientoCampoPage() {
   const hoy = new Date()
-  const [tab, setTab] = useState<'ejecucion' | 'programas' | 'catalogo'>('ejecucion')
+  const [tab, setTab] = useState<'ejecucion' | 'programas' | 'catalogo' | 'ot'>('ejecucion')
   const [anio, setAnio] = useState(hoy.getFullYear())
   const [weekStart, setWeekStart] = useState(() => mondayOf(hoy))
 
@@ -226,7 +227,7 @@ export default function MantenimientoCampoPage() {
     const anioOt  = fecha.getFullYear()
     const folio = `OT-${anioOt}-${String((count ?? 0) + 1).padStart(4, '0')}`
     const { data: ot, error: otErr } = await dbCtrl.from('ordenes_trabajo').insert({
-      folio, empresa: 'Balvanera', titulo: `${prog.nombre} — ${fecha_prog}`,
+      folio, empresa: 'Balvanera', modulo: 'golf', titulo: `${prog.nombre} — ${fecha_prog}`,
       tipo_trabajo: prog.tipo_trabajo ?? null,
       prioridad: 'Media', status: 'Pendiente',
       id_area_fk: prog.id_area_fk ?? null,
@@ -341,9 +342,10 @@ export default function MantenimientoCampoPage() {
       {/* ── Tabs ──────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 2, borderBottom: '2px solid #e2e8f0', marginBottom: 24 }}>
         {([
-          { key: 'ejecucion', label: 'Ejecución Mensual' },
+          { key: 'ejecucion', label: 'Ejecución Semanal' },
           { key: 'programas', label: 'Programas Anuales' },
           { key: 'catalogo',  label: 'Catálogo de Productos' },
+          { key: 'ot',        label: "OT's Campo de Golf" },
         ] as const).map(t => (
           <button
             key={t.key}
@@ -779,6 +781,9 @@ export default function MantenimientoCampoPage() {
           </p>
         </>
       )}
+
+      {/* ══════════════════ TAB: OT's CAMPO DE GOLF ══════════════════ */}
+      {tab === 'ot' && <OrdenesTrabajoTab empresa="Balvanera" modulo="golf" />}
     </div>
   )
 }
