@@ -493,22 +493,23 @@ export default function POSPage() {
   // ── Imprimir corte de caja ────────────────────────────────
   const imprimirCorte = async (c: Corte) => {
     // Cargar datos base
-    const [{ data: det }, { data: cfg }, { data: ops }] = await Promise.all([
+    const [{ data: det }, { data: orgCfg }, { data: ops }] = await Promise.all([
       dbGolf.from('ctrl_cortes_caja_det')
         .select('forma_nombre, monto')
         .eq('id_corte_fk', c.id)
         .order('monto', { ascending: false }),
-      dbGolf.from('cfg_pos').select('*').single(),
+      dbCfg.from('configuracion').select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url']),
       dbGolf.from('ctrl_ventas')
         .select('id, folio_dia, fecha, nombre_cliente, status, total')
         .eq('id_corte_fk', c.id)
         .order('fecha', { ascending: true }),
     ])
 
-    const rs = (cfg as any)?.razon_social ?? 'Balvanera Golf, Polo & Country Club'
-    const dir = (cfg as any)?.direccion ?? ''
-    const tel = (cfg as any)?.telefono ?? ''
-    const rfc = (cfg as any)?.rfc ?? ''
+    const orgMap: Record<string, string> = {}
+    ;(orgCfg ?? []).forEach((r: any) => { orgMap[r.clave] = r.valor ?? '' })
+    const orgNombre = orgMap.org_nombre || 'Balvanera Golf, Polo & Country Club'
+    const orgSubtitulo = orgMap.org_subtitulo || ''
+    const orgLogoUrl = orgMap.org_logo_url || ''
 
     const desglose = (det ?? []) as { forma_nombre: string; monto: number }[]
     const operaciones = (ops ?? []) as { id: number; folio_dia: number | null; fecha: string; nombre_cliente: string | null; status: string; total: number }[]
@@ -577,14 +578,14 @@ export default function POSPage() {
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Arial, sans-serif; font-size:12px; color:#1e293b; background:#fff; padding:20mm 18mm; }
   @media print { body { padding:10mm 12mm; } @page { size:A4; margin:0; } }
-  h1 { font-size:20px; font-weight:800; color:#065f46; margin-bottom:2px; }
+  h1 { font-size:16px; font-weight:700; color:#0f172a; margin-bottom:2px; }
   h2 { font-size:14px; font-weight:700; color:#1e293b; margin:14px 0 6px; border-bottom:2px solid #e2e8f0; padding-bottom:4px; }
-  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; border-bottom:3px solid #059669; padding-bottom:14px; }
-  .club { }
+  .header { display:flex; align-items:center; gap:16px; margin-bottom:12px; border-bottom:2px solid #2563eb; padding-bottom:12px; }
+  .header img { height:52px; max-width:160px; object-fit:contain; }
   .club-sub { font-size:11px; color:#64748b; margin-top:2px; }
-  .folio { text-align:right; }
-  .folio-num { font-size:26px; font-weight:900; color:#059669; }
-  .folio-label { font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:.08em; }
+  .folio { margin-left:auto; text-align:right; }
+  .folio-title { font-size:13px; font-weight:600; color:#2563eb; }
+  .folio-num { font-size:10px; color:#94a3b8; }
   table { width:100%; border-collapse:collapse; margin-bottom:8px; }
   th { background:#f1f5f9; color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:.05em; padding:6px 10px; text-align:left; }
   td { padding:7px 10px; border-bottom:1px solid #f1f5f9; font-size:12px; }
@@ -617,16 +618,14 @@ export default function POSPage() {
 </div>
 
 <div class="header">
-  <div class="club">
-    <h1>${esc(rs)}</h1>
-    <div class="club-sub">${esc(dir)}</div>
-    ${tel ? `<div class="club-sub">Tel. ${esc(tel)}</div>` : ''}
-    ${rfc ? `<div class="club-sub">RFC: ${esc(rfc)}</div>` : ''}
+  ${orgLogoUrl ? `<img src="${esc(orgLogoUrl)}" />` : ''}
+  <div>
+    <h1>${esc(orgNombre)}</h1>
+    ${orgSubtitulo ? `<div class="club-sub">${esc(orgSubtitulo)}</div>` : ''}
+    <div class="folio-title">Corte de Caja #${String(c.id).padStart(4,'0')}</div>
   </div>
   <div class="folio">
-    <div class="folio-label">Corte de Caja</div>
-    <div class="folio-num">#${String(c.id).padStart(4,'0')}</div>
-    <div class="club-sub" style="text-align:right">${fdt(c.fecha_corte)}</div>
+    <div class="folio-num">${fdt(c.fecha_corte)}</div>
     ${c.id_recibo_ingreso ? `<div class="recibo-badge">✓ Recibo ingreso #${c.id_recibo_ingreso}</div>` : ''}
   </div>
 </div>
@@ -677,7 +676,7 @@ ${operaciones.length > 0 ? `
 </table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin operaciones registradas en este corte.</p>'}
 
 <div class="footer">
-  Corte generado el ${fdt(c.fecha_corte)} · ${esc(rs)}
+  Corte generado el ${fdt(c.fecha_corte)} · ${esc(orgNombre)}
   <br/>Este documento es el comprobante oficial del cierre de caja.
 </div>
 </body>
