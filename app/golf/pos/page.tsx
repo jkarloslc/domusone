@@ -273,7 +273,7 @@ export default function POSPage() {
   useEffect(() => { fetchStats() }, [fetchStats])
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
   useEffect(() => { if (tab === 'cortes')   fetchCortes() }, [tab, fetchCortes])
-  useEffect(() => { if (tab === 'config' || tab === 'catalogo') fetchConfig() }, [tab, fetchConfig])
+  useEffect(() => { if (tab === 'config' || tab === 'catalogo' || tab === 'cortes') fetchConfig() }, [tab, fetchConfig])
   useEffect(() => { if (tab === 'mesa')     fetchVentasMesa() }, [tab, fetchVentasMesa])
   useEffect(() => { if (tab === 'facturas') fetchFacturas() }, [tab, fetchFacturas])
 
