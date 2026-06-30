@@ -80,6 +80,13 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
   const [filterAC,     setFilterAC]     = useState('')
   const [areasComunes, setAreasComunesOT] = useState<any[]>([])
   const [areaToAcs,    setAreaToAcs]      = useState<Record<number, number[]>>({})
+  const [centrosCosto, setCentrosCosto]   = useState<any[]>([])
+  const [frentes,      setFrentes]        = useState<any[]>([])
+  const [areaToFrentes, setAreaToFrentes] = useState<Record<number, number[]>>({})
+  const [filterCC,      setFilterCC]      = useState('')
+  const [filterFrente,  setFilterFrente]  = useState('')
+  // Mantto. Res usa Cuadrante/Área Común; Generales y Golf usan CC/Área/Frente
+  const usaCcFrente = modulo === 'generales' || modulo === 'golf'
   const [modal,    setModal]    = useState(false)
   const [editingOT, setEditingOT] = useState<any | null>(null)
   const [detail,   setDetail]   = useState<any | null>(null)
@@ -103,14 +110,20 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
     if (debouncedSearch)  q = q.or(`folio.ilike.%${debouncedSearch}%,titulo.ilike.%${debouncedSearch}%,asignado_a.ilike.%${debouncedSearch}%`)
     if (filterStatus)     q = q.eq('status', filterStatus)
     if (filterTipo)       q = q.eq('tipo_trabajo', filterTipo)
-    if (filterCuad)       q = q.eq('id_cuadrante_fk', Number(filterCuad))
-    if (filterArea)       q = q.eq('id_area_fk', Number(filterArea))
-    if (filterAC)         q = q.eq('id_area_comun_fk', Number(filterAC))
+    if (usaCcFrente) {
+      if (filterCC)       q = q.eq('id_centro_costo_fk', Number(filterCC))
+      if (filterArea)     q = q.eq('id_area_fk', Number(filterArea))
+      if (filterFrente)   q = q.eq('id_frente_fk', Number(filterFrente))
+    } else {
+      if (filterCuad)     q = q.eq('id_cuadrante_fk', Number(filterCuad))
+      if (filterArea)     q = q.eq('id_area_fk', Number(filterArea))
+      if (filterAC)       q = q.eq('id_area_comun_fk', Number(filterAC))
+    }
     const from = (page - 1) * PAGE_SIZE
     const { data, count } = await q.range(from, from + PAGE_SIZE - 1)
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [empresa, modulo, debouncedSearch, filterStatus, filterTipo, filterCuad, filterArea, filterAC, page])
+  }, [empresa, modulo, usaCcFrente, debouncedSearch, filterStatus, filterTipo, filterCuad, filterArea, filterAC, filterCC, filterFrente, page])
 
   useEffect(() => {
     Promise.all([
@@ -120,10 +133,13 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
       dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas_comunes').select('id, nombre, descripcion').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_area_comun').select('id_area, id_area_comun'),
-    ]).then(([{ data: secs }, { data: cuads }, { data: ccs }, { data: frs }, { data: acs }, { data: rels }]) => {
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+    ]).then(([{ data: secs }, { data: cuads }, { data: ccs }, { data: frs }, { data: acs }, { data: rels }, { data: relsFr }]) => {
       setAreas(secs ?? [])
       setCuadrantes(cuads ?? [])
       setAreasComunesOT(acs ?? [])
+      setCentrosCosto(ccs ?? [])
+      setFrentes(frs ?? [])
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
       const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
@@ -135,7 +151,13 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
         if (!ata[aid]) ata[aid] = []
         ata[aid].push(Number(r.id_area_comun))
       })
-      setAreaMap(sm); setCcMap(cm); setFrMap(fm); setCuadMap(cuadm); setAcMap(acm); setAreaToAcs(ata)
+      const atf: Record<number, number[]> = {};
+      (relsFr ?? []).forEach((r: any) => {
+        const aid = Number(r.id_area)
+        if (!atf[aid]) atf[aid] = []
+        atf[aid].push(Number(r.id_frente))
+      })
+      setAreaMap(sm); setCcMap(cm); setFrMap(fm); setCuadMap(cuadm); setAcMap(acm); setAreaToAcs(ata); setAreaToFrentes(atf)
     })
   }, [])
 
@@ -180,25 +202,48 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
         </select>
         <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
         {/* Filtros ubicación */}
-        <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCuad} onChange={e => { setFilterCuad(e.target.value); setFilterArea(''); setFilterAC(''); setPage(1) }}>
-          <option value="">Cuadrante</option>
-          {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
-        <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterAC(''); setPage(1) }}>
-          <option value="">Área</option>
-          {areas
-            .filter((s: any) => !filterCuad || s.id_cuadrante_fk === Number(filterCuad))
-            .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-        </select>
-        <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterAC} onChange={e => { setFilterAC(e.target.value); setPage(1) }}>
-          <option value="">Área Común</option>
-          {areasComunes
-            .filter(a => !filterArea || (areaToAcs[Number(filterArea)] ?? []).includes(a.id))
-            .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-        </select>
-        {(search || filterStatus || filterTipo || filterCuad || filterArea || filterAC) && (
+        {usaCcFrente ? (
+          <>
+            <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setFilterFrente(''); setPage(1) }}>
+              <option value="">Centro de Costo</option>
+              {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+            <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterFrente(''); setPage(1) }}>
+              <option value="">Área</option>
+              {areas
+                .filter((s: any) => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+                .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            </select>
+            <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFrente} onChange={e => { setFilterFrente(e.target.value); setPage(1) }}>
+              <option value="">Frente</option>
+              {frentes
+                .filter(f => !filterArea || (areaToFrentes[Number(filterArea)] ?? []).includes(f.id))
+                .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+            </select>
+          </>
+        ) : (
+          <>
+            <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCuad} onChange={e => { setFilterCuad(e.target.value); setFilterArea(''); setFilterAC(''); setPage(1) }}>
+              <option value="">Cuadrante</option>
+              {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+            <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterAC(''); setPage(1) }}>
+              <option value="">Área</option>
+              {areas
+                .filter((s: any) => !filterCuad || s.id_cuadrante_fk === Number(filterCuad))
+                .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            </select>
+            <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterAC} onChange={e => { setFilterAC(e.target.value); setPage(1) }}>
+              <option value="">Área Común</option>
+              {areasComunes
+                .filter(a => !filterArea || (areaToAcs[Number(filterArea)] ?? []).includes(a.id))
+                .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+            </select>
+          </>
+        )}
+        {(search || filterStatus || filterTipo || filterCuad || filterArea || filterAC || filterCC || filterFrente) && (
           <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
-            onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCuad(''); setFilterArea(''); setFilterAC(''); setPage(1) }}>
+            onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCuad(''); setFilterArea(''); setFilterAC(''); setFilterCC(''); setFilterFrente(''); setPage(1) }}>
             <X size={11} /> Limpiar
           </button>
         )}
@@ -220,7 +265,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Folio</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Título</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Tipo</th>
-              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Área / Área Común</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>{usaCcFrente ? 'CC / Área / Frente' : 'Área / Área Común'}</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Asignado</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>F. Límite</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Prioridad</th>
@@ -246,9 +291,20 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
                 </td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{r.tipo_trabajo ?? '—'}</td>
                 <td style={{ fontSize: 11, padding: '8px 10px' }}>
-                  {r.id_area_fk ? (areaMap[r.id_area_fk] ?? '—') : '—'}
-                  {r.id_area_comun_fk && (
-                    <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{acMap[r.id_area_comun_fk] ?? '—'}</div>
+                  {usaCcFrente ? (
+                    <>
+                      {r.id_centro_costo_fk ? (ccMap[r.id_centro_costo_fk] ?? '—') : (r.id_area_fk ? (areaMap[r.id_area_fk] ?? '—') : '—')}
+                      {r.id_frente_fk && (
+                        <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{frMap[r.id_frente_fk] ?? '—'}</div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {r.id_area_fk ? (areaMap[r.id_area_fk] ?? '—') : '—'}
+                      {r.id_area_comun_fk && (
+                        <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{acMap[r.id_area_comun_fk] ?? '—'}</div>
+                      )}
+                    </>
                   )}
                 </td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{r.asignado_a ?? '—'}</td>
@@ -275,7 +331,9 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
         <PaginationNav page={page} total={total} pageSize={PAGE_SIZE} onChange={setPage} />
       )}
 
-      {modal  && <OTModal areas={areas} cuadrantes={cuadrantes} areasComunes={areasComunes} areaToAcs={areaToAcs} ot={editingOT} empresa={empresa} modulo={modulo}
+      {modal  && <OTModal areas={areas} cuadrantes={cuadrantes} areasComunes={areasComunes} areaToAcs={areaToAcs}
+        centrosCosto={centrosCosto} frentes={frentes} areaToFrentes={areaToFrentes} usaCcFrente={usaCcFrente}
+        ot={editingOT} empresa={empresa} modulo={modulo}
         onClose={() => { setModal(false); setEditingOT(null) }}
         onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
       {detail && <OTDetail ot={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap} cuadMap={cuadMap} acMap={acMap}
@@ -286,8 +344,9 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
 }
 
 // ── OTModal ────────────────────────────────────────────────────
-function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Balvanera', modulo, onClose, onSaved }: {
+function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, frentes, areaToFrentes, usaCcFrente, ot, empresa = 'Balvanera', modulo, onClose, onSaved }: {
   areas: any[]; cuadrantes: any[]; areasComunes: any[]; areaToAcs: Record<number, number[]>
+  centrosCosto: any[]; frentes: any[]; areaToFrentes: Record<number, number[]>; usaCcFrente: boolean
   ot?: any; empresa?: 'Balvanera' | 'Cuadrilla'; modulo: Modulo; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
@@ -303,6 +362,8 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Ba
     id_area_fk:         ot?.id_area_fk?.toString()      ?? '',
     id_cuadrante_fk:    ot?.id_cuadrante_fk?.toString()    ?? '',
     id_area_comun_fk:   ot?.id_area_comun_fk?.toString()   ?? '',
+    id_centro_costo_fk: ot?.id_centro_costo_fk?.toString() ?? '',
+    id_frente_fk:       ot?.id_frente_fk?.toString()       ?? '',
     ubicacion_detalle:  ot?.ubicacion_detalle ?? '',
     descripcion:        ot?.descripcion       ?? '',
     notas:              ot?.notas             ?? '',
@@ -365,6 +426,8 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Ba
         id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
         id_cuadrante_fk:    form.id_cuadrante_fk   ? Number(form.id_cuadrante_fk)   : null,
         id_area_comun_fk:   form.id_area_comun_fk  ? Number(form.id_area_comun_fk)  : null,
+        id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+        id_frente_fk:       form.id_frente_fk       ? Number(form.id_frente_fk)       : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
         descripcion: form.descripcion.trim() || null, notas: form.notas.trim() || null,
         asignado_a: form.asignado_a.trim() || null, supervisor: form.supervisor.trim() || null,
@@ -381,6 +444,8 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Ba
         id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
         id_cuadrante_fk:    form.id_cuadrante_fk   ? Number(form.id_cuadrante_fk)   : null,
         id_area_comun_fk:   form.id_area_comun_fk  ? Number(form.id_area_comun_fk)  : null,
+        id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+        id_frente_fk:       form.id_frente_fk       ? Number(form.id_frente_fk)       : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
         descripcion: form.descripcion.trim() || null, notas: form.notas.trim() || null,
         asignado_a: form.asignado_a.trim() || null, supervisor: form.supervisor.trim() || null,
@@ -460,30 +525,57 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Ba
                 {STATUSES.map(s => <option key={s}>{s}</option>)}
               </select></div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-            <div><label className="label" style={{ fontSize: 11 }}>Cuadrante</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_cuadrante_fk}
-                onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '', id_area_comun_fk: '' }))}>
-                <option value="">—</option>
-                {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select></div>
-            <div><label className="label" style={{ fontSize: 11 }}>Área</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk}
-                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_area_comun_fk: '' }))}>
-                <option value="">—</option>
-                {(areas as any[])
-                  .filter(s => !form.id_cuadrante_fk || s.id_cuadrante_fk === Number(form.id_cuadrante_fk))
-                  .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-              </select></div>
-            <div><label className="label" style={{ fontSize: 11 }}>Área Común</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_area_comun_fk}
-                onChange={setF('id_area_comun_fk')} disabled={!form.id_area_fk}>
-                <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
-                {areasComunes
-                  .filter(a => (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
-                  .map(a => <option key={a.id} value={a.id}>{a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}</option>)}
-              </select></div>
-          </div>
+          {usaCcFrente ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <div><label className="label" style={{ fontSize: 11 }}>Centro de Costo</label>
+                <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk}
+                  onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
+                  <option value="">—</option>
+                  {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select></div>
+              <div><label className="label" style={{ fontSize: 11 }}>Área</label>
+                <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk}
+                  onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}>
+                  <option value="">—</option>
+                  {(areas as any[])
+                    .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                    .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select></div>
+              <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
+                <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk}
+                  onChange={setF('id_frente_fk')} disabled={!form.id_area_fk}>
+                  <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
+                  {frentes
+                    .filter(f => (areaToFrentes[Number(form.id_area_fk)] ?? []).includes(f.id))
+                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                </select></div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <div><label className="label" style={{ fontSize: 11 }}>Cuadrante</label>
+                <select className="select" style={{ fontSize: 12 }} value={form.id_cuadrante_fk}
+                  onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '', id_area_comun_fk: '' }))}>
+                  <option value="">—</option>
+                  {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select></div>
+              <div><label className="label" style={{ fontSize: 11 }}>Área</label>
+                <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk}
+                  onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_area_comun_fk: '' }))}>
+                  <option value="">—</option>
+                  {(areas as any[])
+                    .filter(s => !form.id_cuadrante_fk || s.id_cuadrante_fk === Number(form.id_cuadrante_fk))
+                    .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select></div>
+              <div><label className="label" style={{ fontSize: 11 }}>Área Común</label>
+                <select className="select" style={{ fontSize: 12 }} value={form.id_area_comun_fk}
+                  onChange={setF('id_area_comun_fk')} disabled={!form.id_area_fk}>
+                  <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
+                  {areasComunes
+                    .filter(a => (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
+                    .map(a => <option key={a.id} value={a.id}>{a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}</option>)}
+                </select></div>
+            </div>
+          )}
           <div><label className="label" style={{ fontSize: 11 }}>Ubicación detalle</label>
             <input className="input" style={{ fontSize: 13 }} value={form.ubicacion_detalle} onChange={setF('ubicacion_detalle')} /></div>
           <div><label className="label" style={{ fontSize: 11 }}>Descripción</label>
