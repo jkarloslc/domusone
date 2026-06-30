@@ -238,9 +238,11 @@ export default function DashboardMantenimientoPage() {
   const loadAll = useCallback(async () => {
     setRefreshing(true)
 
-    const [progR, otAllR, equiposR, bitacoraR] = await Promise.allSettled([
-      // Programas del año activos
-      dbCtrl.from('programas_mantenimiento').select('id').eq('anio', anio).eq('activo', true),
+    const [progR, mantProgR, otAllR, equiposR, bitacoraR] = await Promise.allSettled([
+      // Programas Golf del año activos
+      dbCtrl.from('programas_mantenimiento').select('id').eq('anio', anio).eq('activo', true).eq('modulo', 'golf'),
+      // Programas Mantenimiento General del año activos (tabla separada de Golf)
+      dbCtrl.from('mant_programas').select('id').eq('anio', anio).eq('activo', true),
       // Todas las OTs (ambas empresas)
       dbCtrl.from('ordenes_trabajo').select('empresa, status'),
       // Equipos activos
@@ -250,9 +252,12 @@ export default function DashboardMantenimientoPage() {
         .eq('activo', true).gte('fecha_inicio', mesIni),
     ])
 
-    // ── Programas y tareas (2 queries encadenadas) ──────────
+    // ── Programas y tareas (Golf + Mantenimiento General) ──────────
     const progIds: number[] = progR.status === 'fulfilled'
       ? (progR.value.data ?? []).map((p: any) => p.id)
+      : []
+    const mantProgIds: number[] = mantProgR.status === 'fulfilled'
+      ? (mantProgR.value.data ?? []).map((p: any) => p.id)
       : []
 
     let tareas: any[] = []
@@ -262,6 +267,12 @@ export default function DashboardMantenimientoPage() {
         .in('id_programa_fk', progIds)
       tareas = t ?? []
     }
+    if (mantProgIds.length > 0) {
+      const { data: t } = await dbCtrl.from('mant_ejecuciones')
+        .select('status, id_programa_fk')
+        .in('id_programa_fk', mantProgIds)
+      tareas = tareas.concat(t ?? [])
+    }
 
     const pendientes   = tareas.filter(t => t.status === 'Pendiente').length
     const enProceso    = tareas.filter(t => t.status === 'En Proceso').length
@@ -270,7 +281,7 @@ export default function DashboardMantenimientoPage() {
     const totalTareas  = tareas.length
     const cumplimiento = totalTareas > 0 ? Math.round((completadas / totalTareas) * 100) : 0
 
-    setProgStats({ programas: progIds.length, pendientes, enProceso, completadas, omitidas, cumplimiento })
+    setProgStats({ programas: progIds.length + mantProgIds.length, pendientes, enProceso, completadas, omitidas, cumplimiento })
 
     // Progreso por mes (meses con al menos 1 tarea)
     const mesPorPct: { mes: string; pct: number }[] = []

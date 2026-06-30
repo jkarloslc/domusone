@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl } from '@/lib/supabase'
 import {
   Leaf, ChevronLeft, ChevronRight, RefreshCw, ChevronDown, Search,
@@ -11,6 +11,8 @@ const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
+
+const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 const TIPO_CLR: Record<string, string> = {
   'Jardinería': '#16a34a',
@@ -76,6 +78,7 @@ type Programa = {
   tipo_trabajo: string
   frecuencia: string
   mes_inicio: number
+  fecha_inicio: string | null
   fecha_fin: string | null
   responsable: string | null
   descripcion: string | null
@@ -85,27 +88,44 @@ type Programa = {
 type TareaRec = {
   id: number
   id_programa_fk: number
-  mes: number
+  fecha_prog: string
   status: string
+  id_ot_fk: number | null
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers de fecha (granularidad diaria/semanal real — no se ────────────────
+//    pre-generan ocurrencias, se calculan bajo demanda) ───────────────────────
 
-function estaActivoEnMes(p: Programa, mes: number): boolean {
-  const inicio = p.mes_inicio ?? 1
-  const fin = p.fecha_fin
-    ? new Date(p.fecha_fin + 'T12:00:00').getMonth() + 1
-    : 12
-  if (mes < inicio || mes > fin) return false
-  const diff = mes - inicio
+function startOfDay(d: Date) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()) }
+function monthDiff(a: Date, b: Date) { return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) }
+function addDays(d: Date, n: number) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n) }
+function toISODate(d: Date) { return d.toISOString().slice(0, 10) }
+function mondayOf(d: Date): Date {
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  return startOfDay(addDays(d, diff))
+}
+
+function fechaInicioPrograma(p: Programa): string {
+  return p.fecha_inicio ?? new Date(new Date().getFullYear(), (p.mes_inicio ?? 1) - 1, 1).toISOString().slice(0, 10)
+}
+
+function estaActivoEnFecha(p: Programa, fecha: Date): boolean {
+  const inicio = startOfDay(new Date(fechaInicioPrograma(p) + 'T12:00:00'))
+  const fin = p.fecha_fin ? startOfDay(new Date(p.fecha_fin + 'T12:00:00')) : null
+  const f = startOfDay(fecha)
+  if (f < inicio) return false
+  if (fin && f > fin) return false
+  const diffDias = Math.round((f.getTime() - inicio.getTime()) / 86400000)
   switch (p.frecuencia) {
-    case 'Semanal':
-    case 'Quincenal':
-    case 'Mensual':    return true
-    case 'Bimestral':  return diff % 2 === 0
-    case 'Trimestral': return diff % 3 === 0
-    case 'Semestral':  return diff % 6 === 0
-    case 'Anual':      return diff === 0
+    case 'Diario':     return true
+    case 'Semanal':    return diffDias % 7 === 0
+    case 'Quincenal':  return diffDias % 14 === 0
+    case 'Mensual':    return f.getDate() === inicio.getDate()
+    case 'Bimestral':  return f.getDate() === inicio.getDate() && monthDiff(inicio, f) % 2 === 0
+    case 'Trimestral': return f.getDate() === inicio.getDate() && monthDiff(inicio, f) % 3 === 0
+    case 'Semestral':  return f.getDate() === inicio.getDate() && monthDiff(inicio, f) % 6 === 0
+    case 'Anual':      return f.getDate() === inicio.getDate() && f.getMonth() === inicio.getMonth()
     default:           return false
   }
 }
@@ -123,18 +143,20 @@ function rangoMeses(p: Programa): string {
 export default function MantenimientoCampoPage() {
   const hoy = new Date()
   const [tab, setTab] = useState<'ejecucion' | 'programas' | 'catalogo'>('ejecucion')
-  const [mes, setMes] = useState(hoy.getMonth() + 1)
   const [anio, setAnio] = useState(hoy.getFullYear())
+  const [weekStart, setWeekStart] = useState(() => mondayOf(hoy))
 
   const [programas, setProgramas] = useState<Programa[]>([])
   const [tareas, setTareas] = useState<TareaRec[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState<number | null>(null)
+  const [saving, setSaving] = useState<string | null>(null)
 
   const [filtroTipo, setFiltroTipo] = useState('Todos')
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [busqueda, setBusqueda] = useState('')
   const [filtroCat, setFiltroCat] = useState('Todos')
+
+  const dias = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
   // ── Data loading ───────────────────────────────────────────────────────────
 
@@ -142,7 +164,7 @@ export default function MantenimientoCampoPage() {
     setLoading(true)
     const { data } = await dbCtrl
       .from('programas_mantenimiento')
-      .select('id,nombre,tipo_trabajo,frecuencia,mes_inicio,fecha_fin,responsable,descripcion,activo')
+      .select('id,nombre,tipo_trabajo,frecuencia,mes_inicio,fecha_inicio,fecha_fin,responsable,descripcion,activo')
       .eq('anio', anio)
       .eq('activo', true)
       .eq('modulo', 'golf')
@@ -157,24 +179,27 @@ export default function MantenimientoCampoPage() {
     if (!programas.length) { setTareas([]); return }
     const { data } = await dbCtrl
       .from('programa_tareas')
-      .select('id,id_programa_fk,mes,status')
+      .select('id,id_programa_fk,fecha_prog,status,id_ot_fk')
       .in('id_programa_fk', programas.map(p => p.id))
-      .eq('mes', mes)
+      .gte('fecha_prog', toISODate(weekStart))
+      .lte('fecha_prog', toISODate(addDays(weekStart, 6)))
     setTareas(data ?? [])
-  }, [programas, mes])
+  }, [programas, weekStart])
 
   useEffect(() => { loadProgramas() }, [loadProgramas])
   useEffect(() => { loadTareas() }, [loadTareas])
 
   // ── Status helpers ─────────────────────────────────────────────────────────
 
-  function getStatus(progId: number): string {
-    return tareas.find(t => t.id_programa_fk === progId)?.status ?? 'Pendiente'
+  function getStatus(progId: number, fechaISO: string): string {
+    return tareas.find(t => t.id_programa_fk === progId && t.fecha_prog === fechaISO)?.status ?? 'Pendiente'
   }
 
-  async function cambiarStatus(prog: Programa, newStatus: string) {
-    setSaving(prog.id)
-    const existing = tareas.find(t => t.id_programa_fk === prog.id)
+  async function cambiarStatus(prog: Programa, fecha: Date, newStatus: string) {
+    const fecha_prog = toISODate(fecha)
+    const key = `${prog.id}-${fecha_prog}`
+    setSaving(key)
+    const existing = tareas.find(t => t.id_programa_fk === prog.id && t.fecha_prog === fecha_prog)
     if (existing) {
       await dbCtrl
         .from('programa_tareas')
@@ -182,48 +207,84 @@ export default function MantenimientoCampoPage() {
         .eq('id', existing.id)
       setTareas(prev => prev.map(t => t.id === existing.id ? { ...t, status: newStatus } : t))
     } else {
-      const fecha_prog = new Date(anio, mes - 1, 1).toISOString().slice(0, 10)
       const { data } = await dbCtrl
         .from('programa_tareas')
-        .insert({ id_programa_fk: prog.id, fecha_prog, mes, semana_no: 1, status: newStatus })
-        .select('id,id_programa_fk,mes,status')
+        .insert({ id_programa_fk: prog.id, fecha_prog, mes: fecha.getMonth() + 1, semana_no: 1, status: newStatus })
+        .select('id,id_programa_fk,fecha_prog,status,id_ot_fk')
         .single()
       if (data) setTareas(prev => [...prev, data])
     }
     setSaving(null)
   }
 
+  async function generarOT(prog: Programa, fecha: Date) {
+    const fecha_prog = toISODate(fecha)
+    const key = `${prog.id}-${fecha_prog}`
+    setSaving(key)
+    const { count } = await dbCtrl.from('ordenes_trabajo').select('id', { count: 'exact', head: true })
+    const anioOt  = fecha.getFullYear()
+    const folio = `OT-${anioOt}-${String((count ?? 0) + 1).padStart(4, '0')}`
+    const { data: ot, error: otErr } = await dbCtrl.from('ordenes_trabajo').insert({
+      folio, titulo: `${prog.nombre} — ${fecha_prog}`,
+      tipo_trabajo: prog.tipo_trabajo ?? null,
+      prioridad: 'Media', status: 'Pendiente',
+      descripcion: prog.descripcion ?? null,
+      asignado_a: prog.responsable ?? null,
+      fecha_limite: fecha_prog,
+      anio: anioOt,
+    }).select('id, folio').single()
+    if (otErr) { alert(`Error al crear OT: ${otErr.message}`); setSaving(null); return }
+    if (ot) {
+      const existing = tareas.find(t => t.id_programa_fk === prog.id && t.fecha_prog === fecha_prog)
+      if (existing) {
+        await dbCtrl.from('programa_tareas').update({ id_ot_fk: ot.id, status: 'En Proceso', updated_at: new Date().toISOString() }).eq('id', existing.id)
+        setTareas(prev => prev.map(t => t.id === existing.id ? { ...t, id_ot_fk: ot.id, status: 'En Proceso' } : t))
+      } else {
+        const { data } = await dbCtrl.from('programa_tareas')
+          .insert({ id_programa_fk: prog.id, fecha_prog, mes: fecha.getMonth() + 1, semana_no: 1, status: 'En Proceso', id_ot_fk: ot.id })
+          .select('id,id_programa_fk,fecha_prog,status,id_ot_fk')
+          .single()
+        if (data) setTareas(prev => [...prev, data])
+      }
+    }
+    setSaving(null)
+  }
+
   // ── Navigation ─────────────────────────────────────────────────────────────
 
-  function prevMes() {
-    if (mes === 1) { setMes(12); setAnio(a => a - 1) } else setMes(m => m - 1)
-  }
-  function nextMes() {
-    if (mes === 12) { setMes(1); setAnio(a => a + 1) } else setMes(m => m + 1)
-  }
+  function prevSemana() { setWeekStart(w => addDays(w, -7)) }
+  function nextSemana() { setWeekStart(w => addDays(w, 7)) }
 
   // ── Derived state ──────────────────────────────────────────────────────────
 
-  const progsMes = programas.filter(p => estaActivoEnMes(p, mes))
+  // Programas activos esta semana, con sus días concretos de ocurrencia
+  // (granularidad real: Diario/Semanal/Quincenal generan celdas por día,
+  // no una sola tarea representativa del mes)
+  const progsSemana = programas
+    .map(p => ({ prog: p, fechas: dias.filter(f => estaActivoEnFecha(p, f)) }))
+    .filter(r => r.fechas.length > 0)
+
   const tipos = ['Todos', ...Array.from(new Set(programas.map(p => p.tipo_trabajo))).sort()]
 
-  const progsFiltradosMes = progsMes.filter(p =>
-    filtroTipo === 'Todos' || p.tipo_trabajo === filtroTipo
+  const progsFiltradosSemana = progsSemana.filter(r =>
+    filtroTipo === 'Todos' || r.prog.tipo_trabajo === filtroTipo
   )
-  const agrupados = progsFiltradosMes.reduce<Record<string, Programa[]>>((acc, p) => {
-    if (!acc[p.tipo_trabajo]) acc[p.tipo_trabajo] = []
-    acc[p.tipo_trabajo].push(p)
+  const agrupados = progsFiltradosSemana.reduce<Record<string, typeof progsFiltradosSemana>>((acc, r) => {
+    if (!acc[r.prog.tipo_trabajo]) acc[r.prog.tipo_trabajo] = []
+    acc[r.prog.tipo_trabajo].push(r)
     return acc
   }, {})
   const tipoOrder = ['Jardinería', 'Fumigación', 'Obra Civil', 'Otro']
   const gruposOrdenados = tipoOrder.filter(t => agrupados[t])
 
-  const completadas  = progsMes.filter(p => getStatus(p.id) === 'Completada').length
-  const enProceso    = progsMes.filter(p => getStatus(p.id) === 'En Proceso').length
-  const pendientes   = progsMes.filter(p => getStatus(p.id) === 'Pendiente').length
-  const cumplimiento = progsMes.length > 0 ? Math.round(completadas / progsMes.length * 100) : 0
+  const celdas = progsFiltradosSemana.flatMap(r => r.fechas.map(f => getStatus(r.prog.id, toISODate(f))))
+  const completadas  = celdas.filter(s => s === 'Completada').length
+  const enProceso    = celdas.filter(s => s === 'En Proceso').length
+  const pendientes   = celdas.filter(s => s === 'Pendiente').length
+  const cumplimiento = celdas.length > 0 ? Math.round(completadas / celdas.length * 100) : 0
 
-  const esLluvias = mes >= 6 && mes <= 8
+  const mesVisible = weekStart.getMonth() + 1
+  const esLluvias = mesVisible >= 6 && mesVisible <= 8
 
   // Programas tab
   const progsAnualesFiltrados = programas.filter(p =>
@@ -300,16 +361,19 @@ export default function MantenimientoCampoPage() {
       {/* ══════════════════ TAB: EJECUCIÓN ══════════════════ */}
       {tab === 'ejecucion' && (
         <>
-          {/* Month navigation */}
+          {/* Week navigation */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-            <button onClick={prevMes} className="btn-ghost" style={{ padding: '7px 10px' }}>
+            <button onClick={prevSemana} className="btn-ghost" style={{ padding: '7px 10px' }}>
               <ChevronLeft size={18} />
             </button>
-            <span style={{ fontSize: 17, fontWeight: 700, minWidth: 190, textAlign: 'center' }}>
-              {MESES[mes - 1]} {anio}
+            <span style={{ fontSize: 15, fontWeight: 700, minWidth: 220, textAlign: 'center' }}>
+              {dias[0].getDate()} {MESES[dias[0].getMonth()].slice(0, 3)} – {dias[6].getDate()} {MESES[dias[6].getMonth()].slice(0, 3)} {anio}
             </span>
-            <button onClick={nextMes} className="btn-ghost" style={{ padding: '7px 10px' }}>
+            <button onClick={nextSemana} className="btn-ghost" style={{ padding: '7px 10px' }}>
               <ChevronRight size={18} />
+            </button>
+            <button onClick={() => setWeekStart(mondayOf(new Date()))} className="btn-secondary" style={{ fontSize: 11 }}>
+              Hoy
             </button>
             <button
               onClick={loadTareas}
@@ -322,10 +386,10 @@ export default function MantenimientoCampoPage() {
           {/* KPI cards */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 24 }}>
             {[
-              { label: 'Completadas',  val: completadas,       bg: '#dcfce7', clr: '#16a34a' },
-              { label: 'En Proceso',   val: enProceso,         bg: '#dbeafe', clr: '#2563eb' },
-              { label: 'Pendientes',   val: pendientes,        bg: '#fef3c7', clr: '#d97706' },
-              { label: 'Total del mes',val: progsMes.length,   bg: '#f1f5f9', clr: '#374151' },
+              { label: 'Completadas',     val: completadas,    bg: '#dcfce7', clr: '#16a34a' },
+              { label: 'En Proceso',      val: enProceso,      bg: '#dbeafe', clr: '#2563eb' },
+              { label: 'Pendientes',      val: pendientes,     bg: '#fef3c7', clr: '#d97706' },
+              { label: 'Total semana',    val: celdas.length,  bg: '#f1f5f9', clr: '#374151' },
               {
                 label: 'Cumplimiento',
                 val: `${cumplimiento}%`,
@@ -361,18 +425,18 @@ export default function MantenimientoCampoPage() {
                   color: active ? clr : '#64748b',
                   cursor: 'pointer',
                 }}>
-                  {t === 'Todos' ? `Todos (${progsMes.length})` : t}
+                  {t === 'Todos' ? `Todos (${progsSemana.length})` : t}
                 </button>
               )
             })}
           </div>
 
-          {/* Program cards */}
+          {/* Tablas por tipo, columnas = días de la semana */}
           {loading ? (
             <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
               Cargando programas...
             </div>
-          ) : progsFiltradosMes.length === 0 ? (
+          ) : progsFiltradosSemana.length === 0 ? (
             <div style={{
               textAlign: 'center', padding: 60, color: '#94a3b8',
               background: '#f8fafc', borderRadius: 12, border: '1px dashed #e2e8f0',
@@ -381,7 +445,7 @@ export default function MantenimientoCampoPage() {
               <div style={{ fontSize: 14, fontWeight: 600 }}>
                 {programas.length === 0
                   ? 'No se encontraron programas. Ejecuta la migración SQL en Supabase y asigna los IDs de CC/Área.'
-                  : `Sin programas de "${filtroTipo}" activos en ${MESES[mes - 1]}.`}
+                  : `Sin programas de "${filtroTipo}" activos esta semana.`}
               </div>
             </div>
           ) : (
@@ -406,80 +470,90 @@ export default function MantenimientoCampoPage() {
                   </span>
                 </div>
 
-                {/* Cards */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {agrupados[tipo].map(p => {
-                    const status = getStatus(p.id)
-                    const sc = STATUS_CLR[status] ?? STATUS_CLR['Pendiente']
-                    const isExpanded = expandedId === p.id
-                    const isSaving = saving === p.id
-
-                    return (
-                      <div key={p.id} className="card" style={{ padding: '12px 16px' }}>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-                        }}>
-                          {/* Frecuencia tag */}
-                          <span style={{
-                            fontSize: 11, color: '#94a3b8', fontStyle: 'italic',
-                            background: '#f8fafc', borderRadius: 4,
-                            padding: '2px 8px', border: '1px solid #e2e8f0',
-                            whiteSpace: 'nowrap', minWidth: 76, textAlign: 'center',
-                          }}>
-                            {p.frecuencia}
-                          </span>
-                          {/* Name */}
-                          <span style={{
-                            flex: 1, fontWeight: 600, fontSize: 13.5, color: '#1e293b',
-                            minWidth: 180,
-                          }}>
-                            {p.nombre}
-                          </span>
-                          {/* Status selector */}
-                          <select
-                            disabled={isSaving}
-                            value={status}
-                            onChange={e => cambiarStatus(p, e.target.value)}
-                            style={{
-                              padding: '5px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                              background: sc.bg, color: sc.text,
-                              border: `1.5px solid ${sc.text}50`,
-                              cursor: 'pointer', opacity: isSaving ? 0.5 : 1,
-                              outline: 'none',
-                            }}>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="En Proceso">En Proceso</option>
-                            <option value="Completada">Completada</option>
-                            <option value="Omitida">Omitida</option>
-                          </select>
-                          {/* Expand */}
-                          <button
-                            onClick={() => setExpandedId(isExpanded ? null : p.id)}
-                            className="btn-ghost"
-                            style={{ padding: '5px 8px' }}>
-                            <ChevronDown
-                              size={16}
-                              style={{
-                                transform: isExpanded ? 'rotate(180deg)' : 'none',
-                                transition: 'transform .2s',
-                              }} />
-                          </button>
-                        </div>
-
-                        {/* Expanded description */}
-                        {isExpanded && p.descripcion && (
-                          <div style={{
-                            marginTop: 12, paddingTop: 12,
-                            borderTop: '1px solid #f1f5f9',
-                            fontSize: 13, color: '#475569',
-                            lineHeight: 1.8,
-                          }}>
-                            {p.descripcion}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                <div className="card" style={{ overflow: 'hidden' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style={{ minWidth: 200 }}>Programa</th>
+                        {dias.map((d, i) => (
+                          <th key={i} style={{ textAlign: 'center', minWidth: 80 }}>
+                            {DIAS[i]}<br />
+                            <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: 11 }}>{d.getDate()}/{d.getMonth() + 1}</span>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {agrupados[tipo].map(({ prog: p, fechas }) => {
+                        const isExpanded = expandedId === p.id
+                        return (
+                          <Fragment key={p.id}>
+                            <tr>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontWeight: 600, fontSize: 12.5 }}>{p.nombre}</span>
+                                  <button onClick={() => setExpandedId(isExpanded ? null : p.id)} className="btn-ghost" style={{ padding: 2 }}>
+                                    <ChevronDown size={13} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: '.2s' }} />
+                                  </button>
+                                </div>
+                                <div style={{ fontSize: 10.5, color: '#94a3b8', fontStyle: 'italic' }}>{p.frecuencia}</div>
+                              </td>
+                              {dias.map((f, i) => {
+                                const activo = fechas.some(fe => toISODate(fe) === toISODate(f))
+                                if (!activo) return <td key={i} style={{ textAlign: 'center', color: '#e2e8f0' }}>·</td>
+                                const fechaISO = toISODate(f)
+                                const status = getStatus(p.id, fechaISO)
+                                const sc = STATUS_CLR[status] ?? STATUS_CLR['Pendiente']
+                                const key = `${p.id}-${fechaISO}`
+                                const isSaving = saving === key
+                                const tarea = tareas.find(t => t.id_programa_fk === p.id && t.fecha_prog === fechaISO)
+                                return (
+                                  <td key={i} style={{ textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                                      <select
+                                        disabled={isSaving}
+                                        value={status}
+                                        onChange={e => cambiarStatus(p, f, e.target.value)}
+                                        style={{
+                                          padding: '3px 4px', borderRadius: 5, fontSize: 10.5, fontWeight: 600,
+                                          background: sc.bg, color: sc.text,
+                                          border: `1.5px solid ${sc.text}50`,
+                                          cursor: 'pointer', opacity: isSaving ? 0.5 : 1, outline: 'none',
+                                        }}>
+                                        <option value="Pendiente">Pendiente</option>
+                                        <option value="En Proceso">En Proceso</option>
+                                        <option value="Completada">Completada</option>
+                                        <option value="Omitida">Omitida</option>
+                                      </select>
+                                      {tarea?.id_ot_fk ? (
+                                        <span style={{ fontSize: 9, color: '#2563eb' }}>OT ✓</span>
+                                      ) : (
+                                        <button
+                                          onClick={() => generarOT(p, f)}
+                                          disabled={isSaving}
+                                          title="Crear Orden de Trabajo"
+                                          style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #bfdbfe',
+                                            background: '#eff6ff', color: '#2563eb', cursor: 'pointer' }}>
+                                          + OT
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                )
+                              })}
+                            </tr>
+                            {isExpanded && p.descripcion && (
+                              <tr>
+                                <td colSpan={8} style={{ fontSize: 12.5, color: '#475569', lineHeight: 1.7, background: '#f8fafc' }}>
+                                  {p.descripcion}
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             ))
