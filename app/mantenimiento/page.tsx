@@ -206,7 +206,7 @@ export default function MantenimientoPage() {
     const anio  = fecha.getFullYear()
     const folio = `OT-${anio}-${String((count ?? 0) + 1).padStart(4, '0')}`
     const { data: ot, error: otErr } = await dbCtrl.from('ordenes_trabajo').insert({
-      folio, titulo: `${prog.nombre} — ${fmtDate(fechaISO)}`,
+      folio, empresa: 'Balvanera', titulo: `${prog.nombre} — ${fmtDate(fechaISO)}`,
       tipo_trabajo: prog.tipo_trabajo ?? null,
       prioridad:    'Media', status: 'Pendiente',
       id_area_fk:       prog.id_area_fk ?? null,
@@ -251,7 +251,7 @@ export default function MantenimientoPage() {
         {([
           { key: 'programa',          label: 'Programa Anual', icon: <Calendar size={13} /> },
           { key: 'ordenes',           label: 'OT Mantto. Res', icon: <ClipboardList size={13} /> },
-          { key: 'ordenes_cuadrilla', label: 'OT Cuadrilla',   icon: <Wrench size={13} /> },
+          { key: 'ordenes_cuadrilla', label: "OT's Generales",   icon: <Wrench size={13} /> },
           { key: 'servicios',         label: 'Servicios',      icon: <Zap size={13} /> },
         ] as const).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}

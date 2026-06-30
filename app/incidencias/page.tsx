@@ -529,6 +529,7 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
 
     const { data: ot, error } = await dbCtrl.from('ordenes_trabajo').insert({
       folio,
+      empresa:     'Cuadrilla', // Incidencias siempre generan OT's Generales — OT Mantto. Res queda solo para el Programa de Mantenimiento
       titulo:      `Atención: ${inc.tipo ?? 'Incidencia'} — ${(inc as any).lotes?.cve_lote ?? 'Lote sin clave'}`,
       tipo_trabajo: inc.area_responsable ?? null,
       prioridad:   'Media',

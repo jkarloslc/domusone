@@ -226,7 +226,7 @@ export default function MantenimientoCampoPage() {
     const anioOt  = fecha.getFullYear()
     const folio = `OT-${anioOt}-${String((count ?? 0) + 1).padStart(4, '0')}`
     const { data: ot, error: otErr } = await dbCtrl.from('ordenes_trabajo').insert({
-      folio, titulo: `${prog.nombre} — ${fecha_prog}`,
+      folio, empresa: 'Balvanera', titulo: `${prog.nombre} — ${fecha_prog}`,
       tipo_trabajo: prog.tipo_trabajo ?? null,
       prioridad: 'Media', status: 'Pendiente',
       id_area_fk: prog.id_area_fk ?? null,
