@@ -57,18 +57,20 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
   const [kpis, setKpis]           = useState({ pendientes: 0, enProceso: 0, completadas: 0, urgentes: 0 })
   const [areas, setAreas] = useState<any[]>([])
   const [areaMap, setAreaMap]       = useState<Record<number, string>>({})
-  const [centrosCosto, setCentros] = useState<any[]>([])
+  const [cuadrantes,   setCuadrantes]   = useState<any[]>([])
+  const [cuadMap,  setCuadMap]    = useState<Record<number, string>>({})
   const [ccMap,  setCcMap]        = useState<Record<number, string>>({})
   const [frMap,  setFrMap]        = useState<Record<number, string>>({})
+  const [acMap,  setAcMap]        = useState<Record<number, string>>({})
   const [search, setSearch]       = useState('')
   const debouncedSearch           = useDebounce(search, 300)
   const [filterStatus, setFilterStatus] = useState('')
   const [filterTipo,   setFilterTipo]   = useState('')
-  const [filterCC,     setFilterCC]     = useState('')
+  const [filterCuad,   setFilterCuad]   = useState('')
   const [filterArea,  setFilterArea]    = useState('')
-  const [filterFr,     setFilterFr]     = useState('')
-  const [frentes,      setFrentesOT]    = useState<any[]>([])
-  const [relAF,        setRelAF]        = useState<{id_area: number; id_frente: number}[]>([])
+  const [filterAC,     setFilterAC]     = useState('')
+  const [areasComunes, setAreasComunesOT] = useState<any[]>([])
+  const [areaToAcs,    setAreaToAcs]      = useState<Record<number, number[]>>({})
   const [modal,    setModal]    = useState(false)
   const [editingOT, setEditingOT] = useState<any | null>(null)
   const [detail,   setDetail]   = useState<any | null>(null)
@@ -92,30 +94,39 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
     if (debouncedSearch)  q = q.or(`folio.ilike.%${debouncedSearch}%,titulo.ilike.%${debouncedSearch}%,asignado_a.ilike.%${debouncedSearch}%`)
     if (filterStatus)     q = q.eq('status', filterStatus)
     if (filterTipo)       q = q.eq('tipo_trabajo', filterTipo)
-    if (filterCC)         q = q.eq('id_centro_costo_fk', Number(filterCC))
+    if (filterCuad)       q = q.eq('id_cuadrante_fk', Number(filterCuad))
     if (filterArea)       q = q.eq('id_area_fk', Number(filterArea))
-    if (filterFr)         q = q.eq('id_frente_fk', Number(filterFr))
+    if (filterAC)         q = q.eq('id_area_comun_fk', Number(filterAC))
     const from = (page - 1) * PAGE_SIZE
     const { data, count } = await q.range(from, from + PAGE_SIZE - 1)
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [empresa, debouncedSearch, filterStatus, filterTipo, filterCC, filterArea, filterFr, page])
+  }, [empresa, debouncedSearch, filterStatus, filterTipo, filterCuad, filterArea, filterAC, page])
 
   useEffect(() => {
     Promise.all([
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-    ]).then(([{ data: secs }, { data: ccs }, { data: frs }, { data: relaf }]) => {
+      dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas_comunes').select('id, nombre, descripcion').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_area_comun').select('id_area, id_area_comun'),
+    ]).then(([{ data: secs }, { data: cuads }, { data: ccs }, { data: frs }, { data: acs }, { data: rels }]) => {
       setAreas(secs ?? [])
-      setCentros(ccs ?? [])
-      setFrentesOT(frs ?? [])
-      setRelAF((relaf ?? []) as any)
+      setCuadrantes(cuads ?? [])
+      setAreasComunesOT(acs ?? [])
       const sm: Record<number, string> = {}; (secs ?? []).forEach((s: any) => { sm[s.id] = s.nombre })
       const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
-      setAreaMap(sm); setCcMap(cm); setFrMap(fm)
+      const cuadm: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { cuadm[c.id] = c.nombre })
+      const acm: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { acm[a.id] = a.nombre })
+      const ata: Record<number, number[]> = {};
+      (rels ?? []).forEach((r: any) => {
+        const aid = Number(r.id_area)
+        if (!ata[aid]) ata[aid] = []
+        ata[aid].push(Number(r.id_area_comun))
+      })
+      setAreaMap(sm); setCcMap(cm); setFrMap(fm); setCuadMap(cuadm); setAcMap(acm); setAreaToAcs(ata)
     })
   }, [])
 
@@ -160,31 +171,25 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
         </select>
         <div style={{ width: 1, height: 18, background: '#e2e8f0', flexShrink: 0 }} />
         {/* Filtros ubicación */}
-        <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCC} onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setFilterFr(''); setPage(1) }}>
-          <option value="">Centro de costo</option>
-          {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        <select className="select" style={{ flex: '1 1 120px', maxWidth: 200, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterCuad} onChange={e => { setFilterCuad(e.target.value); setFilterArea(''); setFilterAC(''); setPage(1) }}>
+          <option value="">Cuadrante</option>
+          {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterFr(''); setPage(1) }}>
+        <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterAC(''); setPage(1) }}>
           <option value="">Área</option>
           {areas
-            .filter((s: any) => !filterCC || s.id_centro_costo_fk === Number(filterCC))
+            .filter((s: any) => !filterCuad || s.id_cuadrante_fk === Number(filterCuad))
             .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
-        <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterFr} onChange={e => setFilterFr(e.target.value)}>
-          <option value="">Frente</option>
-          {(() => {
-            const aId = Number(filterArea)
-            const permitidos = filterArea
-              ? new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
-              : null
-            return frentes
-              .filter(f => !permitidos || permitidos.has(f.id))
-              .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
-          })()}
+        <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterAC} onChange={e => { setFilterAC(e.target.value); setPage(1) }}>
+          <option value="">Área Común</option>
+          {areasComunes
+            .filter(a => !filterArea || (areaToAcs[Number(filterArea)] ?? []).includes(a.id))
+            .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        {(search || filterStatus || filterTipo || filterCC || filterArea || filterFr) && (
+        {(search || filterStatus || filterTipo || filterCuad || filterArea || filterAC) && (
           <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626', whiteSpace: 'nowrap' }}
-            onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCC(''); setFilterArea(''); setFilterFr(''); setPage(1) }}>
+            onClick={() => { setSearch(''); setFilterStatus(''); setFilterTipo(''); setFilterCuad(''); setFilterArea(''); setFilterAC(''); setPage(1) }}>
             <X size={11} /> Limpiar
           </button>
         )}
@@ -206,7 +211,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Folio</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Título</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Tipo</th>
-              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Área</th>
+              <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Área / Área Común</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Asignado</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>F. Límite</th>
               <th style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', padding: '8px 10px' }}>Prioridad</th>
@@ -231,7 +236,12 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
                   {r.ubicacion_detalle && <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{r.ubicacion_detalle}</div>}
                 </td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{r.tipo_trabajo ?? '—'}</td>
-                <td style={{ fontSize: 11, padding: '8px 10px' }}>{r.id_area_fk ? (areaMap[r.id_area_fk] ?? '—') : '—'}</td>
+                <td style={{ fontSize: 11, padding: '8px 10px' }}>
+                  {r.id_area_fk ? (areaMap[r.id_area_fk] ?? '—') : '—'}
+                  {r.id_area_comun_fk && (
+                    <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>{acMap[r.id_area_comun_fk] ?? '—'}</div>
+                  )}
+                </td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 10px' }}>{r.asignado_a ?? '—'}</td>
                 <td style={{ fontSize: 11, padding: '8px 10px',
                   color: r.fecha_limite && new Date(r.fecha_limite) < new Date() && r.status !== 'Completada' ? '#dc2626' : 'var(--text-secondary)',
@@ -256,10 +266,10 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
         <PaginationNav page={page} total={total} pageSize={PAGE_SIZE} onChange={setPage} />
       )}
 
-      {modal  && <OTModal areas={areas} ot={editingOT} empresa={empresa}
+      {modal  && <OTModal areas={areas} cuadrantes={cuadrantes} areasComunes={areasComunes} areaToAcs={areaToAcs} ot={editingOT} empresa={empresa}
         onClose={() => { setModal(false); setEditingOT(null) }}
         onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
-      {detail && <OTDetail ot={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap}
+      {detail && <OTDetail ot={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap} cuadMap={cuadMap} acMap={acMap}
         onClose={() => { setDetail(null); fetchData() }}
         onEdit={ot => { setDetail(null); setEditingOT(ot); setModal(true) }} />}
     </div>
@@ -267,15 +277,13 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
 }
 
 // ── OTModal ────────────────────────────────────────────────────
-function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
-  areas: any[]; ot?: any; empresa?: 'Balvanera' | 'Cuadrilla'; onClose: () => void; onSaved: () => void
+function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Balvanera', onClose, onSaved }: {
+  areas: any[]; cuadrantes: any[]; areasComunes: any[]; areaToAcs: Record<number, number[]>
+  ot?: any; empresa?: 'Balvanera' | 'Cuadrilla'; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
-  const [centrosCosto, setCentros]   = useState<any[]>([])
-  const [frentes, setFrentes]        = useState<any[]>([])
-  const [relAF, setRelAFModal]       = useState<{id_area: number; id_frente: number}[]>([])
   const [catManoObra, setCatManoObra] = useState<any[]>([])
   const [manoObra, setManoObra]      = useState<any[]>([])
   const [form, setForm] = useState({
@@ -284,8 +292,8 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
     prioridad:          ot?.prioridad         ?? 'Media',
     status:             ot?.status            ?? 'Pendiente',
     id_area_fk:         ot?.id_area_fk?.toString()      ?? '',
-    id_centro_costo_fk: ot?.id_centro_costo_fk?.toString() ?? '',
-    id_frente_fk:       ot?.id_frente_fk?.toString()       ?? '',
+    id_cuadrante_fk:    ot?.id_cuadrante_fk?.toString()    ?? '',
+    id_area_comun_fk:   ot?.id_area_comun_fk?.toString()   ?? '',
     ubicacion_detalle:  ot?.ubicacion_detalle ?? '',
     descripcion:        ot?.descripcion       ?? '',
     notas:              ot?.notas             ?? '',
@@ -324,17 +332,8 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
     setForm(f => ({ ...f, [k]: e.target.value }))
 
   useEffect(() => {
-    Promise.all([
-      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('frentes').select('id, nombre, id_area_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-      dbCfg.from('cat_categorias_mano_obra').select('id, categoria, costo_hora_referencia').eq('activo', true).order('categoria'),
-    ]).then(([cc, fr, rel, mo]) => {
-      setCentros(cc.data ?? [])
-      setFrentes(fr.data ?? [])
-      setRelAFModal((rel.data ?? []) as any)
-      setCatManoObra(mo.data ?? [])
-    })
+    dbCfg.from('cat_categorias_mano_obra').select('id, categoria, costo_hora_referencia').eq('activo', true).order('categoria')
+      .then(({ data }) => setCatManoObra(data ?? []))
   }, [])
   const setR = (i: number, k: string, v: string) =>
     setRecursos(r => r.map((x, j) => j === i ? { ...x, [k]: v } : x))
@@ -355,8 +354,8 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
         folio, empresa, titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
         prioridad: form.prioridad, status: form.status,
         id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
-        id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
-        id_frente_fk:       form.id_frente_fk        ? Number(form.id_frente_fk)       : null,
+        id_cuadrante_fk:    form.id_cuadrante_fk   ? Number(form.id_cuadrante_fk)   : null,
+        id_area_comun_fk:   form.id_area_comun_fk  ? Number(form.id_area_comun_fk)  : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
         descripcion: form.descripcion.trim() || null, notas: form.notas.trim() || null,
         asignado_a: form.asignado_a.trim() || null, supervisor: form.supervisor.trim() || null,
@@ -371,8 +370,8 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
         titulo: form.titulo.trim(), tipo_trabajo: form.tipo_trabajo || null,
         prioridad: form.prioridad, status: form.status,
         id_area_fk:         form.id_area_fk      ? Number(form.id_area_fk)      : null,
-        id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
-        id_frente_fk:       form.id_frente_fk        ? Number(form.id_frente_fk)       : null,
+        id_cuadrante_fk:    form.id_cuadrante_fk   ? Number(form.id_cuadrante_fk)   : null,
+        id_area_comun_fk:   form.id_area_comun_fk  ? Number(form.id_area_comun_fk)  : null,
         ubicacion_detalle: form.ubicacion_detalle.trim() || null,
         descripcion: form.descripcion.trim() || null, notas: form.notas.trim() || null,
         asignado_a: form.asignado_a.trim() || null, supervisor: form.supervisor.trim() || null,
@@ -453,32 +452,27 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
               </select></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-            <div><label className="label" style={{ fontSize: 11 }}>Centro de Costo</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk}
-                onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
+            <div><label className="label" style={{ fontSize: 11 }}>Cuadrante</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_cuadrante_fk}
+                onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '', id_area_comun_fk: '' }))}>
                 <option value="">—</option>
-                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select></div>
             <div><label className="label" style={{ fontSize: 11 }}>Área</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk}
-                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' }))}>
+                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_area_comun_fk: '' }))}>
                 <option value="">—</option>
                 {(areas as any[])
-                  .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                  .filter(s => !form.id_cuadrante_fk || s.id_cuadrante_fk === Number(form.id_cuadrante_fk))
                   .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select></div>
-            <div><label className="label" style={{ fontSize: 11 }}>Frente</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_frente_fk}
-                onChange={setF('id_frente_fk')} disabled={!form.id_area_fk}>
+            <div><label className="label" style={{ fontSize: 11 }}>Área Común</label>
+              <select className="select" style={{ fontSize: 12 }} value={form.id_area_comun_fk}
+                onChange={setF('id_area_comun_fk')} disabled={!form.id_area_fk}>
                 <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
-                {(() => {
-                  if (!form.id_area_fk) return null
-                  const aId = Number(form.id_area_fk)
-                  const permitidos = new Set(relAF.filter(r => r.id_area === aId).map(r => r.id_frente))
-                  return frentes
-                    .filter(f => permitidos.has(f.id))
-                    .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
-                })()}
+                {areasComunes
+                  .filter(a => (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
+                  .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select></div>
           </div>
           <div><label className="label" style={{ fontSize: 11 }}>Ubicación detalle</label>
@@ -574,11 +568,13 @@ function OTModal({ areas, ot, empresa = 'Balvanera', onClose, onSaved }: {
 }
 
 // ── OTDetail ───────────────────────────────────────────────────
-function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
+function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }: {
   ot: any
   areaMap: Record<number, string>
   ccMap: Record<number, string>
   frMap: Record<number, string>
+  cuadMap: Record<number, string>
+  acMap: Record<number, string>
   onClose: () => void
   onEdit: (ot: any) => void
 }) {
@@ -776,6 +772,8 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
         <div><div class="lbl">Área</div><div class="val">${seccion}</div></div>
         ${ot.ubicacion_detalle ? `<div><div class="lbl">Ubicación Detalle</div><div class="val">${ot.ubicacion_detalle}</div></div>` : ''}
         ${ot.tipo_trabajo ? `<div><div class="lbl">Tipo de Trabajo</div><div class="val">${ot.tipo_trabajo}</div></div>` : ''}
+        ${ot.id_cuadrante_fk ? `<div><div class="lbl">Cuadrante</div><div class="val">${cuadMap[ot.id_cuadrante_fk] ?? '—'}</div></div>` : ''}
+        ${ot.id_area_comun_fk ? `<div><div class="lbl">Área Común</div><div class="val">${acMap[ot.id_area_comun_fk] ?? '—'}</div></div>` : ''}
         ${ot.id_centro_costo_fk ? `<div><div class="lbl">Centro de Costo</div><div class="val">${ccMap[ot.id_centro_costo_fk] ?? '—'}</div></div>` : ''}
         ${ot.id_frente_fk ? `<div><div class="lbl">Frente</div><div class="val">${frMap[ot.id_frente_fk] ?? '—'}</div></div>` : ''}
         ${ot.asignado_a ? `<div><div class="lbl">Asignado a</div><div class="val">${ot.asignado_a}</div></div>` : ''}
@@ -872,8 +870,10 @@ function OTDetail({ ot, areaMap, ccMap, frMap, onClose, onEdit }: {
             {ot.fecha_inicio && <DI label="Fecha Inicio" value={fmtFecha(ot.fecha_inicio)} />}
             {ot.fecha_limite && <DI label="Fecha Límite" value={fmtFecha(ot.fecha_limite)} />}
             {ot.fecha_cierre && <DI label="Fecha Cierre" value={fmtFecha(ot.fecha_cierre)} />}
-            {ot.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[ot.id_centro_costo_fk] ?? `#${ot.id_centro_costo_fk}`} />}
+            {ot.id_cuadrante_fk  && <DI label="Cuadrante"    value={cuadMap[ot.id_cuadrante_fk]  ?? `#${ot.id_cuadrante_fk}`} />}
             {ot.id_area_fk      && <DI label="Área"          value={areaMap[ot.id_area_fk]      ?? `#${ot.id_area_fk}`} />}
+            {ot.id_area_comun_fk && <DI label="Área Común"   value={acMap[ot.id_area_comun_fk]   ?? `#${ot.id_area_comun_fk}`} />}
+            {ot.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[ot.id_centro_costo_fk] ?? `#${ot.id_centro_costo_fk}`} />}
             {ot.id_frente_fk       && <DI label="Frente"           value={frMap[ot.id_frente_fk]        ?? `#${ot.id_frente_fk}`} />}
           </div>
 

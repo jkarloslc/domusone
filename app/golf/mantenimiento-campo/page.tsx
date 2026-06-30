@@ -83,6 +83,7 @@ type Programa = {
   responsable: string | null
   descripcion: string | null
   activo: boolean
+  id_area_fk: number | null
 }
 
 type TareaRec = {
@@ -164,7 +165,7 @@ export default function MantenimientoCampoPage() {
     setLoading(true)
     const { data } = await dbCtrl
       .from('programas_mantenimiento')
-      .select('id,nombre,tipo_trabajo,frecuencia,mes_inicio,fecha_inicio,fecha_fin,responsable,descripcion,activo')
+      .select('id,nombre,tipo_trabajo,frecuencia,mes_inicio,fecha_inicio,fecha_fin,responsable,descripcion,activo,id_area_fk')
       .eq('anio', anio)
       .eq('activo', true)
       .eq('modulo', 'golf')
@@ -228,6 +229,7 @@ export default function MantenimientoCampoPage() {
       folio, titulo: `${prog.nombre} — ${fecha_prog}`,
       tipo_trabajo: prog.tipo_trabajo ?? null,
       prioridad: 'Media', status: 'Pendiente',
+      id_area_fk: prog.id_area_fk ?? null,
       descripcion: prog.descripcion ?? null,
       asignado_a: prog.responsable ?? null,
       fecha_limite: fecha_prog,
