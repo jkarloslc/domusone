@@ -313,7 +313,7 @@ export default function MantenimientoPage() {
               <option value="">Área Común</option>
               {areasComunes
                 .filter(a => !filterArea || (areaToAcs[Number(filterArea)] ?? []).includes(a.id))
-                .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                .map(a => <option key={a.id} value={a.id}>{a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}</option>)}
             </select>
             {(filterCuad || filterArea || filterAC) && (
               <button className="btn-ghost" style={{ color: '#dc2626' }}
