@@ -119,7 +119,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera' }: { empresa?:
       const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
       const cuadm: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { cuadm[c.id] = c.nombre })
-      const acm: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { acm[a.id] = a.nombre })
+      const acm: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { acm[a.id] = a.nombre + (a.descripcion ? ` - ${a.descripcion}` : '') })
       const ata: Record<number, number[]> = {};
       (rels ?? []).forEach((r: any) => {
         const aid = Number(r.id_area)
@@ -472,7 +472,7 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, ot, empresa = 'Ba
                 <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
                 {areasComunes
                   .filter(a => (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
-                  .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                  .map(a => <option key={a.id} value={a.id}>{a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}</option>)}
               </select></div>
           </div>
           <div><label className="label" style={{ fontSize: 11 }}>Ubicación detalle</label>
