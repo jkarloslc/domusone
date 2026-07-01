@@ -141,12 +141,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: fullMsg, http_status: res.status }, { status: 400 })
     }
 
-    const cfdiId = pacResp.Id
+    const cfdiId      = pacResp.Id
+    // Facturama expone /cfdi/{tipo}/{id} solo con el UUID fiscal (no acepta
+    // el Id interno) — probado directo contra su API: /cfdi/-/{tipo}/{id}
+    // (con guion) responde "El tipo pdf no es válido" siempre, sin importar
+    // el id; /cfdi/{tipo}/{id} sin guion es la ruta correcta y exige UUID.
+    const folioFiscal = pacResp.Complement?.TaxStamp?.Uuid ?? cfdiId
 
     // ── Descargar PDF y XML ────────────────────────────────────
     const [xmlRes, pdfRes] = await Promise.all([
-      fetch(`${pac.url}/cfdi/-/xml/${cfdiId}`,  { headers: { Authorization: authHeader } }),
-      fetch(`${pac.url}/cfdi/-/pdf/${cfdiId}`,  { headers: { Authorization: authHeader } }),
+      fetch(`${pac.url}/cfdi/xml/${folioFiscal}`, { headers: { Authorization: authHeader } }),
+      fetch(`${pac.url}/cfdi/pdf/${folioFiscal}`, { headers: { Authorization: authHeader } }),
     ])
 
     const xmlText = xmlRes.ok ? await xmlRes.text() : null
@@ -155,7 +160,7 @@ export async function POST(req: NextRequest) {
     const pdfUrl  = pdfB64 ? `data:application/pdf;base64,${pdfB64}` : null
 
     return NextResponse.json({
-      folio_fiscal:  pacResp.Complement?.TaxStamp?.Uuid ?? pacResp.Id,
+      folio_fiscal:  folioFiscal,
       pac_cfdi_id:   cfdiId,   // ID interno Facturama para re-descargar
       xml_cfdi:      xmlText,
       pdf_url:       pdfUrl,

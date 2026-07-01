@@ -341,10 +341,10 @@ export default function POSPage() {
     fetchVentas(); fetchStats()
   }
 
-  // ── Descargar PDF o XML desde Facturama (por pac_cfdi_id) ────
+  // ── Descargar PDF o XML desde Facturama (por folio_fiscal / UUID) ────
   const descargarDesdePAC = async (v: any, format: 'pdf' | 'xml') => {
-    const cfdiId = v._cfdi?.pac_cfdi_id ?? v.pac_cfdi_id
-    if (!cfdiId) { alert('No hay ID de Facturama para esta factura'); return }
+    const cfdiId = v.folio_fiscal ?? v._cfdi?.pac_cfdi_id ?? v.pac_cfdi_id
+    if (!cfdiId) { alert('No hay folio fiscal para esta factura'); return }
     const key = `${v.id}-${format}`
     setDescargando(key)
     try {
@@ -376,7 +376,7 @@ export default function POSPage() {
     // Intentar obtener XML y PDF: primero desde BD, si no hay re-descarga del PAC
     let xmlContent = cfdi?.xml_cfdi ?? null
     let pdfContent = cfdi?.pdf_b64  ?? null
-    const cfdiId   = cfdi?.pac_cfdi_id ?? v.pac_cfdi_id
+    const cfdiId   = v.folio_fiscal ?? cfdi?.pac_cfdi_id ?? v.pac_cfdi_id
 
     if ((!xmlContent || !pdfContent) && cfdiId) {
       const [xmlRes, pdfRes] = await Promise.all([

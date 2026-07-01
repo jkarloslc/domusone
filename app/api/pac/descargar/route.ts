@@ -25,6 +25,8 @@ async function getPacConfig() {
 }
 
 // GET /api/pac/descargar?cfdiId=XXX&format=xml|pdf
+// cfdiId debe ser el folio_fiscal (UUID del SAT) — Facturama valida ese
+// parámetro como UUID y rechaza el Id interno de Facturama (pac_cfdi_id).
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -41,7 +43,9 @@ export async function GET(req: NextRequest) {
     const pac = await getPacConfig()
     const authHeader = 'Basic ' + Buffer.from(`${pac.user}:${pac.pass}`).toString('base64')
 
-    const res = await fetch(`${pac.url}/cfdi/-/${format}/${cfdiId}`, {
+    // Sin guion tras /cfdi/ — "/cfdi/-/{format}/{id}" no es una ruta válida
+    // de Facturama y siempre responde "El tipo {format} no es válido".
+    const res = await fetch(`${pac.url}/cfdi/${format}/${cfdiId}`, {
       headers: { Authorization: authHeader },
     })
 
