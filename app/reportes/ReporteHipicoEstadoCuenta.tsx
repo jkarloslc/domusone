@@ -76,15 +76,15 @@ export default function ReporteHipicoEstadoCuenta() {
     if (idArr === '') return
     setLoading(true); setBuscado(true)
 
-    // Cargos del período
+    // Cargos del período — filtra por fecha_vencimiento (campo más confiable)
     const { data: cargosData } = await dbHip
       .from('cxc_hip')
       .select('id, concepto, periodo, monto_final, saldo, fecha_vencimiento, fecha_emision, status')
       .eq('id_arrendatario_fk', idArr)
-      .gte('fecha_emision', fechaDesde)
-      .lte('fecha_emision', fechaHasta)
+      .gte('fecha_vencimiento', fechaDesde)
+      .lte('fecha_vencimiento', fechaHasta)
       .neq('status', 'CANCELADO')
-      .order('fecha_emision', { ascending: true })
+      .order('fecha_vencimiento', { ascending: true })
 
     // Pagos del período
     const { data: pagosData } = await dbHip
