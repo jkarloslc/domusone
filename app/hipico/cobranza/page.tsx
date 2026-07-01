@@ -123,7 +123,7 @@ export default function CobranzaHipicoPage() {
   const [showAsig, setShowAsig]             = useState(false)
   const [editAsig, setEditAsig]             = useState<AsignacionData | undefined>()
   const [modoCuotas, setModoCuotas]         = useState<{ idAsig: number; monto: number } | null>(null)
-  const [showCobrar, setShowCobrar]         = useState<{ cuotas: CuotaPendiente[]; nombreArr: string; idArr: number; nombreCaballeriza: string } | null>(null)
+  const [showCobrar, setShowCobrar]         = useState<{ cuotas: CuotaPendiente[]; nombreArr: string; idArr: number; nombreCaballeriza: string; periodoDefault?: string } | null>(null)
   const [generandoCargo, setGenerandoCargo] = useState<number | null>(null)
   const [showBitacora, setShowBitacora]     = useState<{ idArr: number; nombre: string } | null>(null)
 
@@ -141,6 +141,7 @@ export default function CobranzaHipicoPage() {
   const [cuotasMes, setCuotasMes]           = useState<CuotaMes[]>([])
   const [carteraVencida, setCarteraVencida] = useState({ count: 0, monto: 0 })
   const [loadingC, setLoadingC]             = useState(false)
+  const [expandidoC, setExpandidoC]         = useState<number | null>(null)
   const [busquedaC, setBusquedaC]           = useState('')
   const [filtroStatusC, setFiltroStatusC]   = useState<'todas' | 'por_cobrar' | 'pagadas'>('todas')
   const [showGenerar, setShowGenerar]       = useState(false)
@@ -233,6 +234,7 @@ export default function CobranzaHipicoPage() {
       nombreArr: fmtNombre(a.cat_arrendatarios),
       idArr: a.id_arrendatario_fk,
       nombreCaballeriza: cab,
+      periodoDefault: hoy.slice(0, 7),
     })
   }
 
@@ -311,6 +313,23 @@ export default function CobranzaHipicoPage() {
       nombreArr: fmtNombre(c.cat_arrendatarios),
       idArr: c.id_arrendatario_fk,
       nombreCaballeriza: cab,
+      periodoDefault: mesCobranza,
+    })
+  }
+
+  // Cobrar todas las cuotas pendientes de un arrendatario (todas sus caballerizas) en un solo recibo
+  const abrirCobroArrendatarioMes = async (idArr: number, nombreArr: string) => {
+    const { data } = await dbHip.from('cxc_hip')
+      .select('id, concepto, periodo, monto_final, saldo, status, fecha_vencimiento')
+      .eq('id_arrendatario_fk', idArr)
+      .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+      .order('fecha_vencimiento', { ascending: true })
+    setShowCobrar({
+      cuotas: ((data ?? []) as any[]).map(x => ({ ...x, saldo: x.saldo ?? x.monto_final })) as CuotaPendiente[],
+      nombreArr,
+      idArr,
+      nombreCaballeriza: '',
+      periodoDefault: mesCobranza,
     })
   }
 
@@ -517,6 +536,36 @@ export default function CobranzaHipicoPage() {
     const q = norm(busquedaC)
     return norm(fmtNombre(c.cat_arrendatarios)).includes(q) || norm(c.concepto).includes(q)
   })
+
+  // ── Agrupación por arrendatario (para cobrar todas sus caballerizas de una vez) ──
+  const gruposArrendatario = (() => {
+    const map = new Map<number, { idArr: number; nombreArr: string; cuotas: CuotaMes[] }>()
+    for (const c of cuotasFiltradas) {
+      let g = map.get(c.id_arrendatario_fk)
+      if (!g) { g = { idArr: c.id_arrendatario_fk, nombreArr: fmtNombre(c.cat_arrendatarios), cuotas: [] }; map.set(c.id_arrendatario_fk, g) }
+      g.cuotas.push(c)
+    }
+    return Array.from(map.values())
+      .map(g => {
+        const totalMonto = g.cuotas.reduce((s, c) => s + c.monto_final, 0)
+        const totalSaldo = g.cuotas.reduce((s, c) => s + saldoCuota(c), 0)
+        const caballerizas = Array.from(new Set(g.cuotas.map(c => c.ctrl_asignaciones?.cat_caballerizas?.clave).filter(Boolean))) as string[]
+        return { ...g, totalMonto, totalSaldo, caballerizas }
+      })
+      .sort((a, b) => b.totalSaldo - a.totalSaldo || a.nombreArr.localeCompare(b.nombreArr))
+  })()
+
+  const SEVERIDAD: Record<string, number> = { 'Vencida': 3, 'Parcial': 2, 'Por vencer': 1, 'Pagada': 0 }
+  const situacionGrupo = (cuotas: CuotaMes[]) => {
+    let peor = { label: 'Pagada', bg: '#dcfce7', color: '#15803d' }
+    let peorSev = -1
+    for (const c of cuotas) {
+      const s = situacionCuota(c)
+      const sev = SEVERIDAD[s.label] ?? 0
+      if (sev > peorSev) { peorSev = sev; peor = s }
+    }
+    return peor
+  }
 
   // ── KPIs Cobranza ─────────────────────────────────────────
   const emitido   = cuotasMes.reduce((s, c) => s + c.monto_final, 0)
@@ -862,7 +911,7 @@ export default function CobranzaHipicoPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                    {['Arrendatario', 'Caballeriza', 'Concepto', 'Monto', 'Saldo', 'Situación', 'Fecha pago', ''].map(h => (
+                    {['', 'Arrendatario', 'Caballerizas', 'Cuotas', 'Monto', 'Saldo', 'Situación', ''].map(h => (
                       <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -870,40 +919,90 @@ export default function CobranzaHipicoPage() {
                 <tbody>
                   {loadingC ? (
                     <tr><td colSpan={8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={16} /></td></tr>
-                  ) : cuotasFiltradas.length === 0 ? (
+                  ) : gruposArrendatario.length === 0 ? (
                     <tr><td colSpan={8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
                       Sin cuotas para {mesLabel}
                     </td></tr>
-                  ) : cuotasFiltradas.map(c => {
-                    const sit   = situacionCuota(c)
-                    const saldo = saldoCuota(c)
-                    const vencida = c.fecha_vencimiento && c.fecha_vencimiento < hoy && saldo > 0
+                  ) : gruposArrendatario.map(g => {
+                    const abierto = expandidoC === g.idArr
+                    const sit = situacionGrupo(g.cuotas)
                     return (
-                      <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                        <td style={{ padding: '10px 14px', fontWeight: 500 }}>{fmtNombre(c.cat_arrendatarios)}</td>
-                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>
-                          {c.ctrl_asignaciones?.cat_caballerizas?.clave ?? '—'}
-                        </td>
-                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.concepto}</td>
-                        <td style={{ padding: '10px 14px', fontWeight: 600, color: '#b45309', whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
-                        <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap', color: saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt$(saldo)}</td>
-                        <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sit.bg, color: sit.color }}>{sit.label}</span>
-                        </td>
-                        <td style={{ padding: '10px 14px', color: vencida ? '#dc2626' : 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>
-                          {c.fecha_pago ? fmtFecha(c.fecha_pago) : '—'}
-                        </td>
-                        <td style={{ padding: '10px 14px' }}>
-                          {puedeEscribir && saldo > 0 && (
-                            <button onClick={() => abrirCobroMes(c)}
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', borderRadius: 6, border: 'none', background: '#b45309', color: '#fff', cursor: 'pointer' }}>
-                              <DollarSign size={12} /> Cobrar
-                            </button>
-                          )}
-                        </td>
-                      </tr>
+                      <>
+                        <tr key={g.idArr}
+                          onClick={() => setExpandidoC(abierto ? null : g.idArr)}
+                          style={{ borderBottom: abierto ? 'none' : '1px solid var(--border)', cursor: 'pointer', background: abierto ? '#fef9f5' : '' }}
+                          onMouseEnter={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)' }}
+                          onMouseLeave={e => { if (!abierto) (e.currentTarget as HTMLElement).style.background = '' }}>
+                          <td style={{ padding: '10px 10px 10px 14px', width: 28, color: '#94a3b8' }}>
+                            {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          </td>
+                          <td style={{ padding: '10px 14px', fontWeight: 500 }}>{g.nombreArr}</td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {g.caballerizas.length > 0 ? g.caballerizas.join(', ') : '—'}
+                          </td>
+                          <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{g.cuotas.length}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#b45309', whiteSpace: 'nowrap' }}>{fmt$(g.totalMonto)}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap', color: g.totalSaldo > 0 ? '#dc2626' : '#15803d' }}>{fmt$(g.totalSaldo)}</td>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sit.bg, color: sit.color }}>{sit.label}</span>
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            {puedeEscribir && g.totalSaldo > 0 && (
+                              <button onClick={e => { e.stopPropagation(); abrirCobroArrendatarioMes(g.idArr, g.nombreArr) }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 10px', borderRadius: 6, border: 'none', background: '#b45309', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                <DollarSign size={12} /> Cobrar todo
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+
+                        {abierto && (
+                          <tr key={`${g.idArr}-det`}>
+                            <td colSpan={8} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
+                              <div style={{ background: '#fef9f5', padding: '4px 20px 14px 48px' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                  <thead>
+                                    <tr>
+                                      {['Caballeriza', 'Concepto', 'Monto', 'Saldo', 'Situación', 'Fecha pago', ''].map(h => (
+                                        <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {g.cuotas.map(c => {
+                                      const sitC   = situacionCuota(c)
+                                      const saldo  = saldoCuota(c)
+                                      const vencida = c.fecha_vencimiento && c.fecha_vencimiento < hoy && saldo > 0
+                                      return (
+                                        <tr key={c.id} style={{ borderTop: '1px solid #fed7aa' }}>
+                                          <td style={{ padding: '7px 10px', color: '#64748b' }}>{c.ctrl_asignaciones?.cat_caballerizas?.clave ?? '—'}</td>
+                                          <td style={{ padding: '7px 10px', color: '#475569', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.concepto}</td>
+                                          <td style={{ padding: '7px 10px', fontWeight: 600, color: '#b45309', whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
+                                          <td style={{ padding: '7px 10px', fontWeight: 700, whiteSpace: 'nowrap', color: saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt$(saldo)}</td>
+                                          <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 600, background: sitC.bg, color: sitC.color }}>{sitC.label}</span>
+                                          </td>
+                                          <td style={{ padding: '7px 10px', color: vencida ? '#dc2626' : '#94a3b8', whiteSpace: 'nowrap' }}>
+                                            {c.fecha_pago ? fmtFecha(c.fecha_pago) : '—'}
+                                          </td>
+                                          <td style={{ padding: '7px 10px' }}>
+                                            {puedeEscribir && saldo > 0 && (
+                                              <button onClick={e => { e.stopPropagation(); abrirCobroMes(c) }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, padding: '3px 9px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                                <DollarSign size={11} /> Cobrar
+                                              </button>
+                                            )}
+                                          </td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     )
                   })}
                 </tbody>
@@ -1179,6 +1278,7 @@ export default function CobranzaHipicoPage() {
           nombreArrendatario={showCobrar.nombreArr}
           idArrendatario={showCobrar.idArr}
           nombreCaballeriza={showCobrar.nombreCaballeriza}
+          periodoDefault={showCobrar.periodoDefault}
           onClose={() => setShowCobrar(null)}
           onSaved={() => { fetchAsignaciones(); if (tab === 'cobranza') fetchCobranza(); fetchRecibos() }}
         />

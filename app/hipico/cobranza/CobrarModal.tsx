@@ -26,6 +26,8 @@ type Props = {
   nombreArrendatario: string
   idArrendatario:     number
   nombreCaballeriza?: string
+  /** Periodo (YYYY-MM) que se preselecciona por defecto; las cuotas de otros periodos quedan visibles pero sin marcar */
+  periodoDefault?:    string
   onClose:            () => void
   onSaved:            () => void
 }
@@ -153,12 +155,20 @@ export async function printReciboHip(reciboId: number, folio: string, nombreArre
 }
 
 // ── Componente ───────────────────────────────────────────────
-export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario, nombreCaballeriza, onClose, onSaved }: Props) {
+export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario, nombreCaballeriza, periodoDefault, onClose, onSaved }: Props) {
   const { authUser } = useAuth()
 
   const [formasPago, setFormasPago] = useState<FormaPago[]>([])
   const [loading, setLoading]       = useState(true)
-  const [seleccionados, setSeleccionados] = useState<Set<number>>(() => new Set(cuotas.map(c => c.id)))
+  const [seleccionados, setSeleccionados] = useState<Set<number>>(() => {
+    // Por defecto solo se marcan las cuotas del periodo actual; los meses atrasados quedan
+    // visibles pero sin seleccionar para no tener que destildarlos uno por uno.
+    if (periodoDefault) {
+      const delPeriodo = cuotas.filter(c => c.periodo === periodoDefault)
+      if (delPeriodo.length > 0) return new Set(delPeriodo.map(c => c.id))
+    }
+    return new Set(cuotas.map(c => c.id))
+  })
   const [pagos, setPagos] = useState<PagoLinea[]>([{ id_forma_fk: 0, forma_nombre: '', monto: '', referencia: '' }])
   const [montoParcial, setMontoParcial] = useState<string>(() => {
     const t = cuotas.reduce((s, c) => s + c.saldo, 0)
@@ -175,9 +185,9 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
   const [genTicket, setGenTicket]   = useState(false)
   const [ticketErr, setTicketErr]   = useState('')
 
-  // Cargar formas de pago y pre-llenar monto con el total inicial
+  // Cargar formas de pago y pre-llenar monto con el total de la selección inicial
   useEffect(() => {
-    const totalInicial = cuotas.reduce((s, c) => s + c.saldo, 0)
+    const totalInicial = cuotas.filter(c => seleccionados.has(c.id)).reduce((s, c) => s + c.saldo, 0)
     dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => {
         const fps = (data as FormaPago[] | null) ?? []
@@ -205,6 +215,18 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
 
   const toggleTodas = () =>
     setSeleccionados(prev => prev.size === cuotas.length ? new Set() : new Set(cuotas.map(c => c.id)))
+
+  // Cuotas de meses anteriores al periodo por defecto (adeudo) — se muestran pero no se marcan solas
+  const cuotasAnteriores    = periodoDefault ? cuotas.filter(c => c.periodo !== periodoDefault) : []
+  const anterioresSeleccionadas = cuotasAnteriores.filter(c => seleccionados.has(c.id))
+  const todasAnterioresSel  = cuotasAnteriores.length > 0 && anterioresSeleccionadas.length === cuotasAnteriores.length
+  const montoAnteriores     = cuotasAnteriores.reduce((s, c) => s + c.saldo, 0)
+  const toggleAnteriores = () =>
+    setSeleccionados(prev => {
+      const next = new Set(prev)
+      cuotasAnteriores.forEach(c => todasAnterioresSel ? next.delete(c.id) : next.add(c.id))
+      return next
+    })
 
   const cuotasSel      = cuotas.filter(c => seleccionados.has(c.id))
   const montoTotal     = cuotasSel.reduce((s, c) => s + c.saldo, 0)
@@ -462,9 +484,13 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
 
         {/* Cuotas pendientes */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cuotas pendientes — selecciona las que se liquidan</span>
-            {cuotas.length > 1 && (
+            {cuotasAnteriores.length > 0 ? (
+              <button onClick={toggleAnteriores} style={{ fontSize: 11, fontWeight: 600, color: todasAnterioresSel ? '#64748b' : '#d97706', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
+                {todasAnterioresSel ? 'Excluir meses anteriores' : `Incluir meses anteriores (+${cuotasAnteriores.length} · ${fmt$(montoAnteriores)})`}
+              </button>
+            ) : cuotas.length > 1 && (
               <button onClick={toggleTodas} style={{ fontSize: 11, fontWeight: 600, color: '#b45309', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
                 {seleccionados.size === cuotas.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
               </button>
@@ -477,6 +503,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
               {cuotas.map((c, i) => {
                 const checked  = seleccionados.has(c.id)
                 const vencido  = c.status === 'Vencido' || (c.fecha_vencimiento && c.fecha_vencimiento < hoyLocal())
+                const esMesActual = !!periodoDefault && c.periodo === periodoDefault
                 return (
                   <div key={c.id} onClick={() => toggle(c.id)}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer',
@@ -488,6 +515,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
                       <div style={{ fontSize: 13, fontWeight: checked ? 600 : 400 }}>{c.concepto}</div>
                       {c.periodo && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtMes(c.periodo)}</div>}
                     </div>
+                    {esMesActual && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#dbeafe', color: '#1d4ed8', fontWeight: 600, whiteSpace: 'nowrap' }}>Mes actual</span>}
                     {vencido && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#fee2e2', color: '#dc2626', fontWeight: 600 }}>Vencida</span>}
                     <div style={{ fontWeight: 700, color: checked ? '#b45309' : 'var(--text-primary)', fontSize: 13 }}>{fmt$(c.saldo)}</div>
                   </div>
