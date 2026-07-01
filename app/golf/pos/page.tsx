@@ -1794,7 +1794,7 @@ ${operaciones.length > 0 ? `
           formaPagoStr={receptorPOS._formaPago ?? ''}
           onClose={() => setFacturandoPOS(null)}
           onSaved={() => { setFacturandoPOS(null); fetchVentas(); if (tab === 'facturas') fetchFacturas() }}
-          saveFactura={async (folio_fiscal, xml, pdf_url, pac_cfdi_id) => {
+          saveFactura={async (folio_fiscal, xml, pdf_url, pac_cfdi_id, receptor) => {
             await dbGolf.from('ctrl_ventas').update({
               folio_fiscal,
               facturada:   true,
@@ -1807,9 +1807,9 @@ ${operaciones.length > 0 ? `
               pac_cfdi_id:     pac_cfdi_id ?? null,
               xml_cfdi:        xml ?? null,
               pdf_b64,
-              receptor_rfc:    receptorPOS.rfc ?? null,
-              receptor_nombre: receptorPOS.razon_social ?? null,
-              receptor_email:  receptorPOS.email ?? null,
+              receptor_rfc:    receptor?.rfc          ?? receptorPOS.rfc ?? null,
+              receptor_nombre: receptor?.razon_social ?? receptorPOS.razon_social ?? null,
+              receptor_email:  receptor?.email        ?? receptorPOS.email ?? null,
               fecha_timbrado:  new Date().toISOString(),
               usuario_timbra:  authUser?.nombre ?? null,
             }, { onConflict: 'id_venta_fk' })

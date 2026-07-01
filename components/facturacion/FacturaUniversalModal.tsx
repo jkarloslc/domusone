@@ -34,7 +34,10 @@ export type Props = {
   formaPagoStr?:     string       // nombre de la forma de pago (para mapear al SAT)
   onClose:           () => void
   onSaved:           (folio_fiscal: string) => void
-  saveFactura:       (folio_fiscal: string, xml?: string, pdf_url?: string, pac_cfdi_id?: string) => Promise<void>
+  // receptor: datos finales tal como quedaron en el modal (RFC/email pueden
+  // haber cambiado respecto a receptorInit — p.ej. al usar "Público en
+  // General" o al capturar el correo a mano) — usarlos, no receptorInit.
+  saveFactura:       (folio_fiscal: string, xml?: string, pdf_url?: string, pac_cfdi_id?: string, receptor?: ReceptorPreFill) => Promise<void>
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -175,7 +178,7 @@ export default function FacturaUniversalModal({
 
     // Guardar folio_fiscal en la BD
     try {
-      await saveFactura(res.folio_fiscal!, res.xml_cfdi, res.pdf_url, res.pac_cfdi_id)
+      await saveFactura(res.folio_fiscal!, res.xml_cfdi, res.pdf_url, res.pac_cfdi_id, receptor)
     } catch (e: any) {
       setError('Factura timbrada pero no se pudo guardar el folio: ' + e.message)
       setSaving(false)
