@@ -165,6 +165,8 @@ export default function CobranzaHipicoPage() {
   const [busquedaQ, setBusquedaQ]           = useState('')
   const [filtroStatusQ, setFiltroStatusQ]   = useState<'todas' | 'PENDIENTE' | 'PAGADO' | 'PAGO_PARCIAL' | 'CANCELADO'>('todas')
   const [eliminandoQ, setEliminandoQ]       = useState<number | null>(null)
+  const [paginaQ, setPaginaQ]               = useState(1)
+  const PAGE_SIZE_Q = 50
   const esSuperadmin = authUser?.rol === 'superadmin'
 
   // ── Config ────────────────────────────────────────────────
@@ -533,6 +535,9 @@ export default function CobranzaHipicoPage() {
     const q = norm(busquedaQ)
     return norm(fmtNombre(c.cat_arrendatarios)).includes(q) || norm(c.concepto).includes(q) || norm(c.periodo ?? '').includes(q)
   })
+  const totalPaginasQ  = Math.max(1, Math.ceil(cuotasAllFiltradas.length / PAGE_SIZE_Q))
+  const paginaQSafe    = Math.min(paginaQ, totalPaginasQ)
+  const cuotasPagina   = cuotasAllFiltradas.slice((paginaQSafe - 1) * PAGE_SIZE_Q, paginaQSafe * PAGE_SIZE_Q)
 
   const TABS: { key: Tab; label: string; icon: any }[] = [
     { key: 'asignaciones', label: 'Asignaciones',    icon: AlertCircle  },
@@ -973,7 +978,7 @@ export default function CobranzaHipicoPage() {
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 360 }}>
               <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
-                placeholder="Buscar arrendatario, concepto o periodo…" value={busquedaQ} onChange={e => setBusquedaQ(e.target.value)} />
+                placeholder="Buscar arrendatario, concepto o periodo…" value={busquedaQ} onChange={e => { setBusquedaQ(e.target.value); setPaginaQ(1) }} />
               {busquedaQ && <button onClick={() => setBusquedaQ('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
             </div>
             <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
@@ -984,7 +989,7 @@ export default function CobranzaHipicoPage() {
                 { key: 'PAGADO',       label: 'Pagado',       color: '#16a34a' },
                 { key: 'CANCELADO',    label: 'Cancelado',    color: '#64748b' },
               ] as const).map(f => (
-                <button key={f.key} onClick={() => setFiltroStatusQ(f.key)} style={{
+                <button key={f.key} onClick={() => { setFiltroStatusQ(f.key); setPaginaQ(1) }} style={{
                   padding: '7px 12px', fontSize: 12, fontWeight: filtroStatusQ === f.key ? 600 : 400,
                   background: filtroStatusQ === f.key ? f.color : '#fff',
                   color: filtroStatusQ === f.key ? '#fff' : '#94a3b8',
@@ -1014,7 +1019,7 @@ export default function CobranzaHipicoPage() {
                     <tr><td colSpan={esSuperadmin ? 9 : 8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={16} /></td></tr>
                   ) : cuotasAllFiltradas.length === 0 ? (
                     <tr><td colSpan={esSuperadmin ? 9 : 8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>Sin cuotas registradas</td></tr>
-                  ) : cuotasAllFiltradas.map(c => {
+                  ) : cuotasPagina.map(c => {
                     const saldo = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
                     const vencida = c.fecha_vencimiento && c.fecha_vencimiento < hoy && saldo > 0
                     const statusCfg: Record<string, { bg: string; color: string }> = {
@@ -1061,8 +1066,30 @@ export default function CobranzaHipicoPage() {
               </table>
             </div>
             {cuotasAllFiltradas.length > 0 && (
-              <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>
-                {cuotasAllFiltradas.length} cuota{cuotasAllFiltradas.length !== 1 ? 's' : ''}
+              <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {((paginaQSafe - 1) * PAGE_SIZE_Q) + 1}–{Math.min(paginaQSafe * PAGE_SIZE_Q, cuotasAllFiltradas.length)} de {cuotasAllFiltradas.length} cuota{cuotasAllFiltradas.length !== 1 ? 's' : ''}
+                </span>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {([
+                    { label: '«', title: 'Primera', onClick: () => setPaginaQ(1),               disabled: paginaQSafe === 1 },
+                    { label: '‹', title: 'Anterior', onClick: () => setPaginaQ(p => p - 1),    disabled: paginaQSafe === 1 },
+                    { label: '›', title: 'Siguiente', onClick: () => setPaginaQ(p => p + 1),   disabled: paginaQSafe === totalPaginasQ },
+                    { label: '»', title: 'Última',   onClick: () => setPaginaQ(totalPaginasQ),  disabled: paginaQSafe === totalPaginasQ },
+                  ]).map(btn => (
+                    <button key={btn.title} title={btn.title} onClick={btn.onClick} disabled={btn.disabled} style={{
+                      width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 6,
+                      background: btn.disabled ? '#f8fafc' : '#fff', color: btn.disabled ? '#cbd5e1' : '#475569',
+                      cursor: btn.disabled ? 'default' : 'pointer', transition: 'all 0.1s',
+                    }}>
+                      {btn.label}
+                    </button>
+                  ))}
+                  <span style={{ display: 'flex', alignItems: 'center', fontSize: 12, color: 'var(--text-muted)', padding: '0 4px' }}>
+                    Pág. {paginaQSafe} / {totalPaginasQ}
+                  </span>
+                </div>
               </div>
             )}
           </div>
