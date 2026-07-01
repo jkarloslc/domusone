@@ -4,7 +4,7 @@ import { dbHip, dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight,
-  CreditCard, Receipt, Settings, AlertCircle, Loader, Printer, DollarSign, Zap, FileText, ClipboardList, Calendar,
+  CreditCard, Receipt, Settings, AlertCircle, Loader, Printer, DollarSign, Zap, FileText, ClipboardList, Calendar, Trash2, List,
 } from 'lucide-react'
 import Link from 'next/link'
 import AsignacionModal, { type AsignacionData } from './AsignacionModal'
@@ -13,7 +13,26 @@ import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 import AgendaCobranza from '@/components/cobranza/AgendaCobranza'
 
 // ── Tipos ──────────────────────────────────────────────────────
-type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'config' | 'agenda'
+type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'cuotas' | 'config' | 'agenda'
+
+type CuotaRow = {
+  id: number
+  concepto: string
+  periodo: string | null
+  monto_original: number
+  descuento: number
+  monto_final: number
+  saldo: number | null
+  status: string
+  fecha_emision: string | null
+  fecha_vencimiento: string | null
+  fecha_pago: string | null
+  tipo: string | null
+  id_arrendatario_fk: number
+  id_asignacion_fk: number | null
+  cat_arrendatarios: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string } | null
+  ctrl_asignaciones: { cat_caballerizas: { clave: string; nombre: string | null } | null } | null
+}
 
 type Asignacion = {
   id: number
@@ -139,6 +158,14 @@ export default function CobranzaHipicoPage() {
   const [imprimiendo, setImprimiendo]       = useState(false)
   const [genTicketR, setGenTicketR]         = useState(false)
   const [ticketErrR, setTicketErrR]         = useState('')
+
+  // ── Cuotas (listado completo) ─────────────────────────────
+  const [cuotasAll, setCuotasAll]           = useState<CuotaRow[]>([])
+  const [loadingQ, setLoadingQ]             = useState(false)
+  const [busquedaQ, setBusquedaQ]           = useState('')
+  const [filtroStatusQ, setFiltroStatusQ]   = useState<'todas' | 'PENDIENTE' | 'PAGADO' | 'PAGO_PARCIAL' | 'CANCELADO'>('todas')
+  const [eliminandoQ, setEliminandoQ]       = useState<number | null>(null)
+  const esSuperadmin = authUser?.rol === 'superadmin'
 
   // ── Config ────────────────────────────────────────────────
   const [tarifa, setTarifa]       = useState(0)
@@ -429,6 +456,28 @@ export default function CobranzaHipicoPage() {
     setTarifa(t); setTarifaEdit(t)
   }, [])
 
+  const fetchCuotasAll = useCallback(async () => {
+    setLoadingQ(true)
+    const { data } = await dbHip.from('cxc_hip')
+      .select(`id, concepto, periodo, monto_original, descuento, monto_final, saldo, status,
+        fecha_emision, fecha_vencimiento, fecha_pago, tipo, id_arrendatario_fk, id_asignacion_fk,
+        cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
+        ctrl_asignaciones(cat_caballerizas(clave, nombre))`)
+      .order('fecha_emision', { ascending: false })
+      .limit(500)
+    setCuotasAll(((data ?? []) as any[]) as CuotaRow[])
+    setLoadingQ(false)
+  }, [])
+
+  const handleEliminarCuota = async (id: number) => {
+    if (!confirm('¿Eliminar esta cuota? Esta acción no se puede deshacer.')) return
+    setEliminandoQ(id)
+    await dbHip.from('cxc_hip').delete().eq('id', id)
+    setCuotasAll(prev => prev.filter(c => c.id !== id))
+    setEliminandoQ(null)
+    fetchAsignaciones()
+  }
+
   const guardarTarifa = async () => {
     setSavingCfg(true)
     await dbHip.from('cfg_hip').update({ tarifa_mensual: tarifaEdit, updated_at: new Date().toISOString() }).eq('id', 1)
@@ -441,6 +490,7 @@ export default function CobranzaHipicoPage() {
   useEffect(() => { if (tab === 'cobranza') fetchCobranza() }, [tab, fetchCobranza])
   useEffect(() => { if (tab === 'recibos') fetchRecibos() }, [tab, fetchRecibos])
   useEffect(() => { if (tab === 'config') fetchConfig() }, [tab, fetchConfig])
+  useEffect(() => { if (tab === 'cuotas') fetchCuotasAll() }, [tab, fetchCuotasAll])
 
   // ── Filtros Asignaciones ──────────────────────────────────
   const asigFiltradas = asignaciones.filter(a => {
@@ -476,10 +526,19 @@ export default function CobranzaHipicoPage() {
     norm(r.folio).includes(norm(busquedaR))
   )
 
+  // ── Filtros Cuotas ────────────────────────────────────────
+  const cuotasAllFiltradas = cuotasAll.filter(c => {
+    if (filtroStatusQ !== 'todas' && c.status !== filtroStatusQ) return false
+    if (!busquedaQ.trim()) return true
+    const q = norm(busquedaQ)
+    return norm(fmtNombre(c.cat_arrendatarios)).includes(q) || norm(c.concepto).includes(q) || norm(c.periodo ?? '').includes(q)
+  })
+
   const TABS: { key: Tab; label: string; icon: any }[] = [
     { key: 'asignaciones', label: 'Asignaciones',    icon: AlertCircle  },
     { key: 'cobranza',     label: 'Cobranza',        icon: CreditCard   },
     { key: 'recibos',      label: 'Recibos',         icon: Receipt      },
+    { key: 'cuotas',       label: 'Cuotas',          icon: List         },
     { key: 'agenda',       label: 'Agenda Cobranza', icon: Calendar     },
     ...(esAdmin ? [{ key: 'config' as Tab, label: 'Configuración', icon: Settings }] : []),
   ]
@@ -901,6 +960,111 @@ export default function CobranzaHipicoPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════════════════
+          TAB: CUOTAS
+      ══════════════════════════════════════════════════════ */}
+      {tab === 'cuotas' && (
+        <>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 360 }}>
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                placeholder="Buscar arrendatario, concepto o periodo…" value={busquedaQ} onChange={e => setBusquedaQ(e.target.value)} />
+              {busquedaQ && <button onClick={() => setBusquedaQ('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+            </div>
+            <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+              {([
+                { key: 'todas',        label: 'Todas',        color: '#b45309' },
+                { key: 'PENDIENTE',    label: 'Pendiente',    color: '#dc2626' },
+                { key: 'PAGO_PARCIAL', label: 'Parcial',      color: '#d97706' },
+                { key: 'PAGADO',       label: 'Pagado',       color: '#16a34a' },
+                { key: 'CANCELADO',    label: 'Cancelado',    color: '#64748b' },
+              ] as const).map(f => (
+                <button key={f.key} onClick={() => setFiltroStatusQ(f.key)} style={{
+                  padding: '7px 12px', fontSize: 12, fontWeight: filtroStatusQ === f.key ? 600 : 400,
+                  background: filtroStatusQ === f.key ? f.color : '#fff',
+                  color: filtroStatusQ === f.key ? '#fff' : '#94a3b8',
+                  border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                }}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <button className="btn-ghost" onClick={fetchCuotasAll} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <RefreshCw size={13} />
+            </button>
+          </div>
+
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
+                    {['Arrendatario', 'Caballeriza', 'Concepto', 'Periodo', 'Monto', 'Saldo', 'Status', 'Vencimiento', ...(esSuperadmin ? [''] : [])].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingQ ? (
+                    <tr><td colSpan={esSuperadmin ? 9 : 8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={16} /></td></tr>
+                  ) : cuotasAllFiltradas.length === 0 ? (
+                    <tr><td colSpan={esSuperadmin ? 9 : 8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>Sin cuotas registradas</td></tr>
+                  ) : cuotasAllFiltradas.map(c => {
+                    const saldo = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
+                    const vencida = c.fecha_vencimiento && c.fecha_vencimiento < hoy && saldo > 0
+                    const statusCfg: Record<string, { bg: string; color: string }> = {
+                      PENDIENTE:    { bg: '#fef2f2', color: '#dc2626' },
+                      PAGO_PARCIAL: { bg: '#fffbeb', color: '#d97706' },
+                      PAGADO:       { bg: '#dcfce7', color: '#15803d' },
+                      CANCELADO:    { bg: '#f1f5f9', color: '#64748b' },
+                    }
+                    const sc = statusCfg[c.status] ?? { bg: '#f1f5f9', color: '#64748b' }
+                    const cab = c.ctrl_asignaciones?.cat_caballerizas
+                      ? `${c.ctrl_asignaciones.cat_caballerizas.clave}${c.ctrl_asignaciones.cat_caballerizas.nombre ? ` — ${c.ctrl_asignaciones.cat_caballerizas.nombre}` : ''}`
+                      : '—'
+                    return (
+                      <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--surface-hover)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                        <td style={{ padding: '10px 14px', fontWeight: 500 }}>{fmtNombre(c.cat_arrendatarios)}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>{cab}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.concepto}</td>
+                        <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12, whiteSpace: 'nowrap' }}>{c.periodo ? fmtMes(c.periodo) : '—'}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 600, color: '#b45309', whiteSpace: 'nowrap' }}>{fmt$(c.monto_final)}</td>
+                        <td style={{ padding: '10px 14px', fontWeight: 700, whiteSpace: 'nowrap', color: saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt$(saldo)}</td>
+                        <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sc.bg, color: sc.color }}>{c.status.replace('_', ' ')}</span>
+                        </td>
+                        <td style={{ padding: '10px 14px', fontSize: 12, whiteSpace: 'nowrap', color: vencida ? '#dc2626' : 'var(--text-muted)' }}>
+                          {fmtFecha(c.fecha_vencimiento)}
+                        </td>
+                        {esSuperadmin && (
+                          <td style={{ padding: '10px 14px' }}>
+                            <button
+                              onClick={() => handleEliminarCuota(c.id)}
+                              disabled={eliminandoQ === c.id}
+                              title="Eliminar cuota"
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', opacity: eliminandoQ === c.id ? 0.5 : 1 }}>
+                              {eliminandoQ === c.id ? <Loader size={12} /> : <Trash2 size={12} />}
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {cuotasAllFiltradas.length > 0 && (
+              <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>
+                {cuotasAllFiltradas.length} cuota{cuotasAllFiltradas.length !== 1 ? 's' : ''}
+              </div>
+            )}
           </div>
         </>
       )}
