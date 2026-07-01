@@ -9,10 +9,12 @@ async function getPacConfig() {
     process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
   const db = supabase.schema('cfg' as any)
-  const { data } = await db
+  const { data, error } = await db
     .from('configuracion')
     .select('clave, valor')
     .in('clave', ['pac_url', 'pac_user', 'pac_pass'])
+
+  if (error) throw new Error(`No se pudo leer cfg.configuracion: ${error.message}`)
 
   const cfg: Record<string, string> = {}
   ;(data ?? []).forEach((r: any) => { cfg[r.clave] = r.valor ?? '' })
