@@ -49,13 +49,13 @@ const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
 
 export default function ReporteHipicoEstadoCuenta() {
   const hoy = new Date()
-  const primerMes = new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1).toISOString().split('T')[0]
-  const ultimoMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().split('T')[0]
+  const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0]
+  const hoyIso       = hoy.toISOString().split('T')[0]
 
   const [arrendatarios, setArrendatarios] = useState<Arrendatario[]>([])
   const [idArr, setIdArr] = useState<number | ''>('')
-  const [fechaDesde, setFechaDesde] = useState(primerMes)
-  const [fechaHasta, setFechaHasta] = useState(ultimoMes)
+  const [fechaDesde, setFechaDesde] = useState(primerDiaMes)
+  const [fechaHasta, setFechaHasta] = useState(hoyIso)
 
   const [cargos, setCargos] = useState<Cargo[]>([])
   const [pagos, setPagos] = useState<Pago[]>([])
@@ -113,27 +113,34 @@ export default function ReporteHipicoEstadoCuenta() {
   return (
     <div>
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
-        <div>
-          <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Arrendatario *</label>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Arrendatario *</label>
           <select className="input" value={idArr} onChange={e => setIdArr(e.target.value ? Number(e.target.value) : '')}
-            style={{ fontSize: 12, minWidth: 220 }}>
+            style={{ fontSize: 13, minWidth: 240, height: 36 }}>
             <option value="">— Seleccionar —</option>
             {arrendatarios.map(a => <option key={a.id} value={a.id}>{fmtNombre(a)}</option>)}
           </select>
         </div>
-        <div>
-          <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Desde</label>
-          <input className="input" type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} style={{ fontSize: 12 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Desde</label>
+          <input className="input" type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)}
+            style={{ fontSize: 13, height: 36, width: 150 }} />
         </div>
-        <div>
-          <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Hasta</label>
-          <input className="input" type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={{ fontSize: 12 }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Hasta</label>
+          <input className="input" type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)}
+            style={{ fontSize: 13, height: 36, width: 150 }} />
         </div>
-        <button className="btn-primary" onClick={fetchData} disabled={idArr === '' || loading} style={{ fontSize: 12 }}>
+        <button className="btn-primary" onClick={fetchData} disabled={idArr === '' || loading}
+          style={{ fontSize: 13, height: 36, padding: '0 20px', alignSelf: 'flex-end' }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && <PrintBar title={`Estado-Cuenta-Hipico-${arrendatarioSel ? fmtNombre(arrendatarioSel).replace(/\s+/g,'-') : 'arrendatario'}`} count={cargos.length + pagos.length} reportTitle="Estado de Cuenta — Módulo Hípico" />}
+        {buscado && !loading && (
+          <div style={{ alignSelf: 'flex-end' }}>
+            <PrintBar title={`Estado-Cuenta-Hipico-${arrendatarioSel ? fmtNombre(arrendatarioSel).replace(/\s+/g,'-') : 'arrendatario'}`} count={cargos.length + pagos.length} reportTitle="Estado de Cuenta — Módulo Hípico" />
+          </div>
+        )}
       </div>
 
       {!buscado && (
