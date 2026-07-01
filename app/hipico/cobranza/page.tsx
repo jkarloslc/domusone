@@ -474,7 +474,12 @@ export default function CobranzaHipicoPage() {
   const handleEliminarCuota = async (id: number) => {
     if (!confirm('¿Eliminar esta cuota? Esta acción no se puede deshacer.')) return
     setEliminandoQ(id)
-    await dbHip.from('cxc_hip').delete().eq('id', id)
+    const { error } = await dbHip.from('cxc_hip').delete().eq('id', id)
+    if (error) {
+      alert(`Error al eliminar: ${error.message}`)
+      setEliminandoQ(null)
+      return
+    }
     setCuotasAll(prev => prev.filter(c => c.id !== id))
     setEliminandoQ(null)
     fetchAsignaciones()
