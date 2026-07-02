@@ -11,6 +11,7 @@ import {
 import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
 import CorteModal from './CorteModal'
+import { distribuirConceptosRecibo } from './distribucionIngreso'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
@@ -44,7 +45,9 @@ type Producto = {
   precio: number; costo: number; iva_pct: number; aplica_iva: boolean
   tipo: string; activo: boolean; id_centro_fk: number | null
   precio_variable: boolean
+  id_concepto_ingreso_fk: number | null
 }
+type ConceptoIngreso = { id: number; nombre: string; id_centro_ingreso_fk: number | null; activo: boolean }
 type FormaPago = { id: number; nombre: string; activo: boolean }
 type CfgPos = { id: number; razon_social: string; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string }
 
@@ -110,6 +113,7 @@ export default function POSPage() {
   const [savingProd,     setSavingProd]     = useState(false)
   const [centrosIngreso, setCentrosIngreso] = useState<CentroIngreso[]>([])
   const [centrosIngresoMap, setCentrosIngresoMap] = useState<CentroIngresoMap[]>([])
+  const [conceptosIngreso, setConceptosIngreso] = useState<ConceptoIngreso[]>([])
 
   // Cortes — acciones
   const [generandoRecibo, setGenerandoRecibo] = useState<number | null>(null)
@@ -218,13 +222,14 @@ export default function POSPage() {
       await dbGolf.from('cfg_pos').insert({ razon_social: 'Balvanera Golf, Polo & Country Club', leyenda_ticket: '¡Gracias por su visita!' })
     }
 
-    const [{ data: prods }, { data: fps }, { data: cfg }, { data: cis }, { data: maps }, { data: cfgClaves }] = await Promise.all([
+    const [{ data: prods }, { data: fps }, { data: cfg }, { data: cis }, { data: maps }, { data: cfgClaves }, { data: conceptos }] = await Promise.all([
       dbGolf.from('cat_productos_pos').select('*').order('nombre'),
       dbCfg.from('formas_pago').select('id, nombre, activo').eq('activo', true).order('nombre'),
       dbGolf.from('cfg_pos').select('*').single(),
       dbCfg.from('centros_ingreso').select('id, nombre, activo').eq('activo', true).order('nombre'),
       dbGolf.from('pos_centros_ingreso_map').select('id, id_centro_venta_fk, id_centro_ingreso_fk, activo'),
       dbCfg.from('configuracion').select('clave, valor').eq('clave', 'pos_exigir_facturacion_corte'),
+      dbCfg.from('conceptos_ingreso').select('id, nombre, id_centro_ingreso_fk, activo').eq('activo', true).order('orden'),
     ])
     const toggleVal = (cfgClaves ?? []).find((r: any) => r.clave === 'pos_exigir_facturacion_corte')?.valor
     setExigirFacturacion(toggleVal === 'true')
@@ -232,6 +237,7 @@ export default function POSPage() {
     setFormasPago((fps as FormaPago[]) ?? [])
     setCentrosIngreso((cis as CentroIngreso[]) ?? [])
     setCentrosIngresoMap((maps as CentroIngresoMap[]) ?? [])
+    setConceptosIngreso((conceptos as ConceptoIngreso[]) ?? [])
     const c = cfg as CfgPos
     setCfgPos(c)
     setCfgForm(c ?? {})
@@ -789,6 +795,12 @@ ${operaciones.length > 0 ? `
         )
       }
 
+      // Distribuir el ingreso por concepto (solo si el centro de ingreso lo requiere)
+      const { data: ventasCorte } = await dbGolf.from('ctrl_ventas').select('id').eq('id_corte_fk', c.id)
+      if (ventasCorte && ventasCorte.length > 0) {
+        await distribuirConceptosRecibo(recibo.id, idCentroIngreso, ventasCorte.map((v: any) => v.id))
+      }
+
       await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: recibo.id }).eq('id', c.id)
       fetchCortes()
       alert(`✅ Recibo de ingreso #${recibo.id} generado exitosamente.`)
@@ -815,6 +827,7 @@ ${operaciones.length > 0 ? `
       tipo:            editingProd.tipo ?? 'SERVICIO',
       activo:          editingProd.activo ?? true,
       id_centro_fk:    editingProd.id_centro_fk ?? null,
+      id_concepto_ingreso_fk: editingProd.id_concepto_ingreso_fk ?? null,
     }
     if (editingProd.id) {
       await dbGolf.from('cat_productos_pos').update(payload).eq('id', editingProd.id)
@@ -1586,7 +1599,25 @@ ${operaciones.length > 0 ? `
                         {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                       </select>
                     </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Concepto de Ingreso</label>
+                      <select value={editingProd.id_concepto_ingreso_fk ?? ''} onChange={e => setEditingProd(p => ({ ...p, id_concepto_ingreso_fk: e.target.value ? Number(e.target.value) : null }))}
+                        style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
+                        <option value="">— Sin asignar —</option>
+                        {conceptosIngreso
+                          .filter(co => {
+                            const idCI = editingProd.id_centro_fk != null ? getCentroIngresoIdForCentroVenta(editingProd.id_centro_fk) : null
+                            return idCI == null || co.id_centro_ingreso_fk === idCI
+                          })
+                          .map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
+                      </select>
+                    </div>
                   </div>
+                  {!editingProd.id_concepto_ingreso_fk && (
+                    <div style={{ marginTop: 8, fontSize: 11, color: '#d97706' }}>
+                      ⚠ Sin concepto asignado, este producto caerá en "Otros" (si existe) al distribuir el ingreso del corte.
+                    </div>
+                  )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
                       <input type="checkbox" checked={editingProd.aplica_iva ?? true} onChange={e => setEditingProd(p => ({ ...p, aplica_iva: e.target.checked }))} />
@@ -1618,6 +1649,7 @@ ${operaciones.length > 0 ? `
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {productos.map(p => {
                   const centro = centros.find(c => c.id === p.id_centro_fk)
+                  const concepto = conceptosIngreso.find(co => co.id === p.id_concepto_ingreso_fk)
                   return (
                     <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', border: '1px solid #f1f5f9', borderRadius: 8, background: p.activo ? '#fff' : '#f8fafc', opacity: p.activo ? 1 : 0.55 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1625,6 +1657,9 @@ ${operaciones.length > 0 ? `
                         <div style={{ fontSize: 11, color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
                           {p.sku && <span style={{ fontFamily: 'monospace' }}>{p.sku}</span>}
                           {centro && <span>📍 {centro.nombre}</span>}
+                          {concepto
+                            ? <span style={{ padding: '1px 7px', borderRadius: 10, background: '#f5f3ff', color: '#6d28d9', fontWeight: 600 }}>💰 {concepto.nombre}</span>
+                            : <span style={{ padding: '1px 7px', borderRadius: 10, background: '#fffbeb', color: '#d97706', fontWeight: 600 }}>Sin concepto</span>}
                           <span style={{ padding: '1px 7px', borderRadius: 10, background: p.tipo === 'PRODUCTO' ? '#eff6ff' : '#ecfdf5', color: p.tipo === 'PRODUCTO' ? '#1d4ed8' : '#065f46', fontWeight: 600 }}>
                             {p.tipo === 'PRODUCTO' ? '📦 Producto' : '⚡ Servicio'}
                           </span>

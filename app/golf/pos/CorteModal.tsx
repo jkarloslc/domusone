@@ -4,6 +4,7 @@ import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Save, Loader, AlertTriangle, CheckCircle } from 'lucide-react'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
+import { distribuirConceptosRecibo } from './distribucionIngreso'
 
 type FormaPagoResumen = { id_forma_fk: number; forma_nombre: string; monto: number }
 type DetalleProd     = { concepto: string; cantidad: number; monto: number }
@@ -235,6 +236,11 @@ export default function CorteModal({ idCentro, nombreCentro, exigirFacturacion =
             monto:             f.monto,
           }))
         )
+      }
+
+      // Distribuir el ingreso por concepto (solo si el centro de ingreso lo requiere)
+      if (recibo && ventasActivas && ventasActivas.length > 0) {
+        await distribuirConceptosRecibo(recibo.id, idCentroIngreso, ventasActivas.map((v: any) => v.id))
       }
 
       // Guardar FK en el corte
