@@ -78,6 +78,10 @@ export default function FacturaUniversalModal({
   const [enviandoEmail, setEnviandoEmail] = useState(false)
   const [emailEnviado, setEmailEnviado] = useState(false)
   const [resultado, setResultado] = useState<{ folio_fiscal: string; pdf_url?: string; xml_cfdi?: string; pac_cfdi_id?: string }>()
+  // Si el timbrado ya se realizó en el SAT pero falló el guardado local,
+  // guardamos aquí la respuesta del PAC para reintentar SOLO el guardado
+  // — nunca volver a llamar a timbrarCFDI, o se genera una factura duplicada real.
+  const [timbradoPendiente, setTimbradoPendiente] = useState<{ folio_fiscal: string; xml_cfdi?: string; pdf_url?: string; pac_cfdi_id?: string } | null>(null)
 
   // Tasas IVA fijas desde el catálogo — no editables en el modal
   const tasas = conceptos.map(c => c.tasa_iva ?? 0)
@@ -132,6 +136,25 @@ export default function FacturaUniversalModal({
 
   // ── Timbrar CFDI ─────────────────────────────────────────────
   const handleTimbrar = async () => {
+    // Si ya timbramos antes y solo falló el guardado local, NO volver a
+    // llamar al PAC (generaría una factura real duplicada) — solo reintentar
+    // el guardado con la misma respuesta que ya tenemos.
+    if (timbradoPendiente) {
+      setSaving(true); setError('')
+      try {
+        await saveFactura(timbradoPendiente.folio_fiscal, timbradoPendiente.xml_cfdi, timbradoPendiente.pdf_url, timbradoPendiente.pac_cfdi_id, receptor)
+      } catch (e: any) {
+        setError(`Factura YA timbrada en el SAT (folio ${timbradoPendiente.folio_fiscal}) pero sigue sin poder guardarse localmente: ${e.message}. No se generará una nueva factura — corrige el problema y usa "Reintentar guardar".`)
+        setSaving(false)
+        return
+      }
+      setResultado(timbradoPendiente)
+      setTimbradoPendiente(null)
+      setSaving(false)
+      setPaso(4)
+      return
+    }
+
     if (!receptor.rfc.trim())          { setError('RFC del receptor es obligatorio'); return }
     if (!receptor.razon_social.trim()) { setError('Razón Social es obligatoria'); return }
     if (!receptor.cp.trim())           { setError('Código Postal es obligatorio'); return }
@@ -176,16 +199,19 @@ export default function FacturaUniversalModal({
       return
     }
 
+    const timbrado = { folio_fiscal: res.folio_fiscal!, xml_cfdi: res.xml_cfdi, pdf_url: res.pdf_url, pac_cfdi_id: res.pac_cfdi_id }
+
     // Guardar folio_fiscal en la BD
     try {
-      await saveFactura(res.folio_fiscal!, res.xml_cfdi, res.pdf_url, res.pac_cfdi_id, receptor)
+      await saveFactura(timbrado.folio_fiscal, timbrado.xml_cfdi, timbrado.pdf_url, timbrado.pac_cfdi_id, receptor)
     } catch (e: any) {
-      setError('Factura timbrada pero no se pudo guardar el folio: ' + e.message)
+      setTimbradoPendiente(timbrado)
+      setError(`Factura timbrada en el SAT (folio ${timbrado.folio_fiscal}) pero no se pudo guardar localmente: ${e.message}. No vuelvas a timbrar — usa "Reintentar guardar" para solo guardar el folio ya emitido.`)
       setSaving(false)
       return
     }
 
-    setResultado({ folio_fiscal: res.folio_fiscal!, pdf_url: res.pdf_url, xml_cfdi: res.xml_cfdi, pac_cfdi_id: res.pac_cfdi_id })
+    setResultado(timbrado)
     setSaving(false)
     setPaso(4)
   }
@@ -295,9 +321,9 @@ export default function FacturaUniversalModal({
       )}
       {paso === 3 && (
         <button onClick={handleTimbrar} disabled={saving}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: timbradoPendiente ? '#d97706' : '#7c3aed', color: '#fff', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <FileCheck size={14} />}
-          {saving ? 'Timbrando…' : 'Timbrar CFDI'}
+          {saving ? 'Guardando…' : timbradoPendiente ? 'Reintentar guardar' : 'Timbrar CFDI'}
         </button>
       )}
     </div>
