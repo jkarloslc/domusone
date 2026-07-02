@@ -149,13 +149,23 @@ export async function POST(req: NextRequest) {
     const folioFiscal = pacResp.Complement?.TaxStamp?.Uuid ?? cfdiId
 
     // ── Descargar PDF y XML ────────────────────────────────────
+    // Facturama envuelve el contenido en JSON: {ContentEncoding, ContentType, Content}
+    // donde Content siempre viene en base64 (tanto para xml como para pdf).
+    const extraerContenido = (raw: string): string => {
+      try {
+        const parsed = JSON.parse(raw)
+        return parsed?.Content ?? raw
+      } catch { return raw }
+    }
+
     const [xmlRes, pdfRes] = await Promise.all([
       fetch(`${pac.url}/cfdi/xml/${folioFiscal}`, { headers: { Authorization: authHeader } }),
       fetch(`${pac.url}/cfdi/pdf/${folioFiscal}`, { headers: { Authorization: authHeader } }),
     ])
 
-    const xmlText = xmlRes.ok ? await xmlRes.text() : null
-    const pdfB64  = pdfRes.ok ? await pdfRes.text() : null   // Facturama devuelve base64
+    const xmlB64  = xmlRes.ok ? extraerContenido(await xmlRes.text()) : null
+    const xmlText = xmlB64 ? Buffer.from(xmlB64, 'base64').toString('utf-8') : null
+    const pdfB64  = pdfRes.ok ? extraerContenido(await pdfRes.text()) : null
 
     const pdfUrl  = pdfB64 ? `data:application/pdf;base64,${pdfB64}` : null
 

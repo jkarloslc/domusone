@@ -54,8 +54,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: `PAC error [${res.status}]: ${txt.substring(0, 200)}` }, { status: 400 })
     }
 
-    // Facturama devuelve base64 para PDF y XML plano para XML
-    const content = await res.text()
+    // Facturama envuelve el contenido en JSON: {ContentEncoding, ContentType, Content}
+    // donde Content siempre viene en base64 (tanto para xml como para pdf).
+    const rawText = await res.text()
+    let contentB64: string
+    try { contentB64 = JSON.parse(rawText)?.Content ?? rawText } catch { contentB64 = rawText }
+
+    const content = format === 'xml' ? Buffer.from(contentB64, 'base64').toString('utf-8') : contentB64
     return NextResponse.json({ content, format })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
