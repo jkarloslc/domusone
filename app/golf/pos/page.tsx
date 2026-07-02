@@ -319,7 +319,7 @@ export default function POSPage() {
         cp:             f.cp_fiscal      ?? '',
         regimen_fiscal: f.regimen_fiscal ?? '626',
         uso_cfdi:       f.uso_cfdi       ?? 'G03',
-        email:          f.email_fiscal   ?? '',
+        email:          f.email_fiscal   || (soc as any)?.email || '',
       }))
       const nombreCompleto = soc
         ? [(soc as any).nombre, (soc as any).apellido_paterno, (soc as any).apellido_materno].filter(Boolean).join(' ')
@@ -369,8 +369,13 @@ export default function POSPage() {
   // ── Reenviar email de factura ─────────────────────────────
   const reenviarEmailFactura = async (v: any) => {
     const cfdi = v._cfdi
-    const emailDest = cfdi?.receptor_email
-    if (!emailDest) { alert('Sin email registrado para esta factura'); return }
+    let emailDest = cfdi?.receptor_email
+    if (!emailDest) {
+      const capturado = prompt('Esta factura no tiene un correo registrado.\nIngresa el correo electrónico del destinatario:')
+      if (!capturado?.trim()) return
+      emailDest = capturado.trim()
+      await dbGolf.from('ctrl_ventas_cfdi').update({ receptor_email: emailDest }).eq('id_venta_fk', v.id)
+    }
     setReenvEmail(v.id)
 
     // Intentar obtener XML y PDF: primero desde BD, si no hay re-descarga del PAC
