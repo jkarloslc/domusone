@@ -1800,13 +1800,14 @@ ${operaciones.length > 0 ? `
           onClose={() => setFacturandoPOS(null)}
           onSaved={() => { setFacturandoPOS(null); fetchVentas(); if (tab === 'facturas') fetchFacturas() }}
           saveFactura={async (folio_fiscal, xml, pdf_url, pac_cfdi_id, receptor) => {
-            await dbGolf.from('ctrl_ventas').update({
+            const { error: errVenta } = await dbGolf.from('ctrl_ventas').update({
               folio_fiscal,
               facturada:   true,
               pac_cfdi_id: pac_cfdi_id ?? null,
             }).eq('id', facturandoPOS!.id)
+            if (errVenta) throw new Error(errVenta.message)
             const pdf_b64 = pdf_url?.replace(/^data:[^;]+;base64,/, '') ?? null
-            await dbGolf.from('ctrl_ventas_cfdi').upsert({
+            const { error: errCfdi } = await dbGolf.from('ctrl_ventas_cfdi').upsert({
               id_venta_fk:     facturandoPOS!.id,
               folio_fiscal,
               pac_cfdi_id:     pac_cfdi_id ?? null,
@@ -1818,6 +1819,7 @@ ${operaciones.length > 0 ? `
               fecha_timbrado:  new Date().toISOString(),
               usuario_timbra:  authUser?.nombre ?? null,
             }, { onConflict: 'id_venta_fk' })
+            if (errCfdi) throw new Error(errCfdi.message)
           }}
         />
       )}
