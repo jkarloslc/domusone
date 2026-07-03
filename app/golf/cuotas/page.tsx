@@ -4,7 +4,7 @@ import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   ChevronLeft, Plus, Zap, Search, X, RefreshCw,
-  Save, Loader, CreditCard, ChevronDown, ChevronRight, Trash2,
+  Save, Loader, CreditCard, ChevronDown, ChevronRight, Trash2, Pencil,
 } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
@@ -730,6 +730,83 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
   )
 }
 
+// ── EditarMontoModal (solo superadmin) ────────────────────────
+function EditarMontoModal({ cuota, onClose, onSaved }: { cuota: Cuota; onClose: () => void; onSaved: () => void }) {
+  const [montoOriginal, setMontoOriginal] = useState(String(cuota.monto_original))
+  const [descuento, setDescuento]         = useState(String(cuota.descuento))
+  const [saving, setSaving] = useState(false)
+  const [error, setError]   = useState('')
+
+  const mOriginal  = parseFloat(montoOriginal) || 0
+  const mDescuento = parseFloat(descuento) || 0
+  const montoFinal = Math.max(0, mOriginal - mDescuento)
+  // Lo ya cobrado no debe verse afectado por el ajuste del monto asignado
+  const pagado    = cuota.monto_final - (cuota.saldo ?? cuota.monto_final)
+  const nuevoSaldo = Math.max(0, montoFinal - pagado)
+
+  const handleSave = async () => {
+    if (mOriginal <= 0) { setError('El monto debe ser mayor a cero'); return }
+    if (mDescuento < 0 || mDescuento > mOriginal) { setError('El descuento no puede ser mayor al monto'); return }
+    setSaving(true); setError('')
+    const nuevoStatus = cuota.status === 'PAGO_PARCIAL' && nuevoSaldo <= 0 ? 'PAGADO' : cuota.status
+    const { error: err } = await dbGolf.from('cxc_golf').update({
+      monto_original: mOriginal,
+      descuento: mDescuento,
+      saldo: nuevoSaldo,
+      status: nuevoStatus,
+    }).eq('id', cuota.id)
+    if (err) { setError(err.message); setSaving(false); return }
+    onSaved()
+  }
+
+  return (
+    <ModalShell
+      modulo="golf-miembros"
+      titulo="Modificar Monto de Cuota"
+      subtitulo={cuota.concepto}
+      onClose={onClose}
+      maxWidth={440}
+      footer={<>
+        <button className="btn-ghost" onClick={onClose}>Cancelar</button>
+        <button onClick={handleSave} disabled={saving}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+          Guardar
+        </button>
+      </>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ padding: '8px 12px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#5b21b6' }}>
+          Solo disponible para <strong>superadmin</strong>. El monto ya cobrado ({fmt$(pagado)}) no se ve afectado; solo se ajusta el saldo pendiente.
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div>
+            <label style={lbl}>Monto original *</label>
+            <input style={inp} type="number" min={0} step={0.01} value={montoOriginal} onChange={e => setMontoOriginal(e.target.value)} />
+          </div>
+          <div>
+            <label style={lbl}>Descuento</label>
+            <input style={inp} type="number" min={0} step={0.01} value={descuento} onChange={e => setDescuento(e.target.value)} />
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13 }}>
+          <span style={{ color: '#64748b' }}>Nuevo monto final</span>
+          <span style={{ fontWeight: 700, color: '#1e293b' }}>{fmt$(montoFinal)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13 }}>
+          <span style={{ color: '#64748b' }}>Nuevo saldo pendiente</span>
+          <span style={{ fontWeight: 700, color: nuevoSaldo > 0 ? '#d97706' : '#15803d' }}>{fmt$(nuevoSaldo)}</span>
+        </div>
+        {error && (
+          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>
+            {error}
+          </div>
+        )}
+      </div>
+    </ModalShell>
+  )
+}
+
 // ── Página principal ─────────────────────────────────────────
 export default function CuotasGolfPage() {
   const { canWrite, authUser } = useAuth()
@@ -745,6 +822,7 @@ export default function CuotasGolfPage() {
   const [filtroCat, setFiltroCat]       = useState('')
   const [showNueva, setShowNueva]       = useState(false)
   const [showMasivo, setShowMasivo]     = useState(false)
+  const [editando, setEditando]         = useState<Cuota | null>(null)
   // grupos expandidos (socioId → bool); por defecto todos expandidos
   const [expandidos, setExpandidos]     = useState<Record<number, boolean>>({})
 
@@ -978,14 +1056,26 @@ export default function CuotasGolfPage() {
                             </td>
                             {esSuperAdmin && (
                               <td style={{ padding: '8px 10px', textAlign: 'right' }}>
-                                <button
-                                  onClick={() => deleteCuota(c.id)}
-                                  title="Eliminar cuota"
-                                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 7px', fontSize: 11, border: '1px solid #fecaca', borderRadius: 6, background: '#fff', color: '#dc2626', cursor: 'pointer' }}
-                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fef2f2' }}
-                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff' }}>
-                                  <Trash2 size={12} />
-                                </button>
+                                <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                                  {(c.status === 'PENDIENTE' || c.status === 'PAGO_PARCIAL') && (
+                                    <button
+                                      onClick={() => setEditando(c)}
+                                      title="Modificar monto"
+                                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 7px', fontSize: 11, border: '1px solid #ddd6fe', borderRadius: 6, background: '#fff', color: '#7c3aed', cursor: 'pointer' }}
+                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f5f3ff' }}
+                                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff' }}>
+                                      <Pencil size={12} />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => deleteCuota(c.id)}
+                                    title="Eliminar cuota"
+                                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px 7px', fontSize: 11, border: '1px solid #fecaca', borderRadius: 6, background: '#fff', color: '#dc2626', cursor: 'pointer' }}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fef2f2' }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff' }}>
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
                               </td>
                             )}
                           </tr>
@@ -1002,6 +1092,7 @@ export default function CuotasGolfPage() {
 
       {showNueva && <NuevaCuotaModal authUser={authUser} onClose={() => setShowNueva(false)} onSaved={() => { setShowNueva(false); fetchCuotas() }} />}
       {showMasivo && <GenerarMasivoModal authUser={authUser} onClose={() => setShowMasivo(false)} onSaved={() => { setShowMasivo(false); fetchCuotas() }} />}
+      {editando && <EditarMontoModal cuota={editando} onClose={() => setEditando(null)} onSaved={() => { setEditando(null); fetchCuotas() }} />}
     </div>
   )
 }
