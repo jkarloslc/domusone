@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
@@ -143,22 +143,30 @@ export default function MantenimientoPage() {
     })
   }, [])
 
-  // Plantillas + sus ejecuciones registradas (lazy: solo existen las
-  // filas que alguien ya marcó — nunca se pre-generan 365 por programa)
+  // Plantillas + áreas comunes asignadas (N:N) + sus ejecuciones registradas
+  // (lazy: solo existen las filas que alguien ya marcó — nunca se
+  // pre-generan 365 por programa, ni un programa por área común)
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('mant_programas').select('*')
       .eq('anio', filterAnio).eq('activo', true).order('nombre')
-    if (filterCuad) q = q.eq('id_cuadrante_fk',  Number(filterCuad))
-    if (filterArea) q = q.eq('id_area_fk',       Number(filterArea))
-    if (filterAC)   q = q.eq('id_area_comun_fk', Number(filterAC))
+    if (filterCuad) q = q.eq('id_cuadrante_fk', Number(filterCuad))
+    if (filterArea) q = q.eq('id_area_fk',      Number(filterArea))
     const { data: progs } = await q
 
     if (!progs?.length) { setProgramas([]); setLoading(false); return }
 
     const ids = progs.map((p: any) => p.id)
-    const { data: ejecs } = await dbCtrl.from('mant_ejecuciones')
-      .select('*').in('id_programa_fk', ids).order('fecha_prog')
+    const [{ data: areasRel }, { data: ejecs }] = await Promise.all([
+      dbCtrl.from('mant_programa_areas').select('*').in('id_programa_fk', ids),
+      dbCtrl.from('mant_ejecuciones').select('*').in('id_programa_fk', ids).order('fecha_prog'),
+    ])
+
+    const aMap: Record<number, number[]> = {}
+    ;(areasRel ?? []).forEach((r: any) => {
+      if (!aMap[r.id_programa_fk]) aMap[r.id_programa_fk] = []
+      aMap[r.id_programa_fk].push(r.id_area_comun_fk)
+    })
 
     const eMap: Record<number, any[]> = {}
     ;(ejecs ?? []).forEach((e: any) => {
@@ -166,7 +174,13 @@ export default function MantenimientoPage() {
       eMap[e.id_programa_fk].push(e)
     })
 
-    setProgramas(progs.map((p: any) => ({ ...p, ejecuciones: eMap[p.id] ?? [] })))
+    let merged = progs.map((p: any) => ({
+      ...p,
+      areasComunes: aMap[p.id] ?? [],
+      ejecuciones:  eMap[p.id] ?? [],
+    }))
+    if (filterAC) merged = merged.filter((p: any) => p.areasComunes.includes(Number(filterAC)))
+    setProgramas(merged)
     setLoading(false)
   }, [filterAnio, filterCuad, filterArea, filterAC])
 
@@ -183,10 +197,12 @@ export default function MantenimientoPage() {
     fetchData()
   }
 
-  // Registrar/actualizar el status de una ocurrencia (crea la fila solo cuando hace falta)
-  const upsertEjecucion = async (prog: any, fecha: Date, status: string) => {
+  // Registrar/actualizar el status de una ocurrencia para UN área común
+  // (areaComunId = null cuando el programa no tiene áreas comunes asignadas
+  // y se registra a nivel programa). Crea la fila solo cuando hace falta.
+  const upsertEjecucion = async (prog: any, areaComunId: number | null, fecha: Date, status: string) => {
     const fechaISO = toISODate(fecha)
-    const existing = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO)
+    const existing = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaComunId)
     if (existing) {
       await dbCtrl.from('mant_ejecuciones').update({ status, updated_at: new Date().toISOString() }).eq('id', existing.id)
       setProgramas(prev => prev.map((p: any) => p.id !== prog.id ? p : {
@@ -194,13 +210,20 @@ export default function MantenimientoPage() {
       }))
     } else {
       const { data } = await dbCtrl.from('mant_ejecuciones')
-        .insert({ id_programa_fk: prog.id, fecha_prog: fechaISO, status })
+        .insert({ id_programa_fk: prog.id, id_area_comun_fk: areaComunId, fecha_prog: fechaISO, status })
         .select('*').single()
       if (data) setProgramas(prev => prev.map((p: any) => p.id !== prog.id ? p : { ...p, ejecuciones: [...p.ejecuciones, data] }))
     }
   }
 
-  const generarOT = async (prog: any, fecha: Date) => {
+  // Marcar de un solo golpe el mismo status para todas las áreas comunes
+  // de un programa en una fecha (reemplaza tener que repetir la acción
+  // área por área cuando el trabajo se hizo igual en todas).
+  const upsertEjecucionesBulk = async (prog: any, areaIds: (number | null)[], fecha: Date, status: string) => {
+    await Promise.all(areaIds.map(id => upsertEjecucion(prog, id, fecha, status)))
+  }
+
+  const generarOT = async (prog: any, areaComunId: number | null, fecha: Date) => {
     const fechaISO = toISODate(fecha)
     const { count } = await dbCtrl.from('ordenes_trabajo').select('id', { count: 'exact', head: true })
     const anio  = fecha.getFullYear()
@@ -211,7 +234,7 @@ export default function MantenimientoPage() {
       prioridad:    'Media', status: 'Pendiente',
       id_area_fk:       prog.id_area_fk ?? null,
       id_cuadrante_fk:  prog.id_cuadrante_fk ?? null,
-      id_area_comun_fk: prog.id_area_comun_fk ?? null,
+      id_area_comun_fk: areaComunId,
       descripcion:  prog.descripcion ?? null,
       asignado_a:   prog.responsable ?? null,
       fecha_limite: fechaISO,
@@ -219,11 +242,11 @@ export default function MantenimientoPage() {
     }).select('id, folio').single()
     if (otErr) { alert(`Error al crear OT: ${otErr.message}`); return }
     if (!ot) return
-    const existing = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO)
+    const existing = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaComunId)
     if (existing) {
       await dbCtrl.from('mant_ejecuciones').update({ id_ot_fk: ot.id, status: 'En Proceso', updated_at: new Date().toISOString() }).eq('id', existing.id)
     } else {
-      await dbCtrl.from('mant_ejecuciones').insert({ id_programa_fk: prog.id, fecha_prog: fechaISO, status: 'En Proceso', id_ot_fk: ot.id })
+      await dbCtrl.from('mant_ejecuciones').insert({ id_programa_fk: prog.id, id_area_comun_fk: areaComunId, fecha_prog: fechaISO, status: 'En Proceso', id_ot_fk: ot.id })
     }
     fetchData()
   }
@@ -330,8 +353,9 @@ export default function MantenimientoPage() {
             <EjecucionSemanal
               programas={programas} loading={loading}
               weekStart={weekStart} setWeekStart={setWeekStart}
-              cuadMap={cuadMap} cuadColorMap={cuadColorMap}
+              cuadMap={cuadMap} cuadColorMap={cuadColorMap} acMap={acMap}
               onCambiarStatus={upsertEjecucion}
+              onCambiarStatusBulk={upsertEjecucionesBulk}
               onGenerarOT={generarOT}
             />
           ) : (
@@ -410,10 +434,15 @@ export default function MantenimientoPage() {
                             {prog.id_area_fk
                               ? <span style={{ fontWeight: 500, color: 'var(--text-secondary)' }}>{areaMap[prog.id_area_fk] ?? '—'}</span>
                               : null}
-                            {prog.id_area_fk && prog.id_area_comun_fk ? <br /> : null}
-                            {prog.id_area_comun_fk
-                              ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{acMap[prog.id_area_comun_fk]}</span>
-                              : (!prog.id_area_fk ? <span style={{ color: 'var(--text-muted)' }}>—</span> : null)}
+                            {prog.id_area_fk && prog.areasComunes.length > 0 ? <br /> : null}
+                            {prog.areasComunes.length > 0 ? (
+                              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}
+                                title={prog.areasComunes.map((id: number) => acMap[id]).filter(Boolean).join(', ')}>
+                                {prog.areasComunes.length === 1
+                                  ? acMap[prog.areasComunes[0]]
+                                  : `${prog.areasComunes.length} áreas comunes`}
+                              </span>
+                            ) : (!prog.id_area_fk ? <span style={{ color: 'var(--text-muted)' }}>—</span> : null)}
                           </td>
                           <td style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                             {prog.fecha_inicio ? fmtDate(prog.fecha_inicio) : '—'}
@@ -466,48 +495,61 @@ export default function MantenimientoPage() {
       {detail && <ProgramaDetail prog={detail} cuadMap={cuadMap} areaMap={areaMap} acMap={acMap}
         onClose={() => { setDetail(null); fetchData() }}
         onEdit={() => { setDetail(null); setEditing(detail); setModal(true) }}
-        onCambiarStatus={upsertEjecucion} onGenerarOT={generarOT} />}
+        onCambiarStatus={upsertEjecucion} onCambiarStatusBulk={upsertEjecucionesBulk} onGenerarOT={generarOT} />}
     </div>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Ejecución Semanal — reemplaza el grid interminable de 365 filas:
-// solo muestra los programas activos en la semana visible y crea
-// la fila de ejecución únicamente cuando se registra un cambio.
+// Ejecución Semanal — un renglón por PROGRAMA (no por área común).
+// Si el programa tiene varias áreas comunes asignadas, cada celda-día
+// muestra el avance agregado ("3/5") con un botón para marcar todas
+// las áreas de un golpe; el detalle por área solo aparece al expandir
+// el renglón — así no hay que dar clic área por área cada semana.
 // ═══════════════════════════════════════════════════════════════
-function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap, cuadColorMap, onCambiarStatus, onGenerarOT }: {
+function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap, cuadColorMap, acMap, onCambiarStatus, onCambiarStatusBulk, onGenerarOT }: {
   programas: any[]; loading: boolean
   weekStart: Date; setWeekStart: (d: Date) => void
-  cuadMap: Record<number, string>; cuadColorMap: Record<number, string>
-  onCambiarStatus: (prog: any, fecha: Date, status: string) => Promise<void>
-  onGenerarOT: (prog: any, fecha: Date) => Promise<void>
+  cuadMap: Record<number, string>; cuadColorMap: Record<number, string>; acMap: Record<number, string>
+  onCambiarStatus: (prog: any, areaComunId: number | null, fecha: Date, status: string) => Promise<void>
+  onCambiarStatusBulk: (prog: any, areaIds: (number | null)[], fecha: Date, status: string) => Promise<void>
+  onGenerarOT: (prog: any, areaComunId: number | null, fecha: Date) => Promise<void>
 }) {
   const [busy, setBusy] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({})
   const dias = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const weekEnd = dias[6]
 
   const activos = useMemo(() => programas
-    .map(prog => ({
-      prog,
-      dias: dias.map(fecha => {
-        const activo = estaActivoEnFecha(prog.frecuencia, prog.fecha_inicio, prog.fecha_fin, fecha)
-        if (!activo) return null
-        const fechaISO = toISODate(fecha)
-        const ejec = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO)
-        return { fecha, status: ejec?.status ?? 'Pendiente', id_ot_fk: ejec?.id_ot_fk ?? null }
-      }),
-    }))
+    .map(prog => {
+      const areaSlots: (number | null)[] = prog.areasComunes.length ? prog.areasComunes : [null]
+      return {
+        prog,
+        areaSlots,
+        dias: dias.map(fecha => {
+          const activo = estaActivoEnFecha(prog.frecuencia, prog.fecha_inicio, prog.fecha_fin, fecha)
+          if (!activo) return null
+          const fechaISO = toISODate(fecha)
+          const celdas = areaSlots.map(areaId => {
+            const ejec = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaId)
+            return { areaId, status: ejec?.status ?? 'Pendiente', id_ot_fk: ejec?.id_ot_fk ?? null }
+          })
+          return { fecha, celdas }
+        }),
+      }
+    })
     .filter(r => r.dias.some(d => d !== null)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [programas, weekStart])
 
-  const totalCeldas = activos.reduce((a, r) => a + r.dias.filter(d => d).length, 0)
-  const completadasCeldas = activos.reduce((a, r) => a + r.dias.filter((d: any) => d?.status === 'Completada').length, 0)
+  const totalCeldas = activos.reduce((a, r) => a + r.dias.reduce((b: number, d: any) => b + (d ? d.celdas.length : 0), 0), 0)
+  const completadasCeldas = activos.reduce((a, r) => a + r.dias.reduce((b: number, d: any) =>
+    b + (d ? d.celdas.filter((c: any) => c.status === 'Completada').length : 0), 0), 0)
 
   const handle = async (key: string, fn: () => Promise<void>) => {
     setBusy(key); await fn(); setBusy(null)
   }
+  const toggleExpand = (id: number) => setExpanded(e => ({ ...e, [id]: !e[id] }))
 
   return (
     <div>
@@ -554,52 +596,136 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
               </tr>
             </thead>
             <tbody>
-              {activos.map(({ prog, dias: celdas }) => {
+              {activos.map(({ prog, areaSlots, dias: celdas }) => {
                 const rowColor = prog.id_cuadrante_fk ? cuadColorMap[prog.id_cuadrante_fk] : undefined
+                const multi = areaSlots.length > 1
+                const isExpanded = multi && !!expanded[prog.id]
                 return (
-                  <tr key={prog.id} style={rowColor ? { borderLeft: `5px solid ${rowColor}`, background: `${rowColor}0a` } : undefined}>
-                    <td>
-                      <div style={{ fontWeight: 600, fontSize: 12.5 }}>{prog.nombre}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {prog.frecuencia}{prog.id_cuadrante_fk && cuadMap[prog.id_cuadrante_fk] ? ` · ${cuadMap[prog.id_cuadrante_fk]}` : ''}
-                      </div>
-                    </td>
-                    {celdas.map((c, i) => {
-                      if (!c) return <td key={i} style={{ textAlign: 'center', color: '#e2e8f0' }}>·</td>
-                      const key = `${prog.id}-${i}`
-                      const sc = STATUS_STYLE[c.status] ?? STATUS_STYLE['Pendiente']
-                      return (
-                        <td key={i} style={{ textAlign: 'center' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                            <select
-                              value={c.status}
-                              disabled={busy === key}
-                              onChange={e => handle(key, () => onCambiarStatus(prog, c.fecha, e.target.value))}
-                              style={{
-                                fontSize: 10.5, fontWeight: 600, padding: '3px 4px', borderRadius: 5,
-                                background: sc.bg, color: sc.color, border: `1.5px solid ${sc.border}`,
-                                cursor: 'pointer', outline: 'none', opacity: busy === key ? 0.5 : 1,
-                              }}>
-                              <option value="Pendiente">Pendiente</option>
-                              <option value="En Proceso">En Proceso</option>
-                              <option value="Completada">Completada</option>
-                              <option value="Omitida">Omitida</option>
-                            </select>
-                            {c.id_ot_fk ? (
-                              <span style={{ fontSize: 9, color: 'var(--blue)' }}>OT ✓</span>
-                            ) : (
-                              <button onClick={() => handle(key, () => onGenerarOT(prog, c.fecha))} disabled={busy === key}
-                                title="Crear Orden de Trabajo"
-                                style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #bfdbfe',
-                                  background: '#eff6ff', color: 'var(--blue)', cursor: 'pointer' }}>
-                                + OT
-                              </button>
-                            )}
+                  <Fragment key={prog.id}>
+                    <tr style={rowColor ? { borderLeft: `5px solid ${rowColor}`, background: `${rowColor}0a` } : undefined}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {multi && (
+                            <button onClick={() => toggleExpand(prog.id)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-muted)' }}
+                              title={isExpanded ? 'Ocultar áreas' : 'Ver áreas comunes'}>
+                              <ChevronDown size={13} style={{ transform: isExpanded ? 'rotate(180deg)' : undefined, transition: 'transform .15s' }} />
+                            </button>
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 12.5 }}>{prog.nombre}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                              {prog.frecuencia}{prog.id_cuadrante_fk && cuadMap[prog.id_cuadrante_fk] ? ` · ${cuadMap[prog.id_cuadrante_fk]}` : ''}
+                              {multi ? ` · ${areaSlots.length} áreas` : ''}
+                            </div>
                           </div>
+                        </div>
+                      </td>
+                      {celdas.map((c, i) => {
+                        if (!c) return <td key={i} style={{ textAlign: 'center', color: '#e2e8f0' }}>·</td>
+                        const key = `${prog.id}-${i}`
+                        if (!multi) {
+                          const cell = c.celdas[0]
+                          const sc = STATUS_STYLE[cell.status] ?? STATUS_STYLE['Pendiente']
+                          return (
+                            <td key={i} style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                                <select
+                                  value={cell.status}
+                                  disabled={busy === key}
+                                  onChange={e => handle(key, () => onCambiarStatus(prog, cell.areaId, c.fecha, e.target.value))}
+                                  style={{
+                                    fontSize: 10.5, fontWeight: 600, padding: '3px 4px', borderRadius: 5,
+                                    background: sc.bg, color: sc.color, border: `1.5px solid ${sc.border}`,
+                                    cursor: 'pointer', outline: 'none', opacity: busy === key ? 0.5 : 1,
+                                  }}>
+                                  <option value="Pendiente">Pendiente</option>
+                                  <option value="En Proceso">En Proceso</option>
+                                  <option value="Completada">Completada</option>
+                                  <option value="Omitida">Omitida</option>
+                                </select>
+                                {cell.id_ot_fk ? (
+                                  <span style={{ fontSize: 9, color: 'var(--blue)' }}>OT ✓</span>
+                                ) : (
+                                  <button onClick={() => handle(key, () => onGenerarOT(prog, cell.areaId, c.fecha))} disabled={busy === key}
+                                    title="Crear Orden de Trabajo"
+                                    style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #bfdbfe',
+                                      background: '#eff6ff', color: 'var(--blue)', cursor: 'pointer' }}>
+                                    + OT
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          )
+                        }
+                        const completas = c.celdas.filter((x: any) => x.status === 'Completada').length
+                        const total = c.celdas.length
+                        const allDone = completas === total
+                        return (
+                          <td key={i} style={{ textAlign: 'center' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700,
+                                color: allDone ? '#15803d' : completas > 0 ? '#d97706' : 'var(--text-muted)' }}>
+                                {completas}/{total}
+                              </span>
+                              {!allDone && (
+                                <button onClick={() => handle(key, () => onCambiarStatusBulk(prog, areaSlots, c.fecha, 'Completada'))}
+                                  disabled={busy === key} title="Marcar todas las áreas como completadas"
+                                  style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #bbf7d0',
+                                    background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
+                                  ✓ Todas
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                    {isExpanded && areaSlots.map(areaId => (
+                      <tr key={`${prog.id}-${areaId}`} style={{ background: '#f8fafc' }}>
+                        <td style={{ paddingLeft: 30, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                          {acMap[areaId as number] ?? '—'}
                         </td>
-                      )
-                    })}
-                  </tr>
+                        {celdas.map((c, i) => {
+                          if (!c) return <td key={i} style={{ textAlign: 'center', color: '#e2e8f0' }}>·</td>
+                          const cell = c.celdas.find((x: any) => x.areaId === areaId)
+                          if (!cell) return <td key={i} />
+                          const key = `${prog.id}-${areaId}-${i}`
+                          const sc = STATUS_STYLE[cell.status] ?? STATUS_STYLE['Pendiente']
+                          return (
+                            <td key={i} style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                                <select
+                                  value={cell.status}
+                                  disabled={busy === key}
+                                  onChange={e => handle(key, () => onCambiarStatus(prog, areaId, c.fecha, e.target.value))}
+                                  style={{
+                                    fontSize: 10, fontWeight: 600, padding: '2px 4px', borderRadius: 5,
+                                    background: sc.bg, color: sc.color, border: `1.5px solid ${sc.border}`,
+                                    cursor: 'pointer', outline: 'none', opacity: busy === key ? 0.5 : 1,
+                                  }}>
+                                  <option value="Pendiente">Pendiente</option>
+                                  <option value="En Proceso">En Proceso</option>
+                                  <option value="Completada">Completada</option>
+                                  <option value="Omitida">Omitida</option>
+                                </select>
+                                {cell.id_ot_fk ? (
+                                  <span style={{ fontSize: 9, color: 'var(--blue)' }}>OT ✓</span>
+                                ) : (
+                                  <button onClick={() => handle(key, () => onGenerarOT(prog, areaId, c.fecha))} disabled={busy === key}
+                                    title="Crear Orden de Trabajo"
+                                    style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #bfdbfe',
+                                      background: '#eff6ff', color: 'var(--blue)', cursor: 'pointer' }}>
+                                    + OT
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </Fragment>
                 )
               })}
             </tbody>
@@ -625,7 +751,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
     anio:             prog?.anio?.toString()   ?? new Date().getFullYear().toString(),
     id_cuadrante_fk:  prog?.id_cuadrante_fk?.toString()  ?? '',
     id_area_fk:       prog?.id_area_fk?.toString()       ?? '',
-    id_area_comun_fk: prog?.id_area_comun_fk?.toString() ?? '',
+    areasComunes:     (prog?.areasComunes ?? []) as number[],
     tipo_trabajo:     prog?.tipo_trabajo       ?? '',
     frecuencia:       prog?.frecuencia         ?? 'Mensual',
     mes_inicio:       prog?.mes_inicio?.toString() ?? '1',
@@ -653,6 +779,11 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
         new Date(form.fecha_inicio + 'T12:00:00'))
     : []
 
+  const areaComunesDisponibles = areasComunes
+    .filter(a => !form.id_area_fk || (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
+  const todasSeleccionadas = areaComunesDisponibles.length > 0
+    && areaComunesDisponibles.every(a => form.areasComunes.includes(a.id))
+
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
     setSaving(true); setError('')
@@ -661,7 +792,6 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
       anio:             Number(form.anio),
       id_cuadrante_fk:  form.id_cuadrante_fk  ? Number(form.id_cuadrante_fk)  : null,
       id_area_fk:       form.id_area_fk       ? Number(form.id_area_fk)       : null,
-      id_area_comun_fk: form.id_area_comun_fk ? Number(form.id_area_comun_fk) : null,
       tipo_trabajo:     form.tipo_trabajo || null,
       frecuencia:       form.frecuencia,
       mes_inicio:       Number(form.mes_inicio),
@@ -673,13 +803,25 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
       fecha_fin:        form.fecha_fin    || null,
       updated_at:       new Date().toISOString(),
     }
+    let programaId = prog?.id ?? null
     if (prog) {
       const { error: err } = await dbCtrl.from('mant_programas').update(payload).eq('id', prog.id)
       if (err) { setError(err.message); setSaving(false); return }
     } else {
-      const { error: err } = await dbCtrl.from('mant_programas')
+      const { data, error: err } = await dbCtrl.from('mant_programas')
         .insert({ ...payload, created_by: authUser?.nombre ?? null })
+        .select('id').single()
       if (err) { setError(err.message); setSaving(false); return }
+      programaId = data?.id ?? null
+    }
+    if (programaId) {
+      // Reemplaza el set completo de áreas comunes asignadas al programa
+      await dbCtrl.from('mant_programa_areas').delete().eq('id_programa_fk', programaId)
+      if (form.areasComunes.length) {
+        const { error: errAreas } = await dbCtrl.from('mant_programa_areas')
+          .insert(form.areasComunes.map(id => ({ id_programa_fk: programaId, id_area_comun_fk: id })))
+        if (errAreas) { setError(errAreas.message); setSaving(false); return }
+      }
     }
     setSaving(false); onSaved()
   }
@@ -706,32 +848,56 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
               </select>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>Cuadrante</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_cuadrante_fk}
-                onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '', id_area_comun_fk: '' }))}>
+                onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '', areasComunes: [] }))}>
                 <option value="">—</option>
                 {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
             <div><label className="label" style={{ fontSize: 11 }}>Área</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk}
-                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_area_comun_fk: '' }))}>
+                onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, areasComunes: [] }))}>
                 <option value="">—</option>
                 {areas
                   .filter(a => !form.id_cuadrante_fk || a.id_cuadrante_fk === Number(form.id_cuadrante_fk))
                   .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
-            <div><label className="label" style={{ fontSize: 11 }}>Área Común</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_area_comun_fk}
-                onChange={setF('id_area_comun_fk')} disabled={!form.id_area_fk}>
-                <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
-                {areasComunes
-                  .filter(a => !form.id_area_fk || (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
-                  .map(a => <option key={a.id} value={a.id}>{a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}</option>)}
-              </select>
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <label className="label" style={{ fontSize: 11 }}>Áreas Comunes</label>
+              {areaComunesDisponibles.length > 0 && (
+                <button type="button"
+                  onClick={() => setForm(f => ({ ...f, areasComunes: todasSeleccionadas ? [] : areaComunesDisponibles.map(a => a.id) }))}
+                  style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                  {todasSeleccionadas ? 'Quitar todas' : 'Seleccionar todas'}
+                </button>
+              )}
             </div>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 6, maxHeight: 150, overflowY: 'auto', padding: 6 }}>
+              {!form.id_area_fk ? (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '6px 4px' }}>Elige un área para ver sus áreas comunes</div>
+              ) : areaComunesDisponibles.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '6px 4px' }}>Esta área no tiene áreas comunes registradas</div>
+              ) : areaComunesDisponibles.map(a => (
+                <label key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 4px', fontSize: 12.5, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={form.areasComunes.includes(a.id)}
+                    onChange={e => setForm(f => ({
+                      ...f,
+                      areasComunes: e.target.checked ? [...f.areasComunes, a.id] : f.areasComunes.filter(id => id !== a.id),
+                    }))} />
+                  {a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}
+                </label>
+              ))}
+            </div>
+            {form.areasComunes.length > 0 && (
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                {form.areasComunes.length} área{form.areasComunes.length === 1 ? '' : 's'} común{form.areasComunes.length === 1 ? '' : 'es'} seleccionada{form.areasComunes.length === 1 ? '' : 's'}
+              </div>
+            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div><label className="label" style={{ fontSize: 11 }}>Frecuencia *</label>
@@ -798,19 +964,23 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
 // Detalle del Programa — datos de la plantilla + próximas ocurrencias
 // (ya no lista las 365 filas del año completo)
 // ═══════════════════════════════════════════════════════════════
-function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit, onCambiarStatus, onGenerarOT }: {
+function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit, onCambiarStatus, onCambiarStatusBulk, onGenerarOT }: {
   prog: any
   cuadMap: Record<number, string>
   areaMap: Record<number, string>
   acMap: Record<number, string>
   onClose: () => void
   onEdit?: () => void
-  onCambiarStatus: (prog: any, fecha: Date, status: string) => Promise<void>
-  onGenerarOT: (prog: any, fecha: Date) => Promise<void>
+  onCambiarStatus: (prog: any, areaComunId: number | null, fecha: Date, status: string) => Promise<void>
+  onCambiarStatusBulk: (prog: any, areaIds: (number | null)[], fecha: Date, status: string) => Promise<void>
+  onGenerarOT: (prog: any, areaComunId: number | null, fecha: Date) => Promise<void>
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [localProg, setLocalProg] = useState(prog)
+  const [showAreas, setShowAreas] = useState(false)
 
+  const areaSlots: (number | null)[] = (localProg.areasComunes ?? []).length ? localProg.areasComunes : [null]
+  const multi = areaSlots.length > 1
   const proximas = proximasFechas(localProg, 14)
   const historial = (localProg.ejecuciones ?? []).slice().reverse().slice(0, 10)
 
@@ -820,14 +990,29 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit, onCamb
     setBusy(null)
   }
 
-  const cambiarYReflejar = async (fecha: Date, status: string) => {
-    await onCambiarStatus(localProg, fecha, status)
+  const cambiarYReflejar = async (areaId: number | null, fecha: Date, status: string) => {
+    await onCambiarStatus(localProg, areaId, fecha, status)
     const fechaISO = toISODate(fecha)
     setLocalProg((p: any) => {
-      const existing = (p.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO)
+      const existing = (p.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaId)
       const ejecuciones = existing
         ? p.ejecuciones.map((e: any) => e.id === existing.id ? { ...e, status } : e)
-        : [...(p.ejecuciones ?? []), { id: `tmp-${fechaISO}`, fecha_prog: fechaISO, status }]
+        : [...(p.ejecuciones ?? []), { id: `tmp-${fechaISO}-${areaId}`, fecha_prog: fechaISO, id_area_comun_fk: areaId, status }]
+      return { ...p, ejecuciones }
+    })
+  }
+
+  const bulkYReflejar = async (fecha: Date, status: string) => {
+    await onCambiarStatusBulk(localProg, areaSlots, fecha, status)
+    const fechaISO = toISODate(fecha)
+    setLocalProg((p: any) => {
+      let ejecuciones = p.ejecuciones ?? []
+      areaSlots.forEach(areaId => {
+        const existing = ejecuciones.find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaId)
+        ejecuciones = existing
+          ? ejecuciones.map((e: any) => e.id === existing.id ? { ...e, status } : e)
+          : [...ejecuciones, { id: `tmp-${fechaISO}-${areaId}`, fecha_prog: fechaISO, id_area_comun_fk: areaId, status }]
+      })
       return { ...p, ejecuciones }
     })
   }
@@ -845,47 +1030,129 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit, onCamb
             {prog.responsable && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Responsable</div>{prog.responsable}</div>}
             {prog.id_cuadrante_fk && cuadMap[prog.id_cuadrante_fk] && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cuadrante</div>{cuadMap[prog.id_cuadrante_fk]}</div>}
             {prog.id_area_fk && areaMap[prog.id_area_fk] && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Área</div>{areaMap[prog.id_area_fk]}</div>}
-            {prog.id_area_comun_fk && acMap[prog.id_area_comun_fk] && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Área Común</div>{acMap[prog.id_area_comun_fk]}</div>}
             {prog.fecha_inicio && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Inicio</div>{fmtDate(prog.fecha_inicio)}</div>}
             {prog.fecha_fin && <div><div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Fin</div>{fmtDate(prog.fecha_fin)}</div>}
           </div>
+          {(localProg.areasComunes ?? []).length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
+                Áreas Comunes ({localProg.areasComunes.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {localProg.areasComunes.map((id: number) => (
+                  <span key={id} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f1f5f9', color: 'var(--text-secondary)' }}>
+                    {acMap[id] ?? `#${id}`}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           {prog.descripcion && (
             <p style={{ background: '#f8fafc', borderLeft: '3px solid var(--blue)', padding: '8px 12px', fontSize: 13, marginBottom: 16 }}>
               {prog.descripcion}
             </p>
           )}
 
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>
-            Próximas ocurrencias
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Próximas ocurrencias
+            </div>
+            {multi && (
+              <button onClick={() => setShowAreas(s => !s)}
+                style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>
+                {showAreas ? 'Vista resumida' : `Desglosar por área (${areaSlots.length})`}
+              </button>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
             {proximas.map(fecha => {
               const fechaISO = toISODate(fecha)
-              const ejec = (localProg.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO)
-              const status = ejec?.status ?? 'Pendiente'
-              const sc = STATUS_STYLE[status] ?? STATUS_STYLE['Pendiente']
-              const key = fechaISO
+              const cells = areaSlots.map(areaId => {
+                const ejec = (localProg.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaId)
+                return { areaId, status: ejec?.status ?? 'Pendiente', id_ot_fk: ejec?.id_ot_fk ?? null }
+              })
+
+              if (!multi) {
+                const cell = cells[0]
+                const sc = STATUS_STYLE[cell.status] ?? STATUS_STYLE['Pendiente']
+                const key = fechaISO
+                return (
+                  <div key={fechaISO} style={{ display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 10px', border: '1px solid #f1f5f9', borderRadius: 6 }}>
+                    <span style={{ fontSize: 12.5, minWidth: 110 }}>{fmtDate(fecha)}</span>
+                    <select value={cell.status} disabled={busy === key}
+                      onChange={e => handle(key, () => cambiarYReflejar(cell.areaId, fecha, e.target.value))}
+                      style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
+                        background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, cursor: 'pointer' }}>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="En Proceso">En Proceso</option>
+                      <option value="Completada">Completada</option>
+                      <option value="Omitida">Omitida</option>
+                    </select>
+                    {cell.id_ot_fk ? (
+                      <span style={{ fontSize: 11, color: 'var(--blue)' }}>OT generada</span>
+                    ) : (
+                      <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }}
+                        onClick={() => handle(key, () => onGenerarOT(localProg, cell.areaId, fecha))} disabled={busy === key}>
+                        <Wrench size={10} /> Crear OT
+                      </button>
+                    )}
+                  </div>
+                )
+              }
+
+              if (!showAreas) {
+                const completasFecha = cells.filter(c => c.status === 'Completada').length
+                const key = fechaISO
+                return (
+                  <div key={fechaISO} style={{ display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 10px', border: '1px solid #f1f5f9', borderRadius: 6 }}>
+                    <span style={{ fontSize: 12.5, minWidth: 110 }}>{fmtDate(fecha)}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700,
+                      color: completasFecha === cells.length ? '#15803d' : completasFecha > 0 ? '#d97706' : 'var(--text-muted)' }}>
+                      {completasFecha}/{cells.length} áreas completadas
+                    </span>
+                    {completasFecha < cells.length && (
+                      <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }}
+                        onClick={() => handle(key, () => bulkYReflejar(fecha, 'Completada'))} disabled={busy === key}>
+                        ✓ Marcar todas
+                      </button>
+                    )}
+                  </div>
+                )
+              }
+
               return (
-                <div key={fechaISO} style={{ display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '6px 10px', border: '1px solid #f1f5f9', borderRadius: 6 }}>
-                  <span style={{ fontSize: 12.5, minWidth: 110 }}>{fmtDate(fecha)}</span>
-                  <select value={status} disabled={busy === key}
-                    onChange={e => handle(key, () => cambiarYReflejar(fecha, e.target.value))}
-                    style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
-                      background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, cursor: 'pointer' }}>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En Proceso">En Proceso</option>
-                    <option value="Completada">Completada</option>
-                    <option value="Omitida">Omitida</option>
-                  </select>
-                  {ejec?.id_ot_fk ? (
-                    <span style={{ fontSize: 11, color: 'var(--blue)' }}>OT generada</span>
-                  ) : (
-                    <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }}
-                      onClick={() => handle(key, () => onGenerarOT(localProg, fecha))} disabled={busy === key}>
-                      <Wrench size={10} /> Crear OT
-                    </button>
-                  )}
+                <div key={fechaISO} style={{ border: '1px solid #f1f5f9', borderRadius: 6, padding: '6px 10px' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>{fmtDate(fecha)}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {cells.map(cell => {
+                      const sc = STATUS_STYLE[cell.status] ?? STATUS_STYLE['Pendiente']
+                      const key = `${fechaISO}-${cell.areaId}`
+                      return (
+                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 11.5, minWidth: 140, color: 'var(--text-secondary)' }}>{acMap[cell.areaId as number] ?? '—'}</span>
+                          <select value={cell.status} disabled={busy === key}
+                            onChange={e => handle(key, () => cambiarYReflejar(cell.areaId, fecha, e.target.value))}
+                            style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 6px', borderRadius: 5,
+                              background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`, cursor: 'pointer' }}>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En Proceso">En Proceso</option>
+                            <option value="Completada">Completada</option>
+                            <option value="Omitida">Omitida</option>
+                          </select>
+                          {cell.id_ot_fk ? (
+                            <span style={{ fontSize: 10, color: 'var(--blue)' }}>OT ✓</span>
+                          ) : (
+                            <button className="btn-ghost" style={{ fontSize: 10, padding: '2px 6px' }}
+                              onClick={() => handle(key, () => onGenerarOT(localProg, cell.areaId, fecha))} disabled={busy === key}>
+                              + OT
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )
             })}
