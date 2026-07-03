@@ -4,6 +4,7 @@ import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag, ClipboardList, ExternalLink } from 'lucide-react'
 import TabCobranzaSocio from './TabCobranzaSocio'
+import TabRecibosSocio from './TabRecibosSocio'
 import type { Socio } from './SocioModal'
 import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 
@@ -34,6 +35,7 @@ const TABS = [
   { key: 'fiscal',      label: 'Datos Fiscales',    icon: Receipt       },
   { key: 'facturas',   label: 'Facturas',           icon: FileText      },
   { key: 'cobranza',  label: 'Cobranza',           icon: CreditCard    },
+  { key: 'recibos',   label: 'Recibos',            icon: Receipt       },
 ]
 
 // ── Tab Familiares ────────────────────────────────────────────
@@ -744,6 +746,14 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           {/* ── Cobranza ── */}
           {tab === 'cobranza' && (
             <TabCobranzaSocio
+              socioId={socio.id}
+              nombreSocio={nombre}
+            />
+          )}
+
+          {/* ── Recibos ── */}
+          {tab === 'recibos' && (
+            <TabRecibosSocio
               socioId={socio.id}
               nombreSocio={nombre}
             />
