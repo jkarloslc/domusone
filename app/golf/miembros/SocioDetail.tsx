@@ -336,6 +336,62 @@ function TabPOS({ socioId }: { socioId: number }) {
 }
 
 // ── Tab Cuotas ───────────────────────────────────────────────
+const esMembresiaCuota = (tipo: string) => tipo === 'INSCRIPCION' || tipo === 'MENSUALIDAD'
+const esPensionCuota   = (tipo: string) => tipo === 'PENSION_CARRITO'
+
+function GridCuotas({ label, rows, filtro }: { label: string; rows: any[]; filtro: 'TODOS' | 'PENDIENTE' | 'PAGADO' }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>
+        {label} <span style={{ fontWeight: 500, color: '#94a3b8' }}>({rows.length})</span>
+      </div>
+      {rows.length === 0 ? (
+        <div style={{ padding: '14px', background: '#f8fafc', borderRadius: 8, border: '1px dashed #e2e8f0', textAlign: 'center' }}>
+          <span style={{ fontSize: 12, color: '#94a3b8' }}>
+            {filtro === 'PENDIENTE' ? 'Sin cuotas pendientes' : filtro === 'PAGADO' ? 'Sin cuotas pagadas' : 'Sin cuotas registradas'}
+          </span>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {rows.map(r => {
+            const vence = r.fecha_vencimiento && r.fecha_vencimiento < hoy && r.status === 'PENDIENTE'
+            return (
+              <div key={r.id} style={{ padding: '10px 14px', background: vence ? '#fff5f5' : '#fff', borderRadius: 8, border: `1px solid ${vence ? '#fecaca' : '#e2e8f0'}` }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{r.concepto}</div>
+                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      {r.periodo && <span>{r.periodo}</span>}
+                      {r.fecha_vencimiento && (
+                        <span style={{ color: vence ? '#dc2626' : '#64748b' }}>
+                          Vence: {new Date(r.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      )}
+                      {r.fecha_pago && <span style={{ color: '#16a34a' }}>Pagado: {new Date(r.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                      {r.forma_pago && <span>{r.forma_pago}</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, marginLeft: 12 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: r.status === 'PAGADO' ? '#16a34a' : vence ? '#dc2626' : '#d97706' }}>
+                      {fmt$(r.monto_final ?? r.monto_original ?? 0)}
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20,
+                      background: r.status === 'PAGADO' ? '#dcfce7' : vence ? '#fee2e2' : '#fef3c7',
+                      color:      r.status === 'PAGADO' ? '#16a34a' : vence ? '#dc2626' : '#d97706',
+                    }}>
+                      {r.status === 'PAGADO' ? 'PAGADO' : vence ? 'VENCIDA' : 'PENDIENTE'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TabCuotas({ socioId }: { socioId: number }) {
   const [rows, setRows]       = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -356,6 +412,9 @@ function TabCuotas({ socioId }: { socioId: number }) {
   const pendMonto = rows.filter(r => r.status === 'PENDIENTE').reduce((a, r) => a + (r.monto_final ?? 0), 0)
   const pagMonto  = rows.filter(r => r.status === 'PAGADO').reduce((a, r) => a + (r.monto_final ?? 0), 0)
 
+  const membresia = filtered.filter(r => esMembresiaCuota(r.tipo))
+  const pension   = filtered.filter(r => esPensionCuota(r.tipo))
+
   return (
     <div>
       {/* Mini stats */}
@@ -371,7 +430,7 @@ function TabCuotas({ socioId }: { socioId: number }) {
       </div>
 
       {/* Filtro */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         {(['TODOS', 'PENDIENTE', 'PAGADO'] as const).map(f => (
           <button key={f} onClick={() => setFiltro(f)}
             style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, borderRadius: 20, cursor: 'pointer', border: '1px solid', borderColor: filtro === f ? '#2563eb' : '#e2e8f0', background: filtro === f ? '#eff6ff' : '#fff', color: filtro === f ? '#1d4ed8' : '#64748b' }}>
@@ -380,40 +439,9 @@ function TabCuotas({ socioId }: { socioId: number }) {
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {filtered.map(r => {
-          const vence = r.fecha_vencimiento && r.fecha_vencimiento < hoy && r.status === 'PENDIENTE'
-          return (
-            <div key={r.id} style={{ padding: '10px 14px', background: vence ? '#fff5f5' : '#fff', borderRadius: 8, border: `1px solid ${vence ? '#fecaca' : '#e2e8f0'}` }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#1e293b' }}>{r.concepto}</div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    {r.periodo && <span>{r.periodo}</span>}
-                    {r.fecha_vencimiento && (
-                      <span style={{ color: vence ? '#dc2626' : '#64748b' }}>
-                        Vence: {new Date(r.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
-                    )}
-                    {r.fecha_pago && <span style={{ color: '#16a34a' }}>Pagado: {new Date(r.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
-                    {r.forma_pago && <span>{r.forma_pago}</span>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, marginLeft: 12 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: r.status === 'PAGADO' ? '#16a34a' : vence ? '#dc2626' : '#d97706' }}>
-                    {fmt$(r.monto_final ?? r.monto_original ?? 0)}
-                  </span>
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 20,
-                    background: r.status === 'PAGADO' ? '#dcfce7' : vence ? '#fee2e2' : '#fef3c7',
-                    color:      r.status === 'PAGADO' ? '#16a34a' : vence ? '#dc2626' : '#d97706',
-                  }}>
-                    {r.status === 'PAGADO' ? 'PAGADO' : vence ? 'VENCIDA' : 'PENDIENTE'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )
-        })}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <GridCuotas label="Membresía" rows={membresia} filtro={filtro} />
+        <GridCuotas label="Pensión Carrito" rows={pension} filtro={filtro} />
       </div>
     </div>
   )
