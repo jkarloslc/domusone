@@ -439,9 +439,13 @@ function TabCuotas({ socioId }: { socioId: number }) {
         ))}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <GridCuotas label="Membresía" rows={membresia} filtro={filtro} />
-        <GridCuotas label="Pensión Carrito" rows={pension} filtro={filtro} />
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+        <div style={{ flex: '1 1 0', minWidth: 0 }}>
+          <GridCuotas label="Membresía" rows={membresia} filtro={filtro} />
+        </div>
+        <div style={{ flex: '1 1 0', minWidth: 0 }}>
+          <GridCuotas label="Pensión Carrito" rows={pension} filtro={filtro} />
+        </div>
       </div>
     </div>
   )
@@ -604,7 +608,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 780, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.22)' }}>
+      <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 960, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.22)' }}>
 
         {/* Header con gradiente sutil */}
         <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', borderRadius: '20px 20px 0 0', padding: '20px 24px 0' }}>

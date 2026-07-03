@@ -226,8 +226,8 @@ export default function TabCobranzaSocio({ socioId, nombreSocio, onRefresh }: Pr
             <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin cuotas registradas</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {grupos.map(renderGrid)}
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+            {grupos.map(g => <div key={g.label} style={{ flex: '1 1 0', minWidth: 0 }}>{renderGrid(g)}</div>)}
           </div>
         )}
       </div>

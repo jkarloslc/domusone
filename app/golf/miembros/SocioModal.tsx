@@ -578,7 +578,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       zIndex: 1000, padding: 20,
     }}>
       <div style={{
-        background: '#fff', borderRadius: 20, width: '100%', maxWidth: 920,
+        background: '#fff', borderRadius: 20, width: '100%', maxWidth: 1100,
         maxHeight: '92vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 24px 80px rgba(0,0,0,0.22)',
       }}>
