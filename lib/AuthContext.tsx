@@ -107,6 +107,7 @@ const ADMIN_MODULOS = [
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
   'golf-cuotas', 'golf-cxc', 'golf-recibos', 'golf-intercambios', 'golf-catalogos',
   'golf-riego', 'golf-mantenimiento-campo', 'golf-tee-practica',
+  'golf-administracion', 'golf-mantto-campo',
   // Hípico
   'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
   'hipico-contratos', 'hipico-cobranza', 'hipico-servicios',
@@ -127,6 +128,7 @@ const GOLF_MODULOS = [
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
   'golf-cuotas', 'golf-cxc', 'golf-recibos', 'golf-intercambios', 'golf-catalogos',
   'golf-riego', 'golf-mantenimiento-campo', 'golf-tee-practica',
+  'golf-administracion', 'golf-mantto-campo',
   'reportes', 'compras', 'requisiciones', 'transferencias',
 ]
 

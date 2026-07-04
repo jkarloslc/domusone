@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import {
-  Users, Home, DollarSign, Stethoscope, ChevronRight,
+  Users, Home, DollarSign, Stethoscope, ChevronRight, Flag,
 } from 'lucide-react'
 
 const HorseIcon = ({ size = 18 }: { size?: number }) => (
@@ -45,6 +45,14 @@ const CABALLERIZAS_MODULOS = [
     icon: DollarSign,
     color: '#dc2626',
     href: '/hipico/cobranza',
+  },
+  {
+    key: 'eventos-ecuestres',
+    label: 'Torneos Ecuestres',
+    desc: 'Organización de torneos y eventos ecuestres',
+    icon: Flag,
+    color: '#ca8a04',
+    href: '/hipico/eventos-ecuestres',
   },
 ]
 
