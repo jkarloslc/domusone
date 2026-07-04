@@ -103,6 +103,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
       { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      RPT('golf'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -146,6 +147,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
       { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      RPT('golf'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -188,6 +190,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
       { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      RPT('golf'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -220,6 +223,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
       { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      RPT('golf'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
