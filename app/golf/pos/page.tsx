@@ -54,6 +54,8 @@ type CfgPos = { id: number; razon_social: string; rfc: string | null; direccion:
 type Tab = 'pos' | 'ventas' | 'cortes' | 'catalogo' | 'config' | 'mesa' | 'facturas'
 type LineaPago = { id_forma_fk: number | null; forma_nombre: string; monto: string }
 
+const CORTES_PAGE_SIZE = 20
+
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 const fmtDT = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 const fmtD  = (d: string) => new Date(d.includes('T') ? d : d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -78,7 +80,8 @@ export default function POSPage() {
   const [busquedaV,      setBusquedaV]      = useState('')
   const [filtroStatus,   setFiltroStatus]   = useState('')
   const [filtroCentro,   setFiltroCentro]   = useState('')
-  const [filtroFecha,    setFiltroFecha]    = useState(fechaLocal())
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(fechaLocal())
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(fechaLocal())
   const [expandidoV,     setExpandidoV]     = useState<number | null>(null)
 
   // Facturación POS
@@ -97,8 +100,12 @@ export default function POSPage() {
   const [descargando,   setDescargando]   = useState<string | null>(null)  // 'id-pdf' | 'id-xml'
 
   // Cortes
-  const [cortes,         setCortes]         = useState<Corte[]>([])
-  const [loadingC,       setLoadingC]       = useState(false)
+  const [cortes,           setCortes]           = useState<Corte[]>([])
+  const [loadingC,         setLoadingC]         = useState(false)
+  const [filtroCorteDesde, setFiltroCorteDesde] = useState('')
+  const [filtroCorteHasta, setFiltroCorteHasta] = useState('')
+  const [pageC,            setPageC]            = useState(0)
+  const [totalC,           setTotalC]           = useState(0)
 
   // Config
   const [productos,      setProductos]      = useState<Producto[]>([])
@@ -177,12 +184,13 @@ export default function POSPage() {
       .limit(200)
     if (filtroStatus)  q = q.eq('status', filtroStatus)
     if (filtroCentro)  q = q.eq('id_centro_fk', Number(filtroCentro))
-    if (filtroFecha)   q = q.gte('fecha', inicioDelDia(filtroFecha)).lte('fecha', finDelDia(filtroFecha))
+    if (filtroFechaDesde) q = q.gte('fecha', inicioDelDia(filtroFechaDesde))
+    if (filtroFechaHasta) q = q.lte('fecha', finDelDia(filtroFechaHasta))
     const { data, error } = await q
     if (error) { console.error('[POS] fetchVentas:', error) }
     setVentas((data ?? []) as Venta[])
     setLoadingV(false)
-  }, [filtroStatus, filtroCentro, filtroFecha])
+  }, [filtroStatus, filtroCentro, filtroFechaDesde, filtroFechaHasta])
 
   // ── Fetch ventas Mesa de Control ─────────────────────────
   const fetchVentasMesa = useCallback(async () => {
@@ -204,13 +212,19 @@ export default function POSPage() {
   // ── Fetch cortes ─────────────────────────────────────────
   const fetchCortes = useCallback(async () => {
     setLoadingC(true)
-    const { data } = await dbGolf.from('ctrl_cortes_caja')
-      .select('*')
+    const from = pageC * CORTES_PAGE_SIZE
+    const to   = from + CORTES_PAGE_SIZE - 1
+    let q = dbGolf.from('ctrl_cortes_caja')
+      .select('*', { count: 'exact' })
       .order('fecha_corte', { ascending: false })
-      .limit(50)
+      .range(from, to)
+    if (filtroCorteDesde) q = q.gte('fecha_corte', inicioDelDia(filtroCorteDesde))
+    if (filtroCorteHasta) q = q.lte('fecha_corte', finDelDia(filtroCorteHasta))
+    const { data, count } = await q
     setCortes((data as Corte[]) ?? [])
+    setTotalC(count ?? 0)
     setLoadingC(false)
-  }, [])
+  }, [filtroCorteDesde, filtroCorteHasta, pageC])
 
   // ── Fetch config ─────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
@@ -995,8 +1009,17 @@ ${operaciones.length > 0 ? `
                 placeholder="Buscar cliente o folio…" value={busquedaV} onChange={e => setBusquedaV(e.target.value)} />
               {busquedaV && <button onClick={() => setBusquedaV('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
             </div>
-            <input type="date" value={filtroFecha} onChange={e => setFiltroFecha(e.target.value)}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>Del</span>
+              <input type="date" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)}
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>al</span>
+              <input type="date" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)}
+                min={filtroFechaDesde}
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            </div>
             <select value={filtroCentro} onChange={e => setFiltroCentro(e.target.value)}
               style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
               <option value="">Todos los centros</option>
@@ -1428,7 +1451,20 @@ ${operaciones.length > 0 ? `
       {/* ── TAB: CORTES ──────────────────────────────────── */}
       {tab === 'cortes' && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>Del</span>
+              <input type="date" value={filtroCorteDesde} onChange={e => { setFiltroCorteDesde(e.target.value); setPageC(0) }}
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>al</span>
+              <input type="date" value={filtroCorteHasta} onChange={e => { setFiltroCorteHasta(e.target.value); setPageC(0) }}
+                min={filtroCorteDesde}
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
+            </div>
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>{totalC} corte{totalC !== 1 ? 's' : ''}</span>
+            <div style={{ flex: 1 }} />
             <button className="btn-ghost" onClick={fetchCortes} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
               <RefreshCw size={12} /> Actualizar
             </button>
@@ -1537,6 +1573,16 @@ ${operaciones.length > 0 ? `
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {totalC > CORTES_PAGE_SIZE && (
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
+              <button className="btn-ghost" disabled={pageC === 0} onClick={() => setPageC(p => p - 1)}>Anterior</button>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>
+                Pág. {pageC + 1} / {Math.ceil(totalC / CORTES_PAGE_SIZE)}
+              </span>
+              <button className="btn-ghost" disabled={pageC >= Math.ceil(totalC / CORTES_PAGE_SIZE) - 1} onClick={() => setPageC(p => p + 1)}>Siguiente</button>
             </div>
           )}
         </>
