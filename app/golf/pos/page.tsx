@@ -275,28 +275,20 @@ export default function POSPage() {
   const fetchFacturas = useCallback(async () => {
     setLoadingF(true)
     const fin = fechaFactFin >= fechaFact ? fechaFactFin : fechaFact
-    // Fallback: si la columna facturada no existe aún (migración pendiente),
-    // buscamos por folio_fiscal not null como alternativa
-    let { data, error } = await dbGolf.from('ctrl_ventas')
-      .select('id, folio_dia, fecha, nombre_cliente, total, folio_fiscal, pac_cfdi_id, id_centro_fk')
-      .eq('facturada', true)
+    // Se filtra por folio_fiscal (no por `facturada`): ese flag se libera al cancelar
+    // el CFDI para permitir refacturar, pero la venta debe seguir viéndose aquí.
+    const { data } = await dbGolf.from('ctrl_ventas')
+      .select('id, folio_dia, fecha, nombre_cliente, total, folio_fiscal, pac_cfdi_id, id_centro_fk, id_socio_fk, facturada')
+      .not('folio_fiscal', 'is', null)
       .gte('fecha', inicioDelDia(fechaFact))
       .lte('fecha', finDelDia(fin))
       .order('fecha', { ascending: false })
-    // Si la columna facturada no existe, hacer fallback por folio_fiscal
-    if (error) {
-      ;({ data } = await dbGolf.from('ctrl_ventas')
-        .select('id, folio_dia, fecha, nombre_cliente, total, folio_fiscal, pac_cfdi_id, id_centro_fk')
-        .not('folio_fiscal', 'is', null)
-        .gte('fecha', inicioDelDia(fechaFact))
-        .lte('fecha', finDelDia(fin))
-        .order('fecha', { ascending: false }))
-    }
     const ids = (data ?? []).map((v: any) => v.id)
-    // ctrl_ventas_cfdi puede no existir aún — ignorar error silenciosamente
+    // ctrl_ventas_cfdi puede tener varias filas por venta (historial de cancelaciones/re-timbrados);
+    // se ordena por fecha_timbrado asc para que la última asignación al map sea la más reciente.
     let cfdiMap: Record<number, any> = {}
     if (ids.length > 0) {
-      const { data: cfdis } = await dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', ids)
+      const { data: cfdis } = await dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', ids).order('fecha_timbrado', { ascending: true })
       for (const c of cfdis ?? []) cfdiMap[c.id_venta_fk] = c
     }
     setFacturas((data ?? []).map((v: any) => ({ ...v, _cfdi: cfdiMap[v.id] ?? null })))
@@ -306,7 +298,7 @@ export default function POSPage() {
   useEffect(() => { fetchStats() }, [fetchStats])
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
   useEffect(() => { if (tab === 'cortes')   fetchCortes() }, [tab, fetchCortes])
-  useEffect(() => { if (tab === 'config' || tab === 'catalogo' || tab === 'cortes') fetchConfig() }, [tab, fetchConfig])
+  useEffect(() => { if (tab === 'config' || tab === 'catalogo' || tab === 'cortes' || tab === 'facturas') fetchConfig() }, [tab, fetchConfig])
   useEffect(() => { if (tab === 'mesa')     fetchVentasMesa() }, [tab, fetchVentasMesa])
   useEffect(() => { if (tab === 'facturas') fetchFacturas() }, [tab, fetchFacturas])
 
@@ -407,7 +399,7 @@ export default function POSPage() {
       const capturado = prompt('Esta factura no tiene un correo registrado.\nIngresa el correo electrónico del destinatario:')
       if (!capturado?.trim()) return
       emailDest = capturado.trim()
-      await dbGolf.from('ctrl_ventas_cfdi').update({ receptor_email: emailDest }).eq('id_venta_fk', v.id)
+      if (cfdi?.id) await dbGolf.from('ctrl_ventas_cfdi').update({ receptor_email: emailDest }).eq('id', cfdi.id)
     }
     setReenvEmail(v.id)
 
@@ -448,17 +440,19 @@ export default function POSPage() {
     if (!res.ok) { alert(`Error al enviar: ${resJson.error ?? 'sin detalle'}`); return }
     // Actualizar ctrl_ventas_cfdi si existe
     try {
-      await dbGolf.from('ctrl_ventas_cfdi').update({ enviado_email: true, fecha_envio: new Date().toISOString() }).eq('id_venta_fk', v.id)
+      if (cfdi?.id) await dbGolf.from('ctrl_ventas_cfdi').update({ enviado_email: true, fecha_envio: new Date().toISOString() }).eq('id', cfdi.id)
     } catch (_) { /* tabla puede no existir aún */ }
     fetchFacturas()
   }
 
-  // ── Cancelar CFDI de una venta ya facturada ───────────────
+  // ── Cancelar CFDI de una venta ya facturada — libera la venta ──
+  // para poder volver a facturarla (se conserva el CFDI cancelado como historial).
   const handleCancelarFactura = async () => {
     if (!cancelarFacturaV) return
     const v = cancelarFacturaV
-    const folioFiscal = v._cfdi?.folio_fiscal ?? v.folio_fiscal
-    if (!folioFiscal) { setErrCancelFactura('Esta factura no tiene folio fiscal.'); return }
+    const cfdi = v._cfdi
+    const folioFiscal = cfdi?.folio_fiscal ?? v.folio_fiscal
+    if (!folioFiscal || !cfdi?.id) { setErrCancelFactura('Esta factura no tiene folio fiscal.'); return }
     setCancelandoFactura(true); setErrCancelFactura('')
     const resultado = await cancelarCFDI(folioFiscal, cfgPos?.rfc ?? '', motivoCancel)
     if (!resultado.ok) {
@@ -470,9 +464,12 @@ export default function POSPage() {
       status:             'Cancelada',
       fecha_cancelacion:  new Date().toISOString(),
       motivo_cancelacion: MOTIVOS_CANCELACION_CFDI.find(m => m.clave === motivoCancel)?.desc ?? null,
-    }).eq('id_venta_fk', v.id)
+    }).eq('id', cfdi.id)
+    if (error) { setCancelandoFactura(false); setErrCancelFactura(error.message); return }
+    // Libera la venta: ya no cuenta con un CFDI vigente, se puede volver a facturar.
+    const { error: errVenta } = await dbGolf.from('ctrl_ventas').update({ facturada: false }).eq('id', v.id)
     setCancelandoFactura(false)
-    if (error) { setErrCancelFactura(error.message); return }
+    if (errVenta) { setErrCancelFactura(errVenta.message); return }
     setCancelarFacturaV(null)
     fetchFacturas()
   }
@@ -1434,6 +1431,12 @@ ${operaciones.length > 0 ? `
                                       Cancelada
                                     </span>
                                   )}
+                                  {cancelada && (
+                                    <button onClick={() => abrirFacturarPOS(v)}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                      <FileCheck size={11} /> Facturar de nuevo
+                                    </button>
+                                  )}
                                   {/* PDF: desde BD si existe, si no re-descarga de Facturama */}
                                   {tienePdfBD ? (
                                     <a href={`data:application/pdf;base64,${v._cfdi.pdf_b64}`}
@@ -1938,7 +1941,9 @@ ${operaciones.length > 0 ? `
             }).eq('id', facturandoPOS!.id)
             if (errVenta) throw new Error(errVenta.message)
             const pdf_b64 = pdf_url?.replace(/^data:[^;]+;base64,/, '') ?? null
-            const { error: errCfdi } = await dbGolf.from('ctrl_ventas_cfdi').upsert({
+            // insert (no upsert): si la venta ya tuvo un CFDI cancelado, se conserva ese
+            // historial y este re-timbrado queda como una fila nueva (la más reciente).
+            const { error: errCfdi } = await dbGolf.from('ctrl_ventas_cfdi').insert({
               id_venta_fk:     facturandoPOS!.id,
               folio_fiscal,
               pac_cfdi_id:     pac_cfdi_id ?? null,
@@ -1949,7 +1954,7 @@ ${operaciones.length > 0 ? `
               receptor_email:  receptor?.email        ?? receptorPOS.email ?? null,
               fecha_timbrado:  new Date().toISOString(),
               usuario_timbra:  authUser?.nombre ?? null,
-            }, { onConflict: 'id_venta_fk' })
+            })
             if (errCfdi) throw new Error(errCfdi.message)
           }}
         />
