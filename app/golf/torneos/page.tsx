@@ -13,6 +13,15 @@ import {
 
 const MODULE = 'golf' as const
 
+// La inscripción a torneo causa IVA — el monto capturado ya lo incluye,
+// se desglosa hacia adentro para el CFDI.
+const IVA_PCT_INSCRIPCION = 16
+const desglosarIva = (montoConIva: number) => {
+  const subtotal = Math.round((montoConIva / (1 + IVA_PCT_INSCRIPCION / 100)) * 100) / 100
+  const iva      = Math.round((montoConIva - subtotal) * 100) / 100
+  return { subtotal, iva }
+}
+
 // ── Types ────────────────────────────────────────────────────
 
 type TipoEvento = { id: number; nombre: string; color: string }
@@ -1033,6 +1042,7 @@ tr:last-child td { border-bottom: none; }
       const folioDia = maxFolio && maxFolio.length > 0 ? ((maxFolio[0] as { folio_dia: number }).folio_dia + 1) : 1
 
       const montoCobrar = j.por_cobrar
+      const { subtotal: subtotalCobrar, iva: ivaCobrar } = desglosarIva(montoCobrar)
       const { data: venta, error: errVenta } = await dbGolf.from('ctrl_ventas').insert({
         folio_dia: folioDia,
         id_centro_fk: centroSel.id,
@@ -1042,7 +1052,7 @@ tr:last-child td { border-bottom: none; }
         es_socio: j.tipo === 'Miembro',
         subtotal: montoCobrar,
         descuento: 0,
-        iva: 0,
+        iva: ivaCobrar,
         total: montoCobrar,
         status: 'PAGADA',
         usuario_crea: authUser?.nombre ?? 'sistema',
@@ -1058,9 +1068,9 @@ tr:last-child td { border-bottom: none; }
         cantidad: 1,
         precio_unitario: montoCobrar,
         descuento: 0,
-        iva_pct: 0,
-        iva: 0,
-        subtotal: montoCobrar,
+        iva_pct: IVA_PCT_INSCRIPCION,
+        iva: ivaCobrar,
+        subtotal: subtotalCobrar,
         total: montoCobrar,
         notas: null,
       })

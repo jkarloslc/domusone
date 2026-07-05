@@ -89,6 +89,14 @@ const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigit
 const saldoCuota = (c: { saldo: number | null; monto_final: number; status: string }) =>
   c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+// Colegiaturas/rentas de caballerizas causan IVA — el monto capturado (monto_final)
+// ya lo incluye, se desglosa hacia adentro para el CFDI.
+const IVA_PCT_CUOTAS = 16
+const desglosarIva = (montoConIva: number) => {
+  const subtotal = Math.round((montoConIva / (1 + IVA_PCT_CUOTAS / 100)) * 100) / 100
+  const iva      = Math.round((montoConIva - subtotal) * 100) / 100
+  return { subtotal, iva }
+}
 const fmtNombre = (a: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string } | null) => {
   if (!a) return '—'
   if (a.tipo_persona === 'Moral' && a.razon_social) return a.razon_social
@@ -415,6 +423,9 @@ export default function CobranzaHipicoPage() {
       let folioDia = 0
       const fechaIso = `${r.fecha_recibo}T12:00:00`
 
+      const detDesglosado = r.recibos_hip_det.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
+      const totalIvaCuotas = detDesglosado.reduce((a, d) => a + d.iva, 0)
+
       if (!ventaId) {
         const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
           .eq('id_centro_fk', centroHip.id)
@@ -424,17 +435,17 @@ export default function CobranzaHipicoPage() {
         const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
           folio_dia: folioDia, id_centro_fk: centroHip.id, fecha: fechaIso,
           nombre_cliente: fmtNombre(r.cat_arrendatarios), es_socio: false,
-          subtotal: r.total, descuento: 0, iva: 0, total: r.total,
+          subtotal: r.total, descuento: 0, iva: totalIvaCuotas, total: r.total,
           status: 'PAGADA', usuario_crea: authUser?.user?.email ?? 'hipico',
           notas: `Ticket POS desde recibo hípico ${r.folio}`,
         }).select('id, folio_dia').single()
         if (ev || !venta) throw new Error(ev?.message ?? 'Error al crear venta POS')
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
-        if (r.recibos_hip_det.length > 0) {
-          await dbGolf.from('ctrl_ventas_det').insert(r.recibos_hip_det.map(d => ({
+        if (detDesglosado.length > 0) {
+          await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
             id_venta_fk: ventaId!, id_producto_fk: null, concepto: d.concepto,
-            cantidad: 1, precio_unitario: d.monto_final, descuento: 0, iva_pct: 0, iva: 0, subtotal: d.monto_final, total: d.monto_final, notas: null,
+            cantidad: 1, precio_unitario: d.monto_final, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
           })))
         }
         const { data: pagosR } = await dbHip.from('recibos_hip_pagos').select('id_forma_pago_fk, forma_nombre, monto').eq('id_recibo_fk', r.id)
@@ -458,9 +469,9 @@ export default function CobranzaHipicoPage() {
         municipio: cfgP?.municipio ?? '', direccion: cfgP?.direccion ?? '',
         rfc: cfgP?.rfc ?? '', telefono: cfgP?.telefono ?? '',
         leyenda: cfgP?.leyenda_ticket ?? '¡Gracias por su visita!',
-        subtotal: r.total, iva: 0, total: r.total,
+        subtotal: parseFloat((r.total - totalIvaCuotas).toFixed(2)), iva: totalIvaCuotas, total: r.total,
         pagos: ((pagosF ?? []) as { forma_nombre: string; monto: number }[]).map(p => ({ forma: p.forma_nombre, monto: p.monto })),
-        items: r.recibos_hip_det.map(d => ({ concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final, iva: 0, total: d.monto_final })),
+        items: detDesglosado.map(d => ({ concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final, iva: d.iva, total: d.monto_final })),
       }
       window.open(`/ticket-golf.html?data=${encodeURIComponent(JSON.stringify(ticketData))}&print=1`, '_blank', 'width=400,height=700')
     } catch (e: any) {

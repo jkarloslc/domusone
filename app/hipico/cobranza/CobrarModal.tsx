@@ -38,6 +38,15 @@ const fmtMes = (d: string | null) =>
   d ? new Date(d + '-01T12:00:00').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }) : null
 const hoyLocal = () => new Date().toLocaleDateString('en-CA')
 
+// Colegiaturas/rentas de caballerizas causan IVA — el monto capturado (monto_final)
+// ya lo incluye, se desglosa hacia adentro para el CFDI.
+const IVA_PCT_CUOTAS = 16
+const desglosarIva = (montoConIva: number) => {
+  const subtotal = Math.round((montoConIva / (1 + IVA_PCT_CUOTAS / 100)) * 100) / 100
+  const iva      = Math.round((montoConIva - subtotal) * 100) / 100
+  return { subtotal, iva }
+}
+
 async function generarFolio(): Promise<string> {
   const anio = new Date().getFullYear()
   const { data } = await dbHip.from('recibos_hip')
@@ -363,6 +372,13 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       let folioDia = 0
       const fechaIso = `${rf.fecha_recibo}T12:00:00`
 
+      const { data: detPago } = await dbHip.from('recibos_hip_det').select('concepto, monto_final').eq('id_recibo_fk', exito.idRecibo)
+      const detList = ((detPago ?? []) as { concepto: string; monto_final: number }[]).length > 0
+        ? (detPago as { concepto: string; monto_final: number }[])
+        : [{ concepto: `Cobro Hípico ${exito.folio}`, monto_final: rf.total }]
+      const detDesglosado = detList.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
+      const totalIvaCuotas = detDesglosado.reduce((a, d) => a + d.iva, 0)
+
       if (!ventaId) {
         const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
           .eq('id_centro_fk', centroHip.id)
@@ -373,20 +389,18 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
           folio_dia: folioDia, id_centro_fk: centroHip.id, fecha: fechaIso,
           nombre_cliente: nombreArrendatario, es_socio: false,
-          subtotal: rf.total, descuento: 0, iva: 0, total: rf.total,
+          subtotal: rf.total, descuento: 0, iva: totalIvaCuotas, total: rf.total,
           status: 'PAGADA', facturable: rf.facturable ?? false, usuario_crea: authUser?.user?.email ?? 'hipico',
           notas: `Ticket POS desde recibo hípico ${exito.folio}`,
         }).select('id, folio_dia').single()
         if (ev || !venta) throw new Error(ev?.message ?? 'Error al crear venta POS')
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
-        const { data: detPago } = await dbHip.from('recibos_hip_det').select('concepto, monto_final').eq('id_recibo_fk', exito.idRecibo)
-        const detList = (detPago ?? []) as { concepto: string; monto_final: number }[]
-        await dbGolf.from('ctrl_ventas_det').insert(detList.length > 0 ? detList.map(d => ({
+        await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
           id_venta_fk: ventaId!, id_producto_fk: null,
           concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final,
-          descuento: 0, iva_pct: 0, iva: 0, subtotal: d.monto_final, total: d.monto_final, notas: null,
-        })) : [{ id_venta_fk: ventaId!, id_producto_fk: null, concepto: `Cobro Hípico ${exito.folio}`, cantidad: 1, precio_unitario: rf.total, descuento: 0, iva_pct: 0, iva: 0, subtotal: rf.total, total: rf.total, notas: null }])
+          descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
+        })))
 
         const { data: formasR } = await dbHip.from('recibos_hip_pagos').select('id_forma_pago_fk, forma_nombre, monto').eq('id_recibo_fk', exito.idRecibo)
         const formasRList = (formasR ?? []) as { id_forma_pago_fk: number | null; forma_nombre: string; monto: number }[]
@@ -397,7 +411,6 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       }
 
       // Datos para ticket
-      const { data: detFinal }    = await dbHip.from('recibos_hip_det').select('concepto, monto_final').eq('id_recibo_fk', exito.idRecibo)
       const { data: formasFinal } = await dbHip.from('recibos_hip_pagos').select('forma_nombre, monto').eq('id_recibo_fk', exito.idRecibo)
       const cfgP = cfg as PosCfg | null
       const ticketData = {
@@ -407,9 +420,9 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         municipio: cfgP?.municipio ?? '', direccion: cfgP?.direccion ?? '',
         rfc: cfgP?.rfc ?? '', telefono: cfgP?.telefono ?? '',
         leyenda: cfgP?.leyenda_ticket ?? '¡Gracias por su visita!',
-        subtotal: rf.total, iva: 0, total: rf.total,
+        subtotal: parseFloat((rf.total - totalIvaCuotas).toFixed(2)), iva: totalIvaCuotas, total: rf.total,
         pagos: ((formasFinal ?? []) as { forma_nombre: string; monto: number }[]).map(f => ({ forma: f.forma_nombre, monto: f.monto })),
-        items: ((detFinal ?? []) as { concepto: string; monto_final: number }[]).map(d => ({ concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final, iva: 0, total: d.monto_final })),
+        items: detDesglosado.map(d => ({ concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final, iva: d.iva, total: d.monto_final })),
       }
       window.open(`/ticket-golf.html?data=${encodeURIComponent(JSON.stringify(ticketData))}&print=1`, '_blank', 'width=400,height=700')
     } catch (e: any) {
