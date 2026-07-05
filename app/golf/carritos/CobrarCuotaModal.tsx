@@ -397,13 +397,17 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     setTicketErr('')
 
     try {
-      const [{ data: reciboDB, error: errRec }, { data: centros }, { data: cfg }, { data: cfgCarritos }] = await Promise.all([
+      const [{ data: reciboDB, error: errRec }, { data: detFiscalDB }, { data: centros }, { data: cfg }, { data: cfgCarritos }] = await Promise.all([
         dbGolf.from('recibos_golf').select('id, folio, id_venta_pos_fk').eq('id', recibo.id).single(),
+        dbGolf.from('recibos_golf_det').select('concepto, periodo, monto_final').eq('id_recibo_fk', recibo.id).order('id'),
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
         dbGolf.from('cfg_carritos').select('id_centro_membresias_fk, id_centro_pension_fk').single(),
       ])
       if (errRec || !reciboDB) throw new Error(errRec?.message ?? 'No se pudo leer el recibo para generar ticket')
+      // Montos realmente aplicados a cada concepto en este pago (ya prorateados si fue pago parcial) —
+      // no usar el saldo/monto_final de la cuota, que refleja lo adeudado, no lo cobrado hoy.
+      const detFiscal = (detFiscalDB as { concepto: string; periodo: string | null; monto_final: number }[]) ?? []
 
       const centrosPos = (centros as PosCentro[]) ?? []
       if (centrosPos.length === 0) throw new Error('No hay centros de venta POS activos.')
@@ -454,49 +458,21 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         ventaId = (ventaData as { id: number; folio_dia: number }).id
         folioDia = (ventaData as { id: number; folio_dia: number }).folio_dia
 
-        const detInsert = cuotasSelec.map(c => ({
+        // Se construye desde recibos_golf_det (montos ya prorateados a lo realmente cobrado),
+        // no desde cuotasSelec (que trae el saldo/monto total adeudado por cuota).
+        const detInsert = detFiscal.map(d => ({
           id_venta_fk: ventaId!,
           id_producto_fk: null,
-          concepto: c.concepto,
+          concepto: d.concepto,
           cantidad: 1,
-          precio_unitario: c.saldo ?? c.monto_final,
+          precio_unitario: d.monto_final,
           descuento: 0,
           iva_pct: 0,
           iva: 0,
-          subtotal: c.saldo ?? c.monto_final,
-          total: c.saldo ?? c.monto_final,
-          notas: c.periodo ?? null,
+          subtotal: d.monto_final,
+          total: d.monto_final,
+          notas: d.periodo ?? null,
         }))
-        if (cargoAdicional > 0) {
-          detInsert.push({
-            id_venta_fk: ventaId!,
-            id_producto_fk: null,
-            concepto: `Cargo adicional (${recibo.folio})`,
-            cantidad: 1,
-            precio_unitario: cargoAdicional,
-            descuento: 0,
-            iva_pct: 0,
-            iva: 0,
-            subtotal: cargoAdicional,
-            total: cargoAdicional,
-            notas: null,
-          })
-        }
-        if (descExtra > 0) {
-          detInsert.push({
-            id_venta_fk: ventaId!,
-            id_producto_fk: null,
-            concepto: `Descuento adicional (${recibo.folio})`,
-            cantidad: 1,
-            precio_unitario: -descExtra,
-            descuento: 0,
-            iva_pct: 0,
-            iva: 0,
-            subtotal: -descExtra,
-            total: -descExtra,
-            notas: null,
-          })
-        }
         const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detInsert)
         if (errDet) throw new Error(errDet.message)
 
@@ -520,31 +496,13 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         folioDia = ((ventaExist as { folio_dia: number } | null)?.folio_dia) ?? 0
       }
 
-      const itemsTicket = cuotasSelec.map(c => ({
-        concepto: c.concepto,
+      const itemsTicket = detFiscal.map(d => ({
+        concepto: d.concepto,
         cantidad: 1,
-        precio_unitario: c.saldo ?? c.monto_final,
+        precio_unitario: d.monto_final,
         iva: 0,
-        total: c.saldo ?? c.monto_final,
+        total: d.monto_final,
       }))
-      if (cargoAdicional > 0) {
-        itemsTicket.push({
-          concepto: `Cargo adicional (${recibo.folio})`,
-          cantidad: 1,
-          precio_unitario: cargoAdicional,
-          iva: 0,
-          total: cargoAdicional,
-        })
-      }
-      if (descExtra > 0) {
-        itemsTicket.push({
-          concepto: `Descuento adicional (${recibo.folio})`,
-          cantidad: 1,
-          precio_unitario: -descExtra,
-          iva: 0,
-          total: -descExtra,
-        })
-      }
 
       const ticketData = {
         id: ventaId,
@@ -559,7 +517,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         rfc: (cfg as PosCfg | null)?.rfc ?? INSTITUCION.rfc,
         telefono: (cfg as PosCfg | null)?.telefono ?? INSTITUCION.tel,
         leyenda: (cfg as PosCfg | null)?.leyenda_ticket ?? `Cobro relacionado al recibo ${recibo.folio}.`,
-        subtotal: subtotalBruto,
+        subtotal: itemsTicket.reduce((a, i) => a + i.total, 0),
         iva: 0,
         total: montoParcial,
         pagos: pagosLineas.filter(p => p.id_forma_pago_fk > 0 && parseFloat(p.monto) > 0).map(p => ({ forma: p.forma_nombre, monto: parseFloat(p.monto) })),
