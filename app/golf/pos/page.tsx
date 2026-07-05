@@ -105,6 +105,7 @@ export default function POSPage() {
   const [loadingF,      setLoadingF]      = useState(false)
   const [fechaFact,     setFechaFact]     = useState(fechaLocal())
   const [fechaFactFin,  setFechaFactFin]  = useState(fechaLocal())
+  const [filtroCentroFact, setFiltroCentroFact] = useState('')
   const [reenvEmail,    setReenvEmail]    = useState<number | null>(null)
   const [descargando,   setDescargando]   = useState<string | null>(null)  // 'id-pdf' | 'id-xml'
   const [cancelarFacturaV, setCancelarFacturaV] = useState<any>(null)
@@ -277,12 +278,14 @@ export default function POSPage() {
     const fin = fechaFactFin >= fechaFact ? fechaFactFin : fechaFact
     // Se filtra por folio_fiscal (no por `facturada`): ese flag se libera al cancelar
     // el CFDI para permitir refacturar, pero la venta debe seguir viéndose aquí.
-    const { data } = await dbGolf.from('ctrl_ventas')
+    let q = dbGolf.from('ctrl_ventas')
       .select('id, folio_dia, fecha, nombre_cliente, total, folio_fiscal, pac_cfdi_id, id_centro_fk, id_socio_fk, facturada')
       .not('folio_fiscal', 'is', null)
       .gte('fecha', inicioDelDia(fechaFact))
       .lte('fecha', finDelDia(fin))
       .order('fecha', { ascending: false })
+    if (filtroCentroFact) q = q.eq('id_centro_fk', Number(filtroCentroFact))
+    const { data } = await q
     const ids = (data ?? []).map((v: any) => v.id)
     // ctrl_ventas_cfdi puede tener varias filas por venta (historial de cancelaciones/re-timbrados);
     // se ordena por fecha_timbrado asc para que la última asignación al map sea la más reciente.
@@ -293,7 +296,7 @@ export default function POSPage() {
     }
     setFacturas((data ?? []).map((v: any) => ({ ...v, _cfdi: cfdiMap[v.id] ?? null })))
     setLoadingF(false)
-  }, [fechaFact, fechaFactFin])
+  }, [fechaFact, fechaFactFin, filtroCentroFact])
 
   useEffect(() => { fetchStats() }, [fetchStats])
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
@@ -1361,6 +1364,11 @@ ${operaciones.length > 0 ? `
                 min={fechaFact}
                 style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
+            <select value={filtroCentroFact} onChange={e => setFiltroCentroFact(e.target.value)}
+              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+              <option value="">Todos los centros</option>
+              {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
             <button className="btn-ghost" onClick={fetchFacturas} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
               <RefreshCw size={12} className={loadingF ? 'animate-spin' : ''} /> Actualizar
             </button>
