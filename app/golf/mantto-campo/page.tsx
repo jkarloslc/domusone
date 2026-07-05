@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Leaf, Droplets, ChevronRight } from 'lucide-react'
+import { Leaf, Droplets, CloudRain, ChevronRight } from 'lucide-react'
 
 const MODULOS = [
   {
@@ -17,6 +17,14 @@ const MODULOS = [
     icon: Leaf,
     color: '#16a34a',
     href: '/golf/mantenimiento-campo',
+  },
+  {
+    key: 'estatus-campo',
+    label: 'Estatus del Campo',
+    desc: 'Bitácora de apertura / cierre del campo y de los caminos',
+    icon: CloudRain,
+    color: '#7c3aed',
+    href: '/golf/estatus-campo',
   },
 ]
 

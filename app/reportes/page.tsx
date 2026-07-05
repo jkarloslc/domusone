@@ -2,7 +2,7 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
-import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star, Droplets } from 'lucide-react'
+import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star, Droplets, CloudRain } from 'lucide-react'
 import ReporteColaboradores from './ReporteColaboradores'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
@@ -45,6 +45,7 @@ import ReporteGolfVentasHistoricas from './ReporteGolfVentasHistoricas'
 import ReporteGolfAuditoriaSlots from './ReporteGolfAuditoriaSlots'
 import ReporteGolfSlotsOcupacion from './ReporteGolfSlotsOcupacion'
 import ReporteRiegoConsumo from './ReporteRiegoConsumo'
+import ReporteEstatusCampo from './ReporteEstatusCampo'
 import ReporteProyeccionCobranza from './ReporteProyeccionCobranza'
 import ReporteLotesPorSeccionClasif from './ReporteLotesPorSeccionClasif'
 import ReporteLotesResumenClasif from './ReporteLotesResumenClasif'
@@ -148,6 +149,7 @@ const GRUPOS = [
       { id: 'golf-auditoria-slots',     label: 'Auditoría de Slots',          icon: ClipboardList, desc: 'Comparativo sistema vs. físico de cajones asignados, vacantes y diferencias por categoría' },
       { id: 'golf-slots-ocupacion',     label: 'Ocupación de Slots / Cajones', icon: BarChart3, desc: 'Porcentaje de ocupación y disponibilidad de cajones por categoría y período' },
       { id: 'golf-riego-consumo',       label: 'Consumo de Agua — Riego',     icon: Droplets,  desc: 'Consumo real vs. programado por origen de agua, semana y período con análisis de gap' },
+      { id: 'golf-estatus-campo',       label: 'Estatus del Campo',           icon: CloudRain, desc: 'Días de apertura, cierre y cierre parcial del campo y de los caminos en el período' },
     ],
   },
   {
@@ -305,6 +307,7 @@ function ReportesContent() {
       {active === 'golf-auditoria-slots'     && <ReporteGolfAuditoriaSlots />}
       {active === 'golf-slots-ocupacion'     && <ReporteGolfSlotsOcupacion />}
       {active === 'golf-riego-consumo'       && <ReporteRiegoConsumo />}
+      {active === 'golf-estatus-campo'       && <ReporteEstatusCampo />}
 
       {/* Reportes hípico */}
       {active === 'hipico-estado-cuenta' && <ReporteHipicoEstadoCuenta />}
