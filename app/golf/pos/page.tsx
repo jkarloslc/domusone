@@ -5,15 +5,24 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
   ChevronDown, ChevronRight, Scissors, Settings, History,
-  Printer, Ban, AlertCircle, Store, Save, Loader, FileText, Receipt, FileCheck, Package,
-  CreditCard, Pencil, Trash2, CheckCircle, Send,
+  Printer, Ban, AlertCircle, AlertTriangle, Store, Save, Loader, FileText, Receipt, FileCheck, Package,
+  CreditCard, Pencil, Trash2, CheckCircle, Send, XCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
 import CorteModal from './CorteModal'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
+import ModalShell from '@/components/ui/ModalShell'
+import { cancelarCFDI } from '@/lib/pacService'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
+
+const MOTIVOS_CANCELACION_CFDI = [
+  { clave: '01', desc: 'Comprobante emitido con errores con relación' },
+  { clave: '02', desc: 'Comprobante emitido sin relación' },
+  { clave: '03', desc: 'No se llevó a cabo la operación' },
+  { clave: '04', desc: 'Operación nominativa relacionada en la factura global' },
+]
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number }
@@ -98,6 +107,10 @@ export default function POSPage() {
   const [fechaFactFin,  setFechaFactFin]  = useState(fechaLocal())
   const [reenvEmail,    setReenvEmail]    = useState<number | null>(null)
   const [descargando,   setDescargando]   = useState<string | null>(null)  // 'id-pdf' | 'id-xml'
+  const [cancelarFacturaV, setCancelarFacturaV] = useState<any>(null)
+  const [motivoCancel,     setMotivoCancel]     = useState('02')
+  const [cancelandoFactura, setCancelandoFactura] = useState(false)
+  const [errCancelFactura,  setErrCancelFactura]  = useState('')
 
   // Cortes
   const [cortes,           setCortes]           = useState<Corte[]>([])
@@ -437,6 +450,30 @@ export default function POSPage() {
     try {
       await dbGolf.from('ctrl_ventas_cfdi').update({ enviado_email: true, fecha_envio: new Date().toISOString() }).eq('id_venta_fk', v.id)
     } catch (_) { /* tabla puede no existir aún */ }
+    fetchFacturas()
+  }
+
+  // ── Cancelar CFDI de una venta ya facturada ───────────────
+  const handleCancelarFactura = async () => {
+    if (!cancelarFacturaV) return
+    const v = cancelarFacturaV
+    const folioFiscal = v._cfdi?.folio_fiscal ?? v.folio_fiscal
+    if (!folioFiscal) { setErrCancelFactura('Esta factura no tiene folio fiscal.'); return }
+    setCancelandoFactura(true); setErrCancelFactura('')
+    const resultado = await cancelarCFDI(folioFiscal, cfgPos?.rfc ?? '', motivoCancel)
+    if (!resultado.ok) {
+      setErrCancelFactura('Error al cancelar ante el PAC: ' + resultado.error)
+      setCancelandoFactura(false)
+      return
+    }
+    const { error } = await dbGolf.from('ctrl_ventas_cfdi').update({
+      status:             'Cancelada',
+      fecha_cancelacion:  new Date().toISOString(),
+      motivo_cancelacion: MOTIVOS_CANCELACION_CFDI.find(m => m.clave === motivoCancel)?.desc ?? null,
+    }).eq('id_venta_fk', v.id)
+    setCancelandoFactura(false)
+    if (error) { setErrCancelFactura(error.message); return }
+    setCancelarFacturaV(null)
     fetchFacturas()
   }
 
@@ -1387,10 +1424,16 @@ ${operaciones.length > 0 ? `
                               const tienePdfBD  = !!v._cfdi?.pdf_b64
                               const tieneXmlBD  = !!v._cfdi?.xml_cfdi
                               const emailDest   = v._cfdi?.receptor_email
+                              const cancelada   = v._cfdi?.status === 'Cancelada'
                               const keyPdf      = `${v.id}-pdf`
                               const keyXml      = `${v.id}-xml`
                               return (
-                                <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                                <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', alignItems: 'center' }}>
+                                  {cancelada && (
+                                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626', whiteSpace: 'nowrap' }}>
+                                      Cancelada
+                                    </span>
+                                  )}
                                   {/* PDF: desde BD si existe, si no re-descarga de Facturama */}
                                   {tienePdfBD ? (
                                     <a href={`data:application/pdf;base64,${v._cfdi.pdf_b64}`}
@@ -1432,6 +1475,13 @@ ${operaciones.length > 0 ? `
                                   {/* Sin datos del PAC — solo mostrar UUID */}
                                   {!tienePAC && !tienePdfBD && !tieneXmlBD && (
                                     <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin ID PAC</span>
+                                  )}
+                                  {/* Cancelar CFDI */}
+                                  {tienePAC && !cancelada && (
+                                    <button onClick={() => { setCancelarFacturaV(v); setMotivoCancel('02'); setErrCancelFactura('') }}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                      <XCircle size={11} /> Cancelar
+                                    </button>
                                   )}
                                 </div>
                               )
@@ -1903,6 +1953,53 @@ ${operaciones.length > 0 ? `
             if (errCfdi) throw new Error(errCfdi.message)
           }}
         />
+      )}
+
+      {/* ── Modal Cancelar CFDI ── */}
+      {cancelarFacturaV && (
+        <ModalShell
+          modulo="golf-pos"
+          titulo="Cancelar Factura"
+          subtitulo={`Venta #${cancelarFacturaV.folio_dia} · ${cancelarFacturaV.folio_fiscal ?? ''}`}
+          icono={XCircle}
+          maxWidth={460}
+          onClose={() => !cancelandoFactura && setCancelarFacturaV(null)}
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setCancelarFacturaV(null)} disabled={cancelandoFactura}>
+                Cerrar
+              </button>
+              <button onClick={handleCancelarFactura} disabled={cancelandoFactura}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: cancelandoFactura ? 0.6 : 1 }}>
+                {cancelandoFactura ? <Loader size={13} className="animate-spin" /> : <XCircle size={13} />}
+                {cancelandoFactura ? 'Cancelando…' : 'Confirmar Cancelación'}
+              </button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', gap: 8, padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+              <AlertTriangle size={15} style={{ flexShrink: 0 }} />
+              Esta acción no puede deshacerse. La cancelación se envía al SAT a través del PAC.
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>
+                Motivo de Cancelación (SAT)
+              </label>
+              <select value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+                {MOTIVOS_CANCELACION_CFDI.map(m => (
+                  <option key={m.clave} value={m.clave}>{m.clave} — {m.desc}</option>
+                ))}
+              </select>
+            </div>
+            {errCancelFactura && (
+              <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                {errCancelFactura}
+              </div>
+            )}
+          </div>
+        </ModalShell>
       )}
     </div>
   )
