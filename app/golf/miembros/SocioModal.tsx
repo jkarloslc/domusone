@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase, dbGolf, dbCtrl } from '@/lib/supabase'
 import TabCobranzaSocio from './TabCobranzaSocio'
 import TabRecibosSocio from './TabRecibosSocio'
-import { X, Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt } from 'lucide-react'
+import { X, Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt, Edit2 } from 'lucide-react'
 
 export type Socio = {
   id: number
@@ -223,6 +223,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const [nuevoFiscal, setNuevoFiscal]           = useState<DatoFiscalForm>(DATO_FISCAL_VACIO)
   const [eliminandoFiscal, setEliminandoFiscal] = useState<number | null>(null)
   const [marcandoPrincipal, setMarcandoPrincipal] = useState<number | null>(null)
+  const [editandoFiscalId, setEditandoFiscalId] = useState<number | null>(null)
 
   // ── Facturas del socio ──
   const [facturasSocio, setFacturasSocio]   = useState<any[]>([])
@@ -520,12 +521,26 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   }
 
   // ── Datos Fiscales CRUD ──
+  const handleEditarFiscal = (f: DatoFiscal) => {
+    setEditandoFiscalId(f.id)
+    setNuevoFiscal({
+      alias:               f.alias ?? '',
+      rfc:                 f.rfc,
+      razon_social_fiscal: f.razon_social_fiscal,
+      cp_fiscal:           f.cp_fiscal ?? '',
+      regimen_fiscal:      f.regimen_fiscal ?? '626',
+      uso_cfdi:            f.uso_cfdi ?? 'G03',
+      email_fiscal:        f.email_fiscal ?? '',
+    })
+    setErrorFiscal('')
+    setShowFormFiscal(true)
+  }
+
   const handleGuardarFiscal = async () => {
     if (!nuevoFiscal.rfc.trim()) { setErrorFiscal('El RFC es obligatorio'); return }
     if (!nuevoFiscal.razon_social_fiscal.trim()) { setErrorFiscal('La razón social es obligatoria'); return }
     setSavingFiscal(true); setErrorFiscal('')
-    const { error: err } = await dbGolf.from('cat_socios_datos_fiscales').insert({
-      id_socio_fk:         socio!.id,
+    const datos = {
       alias:               nuevoFiscal.alias.trim()               || null,
       rfc:                 nuevoFiscal.rfc.toUpperCase().trim(),
       razon_social_fiscal: nuevoFiscal.razon_social_fiscal.trim(),
@@ -533,10 +548,16 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       regimen_fiscal:      nuevoFiscal.regimen_fiscal          || null,
       uso_cfdi:            nuevoFiscal.uso_cfdi                || null,
       email_fiscal:        nuevoFiscal.email_fiscal            || null,
-      es_principal:        fiscales.length === 0,
-    })
+    }
+    const { error: err } = editandoFiscalId
+      ? await dbGolf.from('cat_socios_datos_fiscales').update(datos).eq('id', editandoFiscalId)
+      : await dbGolf.from('cat_socios_datos_fiscales').insert({
+          ...datos,
+          id_socio_fk:  socio!.id,
+          es_principal: fiscales.length === 0,
+        })
     if (err) { setErrorFiscal(err.message); setSavingFiscal(false); return }
-    setNuevoFiscal(DATO_FISCAL_VACIO); setShowFormFiscal(false); setSavingFiscal(false)
+    setNuevoFiscal(DATO_FISCAL_VACIO); setShowFormFiscal(false); setSavingFiscal(false); setEditandoFiscalId(null)
     fetchFiscales()
   }
 
@@ -1216,17 +1237,19 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                   {!loadingFiscal && <span style={{ fontSize: 11, color: '#64748b' }}>({fiscales.length})</span>}
                 </div>
                 {!showFormFiscal && (
-                  <button onClick={() => { setShowFormFiscal(true); setErrorFiscal(''); setNuevoFiscal(DATO_FISCAL_VACIO) }}
+                  <button onClick={() => { setShowFormFiscal(true); setErrorFiscal(''); setNuevoFiscal(DATO_FISCAL_VACIO); setEditandoFiscalId(null) }}
                     style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#7c3aed', background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
                     <Plus size={13} /> Agregar dato fiscal
                   </button>
                 )}
               </div>
 
-              {/* Formulario nuevo dato fiscal */}
+              {/* Formulario nuevo/editar dato fiscal */}
               {showFormFiscal && (
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Nuevo dato fiscal</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>
+                    {editandoFiscalId ? 'Editar dato fiscal' : 'Nuevo dato fiscal'}
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div style={{ gridColumn: 'span 2' }}>
                       <label style={labelStyle}>Alias</label>
@@ -1273,7 +1296,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                     <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errorFiscal}</div>
                   )}
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setShowFormFiscal(false); setNuevoFiscal(DATO_FISCAL_VACIO); setErrorFiscal('') }}
+                    <button onClick={() => { setShowFormFiscal(false); setNuevoFiscal(DATO_FISCAL_VACIO); setErrorFiscal(''); setEditandoFiscalId(null) }}
                       style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
                       Cancelar
                     </button>
@@ -1333,6 +1356,12 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                             Principal
                           </button>
                         )}
+                        <button
+                          onClick={() => handleEditarFiscal(f)}
+                          title="Editar"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', padding: 4 }}>
+                          <Edit2 size={14} />
+                        </button>
                         <button
                           onClick={() => handleEliminarFiscal(f.id)}
                           disabled={eliminandoFiscal === f.id}

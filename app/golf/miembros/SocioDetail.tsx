@@ -644,9 +644,11 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <button onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600 }}>
-                <Edit2 size={13} /> Editar
-              </button>
+              {canWrite('golf-miembros') && (
+                <button onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600 }}>
+                  <Edit2 size={13} /> Editar
+                </button>
+              )}
               <button onClick={onClose} style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={15} />
               </button>
