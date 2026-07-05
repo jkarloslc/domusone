@@ -58,6 +58,15 @@ const TIPOS_LABEL: Record<string, string> = {
   INSCRIPCION: 'Inscripción', MENSUALIDAD: 'Mensualidad', PENSION_CARRITO: 'Pensión Carrito',
 }
 
+// Cuotas de membresía/inscripción/pensión de carrito causan IVA — el monto
+// capturado (monto_final) ya lo incluye, se desglosa hacia adentro para el CFDI.
+const IVA_PCT_CUOTAS = 16
+const desglosarIva = (montoConIva: number) => {
+  const subtotal = Math.round((montoConIva / (1 + IVA_PCT_CUOTAS / 100)) * 100) / 100
+  const iva      = Math.round((montoConIva - subtotal) * 100) / 100
+  return { subtotal, iva }
+}
+
 const INSTITUCION = {
   nombre:    'Balvanera Golf, Polo & Country Club',
   rfc:       'CGB000101AAA',
@@ -303,6 +312,11 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       const fechaPagoStr = r.fecha_recibo
       const fechaVentaIso = `${fechaPagoStr}T12:00:00`
 
+      // Cuotas de membresía/inscripción/pensión causan IVA (16%, ya incluido en el monto).
+      const detDesglosado = r.recibos_golf_det.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
+      const descDesglosado = r.descuento > 0 ? desglosarIva(r.descuento) : null
+      const totalIvaCuotas = detDesglosado.reduce((a, d) => a + d.iva, 0) - (descDesglosado?.iva ?? 0)
+
       if (!ventaId) {
         const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
           .select('folio_dia').eq('id_centro_fk', centroSel.id)
@@ -314,7 +328,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         const { data: ventaData, error: errVenta } = await dbGolf.from('ctrl_ventas').insert({
           folio_dia: folioDia, id_centro_fk: centroSel.id, fecha: fechaVentaIso,
           id_socio_fk: r.id_socio_fk, nombre_cliente: nombreSocio, es_socio: true,
-          subtotal: r.subtotal, descuento: r.descuento, iva: 0, total: r.total,
+          subtotal: r.subtotal, descuento: r.descuento, iva: totalIvaCuotas, total: r.total,
           status: 'PAGADA', usuario_crea: authUser?.nombre ?? 'sistema',
           notas: `Ticket POS regenerado desde recibo ${r.folio} (#${r.id})`,
         }).select('id, folio_dia').single()
@@ -323,18 +337,18 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         ventaId = (ventaData as any).id
         folioDia = (ventaData as any).folio_dia
 
-        const detInsert = r.recibos_golf_det.map(d => ({
+        const detInsert = detDesglosado.map(d => ({
           id_venta_fk: ventaId!, id_producto_fk: null,
           concepto: d.concepto, cantidad: 1,
-          precio_unitario: d.monto_final, descuento: 0, iva_pct: 0, iva: 0,
-          subtotal: d.monto_final, total: d.monto_final, notas: d.periodo ?? null,
+          precio_unitario: d.monto_final, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva,
+          subtotal: d.subtotal, total: d.monto_final, notas: d.periodo ?? null,
         }))
-        if (r.descuento > 0) {
+        if (descDesglosado) {
           detInsert.push({
             id_venta_fk: ventaId!, id_producto_fk: null,
             concepto: `Descuento adicional (${r.folio})`, cantidad: 1,
-            precio_unitario: -r.descuento, descuento: 0, iva_pct: 0, iva: 0,
-            subtotal: -r.descuento, total: -r.descuento, notas: null,
+            precio_unitario: -r.descuento, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: -descDesglosado.iva,
+            subtotal: -descDesglosado.subtotal, total: -r.descuento, notas: null,
           })
         }
         const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detInsert)
@@ -355,12 +369,12 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         folioDia = (ventaExist as any)?.folio_dia ?? 0
       }
 
-      const itemsTicket = r.recibos_golf_det.map(d => ({
+      const itemsTicket = detDesglosado.map(d => ({
         concepto: d.concepto, cantidad: 1,
-        precio_unitario: d.monto_final, iva: 0, total: d.monto_final,
+        precio_unitario: d.monto_final, iva: d.iva, total: d.monto_final,
       }))
-      if (r.descuento > 0) {
-        itemsTicket.push({ concepto: `Descuento adicional`, cantidad: 1, precio_unitario: -r.descuento, iva: 0, total: -r.descuento })
+      if (descDesglosado) {
+        itemsTicket.push({ concepto: `Descuento adicional`, cantidad: 1, precio_unitario: -r.descuento, iva: -descDesglosado.iva, total: -r.descuento })
       }
 
       const ticketData = {
@@ -373,7 +387,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         rfc: (cfg as any)?.rfc ?? INSTITUCION.rfc,
         telefono: (cfg as any)?.telefono ?? '',
         leyenda: (cfg as any)?.leyenda_ticket ?? `Cobro relacionado al recibo ${r.folio}.`,
-        subtotal: r.subtotal, iva: 0, total: r.total,
+        subtotal: parseFloat((r.total - totalIvaCuotas).toFixed(2)), iva: totalIvaCuotas, total: r.total,
         pagos: [{ forma: r.forma_pago_nombre ?? '—', monto: r.total }],
         items: itemsTicket,
       }

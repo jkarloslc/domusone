@@ -133,6 +133,14 @@ const INSTITUCION = {
   rfc:       'CGB000101AAA',
   domicilio: 'Balvanera, Corregidora, Querétaro',
 }
+// Cuotas de pensión de carrito causan IVA — el monto capturado (monto_final) ya lo
+// incluye, se desglosa hacia adentro para el CFDI.
+const IVA_PCT_CUOTAS = 16
+const desglosarIva = (montoConIva: number) => {
+  const subtotal = Math.round((montoConIva / (1 + IVA_PCT_CUOTAS / 100)) * 100) / 100
+  const iva      = Math.round((montoConIva - subtotal) * 100) / 100
+  return { subtotal, iva }
+}
 const STATUS_COLOR: Record<string, { bg: string; color: string; label: string }> = {
   VIGENTE:   { bg: '#dcfce7', color: '#15803d', label: 'Vigente' },
   CANCELADO: { bg: '#fee2e2', color: '#dc2626', label: 'Cancelado' },
@@ -376,6 +384,11 @@ export default function CarritosPage() {
       let folioDia = 0
       const fechaVentaIso = `${r.fecha_recibo}T12:00:00`
 
+      // Cuotas de pensión de carrito causan IVA (16%, ya incluido en el monto).
+      const detDesglosado = r.recibos_golf_det.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
+      const descDesglosado = r.descuento > 0 ? desglosarIva(r.descuento) : null
+      const totalIvaCuotas = detDesglosado.reduce((a, d) => a + d.iva, 0) - (descDesglosado?.iva ?? 0)
+
       if (!ventaId) {
         const { data: maxFolio } = await dbGolf.from('ctrl_ventas')
           .select('folio_dia').eq('id_centro_fk', centroSel.id)
@@ -387,7 +400,7 @@ export default function CarritosPage() {
         const { data: ventaData, error: errVenta } = await dbGolf.from('ctrl_ventas').insert({
           folio_dia: folioDia, id_centro_fk: centroSel.id, fecha: fechaVentaIso,
           id_socio_fk: r.id_socio_fk, nombre_cliente: ncR(r.cat_socios), es_socio: true,
-          subtotal: r.subtotal, descuento: r.descuento, iva: 0, total: r.total,
+          subtotal: r.subtotal, descuento: r.descuento, iva: totalIvaCuotas, total: r.total,
           status: 'PAGADA', facturable: r.facturable ?? false, usuario_crea: 'sistema',
           notas: `Ticket POS regenerado desde recibo pensión ${r.folio} (#${r.id})`,
         }).select('id, folio_dia').single()
@@ -396,18 +409,18 @@ export default function CarritosPage() {
         ventaId = (ventaData as any).id
         folioDia = (ventaData as any).folio_dia
 
-        const detInsert = r.recibos_golf_det.map(d => ({
+        const detInsert = detDesglosado.map(d => ({
           id_venta_fk: ventaId!, id_producto_fk: null,
           concepto: d.concepto, cantidad: 1,
-          precio_unitario: d.monto_final, descuento: 0, iva_pct: 0, iva: 0,
-          subtotal: d.monto_final, total: d.monto_final, notas: d.periodo ?? null,
+          precio_unitario: d.monto_final, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva,
+          subtotal: d.subtotal, total: d.monto_final, notas: d.periodo ?? null,
         }))
-        if (r.descuento > 0) {
+        if (descDesglosado) {
           detInsert.push({
             id_venta_fk: ventaId!, id_producto_fk: null,
             concepto: `Descuento adicional (${r.folio})`, cantidad: 1,
-            precio_unitario: -r.descuento, descuento: 0, iva_pct: 0, iva: 0,
-            subtotal: -r.descuento, total: -r.descuento, notas: null,
+            precio_unitario: -r.descuento, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: -descDesglosado.iva,
+            subtotal: -descDesglosado.subtotal, total: -r.descuento, notas: null,
           })
         }
         const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detInsert)
@@ -429,11 +442,11 @@ export default function CarritosPage() {
         folioDia = (ventaExist as any)?.folio_dia ?? 0
       }
 
-      const itemsTicket = r.recibos_golf_det.map(d => ({
-        concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final, iva: 0, total: d.monto_final,
+      const itemsTicket = detDesglosado.map(d => ({
+        concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final, iva: d.iva, total: d.monto_final,
       }))
-      if (r.descuento > 0) {
-        itemsTicket.push({ concepto: `Descuento adicional`, cantidad: 1, precio_unitario: -r.descuento, iva: 0, total: -r.descuento })
+      if (descDesglosado) {
+        itemsTicket.push({ concepto: `Descuento adicional`, cantidad: 1, precio_unitario: -r.descuento, iva: -descDesglosado.iva, total: -r.descuento })
       }
 
       const ticketData = {
@@ -446,7 +459,7 @@ export default function CarritosPage() {
         rfc: (cfg as PosCfg | null)?.rfc ?? INSTITUCION.rfc,
         telefono: (cfg as PosCfg | null)?.telefono ?? '',
         leyenda: (cfg as PosCfg | null)?.leyenda_ticket ?? `Cobro pensión carrito — recibo ${r.folio}.`,
-        subtotal: r.subtotal, iva: 0, total: r.total,
+        subtotal: parseFloat((r.total - totalIvaCuotas).toFixed(2)), iva: totalIvaCuotas, total: r.total,
         pagos: [{ forma: r.forma_pago_nombre ?? '—', monto: r.total }],
         items: itemsTicket,
       }

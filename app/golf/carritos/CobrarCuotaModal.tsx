@@ -67,6 +67,15 @@ const TIPOS_LABEL: Record<string, string> = {
   MENSUALIDAD:     'Mensualidad',
   PENSION_CARRITO: 'Pensión Carrito',
 }
+
+// Cuotas de membresía/inscripción/pensión de carrito causan IVA — el monto
+// capturado (monto_final) ya lo incluye, se desglosa hacia adentro para el CFDI.
+const IVA_PCT_CUOTAS = 16
+const desglosarIva = (montoConIva: number) => {
+  const subtotal = Math.round((montoConIva / (1 + IVA_PCT_CUOTAS / 100)) * 100) / 100
+  const iva      = Math.round((montoConIva - subtotal) * 100) / 100
+  return { subtotal, iva }
+}
 const norm = (s: string) => s
   .toLowerCase()
   .normalize('NFD')
@@ -408,6 +417,9 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
       // Montos realmente aplicados a cada concepto en este pago (ya prorateados si fue pago parcial) —
       // no usar el saldo/monto_final de la cuota, que refleja lo adeudado, no lo cobrado hoy.
       const detFiscal = (detFiscalDB as { concepto: string; periodo: string | null; monto_final: number }[]) ?? []
+      // Cuotas de membresía/inscripción/pensión causan IVA (16%, ya incluido en el monto).
+      const detCalc = detFiscal.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
+      const totalIvaCuotas = detCalc.reduce((a, d) => a + d.iva, 0)
 
       const centrosPos = (centros as PosCentro[]) ?? []
       if (centrosPos.length === 0) throw new Error('No hay centros de venta POS activos.')
@@ -447,7 +459,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
           es_socio: true,
           subtotal: subtotalConCargo,
           descuento: descExtra,
-          iva: 0,
+          iva: totalIvaCuotas,
           total: montoParcial,
           status: 'PAGADA',
           usuario_crea: authUser?.nombre ?? 'sistema',
@@ -460,16 +472,16 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
 
         // Se construye desde recibos_golf_det (montos ya prorateados a lo realmente cobrado),
         // no desde cuotasSelec (que trae el saldo/monto total adeudado por cuota).
-        const detInsert = detFiscal.map(d => ({
+        const detInsert = detCalc.map(d => ({
           id_venta_fk: ventaId!,
           id_producto_fk: null,
           concepto: d.concepto,
           cantidad: 1,
           precio_unitario: d.monto_final,
           descuento: 0,
-          iva_pct: 0,
-          iva: 0,
-          subtotal: d.monto_final,
+          iva_pct: IVA_PCT_CUOTAS,
+          iva: d.iva,
+          subtotal: d.subtotal,
           total: d.monto_final,
           notas: d.periodo ?? null,
         }))
@@ -496,11 +508,11 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         folioDia = ((ventaExist as { folio_dia: number } | null)?.folio_dia) ?? 0
       }
 
-      const itemsTicket = detFiscal.map(d => ({
+      const itemsTicket = detCalc.map(d => ({
         concepto: d.concepto,
         cantidad: 1,
         precio_unitario: d.monto_final,
-        iva: 0,
+        iva: d.iva,
         total: d.monto_final,
       }))
 
@@ -517,8 +529,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         rfc: (cfg as PosCfg | null)?.rfc ?? INSTITUCION.rfc,
         telefono: (cfg as PosCfg | null)?.telefono ?? INSTITUCION.tel,
         leyenda: (cfg as PosCfg | null)?.leyenda_ticket ?? `Cobro relacionado al recibo ${recibo.folio}.`,
-        subtotal: itemsTicket.reduce((a, i) => a + i.total, 0),
-        iva: 0,
+        subtotal: parseFloat((montoParcial - totalIvaCuotas).toFixed(2)),
+        iva: totalIvaCuotas,
         total: montoParcial,
         pagos: pagosLineas.filter(p => p.id_forma_pago_fk > 0 && parseFloat(p.monto) > 0).map(p => ({ forma: p.forma_nombre, monto: parseFloat(p.monto) })),
         items: itemsTicket,
