@@ -562,10 +562,22 @@ export default function FacturaUniversalModal({
             </div>
 
             {resultado.pdf_url && (
-              <a href={resultado.pdf_url} target="_blank" rel="noreferrer"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: '1px solid #ddd6fe', borderRadius: 8, background: '#ede9fe', color: '#7c3aed', textDecoration: 'none', marginBottom: 12 }}>
+              <button
+                onClick={() => {
+                  // resultado.pdf_url es un data: URI (base64) — abrirlo directo con
+                  // target="_blank" falla silenciosamente en Safari. Se convierte a
+                  // Blob y se abre esa URL, que sí navega de forma confiable.
+                  const match = resultado.pdf_url!.match(/^data:([^;]+);base64,(.+)$/)
+                  if (!match) { window.open(resultado.pdf_url, '_blank'); return }
+                  const [, mime, base64] = match
+                  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+                  const blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }))
+                  window.open(blobUrl, '_blank')
+                  setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+                }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontSize: 13, fontWeight: 600, border: '1px solid #ddd6fe', borderRadius: 8, background: '#ede9fe', color: '#7c3aed', cursor: 'pointer', marginBottom: 12 }}>
                 <FileCheck size={14} /> Ver PDF
-              </a>
+              </button>
             )}
 
             {receptor.email && (
