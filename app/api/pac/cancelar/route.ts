@@ -37,30 +37,23 @@ export async function POST(req: NextRequest) {
     const pac        = await getPacConfig()
     const authHeader = 'Basic ' + Buffer.from(`${pac.user}:${pac.pass}`).toString('base64')
 
-    // Buscar el Id interno del PAC por UUID
-    const searchRes = await fetch(
-      `${pac.url}/api/cfdis/issued?uuid=${folio_fiscal}`,
-      { headers: { Authorization: authHeader } }
-    )
-
-    let cfdiId = folio_fiscal  // fallback: usar UUID directamente
-    if (searchRes.ok) {
-      const searchData = await searchRes.json()
-      if (searchData?.Id) cfdiId = searchData.Id
-    }
-
-    // Cancelar el CFDI
+    // Facturama expone /cfdi/{id} (sin prefijo /api/, sin /cfdis/issued) para
+    // cancelar — mismo patrón que /cfdi/{tipo}/{id} usado para descargar en
+    // app/api/pac/descargar/route.ts: recibe el UUID fiscal directamente, no
+    // el Id interno de Facturama, y no requiere un paso previo de búsqueda.
     const cancelRes = await fetch(
-      `${pac.url}/api/cfdis/issued/${cfdiId}?motivo=${motivo}&folioSustitucion=`,
+      `${pac.url}/cfdi/${folio_fiscal}?motive=${motivo}`,
       { method: 'DELETE', headers: { Authorization: authHeader } }
     )
 
     if (!cancelRes.ok) {
-      const err = await cancelRes.json().catch(() => ({}))
-      return NextResponse.json(
-        { error: err?.Message ?? `Error HTTP ${cancelRes.status}` },
-        { status: 400 }
-      )
+      const rawText = await cancelRes.text()
+      let msg = `Error HTTP ${cancelRes.status}`
+      try {
+        const parsed = JSON.parse(rawText)
+        msg = parsed?.Message ?? (parsed?.ModelState ? JSON.stringify(parsed.ModelState) : rawText.substring(0, 200))
+      } catch { if (rawText) msg = rawText.substring(0, 200) }
+      return NextResponse.json({ error: msg }, { status: 400 })
     }
 
     const acuse = await cancelRes.text().catch(() => '')
