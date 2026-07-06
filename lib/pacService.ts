@@ -113,20 +113,23 @@ export async function timbrarCFDI(datos: DatosFactura): Promise<ResultadoTimbrad
   }
 }
 
+// pac_cfdi_id: ID interno de Facturama (NO el folio_fiscal/UUID del SAT) —
+// la API de cancelación de Facturama (DELETE /cfdi/{id}) recibe su propio Id,
+// no el UUID fiscal (a diferencia de /cfdi/{tipo}/{id} para descargar, que sí
+// usa el UUID). Ver app/api/pac/cancelar/route.ts.
 export async function cancelarCFDI(
-  folio_fiscal: string,
-  rfc_emisor: string,
+  pac_cfdi_id: string,
   motivo: string = '02'
 ): Promise<ResultadoCancelacion> {
   if (!PAC_CONFIGURADO) {
-    return { ok: true, acuse: `CANCELACION-SIMULADA-${folio_fiscal}` }
+    return { ok: true, acuse: `CANCELACION-SIMULADA-${pac_cfdi_id}` }
   }
 
   try {
     const response = await fetch('/api/pac/cancelar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folio_fiscal, rfc_emisor, motivo }),
+      body: JSON.stringify({ pac_cfdi_id, motivo }),
     })
     const result = await response.json()
     if (!response.ok) return { ok: false, error: result.error ?? 'Error al cancelar' }

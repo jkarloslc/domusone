@@ -28,21 +28,21 @@ async function getPacConfig() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { folio_fiscal, rfc_emisor, motivo } = await req.json()
+    const { pac_cfdi_id, motivo } = await req.json()
 
-    if (!folio_fiscal) {
-      return NextResponse.json({ error: 'folio_fiscal es requerido' }, { status: 400 })
+    if (!pac_cfdi_id) {
+      return NextResponse.json({ error: 'pac_cfdi_id es requerido' }, { status: 400 })
     }
 
     const pac        = await getPacConfig()
     const authHeader = 'Basic ' + Buffer.from(`${pac.user}:${pac.pass}`).toString('base64')
 
-    // Facturama expone /cfdi/{id} (sin prefijo /api/, sin /cfdis/issued) para
-    // cancelar — mismo patrón que /cfdi/{tipo}/{id} usado para descargar en
-    // app/api/pac/descargar/route.ts: recibe el UUID fiscal directamente, no
-    // el Id interno de Facturama, y no requiere un paso previo de búsqueda.
+    // Documentado en https://apisandbox.facturama.mx/docs/api/DELETE-cfdi-id_type_motive_uuidReplacement:
+    // {id} es "ID del CFDI en Facturama" (su Id interno, NO el UUID fiscal —
+    // a diferencia de /cfdi/{tipo}/{id} para descargar). `type=issued` es
+    // obligatorio para la API Web (vs. `payroll` para nómina).
     const cancelRes = await fetch(
-      `${pac.url}/cfdi/${folio_fiscal}?motive=${motivo}`,
+      `${pac.url}/cfdi/${pac_cfdi_id}?type=issued&motive=${motivo ?? '02'}`,
       { method: 'DELETE', headers: { Authorization: authHeader } }
     )
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     const acuse = await cancelRes.text().catch(() => '')
-    return NextResponse.json({ acuse: acuse || `CANCELADO-${folio_fiscal}` })
+    return NextResponse.json({ acuse: acuse || `CANCELADO-${pac_cfdi_id}` })
 
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })

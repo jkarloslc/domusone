@@ -33,8 +33,12 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
   const [msg, setMsg]                   = useState('')
 
   const handleCancelar = async () => {
+    if (!f.pac_cfdi_id) {
+      setMsg('Esta factura no tiene ID de PAC (pac_cfdi_id) guardado — no se puede cancelar automáticamente. Se emitió antes de que este campo se empezara a guardar; hay que cancelarla directamente en el portal de Facturama.')
+      return
+    }
     setCancelando(true); setMsg('')
-    const resultado = await cancelarCFDI(f.folio_fiscal, f.rfc_emisor, motivo)
+    const resultado = await cancelarCFDI(f.pac_cfdi_id, motivo)
     if (!resultado.ok) {
       setMsg('Error al cancelar: ' + resultado.error)
       setCancelando(false); return

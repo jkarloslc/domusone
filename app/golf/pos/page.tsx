@@ -454,10 +454,11 @@ export default function POSPage() {
     if (!cancelarFacturaV) return
     const v = cancelarFacturaV
     const cfdi = v._cfdi
-    const folioFiscal = cfdi?.folio_fiscal ?? v.folio_fiscal
-    if (!folioFiscal || !cfdi?.id) { setErrCancelFactura('Esta factura no tiene folio fiscal.'); return }
+    // La API de cancelación de Facturama recibe su propio Id interno, no el folio_fiscal (UUID).
+    const pacCfdiId = cfdi?.pac_cfdi_id ?? v.pac_cfdi_id
+    if (!pacCfdiId || !cfdi?.id) { setErrCancelFactura('Esta factura no tiene ID de PAC (pac_cfdi_id), no se puede cancelar.'); return }
     setCancelandoFactura(true); setErrCancelFactura('')
-    const resultado = await cancelarCFDI(folioFiscal, cfgPos?.rfc ?? '', motivoCancel)
+    const resultado = await cancelarCFDI(pacCfdiId, motivoCancel)
     if (!resultado.ok) {
       setErrCancelFactura('Error al cancelar ante el PAC: ' + resultado.error)
       setCancelandoFactura(false)

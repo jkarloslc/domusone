@@ -234,6 +234,7 @@ export default function FacturaModal({ reciboInicial, onClose, onSaved }: Props)
         xml_cfdi:              resultado.xml_cfdi,
         pdf_url:               resultado.pdf_url,
         pac_respuesta:         resultado.pac_respuesta,
+        pac_cfdi_id:           resultado.pac_cfdi_id ?? null,
       })
 
       if (dbErr) { setError('Error al guardar en BD: ' + dbErr.message); setSaving(false); return }
