@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, Truck, ShoppingCart,
-  BarChart3, Settings, LogOut, User, Users, X, Landmark, MessageSquare,
+  BarChart3, Settings, LogOut, User, Users, X, Landmark,
   Flag, Star, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf,
   Hammer, Building2,
 } from 'lucide-react'
@@ -86,7 +86,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -130,7 +129,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -173,7 +171,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -213,7 +210,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
     { section: 'Club', items: [
@@ -247,7 +243,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -272,7 +267,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   atencion_residentes: [
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -338,7 +332,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
-      { label: 'Comunicados',    href: '/comunicados',    icon: MessageSquare },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
