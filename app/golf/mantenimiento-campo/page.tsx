@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl } from '@/lib/supabase'
-import OrdenesTrabajoTab from '@/app/mantenimiento/OrdenesTrabajoTab'
+import OrdenesTrabajoTab from '@/app/mantenimiento/gestion/OrdenesTrabajoTab'
 import {
   Leaf, ChevronLeft, ChevronRight, RefreshCw, ChevronDown, Search,
 } from 'lucide-react'

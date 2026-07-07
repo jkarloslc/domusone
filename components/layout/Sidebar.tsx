@@ -2,10 +2,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Home, Wrench, Truck, ShoppingCart,
+  Home, Wrench, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark,
   Flag, Star, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf,
-  Hammer, Building2,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 
@@ -91,9 +90,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
-      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
-      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
-      { label: 'Proyectos CAPEX',  href: '/capex',          icon: Building2     },
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
@@ -134,9 +130,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
-      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
-      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
-      { label: 'Proyectos CAPEX',  href: '/capex',          icon: Building2     },
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
@@ -176,9 +169,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
-      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
-      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
-      { label: 'Proyectos CAPEX',  href: '/capex',          icon: Building2     },
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
@@ -248,9 +238,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
-      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
-      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
-      { label: 'Proyectos CAPEX',  href: '/capex',          icon: Building2     },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -320,9 +307,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
-      { label: 'Vehículos y Maquinaria', href: '/equipo-flota', icon: Truck   },
-      { label: 'Equipo y Herramienta',     href: '/herramientas',  icon: Hammer  },
-      { label: 'Proyectos CAPEX',  href: '/capex',          icon: Building2     },
     ]},
   ],
 

@@ -411,10 +411,10 @@ export default function DashboardMantenimientoPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <OtBloque
             titulo="OT Mantto. Res" empresa="Balvanera" color="#2563eb"
-            data={otBalv} loading={loading} href="/mantenimiento" />
+            data={otBalv} loading={loading} href="/mantenimiento/gestion" />
           <OtBloque
             titulo="OT Cuadrilla" empresa="Cuadrilla" color="#7c3aed"
-            data={otCuadrilla} loading={loading} href="/mantenimiento" />
+            data={otCuadrilla} loading={loading} href="/mantenimiento/gestion" />
         </div>
       </div>
 
