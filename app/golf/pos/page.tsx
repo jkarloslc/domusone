@@ -25,7 +25,7 @@ const MOTIVOS_CANCELACION_CFDI = [
 ]
 
 // ── Tipos ──────────────────────────────────────────────────────
-type Centro = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number }
+type Centro = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number; serie_factura: string | null }
 type CentroIngreso = { id: number; nombre: string; activo: boolean }
 type CentroIngresoMap = {
   id: number
@@ -130,6 +130,10 @@ export default function POSPage() {
   const [cfgForm,           setCfgForm]           = useState<Partial<CfgPos>>({})
   const [exigirFacturacion, setExigirFacturacion] = useState(false)
   const [savingToggle,      setSavingToggle]      = useState(false)
+  const [proximoFolioFactura, setProximoFolioFactura] = useState<number | null>(null)
+  const [folioFacturaInput,   setFolioFacturaInput]   = useState('')
+  const [savingFolioFactura,  setSavingFolioFactura]  = useState(false)
+  const [errFolioFactura,     setErrFolioFactura]     = useState('')
   const [editingProd,    setEditingProd]    = useState<Partial<Producto> | null>(null)
   const [savingProd,     setSavingProd]     = useState(false)
   const [centrosIngreso, setCentrosIngreso] = useState<CentroIngreso[]>([])
@@ -156,7 +160,7 @@ export default function POSPage() {
   // ── Cargar centros de venta ─────────────────────────────
   useEffect(() => {
     if (!authUser) return   // esperar a que la sesión esté lista
-    dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden').eq('activo', true).order('orden')
+    dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden, serie_factura').eq('activo', true).order('orden')
       .then(({ data, error }) => {
         if (error) {
           setDbError(`Error cat_centros_venta: ${error.message} | code: ${error.code} | hint: ${error.hint}`)
@@ -272,6 +276,12 @@ export default function POSPage() {
     setLoadingCfg(false)
   }, [])
 
+  // ── Numeración de facturas (folio consecutivo, independiente por serie) ──
+  const fetchProximoFolioFactura = useCallback(async () => {
+    const { data, error } = await dbGolf.rpc('peek_folio_factura')
+    if (!error) setProximoFolioFactura(Number(data))
+  }, [])
+
   // ── Fetch facturas emitidas ──────────────────────────────
   const fetchFacturas = useCallback(async () => {
     setLoadingF(true)
@@ -302,6 +312,7 @@ export default function POSPage() {
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
   useEffect(() => { if (tab === 'cortes')   fetchCortes() }, [tab, fetchCortes])
   useEffect(() => { if (tab === 'config' || tab === 'catalogo' || tab === 'cortes' || tab === 'facturas') fetchConfig() }, [tab, fetchConfig])
+  useEffect(() => { if (tab === 'config') fetchProximoFolioFactura() }, [tab, fetchProximoFolioFactura])
   useEffect(() => { if (tab === 'mesa')     fetchVentasMesa() }, [tab, fetchVentasMesa])
   useEffect(() => { if (tab === 'facturas') fetchFacturas() }, [tab, fetchFacturas])
 
@@ -911,6 +922,17 @@ ${operaciones.length > 0 ? `
     setSavingToggle(false)
   }
 
+  const guardarFolioFacturaInicial = async () => {
+    const nuevo = parseInt(folioFacturaInput, 10)
+    if (!nuevo || nuevo < 1) { setErrFolioFactura('Ingresa un número de folio válido (mayor a 0)'); return }
+    setSavingFolioFactura(true); setErrFolioFactura('')
+    const { error } = await dbGolf.rpc('set_folio_factura_inicial', { nuevo_inicio: nuevo })
+    setSavingFolioFactura(false)
+    if (error) { setErrFolioFactura(error.message); return }
+    setFolioFacturaInput('')
+    fetchProximoFolioFactura()
+  }
+
   const ventasF = ventas.filter(v => {
     if (!busquedaV.trim()) return true
     const q = busquedaV.toLowerCase()
@@ -1388,7 +1410,7 @@ ${operaciones.length > 0 ? `
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                      {['Folio', 'Cliente', 'Centro', 'UUID / Folio Fiscal', 'Fecha', 'Total', 'Receptor', 'Enviado', 'Acciones'].map(h => (
+                      {['Folio', 'Cliente', 'Centro', 'Folio Factura / UUID Fiscal', 'Fecha', 'Total', 'Receptor', 'Enviado', 'Acciones'].map(h => (
                         <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -1406,6 +1428,9 @@ ${operaciones.length > 0 ? `
                           <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</td>
                           <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>{centro?.nombre ?? `#${v.id_centro_fk}`}</td>
                           <td style={{ padding: '10px 14px', maxWidth: 220 }}>
+                            {cfdi?.folio_factura && (
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#1e293b', marginBottom: 2 }}>{cfdi.folio_factura}</div>
+                            )}
                             <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>{v.folio_fiscal ?? '—'}</div>
                           </td>
                           <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>{fmtDT(v.fecha)}</td>
@@ -1904,6 +1929,39 @@ ${operaciones.length > 0 ? `
                 </div>
               </div>
 
+              {/* Numeración de Facturas */}
+              <div className="card" style={{ padding: 20, maxWidth: 600 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>Numeración de Facturas</div>
+                <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
+                  El folio de cada factura combina la <strong>Serie</strong> del centro de venta (se configura en{' '}
+                  <a href="/golf/catalogos" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>Catálogos del Club → Centros de Venta POS</a>)
+                  {' '}con un <strong>folio consecutivo único</strong> compartido entre todas las series (ej. GOLF-0001, luego HIPICO-0002, luego GOLF-0003…).
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                  <span style={{ fontSize: 12, color: '#64748b' }}>Próximo folio a asignar:</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, fontFamily: 'monospace', color: '#7c3aed' }}>
+                    {proximoFolioFactura != null ? String(proximoFolioFactura).padStart(4, '0') : '—'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Reiniciar folio inicial</label>
+                    <input type="number" min={1} value={folioFacturaInput} onChange={e => setFolioFacturaInput(e.target.value)}
+                      placeholder="ej. 1000"
+                      style={{ width: 140, padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <button onClick={guardarFolioFacturaInicial} disabled={savingFolioFactura || !folioFacturaInput}
+                    style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (savingFolioFactura || !folioFacturaInput) ? 0.6 : 1 }}>
+                    {savingFolioFactura ? 'Guardando…' : 'Aplicar'}
+                  </button>
+                </div>
+                {errFolioFactura && (
+                  <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errFolioFactura}</div>
+                )}
+              </div>
+
             </>
           )}
         </div>
@@ -1940,9 +1998,15 @@ ${operaciones.length > 0 ? `
           fiscalOptions={fiscalOptionsPOS}
           genericRfcPrefill={genericRfcData}
           formaPagoStr={receptorPOS._formaPago ?? ''}
+          serieFactura={centros.find(c => c.id === facturandoPOS!.id_centro_fk)?.serie_factura || 'FAC'}
+          obtenerFolioFactura={async () => {
+            const { data, error } = await dbGolf.rpc('next_folio_factura')
+            if (error) throw new Error(error.message)
+            return String(data).padStart(4, '0')
+          }}
           onClose={() => setFacturandoPOS(null)}
           onSaved={() => { setFacturandoPOS(null); fetchVentas(); if (tab === 'facturas') fetchFacturas() }}
-          saveFactura={async (folio_fiscal, xml, pdf_url, pac_cfdi_id, receptor) => {
+          saveFactura={async (folio_fiscal, xml, pdf_url, pac_cfdi_id, receptor, folio_factura) => {
             const { error: errVenta } = await dbGolf.from('ctrl_ventas').update({
               folio_fiscal,
               facturada:   true,
@@ -1955,6 +2019,7 @@ ${operaciones.length > 0 ? `
             const { error: errCfdi } = await dbGolf.from('ctrl_ventas_cfdi').insert({
               id_venta_fk:     facturandoPOS!.id,
               folio_fiscal,
+              folio_factura:   folio_factura ?? null,
               pac_cfdi_id:     pac_cfdi_id ?? null,
               xml_cfdi:        xml ?? null,
               pdf_b64,

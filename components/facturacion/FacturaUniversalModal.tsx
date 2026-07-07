@@ -24,7 +24,7 @@ export type FiscalOption = ReceptorPreFill & { id: number | string; alias: strin
 
 export type Props = {
   titulo:            string       // e.g. "Facturar Recibo RG-2026-001"
-  folio:             string       // folio interno del recibo
+  folio:             string       // referencia del documento origen (ticket/recibo) — solo para mostrar y nombrar archivos
   total:             number
   fecha:             string       // YYYY-MM-DD
   conceptos:         Concepto[]
@@ -32,12 +32,19 @@ export type Props = {
   genericRfcPrefill?: ReceptorPreFill  // datos para el botón "Público en General"
   fiscalOptions?:    FiscalOption[]    // datos fiscales del socio entre los que se puede elegir
   formaPagoStr?:     string       // nombre de la forma de pago (para mapear al SAT)
+  // Folio propio de la factura (Serie + Folio del CFDI), distinto del folio
+  // del documento origen (`folio`) y del folio fiscal (UUID del SAT). Si no
+  // se proveen, se usa el campo "Serie" editable de siempre y `folio` como
+  // folio_interno (comportamiento previo).
+  serieFactura?:       string               // serie fija (ej. 'GOLF', 'HIPICO'), ya resuelta por el llamador
+  obtenerFolioFactura?: () => Promise<string> // folio consecutivo — se pide justo al timbrar, no antes
   onClose:           () => void
   onSaved:           (folio_fiscal: string) => void
   // receptor: datos finales tal como quedaron en el modal (RFC/email pueden
   // haber cambiado respecto a receptorInit — p.ej. al usar "Público en
   // General" o al capturar el correo a mano) — usarlos, no receptorInit.
-  saveFactura:       (folio_fiscal: string, xml?: string, pdf_url?: string, pac_cfdi_id?: string, receptor?: ReceptorPreFill) => Promise<void>
+  // folio_factura: Serie+Folio (ej. "GOLF-0002") realmente asignado, si se usó obtenerFolioFactura.
+  saveFactura:       (folio_fiscal: string, xml?: string, pdf_url?: string, pac_cfdi_id?: string, receptor?: ReceptorPreFill, folio_factura?: string) => Promise<void>
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -70,6 +77,7 @@ const PASOS = ['Receptor', 'Comprobante', 'Confirmar', 'Emitida']
 export default function FacturaUniversalModal({
   titulo, folio, total, fecha, conceptos,
   receptorInit = {}, genericRfcPrefill, fiscalOptions, formaPagoStr = '',
+  serieFactura, obtenerFolioFactura,
   onClose, onSaved, saveFactura,
 }: Props) {
   const [paso, setPaso] = useState(1)
@@ -78,10 +86,13 @@ export default function FacturaUniversalModal({
   const [enviandoEmail, setEnviandoEmail] = useState(false)
   const [emailEnviado, setEmailEnviado] = useState(false)
   const [resultado, setResultado] = useState<{ folio_fiscal: string; pdf_url?: string; xml_cfdi?: string; pac_cfdi_id?: string }>()
+  // Folio propio de la factura (Serie+Folio) asignado al timbrar, cuando se
+  // usa obtenerFolioFactura — se muestra en el paso "Emitida".
+  const [folioFacturaAsignado, setFolioFacturaAsignado] = useState<string | null>(null)
   // Si el timbrado ya se realizó en el SAT pero falló el guardado local,
   // guardamos aquí la respuesta del PAC para reintentar SOLO el guardado
   // — nunca volver a llamar a timbrarCFDI, o se genera una factura duplicada real.
-  const [timbradoPendiente, setTimbradoPendiente] = useState<{ folio_fiscal: string; xml_cfdi?: string; pdf_url?: string; pac_cfdi_id?: string } | null>(null)
+  const [timbradoPendiente, setTimbradoPendiente] = useState<{ folio_fiscal: string; xml_cfdi?: string; pdf_url?: string; pac_cfdi_id?: string; folio_factura?: string } | null>(null)
 
   // Tasas IVA fijas desde el catálogo — no editables en el modal
   const tasas = conceptos.map(c => c.tasa_iva ?? 0)
@@ -101,7 +112,7 @@ export default function FacturaUniversalModal({
 
   // Datos del comprobante
   const [cfdi, setCfdi] = useState({
-    serie:          'A',
+    serie:          serieFactura ?? 'A',
     metodo_pago:    'PUE',
     forma_pago:     mapFormaPagoSAT(formaPagoStr),
     descripcion:    conceptos.length === 1
@@ -142,13 +153,14 @@ export default function FacturaUniversalModal({
     if (timbradoPendiente) {
       setSaving(true); setError('')
       try {
-        await saveFactura(timbradoPendiente.folio_fiscal, timbradoPendiente.xml_cfdi, timbradoPendiente.pdf_url, timbradoPendiente.pac_cfdi_id, receptor)
+        await saveFactura(timbradoPendiente.folio_fiscal, timbradoPendiente.xml_cfdi, timbradoPendiente.pdf_url, timbradoPendiente.pac_cfdi_id, receptor, timbradoPendiente.folio_factura)
       } catch (e: any) {
         setError(`Factura YA timbrada en el SAT (folio ${timbradoPendiente.folio_fiscal}) pero sigue sin poder guardarse localmente: ${e.message}. No se generará una nueva factura — corrige el problema y usa "Reintentar guardar".`)
         setSaving(false)
         return
       }
       setResultado(timbradoPendiente)
+      if (timbradoPendiente.folio_factura) setFolioFacturaAsignado(timbradoPendiente.folio_factura)
       setTimbradoPendiente(null)
       setSaving(false)
       setPaso(4)
@@ -162,6 +174,25 @@ export default function FacturaUniversalModal({
 
     setSaving(true); setError('')
 
+    // Folio propio de la factura: si el llamador provee obtenerFolioFactura,
+    // se pide justo en este momento (no antes, para no dejar huecos si el
+    // usuario cancela el modal) y sustituye a la Serie/Folio editables.
+    let serieFinal = cfdi.serie
+    let folioFinal = folio
+    let folioFacturaGenerado: string | undefined
+    if (obtenerFolioFactura) {
+      try {
+        folioFinal = await obtenerFolioFactura()
+      } catch (e: any) {
+        setError('No se pudo generar el folio de la factura: ' + e.message)
+        setSaving(false)
+        return
+      }
+      serieFinal = serieFactura ?? cfdi.serie
+      folioFacturaGenerado = `${serieFinal}-${folioFinal}`
+      setFolioFacturaAsignado(folioFacturaGenerado)
+    }
+
     const datosFactura: DatosFactura = {
       rfc_emisor:            emisor.rfc,
       razon_social_emisor:   emisor.razon_social,
@@ -171,8 +202,8 @@ export default function FacturaUniversalModal({
       uso_cfdi:              receptor.uso_cfdi,
       regimen_fiscal_receptor: receptor.regimen_fiscal,
       cp_receptor:           receptor.cp.trim(),
-      serie:                 cfdi.serie,
-      folio_interno:         folio,
+      serie:                 serieFinal,
+      folio_interno:         folioFinal,
       metodo_pago:           cfdi.metodo_pago,
       forma_pago:            cfdi.forma_pago,
       moneda:                'MXN',
@@ -199,11 +230,11 @@ export default function FacturaUniversalModal({
       return
     }
 
-    const timbrado = { folio_fiscal: res.folio_fiscal!, xml_cfdi: res.xml_cfdi, pdf_url: res.pdf_url, pac_cfdi_id: res.pac_cfdi_id }
+    const timbrado = { folio_fiscal: res.folio_fiscal!, xml_cfdi: res.xml_cfdi, pdf_url: res.pdf_url, pac_cfdi_id: res.pac_cfdi_id, folio_factura: folioFacturaGenerado }
 
     // Guardar folio_fiscal en la BD
     try {
-      await saveFactura(timbrado.folio_fiscal, timbrado.xml_cfdi, timbrado.pdf_url, timbrado.pac_cfdi_id, receptor)
+      await saveFactura(timbrado.folio_fiscal, timbrado.xml_cfdi, timbrado.pdf_url, timbrado.pac_cfdi_id, receptor, timbrado.folio_factura)
     } catch (e: any) {
       setTimbradoPendiente(timbrado)
       setError(`Factura timbrada en el SAT (folio ${timbrado.folio_fiscal}) pero no se pudo guardar localmente: ${e.message}. No vuelvas a timbrar — usa "Reintentar guardar" para solo guardar el folio ya emitido.`)
@@ -466,8 +497,11 @@ export default function FacturaUniversalModal({
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Serie</label>
-                <input style={inputStyle} value={cfdi.serie} onChange={e => setC('serie', e.target.value)} placeholder="A" />
+                <label style={labelStyle}>Serie{serieFactura ? ' (folio automático)' : ''}</label>
+                <input style={{ ...inputStyle, ...(serieFactura ? { background: '#f1f5f9', color: '#64748b' } : {}) }}
+                  value={serieFactura ?? cfdi.serie}
+                  disabled={!!serieFactura}
+                  onChange={e => setC('serie', e.target.value)} placeholder="A" />
               </div>
               <div>
                 <label style={labelStyle}>Clave Prod/Serv SAT</label>
@@ -532,7 +566,10 @@ export default function FacturaUniversalModal({
               <div><span style={{ color: '#94a3b8' }}>CP: </span><strong>{receptor.cp}</strong></div>
               <div><span style={{ color: '#94a3b8' }}>Método pago: </span><strong>{cfdi.metodo_pago}</strong></div>
               <div><span style={{ color: '#94a3b8' }}>Forma pago: </span><strong>{cfdi.forma_pago}</strong></div>
-              <div><span style={{ color: '#94a3b8' }}>Folio interno: </span><strong>{folio}</strong></div>
+              <div>
+                <span style={{ color: '#94a3b8' }}>Folio de factura: </span>
+                <strong>{obtenerFolioFactura ? `${serieFactura ?? cfdi.serie}-???? (se asigna al timbrar)` : folio}</strong>
+              </div>
               <div><span style={{ color: '#94a3b8' }}>Subtotal: </span><strong>{fmt$(subtotalCalc)}</strong></div>
               <div><span style={{ color: '#94a3b8' }}>IVA{ivaCalc > 0 ? ' incluido' : ' (Exento)'}: </span><strong>{fmt$(ivaCalc)}</strong></div>
               <div style={{ gridColumn: 'span 2' }}>
@@ -555,6 +592,13 @@ export default function FacturaUniversalModal({
             <CheckCircle size={48} color="#7c3aed" style={{ marginBottom: 12 }} />
             <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>¡Factura timbrada exitosamente!</div>
             <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>El folio fiscal ha sido vinculado al recibo.</div>
+
+            {folioFacturaAsignado && (
+              <div style={{ background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 10, padding: '10px 18px', marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>Folio de Factura</div>
+                <div style={{ fontSize: 14, fontFamily: 'monospace', fontWeight: 700, color: '#4c1d95' }}>{folioFacturaAsignado}</div>
+              </div>
+            )}
 
             <div style={{ background: '#faf5ff', border: '1px solid #ddd6fe', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
               <div style={{ fontSize: 10, color: '#7c3aed', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>UUID / Folio Fiscal</div>

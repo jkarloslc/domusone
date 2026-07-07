@@ -797,7 +797,7 @@ function CuotaPreciosModal({ cuota, puedeEscribir, onClose }: {
 // ══════════════════════════════════════════════════════════════
 // Centros de Venta POS — panel custom con mapeo a Centro de Ingreso
 // ══════════════════════════════════════════════════════════════
-type CentroVentaPos = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number }
+type CentroVentaPos = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number; serie_factura: string | null }
 type CentroIngresoOpt = { id: number; nombre: string; activo: boolean }
 type IngresoMapRow   = { id: number; id_centro_venta_fk: number; id_centro_ingreso_fk: number; activo: boolean; genera_recibo_automatico: boolean }
 
@@ -1151,7 +1151,7 @@ function ColaboradoresPanel() {
 }
 
 // ── Centros de Venta POS ──────────────────────────────────────
-const emptyCVForm = () => ({ nombre: '', descripcion: '', orden: 1, id_centro_ingreso_fk: '' as string | number, genera_recibo_automatico: false })
+const emptyCVForm = () => ({ nombre: '', descripcion: '', orden: 1, id_centro_ingreso_fk: '' as string | number, genera_recibo_automatico: false, serie_factura: '' })
 
 const inputSt: React.CSSProperties = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }
 const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
@@ -1172,7 +1172,7 @@ function CentrosVentaPOSPanel() {
   const fetchAll = useCallback(async () => {
     setLoading(true)
     const [{ data: cvs }, { data: cis }, { data: ms }] = await Promise.all([
-      dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden').order('orden'),
+      dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden, serie_factura').order('orden'),
       dbCfg.from('centros_ingreso').select('id, nombre, activo').eq('activo', true).order('nombre'),
       dbGolf.from('pos_centros_ingreso_map').select('id, id_centro_venta_fk, id_centro_ingreso_fk, activo, genera_recibo_automatico'),
     ])
@@ -1192,14 +1192,14 @@ function CentrosVentaPOSPanel() {
   const openEdit = (item: CentroVentaPos) => {
     const m = getMap(item.id)
     setEditing(item)
-    setForm({ nombre: item.nombre, descripcion: item.descripcion ?? '', orden: item.orden, id_centro_ingreso_fk: m?.id_centro_ingreso_fk ?? '', genera_recibo_automatico: m?.genera_recibo_automatico ?? false })
+    setForm({ nombre: item.nombre, descripcion: item.descripcion ?? '', orden: item.orden, id_centro_ingreso_fk: m?.id_centro_ingreso_fk ?? '', genera_recibo_automatico: m?.genera_recibo_automatico ?? false, serie_factura: item.serie_factura ?? '' })
     setError(''); setShowForm(true)
   }
 
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
     setSaving(true); setError('')
-    const payload: any = { nombre: form.nombre.trim(), descripcion: form.descripcion || null, orden: Number(form.orden) }
+    const payload: any = { nombre: form.nombre.trim(), descripcion: form.descripcion || null, orden: Number(form.orden), serie_factura: form.serie_factura.trim().toUpperCase() || null }
     let centroId: number
     if (editing) {
       const { error: err } = await dbGolf.from('cat_centros_venta').update(payload).eq('id', editing.id)
@@ -1300,6 +1300,15 @@ function CentrosVentaPOSPanel() {
                 {centrosIng.map(ci => <option key={ci.id} value={String(ci.id)}>{ci.nombre}</option>)}
               </select>
             </div>
+            <div>
+              <label style={labelSt}>Serie de Factura</label>
+              <input style={{ ...inputSt, fontFamily: 'monospace', textTransform: 'uppercase' }}
+                value={form.serie_factura} onChange={e => setForm(f => ({ ...f, serie_factura: e.target.value }))}
+                placeholder="Ej. GOLF, HIPICO" />
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>
+                Prefijo del folio de factura para las ventas de este centro (ej. GOLF-0001). Si se deja vacío, se usa "FAC".
+              </div>
+            </div>
           </div>
           {form.id_centro_ingreso_fk && (
             <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8,
@@ -1338,6 +1347,7 @@ function CentrosVentaPOSPanel() {
               <th>Descripción</th>
               <th style={{ width: 60, textAlign: 'center' }}>Orden</th>
               <th>Centro de Ingreso</th>
+              <th style={{ width: 100, textAlign: 'center' }}>Serie Factura</th>
               <th style={{ width: 100, textAlign: 'center' }}>Recibo Auto</th>
               <th style={{ width: 80, textAlign: 'center' }}>Status</th>
               {puedeEscribir && <th style={{ width: 90 }}></th>}
@@ -1345,11 +1355,11 @@ function CentrosVentaPOSPanel() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 Sin centros. Haz clic en "Nuevo" para agregar.
               </td></tr>
             ) : items.map(item => {
@@ -1369,6 +1379,9 @@ function CentrosVentaPOSPanel() {
                     {ciNombre
                       ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#dcfce7', color: '#15803d' }}>{ciNombre}</span>
                       : <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>Sin asignar</span>}
+                  </td>
+                  <td style={{ textAlign: 'center', fontSize: 11, fontFamily: 'monospace', fontWeight: 700, color: item.serie_factura ? '#7c3aed' : '#cbd5e1' }}>
+                    {item.serie_factura || 'FAC'}
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     {m ? (
