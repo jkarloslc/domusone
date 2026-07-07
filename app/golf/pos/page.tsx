@@ -130,7 +130,8 @@ export default function POSPage() {
   const [cfgForm,           setCfgForm]           = useState<Partial<CfgPos>>({})
   const [exigirFacturacion, setExigirFacturacion] = useState(false)
   const [savingToggle,      setSavingToggle]      = useState(false)
-  const [proximoFolioFactura, setProximoFolioFactura] = useState<number | null>(null)
+  const [proximosFolioPorSerie, setProximosFolioPorSerie] = useState<Record<string, number>>({})
+  const [serieFolioInput,     setSerieFolioInput]    = useState('')
   const [folioFacturaInput,   setFolioFacturaInput]   = useState('')
   const [savingFolioFactura,  setSavingFolioFactura]  = useState(false)
   const [errFolioFactura,     setErrFolioFactura]     = useState('')
@@ -276,11 +277,16 @@ export default function POSPage() {
     setLoadingCfg(false)
   }, [])
 
-  // ── Numeración de facturas (folio consecutivo, independiente por serie) ──
-  const fetchProximoFolioFactura = useCallback(async () => {
-    const { data, error } = await dbGolf.rpc('peek_folio_factura')
-    if (!error) setProximoFolioFactura(Number(data))
-  }, [])
+  // ── Numeración de facturas (consecutivo independiente por serie) ──────
+  const fetchProximosFolioPorSerie = useCallback(async () => {
+    const series = Array.from(new Set(centros.map(c => c.serie_factura || 'FAC')))
+    if (series.length === 0) return
+    const entries = await Promise.all(series.map(async serie => {
+      const { data, error } = await dbGolf.rpc('peek_folio_factura', { p_serie: serie })
+      return [serie, error ? null : Number(data)] as const
+    }))
+    setProximosFolioPorSerie(Object.fromEntries(entries.filter(([, v]) => v != null)) as Record<string, number>)
+  }, [centros])
 
   // ── Fetch facturas emitidas ──────────────────────────────
   const fetchFacturas = useCallback(async () => {
@@ -312,7 +318,7 @@ export default function POSPage() {
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
   useEffect(() => { if (tab === 'cortes')   fetchCortes() }, [tab, fetchCortes])
   useEffect(() => { if (tab === 'config' || tab === 'catalogo' || tab === 'cortes' || tab === 'facturas') fetchConfig() }, [tab, fetchConfig])
-  useEffect(() => { if (tab === 'config') fetchProximoFolioFactura() }, [tab, fetchProximoFolioFactura])
+  useEffect(() => { if (tab === 'config') fetchProximosFolioPorSerie() }, [tab, fetchProximosFolioPorSerie])
   useEffect(() => { if (tab === 'mesa')     fetchVentasMesa() }, [tab, fetchVentasMesa])
   useEffect(() => { if (tab === 'facturas') fetchFacturas() }, [tab, fetchFacturas])
 
@@ -923,14 +929,15 @@ ${operaciones.length > 0 ? `
   }
 
   const guardarFolioFacturaInicial = async () => {
+    if (!serieFolioInput) { setErrFolioFactura('Elige una serie'); return }
     const nuevo = parseInt(folioFacturaInput, 10)
     if (!nuevo || nuevo < 1) { setErrFolioFactura('Ingresa un número de folio válido (mayor a 0)'); return }
     setSavingFolioFactura(true); setErrFolioFactura('')
-    const { error } = await dbGolf.rpc('set_folio_factura_inicial', { nuevo_inicio: nuevo })
+    const { error } = await dbGolf.rpc('set_folio_factura_inicial', { p_serie: serieFolioInput, nuevo_inicio: nuevo })
     setSavingFolioFactura(false)
     if (error) { setErrFolioFactura(error.message); return }
     setFolioFacturaInput('')
-    fetchProximoFolioFactura()
+    fetchProximosFolioPorSerie()
   }
 
   const ventasF = ventas.filter(v => {
@@ -1935,25 +1942,40 @@ ${operaciones.length > 0 ? `
                 <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>
                   El folio de cada factura combina la <strong>Serie</strong> del centro de venta (se configura en{' '}
                   <a href="/golf/catalogos" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>Catálogos del Club → Centros de Venta POS</a>)
-                  {' '}con un <strong>folio consecutivo único</strong> compartido entre todas las series (ej. GOLF-0001, luego HIPICO-0002, luego GOLF-0003…).
+                  {' '}con un <strong>folio consecutivo propio de cada serie</strong> (ej. GOLF-0001, GOLF-0002… e HIPICO-0001, HIPICO-0002… por separado).
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                  <span style={{ fontSize: 12, color: '#64748b' }}>Próximo folio a asignar:</span>
-                  <span style={{ fontSize: 15, fontWeight: 700, fontFamily: 'monospace', color: '#7c3aed' }}>
-                    {proximoFolioFactura != null ? String(proximoFolioFactura).padStart(4, '0') : '—'}
-                  </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+                  {Object.keys(proximosFolioPorSerie).length === 0 ? (
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>Sin series configuradas todavía.</span>
+                  ) : Object.entries(proximosFolioPorSerie).map(([serie, num]) => (
+                    <div key={serie} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 12, color: '#64748b', minWidth: 90 }}>{serie}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'monospace', color: '#7c3aed' }}>
+                        {serie}-{String(num).padStart(4, '0')}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#94a3b8' }}>(próximo folio)</span>
+                    </div>
+                  ))}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Serie</label>
+                    <select value={serieFolioInput} onChange={e => setSerieFolioInput(e.target.value)}
+                      style={{ width: 140, padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', background: '#fff' }}>
+                      <option value="">Elige…</option>
+                      {Object.keys(proximosFolioPorSerie).map(serie => <option key={serie} value={serie}>{serie}</option>)}
+                    </select>
+                  </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Reiniciar folio inicial</label>
                     <input type="number" min={1} value={folioFacturaInput} onChange={e => setFolioFacturaInput(e.target.value)}
                       placeholder="ej. 1000"
                       style={{ width: 140, padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
-                  <button onClick={guardarFolioFacturaInicial} disabled={savingFolioFactura || !folioFacturaInput}
-                    style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (savingFolioFactura || !folioFacturaInput) ? 0.6 : 1 }}>
+                  <button onClick={guardarFolioFacturaInicial} disabled={savingFolioFactura || !folioFacturaInput || !serieFolioInput}
+                    style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (savingFolioFactura || !folioFacturaInput || !serieFolioInput) ? 0.6 : 1 }}>
                     {savingFolioFactura ? 'Guardando…' : 'Aplicar'}
                   </button>
                 </div>
@@ -2000,7 +2022,8 @@ ${operaciones.length > 0 ? `
           formaPagoStr={receptorPOS._formaPago ?? ''}
           serieFactura={centros.find(c => c.id === facturandoPOS!.id_centro_fk)?.serie_factura || 'FAC'}
           obtenerFolioFactura={async () => {
-            const { data, error } = await dbGolf.rpc('next_folio_factura')
+            const serie = centros.find(c => c.id === facturandoPOS!.id_centro_fk)?.serie_factura || 'FAC'
+            const { data, error } = await dbGolf.rpc('next_folio_factura', { p_serie: serie })
             if (error) throw new Error(error.message)
             return String(data).padStart(4, '0')
           }}
