@@ -4,7 +4,7 @@ import { dbCfg } from '@/lib/supabase'
 import { Loader, CheckCircle, FileCheck, Send, X, ChevronRight } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import {
-  timbrarCFDI, USOS_CFDI, FORMAS_PAGO_SAT, METODOS_PAGO,
+  timbrarCFDI, registrarSerieFactura, USOS_CFDI, FORMAS_PAGO_SAT, METODOS_PAGO,
   REGIMENES_FISCALES, type DatosFactura,
 } from '@/lib/pacService'
 
@@ -223,7 +223,14 @@ export default function FacturaUniversalModal({
       }),
     }
 
-    const res = await timbrarCFDI(datosFactura)
+    let res = await timbrarCFDI(datosFactura)
+    // Facturama exige que la Serie ya exista dada de alta en la sucursal —
+    // si es una serie nueva (ej. recién configurada para un centro), se
+    // registra automáticamente y se reintenta el timbrado una sola vez.
+    if (!res.ok && /sucursal/i.test(res.error ?? '')) {
+      const reg = await registrarSerieFactura(serieFinal, obtenerFolioFactura ? parseInt(folioFinal, 10) : undefined)
+      if (reg.ok) res = await timbrarCFDI(datosFactura)
+    }
     if (!res.ok) {
       setError(res.error ?? 'Error al timbrar')
       setSaving(false)

@@ -139,6 +139,30 @@ export async function cancelarCFDI(
   }
 }
 
+// Da de alta una Serie nueva en la sucursal (Matriz) de Facturama. Facturama
+// exige que toda Serie usada al timbrar exista ya registrada ahí — se llama
+// automáticamente cuando timbrarCFDI falla con "Serie debe existir en la
+// sucursal", para dar de alta la serie y reintentar una sola vez.
+export async function registrarSerieFactura(
+  serie: string,
+  folio_inicial?: number
+): Promise<{ ok: boolean; error?: string }> {
+  if (!PAC_CONFIGURADO) return { ok: true }
+
+  try {
+    const response = await fetch('/api/pac/registrar-serie', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ serie, folio_inicial }),
+    })
+    const result = await response.json()
+    if (!response.ok) return { ok: false, error: result.error ?? 'Error al registrar la serie' }
+    return { ok: true }
+  } catch (err: any) {
+    return { ok: false, error: err.message }
+  }
+}
+
 // Catálogos SAT más usados
 export const USOS_CFDI = [
   { clave: 'G01', desc: 'Adquisición de mercancias' },
