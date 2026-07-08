@@ -58,6 +58,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
     plan_pago_activo:    lote?.plan_pago_activo ?? false,
     plan_pago_enganche:  lote?.plan_pago_enganche?.toString() ?? '',
     plan_pago_plazo:     lote?.plan_pago_plazo?.toString() ?? '',
+    pertenece_asociacion: lote?.pertenece_asociacion ?? false,
     // Jurídico
     status_juridico:     lote?.status_juridico ?? '',
     base_juridica:       lote?.base_juridica ?? '',
@@ -139,6 +140,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
       plan_pago_activo:    form.plan_pago_activo,
       plan_pago_enganche:  form.plan_pago_enganche ? Number(form.plan_pago_enganche) : null,
       plan_pago_plazo:     form.plan_pago_plazo ? Number(form.plan_pago_plazo) : null,
+      pertenece_asociacion: form.pertenece_asociacion,
       // Jurídico
       status_juridico:     form.status_juridico || null,
       base_juridica:       form.base_juridica.trim() || null,
@@ -304,6 +306,12 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
             </Row>
             <Field label="Motivo (detalle)">
               <textarea className="input" rows={2} value={form.motivo_detalle} onChange={set('motivo_detalle')} style={{ resize: 'vertical' }} />
+            </Field>
+            <Field label="Pertenece a Asociación de Condóminos">
+              <select className="select" value={form.pertenece_asociacion ? 'Sí' : 'No'} onChange={setBool('pertenece_asociacion')}>
+                <option value="No">No</option>
+                <option value="Sí">Sí</option>
+              </select>
             </Field>
           </Section>
 

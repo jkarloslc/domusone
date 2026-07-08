@@ -40,7 +40,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
     estado:                  (propietario as any)?.estado ?? '',
     pais:                    (propietario as any)?.pais ?? 'México',
     cp:                      (propietario as any)?.cp ?? '',
-    pertenece_asociacion:    (propietario as any)?.pertenece_asociacion ?? false,
     activo:                  propietario?.activo ?? true,
     // Datos fiscales SAT
     regimen_fiscal:          (propietario as any)?.regimen_fiscal ?? '626',
@@ -110,7 +109,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
       estado:               form.estado.trim() || null,
       pais:                 form.pais.trim() || null,
       cp:                   form.cp.trim() || null,
-      pertenece_asociacion: form.pertenece_asociacion,
       activo:               form.activo,
       regimen_fiscal:       (form as any).regimen_fiscal || null,
       uso_cfdi:             (form as any).uso_cfdi       || null,
@@ -212,29 +210,6 @@ export default function PropietarioModal({ propietario, onClose, onSaved }: Prop
                 </Field>
                 <div />
               </Row2>
-
-              {/* Campo Asociación de Condóminos */}
-              <Field label="Pertenece a Asociación de Condóminos">
-                <div style={{ display: 'flex', gap: 10 }}>
-                  {[{ val: true, label: 'Sí' }, { val: false, label: 'No' }].map(opt => (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => setForm(f => ({ ...f, pertenece_asociacion: opt.val }))}
-                      style={{
-                        flex: 1, padding: '8px', borderRadius: 7, cursor: 'pointer',
-                        fontFamily: 'var(--font-body)', fontSize: 13,
-                        border: `1px solid ${form.pertenece_asociacion === opt.val ? 'var(--blue)' : '#e2e8f0'}`,
-                        background: form.pertenece_asociacion === opt.val ? 'var(--blue-pale)' : '#fff',
-                        color: form.pertenece_asociacion === opt.val ? 'var(--blue)' : 'var(--text-secondary)',
-                        fontWeight: form.pertenece_asociacion === opt.val ? 600 : 400,
-                        transition: 'all 0.15s',
-                      }}>
-                      {opt.val ? '✓ ' : ''}{opt.label}
-                    </button>
-                  ))}
-                </div>
-              </Field>
 
               {form.tipo_persona === 'Moral' && (
                 <Field label="Razón Social">

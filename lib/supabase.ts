@@ -65,6 +65,7 @@ export type Lote = {
   plan_pago_activo: boolean
   plan_pago_enganche: number | null
   plan_pago_plazo: number | null
+  pertenece_asociacion: boolean
   // Jurídico
   base_juridica: string | null
   convenio_firmado: boolean

@@ -122,7 +122,6 @@ function PropietarioModal({ propietario, onClose }: { propietario: any; onClose:
             <DataRow label="CURP"             value={p.curp} mono />
             <DataRow label="Fecha nacimiento" value={fmtFecha(p.fecha_nacimiento)} />
             <DataRow label="Estado civil"     value={p.estado_civil} />
-            <DataRow label="Asoc. Condóminos" value={p.pertenece_asociacion ? 'Sí' : 'No'} />
           </div>
           {(p.calle || p.ciudad) && (
             <div>
@@ -207,7 +206,7 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
     const [clasifRes, seccionRes, propsRes, enviosRes] = await Promise.all([
       loteData?.id_clasificacion_fk ? dbCfg.from('clasificacion').select('nombre').eq('id', loteData.id_clasificacion_fk).single() : Promise.resolve({ data: null }),
       loteData?.id_seccion_fk ? dbCfg.from('secciones').select('nombre').eq('id', loteData.id_seccion_fk).single() : Promise.resolve({ data: null }),
-      propIds.length ? dbCat.from('propietarios').select('id, nombre, apellido_paterno, apellido_materno, tipo_persona, rfc, curp, fecha_nacimiento, estado_civil, regimen, razon_social, calle, colonia, ciudad, estado, cp, pais, pertenece_asociacion').in('id', propIds) : Promise.resolve({ data: [] }),
+      propIds.length ? dbCat.from('propietarios').select('id, nombre, apellido_paterno, apellido_materno, tipo_persona, rfc, curp, fecha_nacimiento, estado_civil, regimen, razon_social, calle, colonia, ciudad, estado, cp, pais').in('id', propIds) : Promise.resolve({ data: [] }),
       propIds.length ? dbCtrl.from('comunicados_envios').select('id, id_comunicado_fk, correo_destino, fecha_envio, nombre_destino, status').in('id_propietario_fk', propIds).order('fecha_envio', { ascending: false }).limit(30) : Promise.resolve({ data: [] }),
     ])
 
@@ -310,6 +309,7 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
               <DataRow label="Dirección"       value={[lote.calle, lote.numero, lote.Diferenciador, lote.manzana].filter(Boolean).join(' ') || null} />
               <DataRow label="Superficie"      value={lote.superficie ? `${lote.superficie} m²` : null} />
               <DataRow label="Paga cuotas"     value={lote.paga_cuotas} />
+              <DataRow label="Asoc. Condóminos" value={lote.pertenece_asociacion ? 'Sí' : 'No'} />
               <DataRow label="Clave catastral" value={lote.clave_catastral} mono />
             </div>
           </div>
