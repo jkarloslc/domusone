@@ -131,7 +131,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
       dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('areas_comunes').select('id, nombre, descripcion').eq('activo', true).order('nombre'),
+      dbCfg.from('areas_comunes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_area_comun').select('id_area, id_area_comun'),
       dbCfg.from('rel_area_frente').select('id_area, id_frente'),
     ]).then(([{ data: secs }, { data: cuads }, { data: ccs }, { data: frs }, { data: acs }, { data: rels }, { data: relsFr }]) => {
@@ -144,7 +144,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
       const cm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { cm[c.id] = c.nombre })
       const fm: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { fm[f.id] = f.nombre })
       const cuadm: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { cuadm[c.id] = c.nombre })
-      const acm: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { acm[a.id] = a.nombre + (a.descripcion ? ` - ${a.descripcion}` : '') })
+      const acm: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { acm[a.id] = a.nombre })
       const ata: Record<number, number[]> = {};
       (rels ?? []).forEach((r: any) => {
         const aid = Number(r.id_area)
@@ -572,7 +572,7 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
                   <option value="">— {form.id_area_fk ? 'Seleccionar' : 'Elige área primero'} —</option>
                   {areasComunes
                     .filter(a => (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
-                    .map(a => <option key={a.id} value={a.id}>{a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}</option>)}
+                    .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                 </select></div>
             </div>
           )}
