@@ -21,8 +21,14 @@ type Props = {
 
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 
-export default function CorteModal({ idCentro, nombreCentro, exigirFacturacion = false, onClose, onSaved }: Props) {
+export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombreCentroProp, exigirFacturacion = false, onClose, onSaved }: Props) {
   const { authUser } = useAuth()
+
+  // Se fija el centro al abrir el corte: si el centro activo del padre cambia
+  // mientras el corte está en curso (p.ej. re-render por refresh de sesión),
+  // este corte debe seguir perteneciendo al centro con el que se inició.
+  const [idCentro]     = useState(idCentroProp)
+  const [nombreCentro] = useState(nombreCentroProp)
 
   const [loading,    setLoading]    = useState(true)
   const [saving,     setSaving]     = useState(false)

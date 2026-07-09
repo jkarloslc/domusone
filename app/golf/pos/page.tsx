@@ -173,10 +173,12 @@ export default function POSPage() {
         } else {
           setDbError('')
           setCentros(cs)
-          setCentroActivo(cs[0])
+          // Preservar el centro ya seleccionado (p.ej. durante una venta en curso);
+          // solo asignar un default si aún no había ninguno o ya no existe.
+          setCentroActivo(prev => (prev && cs.some(c => c.id === prev.id)) ? prev : cs[0])
         }
       })
-  }, [authUser])
+  }, [authUser?.user?.id])
 
   // ── Stats del día ────────────────────────────────────────
   const fetchStats = useCallback(async () => {

@@ -39,8 +39,14 @@ function calcLinea(l: LineaVenta) {
   return { subtotal, iva, total }
 }
 
-export default function NuevaVentaModal({ idCentro, nombreCentro, onClose, onVentaGuardada }: Props) {
+export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: nombreCentroProp, onClose, onVentaGuardada }: Props) {
   const { authUser } = useAuth()
+
+  // Se fija el centro al abrir la venta: si el centro activo del padre cambia
+  // mientras la venta está en curso (p.ej. re-render por refresh de sesión),
+  // esta venta debe seguir perteneciendo al centro con el que se inició.
+  const [idCentro]     = useState(idCentroProp)
+  const [nombreCentro] = useState(nombreCentroProp)
 
   const [productos,   setProductos]   = useState<Producto[]>([])
   const [formasPago,  setFormasPago]  = useState<FormaPago[]>([])
