@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react'
-import { dbCtrl, dbCfg } from '@/lib/supabase'
+import { dbCtrl, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Eye, X, Save, Loader,
@@ -108,6 +108,7 @@ export default function MantenimientoPage() {
   const [areaMap,      setAreaMap]      = useState<Record<number, string>>({})
   const [areasComunes, setAreasComunes] = useState<any[]>([])
   const [acMap,        setAcMap]        = useState<Record<number, string>>({})
+  const [acCritMap,    setAcCritMap]    = useState<Record<number, string>>({})
   const [areaToAcs,    setAreaToAcs]    = useState<Record<number, number[]>>({})
   const [loading,      setLoading]    = useState(true)
   const [filterAnio,   setFilterAnio] = useState(new Date().getFullYear())
@@ -123,7 +124,7 @@ export default function MantenimientoPage() {
     Promise.all([
       dbCfg.from('cuadrantes').select('id, nombre, color').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
-      dbCfg.from('areas_comunes').select('id, nombre, descripcion').eq('activo', true).order('nombre'),
+      dbCfg.from('areas_comunes').select('id, nombre, descripcion, criticidad').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_area_comun').select('id_area, id_area_comun'),
     ]).then(([{ data: cuads }, { data: areasData }, { data: acs }, { data: rels }]) => {
       setCuadrantes(cuads ?? [])
@@ -133,13 +134,14 @@ export default function MantenimientoPage() {
       const cc: Record<number, string> = {}; (cuads ?? []).forEach((c: any) => { if (c.color) cc[c.id] = c.color })
       const am2: Record<number, string> = {}; (areasData ?? []).forEach((a: any) => { am2[a.id] = a.nombre })
       const acm: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { acm[a.id] = a.nombre })
+      const acCrit: Record<number, string> = {}; (acs ?? []).forEach((a: any) => { acCrit[a.id] = a.criticidad ?? 'rutinario' })
       const ata: Record<number, number[]> = {};
       (rels ?? []).forEach((r: any) => {
         const aid = Number(r.id_area)
         if (!ata[aid]) ata[aid] = []
         ata[aid].push(Number(r.id_area_comun))
       })
-      setCuadMap(cm); setCuadColorMap(cc); setAreaMap(am2); setAcMap(acm); setAreaToAcs(ata)
+      setCuadMap(cm); setCuadColorMap(cc); setAreaMap(am2); setAcMap(acm); setAcCritMap(acCrit); setAreaToAcs(ata)
     })
   }, [])
 
@@ -221,6 +223,38 @@ export default function MantenimientoPage() {
   // área por área cuando el trabajo se hizo igual en todas).
   const upsertEjecucionesBulk = async (prog: any, areaIds: (number | null)[], fecha: Date, status: string) => {
     await Promise.all(areaIds.map(id => upsertEjecucion(prog, id, fecha, status)))
+  }
+
+  // Registrar una RONDA (programas rutinarios con varias áreas comunes):
+  // una sola fila a nivel programa (id_area_comun_fk = null) en vez de
+  // una fila por área — así el costo y el hallazgo quedan agregados por
+  // ronda/cuadrante, no desglosados por área individual (decisión de
+  // usabilidad 2026-07-10, ver memoria "mant_estrategia_seguimiento").
+  const registrarRonda = async (prog: any, fecha: Date, datos: {
+    status: string; hallazgo?: string | null; foto_url?: string | null
+    costo_mano_obra?: number; costo_materiales?: number
+  }) => {
+    const fechaISO = toISODate(fecha)
+    const fields = {
+      status:           datos.status,
+      hallazgo:         datos.hallazgo ?? null,
+      foto_url:         datos.foto_url ?? null,
+      costo_mano_obra:  datos.costo_mano_obra ?? 0,
+      costo_materiales: datos.costo_materiales ?? 0,
+      updated_at:       new Date().toISOString(),
+    }
+    const existing = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === null)
+    if (existing) {
+      await dbCtrl.from('mant_ejecuciones').update(fields).eq('id', existing.id)
+      setProgramas(prev => prev.map((p: any) => p.id !== prog.id ? p : {
+        ...p, ejecuciones: p.ejecuciones.map((e: any) => e.id === existing.id ? { ...e, ...fields } : e),
+      }))
+    } else {
+      const { data } = await dbCtrl.from('mant_ejecuciones')
+        .insert({ id_programa_fk: prog.id, id_area_comun_fk: null, fecha_prog: fechaISO, ...fields })
+        .select('*').single()
+      if (data) setProgramas(prev => prev.map((p: any) => p.id !== prog.id ? p : { ...p, ejecuciones: [...p.ejecuciones, data] }))
+    }
   }
 
   const generarOT = async (prog: any, areaComunId: number | null, fecha: Date) => {
@@ -353,9 +387,10 @@ export default function MantenimientoPage() {
             <EjecucionSemanal
               programas={programas} loading={loading}
               weekStart={weekStart} setWeekStart={setWeekStart}
-              cuadMap={cuadMap} cuadColorMap={cuadColorMap} acMap={acMap}
+              cuadMap={cuadMap} cuadColorMap={cuadColorMap} acMap={acMap} acCritMap={acCritMap}
               onCambiarStatus={upsertEjecucion}
               onCambiarStatusBulk={upsertEjecucionesBulk}
+              onRegistrarRonda={registrarRonda}
               onGenerarOT={generarOT}
             />
           ) : (
@@ -507,18 +542,26 @@ export default function MantenimientoPage() {
 // las áreas de un golpe; el detalle por área solo aparece al expandir
 // el renglón — así no hay que dar clic área por área cada semana.
 // ═══════════════════════════════════════════════════════════════
-function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap, cuadColorMap, acMap, onCambiarStatus, onCambiarStatusBulk, onGenerarOT }: {
+function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap, cuadColorMap, acMap, acCritMap, onCambiarStatus, onCambiarStatusBulk, onRegistrarRonda, onGenerarOT }: {
   programas: any[]; loading: boolean
   weekStart: Date; setWeekStart: (d: Date) => void
   cuadMap: Record<number, string>; cuadColorMap: Record<number, string>; acMap: Record<number, string>
+  acCritMap: Record<number, string>
   onCambiarStatus: (prog: any, areaComunId: number | null, fecha: Date, status: string) => Promise<void>
   onCambiarStatusBulk: (prog: any, areaIds: (number | null)[], fecha: Date, status: string) => Promise<void>
+  onRegistrarRonda: (prog: any, fecha: Date, datos: { status: string; hallazgo?: string | null; foto_url?: string | null; costo_mano_obra?: number; costo_materiales?: number }) => Promise<void>
   onGenerarOT: (prog: any, areaComunId: number | null, fecha: Date) => Promise<void>
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Record<number, boolean>>({})
+  const [excepcion, setExcepcion] = useState<{ prog: any; fecha: Date } | null>(null)
   const dias = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const weekEnd = dias[6]
+
+  // Programa homogéneo por diseño: la criticidad del programa es la de
+  // cualquiera de sus áreas asignadas (todas comparten el mismo valor).
+  const criticidadPrograma = (prog: any): 'critico' | 'rutinario' =>
+    (prog.areasComunes?.length ? acCritMap[prog.areasComunes[0]] : 'rutinario') === 'critico' ? 'critico' : 'rutinario'
 
   const activos = useMemo(() => programas
     .map(prog => {
@@ -534,7 +577,13 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
             const ejec = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaId)
             return { areaId, status: ejec?.status ?? 'Pendiente', id_ot_fk: ejec?.id_ot_fk ?? null }
           })
-          return { fecha, celdas }
+          const rondaEjec = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === null)
+          const ronda = {
+            status:   rondaEjec?.status ?? 'Pendiente',
+            id_ot_fk: rondaEjec?.id_ot_fk ?? null,
+            hallazgo: rondaEjec?.hallazgo ?? null,
+          }
+          return { fecha, celdas, ronda }
         }),
       }
     })
@@ -542,9 +591,18 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [programas, weekStart])
 
-  const totalCeldas = activos.reduce((a, r) => a + r.dias.reduce((b: number, d: any) => b + (d ? d.celdas.length : 0), 0), 0)
-  const completadasCeldas = activos.reduce((a, r) => a + r.dias.reduce((b: number, d: any) =>
-    b + (d ? d.celdas.filter((c: any) => c.status === 'Completada').length : 0), 0), 0)
+  // Programas rutinarios con varias áreas se cuentan por RONDA (1 celda),
+  // no por área individual — coherente con que se registran como una sola
+  // ejecución agregada (ver registrarRonda en el padre).
+  const cuentaComo = (r: any) => r.areaSlots.length > 1 && criticidadPrograma(r.prog) === 'rutinario'
+  const totalCeldas = activos.reduce((a, r) => a + r.dias.reduce((b: number, d: any) => {
+    if (!d) return b
+    return b + (cuentaComo(r) ? 1 : d.celdas.length)
+  }, 0), 0)
+  const completadasCeldas = activos.reduce((a, r) => a + r.dias.reduce((b: number, d: any) => {
+    if (!d) return b
+    return b + (cuentaComo(r) ? (d.ronda.status === 'Completada' ? 1 : 0) : d.celdas.filter((c: any) => c.status === 'Completada').length)
+  }, 0), 0)
 
   const handle = async (key: string, fn: () => Promise<void>) => {
     setBusy(key); await fn(); setBusy(null)
@@ -599,13 +657,14 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
               {activos.map(({ prog, areaSlots, dias: celdas }) => {
                 const rowColor = prog.id_cuadrante_fk ? cuadColorMap[prog.id_cuadrante_fk] : undefined
                 const multi = areaSlots.length > 1
-                const isExpanded = multi && !!expanded[prog.id]
+                const esRutinarioMulti = multi && criticidadPrograma(prog) === 'rutinario'
+                const isExpanded = multi && !esRutinarioMulti && !!expanded[prog.id]
                 return (
                   <Fragment key={prog.id}>
                     <tr style={rowColor ? { borderLeft: `5px solid ${rowColor}`, background: `${rowColor}0a` } : undefined}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          {multi && (
+                          {multi && !esRutinarioMulti && (
                             <button onClick={() => toggleExpand(prog.id)}
                               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--text-muted)' }}
                               title={isExpanded ? 'Ocultar áreas' : 'Ver áreas comunes'}>
@@ -616,7 +675,7 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                             <div style={{ fontWeight: 600, fontSize: 12.5 }}>{prog.nombre}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                               {prog.frecuencia}{prog.id_cuadrante_fk && cuadMap[prog.id_cuadrante_fk] ? ` · ${cuadMap[prog.id_cuadrante_fk]}` : ''}
-                              {multi ? ` · ${areaSlots.length} áreas` : ''}
+                              {multi ? ` · ${areaSlots.length} áreas${esRutinarioMulti ? ' · Ronda' : ' · Crítico'}` : ''}
                             </div>
                           </div>
                         </div>
@@ -624,6 +683,36 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
                       {celdas.map((c, i) => {
                         if (!c) return <td key={i} style={{ textAlign: 'center', color: '#e2e8f0' }}>·</td>
                         const key = `${prog.id}-${i}`
+                        if (esRutinarioMulti) {
+                          const rc = STATUS_STYLE[c.ronda.status] ?? STATUS_STYLE['Pendiente']
+                          return (
+                            <td key={i} style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                                {c.ronda.status === 'Pendiente' ? (
+                                  <button onClick={() => handle(key, () => onRegistrarRonda(prog, c.fecha, { status: 'Completada' }))}
+                                    disabled={busy === key} title="Marcar ronda completada (todas las áreas de este programa)"
+                                    style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 5,
+                                      border: '1.5px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', cursor: 'pointer',
+                                      opacity: busy === key ? 0.5 : 1 }}>
+                                    ✓ Ronda
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: 10.5, fontWeight: 600, padding: '3px 6px', borderRadius: 5,
+                                    background: rc.bg, color: rc.color, border: `1.5px solid ${rc.border}` }}>
+                                    {c.ronda.status}
+                                  </span>
+                                )}
+                                <button onClick={() => setExcepcion({ prog, fecha: c.fecha })}
+                                  title="Reportar excepción / hallazgo de la ronda"
+                                  style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, border: '1px solid #fde68a',
+                                    background: c.ronda.hallazgo ? '#fffbeb' : 'transparent', color: '#d97706', cursor: 'pointer' }}>
+                                  {c.ronda.hallazgo ? '⚠ Hallazgo' : '⚠ Reportar'}
+                                </button>
+                                {c.ronda.id_ot_fk && <span style={{ fontSize: 9, color: 'var(--blue)' }}>OT ✓</span>}
+                              </div>
+                            </td>
+                          )
+                        }
                         if (!multi) {
                           const cell = c.celdas[0]
                           const sc = STATUS_STYLE[cell.status] ?? STATUS_STYLE['Pendiente']
@@ -732,7 +821,118 @@ function EjecucionSemanal({ programas, loading, weekStart, setWeekStart, cuadMap
           </table>
         </div>
       )}
+
+      {excepcion && (
+        <ExcepcionModal
+          prog={excepcion.prog} fecha={excepcion.fecha}
+          onClose={() => setExcepcion(null)}
+          onGuardar={async datos => { await onRegistrarRonda(excepcion.prog, excepcion.fecha, datos); setExcepcion(null) }}
+        />
+      )}
     </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Excepción de ronda: captura de hallazgo, evidencia y costo cuando
+// una ronda rutinaria no salió "todo bien" — por diseño el default es
+// "cumplido" (por excepción), esto solo se abre cuando hay algo que
+// reportar. Reusa el bucket 'mantenimiento' ya usado en Vehículos/Herramienta.
+// ═══════════════════════════════════════════════════════════════
+function ExcepcionModal({ prog, fecha, onClose, onGuardar }: {
+  prog: any; fecha: Date; onClose: () => void
+  onGuardar: (datos: { status: string; hallazgo: string; foto_url: string | null; costo_mano_obra: number; costo_materiales: number }) => Promise<void>
+}) {
+  const [seRealizo,  setSeRealizo]  = useState(true)
+  const [hallazgo,   setHallazgo]   = useState('')
+  const [costoMO,    setCostoMO]    = useState('0')
+  const [costoMat,   setCostoMat]   = useState('0')
+  const [fotoUrl,    setFotoUrl]    = useState<string | null>(null)
+  const [uploading,  setUploading]  = useState(false)
+  const [saving,     setSaving]     = useState(false)
+  const [error,      setError]      = useState('')
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `mant-rondas/${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('mantenimiento').upload(path, file, { upsert: true, contentType: file.type })
+    if (upErr) { alert('Error al subir: ' + upErr.message); setUploading(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('mantenimiento').getPublicUrl(path)
+    setFotoUrl(publicUrl)
+    setUploading(false)
+  }
+
+  const handleGuardar = async () => {
+    if (!hallazgo.trim()) { setError('Describe el hallazgo o motivo del reporte'); return }
+    setSaving(true); setError('')
+    await onGuardar({
+      status: seRealizo ? 'Completada' : 'Omitida',
+      hallazgo: hallazgo.trim(),
+      foto_url: fotoUrl,
+      costo_mano_obra: Number(costoMO || 0),
+      costo_materiales: Number(costoMat || 0),
+    })
+    setSaving(false)
+  }
+
+  return (
+    <ModalShell modulo="mantenimiento" titulo="Reportar excepción de ronda" onClose={onClose} maxWidth={440}>
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca',
+          borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
+          <strong>{prog.nombre}</strong> · {fmtDate(fecha)}
+        </div>
+        <div>
+          <label className="label" style={{ fontSize: 11 }}>¿Se realizó la ronda?</label>
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <button type="button" onClick={() => setSeRealizo(true)}
+              style={{ flex: 1, padding: '7px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                border: seRealizo ? '1.5px solid #15803d' : '1px solid var(--border)',
+                background: seRealizo ? '#f0fdf4' : '#fff', color: seRealizo ? '#15803d' : 'var(--text-secondary)' }}>
+              Sí, con hallazgo
+            </button>
+            <button type="button" onClick={() => setSeRealizo(false)}
+              style={{ flex: 1, padding: '7px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                border: !seRealizo ? '1.5px solid #dc2626' : '1px solid var(--border)',
+                background: !seRealizo ? '#fef2f2' : '#fff', color: !seRealizo ? '#dc2626' : 'var(--text-secondary)' }}>
+              No, omitida
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="label" style={{ fontSize: 11 }}>Hallazgo / motivo *</label>
+          <textarea className="input" rows={3} value={hallazgo} onChange={e => setHallazgo(e.target.value)}
+            placeholder="ej. Bache en glorieta G1, cuadrilla no cubrió el sector norte…"
+            style={{ fontSize: 13, resize: 'vertical' }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div><label className="label" style={{ fontSize: 11 }}>Costo mano de obra</label>
+            <input className="input" style={{ fontSize: 13 }} type="number" value={costoMO} onChange={e => setCostoMO(e.target.value)} />
+          </div>
+          <div><label className="label" style={{ fontSize: 11 }}>Costo materiales</label>
+            <input className="input" style={{ fontSize: 13 }} type="number" value={costoMat} onChange={e => setCostoMat(e.target.value)} />
+          </div>
+        </div>
+        <div>
+          <label className="label" style={{ fontSize: 11 }}>Evidencia (foto, opcional)</label>
+          <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} style={{ fontSize: 12 }} />
+          {fotoUrl && <div style={{ marginTop: 6 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={fotoUrl} alt="Evidencia" style={{ maxWidth: '100%', maxHeight: 140, borderRadius: 6 }} />
+          </div>}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
+        <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleGuardar} disabled={saving || uploading}>
+          {saving ? <Loader size={11} className="animate-spin" /> : <Save size={11} />}
+          Guardar
+        </button>
+      </div>
+    </ModalShell>
   )
 }
 
@@ -746,12 +946,36 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
+
+  // Criticidad de cada área común disponible, para poder filtrar el
+  // checklist y forzar programas homogéneos (decisión de usabilidad
+  // 2026-07-10: un programa no puede mezclar áreas críticas y rutinarias).
+  const acCritById = useMemo(() => {
+    const m: Record<number, string> = {}
+    areasComunes.forEach(a => { m[a.id] = a.criticidad ?? 'rutinario' })
+    return m
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [areasComunes])
+
+  // Al editar un programa creado antes de esta regla, puede traer áreas
+  // de criticidad mixta — se toma la mayoría y se depuran las demás
+  // (se avisa en pantalla, no se pierde silenciosamente).
+  const initialAreas = (prog?.areasComunes ?? []) as number[]
+  const initialCounts = initialAreas.reduce((acc: Record<string, number>, id) => {
+    const c = acCritById[id] ?? 'rutinario'; acc[c] = (acc[c] ?? 0) + 1; return acc
+  }, {})
+  const initialCriticidad: 'critico' | 'rutinario' =
+    (initialCounts['critico'] ?? 0) > (initialCounts['rutinario'] ?? 0) ? 'critico' : 'rutinario'
+  const initialAreasFiltradas = initialAreas.filter(id => (acCritById[id] ?? 'rutinario') === initialCriticidad)
+  const depuradasAlAbrir = initialAreas.length - initialAreasFiltradas.length
+
   const [form, setForm] = useState({
     nombre:           prog?.nombre             ?? '',
     anio:             prog?.anio?.toString()   ?? new Date().getFullYear().toString(),
     id_cuadrante_fk:  prog?.id_cuadrante_fk?.toString()  ?? '',
     id_area_fk:       prog?.id_area_fk?.toString()       ?? '',
-    areasComunes:     (prog?.areasComunes ?? []) as number[],
+    criticidad:       initialCriticidad as 'critico' | 'rutinario',
+    areasComunes:     initialAreasFiltradas,
     tipo_trabajo:     prog?.tipo_trabajo       ?? '',
     frecuencia:       prog?.frecuencia         ?? 'Mensual',
     mes_inicio:       prog?.mes_inicio?.toString() ?? '1',
@@ -781,6 +1005,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
 
   const areaComunesDisponibles = areasComunes
     .filter(a => !form.id_area_fk || (areaToAcs[Number(form.id_area_fk)] ?? []).includes(a.id))
+    .filter(a => (a.criticidad ?? 'rutinario') === form.criticidad)
   const todasSeleccionadas = areaComunesDisponibles.length > 0
     && areaComunesDisponibles.every(a => form.areasComunes.includes(a.id))
 
@@ -867,6 +1092,34 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
             </div>
           </div>
           <div>
+            <label className="label" style={{ fontSize: 11 }}>Tipo de programa</label>
+            <div style={{ display: 'flex', gap: 8, marginTop: 4, marginBottom: 4 }}>
+              <button type="button"
+                onClick={() => setForm(f => ({ ...f, criticidad: 'rutinario', areasComunes: f.areasComunes.filter(id => (acCritById[id] ?? 'rutinario') === 'rutinario') }))}
+                style={{ flex: 1, padding: '7px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  border: form.criticidad === 'rutinario' ? '1.5px solid var(--blue)' : '1px solid var(--border)',
+                  background: form.criticidad === 'rutinario' ? 'var(--blue-pale)' : '#fff',
+                  color: form.criticidad === 'rutinario' ? 'var(--blue)' : 'var(--text-secondary)' }}>
+                Rutinario — ronda de 1 tap
+              </button>
+              <button type="button"
+                onClick={() => setForm(f => ({ ...f, criticidad: 'critico', areasComunes: f.areasComunes.filter(id => (acCritById[id] ?? 'rutinario') === 'critico') }))}
+                style={{ flex: 1, padding: '7px 10px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  border: form.criticidad === 'critico' ? '1.5px solid #dc2626' : '1px solid var(--border)',
+                  background: form.criticidad === 'critico' ? '#fef2f2' : '#fff',
+                  color: form.criticidad === 'critico' ? '#dc2626' : 'var(--text-secondary)' }}>
+                Crítico — check-off individual
+              </button>
+            </div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 8 }}>
+              Un programa solo puede tener áreas de un mismo tipo (no se pueden mezclar).
+            </div>
+            {depuradasAlAbrir > 0 && (
+              <div style={{ padding: '6px 10px', background: '#fffbeb', border: '1px solid #fde68a',
+                borderRadius: 6, fontSize: 11, color: '#92400e', marginBottom: 8 }}>
+                Este programa tenía {depuradasAlAbrir} área{depuradasAlAbrir === 1 ? '' : 's'} de criticidad distinta — se quitó del set para mantenerlo homogéneo. Revisa la selección.
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <label className="label" style={{ fontSize: 11 }}>Áreas Comunes</label>
               {areaComunesDisponibles.length > 0 && (
@@ -881,7 +1134,9 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
               {!form.id_area_fk ? (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '6px 4px' }}>Elige un área para ver sus áreas comunes</div>
               ) : areaComunesDisponibles.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '6px 4px' }}>Esta área no tiene áreas comunes registradas</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '6px 4px' }}>
+                  Esta área no tiene áreas comunes {form.criticidad === 'critico' ? 'críticas' : 'rutinarias'} registradas
+                </div>
               ) : areaComunesDisponibles.map(a => (
                 <label key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 4px', fontSize: 12.5, cursor: 'pointer' }}>
                   <input type="checkbox" checked={form.areasComunes.includes(a.id)}
