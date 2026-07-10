@@ -11,8 +11,8 @@ import OrdenesTrabajoTab from './OrdenesTrabajoTab'
 import ServiciosTab from './ServiciosTab'
 import ModalShell from '@/components/ui/ModalShell'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
+import { FRECUENCIAS, startOfDay, addDays, toISODate, getSemana, estaActivoEnFecha, proximasFechas } from '@/lib/mantProgramas'
 
-const FRECUENCIAS = ['Diario','Semanal','Quincenal','Mensual','Bimestral','Trimestral','Semestral','Anual']
 const TIPOS       = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Mantto. Lineas Sanitarias','Otro']
 const MESES       = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 const DIAS        = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
@@ -35,59 +35,13 @@ const Badge = ({ text }: { text: string }) => {
 }
 
 // ── Cálculo de ocurrencias bajo demanda (no se almacenan 365 filas) ──────────
-
-function startOfDay(d: Date) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()) }
-
-function monthDiff(a: Date, b: Date) {
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
-}
-
-function estaActivoEnFecha(frecuencia: string, fechaInicio: string | null, fechaFin: string | null, fecha: Date): boolean {
-  if (!fechaInicio) return false
-  const inicio = startOfDay(new Date(fechaInicio + 'T12:00:00'))
-  const fin = fechaFin ? startOfDay(new Date(fechaFin + 'T12:00:00')) : null
-  const f = startOfDay(fecha)
-  if (f < inicio) return false
-  if (fin && f > fin) return false
-  const diffDias = Math.round((f.getTime() - inicio.getTime()) / 86400000)
-  switch (frecuencia) {
-    case 'Diario':     return true
-    case 'Semanal':    return diffDias % 7 === 0
-    case 'Quincenal':  return diffDias % 14 === 0
-    case 'Mensual':    return f.getDate() === inicio.getDate()
-    case 'Bimestral':  return f.getDate() === inicio.getDate() && monthDiff(inicio, f) % 2 === 0
-    case 'Trimestral': return f.getDate() === inicio.getDate() && monthDiff(inicio, f) % 3 === 0
-    case 'Semestral':  return f.getDate() === inicio.getDate() && monthDiff(inicio, f) % 6 === 0
-    case 'Anual':      return f.getDate() === inicio.getDate() && f.getMonth() === inicio.getMonth()
-    default: return false
-  }
-}
+// La lógica de frecuencia vive en lib/mantProgramas.ts, compartida con el
+// cierre automático de periodo (app/api/mantenimiento/cerrar-periodo).
 
 function mondayOf(d: Date): Date {
   const day = d.getDay() // 0=Dom..6=Sáb
   const diff = day === 0 ? -6 : 1 - day
   return startOfDay(new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff))
-}
-function addDays(d: Date, n: number) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n) }
-function toISODate(d: Date) { return d.toISOString().slice(0, 10) }
-
-function proximasFechas(prog: any, n: number, desde = new Date()): Date[] {
-  const out: Date[] = []
-  let cursor = startOfDay(desde)
-  const fin = prog.fecha_fin ? startOfDay(new Date(prog.fecha_fin + 'T12:00:00')) : null
-  let guard = 0
-  while (out.length < n && guard < 2000) {
-    guard++
-    if (fin && cursor > fin) break
-    if (estaActivoEnFecha(prog.frecuencia, prog.fecha_inicio, prog.fecha_fin, cursor)) out.push(cursor)
-    cursor = addDays(cursor, 1)
-  }
-  return out
-}
-
-const getSemana = (d: Date) => {
-  const start = new Date(d.getFullYear(), 0, 1)
-  return Math.ceil(((d.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7)
 }
 
 const fmtDate = (d: string | Date) => {
@@ -230,6 +184,9 @@ export default function MantenimientoPage() {
   // una fila por área — así el costo y el hallazgo quedan agregados por
   // ronda/cuadrante, no desglosados por área individual (decisión de
   // usabilidad 2026-07-10, ver memoria "mant_estrategia_seguimiento").
+  // Si trae hallazgo, dispara la OT automáticamente (decisión: excepción
+  // reportada → OT; el cierre de periodo sin confirmar también la dispara,
+  // ver app/api/mantenimiento/cerrar-periodo).
   const registrarRonda = async (prog: any, fecha: Date, datos: {
     status: string; hallazgo?: string | null; foto_url?: string | null
     costo_mano_obra?: number; costo_materiales?: number
@@ -255,9 +212,40 @@ export default function MantenimientoPage() {
         .select('*').single()
       if (data) setProgramas(prev => prev.map((p: any) => p.id !== prog.id ? p : { ...p, ejecuciones: [...p.ejecuciones, data] }))
     }
+    if (datos.hallazgo) await resolverOT(prog, null, fecha)
   }
 
-  const generarOT = async (prog: any, areaComunId: number | null, fecha: Date) => {
+  // Antes de crear una OT nueva, busca si ya hay una abierta para el mismo
+  // programa+área (vía mant_ejecuciones.id_ot_fk) y la reutiliza — evita
+  // inflar el conteo de OTs con el mismo hallazgo repetido semana a semana
+  // (decisión de usabilidad 2026-07-10).
+  const resolverOT = async (prog: any, areaComunId: number | null, fecha: Date) => {
+    const fechaISO = toISODate(fecha)
+    const otIdsPrevias = Array.from(new Set(
+      (prog.ejecuciones ?? [])
+        .filter((e: any) => e.id_area_comun_fk === areaComunId && e.id_ot_fk)
+        .map((e: any) => e.id_ot_fk)
+    ))
+    let otIdAbierta: number | null = null
+    if (otIdsPrevias.length) {
+      const { data: ots } = await dbCtrl.from('ordenes_trabajo').select('id, status').in('id', otIdsPrevias)
+      const abierta = (ots ?? []).find((o: any) => o.status !== 'Completada' && o.status !== 'Cancelada')
+      otIdAbierta = abierta?.id ?? null
+    }
+    const existing = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaComunId)
+    if (otIdAbierta) {
+      if (existing) {
+        await dbCtrl.from('mant_ejecuciones').update({ id_ot_fk: otIdAbierta, updated_at: new Date().toISOString() }).eq('id', existing.id)
+        setProgramas(prev => prev.map((p: any) => p.id !== prog.id ? p : {
+          ...p, ejecuciones: p.ejecuciones.map((e: any) => e.id === existing.id ? { ...e, id_ot_fk: otIdAbierta } : e),
+        }))
+      }
+      return
+    }
+    await generarOT(prog, areaComunId, fecha, { preservarStatus: true })
+  }
+
+  const generarOT = async (prog: any, areaComunId: number | null, fecha: Date, opts?: { preservarStatus?: boolean; descripcionExtra?: string }) => {
     const fechaISO = toISODate(fecha)
     const { count } = await dbCtrl.from('ordenes_trabajo').select('id', { count: 'exact', head: true })
     const anio  = fecha.getFullYear()
@@ -269,18 +257,23 @@ export default function MantenimientoPage() {
       id_area_fk:       prog.id_area_fk ?? null,
       id_cuadrante_fk:  prog.id_cuadrante_fk ?? null,
       id_area_comun_fk: areaComunId,
-      descripcion:  prog.descripcion ?? null,
+      descripcion:  opts?.descripcionExtra ?? prog.descripcion ?? null,
       asignado_a:   prog.responsable ?? null,
       fecha_limite: fechaISO,
       semana_no:    getSemana(fecha), anio, created_by: authUser?.nombre ?? null,
     }).select('id, folio').single()
     if (otErr) { alert(`Error al crear OT: ${otErr.message}`); return }
     if (!ot) return
+    // preservarStatus: la excepción (Completada-con-hallazgo u Omitida) ya
+    // refleja si la ronda se hizo o no; la OT es un seguimiento aparte y no
+    // debe pisar ese status con 'En Proceso' (solo aplica al botón manual "+OT").
+    const fieldsEjec: any = { id_ot_fk: ot.id, updated_at: new Date().toISOString() }
+    if (!opts?.preservarStatus) fieldsEjec.status = 'En Proceso'
     const existing = (prog.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaComunId)
     if (existing) {
-      await dbCtrl.from('mant_ejecuciones').update({ id_ot_fk: ot.id, status: 'En Proceso', updated_at: new Date().toISOString() }).eq('id', existing.id)
+      await dbCtrl.from('mant_ejecuciones').update(fieldsEjec).eq('id', existing.id)
     } else {
-      await dbCtrl.from('mant_ejecuciones').insert({ id_programa_fk: prog.id, id_area_comun_fk: areaComunId, fecha_prog: fechaISO, status: 'En Proceso', id_ot_fk: ot.id })
+      await dbCtrl.from('mant_ejecuciones').insert({ id_programa_fk: prog.id, id_area_comun_fk: areaComunId, fecha_prog: fechaISO, status: opts?.preservarStatus ? 'Pendiente' : 'En Proceso', id_ot_fk: ot.id })
     }
     fetchData()
   }
