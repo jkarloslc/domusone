@@ -41,6 +41,7 @@ type Campo = {
   hideInTable?:   boolean  // el campo solo aparece en el modal, no como columna del grid
   staticOptions?: string[]
   bucket?: string
+  default?: string  // valor inicial al crear un registro nuevo (útil para columnas NOT NULL sin default de UI)
 }
 
 const CATALOGOS: CatConfig[] = [
@@ -138,6 +139,8 @@ const CATALOGOS: CatConfig[] = [
       { key: 'nombre',      label: 'Nombre *',    type: 'text',    required: true },
       { key: 'descripcion', label: 'Descripción', type: 'textarea' },
       { key: 'id_area_fk',  label: 'Área',        type: 'select',  selectTabla: 'areas' },
+      { key: 'criticidad',  label: 'Criticidad',  type: 'select',
+        staticOptions: ['rutinario', 'critico'], default: 'rutinario' },
     ],
   },
   {
@@ -2855,7 +2858,7 @@ function CatalogoModal({ config, row, onClose, onSaved }:
 
   const initForm = () => {
     const f: Record<string, string> = { activo: row?.activo !== false ? 'true' : 'false' }
-    config.campos.forEach(c => { f[c.key] = row?.[c.key]?.toString() ?? '' })
+    config.campos.forEach(c => { f[c.key] = row?.[c.key]?.toString() ?? c.default ?? '' })
     return f
   }
   const [form, setForm] = useState<Record<string, string>>(initForm)
