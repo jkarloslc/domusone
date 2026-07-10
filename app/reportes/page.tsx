@@ -85,7 +85,7 @@ const GRUPOS = [
       { id: 'ordenes-trabajo',        label: 'Órdenes de Trabajo',          icon: Wrench,        desc: 'OT filtrable por status, tipo, área, prioridad y fecha' },
       { id: 'ot-financiero',          label: 'OT Financiero CC/Área',       icon: Wallet,        desc: 'Costo de MO y recursos por Centro de Costo, Área y Frente' },
       { id: 'ot-cumplimiento',        label: 'OT Cumplimiento',             icon: BarChart3,     desc: 'Tasa de completado, cumplimiento de fecha límite y desglose por CC/Área/Tipo' },
-      { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Programas con sus tareas, responsable y semanas asignadas' },
+      { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Costo y cumplimiento por cuadrante, con desglose por programa y criticidad' },
       { id: 'colaboradores',          label: 'Colaboradores',               icon: Users,         desc: 'Personal operativo filtrable por cuadrante, sección, CC, área y rol (asignado/supervisor)' },
     ],
   },
