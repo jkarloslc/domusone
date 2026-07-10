@@ -363,7 +363,7 @@ export default function MantenimientoPage() {
               <option value="">Área Común</option>
               {areasComunes
                 .filter(a => !filterArea || (areaToAcs[Number(filterArea)] ?? []).includes(a.id))
-                .map(a => <option key={a.id} value={a.id}>{a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}</option>)}
+                .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
             {(filterCuad || filterArea || filterAC) && (
               <button className="btn-ghost" style={{ color: '#dc2626' }}
@@ -1140,7 +1140,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
                       ...f,
                       areasComunes: e.target.checked ? [...f.areasComunes, a.id] : f.areasComunes.filter(id => id !== a.id),
                     }))} />
-                  {a.nombre}{a.descripcion ? ` - ${a.descripcion}` : ''}
+                  {a.nombre}
                 </label>
               ))}
             </div>
