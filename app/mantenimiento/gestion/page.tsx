@@ -520,10 +520,11 @@ export default function MantenimientoPage() {
       {modal  && <ProgramaModal cuadrantes={cuadrantes} areas={areas} areasComunes={areasComunes} areaToAcs={areaToAcs} prog={editing}
         onClose={() => setModal(false)}
         onSaved={() => { setModal(false); fetchData() }} />}
-      {detail && <ProgramaDetail prog={detail} cuadMap={cuadMap} areaMap={areaMap} acMap={acMap}
+      {detail && <ProgramaDetail prog={detail} cuadMap={cuadMap} areaMap={areaMap} acMap={acMap} acCritMap={acCritMap}
         onClose={() => { setDetail(null); fetchData() }}
         onEdit={() => { setDetail(null); setEditing(detail); setModal(true) }}
-        onCambiarStatus={upsertEjecucion} onCambiarStatusBulk={upsertEjecucionesBulk} onGenerarOT={generarOT} />}
+        onCambiarStatus={upsertEjecucion} onCambiarStatusBulk={upsertEjecucionesBulk}
+        onRegistrarRonda={registrarRonda} onGenerarOT={generarOT} />}
     </div>
   )
 }
@@ -978,6 +979,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
     presupuesto_est:  prog?.presupuesto_est?.toString() ?? '0',
     fecha_inicio:     prog?.fecha_inicio       ?? '',
     fecha_fin:        prog?.fecha_fin          ?? '',
+    genera_ot_automatica: prog?.genera_ot_automatica ?? false,
   })
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -1019,6 +1021,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
       presupuesto_est:  Number(form.presupuesto_est || 0),
       fecha_inicio:     form.fecha_inicio || null,
       fecha_fin:        form.fecha_fin    || null,
+      genera_ot_automatica: form.genera_ot_automatica,
       updated_at:       new Date().toISOString(),
     }
     let programaId = prog?.id ?? null
@@ -1195,6 +1198,15 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
             <textarea className="input" rows={3} value={form.descripcion} onChange={setF('descripcion')}
               style={{ fontSize: 13, resize: 'vertical' }} />
           </div>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 10px',
+            background: '#f8fafc', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.genera_ot_automatica} style={{ marginTop: 2 }}
+              onChange={e => setForm(f => ({ ...f, genera_ot_automatica: e.target.checked }))} />
+            <span style={{ fontSize: 12 }}>
+              <strong>Correctivo mayor</strong> — generar Orden de Trabajo automáticamente en cada
+              ocurrencia programada, sin esperar a que se reporte una excepción (ej. servicio anual).
+            </span>
+          </label>
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end',
           padding: '12px 20px', borderTop: '1px solid #e2e8f0' }}>
@@ -1212,23 +1224,29 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
 // Detalle del Programa — datos de la plantilla + próximas ocurrencias
 // (ya no lista las 365 filas del año completo)
 // ═══════════════════════════════════════════════════════════════
-function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit, onCambiarStatus, onCambiarStatusBulk, onGenerarOT }: {
+function ProgramaDetail({ prog, cuadMap, areaMap, acMap, acCritMap, onClose, onEdit, onCambiarStatus, onCambiarStatusBulk, onRegistrarRonda, onGenerarOT }: {
   prog: any
   cuadMap: Record<number, string>
   areaMap: Record<number, string>
   acMap: Record<number, string>
+  acCritMap: Record<number, string>
   onClose: () => void
   onEdit?: () => void
   onCambiarStatus: (prog: any, areaComunId: number | null, fecha: Date, status: string) => Promise<void>
   onCambiarStatusBulk: (prog: any, areaIds: (number | null)[], fecha: Date, status: string) => Promise<void>
+  onRegistrarRonda: (prog: any, fecha: Date, datos: { status: string; hallazgo?: string | null; foto_url?: string | null; costo_mano_obra?: number; costo_materiales?: number }) => Promise<void>
   onGenerarOT: (prog: any, areaComunId: number | null, fecha: Date) => Promise<void>
 }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [localProg, setLocalProg] = useState(prog)
   const [showAreas, setShowAreas] = useState(false)
+  const [excepcionFecha, setExcepcionFecha] = useState<Date | null>(null)
 
   const areaSlots: (number | null)[] = (localProg.areasComunes ?? []).length ? localProg.areasComunes : [null]
   const multi = areaSlots.length > 1
+  const criticidad: 'critico' | 'rutinario' =
+    (localProg.areasComunes?.length ? acCritMap[localProg.areasComunes[0]] : 'rutinario') === 'critico' ? 'critico' : 'rutinario'
+  const esRutinarioMulti = multi && criticidad === 'rutinario'
   const proximas = proximasFechas(localProg, 14)
   const historial = (localProg.ejecuciones ?? []).slice().reverse().slice(0, 10)
 
@@ -1265,10 +1283,25 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit, onCamb
     })
   }
 
+  // Ronda (programas rutinarios multi-área): una sola fila agregada por
+  // fecha (id_area_comun_fk = null) — mismo mecanismo que EjecucionSemanal.
+  const rondaYReflejar = async (fecha: Date, datos: { status: string; hallazgo?: string | null; foto_url?: string | null; costo_mano_obra?: number; costo_materiales?: number }) => {
+    await onRegistrarRonda(localProg, fecha, datos)
+    const fechaISO = toISODate(fecha)
+    setLocalProg((p: any) => {
+      const existing = (p.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === null)
+      const ejecuciones = existing
+        ? p.ejecuciones.map((e: any) => e.id === existing.id ? { ...e, ...datos } : e)
+        : [...(p.ejecuciones ?? []), { id: `tmp-${fechaISO}-null`, fecha_prog: fechaISO, id_area_comun_fk: null, ...datos }]
+      return { ...p, ejecuciones }
+    })
+  }
+
   const completadas = (localProg.ejecuciones ?? []).filter((e: any) => e.status === 'Completada').length
   const total = (localProg.ejecuciones ?? []).length
 
   return (
+    <>
     <ModalShell modulo="mantenimiento" titulo={prog.nombre} onClose={onClose} maxWidth={640}
     >
         <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', padding: '14px 20px' }}>
@@ -1305,7 +1338,7 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit, onCamb
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
               Próximas ocurrencias
             </div>
-            {multi && (
+            {multi && !esRutinarioMulti && (
               <button onClick={() => setShowAreas(s => !s)}
                 style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }}>
                 {showAreas ? 'Vista resumida' : `Desglosar por área (${areaSlots.length})`}
@@ -1319,6 +1352,36 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit, onCamb
                 const ejec = (localProg.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === areaId)
                 return { areaId, status: ejec?.status ?? 'Pendiente', id_ot_fk: ejec?.id_ot_fk ?? null }
               })
+
+              if (esRutinarioMulti) {
+                const rondaEjec = (localProg.ejecuciones ?? []).find((e: any) => e.fecha_prog === fechaISO && e.id_area_comun_fk === null)
+                const rStatus = rondaEjec?.status ?? 'Pendiente'
+                const rc = STATUS_STYLE[rStatus] ?? STATUS_STYLE['Pendiente']
+                const key = fechaISO
+                return (
+                  <div key={fechaISO} style={{ display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 10px', border: '1px solid #f1f5f9', borderRadius: 6 }}>
+                    <span style={{ fontSize: 12.5, minWidth: 110 }}>{fmtDate(fecha)}</span>
+                    {rStatus === 'Pendiente' ? (
+                      <button onClick={() => handle(key, () => rondaYReflejar(fecha, { status: 'Completada' }))} disabled={busy === key}
+                        style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6,
+                          border: '1.5px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
+                        ✓ Ronda ({areaSlots.length} áreas)
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6,
+                        background: rc.bg, color: rc.color, border: `1px solid ${rc.border}` }}>
+                        {rStatus} · {areaSlots.length} áreas
+                      </span>
+                    )}
+                    <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', color: '#d97706' }}
+                      onClick={() => setExcepcionFecha(fecha)}>
+                      {rondaEjec?.hallazgo ? '⚠ Hallazgo' : '⚠ Reportar'}
+                    </button>
+                    {rondaEjec?.id_ot_fk && <span style={{ fontSize: 11, color: 'var(--blue)' }}>OT ✓</span>}
+                  </div>
+                )
+              }
 
               if (!multi) {
                 const cell = cells[0]
@@ -1437,6 +1500,14 @@ function ProgramaDetail({ prog, cuadMap, areaMap, acMap, onClose, onEdit, onCamb
           )}
         </div>
     </ModalShell>
+    {excepcionFecha && (
+      <ExcepcionModal
+        prog={localProg} fecha={excepcionFecha}
+        onClose={() => setExcepcionFecha(null)}
+        onGuardar={async datos => { await rondaYReflejar(excepcionFecha, datos); setExcepcionFecha(null) }}
+      />
+    )}
+    </>
   )
 }
 
