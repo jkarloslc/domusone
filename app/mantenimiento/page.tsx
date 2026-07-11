@@ -1,15 +1,16 @@
 'use client'
 import {
-  Wrench, Truck, Hammer, Building2, ChevronRight,
+  Wrench, Truck, Hammer, Building2, ChevronRight, ClipboardList,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
 
 const MODULOS = [
-  { key: 'mantenimiento', permKey: 'mantenimiento', label: 'Mantenimiento',          icon: Wrench,    color: '#b45309', desc: 'Programa anual, órdenes de trabajo y servicios',    href: '/mantenimiento/gestion' },
-  { key: 'equipo-flota',  permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria', icon: Truck,     color: '#0891b2', desc: 'Flotilla, mantenimientos y bitácora de uso',         href: '/equipo-flota'  },
-  { key: 'herramientas',  permKey: 'herramientas',  label: 'Equipo y Herramienta',   icon: Hammer,    color: '#7c3aed', desc: 'Catálogo, préstamos y mantenimiento de herramienta', href: '/herramientas'  },
-  { key: 'capex',         permKey: 'capex',         label: 'Proyectos CAPEX',        icon: Building2, color: '#059669', desc: 'Avance y presupuesto de proyectos de inversión',     href: '/capex'         },
+  { key: 'mantenimiento', permKey: 'mantenimiento', label: 'Mantenimiento',          icon: Wrench,        color: '#b45309', desc: 'Programa anual, órdenes de trabajo y servicios',    href: '/mantenimiento/gestion' },
+  { key: 'conceptos',     permKey: 'mantenimiento', label: 'Catálogo de Conceptos',  icon: ClipboardList, color: '#0f766e', desc: 'Conceptos de obra/mantenimiento y matriz de PU',     href: '/mantenimiento/conceptos' },
+  { key: 'equipo-flota',  permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria', icon: Truck,         color: '#0891b2', desc: 'Flotilla, mantenimientos y bitácora de uso',         href: '/equipo-flota'  },
+  { key: 'herramientas',  permKey: 'herramientas',  label: 'Equipo y Herramienta',   icon: Hammer,        color: '#7c3aed', desc: 'Catálogo, préstamos y mantenimiento de herramienta', href: '/herramientas'  },
+  { key: 'capex',         permKey: 'capex',         label: 'Proyectos CAPEX',        icon: Building2,     color: '#059669', desc: 'Avance y presupuesto de proyectos de inversión',     href: '/capex'         },
 ]
 
 export default function OperacionesPage() {

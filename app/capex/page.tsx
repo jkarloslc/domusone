@@ -34,6 +34,20 @@ type CapexPartida = {
   pu_materiales: number; pu_mano_obra: number; pu_maquinaria: number; pu_equipo_menor: number
   pu_total: number; monto_materiales: number; monto_mano_obra: number
   monto_maquinaria: number; monto_equipo_menor: number; monto_total: number; orden: number
+  id_concepto_fk?: number | null
+}
+
+// Concepto del catálogo de Mantenimiento (ctrl.mant_conceptos) — ver app/mantenimiento/conceptos
+type ConceptoCatalogo = { id: number; codigo: string; descripcion: string; unidad: string; pu_venta: number; costo_directo: number }
+type ConceptoCatalogoInsumo = {
+  tipo: 'mano_obra' | 'material' | 'equipo' | 'herramienta_menor'
+  descripcion: string; unidad: string | null; cantidad: number; costo_unitario: number
+  id_insumo_fk: number | null
+}
+
+// Mapeo de tipos: catálogo de conceptos (mant_conceptos_insumos) → capex_insumos
+const TIPO_CATALOGO_A_CAPEX: Record<ConceptoCatalogoInsumo['tipo'], TipoInsumo> = {
+  mano_obra: 'mano_obra', material: 'material', equipo: 'maquinaria', herramienta_menor: 'equipo_menor',
 }
 
 type TipoInsumo = 'material' | 'mano_obra' | 'maquinaria' | 'equipo_menor'
@@ -694,17 +708,87 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
   const [saving, setSaving] = useState(false)
   const [editingP, setEditingP] = useState<CapexPartida | null>(null)
 
+  // ── Selección desde el catálogo de conceptos (ctrl.mant_conceptos) ──────────
+  const [catSearch, setCatSearch]   = useState('')
+  const dCatSearch                  = useDebounce(catSearch, 250)
+  const [catResults, setCatResults] = useState<ConceptoCatalogo[]>([])
+  const [conceptoSel, setConceptoSel] = useState<ConceptoCatalogo | null>(null)
+
+  useEffect(() => {
+    if (dCatSearch.length < 2) { setCatResults([]); return }
+    dbCtrl.from('mant_conceptos').select('id, codigo, descripcion, unidad, pu_venta, costo_directo')
+      .eq('activo', true).or(`codigo.ilike.%${dCatSearch}%,descripcion.ilike.%${dCatSearch}%`).limit(8)
+      .then(({ data }) => setCatResults((data ?? []) as ConceptoCatalogo[]))
+  }, [dCatSearch])
+
+  const elegirConcepto = (c: ConceptoCatalogo) => {
+    setConceptoSel(c)
+    setFormP(f => ({ ...f, clave: c.codigo, descripcion: c.descripcion, unidad: c.unidad }))
+    setCatSearch(''); setCatResults([])
+  }
+
+  const quitarConcepto = () => {
+    setConceptoSel(null)
+    setFormP(EMPTY_PARTIDA)
+  }
+
   const addPartida = async () => {
     if (!formP.descripcion.trim()) return
     setSaving(true)
-    await dbCtrl.from('capex_partidas').insert({
-      id_frente_fk: frenteId,
-      clave:        formP.clave.trim() || null,
-      descripcion:  formP.descripcion.trim(),
-      unidad:       formP.unidad,
-      cantidad:     Number(formP.cantidad) || 0,
-      orden:        partidas.length,
-    })
+
+    if (conceptoSel) {
+      // Copiar la matriz de insumos del concepto como snapshot editable de la partida
+      const { data: itemsData } = await dbCtrl.from('mant_conceptos_insumos')
+        .select('tipo, descripcion, unidad, cantidad, costo_unitario, id_insumo_fk')
+        .eq('id_concepto_fk', conceptoSel.id).order('orden')
+      const items = (itemsData ?? []) as ConceptoCatalogoInsumo[]
+
+      const insumoIds = Array.from(new Set(items.filter(i => i.tipo === 'material' && i.id_insumo_fk).map(i => i.id_insumo_fk as number)))
+      let articuloMap: Record<number, number | null> = {}
+      if (insumoIds.length) {
+        const { data: baseIns } = await dbCtrl.from('mant_insumos').select('id, id_articulo_fk').in('id', insumoIds)
+        articuloMap = Object.fromEntries((baseIns ?? []).map((b: any) => [b.id, b.id_articulo_fk]))
+      }
+
+      const sum = (t: ConceptoCatalogoInsumo['tipo']) => items.filter(i => i.tipo === t).reduce((s, i) => s + i.cantidad * i.costo_unitario, 0)
+
+      const { data: partidaData, error } = await dbCtrl.from('capex_partidas').insert({
+        id_frente_fk:    frenteId,
+        id_concepto_fk:  conceptoSel.id,
+        clave:           formP.clave.trim() || conceptoSel.codigo,
+        descripcion:     formP.descripcion.trim(),
+        unidad:          formP.unidad || conceptoSel.unidad,
+        cantidad:        Number(formP.cantidad) || 0,
+        pu_materiales:   sum('material'),
+        pu_mano_obra:    sum('mano_obra'),
+        pu_maquinaria:   sum('equipo'),
+        pu_equipo_menor: sum('herramienta_menor'),
+        orden:           partidas.length,
+      }).select().single()
+
+      if (!error && partidaData && items.length > 0) {
+        await dbCtrl.from('capex_insumos').insert(items.map((i, idx) => ({
+          id_partida_fk:   (partidaData as any).id,
+          tipo:            TIPO_CATALOGO_A_CAPEX[i.tipo],
+          id_articulo_fk:  i.tipo === 'material' && i.id_insumo_fk ? (articuloMap[i.id_insumo_fk] ?? null) : null,
+          descripcion:     i.descripcion,
+          unidad:          i.unidad,
+          cantidad:        i.cantidad,
+          precio_unitario: i.costo_unitario,
+          orden:           idx,
+        })))
+      }
+      setConceptoSel(null)
+    } else {
+      await dbCtrl.from('capex_partidas').insert({
+        id_frente_fk: frenteId,
+        clave:        formP.clave.trim() || null,
+        descripcion:  formP.descripcion.trim(),
+        unidad:       formP.unidad,
+        cantidad:     Number(formP.cantidad) || 0,
+        orden:        partidas.length,
+      })
+    }
     setFormP(EMPTY_PARTIDA)
     onChanged()
     setSaving(false)
@@ -834,7 +918,40 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
 
       {/* Formulario nueva partida */}
       {puedeEscribir && (
-        <div style={{ padding: '10px 14px', background: '#fafafa', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div style={{ padding: '10px 14px', background: '#fafafa', borderTop: '1px solid #e2e8f0' }}>
+          {/* Elegir desde el catálogo de conceptos (Mantenimiento) */}
+          <div style={{ position: 'relative', marginBottom: 8 }}>
+            {conceptoSel ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 6, fontSize: 12 }}>
+                <span style={{ fontWeight: 700, color: '#0f766e' }}>{conceptoSel.codigo}</span>
+                <span style={{ flex: 1, color: 'var(--text-secondary)' }}>{conceptoSel.descripcion}</span>
+                <span style={{ color: 'var(--text-muted)' }}>PU catálogo: {fmt(conceptoSel.pu_venta)}</span>
+                <button className="btn-ghost" style={{ padding: '2px 6px' }} onClick={quitarConcepto} title="Quitar selección">
+                  <X size={12} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <input className="input" style={{ fontSize: 12 }} placeholder="🔍 Elegir concepto del catálogo (código o descripción)…"
+                  value={catSearch} onChange={e => setCatSearch(e.target.value)} />
+                {catResults.length > 0 && (
+                  <div className="card" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, maxHeight: 200, overflowY: 'auto', padding: '4px 0' }}>
+                    {catResults.map(c => (
+                      <button key={c.id} onClick={() => elegirConcepto(c)}
+                        style={{ display: 'flex', width: '100%', textAlign: 'left', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                        <span style={{ color: '#0f766e', fontWeight: 600, minWidth: 60 }}>{c.codigo}</span>
+                        <span style={{ flex: 1 }}>{c.descripcion}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>{fmt(c.pu_venta)}/{c.unidad}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Clave</div>
             <input className="input" style={{ width: 70, fontSize: 12 }} placeholder="A.1" value={formP.clave} onChange={e => setFormP(f => ({ ...f, clave: e.target.value }))} />
@@ -855,8 +972,9 @@ function PartidasPanel({ frenteId, puedeEscribir, partidas, insumos, setInsumos,
             <input className="input" type="number" style={{ width: 80, fontSize: 12 }} placeholder="0" value={formP.cantidad} onChange={e => setFormP(f => ({ ...f, cantidad: e.target.value }))} />
           </div>
           <button className="btn-primary" style={{ padding: '6px 14px', fontSize: 12 }} onClick={addPartida} disabled={saving || !formP.descripcion.trim()}>
-            {saving ? <Loader size={12} className="animate-spin" /> : <Plus size={12} />} Agregar
+            {saving ? <Loader size={12} className="animate-spin" /> : <Plus size={12} />} {conceptoSel ? 'Agregar desde catálogo' : 'Agregar'}
           </button>
+          </div>
         </div>
       )}
     </div>
