@@ -63,14 +63,18 @@ export default function MiembrosPage() {
     setLoading(true)
     const from = page * PAGE_SIZE
     const to   = from + PAGE_SIZE - 1
+    const hoy  = new Date().toLocaleDateString('en-CA')
 
     // Obtener IDs con adeudo si el filtro de cobranza lo requiere
+    // "Con adeudo" = cuota PENDIENTE/PAGO_PARCIAL ya vencida (no cuenta la mensualidad
+    // del mes en curso o futura que aún no llega a su fecha de vencimiento).
     let idsConAdeudo: number[] | null = null
     if (filtroCobranza !== 'todos') {
       const { data: pendData } = await dbGolf
         .from('cxc_golf')
         .select('id_socio_fk')
         .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+        .lt('fecha_vencimiento', hoy)
       const set = new Set((pendData ?? []).map((r: any) => r.id_socio_fk as number))
       idsConAdeudo = Array.from(set)
     }
@@ -102,14 +106,15 @@ export default function MiembrosPage() {
     setSocios(lista)
     setTotal(count ?? 0)
 
-    // Detectar socios con cuotas pendientes en esta página
+    // Detectar socios con cuotas vencidas (adeudo real) en esta página
     if (lista.length > 0) {
       const ids = lista.map(s => s.id)
       const { data: pend } = await dbGolf
         .from('cxc_golf')
         .select('id_socio_fk')
         .in('id_socio_fk', ids)
-        .eq('status', 'PENDIENTE')
+        .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+        .lt('fecha_vencimiento', hoy)
       setAdeudos(new Set((pend ?? []).map((r: any) => r.id_socio_fk as number)))
     } else {
       setAdeudos(new Set())
