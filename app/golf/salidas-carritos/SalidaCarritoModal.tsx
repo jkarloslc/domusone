@@ -21,6 +21,7 @@ type Elegibilidad = {
   pension: PensionCarrito
   cuotasVencidas: number
   montoVencido: number
+  membresiaVencida: boolean
   enRonda: boolean
 }
 
@@ -79,12 +80,26 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
       }
       const enRondaSet = new Set(((salidasData ?? []) as { id_carrito_fk: number }[]).map(s => s.id_carrito_fk))
 
+      const idsSocios = Array.from(new Set(((pData ?? []) as unknown as PensionCarrito[]).map(p => p.id_socio_fk)))
+      const hoy = new Date().toLocaleDateString('en-CA')
+      // Membresía vencida (mensualidad/inscripción) — independiente de la pensión de carrito
+      const { data: membresiaData } = idsSocios.length > 0
+        ? await dbGolf.from('cxc_golf')
+            .select('id_socio_fk')
+            .in('id_socio_fk', idsSocios)
+            .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+            .neq('tipo', 'PENSION_CARRITO')
+            .lt('fecha_vencimiento', hoy)
+        : { data: [] as { id_socio_fk: number }[] }
+      const membresiaVencidaSet = new Set(((membresiaData ?? []) as { id_socio_fk: number }[]).map(r => r.id_socio_fk))
+
       const result: Elegibilidad[] = ((pData ?? []) as unknown as PensionCarrito[])
         .filter(p => p.cat_carritos?.activo !== false)
         .map(p => ({
           pension: p,
           cuotasVencidas: vencPorPension[p.id]?.count ?? 0,
           montoVencido:   vencPorPension[p.id]?.monto ?? 0,
+          membresiaVencida: membresiaVencidaSet.has(p.id_socio_fk),
           enRonda:        enRondaSet.has(p.id_carrito_fk),
         }))
         // Orden por id de cajón (sin cajón al final), después por nombre de socio
@@ -105,14 +120,17 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
     return `${car}${placa}${cajon} — ${nc(p.cat_socios)}`
   }
 
+  const tieneAdeudo = (e: Elegibilidad) => e.cuotasVencidas > 0 || e.membresiaVencida
+
   const seleccionado = lista.find(e => e.pension.id === idPension)
-  const elegibles    = lista.filter(e => e.cuotasVencidas === 0 && !e.enRonda)
-  const conAdeudo    = lista.filter(e => e.cuotasVencidas > 0)
-  const enRonda      = lista.filter(e => e.cuotasVencidas === 0 && e.enRonda)
+  const elegibles    = lista.filter(e => !tieneAdeudo(e) && !e.enRonda)
+  const conAdeudo    = lista.filter(e => tieneAdeudo(e))
+  const enRonda      = lista.filter(e => !tieneAdeudo(e) && e.enRonda)
 
   const handleSave = async () => {
     if (!seleccionado) { setError('Selecciona un carrito'); return }
-    if (seleccionado.cuotasVencidas > 0) { setError('El carrito tiene adeudo de cuotas — no puede salir a ronda'); return }
+    if (seleccionado.cuotasVencidas > 0) { setError('El carrito tiene adeudo de cuotas de pensión — no puede salir a ronda'); return }
+    if (seleccionado.membresiaVencida) { setError('El socio tiene mensualidad de membresía vencida — no puede salir a ronda'); return }
     if (seleccionado.enRonda) { setError('El carrito ya está en ronda de juego'); return }
     setSaving(true); setError('')
 
@@ -185,10 +203,14 @@ export default function SalidaCarritoModal({ onClose, onSaved }: Props) {
                 </optgroup>
               )}
               {conAdeudo.length > 0 && (
-                <optgroup label="Con adeudo de cuotas (bloqueados)">
+                <optgroup label="Con adeudo (bloqueados)">
                   {conAdeudo.map(e => (
                     <option key={e.pension.id} value={e.pension.id} disabled>
-                      {descCarrito(e.pension)} — {e.cuotasVencidas} cuota{e.cuotasVencidas !== 1 ? 's' : ''} vencida{e.cuotasVencidas !== 1 ? 's' : ''} ({fmt$(e.montoVencido)})
+                      {descCarrito(e.pension)} — {e.cuotasVencidas > 0
+                        ? `${e.cuotasVencidas} cuota${e.cuotasVencidas !== 1 ? 's' : ''} de pensión vencida${e.cuotasVencidas !== 1 ? 's' : ''} (${fmt$(e.montoVencido)})`
+                        : ''}
+                      {e.cuotasVencidas > 0 && e.membresiaVencida ? ' + ' : ''}
+                      {e.membresiaVencida ? 'membresía vencida' : ''}
                     </option>
                   ))}
                 </optgroup>
