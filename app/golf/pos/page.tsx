@@ -156,6 +156,7 @@ export default function POSPage() {
 
   // Stats del día
   const [statsHoy, setStatsHoy] = useState({ ventas: 0, total: 0, pendCorte: 0 })
+  const [ingresosMes, setIngresosMes] = useState(0)
   const [dbError, setDbError]   = useState('')
 
   // ── Cargar centros de venta ─────────────────────────────
@@ -183,10 +184,17 @@ export default function POSPage() {
   // ── Stats del día ────────────────────────────────────────
   const fetchStats = useCallback(async () => {
     const hoy = fechaLocal()
-    const { data, error } = await dbGolf.from('ctrl_ventas')
-      .select('id, total, status, id_corte_fk')
-      .eq('status', 'PAGADA')
-      .gte('fecha', inicioDelDia(hoy))
+    const iniMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-CA')
+    const [{ data, error }, { data: cortesMes }] = await Promise.all([
+      dbGolf.from('ctrl_ventas')
+        .select('id, total, status, id_corte_fk')
+        .eq('status', 'PAGADA')
+        .gte('fecha', inicioDelDia(hoy)),
+      dbGolf.from('ctrl_cortes_caja')
+        .select('total_ventas')
+        .gte('fecha_corte', inicioDelDia(iniMes))
+        .lte('fecha_corte', finDelDia(hoy)),
+    ])
     if (error) { console.error('[POS] fetchStats:', error); return }
     const rows = data ?? []
     setStatsHoy({
@@ -194,6 +202,7 @@ export default function POSPage() {
       total:     rows.reduce((a: number, r: any) => a + (r.total ?? 0), 0),
       pendCorte: rows.filter((r: any) => !r.id_corte_fk).length,
     })
+    setIngresosMes((cortesMes ?? []).reduce((a: number, c: any) => a + (c.total_ventas ?? 0), 0))
   }, [])
 
   // ── Fetch ventas ─────────────────────────────────────────
@@ -998,6 +1007,7 @@ ${operaciones.length > 0 ? `
           { label: 'Ventas hoy',       value: statsHoy.ventas,          color: '#059669', bg: '#ecfdf5' },
           { label: 'Total del día',    value: fmt$(statsHoy.total),     color: '#2563eb', bg: '#eff6ff' },
           { label: 'Por cortar',       value: statsHoy.pendCorte,       color: statsHoy.pendCorte > 0 ? '#d97706' : '#059669', bg: statsHoy.pendCorte > 0 ? '#fffbeb' : '#ecfdf5' },
+          { label: 'Ingresos POS este mes', value: fmt$(ingresosMes),  color: '#7c3aed', bg: '#f5f3ff' },
         ].map(c => (
           <div key={c.label} className="card" style={{ flex: '1 1 140px', maxWidth: 220, padding: '12px 16px', background: c.bg, border: `1px solid ${c.color}22` }}>
             <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{c.label}</div>

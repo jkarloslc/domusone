@@ -7,7 +7,7 @@ import {
   Users, Flag, MapPin, Calendar,
   Car,
   ChevronRight, ArrowRightLeft, RefreshCw, AlertTriangle,
-  TrendingUp, Activity, Target,
+  Activity, Target,
 } from 'lucide-react'
 
 // ── Formatters ────────────────────────────────────────────────
@@ -26,11 +26,7 @@ type KPIs = {
   salidasMes:    number
   cuotasVencidas: number
   montoCuotasVencidas: number
-  ingresosMes:   number
-  cortesPendientes: number
 }
-
-type IngresoPorCentro = { nombre: string; monto: number; id: number }
 
 // ── Módulos del club ──────────────────────────────────────────
 const MODULOS = [
@@ -104,7 +100,6 @@ export default function GolfPage() {
   const [kpis,     setKpis]     = useState<KPIs>({
     sociosActivos: 0, salidasHoy: 0, salidasMes: 0,
     cuotasVencidas: 0, montoCuotasVencidas: 0,
-    ingresosMes: 0, cortesPendientes: 0,
   })
   const [loading,    setLoading]    = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -115,7 +110,7 @@ export default function GolfPage() {
       const [
         sociosR, salidasHoyR, salidasHoyAcompR,
         salidasMesR, salidasMesAcompR,
-        cuotasR, cortesR, centrosR,
+        cuotasR,
       ] = await Promise.allSettled([
         // 1. Socios activos
         dbGolf.from('cat_socios').select('id', { count: 'exact', head: true }).eq('activo', true),
@@ -144,13 +139,6 @@ export default function GolfPage() {
           .select('monto_final')
           .eq('status', 'PENDIENTE')
           .lt('fecha_vencimiento', hoy),
-        // 5. Cortes del mes con ingresos (agrupados por centro)
-        dbGolf.from('ctrl_cortes_caja')
-          .select('id_centro_fk, centro_nombre, total_ventas')
-          .gte('fecha_corte', inicioDelDia(iniMes))
-          .lte('fecha_corte', finDelDia(hoy)),
-        // 6. Centros de venta (para orden y nombres)
-        dbGolf.from('cat_centros_venta').select('id, nombre').eq('activo', true).order('orden'),
       ])
 
       // Socios activos
@@ -167,31 +155,9 @@ export default function GolfPage() {
       const cuotasVencidas = cuotasData.length
       const montoCuotasVencidas = cuotasData.reduce((a: number, c: any) => a + (c.monto_final ?? 0), 0)
 
-      // Ingresos por centro de venta del mes
-      const cortesData  = cortesR.status === 'fulfilled' ? (cortesR.value.data ?? []) : []
-      const centrosData = centrosR.status === 'fulfilled' ? (centrosR.value.data ?? []) : []
-
-      // Agrupar por centro_nombre
-      const porCentro: Record<string, { monto: number; id: number }> = {}
-      cortesData.forEach((c: any) => {
-        const key = c.centro_nombre ?? `Centro #${c.id_centro_fk}`
-        if (!porCentro[key]) porCentro[key] = { monto: 0, id: c.id_centro_fk }
-        porCentro[key].monto += (c.total_ventas ?? 0)
-      })
-
-      // Ordenar según cat_centros_venta orden
-      const centrosOrden: Record<number, number> = {}
-      centrosData.forEach((cv: any, i: number) => { centrosOrden[cv.id] = i })
-      const ingresosPorCentroArr: IngresoPorCentro[] = Object.entries(porCentro)
-        .map(([nombre, { monto, id }]) => ({ nombre, monto, id }))
-        .sort((a, b) => (centrosOrden[a.id] ?? 99) - (centrosOrden[b.id] ?? 99))
-
-      const ingresosMes = ingresosPorCentroArr.reduce((a, c) => a + c.monto, 0)
-
       setKpis({
         sociosActivos, salidasHoy, salidasMes,
         cuotasVencidas, montoCuotasVencidas,
-        ingresosMes, cortesPendientes: 0,
       })
     } catch {
       // silencioso — KPIs son opcionales
@@ -264,26 +230,6 @@ export default function GolfPage() {
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               Salidas hoy · <span style={{ fontWeight: 600 }}>{loading ? '—' : kpis.salidasMes}</span> en el mes
             </div>
-          </div>
-        </div>
-
-        {/* Ingresos del mes */}
-        <div className="card" onClick={() => router.push('/golf/pos')}
-          style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
-            flex: '1 1 180px', maxWidth: 240, cursor: 'pointer', background: '#f0fdf4',
-            transition: 'transform 0.1s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: '#05966920',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <TrendingUp size={16} style={{ color: '#059669' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
-              color: '#059669', fontVariantNumeric: 'tabular-nums' }}>
-              {loading ? '—' : fmtK(kpis.ingresosMes)}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Ingresos POS este mes</div>
           </div>
         </div>
 
