@@ -2,12 +2,15 @@
 import { useState, useEffect } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Save, Loader, Plus, Trash2, Search, Users, CheckCircle, Printer } from 'lucide-react'
+import { X, Save, Loader, Plus, Trash2, Search, Users, CheckCircle, Printer, AlertTriangle, Circle } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_tarjeta: string | null; cat_categorias_socios?: { nombre: string } | null }
 type Familiar = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null }
 type Espacio = { id: number; nombre: string }
+type AdeudoRow = { id: number; concepto: string; monto_final: number; fecha_vencimiento: string | null }
+
+const fmt$ = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 
 // Un acompañante puede ser familiar, visitante Green Fee, invitado por pase o intercambio
 type Acomp = {
@@ -42,6 +45,10 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   const [socioResults, setSocioResults] = useState<Socio[]>([])
   const [socioSelec, setSocioSelec]     = useState<Socio | null>(null)
   const [buscando, setBuscando]         = useState(false)
+
+  // Validación de adeudos
+  const [adeudos, setAdeudos]                 = useState<AdeudoRow[]>([])
+  const [verificandoAdeudo, setVerificandoAdeudo] = useState(false)
 
   // familiares del socio
   const [familiares, setFamiliares] = useState<Familiar[]>([])
@@ -102,7 +109,28 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     setSocioSelec(null)
     setFamiliares([])
     setAcomp([])
+    setAdeudos([])
   }
+
+  // Verificar adeudo (cuotas vencidas) al seleccionar socio — no permite salida al campo
+  useEffect(() => {
+    if (!socioSelec) { setAdeudos([]); return }
+    const hoy = new Date().toLocaleDateString('en-CA')
+    setVerificandoAdeudo(true)
+    dbGolf
+      .from('cxc_golf')
+      .select('id, concepto, monto_final, fecha_vencimiento')
+      .eq('id_socio_fk', socioSelec.id)
+      .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+      .lt('fecha_vencimiento', hoy)
+      .limit(5)
+      .then(({ data }) => {
+        setAdeudos((data as AdeudoRow[]) ?? [])
+        setVerificandoAdeudo(false)
+      })
+  }, [socioSelec])
+
+  const tieneAdeudo = adeudos.length > 0
 
   // pases disponibles del socio seleccionado
   const [pasesDisponibles, setPasesDisponibles] = useState<{ id: number; cantidad_disponible: number; periodo: string | null }[]>([])
@@ -170,6 +198,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   const handleSave = async () => {
     if (!socioSelec) { setError('Selecciona un socio'); return }
     if (!idEspacio)  { setError('Selecciona el espacio deportivo'); return }
+    if (tieneAdeudo) { setError('El socio tiene cuotas vencidas — no puede salir al campo'); return }
     setSaving(true); setError('')
 
     const { data: acceso, error: err } = await dbGolf
@@ -317,7 +346,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       maxWidth={560}
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button className="btn-primary" onClick={handleSave} disabled={saving || verificandoAdeudo || tieneAdeudo} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
           Registrar Salida
         </button>
@@ -340,7 +369,34 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
               </div>
               <button onClick={limpiarSocio} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={14} /></button>
             </div>
-          ) : (
+          ) : null}
+
+          {/* Estado de adeudos */}
+          {socioSelec && (
+            verificandoAdeudo ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b' }}>
+                <Loader size={13} className="animate-spin" /> Verificando cuotas…
+              </div>
+            ) : tieneAdeudo ? (
+              <div style={{ marginTop: 8, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, fontSize: 12, fontWeight: 700, color: '#dc2626' }}>
+                  <AlertTriangle size={13} /> Socio con adeudo — no puede salir al campo
+                </div>
+                {adeudos.map(a => (
+                  <div key={a.id} style={{ fontSize: 11, color: '#991b1b', display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                    <span>{a.concepto}</span>
+                    <span style={{ fontWeight: 600 }}>{fmt$(a.monto_final ?? 0)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#15803d', fontWeight: 600 }}>
+                <Circle size={8} style={{ fill: '#15803d', color: '#15803d' }} /> Sin adeudos — puede salir al campo
+              </div>
+            )
+          )}
+
+          {!socioSelec && (
             <div style={{ position: 'relative' }}>
               <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               {buscando && <Loader size={12} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
