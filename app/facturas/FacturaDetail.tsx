@@ -4,6 +4,7 @@ import { dbCtrl } from '@/lib/supabase'
 import { X, Printer, Mail, XCircle, Download, CheckCircle, Loader, AlertTriangle } from 'lucide-react'
 import { cancelarCFDI } from '@/lib/pacService'
 import ModalShell from '@/components/ui/ModalShell'
+import { useAuth } from '@/lib/AuthContext'
 
 const fmt = (v: number | null | undefined) =>
   v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
@@ -24,6 +25,7 @@ const MOTIVOS_CANCELACION = [
 ]
 
 export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props) {
+  const { canDelete }                   = useAuth()
   const [cancelando, setCancelando]     = useState(false)
   const [showCancelar, setShowCancelar] = useState(false)
   const [motivo, setMotivo]             = useState('02')
@@ -180,9 +182,11 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
                 <button className="btn-secondary" onClick={() => setShowEmail(e => !e)} style={{ fontSize: 12 }}>
                   <Mail size={13} /> Enviar
                 </button>
-                <button className="btn-ghost" onClick={() => setShowCancelar(e => !e)} style={{ color: '#dc2626', fontSize: 12 }}>
-                  <XCircle size={13} /> Cancelar
-                </button>
+                {canDelete() && (
+                  <button className="btn-ghost" onClick={() => setShowCancelar(e => !e)} style={{ color: '#dc2626', fontSize: 12 }}>
+                    <XCircle size={13} /> Cancelar
+                  </button>
+                )}
               </>
             )}
             <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
