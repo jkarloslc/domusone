@@ -201,9 +201,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       .then(({ data }) => {
         const fps = (data as FormaPago[] | null) ?? []
         setFormasPago(fps)
-        if (fps.length > 0) {
-          setPagos([{ id_forma_fk: fps[0].id, forma_nombre: fps[0].nombre, monto: totalInicial > 0 ? totalInicial.toFixed(2) : '', referencia: '' }])
-        }
+        setPagos([{ id_forma_fk: 0, forma_nombre: '', monto: totalInicial > 0 ? totalInicial.toFixed(2) : '', referencia: '' }])
         setLoading(false)
       })
   }, [])

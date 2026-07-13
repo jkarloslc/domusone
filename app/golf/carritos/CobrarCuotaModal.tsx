@@ -153,9 +153,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     ]).then(([{ data: fps }, { data: soc }]) => {
       const fpsList = (fps as FormaPago[]) ?? []
       setFormasPago(fpsList)
-      if (fpsList.length) {
-        setPagosLineas([{ id_forma_pago_fk: fpsList[0].id, forma_nombre: fpsList[0].nombre, monto: '', referencia: '' }])
-      }
       setSocioInfo(soc as unknown as Socio)
       setLoadingInit(false)
     })

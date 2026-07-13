@@ -97,7 +97,6 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
       setProductos((prods as Producto[]) ?? [])
       const fps2 = (fps as FormaPago[]) ?? []
       setFormasPago(fps2)
-      if (fps2.length) setForma1(fps2[0].id)
       setLoading(false)
     })
   }, [idCentro])
@@ -658,6 +657,7 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px', gap: 6, marginBottom: 4 }}>
                     <select value={forma1} onChange={e => setForma1(Number(e.target.value))}
                       style={{ padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+                      <option value={0}>— Selecciona —</option>
                       {formasPago.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                     </select>
                     <input type="number" min={0} step={0.01} value={monto1} onChange={e => setMonto1(e.target.value)}
