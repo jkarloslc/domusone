@@ -20,6 +20,7 @@ export type Socio = {
   rfc: string | null
   curp: string | null
   numero_tarjeta: string | null
+  nacionalidad: string | null
   activo: boolean
   derecho_intercambios?: boolean
   observaciones: string | null
@@ -44,6 +45,7 @@ type Familiar = {
   apellido_materno: string | null
   parentesco: string | null
   fecha_nacimiento: string | null
+  nacionalidad: string | null
   activo: boolean
 }
 
@@ -68,10 +70,11 @@ type FamiliarForm = {
   apellido_materno: string
   parentesco: string
   fecha_nacimiento: string
+  nacionalidad: string
 }
 
 const FAMILIAR_VACIO: FamiliarForm = {
-  nombre: '', apellido_paterno: '', apellido_materno: '', parentesco: '', fecha_nacimiento: '',
+  nombre: '', apellido_paterno: '', apellido_materno: '', parentesco: '', fecha_nacimiento: '', nacionalidad: '',
 }
 
 type ContratoForm = {
@@ -243,6 +246,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     rfc:               socio?.rfc               ?? '',
     curp:              socio?.curp              ?? '',
     numero_tarjeta:    socio?.numero_tarjeta    ?? '',
+    nacionalidad:      socio?.nacionalidad      ?? 'Mexicana',
     activo:                 socio?.activo                ?? true,
     derecho_intercambios:   socio?.derecho_intercambios  ?? false,
     observaciones:          socio?.observaciones         ?? '',
@@ -273,7 +277,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     setLoadingFam(true)
     const { data } = await dbGolf
       .from('cat_familiares')
-      .select('id, nombre, apellido_paterno, apellido_materno, parentesco, fecha_nacimiento, activo')
+      .select('id, nombre, apellido_paterno, apellido_materno, parentesco, fecha_nacimiento, nacionalidad, activo')
       .eq('id_socio_fk', socio.id)
       .order('nombre')
     setFamiliares((data as Familiar[]) ?? [])
@@ -378,6 +382,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       rfc:                form.rfc               || null,
       curp:               form.curp              || null,
       numero_tarjeta:      form.numero_tarjeta        || null,
+      nacionalidad:        form.nacionalidad          || null,
       activo:               form.activo,
       derecho_intercambios: (form as any).derecho_intercambios ?? false,
       observaciones:        form.observaciones         || null,
@@ -401,6 +406,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       apellido_materno: nuevoFam.apellido_materno || null,
       parentesco:       nuevoFam.parentesco       || null,
       fecha_nacimiento: nuevoFam.fecha_nacimiento || null,
+      nacionalidad:     nuevoFam.nacionalidad      || null,
     })
     if (err) { setErrorFam(err.message); setSavingFam(false); return }
     setNuevoFam(FAMILIAR_VACIO); setShowFormFam(false); setSavingFam(false)
@@ -724,6 +730,10 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                   <input style={inputStyle} value={form.curp} onChange={e => set('curp', e.target.value.toUpperCase())} />
                 </div>
                 <div>
+                  <label style={labelStyle}>Nacionalidad</label>
+                  <input style={inputStyle} value={form.nacionalidad} onChange={e => set('nacionalidad', e.target.value)} placeholder="Mexicana" />
+                </div>
+                <div>
                   <label style={labelStyle}>Teléfono</label>
                   <input style={inputStyle} value={form.telefono} onChange={e => set('telefono', e.target.value)} placeholder="(55) 1234-5678" />
                 </div>
@@ -825,6 +835,10 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                       <label style={labelStyle}>Fecha de Nacimiento</label>
                       <input style={inputStyle} type="date" value={nuevoFam.fecha_nacimiento} onChange={e => setFam('fecha_nacimiento', e.target.value)} />
                     </div>
+                    <div>
+                      <label style={labelStyle}>Nacionalidad</label>
+                      <input style={inputStyle} value={nuevoFam.nacionalidad} onChange={e => setFam('nacionalidad', e.target.value)} placeholder="Mexicana" />
+                    </div>
                   </div>
                   {errorFam && (
                     <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errorFam}</div>
@@ -859,6 +873,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                         <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, display: 'flex', gap: 10 }}>
                           {f.parentesco && <span>{f.parentesco}</span>}
                           {f.fecha_nacimiento && <span>{new Date(f.fecha_nacimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                          {f.nacionalidad && <span>{f.nacionalidad}</span>}
                           {!f.activo && <span style={{ color: '#dc2626', fontWeight: 600 }}>Inactivo</span>}
                         </div>
                       </div>
