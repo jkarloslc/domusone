@@ -306,6 +306,7 @@ export default function CXPPage() {
 function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: Record<number,string>; onClose: () => void; onOpenOP: (op: any) => void }) {
   const [ops, setOps]         = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [filterStatus, setFilterStatus] = useState('')
 
   useEffect(() => {
     dbComp.from('ordenes_pago').select('*')
@@ -315,8 +316,11 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
       .then(({ data }) => { setOps(data ?? []); setLoading(false) })
   }, [prov.id])
 
-  const saldoTotal  = ops.filter(o => o.status !== 'Pagada').reduce((a,o) => a + (o.saldo ?? o.monto ?? 0), 0)
-  const pagadoTotal = ops.filter(o => o.status === 'Pagada').reduce((a,o) => a + (o.monto ?? 0), 0)
+  const statusDisponibles = Array.from(new Set(ops.map(o => o.status).filter(Boolean))) as string[]
+  const opsFiltradas = filterStatus ? ops.filter(o => o.status === filterStatus) : ops
+
+  const saldoTotal  = opsFiltradas.filter(o => o.status !== 'Pagada').reduce((a,o) => a + (o.saldo ?? o.monto ?? 0), 0)
+  const pagadoTotal = opsFiltradas.filter(o => o.status === 'Pagada').reduce((a,o) => a + (o.monto ?? 0), 0)
 
   const imprimirEC = async () => {
     let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
@@ -397,9 +401,9 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
 
         <div style={{ display: 'flex', gap: 10, padding: '14px 24px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
           {[
-            { label: 'Saldo Pendiente', value: fmt(saldoTotal),    color: 'var(--blue)' },
-            { label: 'Pagado',          value: fmt(pagadoTotal),   color: '#15803d' },
-            { label: 'Documentos',      value: String(ops.length), color: 'var(--text-secondary)' },
+            { label: 'Saldo Pendiente', value: fmt(saldoTotal),           color: 'var(--blue)' },
+            { label: 'Pagado',          value: fmt(pagadoTotal),          color: '#15803d' },
+            { label: 'Documentos',      value: String(opsFiltradas.length), color: 'var(--text-secondary)' },
           ].map(s => (
             <div key={s.label} style={{ textAlign: 'center', flex: 1, minWidth: 100 }}>
               <div style={{ fontSize: 18, fontWeight: 700, color: s.color, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
@@ -408,7 +412,15 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
           ))}
         </div>
 
-        <div style={{ overflowY: 'auto', maxHeight: 'calc(88vh - 170px)' }}>
+        <div style={{ padding: '10px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label className="label" style={{ margin: 0 }}>Status</label>
+          <select className="select" style={{ maxWidth: 220 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+            <option value="">Todos</option>
+            {statusDisponibles.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(88vh - 220px)' }}>
           <table>
             <thead>
               <tr>
@@ -422,7 +434,9 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
             <tbody>
               {loading ? (
                 <tr><td colSpan={10} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
-              ) : ops.map(op => {
+              ) : opsFiltradas.length === 0 ? (
+                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Sin OPs con este status</td></tr>
+              ) : opsFiltradas.map(op => {
                 const dias = diasVencido(op.fecha_vencimiento)
                 const vencido = dias > 0 && op.status !== 'Pagada'
                 return (
