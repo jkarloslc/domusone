@@ -424,7 +424,11 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Club', items: [
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag      },
-      { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres',icon: HorseIcon },
+    ]},
+    { section: 'Hípico', items: [
+      { label: 'Hípico',            href: '/hipico',                   icon: HorseIcon },
+      { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
+      RPT('hipico'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',           href: '/compras',                 icon: ShoppingCart },

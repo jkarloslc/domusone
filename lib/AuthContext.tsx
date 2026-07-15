@@ -142,10 +142,12 @@ const HIPICO_MODULOS = [
 ]
 
 // Módulos Hospitality para rol dedicado
+// Incluye módulo Hípico completo (mismo alcance que usuariohipico)
 const HOSPITALITY_MODULOS = [
   'hospitality', 'reportes',
   'compras', 'requisiciones', 'transferencias',
-  'golf', 'golf-torneos', 'hipico',
+  'golf', 'golf-torneos',
+  ...HIPICO_MODULOS,
 ]
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
