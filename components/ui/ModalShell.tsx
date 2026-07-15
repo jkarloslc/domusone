@@ -11,6 +11,7 @@ export type ModalModulo =
   | 'tesoreria' | 'ingresos' | 'presupuestos'
   | 'golf' | 'golf-miembros' | 'golf-accesos' | 'golf-pos' | 'golf-carritos'
   | 'hipico'
+  | 'locales'
   | 'usuarios' | 'configuracion'
   | 'default'
 
@@ -52,6 +53,9 @@ export const MODAL_PALETTES: Record<ModalModulo, Palette> = {
 
   // Hípico — café cuero / marrón cálido
   hipico:        { from: '#44200d', to: '#92400e', accent: '#b45309' },
+
+  // Locales y Propiedades — pizarra / teal (inmobiliario comercial)
+  locales:       { from: '#134e4a', to: '#0f766e', accent: '#0d9488' },
 
   // Golf — dorado / verde campo
   golf:          { from: '#713f12', to: '#b8952a', accent: '#b8952a' },

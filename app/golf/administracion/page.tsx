@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import {
-  Users, Tag, Car, Receipt, CreditCard, ChevronRight,
+  Users, Tag, Car, Receipt, CreditCard, ChevronRight, Building2,
 } from 'lucide-react'
 
 const MODULOS = [
@@ -43,6 +43,14 @@ const MODULOS = [
     icon: CreditCard,
     color: '#0891b2',
     href: '/golf/cxc',
+  },
+  {
+    key: 'locales',
+    label: 'Locales y Propiedades',
+    desc: 'Renta de locales comerciales y propiedades — arrendatarios, catálogo y cobranza',
+    icon: Building2,
+    color: '#0f766e',
+    href: '/locales',
   },
 ]
 

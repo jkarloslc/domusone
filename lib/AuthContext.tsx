@@ -113,6 +113,8 @@ const ADMIN_MODULOS = [
   'hipico-contratos', 'hipico-cobranza', 'hipico-servicios',
   // Hospitality
   'hospitality',
+  // Renta de Locales Comerciales y Propiedades
+  'locales',
   // Vehículos y Maquinaria
   'equipo-flota',
   // Equipo y Herramienta
