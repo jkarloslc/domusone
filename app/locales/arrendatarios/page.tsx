@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbLoc } from '@/lib/supabase'
+import { dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, Search, RefreshCw, Edit2, Trash2, Eye, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -64,14 +64,14 @@ export default function ArrendatariosLocalesPage() {
     setLoading(true)
     const from = page * PAGE_SIZE
     const to   = from + PAGE_SIZE - 1
-    let q = dbLoc
-      .from('cat_arrendatarios')
+    let q = dbCtrl
+      .from('loc_arrendatarios')
       .select('*', { count: 'exact' })
       .order('apellido_paterno', { ascending: true })
       .order('nombre', { ascending: true })
       .range(from, to)
-    let kpiQ = dbLoc
-      .from('cat_arrendatarios')
+    let kpiQ = dbCtrl
+      .from('loc_arrendatarios')
       .select('activo, tipo_persona')
     if (search.trim()) {
       const words = search.trim().split(/\s+/).filter(Boolean)
@@ -134,9 +134,9 @@ export default function ArrendatariosLocalesPage() {
     }
     let error
     if (editItem) {
-      ;({ error } = await dbLoc.from('cat_arrendatarios').update(payload).eq('id', editItem.id))
+      ;({ error } = await dbCtrl.from('loc_arrendatarios').update(payload).eq('id', editItem.id))
     } else {
-      ;({ error } = await dbLoc.from('cat_arrendatarios').insert(payload))
+      ;({ error } = await dbCtrl.from('loc_arrendatarios').insert(payload))
     }
     setSaving(false)
     if (error) { setErr(error.message); return }
@@ -147,7 +147,7 @@ export default function ArrendatariosLocalesPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este arrendatario?')) return
     setDeleting(id)
-    await dbLoc.from('cat_arrendatarios').delete().eq('id', id)
+    await dbCtrl.from('loc_arrendatarios').delete().eq('id', id)
     setDeleting(null)
     fetchItems()
   }

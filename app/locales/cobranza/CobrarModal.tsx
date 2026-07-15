@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbLoc, dbGolf, dbCfg } from '@/lib/supabase'
+import { dbCtrl, dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Save, Loader, Printer, Receipt, Plus, Trash2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
@@ -48,7 +48,7 @@ const desglosarIva = (montoConIva: number) => {
 
 async function generarFolio(): Promise<string> {
   const anio = new Date().getFullYear()
-  const { data } = await dbLoc.from('recibos_loc')
+  const { data } = await dbCtrl.from('loc_recibos')
     .select('folio').like('folio', `RL-${anio}-%`)
     .order('folio', { ascending: false }).limit(1)
   const ultimo = (data as { folio: string }[] | null)?.[0]?.folio
@@ -58,9 +58,9 @@ async function generarFolio(): Promise<string> {
 
 export async function printReciboLoc(reciboId: number, folio: string, nombreArrendatario: string) {
   const [{ data: detData }, { data: pagosData }, { data: reciboData }] = await Promise.all([
-    dbLoc.from('recibos_loc_det').select('concepto, periodo, monto_final').eq('id_recibo_fk', reciboId),
-    dbLoc.from('recibos_loc_pagos').select('forma_nombre, monto, referencia').eq('id_recibo_fk', reciboId),
-    dbLoc.from('recibos_loc').select('total, fecha_recibo, observaciones').eq('id', reciboId).single(),
+    dbCtrl.from('loc_recibos_det').select('concepto, periodo, monto_final').eq('id_recibo_fk', reciboId),
+    dbCtrl.from('loc_recibos_pagos').select('forma_nombre, monto, referencia').eq('id_recibo_fk', reciboId),
+    dbCtrl.from('loc_recibos').select('total, fecha_recibo, observaciones').eq('id', reciboId).single(),
   ])
   const recibo = reciboData as { total: number; fecha_recibo: string; observaciones: string | null } | null
   if (!recibo) return
@@ -268,7 +268,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     const primerRef       = pagosValidos[0]?.referencia || null
 
     // 1. Insertar recibo
-    const { data: recData, error: e1 } = await dbLoc.from('recibos_loc').insert({
+    const { data: recData, error: e1 } = await dbCtrl.from('loc_recibos').insert({
       folio,
       fecha_recibo:       fechaPago,
       id_arrendatario_fk: idArrendatario,
@@ -303,11 +303,11 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       }
     }).filter(d => d.monto_final > 0)
 
-    const { error: e2 } = await dbLoc.from('recibos_loc_det').insert(detalle)
+    const { error: e2 } = await dbCtrl.from('loc_recibos_det').insert(detalle)
     if (e2) { setSaving(false); setErr(e2.message); return }
 
     // 3. Formas de pago del recibo
-    const { error: e3 } = await dbLoc.from('recibos_loc_pagos').insert(
+    const { error: e3 } = await dbCtrl.from('loc_recibos_pagos').insert(
       pagosValidos.map(p => ({
         id_recibo_fk:     idRecibo,
         id_forma_pago_fk: p.id_forma_fk,
@@ -327,7 +327,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       if (aplicar <= 0) continue // no se le aplicó nada: no tocar su status/saldo/fecha_pago
       const nuevoSaldo = parseFloat((c.saldo - aplicar).toFixed(2))
       cuotaUpdates.push(
-        dbLoc.from('cxc_loc').update({
+        dbCtrl.from('loc_cxc').update({
           saldo:      nuevoSaldo,
           status:     nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL',
           fecha_pago: fechaPago,
@@ -360,7 +360,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       if (!centrosPos.length) throw new Error('No hay centros POS activos.')
       const centroLoc = centrosPos.find(c => { const n = norm(c.nombre); return n.includes('local') || n.includes('propiedad') }) ?? centrosPos[0]
 
-      const { data: recFull } = await dbLoc.from('recibos_loc')
+      const { data: recFull } = await dbCtrl.from('loc_recibos')
         .select('total, fecha_recibo, id_venta_pos_fk, facturable').eq('id', exito.idRecibo).single()
       const rf = recFull as { total: number; fecha_recibo: string; id_venta_pos_fk: number | null; facturable: boolean | null } | null
       if (!rf) throw new Error('No se encontró el recibo.')
@@ -369,7 +369,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       let folioDia = 0
       const fechaIso = `${rf.fecha_recibo}T12:00:00`
 
-      const { data: detPago } = await dbLoc.from('recibos_loc_det').select('concepto, monto_final').eq('id_recibo_fk', exito.idRecibo)
+      const { data: detPago } = await dbCtrl.from('loc_recibos_det').select('concepto, monto_final').eq('id_recibo_fk', exito.idRecibo)
       const detList = ((detPago ?? []) as { concepto: string; monto_final: number }[]).length > 0
         ? (detPago as { concepto: string; monto_final: number }[])
         : [{ concepto: `Cobro Locales ${exito.folio}`, monto_final: rf.total }]
@@ -399,16 +399,16 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
           descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
         })))
 
-        const { data: formasR } = await dbLoc.from('recibos_loc_pagos').select('id_forma_pago_fk, forma_nombre, monto').eq('id_recibo_fk', exito.idRecibo)
+        const { data: formasR } = await dbCtrl.from('loc_recibos_pagos').select('id_forma_pago_fk, forma_nombre, monto').eq('id_recibo_fk', exito.idRecibo)
         const formasRList = (formasR ?? []) as { id_forma_pago_fk: number | null; forma_nombre: string; monto: number }[]
         if (formasRList.length > 0) {
           await dbGolf.from('ctrl_ventas_pagos').insert(formasRList.map(f => ({ id_venta_fk: ventaId!, id_forma_fk: f.id_forma_pago_fk ?? null, forma_nombre: f.forma_nombre, monto: f.monto })))
         }
-        await dbLoc.from('recibos_loc').update({ id_venta_pos_fk: ventaId }).eq('id', exito.idRecibo)
+        await dbCtrl.from('loc_recibos').update({ id_venta_pos_fk: ventaId }).eq('id', exito.idRecibo)
       }
 
       // Datos para ticket
-      const { data: formasFinal } = await dbLoc.from('recibos_loc_pagos').select('forma_nombre, monto').eq('id_recibo_fk', exito.idRecibo)
+      const { data: formasFinal } = await dbCtrl.from('loc_recibos_pagos').select('forma_nombre, monto').eq('id_recibo_fk', exito.idRecibo)
       const cfgP = cfg as PosCfg | null
       const ticketData = {
         id: ventaId, folio_dia: folioDia || '—', fecha: fechaIso,

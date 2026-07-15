@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbLoc, dbGolf } from '@/lib/supabase'
+import { dbCtrl, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight,
@@ -177,16 +177,16 @@ export default function CobranzaLocalesPage() {
   // ── Fetch Asignaciones ────────────────────────────────────
   const fetchAsignaciones = useCallback(async () => {
     setLoadingA(true)
-    let q = dbLoc.from('ctrl_asignaciones')
+    let q = dbCtrl.from('loc_asignaciones')
       .select(`id, id_arrendatario_fk, id_propiedad_fk, fecha_inicio, fecha_fin,
         monto_mensual, dia_pago, activo, observaciones,
-        cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
-        cat_propiedades(clave, nombre, status)`)
+        cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
+        cat_propiedades:loc_propiedades(clave, nombre, status)`)
       .order('created_at', { ascending: false })
     if (soloActivas) q = q.eq('activo', true)
     const { data } = await q
 
-    const { data: cxcData } = await dbLoc.from('cxc_loc')
+    const { data: cxcData } = await dbCtrl.from('loc_cxc')
       .select('id_asignacion_fk, saldo, monto_final, status, fecha_vencimiento')
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
 
@@ -220,7 +220,7 @@ export default function CobranzaLocalesPage() {
 
   // ── Cobrar desde asignación ───────────────────────────────
   const abrirCobroAsig = async (a: Asignacion) => {
-    const { data } = await dbLoc.from('cxc_loc')
+    const { data } = await dbCtrl.from('loc_cxc')
       .select('id, concepto, periodo, monto_final, saldo, status, fecha_vencimiento')
       .eq('id_asignacion_fk', a.id)
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
@@ -240,7 +240,7 @@ export default function CobranzaLocalesPage() {
   // ── Generar cargo individual ──────────────────────────────
   const handleGenerarCargoAsig = async (a: Asignacion, mes: string) => {
     setGenerandoCargo(a.id)
-    const { data: existing } = await dbLoc.from('cxc_loc')
+    const { data: existing } = await dbCtrl.from('loc_cxc')
       .select('id').eq('id_arrendatario_fk', a.id_arrendatario_fk)
       .eq('periodo', mes).limit(1)
     if (existing && existing.length > 0) {
@@ -254,7 +254,7 @@ export default function CobranzaLocalesPage() {
     const fechaVenc = `${anio}-${String(numMes).padStart(2, '0')}-${String(diaVenc).padStart(2, '0')}`
     const prop = a.cat_propiedades ? ` — ${a.cat_propiedades.clave}${a.cat_propiedades.nombre ? ` ${a.cat_propiedades.nombre}` : ''}` : ''
     const mesLabel = new Date(`${mes}-01T12:00:00`).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
-    await dbLoc.from('cxc_loc').insert({
+    await dbCtrl.from('loc_cxc').insert({
       id_arrendatario_fk: a.id_arrendatario_fk,
       id_asignacion_fk:   a.id,
       concepto:           `Renta de Local${prop} — ${mesLabel}`,
@@ -276,14 +276,14 @@ export default function CobranzaLocalesPage() {
   const fetchCobranza = useCallback(async () => {
     setLoadingC(true)
     const [{ data: mesData }, { data: vData }] = await Promise.all([
-      dbLoc.from('cxc_loc')
+      dbCtrl.from('loc_cxc')
         .select(`id, id_arrendatario_fk, id_asignacion_fk, concepto, periodo, monto_final, saldo, status, fecha_vencimiento, fecha_pago,
-          cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
-          ctrl_asignaciones(cat_propiedades(clave, nombre))`)
+          cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
+          ctrl_asignaciones:loc_asignaciones(cat_propiedades:loc_propiedades(clave, nombre))`)
         .eq('periodo', mesCobranza)
         .neq('status', 'CANCELADO')
         .order('fecha_vencimiento', { ascending: true }),
-      dbLoc.from('cxc_loc')
+      dbCtrl.from('loc_cxc')
         .select('saldo, monto_final, status, fecha_vencimiento')
         .in('status', ['PENDIENTE', 'PAGO_PARCIAL']),
     ])
@@ -296,7 +296,7 @@ export default function CobranzaLocalesPage() {
 
   // Cobrar desde cobranza
   const abrirCobroMes = async (c: CuotaMes) => {
-    const base = dbLoc.from('cxc_loc')
+    const base = dbCtrl.from('loc_cxc')
       .select('id, concepto, periodo, monto_final, saldo, status, fecha_vencimiento')
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
       .order('fecha_vencimiento', { ascending: true })
@@ -317,7 +317,7 @@ export default function CobranzaLocalesPage() {
 
   // Cobrar todas las cuotas pendientes de un arrendatario (todas sus propiedades) en un solo recibo
   const abrirCobroArrendatarioMes = async (idArr: number, nombreArr: string) => {
-    const { data } = await dbLoc.from('cxc_loc')
+    const { data } = await dbCtrl.from('loc_cxc')
       .select('id, concepto, periodo, monto_final, saldo, status, fecha_vencimiento')
       .eq('id_arrendatario_fk', idArr)
       .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
@@ -334,10 +334,10 @@ export default function CobranzaLocalesPage() {
   // ── Generar cargos masivos ────────────────────────────────
   const handleGenerarMasivo = async () => {
     setGenerando(true); setGeneradosMsg('')
-    const { data: vigentes } = await dbLoc.from('ctrl_asignaciones')
-      .select('id, id_arrendatario_fk, id_propiedad_fk, monto_mensual, dia_pago, cat_propiedades(clave, nombre)')
+    const { data: vigentes } = await dbCtrl.from('loc_asignaciones')
+      .select('id, id_arrendatario_fk, id_propiedad_fk, monto_mensual, dia_pago, cat_propiedades:loc_propiedades(clave, nombre)')
       .eq('activo', true)
-    const { data: yaGenerados } = await dbLoc.from('cxc_loc')
+    const { data: yaGenerados } = await dbCtrl.from('loc_cxc')
       .select('id_arrendatario_fk').eq('periodo', mesGenerarAll)
     const yaIds = new Set(((yaGenerados ?? []) as { id_arrendatario_fk: number }[]).map(c => c.id_arrendatario_fk))
 
@@ -370,7 +370,7 @@ export default function CobranzaLocalesPage() {
     if (inserts.length === 0) {
       setGeneradosMsg(`Todas las asignaciones vigentes ya tienen cuota para ${mesLabel}.`)
     } else {
-      await dbLoc.from('cxc_loc').insert(inserts)
+      await dbCtrl.from('loc_cxc').insert(inserts)
       setGeneradosMsg(`✓ ${inserts.length} cuotas generadas para ${mesLabel}.`)
     }
     setGenerando(false)
@@ -380,11 +380,11 @@ export default function CobranzaLocalesPage() {
   // ── Fetch Recibos ─────────────────────────────────────────
   const fetchRecibos = useCallback(async () => {
     setLoadingR(true)
-    const { data } = await dbLoc.from('recibos_loc')
+    const { data } = await dbCtrl.from('loc_recibos')
       .select(`id, folio, fecha_recibo, total, forma_pago_nombre, referencia_pago,
         observaciones, usuario_cobra, status, id_venta_pos_fk, id_forma_pago_fk, id_arrendatario_fk,
-        cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
-        recibos_loc_det(id, concepto, tipo, periodo, monto_final)`)
+        cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
+        recibos_loc_det:loc_recibos_det(id, concepto, tipo, periodo, monto_final)`)
       .order('created_at', { ascending: false }).limit(300)
     setRecibos(((data ?? []) as any[]) as ReciboRow[])
     setLoadingR(false)
@@ -438,11 +438,11 @@ export default function CobranzaLocalesPage() {
             cantidad: 1, precio_unitario: d.monto_final, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
           })))
         }
-        const { data: pagosR } = await dbLoc.from('recibos_loc_pagos').select('id_forma_pago_fk, forma_nombre, monto').eq('id_recibo_fk', r.id)
+        const { data: pagosR } = await dbCtrl.from('loc_recibos_pagos').select('id_forma_pago_fk, forma_nombre, monto').eq('id_recibo_fk', r.id)
         if (pagosR && pagosR.length > 0) {
           await dbGolf.from('ctrl_ventas_pagos').insert((pagosR as any[]).map((p: any) => ({ id_venta_fk: ventaId!, id_forma_fk: p.id_forma_pago_fk ?? null, forma_nombre: p.forma_nombre, monto: p.monto })))
         }
-        await dbLoc.from('recibos_loc').update({ id_venta_pos_fk: ventaId }).eq('id', r.id)
+        await dbCtrl.from('loc_recibos').update({ id_venta_pos_fk: ventaId }).eq('id', r.id)
         setRecibos(prev => prev.map(x => x.id === r.id ? { ...x, id_venta_pos_fk: ventaId } : x))
         if (detalleRecibo?.id === r.id) setDetalleRecibo(prev => prev ? { ...prev, id_venta_pos_fk: ventaId } : prev)
       } else {
@@ -450,7 +450,7 @@ export default function CobranzaLocalesPage() {
         folioDia = (ventaEx as any)?.folio_dia ?? 0
       }
 
-      const { data: pagosF } = await dbLoc.from('recibos_loc_pagos').select('forma_nombre, monto').eq('id_recibo_fk', r.id)
+      const { data: pagosF } = await dbCtrl.from('loc_recibos_pagos').select('forma_nombre, monto').eq('id_recibo_fk', r.id)
       const cfgP = cfg as { razon_social: string | null; municipio: string | null; direccion: string | null; rfc: string | null; telefono: string | null; leyenda_ticket: string | null } | null
       const ticketData = {
         id: ventaId, folio_dia: folioDia || '—', fecha: fechaIso,
@@ -473,11 +473,11 @@ export default function CobranzaLocalesPage() {
 
   const fetchCuotasAll = useCallback(async () => {
     setLoadingQ(true)
-    const { data } = await dbLoc.from('cxc_loc')
+    const { data } = await dbCtrl.from('loc_cxc')
       .select(`id, concepto, periodo, monto_original, descuento, monto_final, saldo, status,
         fecha_emision, fecha_vencimiento, fecha_pago, tipo, id_arrendatario_fk, id_asignacion_fk,
-        cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
-        ctrl_asignaciones(cat_propiedades(clave, nombre))`)
+        cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
+        ctrl_asignaciones:loc_asignaciones(cat_propiedades:loc_propiedades(clave, nombre))`)
       .order('fecha_emision', { ascending: false })
       .limit(500)
     setCuotasAll(((data ?? []) as any[]) as CuotaRow[])
@@ -487,7 +487,7 @@ export default function CobranzaLocalesPage() {
   const handleEliminarCuota = async (id: number) => {
     if (!confirm('¿Eliminar esta cuota? Esta acción no se puede deshacer.')) return
     setEliminandoQ(id)
-    const { error } = await dbLoc.from('cxc_loc').delete().eq('id', id)
+    const { error } = await dbCtrl.from('loc_cxc').delete().eq('id', id)
     if (error) {
       alert(`Error al eliminar: ${error.message}`)
       setEliminandoQ(null)

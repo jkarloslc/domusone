@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { dbLoc } from '@/lib/supabase'
+import { dbCtrl } from '@/lib/supabase'
 import { Save, Loader } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -86,8 +86,8 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
 
   useEffect(() => {
     Promise.all([
-      dbLoc.from('cat_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno'),
-      dbLoc.from('cat_propiedades').select('id, clave, nombre, status').eq('activo', true).order('clave'),
+      dbCtrl.from('loc_arrendatarios').select('id, nombre, apellido_paterno, razon_social, tipo_persona').eq('activo', true).order('apellido_paterno'),
+      dbCtrl.from('loc_propiedades').select('id, clave, nombre, status').eq('activo', true).order('clave'),
     ]).then(([{ data: arr }, { data: prop }]) => {
       setArrendatarios((arr ?? []) as Arrendatario[])
       setPropiedades((prop ?? []) as Propiedad[])
@@ -138,14 +138,14 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
         activo: form.activo,
         observaciones: form.observaciones || null,
       }
-      const { error } = await dbLoc.from('ctrl_asignaciones').update(payload).eq('id', asigId)
+      const { error } = await dbCtrl.from('loc_asignaciones').update(payload).eq('id', asigId)
       if (error) { setErr(error.message); setSaving(false); return }
       onSaved()
       return
     }
 
     if (!soloCuotas) {
-      const { data: newAsig, error: e1 } = await dbLoc.from('ctrl_asignaciones').insert({
+      const { data: newAsig, error: e1 } = await dbCtrl.from('loc_asignaciones').insert({
         id_arrendatario_fk: form.id_arrendatario_fk,
         id_propiedad_fk:    form.id_propiedad_fk,
         fecha_inicio:       form.fecha_inicio,
@@ -158,7 +158,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
       asigId = (newAsig as any).id
 
       // Actualizar estado de la propiedad a Rentada
-      await dbLoc.from('cat_propiedades').update({ status: 'Rentada' }).eq('id', form.id_propiedad_fk)
+      await dbCtrl.from('loc_propiedades').update({ status: 'Rentada' }).eq('id', form.id_propiedad_fk)
     }
 
     // 2. Generar cuotas en cxc_loc
@@ -185,7 +185,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
 
     // Si es modo solo cuotas, necesitamos recuperar el id_arrendatario de la asignación
     if (soloCuotas && asigId) {
-      const { data: asigData } = await dbLoc.from('ctrl_asignaciones')
+      const { data: asigData } = await dbCtrl.from('loc_asignaciones')
         .select('id_arrendatario_fk, id_propiedad_fk, monto_mensual').eq('id', asigId).single()
       if (asigData) {
         const ad = asigData as { id_arrendatario_fk: number; id_propiedad_fk: number; monto_mensual: number }
@@ -196,7 +196,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
       }
     }
 
-    const { error: e2 } = await dbLoc.from('cxc_loc').insert(cuotasInsert)
+    const { error: e2 } = await dbCtrl.from('loc_cxc').insert(cuotasInsert)
     if (e2) { setErr(e2.message); setSaving(false); return }
 
     onSaved()

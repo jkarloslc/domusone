@@ -104,4 +104,3 @@ export const dbComp = base.schema('comp' as any)  // compras e inventarios
 export const dbGolf = base.schema('golf' as any)  // módulo golf
 
 export const dbHip  = base.schema('hip'  as any)  // módulo hípico
-export const dbLoc  = base.schema('loc'  as any)  // módulo renta de locales/propiedades

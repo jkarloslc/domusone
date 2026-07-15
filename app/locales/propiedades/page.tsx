@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbLoc } from '@/lib/supabase'
+import { dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, Search, RefreshCw, Edit2, Trash2, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -61,8 +61,8 @@ export default function PropiedadesPage() {
 
   const fetchItems = useCallback(async () => {
     setLoading(true)
-    let q = dbLoc
-      .from('cat_propiedades')
+    let q = dbCtrl
+      .from('loc_propiedades')
       .select('*')
     if (search.trim()) {
       q = q.or(`clave.ilike.%${search}%,nombre.ilike.%${search}%,ubicacion.ilike.%${search}%`)
@@ -101,9 +101,9 @@ export default function PropiedadesPage() {
     }
     let error
     if (editItem) {
-      ;({ error } = await dbLoc.from('cat_propiedades').update(payload).eq('id', editItem.id))
+      ;({ error } = await dbCtrl.from('loc_propiedades').update(payload).eq('id', editItem.id))
     } else {
-      ;({ error } = await dbLoc.from('cat_propiedades').insert(payload))
+      ;({ error } = await dbCtrl.from('loc_propiedades').insert(payload))
     }
     setSaving(false)
     if (error) { setErr(error.message); return }
@@ -114,7 +114,7 @@ export default function PropiedadesPage() {
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar esta propiedad?')) return
     setDeleting(id)
-    await dbLoc.from('cat_propiedades').delete().eq('id', id)
+    await dbCtrl.from('loc_propiedades').delete().eq('id', id)
     setDeleting(null)
     fetchItems()
   }
