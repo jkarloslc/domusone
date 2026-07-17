@@ -2,10 +2,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, Receipt, FileText, Printer, Loader, XCircle, MapPin } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, Receipt, FileText, Printer, Loader, XCircle, MapPin, ArrowRightLeft } from 'lucide-react'
 import Link from 'next/link'
 import CarritoModal from './CarritoModal'
 import PensionModal from './PensionModal'
+import CambiarTitularModal from './CambiarTitularModal'
 import CobrarCuotaModal from './CobrarCuotaModal'
 import MesaControl from './MesaControl'
 import { periodoCorte, cuotaExigible } from '../salidas-carritos/adeudos'
@@ -188,6 +189,12 @@ export default function CarritosPage() {
   const [slotSel, setSlotSel]           = useState<number | ''>('')
   const [savingSlotSel, setSavingSlotSel] = useState(false)
   const [errorSlot, setErrorSlot]       = useState('')
+
+  // ── Cambio de titular (venta de carrito entre socios) ─────
+  const [showTitular, setShowTitular]   = useState<{
+    idPension: number; idCarrito: number; idSocioActual: number; nombreSocioActual: string
+    idFamiliarActual: number | null; descCarrito: string
+  } | null>(null)
 
   // ── Cobranza ──────────────────────────────────────────────
   const [mesCobranza, setMesCobranza]   = useState(new Date().toISOString().slice(0, 7))
@@ -898,6 +905,22 @@ export default function CarritosPage() {
                                           <MapPin size={12} /> {p.id_slot_fk ? 'Cambiar / liberar cajón' : 'Asignar cajón'}
                                         </button>
                                       )}
+                                      {esAdmin && p.activo && (
+                                        <button onClick={e => {
+                                          e.stopPropagation()
+                                          setShowTitular({
+                                            idPension: p.id,
+                                            idCarrito: idCar,
+                                            idSocioActual: p.id_socio_fk,
+                                            nombreSocioActual: nc(p.cat_socios),
+                                            idFamiliarActual: p.id_familiar_fk ?? null,
+                                            descCarrito: carDesc2,
+                                          })
+                                        }}
+                                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                                          <ArrowRightLeft size={12} /> Cambiar titular
+                                        </button>
+                                      )}
                                       {puedeEscribir && p.activo && (
                                         <button onClick={e => {
                                           e.stopPropagation()
@@ -1550,6 +1573,19 @@ export default function CarritosPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showTitular && (
+        <CambiarTitularModal
+          idPension={showTitular.idPension}
+          idCarrito={showTitular.idCarrito}
+          idSocioActual={showTitular.idSocioActual}
+          nombreSocioActual={showTitular.nombreSocioActual}
+          idFamiliarActual={showTitular.idFamiliarActual}
+          descCarrito={showTitular.descCarrito}
+          onClose={() => setShowTitular(null)}
+          onSaved={() => { setShowTitular(null); fetchPensiones() }}
+        />
       )}
 
       {showCobrar && (
