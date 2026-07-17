@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
+import { useConfig } from '@/lib/ConfigContext'
 import { dbComp, dbCtrl, dbGolf } from '@/lib/supabase'
 import {
   Home, Wrench, ShoppingCart, Landmark, DollarSign,
@@ -175,6 +176,7 @@ const ACCESOS: Record<Rol, Acceso[]> = {
 
 export default function InicioPage() {
   const { authUser } = useAuth()
+  const { config } = useConfig()
   const router = useRouter()
   const hoy = fechaLocal()
 
@@ -307,7 +309,7 @@ export default function InicioPage() {
           {getSaludo()}{nombre ? `, ${nombre}` : ''}.
         </h1>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6, marginBottom: 0 }}>
-          Balvanera Polo &amp; Country Club
+          {config.org_nombre}
         </p>
       </div>
 

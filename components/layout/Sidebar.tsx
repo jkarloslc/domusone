@@ -7,6 +7,7 @@ import {
   Flag, Star, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
+import { useConfig } from '@/lib/ConfigContext'
 
 // Ícono caballo inline (no disponible en lucide)
 const HorseIcon = ({ size = 15 }: { size?: number }) => (
@@ -442,6 +443,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname()
   const { authUser, signOut } = useAuth()
+  const { config } = useConfig()
 
   const rol      = (authUser?.rol ?? 'vigilancia') as Rol
   const sections = NAV_POR_ROL[rol] ?? []
@@ -467,10 +469,10 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       }}>
         <div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#E8CA75', lineHeight: 1.2 }}>
-            Balvanera
+            {config.org_nombre_corto}
           </div>
           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2, letterSpacing: '0.05em' }}>
-            Polo &amp; Country Club
+            {config.org_subtitulo}
           </div>
         </div>
         <button onClick={onClose} className="sidebar-close-btn"
