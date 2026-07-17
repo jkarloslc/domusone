@@ -1,11 +1,11 @@
 'use client'
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { dbComp, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   ArrowLeft, RefreshCw, Search, Eye, X, Loader,
   Plus, Printer, FileText, Upload, Trash2, ExternalLink,
-  AlertTriangle, CheckCircle, Clock
+  AlertTriangle, CheckCircle, Clock, Calendar
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, FORMAS_PAGO_COMP, StatusBadge } from '../../compras/types'
@@ -25,12 +25,45 @@ const bandaAntigüedad = (dias: number) => {
   return             { label: '+90 días',        color: '#7f1d1d', bg: '#fef2f2', border: '#fca5a5' }
 }
 
+// ── Ciclo semanal de pago ───────────────────────────────────
+// Regla de Tesorería: toda OP que entra a CxP entre martes y el lunes
+// siguiente se da por recibida esa semana y se paga el martes siguiente
+// (día de pago establecido).
+const toDateOnly = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
+
+const cicloDePago = (fechaEntradaISO: string | null | undefined) => {
+  if (!fechaEntradaISO) return null
+  const entrada = toDateOnly(new Date(fechaEntradaISO))
+  const dow = entrada.getDay() // 0=Dom … 2=Mar … 6=Sáb
+  const offsetAMartes = (dow - 2 + 7) % 7
+  const ventanaInicio = new Date(entrada); ventanaInicio.setDate(entrada.getDate() - offsetAMartes)
+  const ventanaFin = new Date(ventanaInicio); ventanaFin.setDate(ventanaInicio.getDate() + 6)
+  const fechaPago = new Date(ventanaInicio); fechaPago.setDate(ventanaInicio.getDate() + 7)
+  return { ventanaInicio, ventanaFin, fechaPago }
+}
+
+const fmtCorta = (d: Date) => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }).replace('.', '')
+const fmtLarga = (d: Date) => d.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
+
+function PagoBadge({ fechaPago }: { fechaPago: Date }) {
+  const diff = Math.round((fechaPago.getTime() - toDateOnly(new Date()).getTime()) / 86400000)
+  let label: string, color: string, bg: string, border: string
+  if (diff < 0)        { label = `Atrasado · ${fmtCorta(fechaPago)}`;      color = '#b91c1c'; bg = '#fef2f2'; border = '#fecaca' }
+  else if (diff === 0) { label = 'Hoy — día de pago';                     color = '#15803d'; bg = '#eafaf0'; border = '#bbf7d0' }
+  else if (diff <= 7)  { label = `Martes ${fmtCorta(fechaPago)} · ${diff}d`; color = '#b45309'; bg = '#fff8ea'; border = '#fde68a' }
+  else                 { label = `Martes ${fmtCorta(fechaPago)}`;          color = '#64748b'; bg = '#f1f5f9'; border = '#e2e8f0' }
+  return (
+    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 999,
+      background: bg, color, border: `1px solid ${border}`, whiteSpace: 'nowrap' }}>{label}</span>
+  )
+}
+
 // ════════════════════════════════════════════════════════════
 // Página principal CXP
 // ════════════════════════════════════════════════════════════
 export default function CXPPage() {
   const router = useRouter()
-  const [tab, setTab]               = useState<'resumen'|'antigüedad'>('resumen')
+  const [tab, setTab]               = useState<'programacion'|'resumen'|'antigüedad'>('programacion')
   const [proveedores, setProvs]     = useState<any[]>([])
   const [almMap, setAlmMap]         = useState<Record<number,string>>({})
   const [ops, setOps]               = useState<any[]>([])
@@ -67,6 +100,25 @@ export default function CXPPage() {
   const totalPorVencer = opsPendientes.filter(o => diasVencido(o.fecha_vencimiento) <= 0)
                           .reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
 
+  // OPs Pendiente/Abonada agrupadas por su martes de pago programado
+  const gruposPago = useMemo(() => {
+    const map = new Map<string, { fechaPago: Date; ops: any[]; total: number }>()
+    opsPendientes.forEach(o => {
+      const ciclo = cicloDePago(o.fecha_autorizacion || o.created_at)
+      if (!ciclo) return
+      const key = ciclo.fechaPago.toISOString().slice(0, 10)
+      if (!map.has(key)) map.set(key, { fechaPago: ciclo.fechaPago, ops: [], total: 0 })
+      const g = map.get(key)!
+      g.ops.push(o)
+      g.total += (o.saldo ?? o.monto ?? 0)
+    })
+    return Array.from(map.values()).sort((a, b) => a.fechaPago.getTime() - b.fechaPago.getTime())
+  }, [opsPendientes])
+  const proximoPago = gruposPago[0] ?? null
+  const proximoDiff  = proximoPago ? Math.round((proximoPago.fechaPago.getTime() - toDateOnly(new Date()).getTime()) / 86400000) : null
+  const proximoColor = proximoDiff === null ? 'var(--text-muted)' : proximoDiff < 0 ? '#dc2626' : proximoDiff === 0 ? '#15803d' : 'var(--blue)'
+  const proximoBg    = proximoDiff === null ? '#f8fafc'           : proximoDiff < 0 ? '#fef2f2' : proximoDiff === 0 ? '#f0fdf4' : 'var(--blue-pale)'
+
   const porProveedor = proveedores.map(prov => {
     const misOps = opsPendientes.filter(o => o.id_proveedor_fk === prov.id)
     const saldo  = misOps.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
@@ -98,8 +150,9 @@ export default function CXPPage() {
   })
 
   const tabs = [
-    { key: 'resumen',    label: 'Por Proveedor' },
-    { key: 'antigüedad', label: 'Antigüedad de Saldos' },
+    { key: 'programacion', label: 'Programación de Pago' },
+    { key: 'resumen',      label: 'Por Proveedor' },
+    { key: 'antigüedad',   label: 'Antigüedad de Saldos' },
   ]
 
   return (
@@ -119,11 +172,13 @@ export default function CXPPage() {
       </div>
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
           { label: 'Total por Pagar', value: fmt(totalPorPagar),  color: 'var(--blue)', bg: 'var(--blue-pale)', icon: FileText },
           { label: 'Vencido',         value: fmt(totalVencido),   color: '#dc2626',     bg: '#fef2f2',          icon: AlertTriangle },
           { label: 'Por Vencer',      value: fmt(totalPorVencer), color: '#d97706',     bg: '#fffbeb',          icon: Clock },
+          { label: proximoPago ? `Próx. Pago · Martes ${fmtCorta(proximoPago.fechaPago)}` : 'Próx. Pago',
+            value: proximoPago ? fmt(proximoPago.total) : '—', color: proximoColor, bg: proximoBg, icon: Calendar },
         ].map(k => {
           const Icon = k.icon
           return (
@@ -152,6 +207,71 @@ export default function CXPPage() {
           </button>
         ))}
       </div>
+
+      {/* ── TAB: Programación de Pago (ciclo martes-lunes → martes siguiente) ── */}
+      {tab === 'programacion' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="card" style={{ padding: '12px 18px', background: '#fffbeb', border: '1px solid #fde68a', fontSize: 12.5, color: '#78350f' }}>
+            Toda OP autorizada y enviada a CxP entre el martes y el lunes siguiente se da por recibida esa semana y se paga el martes siguiente. Los grupos de abajo se calculan automáticamente a partir de la fecha en que cada OP quedó autorizada / entró a CxP.
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 48 }}><RefreshCw size={20} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></div>
+          ) : gruposPago.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin OPs pendientes de pago</div>
+          ) : gruposPago.map(g => {
+            const diff = Math.round((g.fechaPago.getTime() - toDateOnly(new Date()).getTime()) / 86400000)
+            const estado = diff < 0
+              ? { label: `Atrasado — debió pagarse el martes ${fmtCorta(g.fechaPago)}`, color: '#b91c1c' }
+              : diff === 0
+                ? { label: 'Se paga HOY', color: '#15803d' }
+                : { label: `En ${diff} día${diff === 1 ? '' : 's'}`, color: '#b45309' }
+            return (
+              <div key={g.fechaPago.toISOString()} className="card" style={{ overflow: 'hidden' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Martes {fmtLarga(g.fechaPago)}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: estado.color }}>{estado.label}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(g.total)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{g.ops.length} OP{g.ops.length === 1 ? '' : "'s"}</div>
+                  </div>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Folio</th><th>Proveedor</th><th>Concepto</th><th>Entró a CxP</th>
+                      <th style={{ textAlign: 'right' }}>Saldo</th><th>Status</th><th style={{ width: 50 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {g.ops.map(op => {
+                      const prov = proveedores.find(p => p.id === op.id_proveedor_fk)
+                      return (
+                        <tr key={op.id}>
+                          <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
+                          <td style={{ fontSize: 13 }}>{prov?.nombre ?? '—'}</td>
+                          <td style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
+                          <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtFecha(op.fecha_autorizacion || op.created_at)}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>{fmt(op.saldo ?? op.monto)}</td>
+                          <td><StatusBadge status={op.status} /></td>
+                          <td>
+                            <button className="btn-ghost" style={{ padding: '4px 6px' }}
+                              onClick={() => setDetailOP({ ...op, _provNombre: prov?.nombre, _almNombre: almMap[op.id_almacen_fk] })}>
+                              <Eye size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* ── TAB: Por Proveedor ── */}
       {tab === 'resumen' && (
@@ -250,12 +370,13 @@ export default function CXPPage() {
                     <thead>
                       <tr>
                         <th>Folio OP</th><th>Proveedor</th><th>Concepto</th>
-                        <th>Vencimiento</th><th style={{ textAlign: 'right' }}>Saldo</th><th style={{ width: 60 }}></th>
+                        <th>Vencimiento</th><th style={{ textAlign: 'right' }}>Saldo</th><th>Día de Pago</th><th style={{ width: 60 }}></th>
                       </tr>
                     </thead>
                     <tbody>
                       {b.ops.map(op => {
                         const prov = proveedores.find(p => p.id === op.id_proveedor_fk)
+                        const ciclo = cicloDePago(op.fecha_autorizacion || op.created_at)
                         return (
                           <tr key={op.id}>
                             <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
@@ -263,6 +384,7 @@ export default function CXPPage() {
                             <td style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                             <td style={{ fontSize: 12, color: banda.color, fontWeight: 600 }}>{fmtFecha(op.fecha_vencimiento)}</td>
                             <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: banda.color }}>{fmt(op.saldo ?? op.monto)}</td>
+                            <td>{ciclo ? <PagoBadge fechaPago={ciclo.fechaPago} /> : '—'}</td>
                             <td>
                               <button className="btn-ghost" style={{ padding: '4px 6px' }}
                                 onClick={() => setDetailOP({ ...op, _provNombre: prov?.nombre, _almNombre: almMap[op.id_almacen_fk] })}>
@@ -428,14 +550,14 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
                 <th>Vencimiento</th><th style={{ textAlign: 'right' }}>Monto</th>
                 <th style={{ textAlign: 'right' }}>Pagado</th>
                 <th style={{ textAlign: 'right' }}>Saldo</th>
-                <th>Docs</th><th>Status</th><th style={{ width: 50 }}></th>
+                <th>Docs</th><th>Status</th><th>Día de Pago</th><th style={{ width: 50 }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
               ) : opsFiltradas.length === 0 ? (
-                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Sin OPs con este status</td></tr>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Sin OPs con este status</td></tr>
               ) : opsFiltradas.map(op => {
                 const dias = diasVencido(op.fecha_vencimiento)
                 const vencido = dias > 0 && op.status !== 'Pagada'
@@ -461,6 +583,14 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
                       </div>
                     </td>
                     <td><StatusBadge status={op.status} /></td>
+                    <td>
+                      {(op.status === 'Pendiente' || op.status === 'Abonada') ? (() => {
+                        const ciclo = cicloDePago(op.fecha_autorizacion || op.created_at)
+                        return ciclo ? <PagoBadge fechaPago={ciclo.fechaPago} /> : '—'
+                      })() : op.status === 'Pagada' ? (
+                        <span style={{ fontSize: 11, color: '#15803d' }}>Pagada {fmtFecha(op.fecha_pago)}</span>
+                      ) : '—'}
+                    </td>
                     <td>
                       <button className="btn-ghost" style={{ padding: '4px 6px' }}
                         onClick={() => onOpenOP({ ...op, _provNombre: prov.nombre, _almNombre: almMap[op.id_almacen_fk] })}>
@@ -662,6 +792,10 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
               <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>{op.folio}</span>
               <StatusBadge status={op.status} />
+              {(op.status === 'Pendiente' || op.status === 'Abonada') && (() => {
+                const ciclo = cicloDePago(op.fecha_autorizacion || op.created_at)
+                return ciclo ? <PagoBadge fechaPago={ciclo.fechaPago} /> : null
+              })()}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{op._provNombre ?? '—'} · {op.concepto ?? '—'}</div>
           </div>
