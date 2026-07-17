@@ -375,7 +375,7 @@ type CuotaDetLine = {
 
 function CuotasEstandarPanel() {
   const { authUser } = useAuth()
-  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
   const [cuotas, setCuotas]         = useState<CuotaHeader[]>([])
   const [loading, setLoading]       = useState(true)
   const [formOpen, setFormOpen]     = useState(false)
@@ -809,7 +809,7 @@ type IngresoMapRow   = { id: number; id_centro_venta_fk: number; id_centro_ingre
 // ══════════════════════════════════════════════════════════════
 function CuotasGolfPanel() {
   const { authUser } = useAuth()
-  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
   return <CuotasConfigPanel puedeEscribir={puedeEscribir} />
 }
 
@@ -824,7 +824,7 @@ const emptyColabForm = () => ({
 
 function ColaboradoresPanel() {
   const { authUser } = useAuth()
-  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<Colaborador[]>([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -1161,7 +1161,7 @@ const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4
 
 function CentrosVentaPOSPanel() {
   const { authUser } = useAuth()
-  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
   const [items, setItems]           = useState<CentroVentaPos[]>([])
   const [centrosIng, setCentrosIng] = useState<CentroIngresoOpt[]>([])
   const [maps, setMaps]             = useState<IngresoMapRow[]>([])
@@ -1425,7 +1425,7 @@ export default function CatalogosPage() {
   const [activeKey, setActiveKey] = useState(CATALOGOS[0].key)
   const active = CATALOGOS.find(c => c.key === activeKey)!
 
-  if (authUser?.rol !== 'superadmin' && authUser?.rol !== 'admin') {
+  if (authUser?.rol !== 'superadmin' && authUser?.rol !== 'admin' && authUser?.rol !== 'admin_organismo') {
     return (
       <div style={{ padding: '32px 36px' }}>
         <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
