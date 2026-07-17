@@ -170,7 +170,8 @@ const COMPRAS_MODULOS = [
 // admin_organismo: acceso total (leer/escribir/eliminar) a Compras, Mantenimiento,
 // Tesorería, Ingresos, Presupuestos y Catálogos — sin Residencial ni Golf/Hípico/Hospitality
 const ADMIN_ORGANISMO_MODULOS = [
-  ...COMPRAS_MODULOS, 'mantenimiento', 'tesoreria', 'ingresos', 'presupuestos', 'catalogos',
+  ...COMPRAS_MODULOS, 'mantenimiento', 'equipo-flota', 'herramientas', 'capex',
+  'tesoreria', 'ingresos', 'presupuestos', 'catalogos',
 ]
 
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
