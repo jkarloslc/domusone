@@ -26,6 +26,9 @@ type Rol =
   | 'usuariohospitality'
   | 'usuario_nomina'
   | 'usuario_organismo'
+  | 'admin_organismo'
+  | 'caja_organismo'
+  | 'aux_organismo'
 
 type AuthUser = {
   user:   User
@@ -52,6 +55,7 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'compras_supervisor':
     case 'almacen':
     case 'usuario_solicitante':
+    case 'admin_organismo':
       return '/compras'
     case 'usuario_nomina':
       return '/inicio'
@@ -59,6 +63,10 @@ export function getHomeRouteByRole(rol?: Rol): string {
       return '/tesoreria'
     case 'ingresos':
       return '/ingresos'
+    case 'caja_organismo':
+      return '/ingresos'
+    case 'aux_organismo':
+      return '/mantenimiento'
     case 'usuariogolf':
       return '/golf'
     case 'usuariohipico':
@@ -154,6 +162,17 @@ const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
 // usuariomantto: igual que admin pero sin tesoreria ni golf
 const USUARIOMANTTO_MODULOS = ADMIN_MODULOS.filter(m => m !== 'tesoreria' && m !== 'golf' && !m.startsWith('golf-'))
 
+// Módulo Compras completo (todas las sub-secciones del hub)
+const COMPRAS_MODULOS = [
+  'compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago',
+  'transferencias', 'recepciones', 'proveedores', 'articulos', 'almacenes', 'areas',
+]
+// admin_organismo: acceso total (leer/escribir/eliminar) a Compras, Mantenimiento,
+// Tesorería, Ingresos, Presupuestos y Catálogos — sin Residencial ni Golf/Hípico/Hospitality
+const ADMIN_ORGANISMO_MODULOS = [
+  ...COMPRAS_MODULOS, 'mantenimiento', 'tesoreria', 'ingresos', 'presupuestos', 'catalogos',
+]
+
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
 const LEER: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
@@ -182,6 +201,9 @@ const LEER: Record<Rol, string[] | '*'> = {
   usuariohospitality:  HOSPITALITY_MODULOS,
   usuario_nomina:      ['compras', 'ordenes-pago'],
   usuario_organismo:   ['lotes', 'propietarios', 'reportes'],
+  admin_organismo:     ADMIN_ORGANISMO_MODULOS,
+  caja_organismo:      ['ingresos', 'compras', 'requisiciones', 'transferencias'],
+  aux_organismo:       ['mantenimiento', 'compras', 'requisiciones', 'transferencias'],
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
@@ -212,6 +234,9 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   usuariohospitality:  HOSPITALITY_MODULOS,
   usuario_nomina:      ['ordenes-pago'],
   usuario_organismo:   [],
+  admin_organismo:     ADMIN_ORGANISMO_MODULOS,
+  caja_organismo:      ['ingresos', 'requisiciones', 'transferencias'],
+  aux_organismo:       ['mantenimiento', 'requisiciones', 'transferencias'],
 }
 
 // ── Reportes permitidos por rol (solo para roles con acceso restringido) ────────
@@ -229,10 +254,10 @@ const REPORTES_PERMITIDOS: Partial<Record<Rol, string[]>> = {
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
-const ROLES_DELETE: Rol[] = ['superadmin', 'admin']
+const ROLES_DELETE: Rol[] = ['superadmin', 'admin', 'admin_organismo']
 
 // ── Roles que pueden autorizar documentos ─────────────────────────────────────
-const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'usuarioadmin', 'usuariomantto', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria']
+const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'usuarioadmin', 'usuariomantto', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria', 'admin_organismo']
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthCtx>({
@@ -325,7 +350,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!authUser) return false
     const r = authUser.rol
     // superadmin / admin / fraccionamiento: acceso total
-    if (r === 'superadmin' || r === 'admin' || r === 'admin_lector' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento') return 'all'
+    if (r === 'superadmin' || r === 'admin' || r === 'admin_lector' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento' || r === 'admin_organismo') return 'all'
     if (r === 'compras' || r === 'compras_supervisor') return 'compras'
     if (r === 'almacen') {
       // almacen ve sus módulos + caja chica
@@ -342,7 +367,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!key) return 'nomina'
       return key === 'ordenes-pago' ? 'nomina' : false
     }
-    if (r === 'usuario_solicitante' || r === 'usuariogolf' || r === 'usuariohipico' || r === 'usuariohospitality') {
+    if (r === 'usuario_solicitante' || r === 'usuariogolf' || r === 'usuariohipico' || r === 'usuariohospitality' || r === 'caja_organismo' || r === 'aux_organismo') {
       // Solo ve Requisiciones y Transferencias — sin autorización, sin catálogos
       const MODS_SOLICITANTE = ['requisiciones', 'transferencias']
       if (!key) return 'solicitante'

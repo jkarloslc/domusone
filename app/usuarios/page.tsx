@@ -28,6 +28,9 @@ const ROLES = [
   { value: 'usuario_nomina',       label: 'Usuario Nómina',          desc: 'Solo puede crear y ver sus propias órdenes de pago de tipo Nómina' },
   { value: 'usuariogolf',         label: 'Usuario Golf',            desc: 'Acceso exclusivo al módulo Golf: miembros, reservaciones, POS, carritos y reportes' },
   { value: 'usuario_organismo',   label: 'Usuario Organismo',       desc: 'Solo lectura: Lotes y Propietarios + reportes residenciales (lotes, secciones, propietarios)' },
+  { value: 'admin_organismo',     label: 'Administrador (Organismo)', desc: 'Leer, escribir y eliminar en Compras, Mantenimiento, Tesorería, Ingresos, Presupuestos y Catálogos' },
+  { value: 'caja_organismo',      label: 'Caja (Organismo)',        desc: 'Ingresos + Compras: solo Requisiciones y Transferencias' },
+  { value: 'aux_organismo',       label: 'Auxiliar (Organismo)',    desc: 'Mantenimiento + Compras: solo Requisiciones y Transferencias' },
 ]
 
 export default function UsuariosPage() {
@@ -76,16 +79,7 @@ export default function UsuariosPage() {
         </div>
       </div>
 
-      {/* Guía de roles */}
-   <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        {ROLES.map(r => (
-          <div key={r.value} className="card" style={{ padding: '10px 14px', minWidth: 140 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue)', marginBottom: 2 }}>{r.label}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.desc}</div>
-          </div>
-        ))}
-      </div>
-      <div className="card" style={{ overflow: 'hidden' }}>
+      <div className="card" style={{ overflow: 'hidden', marginTop: 24 }}>
         <table>
           <thead>
             <tr>

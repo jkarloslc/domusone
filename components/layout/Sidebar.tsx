@@ -40,6 +40,9 @@ type Rol =
   | 'usuariohospitality'
   | 'usuario_nomina'
   | 'usuario_organismo'
+  | 'admin_organismo'
+  | 'caja_organismo'
+  | 'aux_organismo'
 
 type NavItem = { label: string; href: string; icon: any }
 type NavSection = { section: string; items: NavItem[] }
@@ -67,6 +70,9 @@ const ROL_LABEL: Record<Rol, string> = {
   usuariohospitality:  'Operador Hospitality',
   usuario_nomina:      'Usuario Nómina',
   usuario_organismo:   'Organismo',
+  admin_organismo:     'Administrador (Organismo)',
+  caja_organismo:      'Caja (Organismo)',
+  aux_organismo:       'Auxiliar (Organismo)',
 }
 
 // Ítem de reportes con estilo diferenciado (pie de sección)
@@ -415,6 +421,41 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Residencial', items: [
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
+    ]},
+  ],
+
+  admin_organismo: [
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+    ]},
+    { section: 'Finanzas', items: [
+      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+    ]},
+    { section: 'Sistema', items: [
+      { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
+    ]},
+  ],
+
+  caja_organismo: [
+    { section: 'Finanzas', items: [
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+    ]},
+  ],
+
+  aux_organismo: [
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
     ]},
   ],
 
