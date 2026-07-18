@@ -9,6 +9,14 @@ import {
 import { useAuth } from '@/lib/AuthContext'
 import { useConfig } from '@/lib/ConfigContext'
 
+const hexToRgba = (hex: string, alpha: number) => {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.substring(0, 2), 16)
+  const g = parseInt(h.substring(2, 4), 16)
+  const b = parseInt(h.substring(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
 // Ícono caballo inline (no disponible en lucide)
 const HorseIcon = ({ size = 15 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -490,12 +498,17 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const sections = NAV_POR_ROL[rol] ?? []
   const label    = authUser?.rol ? (ROL_LABEL[authUser.rol as Rol] ?? authUser.rol) : '—'
 
+  const bg          = config.color_sidebar_bg
+  const acento      = config.color_sidebar_acento
+  const acentoClaro = config.color_sidebar_acento_claro
+  const acentoBg    = hexToRgba(acento, 0.15)
+
   return (
     <aside
       className={`sidebar ${open ? 'open' : ''}`}
       style={{
         width: 220, flexShrink: 0,
-        background: '#2d3660',
+        background: bg,
         borderRight: 'none',
         display: 'flex', flexDirection: 'column',
         height: '100vh', position: 'sticky', top: 0,
@@ -509,7 +522,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
       }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: '#E8CA75', lineHeight: 1.2 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: acentoClaro, lineHeight: 1.2 }}>
             {config.org_nombre_corto}
           </div>
           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2, letterSpacing: '0.05em' }}>
@@ -533,9 +546,9 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '7px 10px', borderRadius: 6, marginBottom: 2,
-            fontSize: 13, color: pathname === '/inicio' ? '#E8CA75' : 'rgba(255,255,255,0.7)',
-            background: pathname === '/inicio' ? 'rgba(196,160,72,0.15)' : 'transparent',
-            borderLeft: pathname === '/inicio' ? '2px solid #C4A048' : '2px solid transparent',
+            fontSize: 13, color: pathname === '/inicio' ? acentoClaro : 'rgba(255,255,255,0.7)',
+            background: pathname === '/inicio' ? acentoBg : 'transparent',
+            borderLeft: pathname === '/inicio' ? `2px solid ${acento}` : '2px solid transparent',
             textDecoration: 'none', transition: 'all 0.15s',
           }}
         >
@@ -569,9 +582,9 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                     padding: isRpt ? '5px 10px' : '7px 10px',
                     borderRadius: 6, marginBottom: 2,
                     fontSize: isRpt ? 11 : 13,
-                    color: active ? '#E8CA75' : 'rgba(255,255,255,0.7)',
-                    background: active ? 'rgba(196,160,72,0.15)' : 'transparent',
-                    borderLeft: active ? '2px solid #C4A048' : '2px solid transparent',
+                    color: active ? acentoClaro : 'rgba(255,255,255,0.7)',
+                    background: active ? acentoBg : 'transparent',
+                    borderLeft: active ? `2px solid ${acento}` : '2px solid transparent',
                     textDecoration: 'none', transition: 'all 0.15s',
                     opacity: isRpt ? 0.75 : 1,
                     borderTop: isRpt ? '1px dashed rgba(255,255,255,0.1)' : undefined,
@@ -593,14 +606,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
           padding: '8px 10px', background: 'rgba(255,255,255,0.07)', borderRadius: 8,
         }}>
-          <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#C4A048', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 30, height: 30, borderRadius: '50%', background: acento, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <User size={14} style={{ color: '#1a1f3e' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {authUser?.nombre ?? '—'}
             </div>
-            <div style={{ fontSize: 10, color: '#E8CA75', fontWeight: 500 }}>
+            <div style={{ fontSize: 10, color: acentoClaro, fontWeight: 500 }}>
               {label}
             </div>
           </div>

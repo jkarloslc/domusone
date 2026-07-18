@@ -29,7 +29,12 @@ insert into cfg.configuracion (clave, valor) values
   ('org_correo',       '<correo@empresa.com>'),
   ('org_logo_url',     ''),
   ('moneda',           'MXN'),
-  ('app_version',      '1.0.0')
+  ('app_version',      '1.0.0'),
+  -- Colores del sidebar (opcional). Si se omiten, el Sidebar usa estos mismos
+  -- valores por defecto (look actual de Balvanera: azul marino + dorado).
+  ('color_sidebar_bg',           '#2d3660'),
+  ('color_sidebar_acento',       '#C4A048'),
+  ('color_sidebar_acento_claro', '#E8CA75')
 on conflict (clave) do update set valor = excluded.valor;
 
 
