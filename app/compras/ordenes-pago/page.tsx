@@ -25,6 +25,14 @@ const TIPOS_GASTO = [
 
 type RolTipoOp = { tipo_gasto: string; modo: string; solo_propios: boolean }
 
+const URGENCIAS = ['Crítica', 'Alta', 'Media', 'Baja'] as const
+const URGENCIA_COLOR: Record<string, string> = {
+  'Crítica': '#dc2626',
+  'Alta':    '#d97706',
+  'Media':   '#2563eb',
+  'Baja':    '#64748b',
+}
+
 export default function OrdenesPagoPage() {
   const { canWrite } = useAuth()
   const router = useRouter()
@@ -361,6 +369,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     fecha_vencimiento: opEdit?.fecha_vencimiento ?? '',
     concepto:          opEdit?.concepto          ?? '',
     tipo_gasto:        opEdit?.tipo_gasto        ?? '',
+    urgencia:          opEdit?.urgencia          ?? 'Media',
     banco_destino:     opEdit?.banco_destino     ?? '',
     cuenta_clabe:      opEdit?.cuenta_clabe      ?? '',
     notas:             opEdit?.notas             ?? '',
@@ -585,6 +594,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       fecha_vencimiento: form.fecha_vencimiento || null,
       concepto:          form.concepto.trim() || null,
       tipo_gasto:        form.tipo_gasto || null,
+      urgencia:          form.urgencia || null,
       banco_destino:     form.banco_destino.trim() || null,
       cuenta_clabe:      form.cuenta_clabe.trim() || null,
       notas:             form.notas.trim() || null,
@@ -974,6 +984,14 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 <input className="input" type="date" value={form.fecha_vencimiento} onChange={setF('fecha_vencimiento')} />
               </div>
             </div>
+
+            <div>
+              <label className="label">Urgencia</label>
+              <select className="select" value={form.urgencia} onChange={setF('urgencia')}
+                style={{ color: URGENCIA_COLOR[form.urgencia] ?? undefined, fontWeight: 600 }}>
+                {URGENCIAS.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
           </Sec>
 
           {/* Datos bancarios */}
@@ -1245,6 +1263,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
         <tr><th>Almacén</th><td>${opData._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
         ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
+        ${opData.urgencia ? `<tr><th>Urgencia</th><td colspan="3" style="font-weight:700">${opData.urgencia}</td></tr>` : ''}
         <tr><th>Centro de Costo</th><td colspan="3">${centroCostoNombre}</td></tr>
         ${detLinesView.length === 0 ? `<tr><th>Área</th><td>${areaNombre}</td><th>Frente</th><td>${frenteNombre}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
@@ -1357,6 +1376,12 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               <DI label="Tipo de Gasto"   value={op.tipo_gasto} />
               <DI label="Almacén"         value={op._almNombre} />
               <DI label="Vencimiento"     value={fmtFecha(op.fecha_vencimiento)} />
+              {op.urgencia && (
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Urgencia</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: URGENCIA_COLOR[op.urgencia] ?? 'var(--text-primary)' }}>{op.urgencia}</div>
+                </div>
+              )}
               {op.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`} />}
               {op.id_area_fk && detLinesView.length === 0 && <DI label="Área"   value={areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`} />}
               {op.id_frente_fk && detLinesView.length === 0 && <DI label="Frente" value={frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`} />}
