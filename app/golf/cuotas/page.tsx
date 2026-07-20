@@ -909,7 +909,7 @@ export default function CuotasGolfPage() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12 }}
+            <Link href="/golf/administracion" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12 }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#2563eb'}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}>
               <ChevronLeft size={13} /> Club
