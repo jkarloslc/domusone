@@ -1750,7 +1750,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                         background: '#f0fdf4', color: '#15803d', fontWeight: 700, cursor: 'pointer',
                         fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                       {authLoading ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={14} />}
-                      Autorizar — enviar a CXP
+                      Autorizar — Operaciones
                     </button>
                     <button
                       onClick={() => handleAuth(false)} disabled={authLoading}
