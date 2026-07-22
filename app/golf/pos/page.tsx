@@ -1279,6 +1279,12 @@ ${facturasCorte.length > 0 ? `
                           {v.facturada && (
                             <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, background: '#ede9fe', color: '#7c3aed', fontWeight: 700 }}>Facturada</span>
                           )}
+                          {v.facturada && v.folio_fiscal && (
+                            <button onClick={() => verPdfFactura(v)} disabled={viendoPdf === `${v.id}-view`}
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', opacity: viendoPdf === `${v.id}-view` ? 0.6 : 1 }}>
+                              {viendoPdf === `${v.id}-view` ? <Loader size={11} className="animate-spin" /> : <FileCheck size={11} />} PDF
+                            </button>
+                          )}
                           {!cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin') && (
                             <button onClick={() => cancelarVenta(v.id)}
                               style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
