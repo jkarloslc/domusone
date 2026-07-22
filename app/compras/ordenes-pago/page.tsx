@@ -1763,7 +1763,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                 </>
               ) : (
                 <p style={{ fontSize: 12, color: '#a16207', margin: 0 }}>
-                  En espera de aprobación por Administración, Supervisor de Compras o Fraccionamiento.
+                  En espera de aprobación por Administración, Administrador (Organismo), Supervisor de Compras, Tesorería o Fraccionamiento.
                 </p>
               )}
             </div>
