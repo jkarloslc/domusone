@@ -120,6 +120,10 @@ export default function POSPage() {
   const [filtroCorteHasta, setFiltroCorteHasta] = useState('')
   const [pageC,            setPageC]            = useState(0)
   const [totalC,           setTotalC]           = useState(0)
+  const [facturasCorteModal, setFacturasCorteModal] = useState<Corte | null>(null)
+  const [facturasCorteData,  setFacturasCorteData]  = useState<any[]>([])
+  const [loadingFacturasCorte, setLoadingFacturasCorte] = useState(false)
+  const [viendoPdf,        setViendoPdf]        = useState<string | null>(null)
 
   // Config
   const [productos,      setProductos]      = useState<Producto[]>([])
@@ -814,6 +818,51 @@ ${facturasCorte.length > 0 ? `
 
     const w = window.open('', '_blank', 'width=800,height=900')
     if (w) { w.document.write(html); w.document.close(); w.focus() }
+  }
+
+  // ── Facturas asociadas a un corte (modal) ─────────────────
+  const abrirFacturasCorte = async (c: Corte) => {
+    setFacturasCorteModal(c)
+    setLoadingFacturasCorte(true)
+    // Igual que en imprimirCorte: se busca por folio_fiscal sin filtrar por status
+    // de la venta, ya que una venta cancelada puede conservar una factura timbrada.
+    const { data: ventas } = await dbGolf.from('ctrl_ventas')
+      .select('id, folio_dia, fecha, nombre_cliente, status, total, folio_fiscal, pac_cfdi_id')
+      .eq('id_corte_fk', c.id)
+      .not('folio_fiscal', 'is', null)
+      .order('fecha', { ascending: true })
+    const ids = (ventas ?? []).map((v: any) => v.id)
+    let cfdiMap: Record<number, any> = {}
+    if (ids.length > 0) {
+      const { data: cfdis } = await dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', ids).order('fecha_timbrado', { ascending: true })
+      for (const cf of cfdis ?? []) cfdiMap[cf.id_venta_fk] = cf
+    }
+    setFacturasCorteData((ventas ?? []).map((v: any) => ({ ...v, _cfdi: cfdiMap[v.id] ?? null })))
+    setLoadingFacturasCorte(false)
+  }
+
+  // ── Ver PDF de una factura (desde BD si existe, si no vía Facturama) ──
+  const verPdfFactura = async (v: any) => {
+    if (v._cfdi?.pdf_b64) {
+      const w = window.open()
+      if (w) w.location.href = `data:application/pdf;base64,${v._cfdi.pdf_b64}`
+      return
+    }
+    const cfdiId = v.folio_fiscal ?? v._cfdi?.pac_cfdi_id ?? v.pac_cfdi_id
+    if (!cfdiId) { alert('No hay folio fiscal para esta factura'); return }
+    const key = `${v.id}-view`
+    // Abrir la pestaña de inmediato (dentro del gesto de clic) para evitar el bloqueo de pop-ups.
+    const w = window.open()
+    setViendoPdf(key)
+    try {
+      const res = await fetch(`/api/pac/descargar?cfdiId=${encodeURIComponent(cfdiId)}&format=pdf`)
+      const json = await res.json()
+      if (!res.ok) { w?.close(); alert(`Error: ${json.error}`); return }
+      const pdfData = json.content.startsWith('data:') ? json.content : `data:application/pdf;base64,${json.content}`
+      if (w) w.location.href = pdfData
+    } finally {
+      setViendoPdf(null)
+    }
   }
 
   const mapFormasPago = (rows: { forma_nombre: string; monto: number }[]) => {
@@ -1692,6 +1741,12 @@ ${facturasCorte.length > 0 ? `
                               style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                               <Printer size={11} /> Imprimir
                             </button>
+                            <button
+                              onClick={() => abrirFacturasCorte(c)}
+                              title="Ver facturas de este corte"
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <FileCheck size={11} /> Facturas
+                            </button>
                             {!c.id_recibo_ingreso && puedeEscribir && (
                               <button
                                 onClick={() => generarReciboCorte(c)}
@@ -2157,6 +2212,61 @@ ${facturasCorte.length > 0 ? `
               </div>
             )}
           </div>
+        </ModalShell>
+      )}
+
+      {/* ── Modal Facturas del Corte ── */}
+      {facturasCorteModal && (
+        <ModalShell
+          modulo="golf-pos"
+          titulo="Facturas del Corte"
+          subtitulo={`Corte #${String(facturasCorteModal.id).padStart(4, '0')} · ${facturasCorteModal.centro_nombre}`}
+          icono={FileCheck}
+          maxWidth={720}
+          onClose={() => { setFacturasCorteModal(null); setFacturasCorteData([]) }}
+        >
+          {loadingFacturasCorte ? (
+            <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}><Loader size={18} className="animate-spin" style={{ margin: '0 auto' }} /></div>
+          ) : facturasCorteData.length === 0 ? (
+            <div style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>
+              <FileCheck size={26} style={{ margin: '0 auto 8px' }} />
+              <div style={{ fontWeight: 500, fontSize: 13 }}>Sin facturas emitidas en este corte</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {facturasCorteData.map(v => {
+                const cfdi = v._cfdi
+                const cancelada = cfdi?.status === 'Cancelada'
+                const keyView = `${v.id}-view`
+                return (
+                  <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: 12, color: '#94a3b8', minWidth: 56 }}>
+                      #{String(v.folio_dia).padStart(4, '0')}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 160 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente ?? 'Publico General'}</div>
+                      <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>
+                        {cfdi?.folio_factura ? `${cfdi.folio_factura} · ` : ''}{v.folio_fiscal}
+                      </div>
+                      {cfdi?.receptor_rfc && (
+                        <div style={{ fontSize: 11, color: '#64748b' }}>{cfdi.receptor_rfc}</div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: cancelada ? '#fef2f2' : '#dcfce7', color: cancelada ? '#dc2626' : '#15803d' }}>
+                      {cancelada ? 'Cancelada' : 'Vigente'}
+                    </span>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b', minWidth: 90, textAlign: 'right' }}>
+                      ${v.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </div>
+                    <button onClick={() => verPdfFactura(v)} disabled={viendoPdf === keyView}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: viendoPdf === keyView ? 0.6 : 1 }}>
+                      {viendoPdf === keyView ? <Loader size={11} className="animate-spin" /> : <FileCheck size={11} />} PDF
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </ModalShell>
       )}
     </div>
