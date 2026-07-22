@@ -2256,7 +2256,7 @@ ${facturasCorte.length > 0 ? `
                       {cfdi?.folio_factura ?? '—'}
                     </div>
                     <div style={{ flex: 1, minWidth: 160 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente ?? 'Publico General'}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{cfdi?.receptor_nombre ?? v.nombre_cliente ?? 'Publico General'}</div>
                       <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>
                         {v.folio_fiscal}
                       </div>
