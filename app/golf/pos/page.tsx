@@ -842,24 +842,33 @@ ${facturasCorte.length > 0 ? `
   }
 
   // ── Ver PDF de una factura (desde BD si existe, si no vía Facturama) ──
+  // Nota: navegar una pestaña con `location.href = 'data:...'` está bloqueado por
+  // Chrome ("Not allowed to navigate top frame to data URL"), por eso se convierte
+  // el base64 a un Blob y se usa su URL de objeto (blob:), que sí es navegable.
+  const b64ToBlobUrl = (b64: string) => {
+    const bin = atob(b64)
+    const bytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+    return URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
+  }
   const verPdfFactura = async (v: any) => {
+    // Abrir la pestaña de inmediato (dentro del gesto de clic) para evitar el bloqueo de pop-ups.
+    const w = window.open()
     if (v._cfdi?.pdf_b64) {
-      const w = window.open()
-      if (w) w.location.href = `data:application/pdf;base64,${v._cfdi.pdf_b64}`
+      if (w) w.location.href = b64ToBlobUrl(v._cfdi.pdf_b64)
+      else alert('El navegador bloqueó la ventana emergente. Habilita pop-ups para este sitio.')
       return
     }
     const cfdiId = v.folio_fiscal ?? v._cfdi?.pac_cfdi_id ?? v.pac_cfdi_id
-    if (!cfdiId) { alert('No hay folio fiscal para esta factura'); return }
+    if (!cfdiId) { w?.close(); alert('No hay folio fiscal para esta factura'); return }
     const key = `${v.id}-view`
-    // Abrir la pestaña de inmediato (dentro del gesto de clic) para evitar el bloqueo de pop-ups.
-    const w = window.open()
     setViendoPdf(key)
     try {
       const res = await fetch(`/api/pac/descargar?cfdiId=${encodeURIComponent(cfdiId)}&format=pdf`)
       const json = await res.json()
       if (!res.ok) { w?.close(); alert(`Error: ${json.error}`); return }
-      const pdfData = json.content.startsWith('data:') ? json.content : `data:application/pdf;base64,${json.content}`
-      if (w) w.location.href = pdfData
+      const b64 = json.content.startsWith('data:') ? json.content.split(',').pop()! : json.content
+      if (w) w.location.href = b64ToBlobUrl(b64)
     } finally {
       setViendoPdf(null)
     }
