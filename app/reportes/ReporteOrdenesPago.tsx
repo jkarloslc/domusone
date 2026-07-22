@@ -6,7 +6,7 @@ import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutLi
 import * as XLSX from 'xlsx'
 
 // Status conocidos en comp.ordenes_pago
-const STATUS_OP = ['Pendiente Auth', 'Pendiente', 'Pagada', 'Rechazada', 'Cancelada'] as const
+const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Cancelada'] as const
 
 // Tipos de gasto (sincronizado con app/compras/ordenes-pago/page.tsx)
 const TIPOS_GASTO = [
@@ -23,6 +23,7 @@ const statusColor = (s: string) =>
   s === 'Pagada'         ? '#15803d' :
   s === 'Pendiente'      ? '#d97706' :
   s === 'Pendiente Auth' ? '#7c3aed' :
+  s === 'Pendiente Auth Finanzas' ? '#6d28d9' :
   s === 'Rechazada'      ? '#dc2626' :
   s === 'Cancelada'      ? '#64748b' : '#64748b'
 

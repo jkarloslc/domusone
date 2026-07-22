@@ -153,6 +153,7 @@ export default function OrdenesPagoPage() {
         <select className="select" style={{ width: 175 }} value={filterStatus} onChange={e => { setFilter(e.target.value); setPage(0) }}>
           <option value="">Todas</option>
           <option value="Pendiente Auth">Pend. Autorización</option>
+          <option value="Pendiente Auth Finanzas">Pend. Auth Finanzas</option>
           <option value="Pendiente">Pendientes (CXP)</option>
           <option value="Abonada">Abonadas</option>
           <option value="Pagada">Pagadas</option>
@@ -639,9 +640,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       setSaving(false)
       return
     }
-    // OP con OC: ya viene autorizada por la cadena REQ→COT→OC → entra directo a CXP
-    // OP sin OC: gasto directo sin cadena de aprobación → requiere autorización previa
-    payload.status         = conOC ? 'Pendiente' : 'Pendiente Auth'
+    // Toda OP (con o sin OC) pasa por el flujo de doble autorización antes de CXP:
+    // Pendiente Auth → (1ra auth) → Pendiente Auth Finanzas → (2da auth) → Pendiente (CXP)
+    payload.status         = 'Pendiente Auth'
     payload.created_by     = authUser?.nombre ?? null
     payload.created_by_id  = authUser?.user.id ?? null
 
@@ -1041,7 +1042,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
-  const { authUser, canWrite, canAuth } = useAuth()
+  const { authUser, canWrite, canAuth, canAuthFinanzas } = useAuth()
   const puedePublicarInstruccion = Boolean(
     authUser && (canWrite('ordenes-pago') || authUser.rol === 'tesoreria')
   )
@@ -1068,7 +1069,8 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [sendingInstr, setSendingInstr] = useState(false)
   const [instrErr, setInstrErr] = useState('')
 
-  const puedeAutorizar = canAuth()
+  const puedeAutorizar         = canAuth()
+  const puedeAutorizarFinanzas = canAuthFinanzas()
 
   useEffect(() => { setLocalOp(op) }, [op])
 
@@ -1168,11 +1170,12 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     onCanceled()
   }
 
+  // 1ra autorización: Pendiente Auth → Pendiente Auth Finanzas (o Rechazada)
   const handleAuth = async (aprobado: boolean) => {
     if (!aprobado && !confirm('¿Rechazar esta Orden de Pago? Esta acción no entrará a CXP.')) return
     setAuthLd(true)
     const updatePayload: any = {
-      status: aprobado ? 'Pendiente' : 'Rechazada',
+      status: aprobado ? 'Pendiente Auth Finanzas' : 'Rechazada',
       notas:  authComment.trim()
         ? `[${aprobado ? 'Autorizado' : 'Rechazado'} por ${authUser?.nombre ?? ''}]: ${authComment.trim()}${op.notas ? '\n' + op.notas : ''}`
         : op.notas ?? null,
@@ -1180,6 +1183,25 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     if (aprobado) {
       updatePayload.autorizado_por     = authUser?.nombre ?? null
       updatePayload.fecha_autorizacion = new Date().toISOString()
+    }
+    await dbComp.from('ordenes_pago').update(updatePayload).eq('id', op.id)
+    setAuthLd(false)
+    onAuthorized()
+  }
+
+  // 2da autorización (Finanzas): Pendiente Auth Finanzas → Pendiente (CXP) (o Rechazada)
+  const handleAuthFinanzas = async (aprobado: boolean) => {
+    if (!aprobado && !confirm('¿Rechazar esta Orden de Pago? Esta acción no entrará a CXP.')) return
+    setAuthLd(true)
+    const updatePayload: any = {
+      status: aprobado ? 'Pendiente' : 'Rechazada',
+      notas:  authComment.trim()
+        ? `[${aprobado ? 'Autorizado (Finanzas)' : 'Rechazado (Finanzas)'} por ${authUser?.nombre ?? ''}]: ${authComment.trim()}${op.notas ? '\n' + op.notas : ''}`
+        : op.notas ?? null,
+    }
+    if (aprobado) {
+      updatePayload.autorizado_finanzas_por     = authUser?.nombre ?? null
+      updatePayload.fecha_autorizacion_finanzas = new Date().toISOString()
     }
     await dbComp.from('ordenes_pago').update(updatePayload).eq('id', op.id)
     setAuthLd(false)
@@ -1199,14 +1221,20 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     const frenteNombre = opData.id_frente_fk ? (frMap[opData.id_frente_fk] ?? `#${opData.id_frente_fk}`) : '—'
     const estadoAut = opData.status === 'Pendiente Auth'
       ? 'Pendiente de autorización'
-      : opData.status === 'Rechazada'
-        ? 'Rechazada'
-        : opData.autorizado_por
-          ? 'Autorizada'
-          : 'En proceso'
+      : opData.status === 'Pendiente Auth Finanzas'
+        ? 'Pendiente de segunda autorización (Finanzas)'
+        : opData.status === 'Rechazada'
+          ? 'Rechazada'
+          : opData.autorizado_finanzas_por
+            ? 'Autorizada'
+            : opData.autorizado_por
+              ? 'Autorizada (1ra autorización)'
+              : 'En proceso'
     const nombreElaboro = opData.created_by ?? opData.usuario_crea ?? 'Sin registro'
-    const nombreAutorizo = opData.autorizado_por
-      ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización' : opData.status === 'Rechazada' ? 'Rechazada' : 'Sin registro')
+    const nombreAutorizo = opData.autorizado_finanzas_por ?? opData.autorizado_por
+      ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización'
+        : opData.status === 'Pendiente Auth Finanzas' ? 'Pendiente de segunda autorización'
+        : opData.status === 'Rechazada' ? 'Rechazada' : 'Sin registro')
     // Cargar config de organización
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
@@ -1288,11 +1316,11 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         </div>
         <table style="margin:0">
           <tr><th>Estatus</th><td>${estadoAut}</td></tr>
-          ${opData.autorizado_por     ? `<tr><th>Autorizado por</th><td>${opData.autorizado_por}</td></tr>` : ''}
-          ${opData.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
+          ${opData.autorizado_por     ? `<tr><th>1ra Autorización</th><td>${opData.autorizado_por}${opData.fecha_autorizacion ? ' · ' + new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}) : ''}</td></tr>` : ''}
+          ${opData.autorizado_finanzas_por ? `<tr><th>2da Autorización (Finanzas)</th><td>${opData.autorizado_finanzas_por}${opData.fecha_autorizacion_finanzas ? ' · ' + new Date(opData.fecha_autorizacion_finanzas).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}) : ''}</td></tr>` : ''}
           ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
           ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
-          ${!opData.autorizado_por && !opData.fecha_autorizacion && !opData.referencia_pago && !opData.instrucciones_pago ? `<tr><th>Detalle</th><td>Sin datos adicionales de autorización/pago.</td></tr>` : ''}
+          ${!opData.autorizado_por && !opData.autorizado_finanzas_por && !opData.referencia_pago && !opData.instrucciones_pago ? `<tr><th>Detalle</th><td>Sin datos adicionales de autorización/pago.</td></tr>` : ''}
         </table>
       </div>
       <div class="firmas">
@@ -1342,7 +1370,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
             <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}>
               <Printer size={13} /> Imprimir
             </button>
-            {['Pendiente Auth', 'Pendiente', 'Rechazada'].includes(op.status) && (
+            {['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Rechazada'].includes(op.status) && (
               <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
                 <Edit2 size={13} /> Editar
               </button>
@@ -1736,6 +1764,52 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               ) : (
                 <p style={{ fontSize: 12, color: '#a16207', margin: 0 }}>
                   En espera de aprobación por Administración, Supervisor de Compras o Fraccionamiento.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── Bloque de 2da Autorización (Finanzas) ── solo cuando status = Pendiente Auth Finanzas ── */}
+          {op.status === 'Pendiente Auth Finanzas' && (
+            <div style={{ padding: '16px 18px', background: '#f5f3ff', border: '2px solid #ddd6fe', borderRadius: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <AlertTriangle size={15} style={{ color: '#7c3aed', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#5b21b6' }}>
+                  Segunda Autorización (Finanzas)
+                </span>
+                <span style={{ fontSize: 11, color: '#7c3aed', marginLeft: 'auto' }}>
+                  Ya autorizada{op.autorizado_por ? ` por ${op.autorizado_por}` : ''} — falta envío a CXP
+                </span>
+              </div>
+              {puedeAutorizarFinanzas ? (
+                <>
+                  <textarea
+                    className="input" rows={2}
+                    placeholder="Comentario u observación (opcional)…"
+                    value={authComment} onChange={e => setAuthCom(e.target.value)}
+                    style={{ marginBottom: 10, resize: 'vertical', fontSize: 12 }}
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => handleAuthFinanzas(true)} disabled={authLoading}
+                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #bbf7d0',
+                        background: '#f0fdf4', color: '#15803d', fontWeight: 700, cursor: 'pointer',
+                        fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      {authLoading ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={14} />}
+                      Autorizar — enviar a CXP
+                    </button>
+                    <button
+                      onClick={() => handleAuthFinanzas(false)} disabled={authLoading}
+                      style={{ flex: 1, padding: '9px', borderRadius: 8, border: '1px solid #fecaca',
+                        background: '#fef2f2', color: '#dc2626', fontWeight: 700, cursor: 'pointer',
+                        fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <Trash2 size={14} /> Rechazar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p style={{ fontSize: 12, color: '#5b21b6', margin: 0 }}>
+                  En espera de la segunda autorización por Administrador de Finanzas.
                 </p>
               )}
             </div>

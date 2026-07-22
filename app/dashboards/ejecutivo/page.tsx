@@ -94,13 +94,13 @@ export default function VistaEjecutivaPage() {
         .lte('ctrl_accesos.fecha_entrada', finDelDia(hoy)),
       dbHip.from('cat_caballerizas').select('status'),
       dbComp.from('ordenes_pago').select('id', { count: 'exact', head: true })
-        .in('status', ['Pendiente', 'Pendiente Auth']).lt('fecha_vencimiento', hoy),
+        .in('status', ['Pendiente', 'Pendiente Auth', 'Pendiente Auth Finanzas']).lt('fecha_vencimiento', hoy),
       dbComp.from('ordenes_compra').select('id', { count: 'exact', head: true })
         .in('status', ['Autorizada', 'Recibida Parcial']),
       dbComp.from('ordenes_compra').select('total')
         .in('status', ['Autorizada', 'Recibida Parcial']),
       dbComp.from('ordenes_pago').select('saldo, monto, fecha_vencimiento')
-        .in('status', ['Pendiente', 'Pendiente Auth', 'Autorizada'])
+        .in('status', ['Pendiente', 'Pendiente Auth', 'Pendiente Auth Finanzas', 'Autorizada'])
         .not('fecha_vencimiento', 'is', null),
       dbCtrl.from('recibos_ingreso').select('monto_total')
         .eq('status', 'Confirmado').gte('fecha', mesIni).lte('fecha', hoy),

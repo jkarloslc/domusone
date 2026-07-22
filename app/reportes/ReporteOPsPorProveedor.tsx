@@ -10,9 +10,9 @@ const fmt  = (n: number | null | undefined) =>
 const fmtF = (s: string | null | undefined) =>
   s ? new Date(s + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-const STATUS_OP  = ['Pendiente Auth', 'Pendiente', 'Pagada', 'Rechazada', 'Cancelada'] as const
+const STATUS_OP  = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Cancelada'] as const
 const STATUS_CLR: Record<string, string> = {
-  'Pendiente Auth': '#7c3aed', Pendiente: '#d97706',
+  'Pendiente Auth': '#7c3aed', 'Pendiente Auth Finanzas': '#6d28d9', Pendiente: '#d97706',
   Pagada: '#15803d', Rechazada: '#dc2626', Cancelada: '#64748b',
 }
 

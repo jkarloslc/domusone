@@ -54,6 +54,7 @@ export const STATUS_COMP: Record<string, { bg: string; color: string; border: st
   'Cancelada':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
   'Abierta':          { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
   'Pendiente Auth':   { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+  'Pendiente Auth Finanzas': { bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe' },
   'Autorizada':       { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
   'Enviada al Prov':  { bg: '#f0fdf4', color: '#0891b2', border: '#bae6fd' },
   'Recibida Parcial': { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },

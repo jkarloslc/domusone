@@ -198,7 +198,7 @@ export default function InicioPage() {
         if (rolesFinanzas.includes(rol)) {
           const { count } = await dbComp.from('ordenes_pago')
             .select('id', { count: 'exact', head: true })
-            .in('status', ['Pendiente', 'Pendiente Auth'])
+            .in('status', ['Pendiente', 'Pendiente Auth', 'Pendiente Auth Finanzas'])
             .lt('fecha_vencimiento', hoy)
           if ((count ?? 0) > 0) {
             items.push({

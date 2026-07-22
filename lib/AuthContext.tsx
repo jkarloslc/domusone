@@ -7,6 +7,7 @@ type Rol =
   | 'superadmin'
   | 'admin'
   | 'admin_lector'
+  | 'admin_finanzas'
   | 'usuarioadmin'
   | 'usuariomantto'
   | 'atencion_residentes'
@@ -41,6 +42,7 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'superadmin':
     case 'admin':
     case 'admin_lector':
+    case 'admin_finanzas':
     case 'usuarioadmin':
     case 'usuariomantto':
     case 'fraccionamiento':
@@ -95,6 +97,8 @@ type AuthCtx = {
   canCompras: (key?: string) => 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | 'nomina' | false
   /** ¿Puede AUTORIZAR documentos (Req, OC, Transferencias)? */
   canAuth:    (modulo?: string) => boolean
+  /** ¿Puede dar la SEGUNDA autorización de Órdenes de Pago (envío a CXP)? */
+  canAuthFinanzas: () => boolean
   /** ¿Puede ver un reporte específico?
    *  Si el rol tiene lista en REPORTES_PERMITIDOS solo ve los IDs listados.
    *  Si no tiene lista (mayoría de roles), cae al permiso de grupo (can(modulo)). */
@@ -179,6 +183,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
   admin:               ADMIN_MODULOS,
   admin_lector:        ADMIN_MODULOS,   // igual que admin, solo lectura
+  admin_finanzas:      ADMIN_MODULOS,   // igual que admin + 2da autorización de OP
   usuarioadmin:        USUARIOADMIN_MODULOS,
   usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -212,6 +217,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
   admin:               ADMIN_MODULOS,
   admin_lector:        [],              // sin escritura
+  admin_finanzas:      ADMIN_MODULOS,   // igual que admin + 2da autorización de OP
   usuarioadmin:        USUARIOADMIN_MODULOS,
   usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -255,10 +261,13 @@ const REPORTES_PERMITIDOS: Partial<Record<Rol, string[]>> = {
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
-const ROLES_DELETE: Rol[] = ['superadmin', 'admin', 'admin_organismo']
+const ROLES_DELETE: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_organismo']
 
-// ── Roles que pueden autorizar documentos ─────────────────────────────────────
-const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'usuarioadmin', 'usuariomantto', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria', 'admin_organismo']
+// ── Roles que pueden autorizar documentos (1ra autorización) ──────────────────
+const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'usuarioadmin', 'usuariomantto', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria', 'admin_organismo']
+
+// ── Roles que pueden dar la 2da autorización de Órdenes de Pago (envío a CXP) ─
+const ROLES_AUTH_FINANZAS: Rol[] = ['superadmin', 'admin_finanzas']
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthCtx>({
@@ -271,6 +280,7 @@ const AuthContext = createContext<AuthCtx>({
   canDelete:  () => false,
   canCompras: (_key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | 'nomina' | false => false,
   canAuth:    () => false,
+  canAuthFinanzas: () => false,
   canReporte: () => false,
 })
 
@@ -351,7 +361,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!authUser) return false
     const r = authUser.rol
     // superadmin / admin / fraccionamiento: acceso total
-    if (r === 'superadmin' || r === 'admin' || r === 'admin_lector' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento' || r === 'admin_organismo') return 'all'
+    if (r === 'superadmin' || r === 'admin' || r === 'admin_lector' || r === 'admin_finanzas' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento' || r === 'admin_organismo') return 'all'
     if (r === 'compras' || r === 'compras_supervisor') return 'compras'
     if (r === 'almacen') {
       // almacen ve sus módulos + caja chica
@@ -391,6 +401,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   /**
+   * ¿Puede dar la segunda autorización de una Orden de Pago (envío a CXP)?
+   * Solo superadmin y admin_finanzas, y únicamente aplica a OP que ya
+   * pasaron la primera autorización (status 'Pendiente Auth Finanzas').
+   */
+  const canAuthFinanzas = (): boolean => {
+    if (!authUser) return false
+    return ROLES_AUTH_FINANZAS.includes(authUser.rol)
+  }
+
+  /**
    * ¿Puede ver el reporte con ese ID?
    * Si el rol tiene lista en REPORTES_PERMITIDOS solo ve los IDs de esa lista.
    * Si no tiene lista, puede ver cualquier reporte cuyo grupo can() permita.
@@ -403,7 +423,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can, canWrite, canDelete, canCompras, canAuth, canReporte }}>
+    <AuthContext.Provider value={{ authUser, loading, signIn, signOut, can, canWrite, canDelete, canCompras, canAuth, canAuthFinanzas, canReporte }}>
       {children}
     </AuthContext.Provider>
   )

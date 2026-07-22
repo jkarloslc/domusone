@@ -79,6 +79,7 @@ export default function CXPPage() {
       dbComp.from('ordenes_pago').select('*')
         .neq('status', 'Cancelada')
         .neq('status', 'Pendiente Auth')
+        .neq('status', 'Pendiente Auth Finanzas')
         .neq('status', 'Rechazada')
         .order('fecha_vencimiento'),
       dbComp.from('almacenes').select('id, nombre'),
@@ -93,7 +94,7 @@ export default function CXPPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const opsPendientes  = ops.filter(o => o.status !== 'Pagada' && o.status !== 'Pendiente Auth' && o.status !== 'Rechazada')
+  const opsPendientes  = ops.filter(o => o.status !== 'Pagada' && o.status !== 'Pendiente Auth' && o.status !== 'Pendiente Auth Finanzas' && o.status !== 'Rechazada')
   const totalPorPagar  = opsPendientes.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
   const totalVencido   = opsPendientes.filter(o => diasVencido(o.fecha_vencimiento) > 0)
                           .reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)

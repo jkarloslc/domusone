@@ -252,7 +252,7 @@ export default function DashboardFinancieroPage() {
     const ultOpQ = applyEgrQ(
       dbComp.from('ordenes_pago')
         .select('id, folio, concepto, monto, saldo, status, fecha_vencimiento')
-        .in('status', ['Pendiente', 'Pendiente Auth', 'Autorizada'])
+        .in('status', ['Pendiente', 'Pendiente Auth', 'Pendiente Auth Finanzas', 'Autorizada'])
     ).order('created_at', { ascending: false }).limit(5)
 
     const banQ = dbCfg.from('cuentas_bancarias').select('saldo').eq('activo', true)
