@@ -2246,13 +2246,13 @@ ${facturasCorte.length > 0 ? `
                 const keyView = `${v.id}-view`
                 return (
                   <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
-                    <div style={{ fontSize: 12, color: '#94a3b8', minWidth: 56 }}>
-                      #{String(v.folio_dia).padStart(4, '0')}
+                    <div style={{ fontSize: 12, fontWeight: 700, fontFamily: 'monospace', color: '#2563eb', minWidth: 56 }}>
+                      {cfdi?.folio_factura ?? '—'}
                     </div>
                     <div style={{ flex: 1, minWidth: 160 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente ?? 'Publico General'}</div>
                       <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>
-                        {cfdi?.folio_factura ? `${cfdi.folio_factura} · ` : ''}{v.folio_fiscal}
+                        {v.folio_fiscal}
                       </div>
                       {cfdi?.receptor_rfc && (
                         <div style={{ fontSize: 11, color: '#64748b' }}>{cfdi.receptor_rfc}</div>
