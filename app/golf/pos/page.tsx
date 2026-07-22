@@ -1162,6 +1162,11 @@ ${operaciones.length > 0 ? `
                         <div style={{ fontSize: 12, color: '#64748b', flex: 1 }}>
                           {v.usuario_crea && <span>Cajero: <strong>{v.usuario_crea}</strong></span>}
                           {v.num_impresiones > 0 && <span style={{ marginLeft: 12, color: '#94a3b8' }}>🖨 {v.num_impresiones}× impreso</span>}
+                          {v.facturada && v.folio_fiscal && (
+                            <div style={{ marginTop: 4, fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>
+                              UUID: {v.folio_fiscal}
+                            </div>
+                          )}
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button onClick={() => reimprimirTicket(v)}
