@@ -1531,7 +1531,7 @@ ${facturasCorte.length > 0 ? `
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                      {['Folio', 'Cliente', 'Centro', 'Folio Factura / UUID Fiscal', 'Fecha', 'Total', 'Receptor', 'Enviado', 'Acciones'].map(h => (
+                      {['Folio Factura', 'Cliente', 'Centro', 'UUID Fiscal', 'Fecha', 'Total', 'Receptor', 'Enviado', 'Acciones'].map(h => (
                         <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -1543,15 +1543,12 @@ ${facturasCorte.length > 0 ? `
                       return (
                         <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
-                            <div style={{ fontWeight: 700, fontFamily: 'monospace', color: '#2563eb' }}>#{String(v.folio_dia).padStart(4, '0')}</div>
-                            <div style={{ fontSize: 10, color: '#94a3b8' }}>ID {v.id}</div>
+                            <div style={{ fontWeight: 700, fontFamily: 'monospace', color: '#2563eb' }}>{cfdi?.folio_factura ?? '—'}</div>
+                            <div style={{ fontSize: 10, color: '#94a3b8' }}>Venta #{String(v.folio_dia).padStart(4, '0')}</div>
                           </td>
                           <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</td>
                           <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>{centro?.nombre ?? `#${v.id_centro_fk}`}</td>
                           <td style={{ padding: '10px 14px', maxWidth: 220 }}>
-                            {cfdi?.folio_factura && (
-                              <div style={{ fontSize: 11, fontWeight: 700, color: '#1e293b', marginBottom: 2 }}>{cfdi.folio_factura}</div>
-                            )}
                             <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>{v.folio_fiscal ?? '—'}</div>
                           </td>
                           <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>{fmtDT(v.fecha)}</td>
