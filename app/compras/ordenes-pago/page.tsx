@@ -214,30 +214,41 @@ export default function OrdenesPagoPage() {
         <table>
           <thead>
             <tr>
-              <th>Folio</th>
+              <th style={{ width: 110 }}>Folio</th>
               <th>Proveedor</th>
               <th>Concepto / Tipo</th>
-              <th>Vencimiento</th>
-              <th style={{ textAlign: 'right' }}>Monto</th>
-              <th>Docs</th>
-              <th>Status</th>
+              <th style={{ width: 100 }}>Vencimiento</th>
+              <th style={{ textAlign: 'right', width: 110 }}>Monto</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Status</th>
               <th style={{ width: 60 }}></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                 Sin órdenes de pago registradas
               </td></tr>
             ) : rows.map(r => (
               <tr key={r.id} style={{ opacity: r.status === 'Cancelada' ? 0.45 : 1 }}>
-                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
+                  {r.folio}
+                  {(r.pdf_factura || r.xml_factura) && (
+                    <div style={{ display: 'flex', gap: 3, marginTop: 3 }}>
+                      {r.pdf_factura && (
+                        <span title="PDF Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 4, fontWeight: 600 }}>PDF</span>
+                      )}
+                      {r.xml_factura && (
+                        <span title="XML Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 4, fontWeight: 600 }}>XML</span>
+                      )}
+                    </div>
+                  )}
+                </td>
                 <td style={{ fontSize: 13 }}>{r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? `#${r.id_proveedor_fk}`) : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-                <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <td style={{ fontSize: 12, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {r.concepto ?? '—'}
                   {r.tipo_gasto && <span style={{ fontSize: 10, marginLeft: 6, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span>}
                   {r.id_centro_costo_fk && !r.id_area_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#7c3aed', background: '#f5f3ff', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
@@ -248,18 +259,7 @@ export default function OrdenesPagoPage() {
                   {fmtFecha(r.fecha_vencimiento)}
                 </td>
                 <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(r.monto)}</td>
-                {/* Indicadores de documentos */}
-                <td>
-                  <div style={{ display: 'flex', gap: 3 }}>
-                    {r.pdf_factura && (
-                      <span title="PDF Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 4, fontWeight: 600 }}>PDF</span>
-                    )}
-                    {r.xml_factura && (
-                      <span title="XML Factura" style={{ fontSize: 9, padding: '1px 5px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: 4, fontWeight: 600 }}>XML</span>
-                    )}
-                  </div>
-                </td>
-                <td><StatusBadge status={r.status} /></td>
+                <td style={{ whiteSpace: 'nowrap' }}><StatusBadge status={r.status} /></td>
                 <td>
                   <button className="btn-ghost" style={{ padding: '4px 6px' }}
                     onClick={() => setDetail({ ...r, _provNombre: provMap[r.id_proveedor_fk], _almNombre: almMap[r.id_almacen_fk] })}>
@@ -287,7 +287,7 @@ export default function OrdenesPagoPage() {
                       </div>
                     )}
                   </td>
-                  <td colSpan={3} style={{ padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)' }}>
+                  <td colSpan={2} style={{ padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)' }}>
                     {sumaPagadoPage > 0 && <span>Pagado: {fmt(sumaPagadoPage)}</span>}
                   </td>
                 </tr>
