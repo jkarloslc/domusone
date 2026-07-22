@@ -605,13 +605,17 @@ export default function POSPage() {
     const desglose = (det ?? []) as { forma_nombre: string; monto: number }[]
     const operaciones = (ops ?? []) as { id: number; folio_dia: number | null; fecha: string; nombre_cliente: string | null; status: string; total: number; folio_fiscal: string | null }[]
     const idsPagadas = operaciones.filter(o => o.status === 'PAGADA').map(o => o.id)
+    // Las ventas con folio_fiscal deben consultarse aunque la venta esté CANCELADA:
+    // una venta puede cancelarse después de facturada y la factura sigue existiendo
+    // (vigente o cancelada ante el PAC) y debe reflejarse en el corte.
+    const idsFacturadas = operaciones.filter(o => !!o.folio_fiscal).map(o => o.id)
 
     const [{ data: detOps }, { data: cfdisCorte }] = await Promise.all([
       idsPagadas.length > 0
         ? dbGolf.from('ctrl_ventas_det').select('concepto, cantidad, total').in('id_venta_fk', idsPagadas)
         : Promise.resolve({ data: [] as any[] }),
-      idsPagadas.length > 0
-        ? dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', idsPagadas).order('fecha_timbrado', { ascending: true })
+      idsFacturadas.length > 0
+        ? dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', idsFacturadas).order('fecha_timbrado', { ascending: true })
         : Promise.resolve({ data: [] as any[] }),
     ])
     const cfdiMapCorte: Record<number, any> = {}
