@@ -591,7 +591,7 @@ export default function POSPage() {
         .order('monto', { ascending: false }),
       dbCfg.from('configuracion').select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url']),
       dbGolf.from('ctrl_ventas')
-        .select('id, folio_dia, fecha, nombre_cliente, status, total')
+        .select('id, folio_dia, fecha, nombre_cliente, status, total, folio_fiscal')
         .eq('id_corte_fk', c.id)
         .order('fecha', { ascending: true }),
     ])
@@ -603,12 +603,22 @@ export default function POSPage() {
     const orgLogoUrl = orgMap.org_logo_url || ''
 
     const desglose = (det ?? []) as { forma_nombre: string; monto: number }[]
-    const operaciones = (ops ?? []) as { id: number; folio_dia: number | null; fecha: string; nombre_cliente: string | null; status: string; total: number }[]
+    const operaciones = (ops ?? []) as { id: number; folio_dia: number | null; fecha: string; nombre_cliente: string | null; status: string; total: number; folio_fiscal: string | null }[]
     const idsPagadas = operaciones.filter(o => o.status === 'PAGADA').map(o => o.id)
 
-    const { data: detOps } = idsPagadas.length > 0
-      ? await dbGolf.from('ctrl_ventas_det').select('concepto, cantidad, total').in('id_venta_fk', idsPagadas)
-      : { data: [] as any[] }
+    const [{ data: detOps }, { data: cfdisCorte }] = await Promise.all([
+      idsPagadas.length > 0
+        ? dbGolf.from('ctrl_ventas_det').select('concepto, cantidad, total').in('id_venta_fk', idsPagadas)
+        : Promise.resolve({ data: [] as any[] }),
+      idsPagadas.length > 0
+        ? dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', idsPagadas).order('fecha_timbrado', { ascending: true })
+        : Promise.resolve({ data: [] as any[] }),
+    ])
+    const cfdiMapCorte: Record<number, any> = {}
+    for (const cf of cfdisCorte ?? []) cfdiMapCorte[cf.id_venta_fk] = cf
+    const facturasCorte = operaciones
+      .filter(o => !!o.folio_fiscal)
+      .map(o => ({ ...o, _cfdi: cfdiMapCorte[o.id] ?? null }))
 
     const mapProd: Record<string, { concepto: string; cantidad: number; monto: number }> = {}
     for (const d of detOps ?? []) {
@@ -653,6 +663,21 @@ export default function POSPage() {
         </td>
         <td class="right">${fmt(o.total ?? 0)}</td>
       </tr>`).join('')
+
+    const filasFacturas = facturasCorte.map((f) => {
+      const cancelada = f._cfdi?.status === 'Cancelada'
+      return `
+      <tr>
+        <td>#${String(f.folio_dia ?? f.id).padStart(4, '0')}</td>
+        <td>${esc(f.nombre_cliente ?? 'Publico General')}</td>
+        <td>${esc(f._cfdi?.folio_factura ?? '—')}</td>
+        <td style="font-family:monospace;font-size:10px;word-break:break-all">${esc(f.folio_fiscal)}</td>
+        <td>${esc(f._cfdi?.receptor_rfc ?? '—')}</td>
+        <td class="right"><span class="status-badge ${cancelada ? 'status-cancel' : 'status-ok'}">${cancelada ? 'Cancelada' : 'Vigente'}</span></td>
+        <td class="right">${fmt(f.total ?? 0)}</td>
+      </tr>`
+    }).join('')
+    const totalFacturado = facturasCorte.filter(f => f._cfdi?.status !== 'Cancelada').reduce((a, f) => a + (f.total ?? 0), 0)
 
     const cantProd = detalleProd.reduce((a, d) => a + d.cantidad, 0)
     const totalProd = detalleProd.reduce((a, d) => a + d.monto, 0)
@@ -765,6 +790,16 @@ ${operaciones.length > 0 ? `
     <tr class="total-row"><td class="bold">OPERACIONES</td><td></td><td class="right bold">${operaciones.length}</td><td class="right bold">Pagadas ${fmt(totalOpsPagadas)}${totalOpsCanceladas > 0 ? ` · Canceladas ${fmt(totalOpsCanceladas)}` : ''}</td><td class="right bold">${fmt(totalOps)}</td></tr>
   </tbody>
 </table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin operaciones registradas en este corte.</p>'}
+
+<h2>Detalle de Facturas del Día</h2>
+${facturasCorte.length > 0 ? `
+<table>
+  <thead><tr><th>Folio</th><th>Cliente</th><th>Folio Factura</th><th>UUID Fiscal</th><th>RFC</th><th class="right">Status</th><th class="right">Total</th></tr></thead>
+  <tbody>
+    ${filasFacturas}
+    <tr class="total-row"><td class="bold" colspan="5">FACTURADO (vigente)</td><td></td><td class="right bold">${fmt(totalFacturado)}</td></tr>
+  </tbody>
+</table>` : '<p style="color:#94a3b8;font-size:12px;padding:10px 0">Sin facturas emitidas en este corte.</p>'}
 
 <div class="footer">
   Corte generado el ${fdt(c.fecha_corte)} · ${esc(orgNombre)}
