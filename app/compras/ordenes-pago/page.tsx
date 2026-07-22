@@ -270,9 +270,12 @@ export default function OrdenesPagoPage() {
             ))}
           </tbody>
           {!loading && rows.length > 0 && (() => {
+            // saldo/monto_pagado son NULL hasta el primer abono en /tesoreria/cxp:
+            // usar (saldo ?? monto) para "por pagar" y monto_pagado directo para "pagado"
+            // — (monto - saldo) con saldo NULL⇒0 inflaba "Pagado" al 100% de OP sin tocar.
             const sumaMontoPage  = rows.reduce((a, r) => a + (r.monto  ?? 0), 0)
-            const sumaSaldoPage  = rows.reduce((a, r) => a + (r.saldo  ?? 0), 0)
-            const sumaPagadoPage = rows.reduce((a, r) => a + ((r.monto ?? 0) - (r.saldo ?? 0)), 0)
+            const sumaSaldoPage  = rows.reduce((a, r) => a + (r.saldo  ?? r.monto ?? 0), 0)
+            const sumaPagadoPage = rows.reduce((a, r) => a + (r.monto_pagado ?? 0), 0)
             return (
               <tfoot>
                 <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
