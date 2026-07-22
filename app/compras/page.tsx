@@ -16,6 +16,7 @@ const MODULOS = [
   { key: 'cotizaciones',  label: 'Cotizaciones (RFQ)',icon: FileText,      color: '#7c3aed', desc: 'Solicitudes y comparación de cotizaciones' },
   { key: 'ordenes',       label: 'Órdenes de Compra', icon: ShoppingCart,  color: '#059669', desc: 'OC y control de compras' },
   { key: 'ordenes-pago',  label: 'Órdenes de Pago',   icon: FileText,      color: '#0891b2', desc: 'Pagos con y sin OC — servicios y compras' },
+  { key: 'cxp',           label: 'Cuentas por Pagar', icon: Wallet,        color: '#0f766e', desc: 'Saldos, antigüedad y programación de pago' },
   { key: 'recepciones',   label: 'Recepción',         icon: Truck,         color: '#0891b2', desc: 'Entrada de mercancías a almacén' },
   { key: 'transferencias',label: 'Transferencias',    icon: ArrowLeftRight,color: '#d97706', desc: 'Movimientos entre almacenes' },
   { key: 'inventario',    label: 'Inventario',        icon: Warehouse,     color: '#dc2626', desc: 'Saldos y kardex por almacén' },

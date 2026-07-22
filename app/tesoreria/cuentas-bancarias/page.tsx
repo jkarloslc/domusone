@@ -18,7 +18,7 @@ const fmtD = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es
 // ══════════════════════════════════════════════════════════════
 export default function CuentasBancariasPage() {
   const router   = useRouter()
-  const { authUser } = useAuth()
+  const { authUser, canWrite, canDelete } = useAuth()
   const [cuentas, setCuentas]     = useState<any[]>([])
   const [loading, setLoading]     = useState(true)
   const [modal, setModal]         = useState<any | null | 'new'>(null)
@@ -64,9 +64,11 @@ export default function CuentasBancariasPage() {
           <button className="btn-ghost" onClick={fetchData} style={{ padding: '7px 10px' }}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
-          <button className="btn-primary" onClick={() => setModal('new')}>
-            <Plus size={14} /> Nueva Cuenta
-          </button>
+          {canWrite('tesoreria') && (
+            <button className="btn-primary" onClick={() => setModal('new')}>
+              <Plus size={14} /> Nueva Cuenta
+            </button>
+          )}
         </div>
       </div>
 
@@ -122,8 +124,9 @@ export default function CuentasBancariasPage() {
                   {c.descripcion ?? '—'}
                 </td>
                 <td style={{ textAlign: 'center' }}>
-                  <button onClick={() => toggleActivo(c)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', margin: '0 auto' }}>
+                  <button onClick={() => canWrite('tesoreria') && toggleActivo(c)}
+                    disabled={!canWrite('tesoreria')}
+                    style={{ background: 'none', border: 'none', cursor: canWrite('tesoreria') ? 'pointer' : 'default', display: 'flex', margin: '0 auto', opacity: canWrite('tesoreria') ? 1 : 0.5 }}>
                     {c.activo
                       ? <ToggleRight size={20} style={{ color: '#15803d' }} />
                       : <ToggleLeft  size={20} style={{ color: '#cbd5e1' }} />}
@@ -135,14 +138,18 @@ export default function CuentasBancariasPage() {
                       onClick={() => setDetail(c)}>
                       <Eye size={13} />
                     </button>
-                    <button className="btn-ghost" style={{ padding: '4px 6px' }}
-                      onClick={() => setModal(c)}>
-                      <Edit2 size={13} />
-                    </button>
-                    <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }}
-                      onClick={() => handleDelete(c.id)}>
-                      <Trash2 size={13} />
-                    </button>
+                    {canWrite('tesoreria') && (
+                      <button className="btn-ghost" style={{ padding: '4px 6px' }}
+                        onClick={() => setModal(c)}>
+                        <Edit2 size={13} />
+                      </button>
+                    )}
+                    {canDelete() && (
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }}
+                        onClick={() => handleDelete(c.id)}>
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -261,7 +268,7 @@ function CuentaModal({ row, onClose, onSaved }: { row: any | null; onClose: () =
 // Detalle de Cuenta Bancaria — historial de movimientos
 // ══════════════════════════════════════════════════════════════
 function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () => void }) {
-  const { authUser } = useAuth()
+  const { authUser, canWrite } = useAuth()
   const [movs, setMovs]           = useState<any[]>([])
   const [loading, setLoading]     = useState(true)
   const [filtroDe, setFiltroDe]   = useState('')
@@ -402,14 +409,16 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
             <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={fetchMovs}>
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             </button>
-            <button
-              onClick={() => { setShowAbono(s => !s); setErrorAbono('') }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-                background: showAbono ? '#f0fdf4' : '#15803d', color: showAbono ? '#15803d' : '#fff',
-                border: '1px solid #15803d', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
-              <ArrowUpCircle size={13} />
-              {showAbono ? 'Cancelar' : 'Registrar Abono'}
-            </button>
+            {canWrite('tesoreria') && (
+              <button
+                onClick={() => { setShowAbono(s => !s); setErrorAbono('') }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+                  background: showAbono ? '#f0fdf4' : '#15803d', color: showAbono ? '#15803d' : '#fff',
+                  border: '1px solid #15803d', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
+                <ArrowUpCircle size={13} />
+                {showAbono ? 'Cancelar' : 'Registrar Abono'}
+              </button>
+            )}
           </div>
         </div>
 

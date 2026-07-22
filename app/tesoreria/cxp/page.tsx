@@ -611,7 +611,7 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
 // Detalle de OP — abonos + comprobante + complemento de pago
 // ════════════════════════════════════════════════════════════
 function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
-  const { authUser } = useAuth()
+  const { authUser, canWrite } = useAuth()
   const [abonos, setAbonos]             = useState<any[]>([])
   const [loading, setLoading]           = useState(true)
   const [showForm, setShowForm]         = useState(false)
@@ -848,7 +848,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                 Historial de Pagos ({abonos.length})
               </div>
-              {op.status !== 'Pagada' && (
+              {op.status !== 'Pagada' && canWrite('tesoreria') && (
                 <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setShowForm(f => !f)}>
                   <Plus size={12} /> Registrar Pago
                 </button>

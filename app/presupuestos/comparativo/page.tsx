@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp } from '@/lib/supabase'
 import { Loader, RefreshCw, BookOpen } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import { useAuth } from '@/lib/AuthContext'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -69,6 +70,7 @@ function PctEjercidoCell({ real, ppto, tipo }: { real: number; ppto: number; tip
 
 // ── Página ────────────────────────────────────────────────────────────────────
 export default function ComparativoPage() {
+  const { canWrite } = useAuth()
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([])
   const [selId, setSelId]               = useState<number | null>(null)
   const [loading, setLoading]           = useState(true)
@@ -391,11 +393,13 @@ export default function ComparativoPage() {
                         <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="ingreso" />
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
-                        <button className="btn-ghost"
-                          onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
-                          style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
-                          + Manual
-                        </button>
+                        {canWrite('presupuestos') && (
+                          <button className="btn-ghost"
+                            onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
+                            style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
+                            + Manual
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -439,11 +443,13 @@ export default function ComparativoPage() {
                         <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="egreso" />
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
-                        <button className="btn-ghost"
-                          onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
-                          style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
-                          + Manual
-                        </button>
+                        {canWrite('presupuestos') && (
+                          <button className="btn-ghost"
+                            onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
+                            style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
+                            + Manual
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

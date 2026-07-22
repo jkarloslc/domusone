@@ -65,7 +65,7 @@ const PAGE_SIZE = 25
 
 // ── Modal Nuevo / Ver / Cancelar ───────────────────────────────
 function ReciboModal({
-  recibo, centros, secciones, onClose, onSaved, authUser,
+  recibo, centros, secciones, onClose, onSaved, authUser, canWrite,
 }: {
   recibo: Recibo | null
   centros: Centro[]
@@ -73,6 +73,7 @@ function ReciboModal({
   onClose: () => void
   onSaved: () => void
   authUser: any
+  canWrite: (modulo: string) => boolean
 }) {
   const isView        = !!recibo
   const isSuperAdmin  = authUser?.rol === 'superadmin'
@@ -561,7 +562,7 @@ function ReciboModal({
               </button>
             )}
             {/* Cancelar recibo (solo vista normal, no en modo edición) */}
-            {isView && !isEditMode && recibo!.status === 'Confirmado' && !showCancel && (
+            {isView && !isEditMode && recibo!.status === 'Confirmado' && !showCancel && canWrite('ingresos') && (
               <button onClick={() => setShowCancel(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: 'none', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
                 <Ban size={13} /> Cancelar recibo
@@ -1129,6 +1130,7 @@ export default function RecibosIngresoPage() {
           onClose={() => setModal(false)}
           onSaved={() => { setModal(false); fetchData() }}
           authUser={authUser}
+          canWrite={canWrite}
         />
       )}
 
@@ -1141,6 +1143,7 @@ export default function RecibosIngresoPage() {
           onClose={() => setDetalle(null)}
           onSaved={() => { setDetalle(null); fetchData() }}
           authUser={authUser}
+          canWrite={canWrite}
         />
       )}
     </div>

@@ -1038,12 +1038,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 // ════════════════════════════════════════════════════════════
 // Detalle OP
 // ════════════════════════════════════════════════════════════
-const ROLES_AUTH_OP = ['superadmin', 'admin', 'compras_supervisor', 'fraccionamiento']
-
 function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
-  const { authUser, canWrite } = useAuth()
+  const { authUser, canWrite, canAuth } = useAuth()
   const puedePublicarInstruccion = Boolean(
     authUser && (canWrite('ordenes-pago') || authUser.rol === 'tesoreria')
   )
@@ -1070,7 +1068,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [sendingInstr, setSendingInstr] = useState(false)
   const [instrErr, setInstrErr] = useState('')
 
-  const puedeAutorizar = ROLES_AUTH_OP.includes(authUser?.rol ?? '')
+  const puedeAutorizar = canAuth()
 
   useEffect(() => { setLocalOp(op) }, [op])
 
