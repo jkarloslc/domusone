@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { Printer } from 'lucide-react'
 import { dbGolf } from '@/lib/supabase'
 import { PrintBar } from './utils'
 
@@ -27,6 +28,7 @@ type AccesoRaw = {
   hoyo_inicio: number | null
   observaciones: string | null
   id_socio_fk: number | null
+  folio_ticket_pos: string | null
   cat_socios: {
     numero_socio: string | null
     nombre: string
@@ -43,6 +45,16 @@ type Acomp = {
   es_externo: boolean
   origen_pago: 'PASE' | 'GREEN_FEE' | 'INTERCAMBIO' | null
   club_origen: string | null
+}
+
+// Venta POS (centro "Green Fees") ligada al folio capturado en la salida
+type VentaGF = {
+  id: number
+  folio_dia: number
+  fecha: string
+  total: number
+  nombre_cliente: string | null
+  status: string
 }
 
 // ---------------------------------------------------------------------------
@@ -64,6 +76,12 @@ function fmtFecha(d: string): string {
 
 function fmtHora(d: string): string {
   return new Date(d).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+}
+
+// Día local (YYYY-MM-DD) de un timestamp — usado para casar folio_dia + fecha
+// del ticket POS con el día real de la salida (folio_dia reinicia cada día por centro).
+function diaLocal(d: string): string {
+  return new Date(d).toLocaleDateString('en-CA')
 }
 
 function tipoAcomp(a: Acomp): 'Familiar' | 'Invitado · Pase' | 'Green Fee' | 'Intercambio' {
@@ -105,9 +123,13 @@ export default function ReporteGolfAccesos() {
   // Datos
   const [accesos,    setAccesos]    = useState<AccesoRaw[]>([])
   const [acompsMap,  setAcompsMap]  = useState<Record<number, Acomp[]>>({})
+  const [ventasGFMap, setVentasGFMap] = useState<Record<string, VentaGF>>({})
   const [loading,    setLoading]    = useState(false)
   const [buscado,    setBuscado]    = useState(false)
   const [error,      setError]      = useState<string | null>(null)
+
+  // Centro de venta "Green Fees" del POS — para ligar el folio capturado en la salida con su ticket real
+  const [centroGreenFeeId, setCentroGreenFeeId] = useState<number | null>(null)
 
   // Cargar catálogos al montar
   useEffect(() => {
@@ -128,6 +150,14 @@ export default function ReporteGolfAccesos() {
       .select('id, numero_socio, nombre, apellido_paterno, apellido_materno, id_categoria_fk')
       .order('numero_socio')
       .then(({ data }: any) => setSocios(data ?? []))
+
+    dbGolf
+      .from('cat_centros_venta')
+      .select('id, nombre')
+      .ilike('nombre', '%green%')
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }: any) => setCentroGreenFeeId(data?.id ?? null))
   }, [])
 
   // Socios filtrados por categoría para el select individual, ordenados por nombre A-Z ascendente
@@ -171,7 +201,7 @@ export default function ReporteGolfAccesos() {
       let q = (dbGolf as any)
         .from('ctrl_accesos')
         .select(
-          'id, fecha_entrada, fecha_salida, hoyo_inicio, observaciones, id_socio_fk, ' +
+          'id, fecha_entrada, fecha_salida, hoyo_inicio, observaciones, id_socio_fk, folio_ticket_pos, ' +
           'cat_socios(numero_socio, nombre, apellido_paterno, apellido_materno, cat_categorias_socios(nombre)), ' +
           'cat_espacios_deportivos(nombre)'
         )
@@ -219,12 +249,64 @@ export default function ReporteGolfAccesos() {
       } else {
         setAcompsMap({})
       }
+
+      // 5. Ligar el folio de ticket POS capturado en cada salida Green Fee con la venta real
+      // (ctrl_ventas del centro "Green Fees"), casando por folio_dia + día local de la salida.
+      const conFolio = rows.filter(r => r.folio_ticket_pos)
+      if (conFolio.length > 0 && centroGreenFeeId) {
+        const { data: ventasData, error: ventasErr } = await (dbGolf as any)
+          .from('ctrl_ventas')
+          .select('id, folio_dia, fecha, total, nombre_cliente, status')
+          .eq('id_centro_fk', centroGreenFeeId)
+          .gte('fecha', new Date(fechaDesde + 'T00:00:00').toISOString())
+          .lte('fecha', new Date(fechaHasta + 'T23:59:59').toISOString())
+
+        if (ventasErr) throw ventasErr
+
+        const vMap: Record<string, VentaGF> = {}
+        ;(ventasData ?? []).forEach((v: VentaGF) => {
+          vMap[`${v.folio_dia}::${diaLocal(v.fecha)}`] = v
+        })
+        setVentasGFMap(vMap)
+      } else {
+        setVentasGFMap({})
+      }
     } catch (err: any) {
       setError(err?.message ?? 'Error al consultar')
     } finally {
       setLoading(false)
     }
-  }, [fechaDesde, fechaHasta, filtroCat, filtroEspacio, filtroSocio])
+  }, [fechaDesde, fechaHasta, filtroCat, filtroEspacio, filtroSocio, centroGreenFeeId])
+
+  // Abre el ticket POS de la venta Green Fee ligada a la salida (mismo formato que en el POS de Golf)
+  const abrirTicketPOS = async (venta: VentaGF) => {
+    const [{ data: det }, { data: pagos }, { data: cfg }] = await Promise.all([
+      dbGolf.from('ctrl_ventas_det').select('concepto, cantidad, precio_unitario, iva, total').eq('id_venta_fk', venta.id),
+      dbGolf.from('ctrl_ventas_pagos').select('forma_nombre, monto').eq('id_venta_fk', venta.id),
+      dbGolf.from('cfg_pos').select('*').single(),
+    ])
+    const ticketData = {
+      id: venta.id,
+      folio_dia: venta.folio_dia,
+      fecha: venta.fecha,
+      cliente: venta.nombre_cliente,
+      cajero: '—',
+      centro: 'Green Fees',
+      razon_social: (cfg as any)?.razon_social ?? 'Balvanera Golf, Polo & Country Club',
+      municipio: (cfg as any)?.municipio ?? '',
+      direccion: (cfg as any)?.direccion ?? '',
+      rfc: (cfg as any)?.rfc ?? '',
+      telefono: (cfg as any)?.telefono ?? '',
+      leyenda: (cfg as any)?.leyenda_ticket ?? '¡Gracias por su visita!',
+      subtotal: venta.total - (det ?? []).reduce((a: number, d: any) => a + (d.iva ?? 0), 0),
+      iva: (det ?? []).reduce((a: number, d: any) => a + (d.iva ?? 0), 0),
+      total: venta.total,
+      pagos: (pagos ?? []).map((p: any) => ({ forma: p.forma_nombre, monto: p.monto })),
+      items: det ?? [],
+    }
+    const url = `/ticket-golf.html?data=${encodeURIComponent(JSON.stringify(ticketData))}`
+    window.open(url, '_blank', 'width=400,height=700')
+  }
 
   // ---------------------------------------------------------------------------
   // KPIs
@@ -438,7 +520,7 @@ export default function ReporteGolfAccesos() {
               >
                 <thead>
                   <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-                    {['Fecha', 'Hora entrada', 'Hora salida', 'Categoría', 'Socio', 'Espacio', 'Hoyo', 'Status', 'Acompañantes'].map(h => (
+                    {['Fecha', 'Hora entrada', 'Hora salida', 'Categoría', 'Socio', 'Espacio', 'Hoyo', 'Status', 'Ticket POS', 'Acompañantes'].map(h => (
                       <th
                         key={h}
                         style={{
@@ -481,7 +563,7 @@ export default function ReporteGolfAccesos() {
                         {mostrarHeaderCat && (
                           <tr key={`cat-${catActual}-${i}`}>
                             <td
-                              colSpan={9}
+                              colSpan={10}
                               style={{
                                 background: '#f1f5f9',
                                 fontWeight: 700,
@@ -549,6 +631,36 @@ export default function ReporteGolfAccesos() {
                             }}>
                               {enCampo ? 'En campo' : 'Completado'}
                             </span>
+                          </td>
+                          {/* Ticket POS (Green Fee) */}
+                          <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
+                            {(() => {
+                              if (!a.folio_ticket_pos) return <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>
+                              const venta = ventasGFMap[`${a.folio_ticket_pos}::${diaLocal(a.fecha_entrada)}`]
+                              if (!venta) {
+                                return (
+                                  <span title="No se encontró la venta en el POS de Green Fees" style={{ fontSize: 11, fontWeight: 600, color: '#d97706' }}>
+                                    #{a.folio_ticket_pos} ⚠
+                                  </span>
+                                )
+                              }
+                              return (
+                                <button
+                                  onClick={() => abrirTicketPOS(venta)}
+                                  title={`Ver ticket · ${venta.nombre_cliente ?? ''} · $${venta.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    fontSize: 11, fontWeight: 600,
+                                    color: venta.status === 'CANCELADA' ? '#dc2626' : '#16a34a',
+                                    background: venta.status === 'CANCELADA' ? '#fef2f2' : '#f0fdf4',
+                                    border: 'none', borderRadius: 999, padding: '3px 8px', cursor: 'pointer',
+                                  }}
+                                >
+                                  <Printer size={10} /> #{venta.folio_dia}
+                                  {venta.status === 'CANCELADA' && ' (cancelado)'}
+                                </button>
+                              )
+                            })()}
                           </td>
                           {/* Acompañantes */}
                           <td style={{ padding: '8px 12px', maxWidth: 260 }}>
