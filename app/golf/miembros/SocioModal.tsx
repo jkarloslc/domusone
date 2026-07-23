@@ -367,6 +367,38 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   // ── handleSave (datos generales) ──
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
+
+    // Al dar de baja a un socio (activo → inactivo), sus cuotas pendientes dejan
+    // de contar en la fórmula de cobranza. Las PENDIENTE (sin pago ligado) se eliminan;
+    // las PAGO_PARCIAL ya tienen un recibo ligado (FK) y no se pueden borrar, se cancelan.
+    const seDesactiva = !isNew && socio!.activo && !form.activo
+    if (seDesactiva) {
+      const { data: pendientes } = await dbGolf
+        .from('cxc_golf')
+        .select('id, status, saldo, monto_final')
+        .eq('id_socio_fk', socio!.id)
+        .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+      const cuotasPend = (pendientes as { id: number; status: string; saldo: number | null; monto_final: number }[]) ?? []
+      if (cuotasPend.length > 0) {
+        const montoTotal = cuotasPend.reduce((a, c) => a + (c.saldo ?? c.monto_final ?? 0), 0)
+        const ok = confirm(
+          `Este socio tiene ${cuotasPend.length} cuota${cuotasPend.length !== 1 ? 's' : ''} pendiente${cuotasPend.length !== 1 ? 's' : ''} por $${montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}.\n\n` +
+          `Al dar de baja al socio se cancelarán para que dejen de afectar la cobranza pendiente. Esta acción no se puede deshacer.\n\n¿Continuar con la baja?`
+        )
+        if (!ok) return
+
+        const idsPendientes = cuotasPend.filter(c => c.status === 'PENDIENTE').map(c => c.id)
+        const idsParciales   = cuotasPend.filter(c => c.status === 'PAGO_PARCIAL').map(c => c.id)
+
+        if (idsPendientes.length > 0) {
+          await dbGolf.from('cxc_golf').delete().in('id', idsPendientes)
+        }
+        if (idsParciales.length > 0) {
+          await dbGolf.from('cxc_golf').update({ status: 'CANCELADO', saldo: 0 }).in('id', idsParciales)
+        }
+      }
+    }
+
     setSaving(true); setError('')
     const payload = {
       numero_socio:       form.numero_socio      || null,

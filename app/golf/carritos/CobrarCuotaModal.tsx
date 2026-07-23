@@ -297,8 +297,10 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     )
     if (ePagos) { setError(ePagos.message); setSaving(false); return }
 
-    // 5. Aplicar pago greedy a cuotas (lo cobrado del cargo adicional no reduce saldo de ninguna cuota)
-    let remaining = parseFloat((montoParcial - cargoAplicado).toFixed(2))
+    // 5. Aplicar pago greedy a cuotas (lo cobrado del cargo adicional no reduce saldo de ninguna cuota).
+    // El descuento adicional (descExtra) también debe extinguir saldo de las cuotas — de lo contrario
+    // ese monto se queda como PAGO_PARCIAL aunque el socio ya no lo deba (quedó condonado por el descuento).
+    let remaining = parseFloat((montoParcial - cargoAplicado + descExtra).toFixed(2))
     const updates: PromiseLike<any>[] = []
     const mensualidadesPagadasCompleto: Cuota[] = []
     for (const c of cuotasSelec) {

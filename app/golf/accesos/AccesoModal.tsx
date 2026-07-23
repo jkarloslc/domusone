@@ -58,6 +58,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   const [hoyoInicio, setHoyoInicio] = useState<number | ''>(1)
   const [observaciones, setObs]     = useState('')
   const [acompanantes, setAcomp]    = useState<Acomp[]>([])
+  const [folioTicketPOS, setFolioTicketPOS] = useState('')
 
   useEffect(() => {
     dbGolf.from('cat_espacios_deportivos').select('id, nombre').eq('activo', true).order('nombre')
@@ -110,6 +111,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     setFamiliares([])
     setAcomp([])
     setAdeudos([])
+    setFolioTicketPOS('')
   }
 
   // Verificar adeudo (cuotas vencidas) al seleccionar socio — no permite salida al campo
@@ -149,6 +151,12 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   }, [socioSelec])
 
   const totalPasesDisp = pasesDisponibles.reduce((a, p) => a + (p.cantidad_disponible ?? 0), 0)
+
+  // La salida se considera "Green Fee" si hay algún acompañante marcado como tal,
+  // o un invitado sin pases disponibles (se cobrará como green fee al no poder descontar un pase).
+  const tieneGreenFee = acompanantes.some(a =>
+    a.nombre.trim() && (a.tipo === 'libre' || (a.tipo === 'externo' && totalPasesDisp <= 0))
+  )
 
   // Si el socio tiene pases disponibles, los acompañantes libres se marcan por defecto como invitados.
   useEffect(() => {
@@ -199,6 +207,10 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     if (!socioSelec) { setError('Selecciona un socio'); return }
     if (!idEspacio)  { setError('Selecciona el espacio deportivo'); return }
     if (tieneAdeudo) { setError('El socio tiene cuotas vencidas — no puede salir al campo'); return }
+    if (tieneGreenFee && !folioTicketPOS.trim()) {
+      setError('Captura el folio del Ticket de Venta del POS de Golf para registrar la salida Green Fee')
+      return
+    }
     setSaving(true); setError('')
 
     const { data: acceso, error: err } = await dbGolf
@@ -208,6 +220,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
         id_espacio_fk:     idEspacio || null,
         hoyo_inicio:       hoyoInicio || null,
         observaciones:     observaciones || null,
+        folio_ticket_pos:  tieneGreenFee ? folioTicketPOS.trim() : null,
         fecha_entrada:     new Date().toISOString(),
       })
       .select('id')
@@ -346,7 +359,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       maxWidth={560}
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn-primary" onClick={handleSave} disabled={saving || verificandoAdeudo || tieneAdeudo} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button className="btn-primary" onClick={handleSave} disabled={saving || verificandoAdeudo || tieneAdeudo || (tieneGreenFee && !folioTicketPOS.trim())} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
           Registrar Salida
         </button>
@@ -556,6 +569,22 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
             ))}
           </div>
         </div>
+
+        {/* Folio de Ticket POS — obligatorio cuando hay acompañante Green Fee */}
+        {tieneGreenFee && (
+          <div>
+            <label style={labelStyle}>Folio del Ticket de Venta (POS Golf) *</label>
+            <input
+              style={{ ...inputStyle, borderColor: !folioTicketPOS.trim() ? '#fca5a5' : '#e2e8f0' }}
+              placeholder="Folio del ticket emitido en el POS de Golf…"
+              value={folioTicketPOS}
+              onChange={e => setFolioTicketPOS(e.target.value)}
+            />
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+              La salida incluye un visitante Green Fee — captura el folio del ticket cobrado en el POS antes de registrar la salida.
+            </div>
+          </div>
+        )}
 
         {/* Observaciones */}
         <div>
