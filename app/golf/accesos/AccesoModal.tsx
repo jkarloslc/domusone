@@ -4,6 +4,7 @@ import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Save, Loader, Plus, Trash2, Search, Users, CheckCircle, Printer, AlertTriangle, Circle } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import { fechaLocal, inicioDelDia, finDelDia, fmtFechaLocal } from '@/lib/dateUtils'
 
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_tarjeta: string | null; cat_categorias_socios?: { nombre: string } | null }
 type Familiar = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null }
@@ -58,7 +59,12 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   const [hoyoInicio, setHoyoInicio] = useState<number | ''>(1)
   const [observaciones, setObs]     = useState('')
   const [acompanantes, setAcomp]    = useState<Acomp[]>([])
-  const [folioTicketPOS, setFolioTicketPOS] = useState('')
+
+  // Folio de ticket POS — obligatorio para salidas Green Fee, validado contra ctrl_ventas
+  const [folioTicketPOS, setFolioTicketPOS]     = useState('')
+  const [centroGreenFeeId, setCentroGreenFeeId] = useState<number | null>(null)
+  const [verificandoFolio, setVerificandoFolio] = useState(false)
+  const [folioValidado, setFolioValidado]       = useState<{ ok: boolean; msg: string } | null>(null)
 
   useEffect(() => {
     dbGolf.from('cat_espacios_deportivos').select('id, nombre').eq('activo', true).order('nombre')
@@ -69,6 +75,8 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
         const campo = list.find((e: Espacio) => e.nombre.toLowerCase().includes('campo golf'))
         if (campo) setIdEspacio(campo.id)
       })
+    dbGolf.from('cat_centros_venta').select('id, nombre').ilike('nombre', '%green%').limit(1).maybeSingle()
+      .then(({ data }) => setCentroGreenFeeId((data as { id: number } | null)?.id ?? null))
   }, [])
 
   // debounce búsqueda de socio
@@ -112,6 +120,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     setAcomp([])
     setAdeudos([])
     setFolioTicketPOS('')
+    setFolioValidado(null)
   }
 
   // Verificar adeudo (cuotas vencidas) al seleccionar socio — no permite salida al campo
@@ -157,6 +166,61 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   const tieneGreenFee = acompanantes.some(a =>
     a.nombre.trim() && (a.tipo === 'libre' || (a.tipo === 'externo' && totalPasesDisp <= 0))
   )
+
+  // Valida el folio contra las ventas del POS del centro "Green Fees" — solo se
+  // acepta un folio de una venta PAGADA emitida el mismo día del registro.
+  useEffect(() => {
+    if (!tieneGreenFee || !folioTicketPOS.trim()) { setFolioValidado(null); return }
+    const folioNum = Number(folioTicketPOS.trim())
+    if (!Number.isInteger(folioNum) || folioNum <= 0) {
+      setFolioValidado({ ok: false, msg: 'El folio debe ser el número de venta (folio del día) del ticket' })
+      return
+    }
+    if (!centroGreenFeeId) {
+      setFolioValidado({ ok: false, msg: 'No se encontró el centro de venta "Green Fees" configurado en el POS' })
+      return
+    }
+    const t = setTimeout(async () => {
+      setVerificandoFolio(true)
+      const hoy = fechaLocal()
+      const { data: ventaHoy } = await dbGolf
+        .from('ctrl_ventas')
+        .select('id, folio_dia, fecha, status, total, nombre_cliente')
+        .eq('id_centro_fk', centroGreenFeeId)
+        .eq('folio_dia', folioNum)
+        .gte('fecha', inicioDelDia(hoy))
+        .lte('fecha', finDelDia(hoy))
+        .order('fecha', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!ventaHoy) {
+        // ¿Existe ese folio pero de un día anterior? — mensaje más claro para el usuario
+        const { data: ventaAnterior } = await dbGolf
+          .from('ctrl_ventas')
+          .select('fecha')
+          .eq('id_centro_fk', centroGreenFeeId)
+          .eq('folio_dia', folioNum)
+          .lt('fecha', inicioDelDia(hoy))
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        setVerificandoFolio(false)
+        setFolioValidado(ventaAnterior
+          ? { ok: false, msg: `Ese folio corresponde a una venta del ${fmtFechaLocal((ventaAnterior as { fecha: string }).fecha)} — no es válido para la salida de hoy` }
+          : { ok: false, msg: 'No se encontró ese folio en las ventas de Green Fees de hoy' })
+        return
+      }
+      const v = ventaHoy as { id: number; folio_dia: number; fecha: string; status: string; total: number; nombre_cliente: string | null }
+      setVerificandoFolio(false)
+      if (v.status !== 'PAGADA') {
+        setFolioValidado({ ok: false, msg: `Ese ticket está ${v.status.toLowerCase()} — no es válido` })
+        return
+      }
+      setFolioValidado({ ok: true, msg: `Venta #${v.folio_dia} de hoy · ${v.nombre_cliente ?? '—'} · ${fmt$(v.total)}` })
+    }, 400)
+    return () => clearTimeout(t)
+  }, [folioTicketPOS, tieneGreenFee, centroGreenFeeId])
 
   // Si el socio tiene pases disponibles, los acompañantes libres se marcan por defecto como invitados.
   useEffect(() => {
@@ -207,8 +271,8 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     if (!socioSelec) { setError('Selecciona un socio'); return }
     if (!idEspacio)  { setError('Selecciona el espacio deportivo'); return }
     if (tieneAdeudo) { setError('El socio tiene cuotas vencidas — no puede salir al campo'); return }
-    if (tieneGreenFee && !folioTicketPOS.trim()) {
-      setError('Captura el folio del Ticket de Venta del POS de Golf para registrar la salida Green Fee')
+    if (tieneGreenFee && !folioValidado?.ok) {
+      setError('Captura y valida el folio del Ticket de Venta (Green Fees) del POS de Golf, emitido el día de hoy')
       return
     }
     setSaving(true); setError('')
@@ -359,7 +423,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       maxWidth={560}
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn-primary" onClick={handleSave} disabled={saving || verificandoAdeudo || tieneAdeudo || (tieneGreenFee && !folioTicketPOS.trim())} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button className="btn-primary" onClick={handleSave} disabled={saving || verificandoAdeudo || tieneAdeudo || (tieneGreenFee && !folioValidado?.ok)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
           Registrar Salida
         </button>
@@ -570,19 +634,34 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           </div>
         </div>
 
-        {/* Folio de Ticket POS — obligatorio cuando hay acompañante Green Fee */}
+        {/* Folio de Ticket POS — obligatorio y validado cuando hay acompañante Green Fee */}
         {tieneGreenFee && (
           <div>
-            <label style={labelStyle}>Folio del Ticket de Venta (POS Golf) *</label>
-            <input
-              style={{ ...inputStyle, borderColor: !folioTicketPOS.trim() ? '#fca5a5' : '#e2e8f0' }}
-              placeholder="Folio del ticket emitido en el POS de Golf…"
-              value={folioTicketPOS}
-              onChange={e => setFolioTicketPOS(e.target.value)}
-            />
-            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-              La salida incluye un visitante Green Fee — captura el folio del ticket cobrado en el POS antes de registrar la salida.
+            <label style={labelStyle}>Folio del Ticket de Venta — Green Fees (POS Golf) *</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                style={{
+                  ...inputStyle, paddingRight: 34,
+                  borderColor: !folioTicketPOS.trim() ? '#e2e8f0' : folioValidado?.ok ? '#86efac' : '#fca5a5',
+                }}
+                type="number" min="1"
+                placeholder="Número de venta (folio del día) del ticket…"
+                value={folioTicketPOS}
+                onChange={e => setFolioTicketPOS(e.target.value)}
+              />
+              {verificandoFolio && <Loader size={14} className="animate-spin" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
             </div>
+            {!verificandoFolio && folioValidado && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 11, fontWeight: 600, color: folioValidado.ok ? '#15803d' : '#dc2626' }}>
+                {folioValidado.ok ? <CheckCircle size={13} /> : <AlertTriangle size={13} />}
+                {folioValidado.msg}
+              </div>
+            )}
+            {!folioTicketPOS.trim() && (
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                La salida incluye un visitante Green Fee — captura el folio del ticket cobrado hoy en el POS antes de registrar la salida.
+              </div>
+            )}
           </div>
         )}
 
