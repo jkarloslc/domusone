@@ -55,8 +55,8 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
   // Líneas del carrito
   const [lineas, setLineas] = useState<LineaVenta[]>([])
 
-  // Cliente
-  const [esSocio,       setEsSocio]       = useState(true)
+  // Cliente — toda venta se atribuye a un socio (incluyendo el socio genérico
+  // usado internamente para público en general); ya no existe el modo anónimo.
   const [socioSearch,   setSocioSearch]   = useState('')
   const [socioResults,  setSocioResults]  = useState<Socio[]>([])
   const [socioSelec,    setSocioSelec]    = useState<Socio | null>(null)
@@ -103,7 +103,6 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
 
   // ── Búsqueda de socios ────────────────────────────────────
   useEffect(() => {
-    if (!esSocio) { setSocioResults([]); return }
     if (socioSearch.trim().length < 2) { setSocioResults([]); return }
     const t = setTimeout(async () => {
       setBuscandoSocio(true)
@@ -119,7 +118,7 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
       setBuscandoSocio(false)
     }, 300)
     return () => clearTimeout(t)
-  }, [socioSearch, esSocio])
+  }, [socioSearch])
 
   // ── Cálculos ──────────────────────────────────────────────
   const totales = lineas.reduce((acc, l) => {
@@ -129,7 +128,7 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
 
   const totalPagado = (parseFloat(monto1) || 0) + (dosFormas ? (parseFloat(monto2) || 0) : 0)
   const cambio      = totalPagado - totales.total
-  const canSave     = lineas.length > 0 && forma1 > 0 && totalPagado >= totales.total && totales.total > 0
+  const canSave     = lineas.length > 0 && forma1 > 0 && totalPagado >= totales.total && totales.total > 0 && !!socioSelec
 
   const esCondonacion = (idForma: number) =>
     !!formasPago.find(f => f.id === idForma)?.nombre.toLowerCase().includes('condonac')
@@ -261,7 +260,7 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
       fecha:          new Date().toISOString(),
       id_socio_fk:    socioSelec?.id ?? null,
       nombre_cliente: nombreCliente,
-      es_socio:       esSocio && !!socioSelec,
+      es_socio:       !!socioSelec,
       subtotal:       totales.subtotal,
       iva:            totales.iva,
       total:          totales.total,
@@ -549,49 +548,38 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
             {/* ── Panel derecho: carrito + pago ────────────── */}
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-              {/* Cliente */}
+              {/* Cliente — obligatorio, buscar y seleccionar un socio (usar el socio genérico para público en general) */}
               <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', background: '#fafafa' }}>
-                <div style={{ display: 'flex', gap: 0, border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', marginBottom: 8 }}>
-                  <button onClick={() => setEsSocio(true)}
-                    style={{ flex: 1, padding: '6px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', background: esSocio ? '#ecfdf5' : '#fff', color: esSocio ? '#065f46' : '#94a3b8' }}>
-                    Socio
-                  </button>
-                  <button onClick={() => { setEsSocio(false); setSocioSelec(null); setSocioSearch('') }}
-                    style={{ flex: 1, padding: '6px', fontSize: 12, fontWeight: 600, border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer', background: !esSocio ? '#ecfdf5' : '#fff', color: !esSocio ? '#065f46' : '#94a3b8' }}>
-                    Público General
-                  </button>
-                </div>
-                {esSocio && (
-                  socioSelec ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: '#065f46' }}>{nc(socioSelec)}</div>
-                        {socioSelec.numero_socio && <div style={{ fontSize: 10, color: '#6b7280' }}>#{socioSelec.numero_socio}</div>}
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Socio *</div>
+                {socioSelec ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#065f46' }}>{nc(socioSelec)}</div>
+                      {socioSelec.numero_socio && <div style={{ fontSize: 10, color: '#6b7280' }}>#{socioSelec.numero_socio}</div>}
+                    </div>
+                    <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={13} /></button>
+                  </div>
+                ) : (
+                  <div style={{ position: 'relative' }}>
+                    <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    {buscandoSocio && <Loader size={11} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
+                    <input
+                      style={{ width: '100%', padding: '6px 8px 6px 26px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                      placeholder="Buscar socio…" value={socioSearch} onChange={e => setSocioSearch(e.target.value)} />
+                    {socioResults.length > 0 && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 2, maxHeight: 160, overflowY: 'auto' }}>
+                        {socioResults.map(s => (
+                          <button key={s.id} onClick={() => { setSocioSelec(s); setSocioSearch(''); setSocioResults([]) }}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{nc(s)}</span>
+                            {s.numero_socio && <span style={{ fontSize: 10, color: '#64748b' }}>#{s.numero_socio}</span>}
+                          </button>
+                        ))}
                       </div>
-                      <button onClick={() => setSocioSelec(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={13} /></button>
-                    </div>
-                  ) : (
-                    <div style={{ position: 'relative' }}>
-                      <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                      {buscandoSocio && <Loader size={11} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />}
-                      <input
-                        style={{ width: '100%', padding: '6px 8px 6px 26px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
-                        placeholder="Buscar socio…" value={socioSearch} onChange={e => setSocioSearch(e.target.value)} />
-                      {socioResults.length > 0 && (
-                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 2, maxHeight: 160, overflowY: 'auto' }}>
-                          {socioResults.map(s => (
-                            <button key={s.id} onClick={() => { setSocioSelec(s); setSocioSearch(''); setSocioResults([]) }}
-                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', padding: '7px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f1f5f9' }}
-                              onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                              onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{nc(s)}</span>
-                              {s.numero_socio && <span style={{ fontSize: 10, color: '#64748b' }}>#{s.numero_socio}</span>}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
+                    )}
+                  </div>
                 )}
               </div>
 
