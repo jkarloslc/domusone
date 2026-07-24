@@ -405,17 +405,25 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     setTicketErr('')
 
     try {
-      const [{ data: reciboDB, error: errRec }, { data: detFiscalDB }, { data: centros }, { data: cfg }, { data: cfgCarritos }] = await Promise.all([
+      const [{ data: reciboDB, error: errRec }, { data: detFiscalDB }, { data: centros }, { data: cfg }, { data: cfgCarritos }, { data: cuotasConfig }] = await Promise.all([
         dbGolf.from('recibos_golf').select('id, folio, id_venta_pos_fk').eq('id', recibo.id).single(),
-        dbGolf.from('recibos_golf_det').select('concepto, periodo, monto_final').eq('id_recibo_fk', recibo.id).order('id'),
+        dbGolf.from('recibos_golf_det').select('concepto, periodo, monto_final, tipo').eq('id_recibo_fk', recibo.id).order('id'),
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
         dbGolf.from('cfg_carritos').select('id_centro_membresias_fk, id_centro_pension_fk').single(),
+        dbGolf.from('cat_cuotas_config').select('tipo, id_concepto_ingreso_fk'),
       ])
       if (errRec || !reciboDB) throw new Error(errRec?.message ?? 'No se pudo leer el recibo para generar ticket')
       // Montos realmente aplicados a cada concepto en este pago (ya prorateados si fue pago parcial) —
       // no usar el saldo/monto_final de la cuota, que refleja lo adeudado, no lo cobrado hoy.
-      const detFiscal = (detFiscalDB as { concepto: string; periodo: string | null; monto_final: number }[]) ?? []
+      const detFiscal = (detFiscalDB as { concepto: string; periodo: string | null; monto_final: number; tipo: string | null }[]) ?? []
+      // Concepto de ingreso por tipo de cuota (Membresía/Pensión), para que el corte POS
+      // distribuya estas líneas a su propia partida de presupuesto en vez de "Otros"
+      // (estas líneas no traen id_producto_fk — ver distribucionIngreso.ts).
+      const conceptoPorTipo: Record<string, number | null> = {}
+      for (const c of (cuotasConfig as { tipo: string; id_concepto_ingreso_fk: number | null }[]) ?? []) {
+        if (conceptoPorTipo[c.tipo] == null && c.id_concepto_ingreso_fk != null) conceptoPorTipo[c.tipo] = c.id_concepto_ingreso_fk
+      }
       // Cuotas de membresía/inscripción/pensión causan IVA (16%, ya incluido en el monto).
       const detCalc = detFiscal.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
       const totalIvaCuotas = detCalc.reduce((a, d) => a + d.iva, 0)
@@ -474,6 +482,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         const detInsert = detCalc.map(d => ({
           id_venta_fk: ventaId!,
           id_producto_fk: null,
+          id_concepto_ingreso_fk: d.tipo ? (conceptoPorTipo[d.tipo] ?? null) : null,
           concepto: d.concepto,
           cantidad: 1,
           precio_unitario: d.monto_final,

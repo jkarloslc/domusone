@@ -14,8 +14,8 @@ export async function distribuirConceptosRecibo(idRecibo: number, idCentroIngres
   if ((centro as any)?.tipo_desglose !== 'conceptos') return
 
   const { data: det } = await dbGolf.from('ctrl_ventas_det')
-    .select('id_producto_fk, total').in('id_venta_fk', ventaIds)
-  const detRows = (det ?? []) as { id_producto_fk: number | null; total: number }[]
+    .select('id_producto_fk, id_concepto_ingreso_fk, total').in('id_venta_fk', ventaIds)
+  const detRows = (det ?? []) as { id_producto_fk: number | null; id_concepto_ingreso_fk: number | null; total: number }[]
   if (detRows.length === 0) return
 
   const productoIds = Array.from(new Set(detRows.map(d => d.id_producto_fk).filter((v): v is number => v != null)))
@@ -34,7 +34,11 @@ export async function distribuirConceptosRecibo(idRecibo: number, idCentroIngres
 
   const sumas: Record<number, number> = {}
   for (const d of detRows) {
-    const idConcepto = (d.id_producto_fk != null ? prodConcepto[d.id_producto_fk] : null) ?? idConceptoOtros
+    // Prioridad: concepto capturado directo en la línea (cuotas/rentas sin producto POS,
+    // ver cat_cuotas_config / cfg_hip) > mapeo por producto > "Otros".
+    const idConcepto = d.id_concepto_ingreso_fk
+      ?? (d.id_producto_fk != null ? prodConcepto[d.id_producto_fk] : null)
+      ?? idConceptoOtros
     // Sin concepto mapeado y sin "Otros" configurado para este centro: se omite
     // (el faltante queda visible como diferencia entre monto_total y la suma de conceptos).
     if (idConcepto == null) continue

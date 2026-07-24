@@ -1,10 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { dbGolf } from '@/lib/supabase'
+import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   ChevronLeft, Plus, Zap, Search, X, RefreshCw,
-  Save, Loader, CreditCard, ChevronDown, ChevronRight, Trash2, Pencil,
+  Save, Loader, CreditCard, ChevronDown, ChevronRight, Trash2, Pencil, Settings,
 } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
@@ -35,11 +35,13 @@ type CuotaConfig = {
   monto: number
   meses_aplicar: number
   dia_vencimiento: number
+  id_concepto_ingreso_fk: number | null
   cat_categorias_socios?: { nombre: string } | null
 }
 
 type Socio = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; id_categoria_fk: number | null }
 type Categoria = { id: number; nombre: string }
+type ConceptoIngreso = { id: number; nombre: string; id_centro_ingreso_fk: number | null }
 
 const hoy  = new Date().toISOString().split('T')[0]
 const fmt$ = (v: number) => `$${Number(v).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
@@ -807,6 +809,79 @@ function EditarMontoModal({ cuota, onClose, onSaved }: { cuota: Cuota; onClose: 
   )
 }
 
+// ── Modal: Concepto de Ingreso por tipo de cuota ──────────────
+// Las cuotas de Membresía/Pensión se cobran vía ticket POS sin producto
+// asociado (id_producto_fk null), así que el corte no puede mapearlas por
+// producto — este selector guarda el concepto directo en cat_cuotas_config,
+// que CobrarCuotaModal usa para poblar ctrl_ventas_det.id_concepto_ingreso_fk.
+function ConfigConceptosModal({ onClose }: { onClose: () => void }) {
+  const [configs, setConfigs]     = useState<CuotaConfig[]>([])
+  const [conceptos, setConceptos] = useState<ConceptoIngreso[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [saving, setSaving]       = useState<number | null>(null)
+  const [error, setError]         = useState('')
+
+  useEffect(() => {
+    Promise.all([
+      dbGolf.from('cat_cuotas_config').select('*').order('tipo').order('nombre'),
+      dbCfg.from('conceptos_ingreso').select('id, nombre, id_centro_ingreso_fk').eq('activo', true).order('orden'),
+    ]).then(([{ data: cfgs }, { data: cons }]) => {
+      // Colapsa filas duplicadas por tipo+nombre (p.ej. PENSION_CARRITO por categoría)
+      const vistos = new Set<string>()
+      const unicos = ((cfgs as CuotaConfig[]) ?? []).filter(c => {
+        const key = `${c.tipo}|${c.nombre}`
+        if (vistos.has(key)) return false
+        vistos.add(key); return true
+      })
+      setConfigs(unicos)
+      setConceptos((cons as ConceptoIngreso[]) ?? [])
+      setLoading(false)
+    })
+  }, [])
+
+  const guardarConcepto = async (row: CuotaConfig, idConcepto: number | null) => {
+    setSaving(row.id); setError('')
+    // Aplica a TODAS las cabeceras con el mismo tipo+nombre (p.ej. Pensión por categoría)
+    const { error: err } = await dbGolf.from('cat_cuotas_config')
+      .update({ id_concepto_ingreso_fk: idConcepto })
+      .eq('tipo', row.tipo).eq('nombre', row.nombre)
+    if (err) { setError(err.message); setSaving(null); return }
+    setConfigs(prev => prev.map(c => (c.tipo === row.tipo && c.nombre === row.nombre) ? { ...c, id_concepto_ingreso_fk: idConcepto } : c))
+    setSaving(null)
+  }
+
+  return (
+    <ModalShell modulo="golf-carritos" titulo="Concepto de Ingreso por Cuota" subtitulo="Para distribuir el corte POS a su partida de presupuesto" onClose={onClose} maxWidth={560}>
+      {loading ? (
+        <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}><Loader size={16} className="animate-spin" /></div>
+      ) : configs.length === 0 ? (
+        <div style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>No hay tipos de cuota configurados.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {error && (
+            <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>
+          )}
+          {configs.map(c => (
+            <div key={`${c.tipo}-${c.nombre}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+              <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c.nombre}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8' }}>{TIPOS_LABEL[c.tipo] ?? c.tipo}</div>
+              </div>
+              <select value={c.id_concepto_ingreso_fk ?? ''} disabled={saving === c.id}
+                onChange={e => guardarConcepto(c, e.target.value ? Number(e.target.value) : null)}
+                style={{ width: 220, padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
+                <option value="">— Sin asignar (cae en "Otros") —</option>
+                {conceptos.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
+              </select>
+              {saving === c.id && <Loader size={13} className="animate-spin" style={{ color: '#94a3b8' }} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </ModalShell>
+  )
+}
+
 // ── Página principal ─────────────────────────────────────────
 export default function CuotasGolfPage() {
   const { canWrite, authUser } = useAuth()
@@ -822,6 +897,7 @@ export default function CuotasGolfPage() {
   const [filtroCat, setFiltroCat]       = useState('')
   const [showNueva, setShowNueva]       = useState(false)
   const [showMasivo, setShowMasivo]     = useState(false)
+  const [showConceptos, setShowConceptos] = useState(false)
   const [editando, setEditando]         = useState<Cuota | null>(null)
   // grupos expandidos (socioId → bool); por defecto todos expandidos
   const [expandidos, setExpandidos]     = useState<Record<number, boolean>>({})
@@ -929,6 +1005,10 @@ export default function CuotasGolfPage() {
           </button>
           {puedeEscribir && (
             <>
+              <button className="btn-ghost" onClick={() => setShowConceptos(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Settings size={13} /> Concepto de ingreso
+              </button>
               <button className="btn-ghost" onClick={() => setShowMasivo(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#7c3aed', borderColor: '#ddd6fe' }}>
                 <Zap size={13} /> Generar masivo
@@ -1092,6 +1172,7 @@ export default function CuotasGolfPage() {
 
       {showNueva && <NuevaCuotaModal authUser={authUser} onClose={() => setShowNueva(false)} onSaved={() => { setShowNueva(false); fetchCuotas() }} />}
       {showMasivo && <GenerarMasivoModal authUser={authUser} onClose={() => setShowMasivo(false)} onSaved={() => { setShowMasivo(false); fetchCuotas() }} />}
+      {showConceptos && <ConfigConceptosModal onClose={() => setShowConceptos(false)} />}
       {editando && <EditarMontoModal cuota={editando} onClose={() => setEditando(null)} onSaved={() => { setEditando(null); fetchCuotas() }} />}
     </div>
   )

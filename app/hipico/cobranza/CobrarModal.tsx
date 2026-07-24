@@ -353,13 +353,15 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     if (!exito) return
     setGenTicket(true); setTicketErr('')
     try {
-      const [{ data: centros }, { data: cfg }] = await Promise.all([
+      const [{ data: centros }, { data: cfg }, { data: cfgHip }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+        dbHip.from('cfg_hip').select('id_concepto_ingreso_fk').single(),
       ])
       const centrosPos = (centros as { id: number; nombre: string }[]) ?? []
       if (!centrosPos.length) throw new Error('No hay centros POS activos.')
       const centroHip = centrosPos.find(c => { const n = norm(c.nombre); return n.includes('hipico') || n.includes('caballeriza') }) ?? centrosPos[0]
+      const idConceptoHip = (cfgHip as { id_concepto_ingreso_fk: number | null } | null)?.id_concepto_ingreso_fk ?? null
 
       const { data: recFull } = await dbHip.from('recibos_hip')
         .select('total, fecha_recibo, id_venta_pos_fk, facturable').eq('id', exito.idRecibo).single()
@@ -395,7 +397,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
         await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
-          id_venta_fk: ventaId!, id_producto_fk: null,
+          id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: idConceptoHip,
           concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final,
           descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
         })))
