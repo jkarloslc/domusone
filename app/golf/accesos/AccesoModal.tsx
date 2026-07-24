@@ -130,7 +130,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   // Verificar adeudo (cuotas vencidas) al seleccionar socio — no permite salida al campo
   useEffect(() => {
     if (!socioSelec) { setAdeudos([]); return }
-    const hoy = new Date().toLocaleDateString('en-CA')
+    const hoy = fechaLocal()
     setVerificandoAdeudo(true)
     dbGolf
       .from('cxc_golf')
@@ -152,7 +152,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
   useEffect(() => {
     if (!socioSelec) { setPasesDisponibles([]); return }
-    const hoy = new Date().toISOString().split('T')[0]
+    const hoy = fechaLocal()
     dbGolf
       .from('ctrl_pases')
       .select('id, cantidad_disponible, periodo')
@@ -173,11 +173,13 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
   // Valida el folio contra las ventas del POS del centro "Green Fees" — solo se
   // acepta un folio de una venta PAGADA emitida el mismo día del registro.
+  // El folio del ticket es el número grande impreso en el ticket (#000123 = ctrl_ventas.id),
+  // NO el "Folio del día" (chico, reinicia cada día por centro) que aparece debajo.
   useEffect(() => {
     if (!tieneGreenFee || !folioTicketPOS.trim()) { setFolioValidado(null); setVerificandoFolio(false); return }
     const folioNum = Number(folioTicketPOS.trim())
     if (!Number.isInteger(folioNum) || folioNum <= 0) {
-      setFolioValidado({ ok: false, msg: 'El folio debe ser el número de venta (folio del día) del ticket' })
+      setFolioValidado({ ok: false, msg: 'El folio debe ser el número del ticket (el folio grande impreso, ej. #000123)' })
       setVerificandoFolio(false)
       return
     }
@@ -201,13 +203,11 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       const hoy = fechaLocal()
       const { data: ventaHoy } = await dbGolf
         .from('ctrl_ventas')
-        .select('id, folio_dia, fecha, status, total, nombre_cliente')
+        .select('id, fecha, status, total, nombre_cliente')
         .eq('id_centro_fk', centroGreenFeeId)
-        .eq('folio_dia', folioNum)
+        .eq('id', folioNum)
         .gte('fecha', inicioDelDia(hoy))
         .lte('fecha', finDelDia(hoy))
-        .order('fecha', { ascending: false })
-        .limit(1)
         .maybeSingle()
 
       if (!ventaHoy) {
@@ -216,24 +216,22 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
           .from('ctrl_ventas')
           .select('fecha')
           .eq('id_centro_fk', centroGreenFeeId)
-          .eq('folio_dia', folioNum)
+          .eq('id', folioNum)
           .lt('fecha', inicioDelDia(hoy))
-          .order('fecha', { ascending: false })
-          .limit(1)
           .maybeSingle()
         setVerificandoFolio(false)
         setFolioValidado(ventaAnterior
-          ? { ok: false, msg: `Ese folio corresponde a una venta del ${fmtFechaLocal((ventaAnterior as { fecha: string }).fecha)} — no es válido para la salida de hoy` }
-          : { ok: false, msg: 'No se encontró ese folio en las ventas de Green Fees de hoy' })
+          ? { ok: false, msg: `Ese ticket corresponde a una venta del ${fmtFechaLocal((ventaAnterior as { fecha: string }).fecha)} — no es válido para la salida de hoy` }
+          : { ok: false, msg: 'No se encontró ese ticket en las ventas de Green Fees de hoy' })
         return
       }
-      const v = ventaHoy as { id: number; folio_dia: number; fecha: string; status: string; total: number; nombre_cliente: string | null }
+      const v = ventaHoy as { id: number; fecha: string; status: string; total: number; nombre_cliente: string | null }
       setVerificandoFolio(false)
       if (v.status !== 'PAGADA') {
         setFolioValidado({ ok: false, msg: `Ese ticket está ${v.status.toLowerCase()} — no es válido` })
         return
       }
-      setFolioValidado({ ok: true, msg: `Venta #${v.folio_dia} de hoy · ${v.nombre_cliente ?? '—'} · ${fmt$(v.total)}` })
+      setFolioValidado({ ok: true, msg: `Ticket #${String(v.id).padStart(6, '0')} de hoy · ${v.nombre_cliente ?? '—'} · ${fmt$(v.total)}` })
     }, 400)
     return () => clearTimeout(t)
   }, [folioTicketPOS, tieneGreenFee, centroGreenFeeId, centroGreenFeeLoaded])
@@ -661,7 +659,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                   borderColor: !folioTicketPOS.trim() ? '#e2e8f0' : folioValidado?.ok ? '#86efac' : '#fca5a5',
                 }}
                 type="number" min="1"
-                placeholder="Número de venta (folio del día) del ticket…"
+                placeholder="Folio impreso en el ticket (el número grande, ej. 123)…"
                 value={folioTicketPOS}
                 onChange={e => setFolioTicketPOS(e.target.value)}
               />

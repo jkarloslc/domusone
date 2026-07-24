@@ -66,22 +66,21 @@ function fmtNombreSocio(s: AccesoRaw['cat_socios']): string {
   return [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ')
 }
 
+// Zona horaria fija de la operación (Balvanera, Querétaro = Ciudad de México, UTC-6
+// sin horario de verano desde 2022) — no depender de la TZ del dispositivo/navegador.
+const TZ_MX = 'America/Mexico_City'
+
 function fmtFecha(d: string): string {
   return new Date(d + (d.includes('T') ? '' : 'T00:00:00')).toLocaleDateString('es-MX', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
+    timeZone: TZ_MX,
   })
 }
 
 function fmtHora(d: string): string {
-  return new Date(d).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
-}
-
-// Día local (YYYY-MM-DD) de un timestamp — usado para casar folio_dia + fecha
-// del ticket POS con el día real de la salida (folio_dia reinicia cada día por centro).
-function diaLocal(d: string): string {
-  return new Date(d).toLocaleDateString('en-CA')
+  return new Date(d).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: TZ_MX })
 }
 
 function tipoAcomp(a: Acomp): 'Familiar' | 'Invitado · Pase' | 'Green Fee' | 'Intercambio' {
@@ -128,9 +127,6 @@ export default function ReporteGolfAccesos() {
   const [buscado,    setBuscado]    = useState(false)
   const [error,      setError]      = useState<string | null>(null)
 
-  // Centro de venta "Green Fees" del POS — para ligar el folio capturado en la salida con su ticket real
-  const [centroGreenFeeId, setCentroGreenFeeId] = useState<number | null>(null)
-
   // Cargar catálogos al montar
   useEffect(() => {
     dbGolf
@@ -150,14 +146,6 @@ export default function ReporteGolfAccesos() {
       .select('id, numero_socio, nombre, apellido_paterno, apellido_materno, id_categoria_fk')
       .order('numero_socio')
       .then(({ data }: any) => setSocios(data ?? []))
-
-    dbGolf
-      .from('cat_centros_venta')
-      .select('id, nombre')
-      .ilike('nombre', '%green%')
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }: any) => setCentroGreenFeeId(data?.id ?? null))
   }, [])
 
   // Socios filtrados por categoría para el select individual, ordenados por nombre A-Z ascendente
@@ -250,23 +238,22 @@ export default function ReporteGolfAccesos() {
         setAcompsMap({})
       }
 
-      // 5. Ligar el folio de ticket POS capturado en cada salida Green Fee con la venta real
-      // (ctrl_ventas del centro "Green Fees"), casando por folio_dia + día local de la salida.
-      const conFolio = rows.filter(r => r.folio_ticket_pos)
-      if (conFolio.length > 0 && centroGreenFeeId) {
+      // 5. Ligar el folio de ticket POS capturado en cada salida Green Fee con la venta real —
+      // el folio guardado es el folio del ticket (ctrl_ventas.id, el número grande impreso),
+      // no el "folio del día" (que reinicia diario por centro), así que es una llave única directa.
+      const idsFolio = Array.from(new Set(
+        rows.map(r => r.folio_ticket_pos).filter(Boolean).map(f => Number(f)).filter(n => Number.isInteger(n))
+      ))
+      if (idsFolio.length > 0) {
         const { data: ventasData, error: ventasErr } = await (dbGolf as any)
           .from('ctrl_ventas')
           .select('id, folio_dia, fecha, total, nombre_cliente, status')
-          .eq('id_centro_fk', centroGreenFeeId)
-          .gte('fecha', new Date(fechaDesde + 'T00:00:00').toISOString())
-          .lte('fecha', new Date(fechaHasta + 'T23:59:59').toISOString())
+          .in('id', idsFolio)
 
         if (ventasErr) throw ventasErr
 
         const vMap: Record<string, VentaGF> = {}
-        ;(ventasData ?? []).forEach((v: VentaGF) => {
-          vMap[`${v.folio_dia}::${diaLocal(v.fecha)}`] = v
-        })
+        ;(ventasData ?? []).forEach((v: VentaGF) => { vMap[String(v.id)] = v })
         setVentasGFMap(vMap)
       } else {
         setVentasGFMap({})
@@ -276,7 +263,7 @@ export default function ReporteGolfAccesos() {
     } finally {
       setLoading(false)
     }
-  }, [fechaDesde, fechaHasta, filtroCat, filtroEspacio, filtroSocio, centroGreenFeeId])
+  }, [fechaDesde, fechaHasta, filtroCat, filtroEspacio, filtroSocio])
 
   // Abre el ticket POS de la venta Green Fee ligada a la salida (mismo formato que en el POS de Golf)
   const abrirTicketPOS = async (venta: VentaGF) => {
@@ -636,11 +623,11 @@ export default function ReporteGolfAccesos() {
                           <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
                             {(() => {
                               if (!a.folio_ticket_pos) return <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>
-                              const venta = ventasGFMap[`${a.folio_ticket_pos}::${diaLocal(a.fecha_entrada)}`]
+                              const venta = ventasGFMap[String(a.folio_ticket_pos)]
                               if (!venta) {
                                 return (
-                                  <span title="No se encontró la venta en el POS de Green Fees" style={{ fontSize: 11, fontWeight: 600, color: '#d97706' }}>
-                                    #{a.folio_ticket_pos} ⚠
+                                  <span title="No se encontró ese ticket en las ventas del POS de Green Fees" style={{ fontSize: 11, fontWeight: 600, color: '#d97706' }}>
+                                    #{String(a.folio_ticket_pos).padStart(6, '0')} ⚠
                                   </span>
                                 )
                               }
@@ -656,7 +643,7 @@ export default function ReporteGolfAccesos() {
                                     border: 'none', borderRadius: 999, padding: '3px 8px', cursor: 'pointer',
                                   }}
                                 >
-                                  <Printer size={10} /> #{venta.folio_dia}
+                                  <Printer size={10} /> #{String(venta.id).padStart(6, '0')}
                                   {venta.status === 'CANCELADA' && ' (cancelado)'}
                                 </button>
                               )

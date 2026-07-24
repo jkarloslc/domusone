@@ -1,43 +1,49 @@
 /**
- * Utilidades de fecha con zona horaria local correcta.
+ * Utilidades de fecha con zona horaria fija: América/Ciudad de México (UTC-6),
+ * la sede real de la operación (Balvanera, Querétaro, misma zona horaria).
  *
- * Problema: `new Date().toISOString()` devuelve fecha/hora en UTC.
- * En México (UTC-5 CDT / UTC-6 CST) esto provoca que a partir de las
- * 18-19h el "día UTC" ya sea el siguiente, corrompiendo filtros de rango.
+ * Problema histórico: `new Date().toISOString()` devuelve fecha/hora en UTC,
+ * lo que después de las 18-19h locales ya cae en el "día UTC" siguiente,
+ * corrompiendo filtros de rango ("hoy").
  *
- * Solución:
- *  - `fechaLocal()` usa `toLocaleDateString('en-CA')` que respeta la TZ del navegador.
- *  - `inicioDelDia` / `finDelDia` construyen un `Date` con componentes locales
- *    (el constructor Date(y,m,d,h) trata los valores como hora local)
- *    y lo convierten a ISO UTC para enviarlo a Supabase.
+ * Un primer intento resolvía esto apoyándose en la zona horaria del NAVEGADOR
+ * (`toLocaleDateString('en-CA')` sin `timeZone`), pero eso desfasa resultados
+ * si el equipo/navegador donde corre la app no tiene su reloj configurado a
+ * Ciudad de México (detectado 2026-07-24 en la validación de folio POS de
+ * Salidas al Campo). Ahora todo se calcula explícitamente contra
+ * 'America/Mexico_City', sin importar la configuración del dispositivo.
+ * México eliminó el horario de verano en el centro del país desde 2022,
+ * así que esta zona es UTC-6 fijo todo el año (sin DST que calcular).
  */
 
-/** Fecha local del navegador como YYYY-MM-DD (usa TZ local, no UTC). */
-export const fechaLocal = (): string =>
-  new Date().toLocaleDateString('en-CA') // en-CA → YYYY-MM-DD
+const TZ_MX = 'America/Mexico_City'
+const OFFSET_MX_MIN = 6 * 60 // UTC-6 fijo (sin horario de verano desde 2022)
 
-/** ISO UTC equivalente a las 00:00:00 del día local indicado. */
+/** Fecha en Ciudad de México como YYYY-MM-DD (fija, no depende de la TZ del dispositivo). */
+export const fechaLocal = (): string =>
+  new Date().toLocaleDateString('en-CA', { timeZone: TZ_MX }) // en-CA → YYYY-MM-DD
+
+/** ISO UTC equivalente a las 00:00:00 del día indicado, hora Ciudad de México. */
 export const inicioDelDia = (localDate: string): string => {
   const [y, m, d] = localDate.split('-').map(Number)
-  return new Date(y, m - 1, d, 0, 0, 0, 0).toISOString()
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0) + OFFSET_MX_MIN * 60000).toISOString()
 }
 
-/** ISO UTC equivalente a las 23:59:59.999 del día local indicado. */
+/** ISO UTC equivalente a las 23:59:59.999 del día indicado, hora Ciudad de México. */
 export const finDelDia = (localDate: string): string => {
   const [y, m, d] = localDate.split('-').map(Number)
-  return new Date(y, m - 1, d, 23, 59, 59, 999).toISOString()
+  return new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999) + OFFSET_MX_MIN * 60000).toISOString()
 }
 
 /**
- * Convierte un string YYYY-MM-DD o un timestamptz a una fecha local
- * legible en español. Agrega T12:00:00 cuando no tiene hora para evitar
- * que el parser UTC lo desplace un día.
+ * Convierte un string YYYY-MM-DD o un timestamptz a una fecha legible en
+ * español, en la zona horaria de Ciudad de México (fija, no la del dispositivo).
  */
 export const fmtFechaLocal = (s: string | null | undefined): string => {
   if (!s) return '—'
   const iso = s.includes('T') ? s : s + 'T12:00:00'
   return new Date(iso).toLocaleDateString('es-MX', {
-    day: '2-digit', month: 'short', year: 'numeric',
+    day: '2-digit', month: 'short', year: 'numeric', timeZone: TZ_MX,
   })
 }
 
