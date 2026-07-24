@@ -63,6 +63,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   // Folio de ticket POS — obligatorio para salidas Green Fee, validado contra ctrl_ventas
   const [folioTicketPOS, setFolioTicketPOS]     = useState('')
   const [centroGreenFeeId, setCentroGreenFeeId] = useState<number | null>(null)
+  const [centroGreenFeeLoaded, setCentroGreenFeeLoaded] = useState(false)
   const [verificandoFolio, setVerificandoFolio] = useState(false)
   const [folioValidado, setFolioValidado]       = useState<{ ok: boolean; msg: string } | null>(null)
 
@@ -76,7 +77,10 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
         if (campo) setIdEspacio(campo.id)
       })
     dbGolf.from('cat_centros_venta').select('id, nombre').ilike('nombre', '%green%').limit(1).maybeSingle()
-      .then(({ data }) => setCentroGreenFeeId((data as { id: number } | null)?.id ?? null))
+      .then(({ data }) => {
+        setCentroGreenFeeId((data as { id: number } | null)?.id ?? null)
+        setCentroGreenFeeLoaded(true)
+      })
   }, [])
 
   // debounce búsqueda de socio
@@ -170,18 +174,30 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
   // Valida el folio contra las ventas del POS del centro "Green Fees" — solo se
   // acepta un folio de una venta PAGADA emitida el mismo día del registro.
   useEffect(() => {
-    if (!tieneGreenFee || !folioTicketPOS.trim()) { setFolioValidado(null); return }
+    if (!tieneGreenFee || !folioTicketPOS.trim()) { setFolioValidado(null); setVerificandoFolio(false); return }
     const folioNum = Number(folioTicketPOS.trim())
     if (!Number.isInteger(folioNum) || folioNum <= 0) {
       setFolioValidado({ ok: false, msg: 'El folio debe ser el número de venta (folio del día) del ticket' })
+      setVerificandoFolio(false)
+      return
+    }
+    // Mientras se resuelve la búsqueda del centro "Green Fees" (al montar el modal),
+    // no mostrar el error de "no encontrado" — solo mostrarlo si de verdad no existe.
+    if (!centroGreenFeeLoaded) {
+      setFolioValidado(null)
+      setVerificandoFolio(true)
       return
     }
     if (!centroGreenFeeId) {
       setFolioValidado({ ok: false, msg: 'No se encontró el centro de venta "Green Fees" configurado en el POS' })
+      setVerificandoFolio(false)
       return
     }
+    // Limpiar de inmediato el resultado del folio anterior — evita que, mientras el
+    // usuario sigue escribiendo, quede visible (y "válido") el resultado de otro folio.
+    setFolioValidado(null)
+    setVerificandoFolio(true)
     const t = setTimeout(async () => {
-      setVerificandoFolio(true)
       const hoy = fechaLocal()
       const { data: ventaHoy } = await dbGolf
         .from('ctrl_ventas')
@@ -220,7 +236,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       setFolioValidado({ ok: true, msg: `Venta #${v.folio_dia} de hoy · ${v.nombre_cliente ?? '—'} · ${fmt$(v.total)}` })
     }, 400)
     return () => clearTimeout(t)
-  }, [folioTicketPOS, tieneGreenFee, centroGreenFeeId])
+  }, [folioTicketPOS, tieneGreenFee, centroGreenFeeId, centroGreenFeeLoaded])
 
   // Si el socio tiene pases disponibles, los acompañantes libres se marcan por defecto como invitados.
   useEffect(() => {
