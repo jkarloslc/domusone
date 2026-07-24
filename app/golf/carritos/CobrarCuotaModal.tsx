@@ -410,20 +410,23 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         dbGolf.from('recibos_golf_det').select('concepto, periodo, monto_final, tipo').eq('id_recibo_fk', recibo.id).order('id'),
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
-        dbGolf.from('cfg_carritos').select('id_centro_membresias_fk, id_centro_pension_fk').single(),
+        dbGolf.from('cfg_carritos').select('id_centro_membresias_fk, id_centro_pension_fk, id_concepto_ingreso_fk').single(),
         dbGolf.from('cat_cuotas_config').select('tipo, id_concepto_ingreso_fk'),
       ])
       if (errRec || !reciboDB) throw new Error(errRec?.message ?? 'No se pudo leer el recibo para generar ticket')
       // Montos realmente aplicados a cada concepto en este pago (ya prorateados si fue pago parcial) —
       // no usar el saldo/monto_final de la cuota, que refleja lo adeudado, no lo cobrado hoy.
       const detFiscal = (detFiscalDB as { concepto: string; periodo: string | null; monto_final: number; tipo: string | null }[]) ?? []
-      // Concepto de ingreso por tipo de cuota (Membresía/Pensión), para que el corte POS
-      // distribuya estas líneas a su propia partida de presupuesto en vez de "Otros"
-      // (estas líneas no traen id_producto_fk — ver distribucionIngreso.ts).
+      // Concepto de ingreso por tipo de cuota, para que el corte POS distribuya estas
+      // líneas a su propia partida de presupuesto en vez de "Otros" (no traen
+      // id_producto_fk — ver distribucionIngreso.ts). Membresía/Inscripción sí tienen
+      // fila en cat_cuotas_config; Pensión Carrito no (el monto se captura manual en
+      // PensionModal), así que su concepto vive en cfg_carritos.id_concepto_ingreso_fk.
       const conceptoPorTipo: Record<string, number | null> = {}
       for (const c of (cuotasConfig as { tipo: string; id_concepto_ingreso_fk: number | null }[]) ?? []) {
         if (conceptoPorTipo[c.tipo] == null && c.id_concepto_ingreso_fk != null) conceptoPorTipo[c.tipo] = c.id_concepto_ingreso_fk
       }
+      conceptoPorTipo['PENSION_CARRITO'] = (cfgCarritos as { id_concepto_ingreso_fk: number | null } | null)?.id_concepto_ingreso_fk ?? null
       // Cuotas de membresía/inscripción/pensión causan IVA (16%, ya incluido en el monto).
       const detCalc = detFiscal.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
       const totalIvaCuotas = detCalc.reduce((a, d) => a + d.iva, 0)

@@ -226,6 +226,8 @@ export default function CarritosPage() {
   const [idCentroMembresias, setIdCentroMembresias] = useState<number | null>(null)
   const [idCentroPension, setIdCentroPension]       = useState<number | null>(null)
   const [savingCentros, setSavingCentros] = useState(false)
+  const [conceptosIngreso, setConceptosIngreso] = useState<{ id: number; nombre: string }[]>([])
+  const [idConceptoPension, setIdConceptoPension] = useState<number | null>(null)
 
   // ── Stats ─────────────────────────────────────────────────
   const [stats, setStats] = useState({ pensionesActivas: 0, cuotasPendientes: 0, montoPendiente: 0, vencidas: 0 })
@@ -282,12 +284,13 @@ export default function CarritosPage() {
 
   // ── Fetch Config ──────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
-    const [{ data: cfg }, { data: sl }, { data: occ }, { data: cv }] = await Promise.all([
-      dbGolf.from('cfg_carritos').select('tarifa_mensual, id_centro_membresias_fk, id_centro_pension_fk').single(),
+    const [{ data: cfg }, { data: sl }, { data: occ }, { data: cv }, { data: cons }] = await Promise.all([
+      dbGolf.from('cfg_carritos').select('tarifa_mensual, id_centro_membresias_fk, id_centro_pension_fk, id_concepto_ingreso_fk').single(),
       dbGolf.from('cat_slots').select('id, numero').eq('activo', true).order('numero'),
       // Cajones ocupados por pensiones activas (solo informativo en la UI)
       dbGolf.from('ctrl_pensiones').select('id_slot_fk').eq('activo', true).not('id_slot_fk', 'is', null),
       dbGolf.from('cat_centros_venta').select('id, nombre').eq('activo', true).order('orden'),
+      dbCfg.from('conceptos_ingreso').select('id, nombre').eq('activo', true).order('orden'),
     ])
     const t = cfg?.tarifa_mensual ?? 0
     setTarifa(t); setTarifaEdit(t)
@@ -296,6 +299,8 @@ export default function CarritosPage() {
     setCentrosVenta(cv ?? [])
     setIdCentroMembresias((cfg as any)?.id_centro_membresias_fk ?? null)
     setIdCentroPension((cfg as any)?.id_centro_pension_fk ?? null)
+    setConceptosIngreso((cons as { id: number; nombre: string }[]) ?? [])
+    setIdConceptoPension((cfg as any)?.id_concepto_ingreso_fk ?? null)
   }, [])
 
   // ── Fetch Cobranza del mes ────────────────────────────────
@@ -600,6 +605,7 @@ export default function CarritosPage() {
     await dbGolf.from('cfg_carritos').update({
       id_centro_membresias_fk: idCentroMembresias,
       id_centro_pension_fk:    idCentroPension,
+      id_concepto_ingreso_fk:  idConceptoPension,
       updated_at: new Date().toISOString(),
     }).eq('id', 1)
     setSavingCentros(false)
@@ -1398,6 +1404,16 @@ export default function CarritosPage() {
                   onChange={e => setIdCentroPension(e.target.value ? Number(e.target.value) : null)}>
                   <option value="">— Sin configurar (usa heurística por nombre) —</option>
                   {centrosVenta.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Concepto de ingreso (Pensión de carrito)</label>
+                <select
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
+                  value={idConceptoPension ?? ''}
+                  onChange={e => setIdConceptoPension(e.target.value ? Number(e.target.value) : null)}>
+                  <option value="">— Sin asignar (cae en &quot;Otros&quot; al distribuir el corte) —</option>
+                  {conceptosIngreso.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
                 </select>
               </div>
               <button onClick={guardarCentros} disabled={savingCentros}
