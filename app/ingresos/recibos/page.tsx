@@ -252,8 +252,10 @@ function ReciboModal({
     if (!form.id_centro_ingreso_fk) { setError('Selecciona un centro de ingreso'); return }
     if (totalFinal === 0)           { setError('El monto total debe ser mayor a $0'); return }
 
-    // Validar que formas de cobro coincidan con el total general (secciones y conceptos)
-    if ((esSecciones || centroSel?.tipo_desglose === 'conceptos') && totalFormasPago > 0) {
+    // Validar que formas de cobro coincidan con el total general (secciones y conceptos).
+    // Sin "&& totalFormasPago > 0": dejar las formas de cobro en $0 NO debe saltarse la
+    // validación, si no cualquier recibo se guarda con monto_total > 0 y cero desglose de pago.
+    if (esSecciones || centroSel?.tipo_desglose === 'conceptos') {
       const diff = Math.round((totalFinal - totalFormasPago) * 100) / 100
       if (diff !== 0) {
         const tipo = diff > 0 ? 'falta' : 'excede'
@@ -316,7 +318,8 @@ function ReciboModal({
     if (totalFinal === 0) { setError('El monto total debe ser mayor a $0'); return }
 
     // Misma validación de secciones/conceptos vs formas de cobro que handleSave
-    if ((esSecciones || centroSel?.tipo_desglose === 'conceptos') && totalFormasPago > 0) {
+    // (sin "&& totalFormasPago > 0" — ver comentario en handleSave)
+    if (esSecciones || centroSel?.tipo_desglose === 'conceptos') {
       const diff = Math.round((totalFinal - totalFormasPago) * 100) / 100
       if (diff !== 0) {
         const tipo = diff > 0 ? 'falta' : 'excede'
