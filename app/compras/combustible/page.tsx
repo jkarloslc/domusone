@@ -342,9 +342,10 @@ export default function CombustiblePage() {
               ))}
             </div>
 
-            {/* Tipo movimiento */}
+            {/* Tipo movimiento — las Salidas ya no se capturan aquí: se generan solas
+                desde la Bitácora de Uso (Vehículos y Maquinaria) al registrar consumo. */}
             <div style={{ display: 'flex', gap: 8 }}>
-              {(['ENTRADA', 'SALIDA', 'AJUSTE'] as TipoMov[]).map(t => {
+              {(['ENTRADA', 'AJUSTE'] as TipoMov[]).map(t => {
                 const meta = MOV_META[t]
                 return (
                   <button key={t} type="button"
@@ -360,6 +361,10 @@ export default function CombustiblePage() {
                   </button>
                 )
               })}
+            </div>
+
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#2563eb' }}>
+              Las salidas se registran automáticamente desde la Bitácora de Uso del módulo de Vehículos y Maquinaria.
             </div>
 
             {form.tipo_mov === 'AJUSTE' && (

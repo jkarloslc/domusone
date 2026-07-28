@@ -9,14 +9,18 @@ import {
 
 const TIPOS_SUMINISTRO = ['Gasolinería', 'Garrafa']
 const TIPOS_CARGA      = ['Gasolinería', 'Entrega Garrafa', 'Consumo Garrafa']
-const STATUS_VALE      = ['Emitido', 'Parcial', 'Agotado', 'Entregado', 'Cerrado', 'Cancelado']
+
+// El status ya no se elige manualmente: avanza solo con el proceso.
+// Solicitado (área usuaria pide) → Emitido (Tesorería autoriza) →
+// Parcial/Completado (según cargas registradas) — o Cancelado en cualquier punto.
+const STATUS_VALE      = ['Solicitado', 'Emitido', 'Parcial', 'Completado', 'Cancelado']
+const ROLES_EMITE_VALE = ['superadmin', 'admin', 'usuariomantto', 'mantenimiento', 'tesoreria']
 
 const VALE_STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
+  'Solicitado': { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
   'Emitido':    { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
   'Parcial':    { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  'Agotado':    { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  'Entregado':  { color: '#0891b2', bg: '#ecfeff', border: '#a5f3fc' },
-  'Cerrado':    { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  'Completado': { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
   'Cancelado':  { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
 }
 const CARGA_TIPO_STYLE: Record<string, { color: string; bg: string; border: string }> = {
@@ -116,7 +120,7 @@ export default function CombustibleTab() {
   const cargasMes = cargas.filter(c => c.fecha?.startsWith(mesActual))
   const kpiLitrosMes  = cargasMes.reduce((a, c) => a + (c.litros ?? 0), 0)
   const kpiCostoMes   = cargasMes.reduce((a, c) => a + (c.monto_total ?? 0), 0)
-  const kpiValesAbiertos = vales.filter(v => ['Emitido', 'Parcial'].includes(v.status)).length
+  const kpiValesAbiertos = vales.filter(v => ['Solicitado', 'Emitido', 'Parcial'].includes(v.status)).length
   const kpiValesPorVencer = vales.filter(v => {
     if (!v.vigencia || !['Emitido', 'Parcial'].includes(v.status)) return false
     const diff = (new Date(v.vigencia).getTime() - Date.now()) / 86400000
@@ -242,7 +246,7 @@ export default function CombustibleTab() {
                         <td style={{ padding: '8px 10px' }}>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button className="btn-ghost" style={{ padding: '3px 6px' }} onClick={() => setDetailV(v)}><Eye size={12} /></button>
-                            {canWrite('mantenimiento') && !['Cerrado', 'Cancelado', 'Agotado'].includes(v.status) && (
+                            {canWrite('mantenimiento') && !['Completado', 'Cancelado'].includes(v.status) && (
                               <button className="btn-ghost" style={{ padding: '3px 6px' }} onClick={() => setModalV({ open: true, vale: v })}><Edit2 size={12} /></button>
                             )}
                           </div>
@@ -336,7 +340,7 @@ export default function CombustibleTab() {
       )}
       {modalC.open && (
         <CargaModal
-          carga={modalC.carga} equipos={equipos} areas={areas} vales={vales.filter(v => ['Emitido', 'Parcial', 'Entregado'].includes(v.status))}
+          carga={modalC.carga} equipos={equipos} areas={areas} vales={vales.filter(v => ['Emitido', 'Parcial'].includes(v.status))}
           onClose={() => setModalC({ open: false })}
           onSaved={() => { setModalC({ open: false }); fetchCargas(); fetchVales() }}
         />
@@ -360,6 +364,9 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
   const [ops,    setOps]    = useState<any[]>([])
   const [opSearch, setOpSearch] = useState('')
 
+  const isNew = !vale?.folio
+  const puedeEmitir = ROLES_EMITE_VALE.includes(authUser?.rol as any)
+
   const [form, setForm] = useState({
     tipo_suministro:    vale?.tipo_suministro    ?? 'Gasolinería',
     id_area_fk:         vale?.id_area_fk?.toString()   ?? '',
@@ -368,7 +375,6 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
     litros_autorizados: vale?.litros_autorizados?.toString() ?? '',
     monto_autorizado:   vale?.monto_autorizado?.toString()   ?? '',
     vigencia:           vale?.vigencia           ?? '',
-    status:             vale?.status             ?? 'Emitido',
     id_op_fk:           vale?.id_op_fk?.toString() ?? '',
     notas:              vale?.notas              ?? '',
   })
@@ -387,33 +393,37 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
     return (op.folio ?? '').toLowerCase().includes(q) || (op.concepto ?? '').toLowerCase().includes(q)
   })
 
-  const handleSave = async () => {
-    if (!form.id_area_fk)          { setError('El área es obligatoria'); return }
-    if (!form.litros_autorizados)  { setError('Los litros autorizados son obligatorios'); return }
+  const buildPayload = () => ({
+    tipo_suministro:   form.tipo_suministro,
+    id_area_fk:        Number(form.id_area_fk),
+    id_equipo_fk:      form.id_equipo_fk ? Number(form.id_equipo_fk) : null,
+    periodo:           form.periodo.trim() || null,
+    litros_autorizados:Number(form.litros_autorizados),
+    monto_autorizado:  form.monto_autorizado ? Number(form.monto_autorizado) : null,
+    vigencia:          form.vigencia || null,
+    id_op_fk:          form.id_op_fk ? Number(form.id_op_fk) : null,
+    notas:             form.notas.trim() || null,
+    updated_at:        new Date().toISOString(),
+  })
+
+  const validar = () => {
+    if (!form.id_area_fk)          { setError('El área es obligatoria'); return false }
+    if (!form.litros_autorizados)  { setError('Los litros son obligatorios'); return false }
     if (form.tipo_suministro === 'Gasolinería' && !form.id_equipo_fk) {
-      setError('Para Gasolinería el equipo es obligatorio'); return
+      setError('Para Gasolinería el equipo es obligatorio'); return false
     }
+    return true
+  }
+
+  const handleSave = async () => {
+    if (!validar()) return
     setSaving(true); setError('')
-    const isNew = !vale?.folio
 
-    const payload: any = {
-      tipo_suministro:   form.tipo_suministro,
-      id_area_fk:        Number(form.id_area_fk),
-      id_equipo_fk:      form.id_equipo_fk ? Number(form.id_equipo_fk) : null,
-      periodo:           form.periodo.trim() || null,
-      litros_autorizados:Number(form.litros_autorizados),
-      monto_autorizado:  form.monto_autorizado ? Number(form.monto_autorizado) : null,
-      vigencia:          form.vigencia || null,
-      status:            form.status,
-      id_op_fk:          form.id_op_fk ? Number(form.id_op_fk) : null,
-      notas:             form.notas.trim() || null,
-      updated_at:        new Date().toISOString(),
-    }
-
+    const payload: any = { ...buildPayload() }
     if (isNew) {
+      payload.status = 'Solicitado'
       const { count } = await dbCtrl.from('vales_combustible').select('id', { count: 'exact', head: true })
-      payload.folio       = `VAL-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, '0')}`
-      payload.emitido_por = authUser?.nombre ?? null
+      payload.folio = `VAL-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, '0')}`
     }
 
     const { error: err } = isNew
@@ -424,31 +434,54 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
     onSaved()
   }
 
+  const handleEmitir = async () => {
+    if (!validar()) return
+    setSaving(true); setError('')
+    const payload = { ...buildPayload(), status: 'Emitido', emitido_por: authUser?.nombre ?? null }
+    const { error: err } = await dbCtrl.from('vales_combustible').update(payload).eq('id', vale.id)
+    if (err) { setError(err.message); setSaving(false); return }
+    onSaved()
+  }
+
+  const handleCancelar = async () => {
+    if (!confirm('¿Cancelar este vale? Ya no podrá usarse para registrar cargas.')) return
+    setSaving(true); setError('')
+    const { error: err } = await dbCtrl.from('vales_combustible')
+      .update({ status: 'Cancelado', updated_at: new Date().toISOString() }).eq('id', vale.id)
+    if (err) { setError(err.message); setSaving(false); return }
+    onSaved()
+  }
+
   const esGasolineria = form.tipo_suministro === 'Gasolinería'
+  const status = vale?.status ?? 'Solicitado'
+  const soloLectura = ['Completado', 'Cancelado'].includes(status)
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 540 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
-            {vale ? 'Editar Vale' : 'Nuevo Vale de Combustible'}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
+              {isNew ? 'Solicitar Vale de Combustible' : 'Editar Vale'}
+            </h2>
+            {!isNew && <Badge text={status} map={VALE_STATUS_STYLE} />}
+          </div>
           <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
         </div>
         <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+          {soloLectura && (
+            <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, color: 'var(--text-muted)', fontSize: 12 }}>
+              Este vale está {status.toLowerCase()} y ya no se puede modificar.
+            </div>
+          )}
 
+          <fieldset disabled={soloLectura} style={{ border: 'none', padding: 0, margin: 0, display: 'contents' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
               <label className="label" style={{ fontSize: 11 }}>Tipo de Suministro *</label>
               <select className="select" style={{ fontSize: 12 }} value={form.tipo_suministro} onChange={setF('tipo_suministro')}>
                 {TIPOS_SUMINISTRO.map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label" style={{ fontSize: 11 }}>Status</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.status} onChange={setF('status')}>
-                {STATUS_VALE.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div style={{ gridColumn: esGasolineria ? '1' : 'span 2' }}>
@@ -476,7 +509,7 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
               <input className="input" type="date" style={{ fontSize: 12 }} value={form.vigencia} onChange={setF('vigencia')} />
             </div>
             <div>
-              <label className="label" style={{ fontSize: 11 }}>Litros Autorizados *</label>
+              <label className="label" style={{ fontSize: 11 }}>{status === 'Solicitado' ? 'Litros Solicitados *' : 'Litros Autorizados *'}</label>
               <input className="input" type="number" step="0.01" style={{ fontSize: 12 }} value={form.litros_autorizados} onChange={setF('litros_autorizados')} placeholder="0.00" />
             </div>
             <div>
@@ -530,13 +563,33 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
             <label className="label" style={{ fontSize: 11 }}>Notas</label>
             <textarea className="input" rows={2} style={{ fontSize: 12, resize: 'vertical' }} value={form.notas} onChange={setF('notas')} />
           </div>
+          </fieldset>
         </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button className="btn-secondary" onClick={onClose} style={{ fontSize: 12 }}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: 12 }}>
-            {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+          <div>
+            {!isNew && !soloLectura && (
+              <button className="btn-ghost" onClick={handleCancelar} disabled={saving}
+                style={{ fontSize: 12, color: '#dc2626' }}>
+                Cancelar Vale
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-secondary" onClick={onClose} style={{ fontSize: 12 }}>Cerrar</button>
+            {!soloLectura && (
+              <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: 12 }}>
+                {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
+                {saving ? 'Guardando…' : 'Guardar'}
+              </button>
+            )}
+            {!isNew && status === 'Solicitado' && puedeEmitir && (
+              <button className="btn-primary" onClick={handleEmitir} disabled={saving}
+                style={{ fontSize: 12, background: '#15803d' }}>
+                {saving ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                {saving ? 'Emitiendo…' : 'Emitir Vale'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -609,6 +662,9 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
     if (form.tipo_carga === 'Gasolinería' && !form.id_equipo_fk) {
       setError('Para Gasolinería el equipo es obligatorio'); return
     }
+    if (form.tipo_carga === 'Gasolinería' && !form.comprobante_url) {
+      setError('El comprobante de carga es obligatorio para Gasolinería'); return
+    }
     setSaving(true); setError('')
 
     const payload: any = {
@@ -638,11 +694,13 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
       const totalUsado = (allCargas ?? []).reduce((a: number, c: any) => a + (c.litros ?? 0), 0)
       const { data: valeData } = await dbCtrl.from('vales_combustible')
         .select('litros_autorizados, tipo_suministro').eq('id', payload.id_vale_fk).single()
+      // Garrafa: Almacén recibe y queda Completado. Gasolinería: Completado al alcanzar
+      // los litros autorizados, Parcial mientras falte (avance automático, sin elegirlo).
       let nuevoStatus = 'Parcial'
       if (valeData?.tipo_suministro === 'Garrafa') {
-        nuevoStatus = 'Entregado'
+        nuevoStatus = 'Completado'
       } else if (valeData && totalUsado >= valeData.litros_autorizados) {
-        nuevoStatus = 'Agotado'
+        nuevoStatus = 'Completado'
       }
       await dbCtrl.from('vales_combustible')
         .update({ litros_usados: totalUsado, status: nuevoStatus, updated_at: new Date().toISOString() })
@@ -655,9 +713,7 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
   const esGasolineria = form.tipo_carga === 'Gasolinería'
   const esConsumoGarrafa = form.tipo_carga === 'Consumo Garrafa'
   const valesFiltrados = vales.filter(v =>
-    form.tipo_carga === 'Gasolinería'     ? v.tipo_suministro === 'Gasolinería' :
-    form.tipo_carga === 'Entrega Garrafa' ? v.tipo_suministro === 'Garrafa'     :
-    true
+    form.tipo_carga === 'Gasolinería' ? v.tipo_suministro === 'Gasolinería' : v.tipo_suministro === 'Garrafa'
   )
 
   return (
@@ -737,7 +793,7 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
           {/* Ticket */}
           {esGasolineria && (
             <div>
-              <label className="label" style={{ fontSize: 11 }}>Ticket / Comprobante</label>
+              <label className="label" style={{ fontSize: 11 }}>Ticket / Comprobante *</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
                 {form.comprobante_url && (
                   <a href={form.comprobante_url} target="_blank" rel="noopener noreferrer"

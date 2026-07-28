@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbCfg } from '@/lib/supabase'
+import { dbCtrl, dbCfg, dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, X, Save, Loader, RefreshCw, Edit2, Trash2,
@@ -9,6 +9,12 @@ import {
 import ModalShell from '@/components/ui/ModalShell'
 
 const TIPOS_COMBUSTIBLE = ['Magna', 'Premium', 'Diesel', 'Gas LP', 'Eléctrico']
+
+// Mapeo hacia el Kardex de Combustible (comp.combustible_movimientos), que solo
+// controla los 3 combustibles de tanque. Gas LP / Eléctrico no generan salida ahí.
+const KARDEX_TIPO_MAP: Record<string, 'magna' | 'premium' | 'diesel' | undefined> = {
+  'Magna': 'magna', 'Premium': 'premium', 'Diesel': 'diesel',
+}
 
 const fmt$ = (n: number | null | undefined) =>
   n != null ? `$${Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'
@@ -60,7 +66,11 @@ export default function BitacoraUsoTab({
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este registro?')) return
+    const reg = registros.find(r => r.id === id)
     await dbCtrl.from('bitacora_uso_equipos').update({ activo: false }).eq('id', id)
+    if (reg?.id_combustible_mov_fk) {
+      await dbComp.from('combustible_movimientos').delete().eq('id', reg.id_combustible_mov_fk)
+    }
     fetchRegistros()
   }
 
@@ -396,11 +406,15 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
       created_by:        authUser?.nombre ?? null,
     }
 
-    const { error: err } = isNew
-      ? await dbCtrl.from('bitacora_uso_equipos').insert(payload)
-      : await dbCtrl.from('bitacora_uso_equipos').update(payload).eq('id', reg.id)
-
-    if (err) { setError(err.message); setSaving(false); return }
+    let regId = reg?.id
+    if (isNew) {
+      const { data, error: err } = await dbCtrl.from('bitacora_uso_equipos').insert(payload).select('id').single()
+      if (err) { setError(err.message); setSaving(false); return }
+      regId = data.id
+    } else {
+      const { error: err } = await dbCtrl.from('bitacora_uso_equipos').update(payload).eq('id', reg.id)
+      if (err) { setError(err.message); setSaving(false); return }
+    }
 
     // Actualizar odómetro del equipo si la lectura fin es mayor a la actual
     if (form.odometro_fin && equipo) {
@@ -408,6 +422,30 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
       if (newOdo > (equipo.odometro_actual ?? 0)) {
         await dbCfg.from('equipos').update({ odometro_actual: newOdo }).eq('id', equipo.id)
       }
+    }
+
+    // Sincroniza la salida en el Kardex de Combustible (comp.combustible_movimientos):
+    // si ya había una ligada a este registro, se reemplaza para reflejar el cambio.
+    if (reg?.id_combustible_mov_fk) {
+      await dbComp.from('combustible_movimientos').delete().eq('id', reg.id_combustible_mov_fk)
+    }
+    const tipoKardex = payload.litros ? KARDEX_TIPO_MAP[payload.tipo_combustible ?? ''] : undefined
+    if (tipoKardex && payload.litros) {
+      const { data: mov } = await dbComp.from('combustible_movimientos').insert({
+        tipo_combustible: tipoKardex,
+        tipo_mov:         'SALIDA',
+        fecha:            payload.fecha,
+        litros:           payload.litros,
+        monto_total:      payload.costo_combustible,
+        referencia:       `Bitácora de uso · ${equipo?.nombre ?? `Equipo #${payload.id_equipo_fk}`}`,
+        observaciones:    payload.actividad,
+        created_by:       authUser?.nombre ?? null,
+      }).select('id').single()
+      if (mov) {
+        await dbCtrl.from('bitacora_uso_equipos').update({ id_combustible_mov_fk: mov.id }).eq('id', regId)
+      }
+    } else if (reg?.id_combustible_mov_fk) {
+      await dbCtrl.from('bitacora_uso_equipos').update({ id_combustible_mov_fk: null }).eq('id', regId)
     }
 
     onSaved()
