@@ -135,8 +135,16 @@ const ADMIN_MODULOS = [
   'capex',
 ]
 
+// Módulos Hípico para rol dedicado
+const HIPICO_MODULOS = [
+  'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
+  'hipico-contratos', 'hipico-cobranza', 'hipico-servicios', 'reportes',
+  'compras', 'requisiciones', 'transferencias',
+]
+
 // Módulos Golf para rol dedicado
 // Incluye requisiciones y transferencias de Compras para flujo de solicitudes
+// Incluye módulo Hípico completo (acceso agregado 2026-07-28)
 const GOLF_MODULOS = [
   'golf', 'golf-torneos', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
@@ -144,13 +152,7 @@ const GOLF_MODULOS = [
   'golf-riego', 'golf-mantenimiento-campo', 'golf-tee-practica',
   'golf-administracion', 'golf-mantto-campo', 'golf-estatus-campo',
   'reportes', 'compras', 'requisiciones', 'transferencias',
-]
-
-// Módulos Hípico para rol dedicado
-const HIPICO_MODULOS = [
-  'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
-  'hipico-contratos', 'hipico-cobranza', 'hipico-servicios', 'reportes',
-  'compras', 'requisiciones', 'transferencias',
+  ...HIPICO_MODULOS,
 ]
 
 // Módulos Hospitality para rol dedicado

@@ -440,6 +440,11 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantto. Campo',  href: '/golf/mantto-campo',   icon: Leaf  },
       RPT('golf'),
     ]},
+    { section: 'Hípico', items: [
+      { label: 'Hípico',            href: '/hipico',                   icon: HorseIcon },
+      { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
+      RPT('hipico'),
+    ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
     ]},
