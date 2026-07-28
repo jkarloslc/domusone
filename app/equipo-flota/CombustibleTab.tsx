@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, dbCtrl, dbComp, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { recomputeValeCombustible } from '@/lib/combustible'
 import {
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2,
   Fuel, Droplets, FileText, Search, Upload, CheckCircle, AlertTriangle
@@ -90,7 +91,7 @@ export default function CombustibleTab() {
   const fetchVales = useCallback(async () => {
     setLoadingV(true)
     let q = dbCtrl.from('vales_combustible')
-      .select('*, areas:id_area_fk(nombre), equipos:id_equipo_fk(nombre, placa)')
+      .select('*, areas:id_area_fk(nombre)')
       .eq('activo', true).order('created_at', { ascending: false })
     if (filterTipoV) q = q.eq('tipo_suministro', filterTipoV)
     if (filterStatV) q = q.eq('status', filterStatV)
@@ -132,7 +133,6 @@ export default function CombustibleTab() {
     const q = searchV.toLowerCase()
     return (v.folio ?? '').toLowerCase().includes(q)
       || (v.areas?.nombre ?? '').toLowerCase().includes(q)
-      || (v.equipos?.nombre ?? '').toLowerCase().includes(q)
       || (v.periodo ?? '').toLowerCase().includes(q)
   })
   const filteredCargas = cargas.filter(c => {
@@ -215,7 +215,7 @@ export default function CombustibleTab() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    {['Folio', 'Tipo', 'Área', 'Equipo', 'Periodo', 'Litros Auth.', 'Litros Usados', 'Monto Auth.', 'Vigencia', 'Status', ''].map(h => (
+                    {['Folio', 'Tipo', 'Área', 'Periodo', 'Litros Auth.', 'Litros Usados', 'Monto Auth.', 'Vigencia', 'Status', ''].map(h => (
                       <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -228,7 +228,6 @@ export default function CombustibleTab() {
                         <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio}</td>
                         <td style={{ padding: '8px 10px' }}><Badge text={v.tipo_suministro} map={CARGA_TIPO_STYLE} /></td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>{v.areas?.nombre ?? '—'}</td>
-                        <td style={{ padding: '8px 10px', fontSize: 12 }}>{v.equipos ? `${v.equipos.nombre}${v.equipos.placa ? ` (${v.equipos.placa})` : ''}` : '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>{v.periodo ?? '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12, textAlign: 'right' }}>{fmtL(v.litros_autorizados)}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>
@@ -333,7 +332,7 @@ export default function CombustibleTab() {
       {/* Modales */}
       {modalV.open && (
         <ValeModal
-          vale={modalV.vale} equipos={equipos} areas={areas}
+          vale={modalV.vale} areas={areas}
           onClose={() => setModalV({ open: false })}
           onSaved={() => { setModalV({ open: false }); fetchVales() }}
         />
@@ -355,8 +354,8 @@ export default function CombustibleTab() {
 // ══════════════════════════════════════════════════════════════
 // Modal: Crear / Editar Vale
 // ══════════════════════════════════════════════════════════════
-function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
-  vale?: any; equipos: any[]; areas: any[]; onClose: () => void; onSaved: () => void
+function ValeModal({ vale, areas, onClose, onSaved }: {
+  vale?: any; areas: any[]; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
@@ -370,7 +369,6 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
   const [form, setForm] = useState({
     tipo_suministro:    vale?.tipo_suministro    ?? 'Gasolinería',
     id_area_fk:         vale?.id_area_fk?.toString()   ?? '',
-    id_equipo_fk:       vale?.id_equipo_fk?.toString() ?? '',
     periodo:            vale?.periodo            ?? '',
     litros_autorizados: vale?.litros_autorizados?.toString() ?? '',
     monto_autorizado:   vale?.monto_autorizado?.toString()   ?? '',
@@ -396,7 +394,6 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
   const buildPayload = () => ({
     tipo_suministro:   form.tipo_suministro,
     id_area_fk:        Number(form.id_area_fk),
-    id_equipo_fk:      form.id_equipo_fk ? Number(form.id_equipo_fk) : null,
     periodo:           form.periodo.trim() || null,
     litros_autorizados:Number(form.litros_autorizados),
     monto_autorizado:  form.monto_autorizado ? Number(form.monto_autorizado) : null,
@@ -409,9 +406,6 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
   const validar = () => {
     if (!form.id_area_fk)          { setError('El área es obligatoria'); return false }
     if (!form.litros_autorizados)  { setError('Los litros son obligatorios'); return false }
-    if (form.tipo_suministro === 'Gasolinería' && !form.id_equipo_fk) {
-      setError('Para Gasolinería el equipo es obligatorio'); return false
-    }
     return true
   }
 
@@ -452,7 +446,6 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
     onSaved()
   }
 
-  const esGasolineria = form.tipo_suministro === 'Gasolinería'
   const status = vale?.status ?? 'Solicitado'
   const soloLectura = ['Completado', 'Cancelado'].includes(status)
 
@@ -484,22 +477,13 @@ function ValeModal({ vale, equipos, areas, onClose, onSaved }: {
                 {TIPOS_SUMINISTRO.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
-            <div style={{ gridColumn: esGasolineria ? '1' : 'span 2' }}>
+            <div>
               <label className="label" style={{ fontSize: 11 }}>Área *</label>
               <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk} onChange={setF('id_area_fk')}>
                 <option value="">— Seleccionar —</option>
                 {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
-            {esGasolineria && (
-              <div>
-                <label className="label" style={{ fontSize: 11 }}>Equipo / Vehículo *</label>
-                <select className="select" style={{ fontSize: 12 }} value={form.id_equipo_fk} onChange={setF('id_equipo_fk')}>
-                  <option value="">— Seleccionar —</option>
-                  {equipos.map(e => <option key={e.id} value={e.id}>{e.nombre}{e.placa ? ` (${e.placa})` : ''}</option>)}
-                </select>
-              </div>
-            )}
             <div>
               <label className="label" style={{ fontSize: 11 }}>Periodo</label>
               <input className="input" style={{ fontSize: 12 }} placeholder="ej. Abril 2026" value={form.periodo} onChange={setF('periodo')} />
@@ -687,25 +671,8 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
       : await dbCtrl.from('cargas_combustible').insert(payload)
     if (err) { setError(err.message); setSaving(false); return }
 
-    // Actualizar litros_usados y status del vale
-    if (payload.id_vale_fk) {
-      const { data: allCargas } = await dbCtrl.from('cargas_combustible')
-        .select('litros').eq('id_vale_fk', payload.id_vale_fk).eq('activo', true)
-      const totalUsado = (allCargas ?? []).reduce((a: number, c: any) => a + (c.litros ?? 0), 0)
-      const { data: valeData } = await dbCtrl.from('vales_combustible')
-        .select('litros_autorizados, tipo_suministro').eq('id', payload.id_vale_fk).single()
-      // Garrafa: Almacén recibe y queda Completado. Gasolinería: Completado al alcanzar
-      // los litros autorizados, Parcial mientras falte (avance automático, sin elegirlo).
-      let nuevoStatus = 'Parcial'
-      if (valeData?.tipo_suministro === 'Garrafa') {
-        nuevoStatus = 'Completado'
-      } else if (valeData && totalUsado >= valeData.litros_autorizados) {
-        nuevoStatus = 'Completado'
-      }
-      await dbCtrl.from('vales_combustible')
-        .update({ litros_usados: totalUsado, status: nuevoStatus, updated_at: new Date().toISOString() })
-        .eq('id', payload.id_vale_fk)
-    }
+    // El status del vale se deriva solo: suma cargas + bitácora de uso vinculadas.
+    if (payload.id_vale_fk) await recomputeValeCombustible(payload.id_vale_fk)
 
     onSaved()
   }
@@ -746,7 +713,7 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
                 <option value="">— Sin vale / Emergencia —</option>
                 {valesFiltrados.map(v => (
                   <option key={v.id} value={v.id}>
-                    {v.folio} · {v.areas?.nombre ?? ''}{v.equipos ? ` · ${v.equipos.nombre}` : ''}{v.periodo ? ` · ${v.periodo}` : ''}
+                    {v.folio} · {v.areas?.nombre ?? ''}{v.periodo ? ` · ${v.periodo}` : ''}
                   </option>
                 ))}
               </select>
@@ -875,7 +842,6 @@ function ValeDetail({ vale, areaMap, equipoMap, onClose }: {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
               { label: 'Área',       value: areaMap[vale.id_area_fk] },
-              { label: 'Equipo',     value: vale.id_equipo_fk ? equipoMap[vale.id_equipo_fk] : null },
               { label: 'Monto auth.', value: fmt$(vale.monto_autorizado) },
               { label: 'Vigencia',   value: fmtF(vale.vigencia) },
               { label: 'Emitido por',value: vale.emitido_por },

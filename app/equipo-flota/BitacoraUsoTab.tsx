@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg, dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { recomputeValeCombustible } from '@/lib/combustible'
 import {
   Plus, X, Save, Loader, RefreshCw, Edit2, Trash2,
   Filter, Gauge, Activity,
@@ -70,6 +71,9 @@ export default function BitacoraUsoTab({
     await dbCtrl.from('bitacora_uso_equipos').update({ activo: false }).eq('id', id)
     if (reg?.id_combustible_mov_fk) {
       await dbComp.from('combustible_movimientos').delete().eq('id', reg.id_combustible_mov_fk)
+    }
+    if (reg?.id_vale_combustible_fk) {
+      await recomputeValeCombustible(reg.id_vale_combustible_fk)
     }
     fetchRegistros()
   }
@@ -358,6 +362,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
   const isNew = !reg?.id
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
+  const [vales,  setVales]  = useState<any[]>([])
 
   const [form, setForm] = useState({
     id_equipo_fk:     (reg?.id_equipo_fk ?? '').toString(),
@@ -370,12 +375,22 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
     litros:           reg?.litros?.toString()          ?? '',
     tipo_combustible: reg?.tipo_combustible            ?? 'Magna',
     costo_combustible:reg?.costo_combustible?.toString() ?? '',
+    id_vale_combustible_fk: (reg?.id_vale_combustible_fk ?? '').toString(),
     notas:            reg?.notas ?? '',
   })
 
   const setF = (k: string) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }))
+
+  // Vales abiertos contra los que se puede "sacar" combustible por litros —
+  // típicamente vales en modalidad Garrafa (pool de litros para el área).
+  useEffect(() => {
+    dbCtrl.from('vales_combustible')
+      .select('id, folio, tipo_suministro, periodo, litros_autorizados, litros_usados, areas:id_area_fk(nombre)')
+      .in('status', ['Emitido', 'Parcial']).order('created_at', { ascending: false })
+      .then(({ data }) => setVales(data ?? []))
+  }, [])
 
   const equipo  = equipos.find(e => e.id === Number(form.id_equipo_fk))
   const unidad  = equipo?.unidad_odometro ?? 'km'
@@ -389,8 +404,12 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
   const handleSave = async () => {
     if (!form.id_equipo_fk) { setError('Selecciona un equipo'); return }
     if (!form.fecha)         { setError('La fecha es obligatoria'); return }
+    if (form.id_vale_combustible_fk && !form.litros) {
+      setError('Especifica los litros a descontar del vale'); return
+    }
     setSaving(true); setError('')
 
+    const valeAnteriorId = reg?.id_vale_combustible_fk ?? null
     const payload = {
       id_equipo_fk:      Number(form.id_equipo_fk),
       fecha:             form.fecha,
@@ -402,6 +421,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
       litros:            form.litros           ? Number(form.litros)            : null,
       tipo_combustible:  form.litros           ? form.tipo_combustible          : null,
       costo_combustible: form.costo_combustible ? Number(form.costo_combustible) : null,
+      id_vale_combustible_fk: form.id_vale_combustible_fk ? Number(form.id_vale_combustible_fk) : null,
       notas:             form.notas.trim() || null,
       created_by:        authUser?.nombre ?? null,
     }
@@ -446,6 +466,12 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
       }
     } else if (reg?.id_combustible_mov_fk) {
       await dbCtrl.from('bitacora_uso_equipos').update({ id_combustible_mov_fk: null }).eq('id', regId)
+    }
+
+    // Recalcula el status del vale ligado (y del anterior, si se cambió o quitó el vínculo).
+    if (payload.id_vale_combustible_fk) await recomputeValeCombustible(payload.id_vale_combustible_fk)
+    if (valeAnteriorId && valeAnteriorId !== payload.id_vale_combustible_fk) {
+      await recomputeValeCombustible(valeAnteriorId)
     }
 
     onSaved()
@@ -578,6 +604,24 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
               }}>
                 {rendimiento != null ? `${rendimiento.toFixed(2)} km/L` : '—'}
               </div>
+            </div>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <label className="label" style={{ fontSize: 11 }}>Vale de combustible vinculado (opcional)</label>
+            <select className="select" style={{ fontSize: 12 }}
+              value={form.id_vale_combustible_fk} onChange={setF('id_vale_combustible_fk')}>
+              <option value="">— Sin vale —</option>
+              {vales.map(v => {
+                const restante = (v.litros_autorizados ?? 0) - (v.litros_usados ?? 0)
+                return (
+                  <option key={v.id} value={v.id}>
+                    {v.folio} · {v.tipo_suministro} · {v.areas?.nombre ?? ''} · {fmtN(restante)} L restantes
+                  </option>
+                )
+              })}
+            </select>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
+              Descuenta los litros capturados arriba del vale seleccionado (útil para garrafas: se va sacando por litros conforme se usa).
             </div>
           </div>
         </div>
