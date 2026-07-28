@@ -22,3 +22,16 @@ export async function recomputeValeCombustible(idVale: number) {
     .update({ litros_usados: total, status: nuevoStatus, updated_at: new Date().toISOString() })
     .eq('id', idVale)
 }
+
+// El proceso arranca con el vale en Solicitado: Tesorería genera la OP (tipo de
+// gasto Combustible) para pagarle al proveedor con base en los vales pendientes.
+// Al liquidarse esa OP, los vales que quedaron ligados a ella (vales_combustible.id_op_fk)
+// pasan solos a Emitido — ya no se hace a mano desde el modal del vale.
+export async function emitirValesPorPagoOP(idOp: number, emitidoPor: string | null) {
+  const { data: vales } = await dbCtrl.from('vales_combustible')
+    .select('id').eq('id_op_fk', idOp).eq('status', 'Solicitado')
+  if (!vales || vales.length === 0) return
+  await dbCtrl.from('vales_combustible')
+    .update({ status: 'Emitido', emitido_por: emitidoPor, updated_at: new Date().toISOString() })
+    .eq('id_op_fk', idOp).eq('status', 'Solicitado')
+}

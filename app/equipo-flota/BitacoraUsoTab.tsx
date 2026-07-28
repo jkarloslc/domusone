@@ -1,11 +1,11 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbCfg, dbComp } from '@/lib/supabase'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { dbCtrl, dbCfg, dbComp, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { recomputeValeCombustible } from '@/lib/combustible'
 import {
   Plus, X, Save, Loader, RefreshCw, Edit2, Trash2,
-  Filter, Gauge, Activity,
+  Filter, Gauge, Activity, Upload,
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -363,6 +363,8 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
   const [vales,  setVales]  = useState<any[]>([])
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     id_equipo_fk:     (reg?.id_equipo_fk ?? '').toString(),
@@ -376,12 +378,25 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
     tipo_combustible: reg?.tipo_combustible            ?? 'Magna',
     costo_combustible:reg?.costo_combustible?.toString() ?? '',
     id_vale_combustible_fk: (reg?.id_vale_combustible_fk ?? '').toString(),
+    comprobante_url:  reg?.comprobante_url ?? '',
     notas:            reg?.notas ?? '',
   })
 
   const setF = (k: string) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return
+    setUploading(true)
+    const ext  = file.name.split('.').pop()
+    const path = `bitacora/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+    const { error: upErr } = await supabase.storage.from('mantenimiento').upload(path, file, { upsert: true, contentType: file.type })
+    if (upErr) { alert('Error al subir: ' + upErr.message); setUploading(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('mantenimiento').getPublicUrl(path)
+    setForm(f => ({ ...f, comprobante_url: publicUrl }))
+    setUploading(false)
+  }
 
   // Vales abiertos contra los que se puede "sacar" combustible por litros —
   // típicamente vales en modalidad Garrafa (pool de litros para el área).
@@ -422,6 +437,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
       tipo_combustible:  form.litros           ? form.tipo_combustible          : null,
       costo_combustible: form.costo_combustible ? Number(form.costo_combustible) : null,
       id_vale_combustible_fk: form.id_vale_combustible_fk ? Number(form.id_vale_combustible_fk) : null,
+      comprobante_url:   form.comprobante_url || null,
       notas:             form.notas.trim() || null,
       created_by:        authUser?.nombre ?? null,
     }
@@ -622,6 +638,20 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
             </select>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
               Descuenta los litros capturados arriba del vale seleccionado (útil para garrafas: se va sacando por litros conforme se usa).
+            </div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <label className="label" style={{ fontSize: 11 }}>Comprobante de carga</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+              {form.comprobante_url && (
+                <a href={form.comprobante_url} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 11, color: 'var(--blue)', textDecoration: 'underline' }}>Ver comprobante actual</a>
+              )}
+              <button className="btn-secondary" style={{ fontSize: 11 }} onClick={() => fileRef.current?.click()} disabled={uploading}>
+                {uploading ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+                {uploading ? 'Subiendo…' : form.comprobante_url ? 'Reemplazar' : 'Subir comprobante'}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleUpload} />
             </div>
           </div>
         </div>

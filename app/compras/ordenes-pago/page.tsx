@@ -347,6 +347,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [areaId, setAreaId]         = useState<string>(opEdit?.id_area_fk?.toString() ?? '')
   const [ocsDisp, setOcsDisp]       = useState<any[]>([])
   const [ocsSelected, setOcsSel]    = useState<{ id: number; folio: string; total: number; monto: string }[]>([])
+  const [valesCombDisp, setValesCombDisp] = useState<any[]>([])
+  const [valesCombSel,  setValesCombSel]  = useState<number[]>([])
   const [conOC, setConOC] = useState<boolean | null>(
     opEdit ? (opEdit.id_oc_fk != null) : null
   )
@@ -445,6 +447,31 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
+
+  // Vales de combustible en Solicitado disponibles para pagar con esta OP —
+  // el proceso arranca aquí: la OP se genera con base en los vales pendientes de pago.
+  useEffect(() => {
+    if (form.tipo_gasto !== 'Combustible') return
+    let q = dbCtrl.from('vales_combustible')
+      .select('id, folio, tipo_suministro, periodo, litros_autorizados, monto_autorizado, id_op_fk, areas:id_area_fk(nombre)')
+      .eq('status', 'Solicitado').order('created_at', { ascending: false })
+    q = isEdit ? q.or(`id_op_fk.is.null,id_op_fk.eq.${opEdit.id}`) : q.is('id_op_fk', null)
+    q.then(({ data }) => {
+      setValesCombDisp(data ?? [])
+      if (isEdit) setValesCombSel((data ?? []).filter((v: any) => v.id_op_fk === opEdit.id).map((v: any) => v.id))
+    })
+  }, [form.tipo_gasto])
+
+  const toggleValeComb = (id: number) =>
+    setValesCombSel(sel => sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id])
+
+  // Sugiere el monto de la OP con la suma de los vales seleccionados (el usuario puede ajustarlo)
+  useEffect(() => {
+    if (form.tipo_gasto !== 'Combustible' || valesCombSel.length === 0) return
+    const total = valesCombDisp.filter(v => valesCombSel.includes(v.id)).reduce((a, v) => a + (v.monto_autorizado ?? 0), 0)
+    if (total > 0) setForm(f => ({ ...f, monto_manual: total.toFixed(2) }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valesCombSel])
 
   const aplicarProveedor = (provId: string) => {
     const prov = proveedores.find(p => p.id === Number(provId))
@@ -576,6 +603,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (!conOC && detLines.length === 0 && !form.id_area_fk) { setError('Área es obligatoria (o agrega líneas de distribución)'); return }
     if (detLines.length > 0 && detLines.some(l => !l.id_area_fk)) { setError('Todas las líneas de distribución deben tener Área asignada'); return }
     if (detLines.length > 0 && detTotal <= 0) { setError('El total de distribución debe ser mayor a cero'); return }
+    if (form.tipo_gasto === 'Combustible' && valesCombSel.length === 0) {
+      setError('Selecciona al menos un vale solicitado a pagar'); return
+    }
     setSaving(true); setError('')
 
     // Obtener CC/Área/Frente de la OC cuando aplica
@@ -613,6 +643,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (isEdit) {
       const { error: err } = await dbComp.from('ordenes_pago').update(payload).eq('id', opEdit.id)
       if (err) { setError(err.message); setSaving(false); return }
+      // Sincronizar vales de combustible ligados a esta OP
+      await dbCtrl.from('vales_combustible').update({ id_op_fk: null }).eq('id_op_fk', opEdit.id)
+      if (form.tipo_gasto === 'Combustible' && valesCombSel.length > 0) {
+        await dbCtrl.from('vales_combustible').update({ id_op_fk: opEdit.id }).in('id', valesCombSel)
+      }
       // Sincronizar líneas de distribución
       await dbComp.from('ordenes_pago_det').delete().eq('id_op_fk', opEdit.id)
       if (detLines.length > 0) {
@@ -651,6 +686,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
     const { data: op, error: err } = await dbComp.from('ordenes_pago').insert(payload).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
+
+    if (form.tipo_gasto === 'Combustible' && valesCombSel.length > 0) {
+      await dbCtrl.from('vales_combustible').update({ id_op_fk: op.id }).in('id', valesCombSel)
+    }
 
     if (conOC && ocsSelected.length > 0) {
       await dbComp.from('ordenes_pago_oc').insert(
@@ -884,6 +923,38 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                       onChange={setF('monto_manual')} style={{ textAlign: 'right' }} />
                   </div>
                 )}
+              </div>
+            )}
+
+            {!conOC && form.tipo_gasto === 'Combustible' && (
+              <div>
+                <label className="label">Vales solicitados a pagar *</label>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                  {valesCombDisp.length === 0 ? (
+                    <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+                      Sin vales en status Solicitado disponibles
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: 180, overflowY: 'auto' }}>
+                      {valesCombDisp.map(v => (
+                        <label key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                          borderBottom: '1px solid #f8fafc', cursor: 'pointer', fontSize: 12 }}>
+                          <input type="checkbox" checked={valesCombSel.includes(v.id)} onChange={() => toggleValeComb(v.id)} />
+                          <span style={{ fontFamily: 'monospace', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{v.folio}</span>
+                          <span style={{ flex: 1, color: 'var(--text-secondary)' }}>
+                            {v.tipo_suministro} · {v.areas?.nombre ?? ''}{v.periodo ? ` · ${v.periodo}` : ''} · {Number(v.litros_autorizados ?? 0).toLocaleString('es-MX')} L
+                          </span>
+                          <span style={{ fontWeight: 600, color: '#059669', flexShrink: 0 }}>
+                            {v.monto_autorizado != null ? `$${Number(v.monto_autorizado).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
+                  Al pagarse esta OP, los vales seleccionados pasan automáticamente a status Emitido.
+                </div>
               </div>
             )}
 

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { dbCfg, dbCtrl, dbComp, supabase } from '@/lib/supabase'
+import { dbCfg, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { recomputeValeCombustible } from '@/lib/combustible'
 import {
@@ -360,8 +360,8 @@ function ValeModal({ vale, areas, onClose, onSaved }: {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
-  const [ops,    setOps]    = useState<any[]>([])
-  const [opSearch, setOpSearch] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const isNew = !vale?.folio
   const puedeEmitir = ROLES_EMITE_VALE.includes(authUser?.rol as any)
@@ -373,23 +373,23 @@ function ValeModal({ vale, areas, onClose, onSaved }: {
     litros_autorizados: vale?.litros_autorizados?.toString() ?? '',
     monto_autorizado:   vale?.monto_autorizado?.toString()   ?? '',
     vigencia:           vale?.vigencia           ?? '',
-    id_op_fk:           vale?.id_op_fk?.toString() ?? '',
+    comprobante_url:    vale?.comprobante_url    ?? '',
     notas:              vale?.notas              ?? '',
   })
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  useEffect(() => {
-    dbComp.from('ordenes_pago').select('id, folio, concepto, monto, status')
-      .in('status', ['Pagada', 'Pendiente']).order('created_at', { ascending: false }).limit(200)
-      .then(({ data }) => setOps(data ?? []))
-  }, [])
-
-  const filteredOps = ops.filter(op => {
-    if (!opSearch) return true
-    const q = opSearch.toLowerCase()
-    return (op.folio ?? '').toLowerCase().includes(q) || (op.concepto ?? '').toLowerCase().includes(q)
-  })
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return
+    setUploading(true)
+    const ext  = file.name.split('.').pop()
+    const path = `vales/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+    const { error: upErr } = await supabase.storage.from('mantenimiento').upload(path, file, { upsert: true, contentType: file.type })
+    if (upErr) { alert('Error al subir: ' + upErr.message); setUploading(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('mantenimiento').getPublicUrl(path)
+    setForm(f => ({ ...f, comprobante_url: publicUrl }))
+    setUploading(false)
+  }
 
   const buildPayload = () => ({
     tipo_suministro:   form.tipo_suministro,
@@ -398,7 +398,7 @@ function ValeModal({ vale, areas, onClose, onSaved }: {
     litros_autorizados:Number(form.litros_autorizados),
     monto_autorizado:  form.monto_autorizado ? Number(form.monto_autorizado) : null,
     vigencia:          form.vigencia || null,
-    id_op_fk:          form.id_op_fk ? Number(form.id_op_fk) : null,
+    comprobante_url:   form.comprobante_url || null,
     notas:             form.notas.trim() || null,
     updated_at:        new Date().toISOString(),
   })
@@ -502,44 +502,25 @@ function ValeModal({ vale, areas, onClose, onSaved }: {
             </div>
           </div>
 
-          {/* Selector de OP */}
+          {!isNew && vale?.id_op_fk && (
+            <div style={{ padding: '6px 10px', background: '#eff6ff', borderRadius: 6, fontSize: 11, color: 'var(--blue)' }}>
+              Vinculado a la OP #{vale.id_op_fk} — se emitirá automáticamente cuando esa OP se pague.
+            </div>
+          )}
+
+          {/* Documento del vale */}
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
-            <label className="label" style={{ fontSize: 11, marginBottom: 6, display: 'block' }}>Orden de Pago vinculada (opcional)</label>
-            {form.id_op_fk && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 8px', background: '#eff6ff', borderRadius: 6, marginBottom: 6 }}>
-                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600, flex: 1 }}>
-                  {ops.find(o => o.id === Number(form.id_op_fk))?.folio ?? `OP #${form.id_op_fk}`}
-                </span>
-                <button className="btn-ghost" style={{ padding: '2px 4px', color: '#dc2626' }} onClick={() => setForm(f => ({ ...f, id_op_fk: '' }))}>
-                  <X size={11} />
-                </button>
-              </div>
-            )}
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-              <div style={{ padding: '6px 10px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <div style={{ position: 'relative' }}>
-                  <Search size={11} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-                  <input className="input" style={{ paddingLeft: 26, fontSize: 11, height: 26 }}
-                    placeholder="Buscar folio o concepto…" value={opSearch} onChange={e => setOpSearch(e.target.value)} />
-                </div>
-              </div>
-              <div style={{ maxHeight: 130, overflowY: 'auto' }}>
-                {filteredOps.length === 0 ? (
-                  <div style={{ padding: '10px', fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>Sin OPs disponibles</div>
-                ) : filteredOps.slice(0, 40).map(op => (
-                  <div key={op.id} onClick={() => setForm(f => ({ ...f, id_op_fk: op.id.toString() }))}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', cursor: 'pointer',
-                      background: Number(form.id_op_fk) === op.id ? '#eff6ff' : 'transparent',
-                      borderBottom: '1px solid #f8fafc' }}
-                    onMouseEnter={e => { if (Number(form.id_op_fk) !== op.id) e.currentTarget.style.background = '#f8fafc' }}
-                    onMouseLeave={e => { if (Number(form.id_op_fk) !== op.id) e.currentTarget.style.background = 'transparent' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{op.folio}</span>
-                    <span style={{ fontSize: 11, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', flexShrink: 0 }}>{fmt$(op.monto)}</span>
-                    {Number(form.id_op_fk) === op.id && <CheckCircle size={12} style={{ color: 'var(--blue)', flexShrink: 0 }} />}
-                  </div>
-                ))}
-              </div>
+            <label className="label" style={{ fontSize: 11 }}>Documento del Vale (PDF / imagen)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+              {form.comprobante_url && (
+                <a href={form.comprobante_url} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 11, color: 'var(--blue)', textDecoration: 'underline' }}>Ver documento actual</a>
+              )}
+              <button className="btn-secondary" style={{ fontSize: 11 }} onClick={() => fileRef.current?.click()} disabled={uploading}>
+                {uploading ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+                {uploading ? 'Subiendo…' : form.comprobante_url ? 'Reemplazar' : 'Subir documento'}
+              </button>
+              <input ref={fileRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleUpload} />
             </div>
           </div>
 
@@ -854,6 +835,11 @@ function ValeDetail({ vale, areaMap, equipoMap, onClose }: {
             ))}
           </div>
           {vale.notas && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: '#f8fafc', borderRadius: 8, padding: '10px 12px' }}>{vale.notas}</div>}
+          {vale.comprobante_url && (
+            <a href={vale.comprobante_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--blue)' }}>
+              Ver documento del vale
+            </a>
+          )}
 
           {/* Cargas del vale */}
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>

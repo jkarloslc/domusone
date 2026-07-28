@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { dbComp, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { emitirValesPorPagoOP } from '@/lib/combustible'
 import {
   ArrowLeft, RefreshCw, Search, Eye, X, Loader,
   Plus, Printer, FileText, Upload, Trash2, ExternalLink,
@@ -527,6 +528,11 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
         referencia_pago: form.referencia.trim() || null,
       } : {}),
     }).eq('id', op.id)
+
+    // OP de Combustible pagada: los vales ligados pasan de Solicitado a Emitido solos.
+    if (nuevoStatus === 'Pagada') {
+      await emitirValesPorPagoOP(op.id, authUser?.nombre ?? null)
+    }
 
     // Movimiento bancario: actualizar saldo de cuenta origen
     if (cuentaId) {
