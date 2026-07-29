@@ -346,12 +346,15 @@ export default function POSPage() {
     ])
     // Para el CFDI: importe = subtotal (base sin IVA); el PAC agrega la tasa encima.
     // Si no aplica IVA (iva = 0), importe = total y tasa = 0.
+    // Nota: se incluyen también líneas con total negativo (p.ej. "Descuento adicional" de un
+    // cobro de cuotas con varios conceptos) — excluirlas dejaría la factura por un monto mayor
+    // al realmente cobrado en el ticket POS.
     const conceptos = ((det ?? []) as { concepto: string; subtotal: number; iva: number; iva_pct: number; total: number }[])
-      .filter(d => d.total > 0)
+      .filter(d => d.total !== 0)
       .map(d => ({
         descripcion: d.concepto,
         importe:     d.subtotal,                                          // base sin IVA
-        tasa_iva:    d.iva > 0 && d.iva_pct > 0 ? d.iva_pct / 100 : 0,  // 0.16 ó 0
+        tasa_iva:    d.iva !== 0 && d.iva_pct > 0 ? d.iva_pct / 100 : 0,  // 0.16 ó 0
       }))
     setConceptosPOS(conceptos.length ? conceptos : [{ descripcion: `Venta POS #${v.folio_dia}`, importe: v.total, tasa_iva: 0 }])
 

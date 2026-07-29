@@ -250,10 +250,15 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     const folioFinal = (reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).folio
     setIdVentaPos((reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).id_venta_pos_fk ?? null)
 
-    // 3. Insertar detalle del recibo — el cargo adicional se cobra primero, luego cuotas (greedy)
-    let rem2 = montoParcial
-    const cargoAplicado = cargoAdicional > 0 ? Math.min(rem2, cargoAdicional) : 0
-    rem2 = parseFloat((rem2 - cargoAplicado).toFixed(2))
+    // 3. Insertar detalle del recibo — el cargo adicional se cobra primero, luego cuotas (greedy).
+    // El descuento adicional (descExtra) es un monto condonado, no un faltante de pago: se debe
+    // sumar de vuelta al pool a repartir entre cuotas (igual que el paso 5 al actualizar cxc_golf,
+    // que usa esta misma fórmula) para que TODAS las cuotas seleccionadas queden con su saldo
+    // completo cubierto y aparezcan en el detalle del recibo/ticket/factura — antes, al restar el
+    // descuento del pool sin más, la(s) primera(s) cuota(s) se lo tragaban entero y el resto
+    // quedaba fuera del recibo aunque sí se marcaran como pagadas.
+    const cargoAplicado = cargoAdicional > 0 ? Math.min(montoParcial, cargoAdicional) : 0
+    let rem2 = parseFloat((montoParcial - cargoAplicado + descExtra).toFixed(2))
     const detRows = cuotasSelec.map(c => {
       const cuotaSaldo = c.saldo ?? c.monto_final
       const aplicar = Math.min(rem2, cuotaSaldo)
@@ -279,6 +284,18 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         monto_original: cargoAdicional,
         descuento:      0,
         monto_final:    parseFloat(cargoAplicado.toFixed(2)),
+      } as any)
+    }
+    if (descExtra > 0) {
+      detRows.push({
+        id_recibo_fk:   reciboId,
+        id_cuota_fk:    null,
+        concepto:       'Descuento adicional',
+        tipo:           null,
+        periodo:        null,
+        monto_original: -descExtra,
+        descuento:      0,
+        monto_final:    -parseFloat(descExtra.toFixed(2)),
       } as any)
     }
 
