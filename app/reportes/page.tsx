@@ -53,6 +53,7 @@ import ReporteLotesResumenClasif from './ReporteLotesResumenClasif'
 import ReportePropietariosDesgloseLotes from './ReportePropietariosDesgloseLotes'
 import ReporteLotesPorStatus from './ReporteLotesPorStatus'
 import ReporteSeccionesLotes from './ReporteSeccionesLotes'
+import ReporteCobranzaCorrienteVencida from './ReporteCobranzaCorrienteVencida'
 
 const GRUPOS = [
   {
@@ -61,6 +62,7 @@ const GRUPOS = [
     label: 'Residencial',
     color: 'var(--blue)',
     reportes: [
+      { id: 'cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Cuotas cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores), con resumen mensual y detalle' },
       { id: 'secciones-lotes',        label: 'Secciones con Cantidad de Lotes', icon: MapPin, desc: 'Resumen por sección: total de lotes y desglose por status (Vendido / Libre / Bloqueado)' },
       { id: 'lotes',                label: 'Lotes por Sección',          icon: MapPin,        desc: 'Catálogo de lotes filtrable por sección' },
       { id: 'lotes-seccion-clasif',   label: 'Lotes por Sección y Clasificación', icon: MapPin, desc: 'Lotes agrupados jerárquicamente por sección y clasificación, con subtotales de superficie y valor' },
@@ -143,6 +145,8 @@ const GRUPOS = [
     reportes: [
       { id: 'golf-estado-cuenta', label: 'Estado de Cuenta',    icon: FileText,  desc: 'Cuotas y recibos por socio en un período' },
       { id: 'golf-cobranza',      label: 'Cobranza / CXC',      icon: Wallet,    desc: 'Cuotas por categoría, tipo y status con resumen y detalle' },
+      { id: 'golf-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Cuotas de socios cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
+      { id: 'golf-pensiones-corriente-vencida', label: 'Pensiones — Corriente vs Vencida', icon: Wallet, desc: 'Pensiones de carritos cobradas clasificadas por fecha de pago: corriente vs vencida, con resumen mensual y detalle' },
       { id: 'golf-proyeccion-cobranza', label: 'Proyección de Cobranza', icon: TrendingDown, desc: 'Membresías y pensiones por mes: cargo total, cobrado y por cobrar con avance de cobranza' },
       { id: 'golf-accesos',       label: 'Salidas al Campo',     icon: MapPin,    desc: 'Registro de rondas por socio, espacio y forma de juego' },
       { id: 'golf-caballos-servicios',  label: 'Caballos y Servicios',        icon: BarChart3, desc: 'Desglose por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
@@ -161,7 +165,17 @@ const GRUPOS = [
     color: '#92400e',
     reportes: [
       { id: 'hipico-estado-cuenta', label: 'Estado de Cuenta', icon: FileText,  desc: 'Cargos y pagos por arrendatario en un período' },
+      { id: 'hipico-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Rentas de caballerizas cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
       { id: 'hipico-servicios',     label: 'Servicios por Caballo', icon: BarChart3, desc: 'Desglose jerárquico por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
+    ],
+  },
+  {
+    slug:   'locales',
+    modulo: 'locales',
+    label: 'Locales Comerciales',
+    color: '#0f766e',
+    reportes: [
+      { id: 'locales-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Rentas de locales y propiedades cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
     ],
   },
   {
@@ -251,6 +265,7 @@ function ReportesContent() {
       })}
 
       {/* Reportes residencial */}
+      {active === 'cobranza-corriente-vencida' && <ReporteCobranzaCorrienteVencida fuente="residencial" />}
       {active === 'secciones-lotes'       && <ReporteSeccionesLotes />}
       {active === 'lotes'                && <ReporteLotes />}
       {active === 'lotes-seccion-clasif' && <ReporteLotesPorSeccionClasif />}
@@ -302,6 +317,8 @@ function ReportesContent() {
       {/* Reportes golf */}
       {active === 'golf-estado-cuenta' && <ReporteGolfEstadoCuenta />}
       {active === 'golf-cobranza'               && <ReporteGolfCobranza />}
+      {active === 'golf-cobranza-corriente-vencida'  && <ReporteCobranzaCorrienteVencida fuente="golf" />}
+      {active === 'golf-pensiones-corriente-vencida' && <ReporteCobranzaCorrienteVencida fuente="pensiones" />}
       {active === 'golf-proyeccion-cobranza'    && <ReporteProyeccionCobranza />}
       {active === 'golf-accesos'       && <ReporteGolfAccesos />}
       {active === 'golf-caballos-servicios'  && <ReporteHipicoServicios />}
@@ -314,7 +331,11 @@ function ReportesContent() {
 
       {/* Reportes hípico */}
       {active === 'hipico-estado-cuenta' && <ReporteHipicoEstadoCuenta />}
+      {active === 'hipico-cobranza-corriente-vencida' && <ReporteCobranzaCorrienteVencida fuente="hipico" />}
       {active === 'hipico-servicios'     && <ReporteHipicoServicios />}
+
+      {/* Reportes locales comerciales */}
+      {active === 'locales-cobranza-corriente-vencida' && <ReporteCobranzaCorrienteVencida fuente="locales" />}
 
       {/* Reportes hospitality */}
       {active === 'hospitality-eventos' && <ReporteHospitalityEventos />}
