@@ -130,6 +130,7 @@ export default function CobranzaLocalesPage() {
   const [modoCuotas, setModoCuotas]         = useState<{ idAsig: number; monto: number } | null>(null)
   const [showCobrar, setShowCobrar]         = useState<{ cuotas: CuotaPendiente[]; nombreArr: string; idArr: number; nombrePropiedad: string; periodoDefault?: string } | null>(null)
   const [generandoCargo, setGenerandoCargo] = useState<number | null>(null)
+  const [eliminandoA, setEliminandoA]       = useState<number | null>(null)
 
   const [mesGenerar, setMesGenerar] = useState(() => {
     const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -498,6 +499,42 @@ export default function CobranzaLocalesPage() {
     fetchAsignaciones()
   }
 
+  const handleEliminarAsignacion = async (a: Asignacion) => {
+    const { data: cuotas } = await dbCtrl.from('loc_cxc')
+      .select('id, status').eq('id_asignacion_fk', a.id)
+    const conPago = (cuotas ?? []).filter(c => c.status !== 'PENDIENTE')
+    if (conPago.length > 0) {
+      alert(`No se puede eliminar: la asignación tiene ${conPago.length} cuota(s) con pagos registrados (pagadas o parciales). Si ya no aplica, desactívala con Editar → Activa.`)
+      return
+    }
+    const pendientes = (cuotas ?? []).length
+    if (!confirm(`¿Eliminar la asignación de ${fmtNombre(a.cat_arrendatarios)} (${a.cat_propiedades?.clave ?? 'sin propiedad'})?${pendientes > 0 ? ` Se eliminarán también sus ${pendientes} cuota(s) pendiente(s).` : ''} Esta acción no se puede deshacer.`)) return
+    setEliminandoA(a.id)
+    if (pendientes > 0) {
+      const { error: errCxc } = await dbCtrl.from('loc_cxc').delete().eq('id_asignacion_fk', a.id)
+      if (errCxc) {
+        alert(`Error al eliminar cuotas pendientes: ${errCxc.message}`)
+        setEliminandoA(null)
+        return
+      }
+    }
+    const { error } = await dbCtrl.from('loc_asignaciones').delete().eq('id', a.id)
+    if (error) {
+      alert(`Error al eliminar: ${error.message}`)
+      setEliminandoA(null)
+      return
+    }
+    // Liberar la propiedad si no tiene otra asignación activa
+    const { data: otras } = await dbCtrl.from('loc_asignaciones')
+      .select('id').eq('id_propiedad_fk', a.id_propiedad_fk).eq('activo', true).limit(1)
+    if (!otras || otras.length === 0) {
+      await dbCtrl.from('loc_propiedades').update({ status: 'Libre' }).eq('id', a.id_propiedad_fk)
+    }
+    setEliminandoA(null)
+    setExpandidoA(null)
+    fetchAsignaciones()
+  }
+
   // ── Effects ───────────────────────────────────────────────
   useEffect(() => { fetchAsignaciones() }, [fetchAsignaciones])
   useEffect(() => { if (tab === 'cobranza') fetchCobranza() }, [tab, fetchCobranza])
@@ -759,12 +796,22 @@ export default function CobranzaLocalesPage() {
                             </span>
                           </td>
                           <td style={{ padding: '10px 14px' }}>
-                            {puedeEscribir && (
-                              <button onClick={e => { e.stopPropagation(); setEditAsig({ id: a.id, id_arrendatario_fk: a.id_arrendatario_fk, id_propiedad_fk: a.id_propiedad_fk, fecha_inicio: a.fecha_inicio, fecha_fin: a.fecha_fin, monto_mensual: a.monto_mensual, dia_pago: a.dia_pago, activo: a.activo, observaciones: a.observaciones }); setShowAsig(true) }}
-                                style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                Editar
-                              </button>
-                            )}
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              {puedeEscribir && (
+                                <button onClick={e => { e.stopPropagation(); setEditAsig({ id: a.id, id_arrendatario_fk: a.id_arrendatario_fk, id_propiedad_fk: a.id_propiedad_fk, fecha_inicio: a.fecha_inicio, fecha_fin: a.fecha_fin, monto_mensual: a.monto_mensual, dia_pago: a.dia_pago, activo: a.activo, observaciones: a.observaciones }); setShowAsig(true) }}
+                                  style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                  Editar
+                                </button>
+                              )}
+                              {esSuperadmin && (
+                                <button onClick={e => { e.stopPropagation(); handleEliminarAsignacion(a) }}
+                                  disabled={eliminandoA === a.id}
+                                  title="Eliminar asignación"
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '5px 8px', borderRadius: 8, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', opacity: eliminandoA === a.id ? 0.5 : 1 }}>
+                                  {eliminandoA === a.id ? <Loader size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
 
