@@ -1553,7 +1553,7 @@ ${facturasCorte.length > 0 ? `
                         <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                             <div style={{ fontWeight: 700, fontFamily: 'monospace', color: '#2563eb' }}>{cfdi?.folio_factura ?? '—'}</div>
-                            <div style={{ fontSize: 10, color: '#94a3b8' }}>Venta #{String(v.folio_dia).padStart(4, '0')}</div>
+                            <div style={{ fontSize: 10, color: '#94a3b8' }}>Ticket #{String(v.id).padStart(6, '0')}</div>
                           </td>
                           <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</td>
                           <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>{centro?.nombre ?? `#${v.id_centro_fk}`}</td>
