@@ -61,9 +61,9 @@ export async function printReciboHip(reciboId: number, folio: string, nombreArre
   const [{ data: detData }, { data: pagosData }, { data: reciboData }] = await Promise.all([
     dbHip.from('recibos_hip_det').select('concepto, periodo, monto_final').eq('id_recibo_fk', reciboId),
     dbHip.from('recibos_hip_pagos').select('forma_nombre, monto, referencia').eq('id_recibo_fk', reciboId),
-    dbHip.from('recibos_hip').select('total, fecha_recibo, observaciones').eq('id', reciboId).single(),
+    dbHip.from('recibos_hip').select('subtotal, descuento, total, fecha_recibo, observaciones').eq('id', reciboId).single(),
   ])
-  const recibo = reciboData as { total: number; fecha_recibo: string; observaciones: string | null } | null
+  const recibo = reciboData as { subtotal: number | null; descuento: number | null; total: number; fecha_recibo: string; observaciones: string | null } | null
   if (!recibo) return
 
   let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
@@ -142,6 +142,8 @@ export async function printReciboHip(reciboId: number, folio: string, nombreArre
       <tbody>${filas}</tbody>
     </table>
     <div class="totales">
+      ${recibo.subtotal != null && (recibo.descuento ?? 0) > 0 ? `<div class="totales-row"><span>Subtotal</span><span>$${recibo.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>
+      <div class="totales-row"><span>Descuento adicional</span><span style="color:#dc2626">– $${(recibo.descuento ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>` : ''}
       <div class="totales-row total"><span>TOTAL</span><span>$${recibo.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>
     </div>
     <div class="pago-box" style="margin-top:16px">
@@ -179,10 +181,10 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     return new Set(cuotas.map(c => c.id))
   })
   const [pagos, setPagos] = useState<PagoLinea[]>([{ id_forma_fk: 0, forma_nombre: '', monto: '', referencia: '' }])
-  const [montoParcial, setMontoParcial] = useState<string>(() => {
-    const t = cuotas.reduce((s, c) => s + c.saldo, 0)
-    return t > 0 ? t.toFixed(2) : ''
-  })
+  const [cargoAdicionalStr, setCargoAdicionalStr] = useState('')
+  const [descuentoExtra, setDescuentoExtra]       = useState('')
+  const [parcialHabilitado, setParcialHabilitado] = useState(false)
+  const [montoParcialStr, setMontoParcialStr]     = useState('')
   const [fechaPago, setFechaPago] = useState<string>(hoyLocal())
   const [notas, setNotas]   = useState('')
   const [facturable, setFacturable] = useState(false)
@@ -190,32 +192,19 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
   const [err, setErr]       = useState('')
 
   const [exito, setExito]           = useState<{ idRecibo: number; folio: string } | null>(null)
+  const [idVentaPos, setIdVentaPos] = useState<number | null>(null)
   const [imprimiendo, setImprimiendo] = useState(false)
   const [genTicket, setGenTicket]   = useState(false)
   const [ticketErr, setTicketErr]   = useState('')
 
-  // Cargar formas de pago y pre-llenar monto con el total de la selección inicial
+  // Cargar formas de pago
   useEffect(() => {
-    const totalInicial = cuotas.filter(c => seleccionados.has(c.id)).reduce((s, c) => s + c.saldo, 0)
     dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => {
-        const fps = (data as FormaPago[] | null) ?? []
-        setFormasPago(fps)
-        setPagos([{ id_forma_fk: 0, forma_nombre: '', monto: totalInicial > 0 ? totalInicial.toFixed(2) : '', referencia: '' }])
+        setFormasPago((data as FormaPago[] | null) ?? [])
         setLoading(false)
       })
   }, [])
-
-  // Sincronizar montoParcial y la primera línea de pago al cambiar la selección
-  useEffect(() => {
-    const total = cuotas.filter(c => seleccionados.has(c.id)).reduce((s, c) => s + c.saldo, 0)
-    const totalStr = total > 0 ? total.toFixed(2) : ''
-    setMontoParcial(totalStr)
-    setPagos(prev => {
-      if (prev.length !== 1) return prev
-      return [{ ...prev[0], monto: totalStr }]
-    })
-  }, [seleccionados])
 
   const toggle = (id: number) =>
     setSeleccionados(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
@@ -235,11 +224,34 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       return next
     })
 
-  const cuotasSel      = cuotas.filter(c => seleccionados.has(c.id))
-  const montoTotal     = cuotasSel.reduce((s, c) => s + c.saldo, 0)
-  const montoCobrar    = Math.min(parseFloat(montoParcial) || montoTotal, montoTotal)
-  const saldoRestante  = Math.max(0, parseFloat((montoTotal - montoCobrar).toFixed(2)))
+  const cuotasSel        = cuotas.filter(c => seleccionados.has(c.id))
+  const subtotalBruto    = cuotasSel.reduce((s, c) => s + c.saldo, 0)
+  const cargoAdicional   = Math.max(0, parseFloat(cargoAdicionalStr) || 0)
+  const subtotalConCargo = subtotalBruto + cargoAdicional
+  const descExtra        = Math.min(parseFloat(descuentoExtra) || 0, subtotalConCargo)
+  const totalCobro       = Math.max(0, subtotalConCargo - descExtra)
+
+  // Cobro parcial
+  const montoCobrar    = parcialHabilitado
+    ? Math.min(parseFloat(montoParcialStr) || totalCobro, totalCobro)
+    : totalCobro
+  const saldoRestante  = Math.max(0, parseFloat((totalCobro - montoCobrar).toFixed(2)))
   const esParcial      = saldoRestante > 0
+
+  const toggleParcial = () => {
+    if (parcialHabilitado) {
+      setParcialHabilitado(false)
+      setMontoParcialStr('')
+    } else {
+      setParcialHabilitado(true)
+    }
+  }
+
+  // Sincronizar la única línea de pago con el monto a cobrar
+  useEffect(() => {
+    const str = montoCobrar > 0 ? montoCobrar.toFixed(2) : ''
+    setPagos(prev => prev.length !== 1 ? prev : [{ ...prev[0], monto: str }])
+  }, [montoCobrar])
 
   const pagosValidos      = pagos.filter(p => p.id_forma_fk > 0 && parseFloat(p.monto) > 0)
   const totalDistribuido  = pagosValidos.reduce((s, p) => s + parseFloat(p.monto), 0)
@@ -273,13 +285,13 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       folio,
       fecha_recibo:       fechaPago,
       id_arrendatario_fk: idArrendatario,
-      subtotal:           montoCobrar,
-      descuento:          0,
+      subtotal:           subtotalConCargo,
+      descuento:          descExtra,
       total:              montoCobrar,
       forma_pago_nombre:  formasNombre,
       referencia_pago:    primerRef,
       observaciones:      notas || null,
-      usuario_cobra:      authUser?.user?.email ?? null,
+      usuario_cobra:      authUser?.nombre ?? authUser?.user?.email ?? null,
       status:             'VIGENTE',
       id_forma_pago_fk:   primerFormaId,
       facturable,
@@ -287,22 +299,51 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     if (e1 || !recData) { setSaving(false); setErr(e1?.message ?? 'Error al crear recibo'); return }
     const idRecibo = (recData as { id: number }).id
 
-    // 2. Detalle de cuotas (greedy)
-    let rem = montoCobrar
+    // 2. Detalle de cuotas (greedy) — el cargo adicional se cobra primero, luego cuotas.
+    // El descuento adicional (descExtra) es un monto condonado, no un faltante de pago: se
+    // suma de vuelta al pool a repartir entre cuotas (igual que el paso 4 al actualizar
+    // cxc_hip) para que TODAS las cuotas seleccionadas queden con su saldo cubierto y
+    // aparezcan en el detalle del recibo/ticket — misma lógica que el modal de golf.
+    const cargoAplicado = cargoAdicional > 0 ? Math.min(montoCobrar, cargoAdicional) : 0
+    let rem = parseFloat((montoCobrar - cargoAplicado + descExtra).toFixed(2))
     const detalle = cuotasSel.map(c => {
       const aplicar = Math.min(rem, c.saldo)
       rem = parseFloat((rem - aplicar).toFixed(2))
       return {
         id_recibo_fk:   idRecibo,
-        id_cuota_fk:    c.id,
+        id_cuota_fk:    c.id as number | null,
         concepto:       c.concepto,
-        tipo:           'RENTA_CABALLERIZA',
+        tipo:           'RENTA_CABALLERIZA' as string | null,
         periodo:        c.periodo ?? null,
         monto_original: c.monto_final,
         descuento:      0,
-        monto_final:    aplicar,
+        monto_final:    parseFloat(aplicar.toFixed(2)),
       }
     }).filter(d => d.monto_final > 0)
+    if (cargoAplicado > 0) {
+      detalle.unshift({
+        id_recibo_fk:   idRecibo,
+        id_cuota_fk:    null,
+        concepto:       'Cargo adicional',
+        tipo:           null,
+        periodo:        null,
+        monto_original: cargoAdicional,
+        descuento:      0,
+        monto_final:    parseFloat(cargoAplicado.toFixed(2)),
+      })
+    }
+    if (descExtra > 0) {
+      detalle.push({
+        id_recibo_fk:   idRecibo,
+        id_cuota_fk:    null,
+        concepto:       'Descuento adicional',
+        tipo:           null,
+        periodo:        null,
+        monto_original: -descExtra,
+        descuento:      0,
+        monto_final:    -parseFloat(descExtra.toFixed(2)),
+      })
+    }
 
     const { error: e2 } = await dbHip.from('recibos_hip_det').insert(detalle)
     if (e2) { setSaving(false); setErr(e2.message); return }
@@ -319,8 +360,10 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     )
     if (e3) { setSaving(false); setErr(e3.message); return }
 
-    // 4. Actualizar saldo de cuotas (greedy, en paralelo)
-    let remaining = montoCobrar
+    // 4. Actualizar saldo de cuotas (greedy, en paralelo). El descuento adicional también
+    // extingue saldo de las cuotas (quedó condonado); lo cobrado del cargo adicional no
+    // reduce saldo de ninguna cuota.
+    let remaining = parseFloat((montoCobrar - cargoAplicado + descExtra).toFixed(2))
     const cuotaUpdates: PromiseLike<any>[] = []
     for (const c of cuotasSel) {
       const aplicar = Math.min(remaining, c.saldo)
@@ -331,12 +374,14 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         dbHip.from('cxc_hip').update({
           saldo:      nuevoSaldo,
           status:     nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL',
-          fecha_pago: fechaPago,
+          fecha_pago: nuevoSaldo === 0 ? fechaPago : null,
           forma_pago: formasNombre,
-        }).eq('id', c.id)
+        }).eq('id', c.id).select('id')
       )
     }
-    await Promise.all(cuotaUpdates)
+    const results = await Promise.all(cuotaUpdates)
+    const updErr = results.find((r: any) => r.error)?.error
+    if (updErr) { setSaving(false); setErr(updErr.message); return }
 
     setSaving(false)
     setExito({ idRecibo, folio })
@@ -364,8 +409,8 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       const idConceptoHip = (cfgHip as { id_concepto_ingreso_fk: number | null } | null)?.id_concepto_ingreso_fk ?? null
 
       const { data: recFull } = await dbHip.from('recibos_hip')
-        .select('total, fecha_recibo, id_venta_pos_fk, facturable').eq('id', exito.idRecibo).single()
-      const rf = recFull as { total: number; fecha_recibo: string; id_venta_pos_fk: number | null; facturable: boolean | null } | null
+        .select('subtotal, descuento, total, fecha_recibo, id_venta_pos_fk, facturable').eq('id', exito.idRecibo).single()
+      const rf = recFull as { subtotal: number; descuento: number; total: number; fecha_recibo: string; id_venta_pos_fk: number | null; facturable: boolean | null } | null
       if (!rf) throw new Error('No se encontró el recibo.')
 
       let ventaId = rf.id_venta_pos_fk
@@ -389,9 +434,9 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
           folio_dia: folioDia, id_centro_fk: centroHip.id, fecha: fechaIso,
           nombre_cliente: nombreArrendatario, es_socio: false,
-          subtotal: rf.total, descuento: 0, iva: totalIvaCuotas, total: rf.total,
-          status: 'PAGADA', facturable: rf.facturable ?? false, usuario_crea: authUser?.user?.email ?? 'hipico',
-          notas: `Ticket POS desde recibo hípico ${exito.folio}`,
+          subtotal: rf.subtotal ?? rf.total, descuento: rf.descuento ?? 0, iva: totalIvaCuotas, total: rf.total,
+          status: 'PAGADA', facturable: rf.facturable ?? false, usuario_crea: authUser?.nombre ?? authUser?.user?.email ?? 'hipico',
+          notas: `Ticket POS desde recibo hípico ${exito.folio}${esParcial ? ' [PAGO PARCIAL]' : ''}`,
         }).select('id, folio_dia').single()
         if (ev || !venta) throw new Error(ev?.message ?? 'Error al crear venta POS')
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
@@ -409,13 +454,14 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         }
         await dbHip.from('recibos_hip').update({ id_venta_pos_fk: ventaId }).eq('id', exito.idRecibo)
       }
+      setIdVentaPos(ventaId)
 
       // Datos para ticket
       const { data: formasFinal } = await dbHip.from('recibos_hip_pagos').select('forma_nombre, monto').eq('id_recibo_fk', exito.idRecibo)
       const cfgP = cfg as PosCfg | null
       const ticketData = {
         id: ventaId, folio_dia: folioDia || '—', fecha: fechaIso,
-        cliente: nombreArrendatario, cajero: authUser?.user?.email ?? 'hipico', centro: centroHip.nombre,
+        cliente: nombreArrendatario, cajero: authUser?.nombre ?? authUser?.user?.email ?? 'hipico', centro: centroHip.nombre,
         razon_social: cfgP?.razon_social ?? 'Club Hípico Balvanera',
         municipio: cfgP?.municipio ?? '', direccion: cfgP?.direccion ?? '',
         rfc: cfgP?.rfc ?? '', telefono: cfgP?.telefono ?? '',
@@ -446,7 +492,16 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
             {nombreArrendatario}
             {nombreCaballeriza && <span style={{ color: '#b45309' }}> · {nombreCaballeriza}</span>}
             {' · '}{fmt$(montoCobrar)}
+            {esParcial && <span style={{ marginLeft: 6, color: '#d97706', fontWeight: 600 }}>PAGO PARCIAL</span>}
           </div>
+          {esParcial && (
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e', textAlign: 'left' }}>
+              Se cobró {fmt$(montoCobrar)} de {fmt$(totalCobro)} adeudado. Saldo pendiente: <strong>{fmt$(saldoRestante)}</strong>.
+            </div>
+          )}
+          {idVentaPos && (
+            <div style={{ fontSize: 12, color: '#15803d', fontWeight: 600, marginTop: 6 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</div>
+          )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handleImprimir} disabled={imprimiendo}
@@ -455,7 +510,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
           </button>
           <button onClick={handleTicketPOS} disabled={genTicket}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: 'none', borderRadius: 10, background: '#b45309', color: '#fff', cursor: 'pointer', opacity: genTicket ? 0.6 : 1 }}>
-            <Receipt size={16} /> {genTicket ? 'Generando…' : 'Generar Ticket POS'}
+            <Receipt size={16} /> {genTicket ? 'Generando…' : idVentaPos ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
           </button>
           {ticketErr && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{ticketErr}</div>}
         </div>
@@ -467,12 +522,17 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
   return (
     <ModalShell modulo="hipico" titulo="Registrar Cobro" onClose={onClose} maxWidth={580}
       footer={
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
           {seleccionados.size > 0 && (
-            <span style={{ fontSize: 13, fontWeight: 700, color: esParcial ? '#d97706' : '#16a34a', marginRight: 'auto' }}>
-              Total: {fmt$(montoCobrar)}
-              {esParcial && <span style={{ fontSize: 11, color: '#64748b', marginLeft: 6 }}>(parcial de {fmt$(montoTotal)})</span>}
-            </span>
+            <div style={{ marginRight: 'auto' }}>
+              <div style={{ fontSize: 11, color: '#64748b' }}>{cuotasSel.length} cuota{cuotasSel.length !== 1 ? 's' : ''} · subtotal {fmt$(subtotalBruto)}</div>
+              {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#059669' }}>+ cargo adicional {fmt$(cargoAdicional)}</div>}
+              {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626' }}>– descuento {fmt$(descExtra)}</div>}
+              <span style={{ fontSize: 15, fontWeight: 700, color: esParcial ? '#d97706' : '#16a34a' }}>
+                {fmt$(montoCobrar)}
+                {esParcial && <span style={{ fontSize: 11, color: '#64748b', marginLeft: 6, fontWeight: 400 }}>de {fmt$(totalCobro)}</span>}
+              </span>
+            </div>
           )}
           <button className="btn-ghost" onClick={onClose}>Cancelar</button>
           <button className="btn-primary" onClick={handleGuardar}
@@ -538,19 +598,70 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
           )}
         </div>
 
-        {/* Monto parcial */}
-        {seleccionados.size > 0 && (
+        {/* Cargo adicional + Descuento adicional */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              Monto a cobrar ahora
-              {esParcial && <span style={{ marginLeft: 6, fontSize: 11, color: '#d97706', fontWeight: 600 }}>(PAGO PARCIAL)</span>}
-            </label>
-            <input className="input" type="number" min={0} step={0.01} max={montoTotal}
-              value={montoParcial} onChange={e => setMontoParcial(e.target.value)}
-              style={{ width: '100%', fontWeight: 700, border: esParcial ? '1px solid #fbbf24' : undefined }} />
-            {esParcial && (
-              <div style={{ marginTop: 6, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
-                ⚠ Quedará un saldo pendiente de <strong>{fmt$(saldoRestante)}</strong>.
+            <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontWeight: 600 }}>Cargo adicional ($)</label>
+            <input className="input" type="number" min={0} step={0.01}
+              value={cargoAdicionalStr} onChange={e => setCargoAdicionalStr(e.target.value)}
+              placeholder="0.00" style={{ width: '100%' }} />
+            {cargoAdicional > 0 && (
+              <div style={{ fontSize: 11, color: '#059669', marginTop: 3 }}>+ {fmt$(cargoAdicional)} sobre el total</div>
+            )}
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4, fontWeight: 600 }}>Descuento adicional ($)</label>
+            <input className="input" type="number" min={0} step={0.01}
+              value={descuentoExtra} onChange={e => setDescuentoExtra(e.target.value)}
+              placeholder="0.00" style={{ width: '100%' }} />
+            {descExtra > 0 && (
+              <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>– {fmt$(descExtra)} sobre el total</div>
+            )}
+          </div>
+        </div>
+
+        {/* Cobro parcial */}
+        {seleccionados.size > 0 && (
+          <div style={{ border: `1px solid ${parcialHabilitado ? '#fde68a' : 'var(--border)'}`, borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.2s' }}>
+            <div
+              onClick={toggleParcial}
+              style={{ padding: '10px 14px', background: parcialHabilitado ? '#fffbeb' : 'var(--surface-800)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', borderBottom: parcialHabilitado ? '1px solid #fde68a' : 'none' }}>
+              <div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: parcialHabilitado ? '#92400e' : 'var(--text-secondary)' }}>Cobro parcial</span>
+                {!parcialHabilitado && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>Cobrar menos del total adeudado</span>}
+              </div>
+              {/* Toggle switch */}
+              <div style={{ width: 40, height: 22, borderRadius: 11, background: parcialHabilitado ? '#d97706' : '#cbd5e1', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: parcialHabilitado ? 20 : 2, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
+              </div>
+            </div>
+
+            {parcialHabilitado && (
+              <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, color: '#92400e', marginBottom: 4, display: 'block', fontWeight: 600 }}>Monto a cobrar ahora</label>
+                    <input
+                      // eslint-disable-next-line jsx-a11y/no-autofocus
+                      autoFocus
+                      className="input" type="number" min={0.01} step={0.01} max={totalCobro}
+                      value={montoParcialStr} onChange={e => setMontoParcialStr(e.target.value)}
+                      placeholder={`Máx. ${fmt$(totalCobro)}`}
+                      style={{ width: '100%', fontWeight: 700, border: '1px solid #fbbf24' }} />
+                  </div>
+                  <button
+                    onClick={() => setMontoParcialStr(totalCobro.toFixed(2))}
+                    style={{ padding: '8px 10px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                    Total
+                  </button>
+                </div>
+                {esParcial ? (
+                  <div style={{ padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    ⚠ Saldo pendiente: <strong>{fmt$(saldoRestante)}</strong> · Las cuotas quedarán en PAGO PARCIAL
+                  </div>
+                ) : montoParcialStr ? (
+                  <div style={{ fontSize: 11, color: '#15803d' }}>✓ Cubre el total adeudado</div>
+                ) : null}
               </div>
             )}
           </div>

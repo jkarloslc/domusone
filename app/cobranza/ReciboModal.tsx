@@ -1,13 +1,16 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
-import { X, Save, Loader, Plus, Trash2, CheckCircle } from 'lucide-react'
+import { dbCat, dbCtrl, dbCfg, dbGolf } from '@/lib/supabase'
+import { useAuth } from '@/lib/AuthContext'
+import { X, Save, Loader, Plus, Trash2, CheckCircle, Printer, Receipt } from 'lucide-react'
 import { type ReciboDetalle, type ReciboPago, type Cargo, fmt, MESES, CUENTAS } from './types'
 
 type Lote = { id: number; cve_lote: string | null; lote: number | null }
 type FormaPago = { id: number; nombre: string }
+type PosCfg = { razon_social: string | null; rfc: string | null; direccion: string | null; telefono: string | null; municipio: string | null; leyenda_ticket: string | null }
 
 const ANIOS = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - 2 + i)
+const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 type Props = {
   cargoInicial?: Cargo
@@ -15,7 +18,19 @@ type Props = {
   onSaved: () => void
 }
 
+// Folio autogenerado RC-YYYY-NNNN cuando el usuario no captura uno manual
+async function generarFolio(): Promise<string> {
+  const anio = new Date().getFullYear()
+  const { data } = await dbCtrl.from('recibos')
+    .select('folio').like('folio', `RC-${anio}-%`)
+    .order('folio', { ascending: false }).limit(1)
+  const ultimo = (data as { folio: string }[] | null)?.[0]?.folio
+  const num = ultimo ? parseInt(ultimo.split('-')[2] ?? '0') + 1 : 1
+  return `RC-${anio}-${String(num).padStart(4, '0')}`
+}
+
 export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
+  const { authUser } = useAuth()
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
   const [lotes, setLotes]           = useState<Lote[]>([])
@@ -58,6 +73,15 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
     fecha: new Date().toISOString().split('T')[0], id_forma_pago_fk: null
   }])
 
+  // Homologado con golf: cargo/descuento adicionales sobre el total del recibo
+  const [cargoAdicionalStr, setCargoAdicionalStr] = useState('')
+  const [descuentoExtra, setDescuentoExtra]       = useState('')
+
+  const [exito, setExito]                 = useState<{ id: number; folio: string } | null>(null)
+  const [idVentaPos, setIdVentaPos]       = useState<number | null>(null)
+  const [generandoTicket, setGenerandoTicket] = useState(false)
+  const [ticketErr, setTicketErr]         = useState('')
+
   useEffect(() => {
     dbCat.from('lotes').select('id, cve_lote, lote').order('cve_lote')
       .then(({ data }) => setLotes(data as Lote[] ?? []))
@@ -99,19 +123,34 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
     })
   }
 
-  const totalRecibo = lineas.reduce((a, l) => a + (l.total ?? 0), 0)
-  const totalPagado = pagos.reduce((a, p) => a + (Number(p.monto) || 0), 0)
-  const diferencia  = totalRecibo - totalPagado
+  const totalLineas      = lineas.reduce((a, l) => a + (l.total ?? 0), 0)
+  const cargoAdicional   = Math.max(0, parseFloat(cargoAdicionalStr) || 0)
+  const subtotalConCargo = totalLineas + cargoAdicional
+  const descExtra        = Math.min(parseFloat(descuentoExtra) || 0, subtotalConCargo)
+  const totalRecibo      = Math.max(0, subtotalConCargo - descExtra)
+  const totalPagado      = pagos.reduce((a, p) => a + (Number(p.monto) || 0), 0)
+  const diferencia       = parseFloat((totalRecibo - totalPagado).toFixed(2))
+
+  const formaNombre = (id: number | null | undefined) =>
+    formasPago.find(f => f.id === id)?.nombre ?? '—'
 
   const handleSubmit = async () => {
     const lineasValidas = lineas.filter(l => l.concepto.trim() && l.total > 0)
     if (!form.id_lote_fk) { setError('Selecciona un lote'); return }
     if (!lineasValidas.length) { setError('Agrega al menos una línea con monto'); return }
+    const pagosValidos = pagos.filter(p => Number(p.monto) > 0)
+    if (!pagosValidos.length) { setError('Agrega al menos una forma de pago con monto'); return }
+    if (Math.abs(diferencia) > 0.01) {
+      setError(`La suma de los pagos (${fmt(totalPagado)}) debe ser igual al total del recibo (${fmt(totalRecibo)})`)
+      return
+    }
     setSaving(true); setError('')
+
+    const folio = form.folio.trim() || await generarFolio()
 
     const { data: recibo, error: err1 } = await dbCtrl.from('recibos').insert({
       id_lote_fk:       Number(form.id_lote_fk),
-      folio:            form.folio.trim() || null,
+      folio,
       fecha_recibo:     form.fecha_recibo,
       fecha_pago:       form.fecha_pago || null,
       propietario:      form.propietario.trim() || null,
@@ -121,59 +160,328 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       rfc_factura:      form.rfc_factura.trim() || null,
       folio_factura:    form.folio_factura.trim() || null,
       tipo_concepto:    'Pago de Cuota',
+      usuario_crea:     authUser?.nombre ?? null,
       activo:           true,
     }).select('id').single()
 
     if (err1) { setError(err1.message); setSaving(false); return }
     const reciboId = recibo.id
 
-    await dbCtrl.from('recibos_detalle').insert(
-      lineasValidas.map(l => ({
+    // Detalle: líneas capturadas + cargo/descuento adicionales como líneas propias
+    // (igual que el modal de golf) para que recibo, impresión y ticket POS cuadren.
+    const detRows = lineasValidas.map(l => ({
+      id_recibo_fk:     reciboId,
+      id_cargo_fk:      (l as any).id_cargo_fk ?? null,
+      id_cuota_lote_fk: l.id_cuota_lote_fk ?? null,
+      concepto:         l.concepto,
+      cantidad:         l.cantidad,
+      precio_unitario:  l.precio_unitario,
+      descuento:        l.descuento ?? 0,
+      subtotal:         l.subtotal,
+      iva:              0,
+      total:            l.total,
+      periodo_mes:      l.periodo_mes ?? null,
+      periodo_anio:     l.periodo_anio ?? null,
+    }))
+    if (cargoAdicional > 0) {
+      detRows.push({
+        id_recibo_fk: reciboId, id_cargo_fk: null, id_cuota_lote_fk: null,
+        concepto: 'Cargo adicional', cantidad: 1, precio_unitario: cargoAdicional,
+        descuento: 0, subtotal: cargoAdicional, iva: 0, total: cargoAdicional,
+        periodo_mes: null, periodo_anio: null,
+      })
+    }
+    if (descExtra > 0) {
+      detRows.push({
+        id_recibo_fk: reciboId, id_cargo_fk: null, id_cuota_lote_fk: null,
+        concepto: 'Descuento adicional', cantidad: 1, precio_unitario: -descExtra,
+        descuento: 0, subtotal: -descExtra, iva: 0, total: -descExtra,
+        periodo_mes: null, periodo_anio: null,
+      })
+    }
+
+    const { error: err2 } = await dbCtrl.from('recibos_detalle').insert(detRows)
+    if (err2) { setError(err2.message); setSaving(false); return }
+
+    const { error: err3 } = await dbCtrl.from('recibos_pagos').insert(
+      pagosValidos.map(p => ({
         id_recibo_fk:     reciboId,
-        id_cargo_fk:      (l as any).id_cargo_fk ?? null,
-        id_cuota_lote_fk: l.id_cuota_lote_fk ?? null,
-        concepto:         l.concepto,
-        cantidad:         l.cantidad,
-        precio_unitario:  l.precio_unitario,
-        descuento:        l.descuento ?? 0,
-        subtotal:         l.subtotal,
-        iva:              0,
-        total:            l.total,
-        periodo_mes:      l.periodo_mes ?? null,
-        periodo_anio:     l.periodo_anio ?? null,
+        id_forma_pago_fk: p.id_forma_pago_fk ?? null,
+        monto:            Number(p.monto),
+        referencia:       p.referencia?.trim() || null,
+        fecha:            p.fecha || null,
       }))
     )
-
-    const pagosValidos = pagos.filter(p => Number(p.monto) > 0)
-    if (pagosValidos.length) {
-      await dbCtrl.from('recibos_pagos').insert(
-        pagosValidos.map(p => ({
-          id_recibo_fk:     reciboId,
-          id_forma_pago_fk: p.id_forma_pago_fk ?? null,
-          monto:            Number(p.monto),
-          referencia:       p.referencia?.trim() || null,
-          fecha:            p.fecha || null,
-        }))
-      )
-    }
+    if (err3) { setError(err3.message); setSaving(false); return }
 
     // Actualizar saldo de cada cargo vinculado
     for (const linea of lineasValidas) {
       if ((linea as any).id_cargo_fk) {
         const cargoId = (linea as any).id_cargo_fk
-        const { data: cargoDB } = await dbCtrl.from('cargos').select('monto_pagado').eq('id', cargoId).single()
+        const { data: cargoDB, error: errC } = await dbCtrl.from('cargos').select('monto_pagado').eq('id', cargoId).single()
+        if (errC) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errC.message}`); break }
         if (cargoDB) {
           const nuevoPagado = (cargoDB.monto_pagado ?? 0) + linea.total
-          await dbCtrl.from('cargos').update({ monto_pagado: nuevoPagado }).eq('id', cargoId)
+          const { error: errU } = await dbCtrl.from('cargos').update({ monto_pagado: nuevoPagado }).eq('id', cargoId)
+          if (errU) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errU.message}`); break }
         }
       }
     }
 
     setSaving(false)
-    onSaved()
+    setTicketErr('')
+    setExito({ id: reciboId, folio })
+  }
+
+  // ── Imprimir recibo (mismo formato que golf/hípico, con datos de la organización) ──
+  const handlePrint = async () => {
+    if (!exito) return
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+
+    const lineasValidas = lineas.filter(l => l.concepto.trim() && l.total > 0)
+    const filas = lineasValidas.map(l => `
+      <tr>
+        <td>${l.concepto}</td>
+        <td>${l.periodo_mes ? `${l.periodo_mes} ${l.periodo_anio ?? ''}` : '—'}</td>
+        <td class="right">${l.cantidad}</td>
+        <td class="right">${fmt(l.precio_unitario)}</td>
+        <td class="right">${(l.descuento ?? 0) > 0 ? fmt(l.descuento) : '—'}</td>
+        <td class="right" style="font-weight:600">${fmt(l.total)}</td>
+      </tr>`).join('')
+
+    const pagosValidos = pagos.filter(p => Number(p.monto) > 0)
+    const fechaLarga = new Date(form.fecha_recibo + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
+
+    const win = window.open('', '_blank', 'width=750,height=900')
+    if (!win) return
+    win.document.write(`<!DOCTYPE html><html><head>
+      <meta charset="utf-8"/><title>Recibo ${exito.folio}</title>
+      <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:Arial,sans-serif;font-size:12px;color:#1e293b;padding:32px}
+        .org-header{display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:2px solid #0D4F80;margin-bottom:18px}
+        .org-nombre{font-size:18px;font-weight:700;color:#0D4F80}
+        .org-sub{font-size:11px;color:#64748b}
+        .doc-title{font-size:14px;font-weight:600;color:#0D4F80;margin-bottom:2px}
+        .section-title{font-size:10px;font-weight:700;color:#0D4F80;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;border-bottom:1px solid #bfdbfe;padding-bottom:4px;margin-top:16px}
+        .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:14px}
+        .info-item label{font-size:10px;color:#64748b;display:block;margin-bottom:1px}
+        .info-item span{font-size:12px;font-weight:500}
+        table{width:100%;border-collapse:collapse;margin-bottom:16px}
+        th{padding:7px 10px;background:#f1f5f9;color:#0D4F80;font-size:10px;text-align:left;text-transform:uppercase;letter-spacing:.05em;border:1px solid #e2e8f0}
+        td{padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:12px}
+        tr:last-child td{border-bottom:none}
+        .right{text-align:right}
+        .totales{margin-left:auto;width:260px}
+        .totales-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+        .totales-row.total{font-weight:700;font-size:15px;border-top:2px solid #0D4F80;padding-top:8px;margin-top:4px;color:#0D4F80}
+        .pago-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
+        .pago-row{display:flex;justify-content:space-between;font-size:13px}
+        .pago-label{font-size:10px;color:#0D4F80;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+        .firma-area{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px}
+        .firma-line{border-top:1px solid #1e293b;padding-top:4px;font-size:10px;color:#64748b;text-align:center}
+        .footer{margin-top:32px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}
+        @page{margin:1.2cm}
+      </style></head><body>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="doc-title">Recibo de Cobro</div>
+          <div style="font-size:11px;color:#64748b">Folio: <strong>${exito.folio}</strong></div>
+          <div style="font-size:11px;color:#64748b">${fechaLarga}</div>
+        </div>
+      </div>
+      <div class="section-title">Datos del Recibo</div>
+      <div class="info-grid">
+        <div class="info-item"><label>Lote</label><span>${loteSearch || '—'}</span></div>
+        <div class="info-item"><label>Propietario</label><span>${form.propietario || '—'}</span></div>
+        ${form.empresa ? `<div class="info-item"><label>Empresa</label><span>${form.empresa}</span></div>` : ''}
+        <div class="info-item"><label>Fecha de pago</label><span>${form.fecha_pago || '—'}</span></div>
+      </div>
+      <div class="section-title">Conceptos</div>
+      <table>
+        <thead><tr><th>Concepto</th><th>Período</th><th class="right">Cant.</th><th class="right">P. Unit.</th><th class="right">Desc.</th><th class="right">Total</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+      <div class="totales">
+        <div class="totales-row"><span>Subtotal</span><span>${fmt(totalLineas)}</span></div>
+        ${cargoAdicional > 0 ? `<div class="totales-row"><span>Cargo adicional</span><span style="color:#059669">+ ${fmt(cargoAdicional)}</span></div>` : ''}
+        ${descExtra > 0 ? `<div class="totales-row"><span>Descuento adicional</span><span style="color:#dc2626">– ${fmt(descExtra)}</span></div>` : ''}
+        <div class="totales-row total"><span>TOTAL</span><span>${fmt(totalRecibo)}</span></div>
+      </div>
+      <div class="pago-box">
+        <div class="pago-label">Forma${pagosValidos.length > 1 ? 's' : ''} de pago</div>
+        ${pagosValidos.map(p => `<div class="pago-row"><span><strong>${formaNombre(p.id_forma_pago_fk)}</strong>${p.referencia ? ` · Ref: ${p.referencia}` : ''}</span><span style="font-weight:700;color:#0D4F80">${fmt(Number(p.monto))}</span></div>`).join('')}
+      </div>
+      <div class="firma-area">
+        <div class="firma-line">Firma del Propietario</div>
+        <div class="firma-line">Cajero / Recibí</div>
+      </div>
+      <div class="footer">
+        Este recibo es comprobante de pago de cuotas. Para facturación, presentar este folio en administración.<br/>
+        ${orgNombre} · ${new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
+      </div>
+    </body></html>`)
+    win.document.close()
+    win.focus()
+    setTimeout(() => { win.print(); win.close() }, 400)
+  }
+
+  // ── Ticket POS (homologado con golf/hípico) ─────────────────
+  // Crea la venta en golf.ctrl_ventas y la vincula al recibo vía id_venta_pos_fk
+  // para no duplicar tickets al reimprimir. Cuotas residenciales van sin IVA.
+  const handleTicketPOS = async () => {
+    if (!exito) return
+    setGenerandoTicket(true); setTicketErr('')
+    try {
+      const [{ data: centros }, { data: cfg }, { data: recFull, error: errRec }] = await Promise.all([
+        dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
+        dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+        dbCtrl.from('recibos').select('monto, fecha_recibo, id_venta_pos_fk').eq('id', exito.id).single(),
+      ])
+      if (errRec || !recFull) throw new Error(errRec?.message ?? 'No se pudo leer el recibo (¿migración id_venta_pos_fk pendiente?)')
+      const rf = recFull as { monto: number; fecha_recibo: string; id_venta_pos_fk: number | null }
+
+      const centrosPos = (centros as { id: number; nombre: string }[]) ?? []
+      if (!centrosPos.length) throw new Error('No hay centros POS activos.')
+      const centroRes = centrosPos.find(c => {
+        const n = norm(c.nombre)
+        return n.includes('residencial') || n.includes('administra') || n.includes('cuota') || n.includes('caseta')
+      }) ?? centrosPos[0]
+
+      const { data: detDB } = await dbCtrl.from('recibos_detalle')
+        .select('concepto, cantidad, precio_unitario, descuento, subtotal, total, periodo_mes, periodo_anio')
+        .eq('id_recibo_fk', exito.id)
+      const detList = ((detDB ?? []) as { concepto: string; cantidad: number; precio_unitario: number; descuento: number; subtotal: number; total: number; periodo_mes: string | null; periodo_anio: number | null }[])
+      if (!detList.length) throw new Error('El recibo no tiene detalle.')
+
+      let ventaId = rf.id_venta_pos_fk
+      let folioDia = 0
+      const fechaIso = `${rf.fecha_recibo}T12:00:00`
+
+      if (!ventaId) {
+        const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
+          .eq('id_centro_fk', centroRes.id)
+          .gte('fecha', `${rf.fecha_recibo}T00:00:00`).lte('fecha', `${rf.fecha_recibo}T23:59:59`)
+          .order('folio_dia', { ascending: false }).limit(1)
+        folioDia = maxF && maxF.length > 0 ? ((maxF[0] as any).folio_dia + 1) : 1
+
+        const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
+          folio_dia: folioDia, id_centro_fk: centroRes.id, fecha: fechaIso,
+          nombre_cliente: form.propietario.trim() || loteSearch || `Lote #${form.id_lote_fk}`, es_socio: false,
+          subtotal: rf.monto, descuento: 0, iva: 0, total: rf.monto,
+          status: 'PAGADA', usuario_crea: authUser?.nombre ?? 'residencial',
+          notas: `Ticket POS desde recibo residencial ${exito.folio} (#${exito.id})`,
+        }).select('id, folio_dia').single()
+        if (ev || !venta) throw new Error(ev?.message ?? 'Error al crear venta POS')
+        ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
+
+        const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detList.map(d => ({
+          id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: null,
+          concepto: d.concepto, cantidad: d.cantidad, precio_unitario: d.precio_unitario,
+          descuento: d.descuento ?? 0, iva_pct: 0, iva: 0, subtotal: d.total, total: d.total,
+          notas: d.periodo_mes ? `${d.periodo_mes} ${d.periodo_anio ?? ''}`.trim() : null,
+        })))
+        if (errDet) throw new Error(errDet.message)
+
+        const pagosValidos = pagos.filter(p => Number(p.monto) > 0)
+        const { error: errPag } = await dbGolf.from('ctrl_ventas_pagos').insert(
+          pagosValidos.map(p => ({
+            id_venta_fk: ventaId!, id_forma_fk: p.id_forma_pago_fk ?? null,
+            forma_nombre: formaNombre(p.id_forma_pago_fk), monto: Number(p.monto),
+          }))
+        )
+        if (errPag) throw new Error(errPag.message)
+
+        const { error: errLink } = await dbCtrl.from('recibos').update({ id_venta_pos_fk: ventaId }).eq('id', exito.id)
+        if (errLink) throw new Error(errLink.message)
+      } else {
+        const { data: ventaExist } = await dbGolf.from('ctrl_ventas').select('folio_dia').eq('id', ventaId).single()
+        folioDia = ((ventaExist as { folio_dia: number } | null)?.folio_dia) ?? 0
+      }
+      setIdVentaPos(ventaId)
+
+      const cfgP = cfg as PosCfg | null
+      const pagosValidos = pagos.filter(p => Number(p.monto) > 0)
+      const ticketData = {
+        id: ventaId, folio_dia: folioDia || '—', fecha: fechaIso,
+        cliente: form.propietario.trim() || loteSearch || '—',
+        cajero: authUser?.nombre ?? '—', centro: centroRes.nombre,
+        razon_social: cfgP?.razon_social ?? 'Organización',
+        municipio: cfgP?.municipio ?? '', direccion: cfgP?.direccion ?? '',
+        rfc: cfgP?.rfc ?? '', telefono: cfgP?.telefono ?? '',
+        leyenda: cfgP?.leyenda_ticket ?? `Cobro relacionado al recibo ${exito.folio}.`,
+        subtotal: rf.monto, iva: 0, total: rf.monto,
+        pagos: pagosValidos.map(p => ({ forma: formaNombre(p.id_forma_pago_fk), monto: Number(p.monto) })),
+        items: detList.map(d => ({ concepto: d.concepto, cantidad: d.cantidad, precio_unitario: d.precio_unitario, iva: 0, total: d.total })),
+      }
+      window.open(`/ticket-golf.html?data=${encodeURIComponent(JSON.stringify(ticketData))}&print=1`, '_blank', 'width=400,height=700')
+    } catch (e: any) {
+      setTicketErr(e?.message ?? 'Error al generar ticket')
+    } finally {
+      setGenerandoTicket(false)
+    }
   }
 
   const filteredLotes = lotes.filter(l => l.cve_lote?.toLowerCase().includes(loteSearch.toLowerCase())).slice(0, 6)
+
+  // ── Pantalla de éxito ─────────────────────────────────────
+  if (exito) {
+    return (
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onSaved()}>
+        <div className="modal" style={{ maxWidth: 460 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <CheckCircle size={20} color="#15803d" /> Cobro registrado
+            </h2>
+            <button className="btn-ghost" onClick={onSaved}><X size={16} /></button>
+          </div>
+          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ textAlign: 'center', padding: '4px 0 8px' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: 22, fontWeight: 700, color: 'var(--blue)', letterSpacing: 1 }}>{exito.folio}</div>
+              <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
+                {form.propietario || loteSearch || '—'}{' · '}{fmt(totalRecibo)}
+              </div>
+              {idVentaPos && (
+                <div style={{ fontSize: 12, color: '#15803d', fontWeight: 600, marginTop: 6 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</div>
+              )}
+            </div>
+            <button onClick={handlePrint}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: 'none', borderRadius: 10, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
+              <Printer size={16} /> Imprimir Recibo
+            </button>
+            <button onClick={handleTicketPOS} disabled={generandoTicket}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 10, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicket ? 0.6 : 1 }}>
+              {generandoTicket ? <Loader size={16} className="animate-spin" /> : <Receipt size={16} />}
+              {generandoTicket ? 'Generando…' : idVentaPos ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
+            </button>
+            {ticketErr && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{ticketErr}</div>}
+            {error && <div style={{ fontSize: 12, color: '#d97706', background: '#fffbeb', padding: '8px 12px', borderRadius: 6 }}>{error}</div>}
+          </div>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
+            <button className="btn-secondary" onClick={onSaved}>Cerrar</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -285,7 +593,30 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
               onClick={() => setLineas(ls => [...ls, { id_cargo_fk: null, concepto: '', cantidad: 1, precio_unitario: 0, descuento: 0, subtotal: 0, iva: 0, total: 0, periodo_mes: MESES[new Date().getMonth()], periodo_anio: new Date().getFullYear(), id_cuota_lote_fk: null }])}>
               <Plus size={12} /> Agregar línea manual
             </button>
-            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid #e2e8f0' }}>
+
+            {/* Cargo adicional + Descuento adicional (homologado con golf) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 10 }}>
+              <div>
+                <label className="label">Cargo adicional ($)</label>
+                <input className="input" type="number" min="0" step="0.01" value={cargoAdicionalStr}
+                  onChange={e => setCargoAdicionalStr(e.target.value)} placeholder="0.00" />
+                {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#059669', marginTop: 3 }}>+ {fmt(cargoAdicional)} sobre el total</div>}
+              </div>
+              <div>
+                <label className="label">Descuento adicional ($)</label>
+                <input className="input" type="number" min="0" step="0.01" value={descuentoExtra}
+                  onChange={e => setDescuentoExtra(e.target.value)} placeholder="0.00" />
+                {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>– {fmt(descExtra)} sobre el total</div>}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, paddingTop: 10, borderTop: '1px solid #e2e8f0' }}>
+              {(cargoAdicional > 0 || descExtra > 0) && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Subtotal {fmt(totalLineas)}
+                  {cargoAdicional > 0 && <span style={{ color: '#059669' }}> + {fmt(cargoAdicional)}</span>}
+                  {descExtra > 0 && <span style={{ color: '#dc2626' }}> – {fmt(descExtra)}</span>}
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 24 }}>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>TOTAL</span>
                 <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalRecibo)}</span>
@@ -321,9 +652,13 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
               onClick={() => setPagos(ps => [...ps, { monto: diferencia > 0 ? diferencia : 0, referencia: '', fecha: new Date().toISOString().split('T')[0], id_forma_pago_fk: null }])}>
               <Plus size={12} /> Agregar forma de pago
             </button>
-            <div style={{ marginTop: 10, padding: '10px 14px', background: diferencia === 0 ? '#f0fdf4' : '#fef2f2', borderRadius: 6, display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Diferencia (total − pagado)</span>
-              <span style={{ fontWeight: 700, color: diferencia === 0 ? '#15803d' : '#dc2626' }}>{fmt(diferencia)}</span>
+            <div style={{ marginTop: 10, padding: '10px 14px', background: Math.abs(diferencia) < 0.01 ? '#f0fdf4' : '#fef2f2', borderRadius: 6, display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {Math.abs(diferencia) < 0.01 ? '✓ Suma cuadrada' : diferencia > 0 ? 'Falta distribuir' : 'Exceso'}
+              </span>
+              <span style={{ fontWeight: 700, color: Math.abs(diferencia) < 0.01 ? '#15803d' : '#dc2626' }}>
+                {Math.abs(diferencia) < 0.01 ? fmt(totalRecibo) : fmt(Math.abs(diferencia))}
+              </span>
             </div>
           </Section>
         </div>
