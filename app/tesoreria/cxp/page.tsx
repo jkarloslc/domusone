@@ -522,7 +522,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
   }
 
   return (
-    <ModalShell modulo="tesoreria" titulo={prov.nombre} onClose={onClose} maxWidth={780}
+    <ModalShell modulo="tesoreria" titulo={prov.nombre} onClose={onClose} maxWidth={1100}
     >
 
         <div style={{ display: 'flex', gap: 10, padding: '14px 24px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
@@ -546,7 +546,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
           </select>
         </div>
 
-        <div style={{ overflowY: 'auto', maxHeight: 'calc(88vh - 220px)' }}>
+        <div style={{ overflowY: 'auto', maxHeight: 'calc(88vh - 200px)' }}>
           <table>
             <thead>
               <tr>
@@ -568,7 +568,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
                 return (
                   <tr key={op.id}>
                     <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
-                    <td style={{ fontSize: 12, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
+                    <td style={{ fontSize: 12, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                     <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{op.id_almacen_fk ? (almMap[op.id_almacen_fk] ?? '—') : '—'}</td>
                     <td style={{ fontSize: 12, color: vencido ? '#dc2626' : 'var(--text-secondary)', fontWeight: vencido ? 600 : 400 }}>
                       {fmtFecha(op.fecha_vencimiento)}
