@@ -503,6 +503,19 @@ function TabFacturas({ socioId }: { socioId: number }) {
   const [rows, setRows]       = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Abrir un PDF en base64 en una pestaña nueva: navegar directo a una data:
+  // URL está bloqueado por Chrome ("Not allowed to navigate top frame to data
+  // URL"), por eso se convierte a un Blob y se navega a su URL de objeto (blob:).
+  const verPdfFactura = (pdfB64: string) => {
+    const w = window.open()
+    const bin = atob(pdfB64)
+    const bytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+    const blobUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
+    if (w) w.location.href = blobUrl
+    else alert('El navegador bloqueó la ventana emergente. Habilita pop-ups para este sitio.')
+  }
+
   useEffect(() => {
     const load = async () => {
       // Las facturas de socios se emiten siempre vía ticket POS (Golf), que las
@@ -583,11 +596,11 @@ function TabFacturas({ socioId }: { socioId: number }) {
                     </td>
                     <td style={{ padding: '8px 10px' }}>
                       {cfdi?.pdf_b64 && (
-                        <a href={`data:application/pdf;base64,${cfdi.pdf_b64}`} target="_blank" rel="noopener noreferrer"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
+                        <button onClick={() => verPdfFactura(cfdi.pdf_b64)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#2563eb', textDecoration: 'none', fontWeight: 600, fontSize: 12 }}
                           title="Ver PDF">
                           <ExternalLink size={12} /> PDF
-                        </a>
+                        </button>
                       )}
                     </td>
                   </tr>
