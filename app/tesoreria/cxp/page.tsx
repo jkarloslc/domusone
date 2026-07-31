@@ -683,6 +683,14 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
     if (Number(form.monto) > saldoActual + 0.01) { setError(`El pago no puede exceder el saldo (${fmt(saldoActual)})`); return }
     setSaving(true); setError('')
 
+    // Releer la OP desde BD: el grid puede estar desactualizado y la OP ya pagada (evita abonos duplicados)
+    const { data: opBD, error: errOp } = await dbComp.from('ordenes_pago')
+      .select('monto, monto_pagado, saldo, status').eq('id', op.id).single()
+    if (errOp || !opBD) { setError('No se pudo verificar el estado actual de la OP: ' + (errOp?.message ?? 'sin datos')); setSaving(false); return }
+    if (opBD.status === 'Pagada') { setError('Esta OP ya está pagada; no se registró el abono. Cierra y vuelve a abrir para ver los datos actualizados.'); setSaving(false); return }
+    const saldoBD = opBD.saldo ?? opBD.monto ?? 0
+    if (Number(form.monto) > saldoBD + 0.01) { setError(`El pago excede el saldo real de la OP (${fmt(saldoBD)}). Cierra y vuelve a abrir para ver los datos actualizados.`); setSaving(false); return }
+
     const montoAbono     = Number(form.monto)
     const cuentaId       = form.id_cuenta_bancaria_fk ? Number(form.id_cuenta_bancaria_fk) : null
 
@@ -700,9 +708,9 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
     }).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
 
-    // Actualizar monto_pagado, saldo y status en ordenes_pago
-    const nuevoMontoPagado = (op.monto_pagado ?? 0) + montoAbono
-    const nuevoSaldo       = (op.monto ?? 0) - nuevoMontoPagado
+    // Actualizar monto_pagado, saldo y status en ordenes_pago (con los valores releídos de BD, no los del prop)
+    const nuevoMontoPagado = (opBD.monto_pagado ?? 0) + montoAbono
+    const nuevoSaldo       = (opBD.monto ?? 0) - nuevoMontoPagado
     const nuevoStatus      = nuevoSaldo <= 0.01 ? 'Pagada' : 'Abonada'
 
     await dbComp.from('ordenes_pago').update({
