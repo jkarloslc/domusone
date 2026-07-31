@@ -56,6 +56,39 @@ async function generarFolio(): Promise<string> {
   return `RL-${anio}-${String(num).padStart(3, '0')}`
 }
 
+// Resuelve el concepto de ingreso por cada línea de un ticket POS, siguiendo la
+// cadena cuota (loc_cxc) → asignación (loc_asignaciones) → propiedad (loc_propiedades).
+// Si la propiedad no tiene concepto propio (o la línea no viene de una cuota,
+// como "Cargo adicional"/"Descuento adicional"), cae en el concepto global de
+// ctrl.loc_cfg; si tampoco hay global, el corte lo clasifica en "Otros".
+export async function resolveConceptosPorCuota(idsCuota: number[], idConceptoDefault: number | null): Promise<Record<number, number | null>> {
+  if (idsCuota.length === 0) return {}
+  const { data: cxc } = await dbCtrl.from('loc_cxc').select('id, id_asignacion_fk').in('id', idsCuota)
+  const cxcRows = (cxc ?? []) as { id: number; id_asignacion_fk: number | null }[]
+
+  const idsAsig = Array.from(new Set(cxcRows.map(c => c.id_asignacion_fk).filter((v): v is number => v != null)))
+  const { data: asigs } = idsAsig.length
+    ? await dbCtrl.from('loc_asignaciones').select('id, id_propiedad_fk').in('id', idsAsig)
+    : { data: [] as { id: number; id_propiedad_fk: number }[] }
+  const asigRows = (asigs ?? []) as { id: number; id_propiedad_fk: number }[]
+
+  const idsProp = Array.from(new Set(asigRows.map(a => a.id_propiedad_fk)))
+  const { data: props } = idsProp.length
+    ? await dbCtrl.from('loc_propiedades').select('id, id_concepto_ingreso_fk').in('id', idsProp)
+    : { data: [] as { id: number; id_concepto_ingreso_fk: number | null }[] }
+  const propConcepto: Record<number, number | null> =
+    Object.fromEntries((props ?? []).map((p: any) => [p.id, p.id_concepto_ingreso_fk]))
+
+  const asigConcepto: Record<number, number | null> =
+    Object.fromEntries(asigRows.map(a => [a.id, propConcepto[a.id_propiedad_fk] ?? null]))
+
+  const cuotaConcepto: Record<number, number | null> = {}
+  for (const c of cxcRows) {
+    cuotaConcepto[c.id] = (c.id_asignacion_fk != null ? asigConcepto[c.id_asignacion_fk] : null) ?? idConceptoDefault
+  }
+  return cuotaConcepto
+}
+
 export async function printReciboLoc(reciboId: number, folio: string, nombreArrendatario: string) {
   const [{ data: detData }, { data: pagosData }, { data: reciboData }] = await Promise.all([
     dbCtrl.from('loc_recibos_det').select('concepto, periodo, monto_final').eq('id_recibo_fk', reciboId),
@@ -416,12 +449,17 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       let folioDia = 0
       const fechaIso = `${rf.fecha_recibo}T12:00:00`
 
-      const { data: detPago } = await dbCtrl.from('loc_recibos_det').select('concepto, monto_final').eq('id_recibo_fk', exito.idRecibo)
-      const detList = ((detPago ?? []) as { concepto: string; monto_final: number }[]).length > 0
-        ? (detPago as { concepto: string; monto_final: number }[])
-        : [{ concepto: `Cobro Locales ${exito.folio}`, monto_final: rf.total }]
+      const { data: detPago } = await dbCtrl.from('loc_recibos_det').select('concepto, monto_final, id_cuota_fk').eq('id_recibo_fk', exito.idRecibo)
+      const detList = ((detPago ?? []) as { concepto: string; monto_final: number; id_cuota_fk: number | null }[]).length > 0
+        ? (detPago as { concepto: string; monto_final: number; id_cuota_fk: number | null }[])
+        : [{ concepto: `Cobro Locales ${exito.folio}`, monto_final: rf.total, id_cuota_fk: null }]
       const detDesglosado = detList.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
       const totalIvaCuotas = detDesglosado.reduce((a, d) => a + d.iva, 0)
+
+      const idsCuota = Array.from(new Set(detList.map(d => d.id_cuota_fk).filter((v): v is number => v != null)))
+      const conceptoPorCuota = await resolveConceptosPorCuota(idsCuota, idConceptoLoc)
+      const conceptoDeLinea = (d: { id_cuota_fk: number | null }) =>
+        d.id_cuota_fk != null ? (conceptoPorCuota[d.id_cuota_fk] ?? idConceptoLoc) : idConceptoLoc
 
       if (!ventaId) {
         const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
@@ -441,7 +479,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
         await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
-          id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: idConceptoLoc,
+          id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: conceptoDeLinea(d),
           concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final,
           descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
         })))

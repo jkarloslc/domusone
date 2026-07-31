@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import AsignacionModal, { type AsignacionData } from './AsignacionModal'
-import CobrarModal, { type CuotaPendiente, printReciboLoc } from './CobrarModal'
+import CobrarModal, { type CuotaPendiente, printReciboLoc, resolveConceptosPorCuota } from './CobrarModal'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'cuotas' | 'config'
@@ -80,7 +80,7 @@ type ReciboRow = {
   id_forma_pago_fk: number | null
   id_arrendatario_fk: number
   cat_arrendatarios: { nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string } | null
-  recibos_loc_det: { id: number; concepto: string; tipo: string; periodo: string | null; monto_final: number }[]
+  recibos_loc_det: { id: number; concepto: string; tipo: string; periodo: string | null; monto_final: number; id_cuota_fk: number | null }[]
 }
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -410,7 +410,7 @@ export default function CobranzaLocalesPage() {
       .select(`id, folio, fecha_recibo, subtotal, descuento, total, forma_pago_nombre, referencia_pago,
         observaciones, usuario_cobra, status, id_venta_pos_fk, id_forma_pago_fk, id_arrendatario_fk,
         cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
-        recibos_loc_det:loc_recibos_det(id, concepto, tipo, periodo, monto_final)`)
+        recibos_loc_det:loc_recibos_det(id, concepto, tipo, periodo, monto_final, id_cuota_fk)`)
       .order('created_at', { ascending: false }).limit(300)
     setRecibos(((data ?? []) as any[]) as ReciboRow[])
     setLoadingR(false)
@@ -444,6 +444,11 @@ export default function CobranzaLocalesPage() {
       const detDesglosado = r.recibos_loc_det.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
       const totalIvaCuotas = detDesglosado.reduce((a, d) => a + d.iva, 0)
 
+      const idsCuota = Array.from(new Set(r.recibos_loc_det.map(d => d.id_cuota_fk).filter((v): v is number => v != null)))
+      const conceptoPorCuota = await resolveConceptosPorCuota(idsCuota, idConceptoLoc)
+      const conceptoDeLinea = (d: { id_cuota_fk: number | null }) =>
+        d.id_cuota_fk != null ? (conceptoPorCuota[d.id_cuota_fk] ?? idConceptoLoc) : idConceptoLoc
+
       if (!ventaId) {
         const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
           .eq('id_centro_fk', centroLoc.id)
@@ -462,7 +467,7 @@ export default function CobranzaLocalesPage() {
 
         if (detDesglosado.length > 0) {
           await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
-            id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: idConceptoLoc, concepto: d.concepto,
+            id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: conceptoDeLinea(d), concepto: d.concepto,
             cantidad: 1, precio_unitario: d.monto_final, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
           })))
         }
