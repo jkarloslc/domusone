@@ -72,6 +72,7 @@ export default function CXPPage() {
   const [search, setSearch]         = useState('')
   const [detailProv, setDetailProv] = useState<any | null>(null)
   const [detailOP, setDetailOP]     = useState<any | null>(null)
+  const [provRefresh, setProvRefresh] = useState(0)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -410,6 +411,7 @@ export default function CXPPage() {
         <ProveedorCXP
           prov={detailProv}
           almMap={almMap}
+          refreshKey={provRefresh}
           onClose={() => { setDetailProv(null); fetchData() }}
           onOpenOP={op => setDetailOP(op)}
         />
@@ -417,7 +419,7 @@ export default function CXPPage() {
       {detailOP && (
         <OPCXPDetail
           op={detailOP}
-          onClose={() => { setDetailOP(null); fetchData() }}
+          onClose={() => { setDetailOP(null); fetchData(); setProvRefresh(v => v + 1) }}
         />
       )}
     </div>
@@ -427,7 +429,7 @@ export default function CXPPage() {
 // ════════════════════════════════════════════════════════════
 // Vista de OPs por proveedor + estado de cuenta imprimible
 // ════════════════════════════════════════════════════════════
-function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: Record<number,string>; onClose: () => void; onOpenOP: (op: any) => void }) {
+function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: any; almMap: Record<number,string>; refreshKey: number; onClose: () => void; onOpenOP: (op: any) => void }) {
   const [ops, setOps]         = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('')
@@ -438,7 +440,7 @@ function ProveedorCXP({ prov, almMap, onClose, onOpenOP }: { prov: any; almMap: 
       .neq('status', 'Cancelada')
       .order('fecha_vencimiento')
       .then(({ data }) => { setOps(data ?? []); setLoading(false) })
-  }, [prov.id])
+  }, [prov.id, refreshKey])
 
   const statusDisponibles = Array.from(new Set(ops.map(o => o.status).filter(Boolean))) as string[]
   const opsFiltradas = filterStatus ? ops.filter(o => o.status === filterStatus) : ops
