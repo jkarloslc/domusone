@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import AsignacionModal, { type AsignacionData } from './AsignacionModal'
 import CobrarModal, { type CuotaPendiente, printReciboHip } from './CobrarModal'
+import EditarCuotaModal, { type CuotaEditData } from './EditarCuotaModal'
 import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 import AgendaCobranza from '@/components/cobranza/AgendaCobranza'
 
@@ -175,6 +176,7 @@ export default function CobranzaHipicoPage() {
   const [busquedaQ, setBusquedaQ]           = useState('')
   const [filtroStatusQ, setFiltroStatusQ]   = useState<'todas' | 'PENDIENTE' | 'PAGADO' | 'PAGO_PARCIAL' | 'CANCELADO'>('todas')
   const [eliminandoQ, setEliminandoQ]       = useState<number | null>(null)
+  const [editCuota, setEditCuota]           = useState<CuotaEditData | null>(null)
   const [paginaQ, setPaginaQ]               = useState(1)
   const PAGE_SIZE_Q = 50
   const esSuperadmin = authUser?.rol === 'superadmin'
@@ -1161,16 +1163,16 @@ export default function CobranzaHipicoPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                    {['Arrendatario', 'Caballeriza', 'Concepto', 'Periodo', 'Monto', 'Saldo', 'Status', 'Vencimiento', ...(esSuperadmin ? [''] : [])].map(h => (
+                    {['Arrendatario', 'Caballeriza', 'Concepto', 'Periodo', 'Monto', 'Saldo', 'Status', 'Vencimiento', ...(puedeEscribir || esSuperadmin ? [''] : [])].map(h => (
                       <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loadingQ ? (
-                    <tr><td colSpan={esSuperadmin ? 9 : 8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={16} /></td></tr>
+                    <tr><td colSpan={puedeEscribir || esSuperadmin ? 9 : 8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={16} /></td></tr>
                   ) : cuotasAllFiltradas.length === 0 ? (
-                    <tr><td colSpan={esSuperadmin ? 9 : 8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>Sin cuotas registradas</td></tr>
+                    <tr><td colSpan={puedeEscribir || esSuperadmin ? 9 : 8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>Sin cuotas registradas</td></tr>
                   ) : cuotasPagina.map(c => {
                     const saldo = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
                     const vencida = c.fecha_vencimiento && c.fecha_vencimiento < hoy && saldo > 0
@@ -1200,15 +1202,32 @@ export default function CobranzaHipicoPage() {
                         <td style={{ padding: '10px 14px', fontSize: 12, whiteSpace: 'nowrap', color: vencida ? '#dc2626' : 'var(--text-muted)' }}>
                           {fmtFecha(c.fecha_vencimiento)}
                         </td>
-                        {esSuperadmin && (
+                        {(puedeEscribir || esSuperadmin) && (
                           <td style={{ padding: '10px 14px' }}>
-                            <button
-                              onClick={() => handleEliminarCuota(c.id)}
-                              disabled={eliminandoQ === c.id}
-                              title="Eliminar cuota"
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', opacity: eliminandoQ === c.id ? 0.5 : 1 }}>
-                              {eliminandoQ === c.id ? <Loader size={12} /> : <Trash2 size={12} />}
-                            </button>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              {puedeEscribir && (
+                                <button
+                                  onClick={() => setEditCuota({
+                                    id: c.id, concepto: c.concepto, periodo: c.periodo,
+                                    monto_original: c.monto_original, descuento: c.descuento, monto_final: c.monto_final,
+                                    saldo: c.saldo, status: c.status, fecha_vencimiento: c.fecha_vencimiento,
+                                    nombreArrendatario: fmtNombre(c.cat_arrendatarios),
+                                  })}
+                                  title="Editar cuota"
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#475569', cursor: 'pointer' }}>
+                                  Editar
+                                </button>
+                              )}
+                              {esSuperadmin && (
+                                <button
+                                  onClick={() => handleEliminarCuota(c.id)}
+                                  disabled={eliminandoQ === c.id}
+                                  title="Eliminar cuota"
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', opacity: eliminandoQ === c.id ? 0.5 : 1 }}>
+                                  {eliminandoQ === c.id ? <Loader size={12} /> : <Trash2 size={12} />}
+                                </button>
+                              )}
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -1338,6 +1357,15 @@ export default function CobranzaHipicoPage() {
           periodoDefault={showCobrar.periodoDefault}
           onClose={() => setShowCobrar(null)}
           onSaved={() => { fetchAsignaciones(); if (tab === 'cobranza') fetchCobranza(); fetchRecibos() }}
+        />
+      )}
+
+      {/* Modal Editar Cuota */}
+      {editCuota && (
+        <EditarCuotaModal
+          cuota={editCuota}
+          onClose={() => setEditCuota(null)}
+          onSaved={() => { setEditCuota(null); fetchCuotasAll(); fetchAsignaciones(); if (tab === 'cobranza') fetchCobranza() }}
         />
       )}
 
