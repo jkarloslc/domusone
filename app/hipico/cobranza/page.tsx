@@ -852,8 +852,9 @@ export default function CobranzaHipicoPage() {
                                       <select value={mesGenerar} onChange={e => setMesGenerar(e.target.value)}
                                         style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', color: '#1e293b' }}>
                                         {Array.from({ length: 12 }, (_, i) => {
-                                          const d = new Date(); d.setMonth(d.getMonth() - 2 + i)
-                                          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                                          const hoyD = new Date()
+                                          const total = hoyD.getFullYear() * 12 + hoyD.getMonth() + (i - 2)
+                                          return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, '0')}`
                                         }).map(m => <option key={m} value={m}>{fmtMes(m)}</option>)}
                                       </select>
                                       <button onClick={e => { e.stopPropagation(); handleGenerarCargoAsig(a, mesGenerar) }}
