@@ -151,7 +151,7 @@ const GOLF_MODULOS = [
   'golf-cuotas', 'golf-cxc', 'golf-recibos', 'golf-intercambios', 'golf-catalogos',
   'golf-riego', 'golf-mantenimiento-campo', 'golf-tee-practica',
   'golf-administracion', 'golf-mantto-campo', 'golf-estatus-campo',
-  'reportes', 'compras', 'requisiciones', 'transferencias',
+  'reportes', 'compras', 'requisiciones', 'transferencias', 'locales',
   ...HIPICO_MODULOS,
 ]
 
