@@ -133,6 +133,7 @@ export default function CobranzaHipicoPage() {
   const [modoCuotas, setModoCuotas]         = useState<{ idAsig: number; monto: number } | null>(null)
   const [showCobrar, setShowCobrar]         = useState<{ cuotas: CuotaPendiente[]; nombreArr: string; idArr: number; nombreCaballeriza: string; periodoDefault?: string } | null>(null)
   const [generandoCargo, setGenerandoCargo] = useState<number | null>(null)
+  const [eliminandoA, setEliminandoA]       = useState<number | null>(null)
   const [showBitacora, setShowBitacora]     = useState<{ idArr: number; nombre: string } | null>(null)
 
   const [mesGenerar, setMesGenerar] = useState(() => {
@@ -282,6 +283,23 @@ export default function CobranzaHipicoPage() {
     })
     setGenerandoCargo(null)
     fetchAsignaciones()
+  }
+
+  // ── Eliminar asignación ────────────────────────────────────
+  const handleEliminarAsignacion = async (a: Asignacion) => {
+    const msg = a.pendientes > 0
+      ? `Esta asignación tiene ${a.pendientes} cuota(s) pendiente(s) por ${fmt$(a.monto_pendiente)}. Al eliminarla, esas cuotas quedarán sin asignación asociada. ¿Eliminar de todas formas?`
+      : '¿Eliminar esta asignación? Esta acción no se puede deshacer.'
+    if (!confirm(msg)) return
+    setEliminandoA(a.id)
+    const { error } = await dbHip.from('ctrl_asignaciones').delete().eq('id', a.id)
+    if (error) {
+      alert(`Error al eliminar: ${error.message}`)
+      setEliminandoA(null)
+      return
+    }
+    setAsignaciones(prev => prev.filter(x => x.id !== a.id))
+    setEliminandoA(null)
   }
 
   // ── Fetch Cobranza ────────────────────────────────────────
@@ -798,10 +816,18 @@ export default function CobranzaHipicoPage() {
                           </td>
                           <td style={{ padding: '10px 14px' }}>
                             {puedeEscribir && (
-                              <button onClick={e => { e.stopPropagation(); setEditAsig({ id: a.id, id_arrendatario_fk: a.id_arrendatario_fk, id_caballeriza_fk: a.id_caballeriza_fk, fecha_inicio: a.fecha_inicio, fecha_fin: a.fecha_fin, monto_mensual: a.monto_mensual, dia_pago: a.dia_pago, activo: a.activo, observaciones: a.observaciones }); setShowAsig(true) }}
-                                style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                Editar
-                              </button>
+                              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                <button onClick={e => { e.stopPropagation(); setEditAsig({ id: a.id, id_arrendatario_fk: a.id_arrendatario_fk, id_caballeriza_fk: a.id_caballeriza_fk, fecha_inicio: a.fecha_inicio, fecha_fin: a.fecha_fin, monto_mensual: a.monto_mensual, dia_pago: a.dia_pago, activo: a.activo, observaciones: a.observaciones }); setShowAsig(true) }}
+                                  style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                  Editar
+                                </button>
+                                <button onClick={e => { e.stopPropagation(); handleEliminarAsignacion(a) }}
+                                  disabled={eliminandoA === a.id}
+                                  title="Eliminar asignación"
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: eliminandoA === a.id ? 0.5 : 1 }}>
+                                  {eliminandoA === a.id ? <Loader size={12} /> : <Trash2 size={12} />}
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
