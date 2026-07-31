@@ -397,13 +397,15 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     if (!exito) return
     setGenTicket(true); setTicketErr('')
     try {
-      const [{ data: centros }, { data: cfg }] = await Promise.all([
+      const [{ data: centros }, { data: cfg }, { data: cfgLoc }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+        dbCtrl.from('loc_cfg').select('id_concepto_ingreso_fk').eq('id', 1).maybeSingle(),
       ])
       const centrosPos = (centros as { id: number; nombre: string }[]) ?? []
       if (!centrosPos.length) throw new Error('No hay centros POS activos.')
       const centroLoc = centrosPos.find(c => { const n = norm(c.nombre); return n.includes('local') || n.includes('propiedad') }) ?? centrosPos[0]
+      const idConceptoLoc = (cfgLoc as { id_concepto_ingreso_fk: number | null } | null)?.id_concepto_ingreso_fk ?? null
 
       const { data: recFull } = await dbCtrl.from('loc_recibos')
         .select('subtotal, descuento, total, fecha_recibo, id_venta_pos_fk, facturable').eq('id', exito.idRecibo).single()
@@ -439,7 +441,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
         await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
-          id_venta_fk: ventaId!, id_producto_fk: null,
+          id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: idConceptoLoc,
           concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final,
           descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
         })))
@@ -450,6 +452,9 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
           await dbGolf.from('ctrl_ventas_pagos').insert(formasRList.map(f => ({ id_venta_fk: ventaId!, id_forma_fk: f.id_forma_pago_fk ?? null, forma_nombre: f.forma_nombre, monto: f.monto })))
         }
         await dbCtrl.from('loc_recibos').update({ id_venta_pos_fk: ventaId }).eq('id', exito.idRecibo)
+      } else {
+        const { data: ventaEx } = await dbGolf.from('ctrl_ventas').select('folio_dia').eq('id', ventaId).single()
+        folioDia = (ventaEx as { folio_dia: number } | null)?.folio_dia ?? 0
       }
       setIdVentaPos(ventaId)
 

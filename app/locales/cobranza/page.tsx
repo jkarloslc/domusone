@@ -1,17 +1,17 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbGolf } from '@/lib/supabase'
+import { dbCtrl, dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight,
-  CreditCard, Receipt, AlertCircle, Loader, Printer, DollarSign, Zap, FileText, Trash2, List,
+  CreditCard, Receipt, AlertCircle, Loader, Printer, DollarSign, Zap, FileText, Trash2, List, Settings,
 } from 'lucide-react'
 import Link from 'next/link'
 import AsignacionModal, { type AsignacionData } from './AsignacionModal'
 import CobrarModal, { type CuotaPendiente, printReciboLoc } from './CobrarModal'
 
 // ── Tipos ──────────────────────────────────────────────────────
-type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'cuotas'
+type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'cuotas' | 'config'
 
 type CuotaRow = {
   id: number
@@ -68,6 +68,8 @@ type ReciboRow = {
   id: number
   folio: string
   fecha_recibo: string
+  subtotal: number | null
+  descuento: number | null
   total: number
   forma_pago_nombre: string | null
   referencia_pago: string | null
@@ -174,6 +176,29 @@ export default function CobranzaLocalesPage() {
   const [paginaQ, setPaginaQ]               = useState(1)
   const PAGE_SIZE_Q = 50
   const esSuperadmin = authUser?.rol === 'superadmin'
+  const esAdmin = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+
+  // ── Config (Concepto de Ingreso) ───────────────────────────
+  const [conceptoEdit, setConceptoEdit]         = useState<number | null>(null)
+  const [conceptosIngreso, setConceptosIngreso] = useState<{ id: number; nombre: string }[]>([])
+  const [savingCfg, setSavingCfg]               = useState(false)
+
+  const fetchConfig = useCallback(async () => {
+    const [{ data }, { data: cons }] = await Promise.all([
+      dbCtrl.from('loc_cfg').select('id_concepto_ingreso_fk').eq('id', 1).maybeSingle(),
+      dbCfg.from('conceptos_ingreso').select('id, nombre').eq('activo', true).order('nombre'),
+    ])
+    setConceptoEdit((data as { id_concepto_ingreso_fk: number | null } | null)?.id_concepto_ingreso_fk ?? null)
+    setConceptosIngreso((cons as { id: number; nombre: string }[]) ?? [])
+  }, [])
+
+  const guardarConcepto = async () => {
+    setSavingCfg(true)
+    await dbCtrl.from('loc_cfg')
+      .update({ id_concepto_ingreso_fk: conceptoEdit, updated_at: new Date().toISOString() })
+      .eq('id', 1)
+    setSavingCfg(false)
+  }
 
   // ── Fetch Asignaciones ────────────────────────────────────
   const fetchAsignaciones = useCallback(async () => {
@@ -382,7 +407,7 @@ export default function CobranzaLocalesPage() {
   const fetchRecibos = useCallback(async () => {
     setLoadingR(true)
     const { data } = await dbCtrl.from('loc_recibos')
-      .select(`id, folio, fecha_recibo, total, forma_pago_nombre, referencia_pago,
+      .select(`id, folio, fecha_recibo, subtotal, descuento, total, forma_pago_nombre, referencia_pago,
         observaciones, usuario_cobra, status, id_venta_pos_fk, id_forma_pago_fk, id_arrendatario_fk,
         cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
         recibos_loc_det:loc_recibos_det(id, concepto, tipo, periodo, monto_final)`)
@@ -402,13 +427,15 @@ export default function CobranzaLocalesPage() {
   const handleTicketPOS = async (r: ReciboRow) => {
     setGenTicketR(true); setTicketErrR('')
     try {
-      const [{ data: centros }, { data: cfg }] = await Promise.all([
+      const [{ data: centros }, { data: cfg }, { data: cfgLoc }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+        dbCtrl.from('loc_cfg').select('id_concepto_ingreso_fk').eq('id', 1).maybeSingle(),
       ])
       const centrosPos = (centros as { id: number; nombre: string }[]) ?? []
       if (!centrosPos.length) throw new Error('No hay centros POS activos.')
       const centroLoc = centrosPos.find(c => { const n = norm(c.nombre); return n.includes('local') || n.includes('propiedad') }) ?? centrosPos[0]
+      const idConceptoLoc = (cfgLoc as { id_concepto_ingreso_fk: number | null } | null)?.id_concepto_ingreso_fk ?? null
 
       let ventaId = r.id_venta_pos_fk
       let folioDia = 0
@@ -426,7 +453,7 @@ export default function CobranzaLocalesPage() {
         const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
           folio_dia: folioDia, id_centro_fk: centroLoc.id, fecha: fechaIso,
           nombre_cliente: fmtNombre(r.cat_arrendatarios), es_socio: false,
-          subtotal: r.total, descuento: 0, iva: totalIvaCuotas, total: r.total,
+          subtotal: r.subtotal ?? r.total, descuento: r.descuento ?? 0, iva: totalIvaCuotas, total: r.total,
           status: 'PAGADA', usuario_crea: authUser?.user?.email ?? 'locales',
           notas: `Ticket POS desde recibo de locales ${r.folio}`,
         }).select('id, folio_dia').single()
@@ -435,7 +462,7 @@ export default function CobranzaLocalesPage() {
 
         if (detDesglosado.length > 0) {
           await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
-            id_venta_fk: ventaId!, id_producto_fk: null, concepto: d.concepto,
+            id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: idConceptoLoc, concepto: d.concepto,
             cantidad: 1, precio_unitario: d.monto_final, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
           })))
         }
@@ -540,6 +567,7 @@ export default function CobranzaLocalesPage() {
   useEffect(() => { if (tab === 'cobranza') fetchCobranza() }, [tab, fetchCobranza])
   useEffect(() => { if (tab === 'recibos') fetchRecibos() }, [tab, fetchRecibos])
   useEffect(() => { if (tab === 'cuotas') fetchCuotasAll() }, [tab, fetchCuotasAll])
+  useEffect(() => { if (tab === 'config') fetchConfig() }, [tab, fetchConfig])
 
   // ── Filtros Asignaciones ──────────────────────────────────
   const asigFiltradas = asignaciones.filter(a => {
@@ -621,6 +649,7 @@ export default function CobranzaLocalesPage() {
     { key: 'cobranza',     label: 'Cobranza',     icon: CreditCard  },
     { key: 'recibos',      label: 'Recibos',      icon: Receipt     },
     { key: 'cuotas',       label: 'Cuotas',       icon: List        },
+    ...(esAdmin ? [{ key: 'config' as Tab, label: 'Config', icon: Settings }] : []),
   ]
 
   const situacionCuota = (c: CuotaMes) => {
@@ -1225,6 +1254,28 @@ export default function CobranzaLocalesPage() {
             )}
           </div>
         </>
+      )}
+
+      {/* ══════════════════════════════════════════════════════
+          TAB: CONFIG
+      ══════════════════════════════════════════════════════ */}
+      {tab === 'config' && esAdmin && (
+        <div style={{ maxWidth: 400 }}>
+          <div className="card" style={{ padding: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: 'var(--text-primary)' }}>Concepto de Ingreso</div>
+            <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+              Para distribuir el corte POS de los tickets de Locales a su partida de presupuesto
+            </label>
+            <select className="input" value={conceptoEdit ?? ''} onChange={e => setConceptoEdit(e.target.value ? Number(e.target.value) : null)} style={{ width: '100%' }}>
+              <option value="">— Sin asignar (cae en &quot;Otros&quot;) —</option>
+              {conceptosIngreso.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
+            </select>
+            <button className="btn-primary" onClick={guardarConcepto} disabled={savingCfg}
+              style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, background: '#0f766e' }}>
+              {savingCfg ? <Loader size={13} /> : null} {savingCfg ? 'Guardando…' : 'Guardar'}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ══════════════════════════════════════════════════════
