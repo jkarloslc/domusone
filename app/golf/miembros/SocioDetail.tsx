@@ -505,18 +505,25 @@ function TabFacturas({ socioId }: { socioId: number }) {
 
   useEffect(() => {
     const load = async () => {
-      const { data: fiscData } = await dbGolf
-        .from('cat_socios_datos_fiscales')
-        .select('rfc')
+      // Las facturas de socios se emiten siempre vía ticket POS (Golf), que las
+      // guarda en golf.ctrl_ventas / golf.ctrl_ventas_cfdi — NO en ctrl.facturas
+      // (esa tabla es de un flujo de facturación distinto, no relacionado a golf).
+      const { data: ventas } = await dbGolf
+        .from('ctrl_ventas')
+        .select('id, folio_dia, fecha, total, folio_fiscal')
         .eq('id_socio_fk', socioId)
-      const rfcs = (fiscData ?? []).map((f: any) => f.rfc as string)
-      if (rfcs.length === 0) { setRows([]); setLoading(false); return }
-      const { data } = await dbCtrl
-        .from('facturas')
-        .select('id, folio_interno, folio_fiscal, rfc_receptor, razon_social_receptor, total, status, created_at, pdf_url')
-        .in('rfc_receptor', rfcs)
-        .order('created_at', { ascending: false })
-      setRows(data ?? [])
+        .not('folio_fiscal', 'is', null)
+        .order('fecha', { ascending: false })
+      const ids = (ventas ?? []).map((v: any) => v.id)
+      if (ids.length === 0) { setRows([]); setLoading(false); return }
+      const { data: cfdis } = await dbGolf
+        .from('ctrl_ventas_cfdi')
+        .select('id_venta_fk, folio_factura, receptor_rfc, receptor_nombre, status, fecha_timbrado, pdf_b64')
+        .in('id_venta_fk', ids)
+        .order('fecha_timbrado', { ascending: true })
+      const cfdiMap: Record<number, any> = {}
+      for (const c of cfdis ?? []) cfdiMap[c.id_venta_fk] = c
+      setRows((ventas ?? []).map((v: any) => ({ ...v, _cfdi: cfdiMap[v.id] ?? null })))
       setLoading(false)
     }
     load()
@@ -533,7 +540,7 @@ function TabFacturas({ socioId }: { socioId: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12, color: '#166534' }}>
-        Facturas cuyos RFC receptor coinciden con los datos fiscales registrados para este socio.
+        Tickets POS de este socio que fueron facturados (Golf → POS).
       </div>
       {rows.length === 0 ? (
         <Empty text="Sin facturas emitidas" emoji="🧾" />
@@ -548,33 +555,35 @@ function TabFacturas({ socioId }: { socioId: number }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map(f => {
-                const sc = STATUS_COLOR[f.status] ?? { bg: '#f1f5f9', color: '#475569' }
+              {rows.map(v => {
+                const cfdi = v._cfdi
+                const status = cfdi?.status ?? 'Vigente'
+                const sc = STATUS_COLOR[status] ?? { bg: '#f1f5f9', color: '#475569' }
                 return (
-                  <tr key={f.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap' }}>
-                      {f.folio_interno ?? '—'}
+                      {cfdi?.folio_factura ?? '—'}
                     </td>
                     <td style={{ padding: '8px 10px', fontFamily: 'monospace', color: '#475569', whiteSpace: 'nowrap' }}>
-                      {f.rfc_receptor ?? '—'}
+                      {cfdi?.receptor_rfc ?? '—'}
                     </td>
                     <td style={{ padding: '8px 10px', color: '#475569', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {f.razon_social_receptor ?? '—'}
+                      {cfdi?.receptor_nombre ?? '—'}
                     </td>
                     <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap' }}>
-                      {f.total != null ? '$' + Number(f.total).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}
+                      {v.total != null ? '$' + Number(v.total).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
                       <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: sc.bg, color: sc.color }}>
-                        {f.status}
+                        {status}
                       </span>
                     </td>
                     <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                      {f.created_at ? new Date(f.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      {cfdi?.fecha_timbrado ? new Date(cfdi.fecha_timbrado).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : (v.fecha ? new Date(v.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')}
                     </td>
                     <td style={{ padding: '8px 10px' }}>
-                      {f.pdf_url && (
-                        <a href={f.pdf_url} target="_blank" rel="noopener noreferrer"
+                      {cfdi?.pdf_b64 && (
+                        <a href={`data:application/pdf;base64,${cfdi.pdf_b64}`} target="_blank" rel="noopener noreferrer"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
                           title="Ver PDF">
                           <ExternalLink size={12} /> PDF
