@@ -59,9 +59,8 @@ async function generarFolio(): Promise<string> {
 // Resuelve el concepto de ingreso por cada línea de un ticket POS, siguiendo la
 // cadena cuota (loc_cxc) → asignación (loc_asignaciones) → propiedad (loc_propiedades).
 // Si la propiedad no tiene concepto propio (o la línea no viene de una cuota,
-// como "Cargo adicional"/"Descuento adicional"), cae en el concepto global de
-// ctrl.loc_cfg; si tampoco hay global, el corte lo clasifica en "Otros".
-export async function resolveConceptosPorCuota(idsCuota: number[], idConceptoDefault: number | null): Promise<Record<number, number | null>> {
+// como "Cargo adicional"/"Descuento adicional"), el corte la clasifica en "Otros".
+export async function resolveConceptosPorCuota(idsCuota: number[]): Promise<Record<number, number | null>> {
   if (idsCuota.length === 0) return {}
   const { data: cxc } = await dbCtrl.from('loc_cxc').select('id, id_asignacion_fk').in('id', idsCuota)
   const cxcRows = (cxc ?? []) as { id: number; id_asignacion_fk: number | null }[]
@@ -84,7 +83,7 @@ export async function resolveConceptosPorCuota(idsCuota: number[], idConceptoDef
 
   const cuotaConcepto: Record<number, number | null> = {}
   for (const c of cxcRows) {
-    cuotaConcepto[c.id] = (c.id_asignacion_fk != null ? asigConcepto[c.id_asignacion_fk] : null) ?? idConceptoDefault
+    cuotaConcepto[c.id] = c.id_asignacion_fk != null ? (asigConcepto[c.id_asignacion_fk] ?? null) : null
   }
   return cuotaConcepto
 }
@@ -430,15 +429,13 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     if (!exito) return
     setGenTicket(true); setTicketErr('')
     try {
-      const [{ data: centros }, { data: cfg }, { data: cfgLoc }] = await Promise.all([
+      const [{ data: centros }, { data: cfg }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
-        dbCtrl.from('loc_cfg').select('id_concepto_ingreso_fk').eq('id', 1).maybeSingle(),
       ])
       const centrosPos = (centros as { id: number; nombre: string }[]) ?? []
       if (!centrosPos.length) throw new Error('No hay centros POS activos.')
       const centroLoc = centrosPos.find(c => { const n = norm(c.nombre); return n.includes('local') || n.includes('propiedad') }) ?? centrosPos[0]
-      const idConceptoLoc = (cfgLoc as { id_concepto_ingreso_fk: number | null } | null)?.id_concepto_ingreso_fk ?? null
 
       const { data: recFull } = await dbCtrl.from('loc_recibos')
         .select('subtotal, descuento, total, fecha_recibo, id_venta_pos_fk, facturable').eq('id', exito.idRecibo).single()
@@ -457,9 +454,9 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       const totalIvaCuotas = detDesglosado.reduce((a, d) => a + d.iva, 0)
 
       const idsCuota = Array.from(new Set(detList.map(d => d.id_cuota_fk).filter((v): v is number => v != null)))
-      const conceptoPorCuota = await resolveConceptosPorCuota(idsCuota, idConceptoLoc)
+      const conceptoPorCuota = await resolveConceptosPorCuota(idsCuota)
       const conceptoDeLinea = (d: { id_cuota_fk: number | null }) =>
-        d.id_cuota_fk != null ? (conceptoPorCuota[d.id_cuota_fk] ?? idConceptoLoc) : idConceptoLoc
+        d.id_cuota_fk != null ? (conceptoPorCuota[d.id_cuota_fk] ?? null) : null
 
       if (!ventaId) {
         const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
