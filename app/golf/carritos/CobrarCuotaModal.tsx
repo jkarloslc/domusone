@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { Save, Loader, CheckCircle, Printer, Receipt, Plus, Trash2, Gift } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
+import { prorratearDescuento } from '@/lib/prorateoDescuento'
 import PaseModal from '../pases/PaseModal'
 
 type Cuota = {
@@ -173,6 +174,17 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const saldoQuedara  = Math.max(0, parseFloat((totalCobro - montoParcial).toFixed(2)))
   const esParcial     = saldoQuedara > 0
 
+  // Reparto del cobro entre cuotas seleccionadas — el descuento ya viene aplicado a cada
+  // línea (montoNeto), no se desglosa aparte. Se calcula aquí (no solo en handleSave) para
+  // que la vista previa del recibo muestre exactamente lo que se va a guardar.
+  const cargoAplicado = cargoAdicional > 0 ? Math.min(montoParcial, cargoAdicional) : 0
+  const detalleNeto   = prorratearDescuento(
+    cuotasSelec,
+    c => c.saldo ?? c.monto_final,
+    parseFloat((montoParcial - cargoAplicado + descExtra).toFixed(2)),
+    parseFloat((montoParcial - cargoAplicado).toFixed(2)),
+  )
+
   const toggleParcial = () => {
     if (parcialHabilitado) {
       setParcialHabilitado(false)
@@ -250,30 +262,21 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
     const folioFinal = (reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).folio
     setIdVentaPos((reciboData as { id: number; folio: string; id_venta_pos_fk: number | null }).id_venta_pos_fk ?? null)
 
-    // 3. Insertar detalle del recibo — el cargo adicional se cobra primero, luego cuotas (greedy).
-    // El descuento adicional (descExtra) es un monto condonado, no un faltante de pago: se debe
-    // sumar de vuelta al pool a repartir entre cuotas (igual que el paso 5 al actualizar cxc_golf,
-    // que usa esta misma fórmula) para que TODAS las cuotas seleccionadas queden con su saldo
-    // completo cubierto y aparezcan en el detalle del recibo/ticket/factura — antes, al restar el
-    // descuento del pool sin más, la(s) primera(s) cuota(s) se lo tragaban entero y el resto
-    // quedaba fuera del recibo aunque sí se marcaran como pagadas.
-    const cargoAplicado = cargoAdicional > 0 ? Math.min(montoParcial, cargoAdicional) : 0
-    let rem2 = parseFloat((montoParcial - cargoAplicado + descExtra).toFixed(2))
-    const detRows = cuotasSelec.map(c => {
-      const cuotaSaldo = c.saldo ?? c.monto_final
-      const aplicar = Math.min(rem2, cuotaSaldo)
-      rem2 = parseFloat((rem2 - aplicar).toFixed(2))
-      return {
-        id_recibo_fk:   reciboId,
-        id_cuota_fk:    c.id,
-        concepto:       c.concepto,
-        tipo:           c.tipo,
-        periodo:        c.periodo,
-        monto_original: c.monto_original,
-        descuento:      c.descuento,
-        monto_final:    parseFloat(aplicar.toFixed(2)),
-      }
-    }).filter(d => d.monto_final > 0)
+    // 3. Insertar detalle del recibo — el cargo adicional se cobra primero, luego cuotas.
+    // El descuento adicional (descExtra) ya viene prorrateado dentro de cada línea de cuota
+    // (detalleNeto, calculado más arriba con prorratearDescuento): no se guarda como línea
+    // aparte, así ticket POS y factura (que se arman a partir de este detalle) nunca
+    // desglosan el descuento — cada línea trae directamente su monto neto.
+    const detRows = detalleNeto.map(({ item: c, montoNeto }) => ({
+      id_recibo_fk:   reciboId,
+      id_cuota_fk:    c.id,
+      concepto:       c.concepto,
+      tipo:           c.tipo,
+      periodo:        c.periodo,
+      monto_original: c.monto_original,
+      descuento:      c.descuento,
+      monto_final:    montoNeto,
+    }))
     if (cargoAplicado > 0) {
       detRows.unshift({
         id_recibo_fk:   reciboId,
@@ -284,18 +287,6 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         monto_original: cargoAdicional,
         descuento:      0,
         monto_final:    parseFloat(cargoAplicado.toFixed(2)),
-      } as any)
-    }
-    if (descExtra > 0) {
-      detRows.push({
-        id_recibo_fk:   reciboId,
-        id_cuota_fk:    null,
-        concepto:       'Descuento adicional',
-        tipo:           null,
-        periodo:        null,
-        monto_original: -descExtra,
-        descuento:      0,
-        monto_final:    -parseFloat(descExtra.toFixed(2)),
       } as any)
     }
 
@@ -735,20 +726,16 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                       <th>Concepto</th>
                       <th>Tipo</th>
                       <th>Período</th>
-                      <th className="right">Monto</th>
-                      <th className="right">Desc.</th>
-                      <th className="right">Total</th>
+                      <th className="right">Importe</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cuotasSelec.map(c => (
+                    {detalleNeto.map(({ item: c, montoNeto }) => (
                       <tr key={c.id}>
                         <td>{c.concepto}</td>
                         <td>{TIPOS_LABEL[c.tipo] ?? c.tipo}</td>
                         <td>{c.periodo ?? '—'}</td>
-                        <td className="right">{fmt$(c.monto_original)}</td>
-                        <td className="right">{c.descuento > 0 ? fmt$(c.descuento) : '—'}</td>
-                        <td className="right" style={{ fontWeight: 600 }}>{fmt$(c.saldo ?? c.monto_final)}</td>
+                        <td className="right" style={{ fontWeight: 600 }}>{fmt$(montoNeto)}</td>
                       </tr>
                     ))}
                     {cargoAdicional > 0 && (
@@ -756,31 +743,13 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                         <td>Cargo adicional</td>
                         <td>—</td>
                         <td>—</td>
-                        <td className="right">{fmt$(cargoAdicional)}</td>
-                        <td className="right">—</td>
-                        <td className="right" style={{ fontWeight: 600 }}>{fmt$(cargoAdicional)}</td>
+                        <td className="right" style={{ fontWeight: 600 }}>{fmt$(cargoAplicado)}</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
 
                 <div className="totales">
-                  <div className="totales-row">
-                    <span>Subtotal adeudado</span>
-                    <span>{fmt$(subtotalBruto)}</span>
-                  </div>
-                  {cargoAdicional > 0 && (
-                    <div className="totales-row">
-                      <span>Cargo adicional</span>
-                      <span style={{ color: '#059669' }}>+ {fmt$(cargoAdicional)}</span>
-                    </div>
-                  )}
-                  {descExtra > 0 && (
-                    <div className="totales-row">
-                      <span>Descuento adicional</span>
-                      <span style={{ color: '#dc2626' }}>– {fmt$(descExtra)}</span>
-                    </div>
-                  )}
                   {esParcial && (
                     <div className="totales-row">
                       <span>Saldo pendiente</span>

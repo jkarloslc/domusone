@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { Save, Loader, Printer, Receipt, Plus, Trash2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { fechaLocal } from '@/lib/dateUtils'
+import { prorratearDescuento } from '@/lib/prorateoDescuento'
 
 // ── Tipos ────────────────────────────────────────────────────
 export type CuotaPendiente = {
@@ -142,8 +143,6 @@ export async function printReciboHip(reciboId: number, folio: string, nombreArre
       <tbody>${filas}</tbody>
     </table>
     <div class="totales">
-      ${recibo.subtotal != null && (recibo.descuento ?? 0) > 0 ? `<div class="totales-row"><span>Subtotal</span><span>$${recibo.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>
-      <div class="totales-row"><span>Descuento adicional</span><span style="color:#dc2626">– $${(recibo.descuento ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>` : ''}
       <div class="totales-row total"><span>TOTAL</span><span>$${recibo.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span></div>
     </div>
     <div class="pago-box" style="margin-top:16px">
@@ -299,27 +298,27 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     if (e1 || !recData) { setSaving(false); setErr(e1?.message ?? 'Error al crear recibo'); return }
     const idRecibo = (recData as { id: number }).id
 
-    // 2. Detalle de cuotas (greedy) — el cargo adicional se cobra primero, luego cuotas.
-    // El descuento adicional (descExtra) es un monto condonado, no un faltante de pago: se
-    // suma de vuelta al pool a repartir entre cuotas (igual que el paso 4 al actualizar
-    // cxc_hip) para que TODAS las cuotas seleccionadas queden con su saldo cubierto y
-    // aparezcan en el detalle del recibo/ticket — misma lógica que el modal de golf.
+    // 2. Detalle de cuotas — el cargo adicional se cobra primero, luego cuotas. El descuento
+    // adicional (descExtra) ya viene prorrateado dentro de cada línea de cuota (prorratearDescuento):
+    // no se guarda como línea aparte, así ticket POS y factura (armados a partir de este detalle)
+    // nunca desglosan el descuento — cada línea trae directamente su monto neto.
     const cargoAplicado = cargoAdicional > 0 ? Math.min(montoCobrar, cargoAdicional) : 0
-    let rem = parseFloat((montoCobrar - cargoAplicado + descExtra).toFixed(2))
-    const detalle = cuotasSel.map(c => {
-      const aplicar = Math.min(rem, c.saldo)
-      rem = parseFloat((rem - aplicar).toFixed(2))
-      return {
-        id_recibo_fk:   idRecibo,
-        id_cuota_fk:    c.id as number | null,
-        concepto:       c.concepto,
-        tipo:           'RENTA_CABALLERIZA' as string | null,
-        periodo:        c.periodo ?? null,
-        monto_original: c.monto_final,
-        descuento:      0,
-        monto_final:    parseFloat(aplicar.toFixed(2)),
-      }
-    }).filter(d => d.monto_final > 0)
+    const detalleNeto = prorratearDescuento(
+      cuotasSel,
+      c => c.saldo,
+      parseFloat((montoCobrar - cargoAplicado + descExtra).toFixed(2)),
+      parseFloat((montoCobrar - cargoAplicado).toFixed(2)),
+    )
+    const detalle = detalleNeto.map(({ item: c, montoNeto }) => ({
+      id_recibo_fk:   idRecibo,
+      id_cuota_fk:    c.id as number | null,
+      concepto:       c.concepto,
+      tipo:           'RENTA_CABALLERIZA' as string | null,
+      periodo:        c.periodo ?? null,
+      monto_original: c.monto_final,
+      descuento:      0,
+      monto_final:    montoNeto,
+    }))
     if (cargoAplicado > 0) {
       detalle.unshift({
         id_recibo_fk:   idRecibo,
@@ -330,18 +329,6 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         monto_original: cargoAdicional,
         descuento:      0,
         monto_final:    parseFloat(cargoAplicado.toFixed(2)),
-      })
-    }
-    if (descExtra > 0) {
-      detalle.push({
-        id_recibo_fk:   idRecibo,
-        id_cuota_fk:    null,
-        concepto:       'Descuento adicional',
-        tipo:           null,
-        periodo:        null,
-        monto_original: -descExtra,
-        descuento:      0,
-        monto_final:    -parseFloat(descExtra.toFixed(2)),
       })
     }
 
