@@ -90,24 +90,30 @@ export default function CombustibleTab() {
 
   const fetchVales = useCallback(async () => {
     setLoadingV(true)
+    // Nota: sin embed de `areas` — PostgREST no resuelve relaciones cross-schema
+    // (ctrl → cfg) por FK; el nombre del área se resuelve con areaMap.
     let q = dbCtrl.from('vales_combustible')
-      .select('*, areas:id_area_fk(nombre)')
+      .select('*')
       .eq('activo', true).order('created_at', { ascending: false })
     if (filterTipoV) q = q.eq('tipo_suministro', filterTipoV)
     if (filterStatV) q = q.eq('status', filterStatV)
-    const { data } = await q
+    const { data, error } = await q
+    if (error) console.error('fetchVales:', error.message)
     setVales(data ?? [])
     setLoadingV(false)
   }, [filterTipoV, filterStatV])
 
   const fetchCargas = useCallback(async () => {
     setLoadingC(true)
+    // `vales:id_vale_fk(folio)` es un embed dentro del mismo schema (ctrl) y sí
+    // funciona; área/equipo se resuelven con areaMap/equipoMap (ver nota arriba).
     let q = dbCtrl.from('cargas_combustible')
-      .select('*, areas:id_area_fk(nombre), equipos:id_equipo_fk(nombre, placa), vales:id_vale_fk(folio)')
+      .select('*, vales:id_vale_fk(folio)')
       .eq('activo', true).order('fecha', { ascending: false })
     if (filterTipoC) q = q.eq('tipo_carga', filterTipoC)
     if (filterAreaC) q = q.eq('id_area_fk', Number(filterAreaC))
-    const { data } = await q
+    const { data, error } = await q
+    if (error) console.error('fetchCargas:', error.message)
     setCargas(data ?? [])
     setLoadingC(false)
   }, [filterTipoC, filterAreaC])
@@ -132,14 +138,14 @@ export default function CombustibleTab() {
     if (!searchV) return true
     const q = searchV.toLowerCase()
     return (v.folio ?? '').toLowerCase().includes(q)
-      || (v.areas?.nombre ?? '').toLowerCase().includes(q)
+      || (areaMap[v.id_area_fk] ?? '').toLowerCase().includes(q)
       || (v.periodo ?? '').toLowerCase().includes(q)
   })
   const filteredCargas = cargas.filter(c => {
     if (!searchC) return true
     const q = searchC.toLowerCase()
-    return (c.equipos?.nombre ?? '').toLowerCase().includes(q)
-      || (c.areas?.nombre ?? '').toLowerCase().includes(q)
+    return (equipoMap[c.id_equipo_fk] ?? '').toLowerCase().includes(q)
+      || (areaMap[c.id_area_fk] ?? '').toLowerCase().includes(q)
       || (c.vales?.folio ?? '').toLowerCase().includes(q)
   })
 
@@ -227,7 +233,7 @@ export default function CombustibleTab() {
                       <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                         <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio}</td>
                         <td style={{ padding: '8px 10px' }}><Badge text={v.tipo_suministro} map={CARGA_TIPO_STYLE} /></td>
-                        <td style={{ padding: '8px 10px', fontSize: 12 }}>{v.areas?.nombre ?? '—'}</td>
+                        <td style={{ padding: '8px 10px', fontSize: 12 }}>{areaMap[v.id_area_fk] ?? '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>{v.periodo ?? '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12, textAlign: 'right' }}>{fmtL(v.litros_autorizados)}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>
@@ -304,8 +310,8 @@ export default function CombustibleTab() {
                       <td style={{ padding: '8px 10px', fontSize: 12, whiteSpace: 'nowrap' }}>{fmtF(c.fecha)}</td>
                       <td style={{ padding: '8px 10px' }}><Badge text={c.tipo_carga} map={CARGA_TIPO_STYLE} /></td>
                       <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 11, color: 'var(--blue)' }}>{c.vales?.folio ?? '—'}</td>
-                      <td style={{ padding: '8px 10px', fontSize: 12 }}>{c.areas?.nombre ?? '—'}</td>
-                      <td style={{ padding: '8px 10px', fontSize: 12 }}>{c.equipos ? `${c.equipos.nombre}${c.equipos.placa ? ` (${c.equipos.placa})` : ''}` : '—'}</td>
+                      <td style={{ padding: '8px 10px', fontSize: 12 }}>{areaMap[c.id_area_fk] ?? '—'}</td>
+                      <td style={{ padding: '8px 10px', fontSize: 12 }}>{c.id_equipo_fk ? (equipoMap[c.id_equipo_fk] ?? '—') : '—'}</td>
                       <td style={{ padding: '8px 10px', fontSize: 12, fontWeight: 600, textAlign: 'right' }}>{fmtL(c.litros)}</td>
                       <td style={{ padding: '8px 10px', fontSize: 12, textAlign: 'right' }}>{c.precio_unitario ? `$${Number(c.precio_unitario).toFixed(4)}` : '—'}</td>
                       <td style={{ padding: '8px 10px', fontSize: 12, fontWeight: 700, textAlign: 'right', color: '#059669' }}>{fmt$(c.monto_total)}</td>
@@ -694,7 +700,7 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
                 <option value="">— Sin vale / Emergencia —</option>
                 {valesFiltrados.map(v => (
                   <option key={v.id} value={v.id}>
-                    {v.folio} · {v.areas?.nombre ?? ''}{v.periodo ? ` · ${v.periodo}` : ''}
+                    {v.folio} · {areas.find(a => a.id === v.id_area_fk)?.nombre ?? ''}{v.periodo ? ` · ${v.periodo}` : ''}
                   </option>
                 ))}
               </select>
@@ -783,11 +789,16 @@ function ValeDetail({ vale, areaMap, equipoMap, onClose }: {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Sin embed de `equipos` — cross-schema (ctrl → cfg), se resuelve con equipoMap.
     dbCtrl.from('cargas_combustible')
-      .select('*, equipos:id_equipo_fk(nombre, placa)')
+      .select('*')
       .eq('id_vale_fk', vale.id).eq('activo', true)
       .order('fecha', { ascending: false })
-      .then(({ data }) => { setCargas(data ?? []); setLoading(false) })
+      .then(({ data, error }) => {
+        if (error) console.error('ValeDetail cargas:', error.message)
+        setCargas(data ?? [])
+        setLoading(false)
+      })
   }, [vale.id])
 
   const pct = vale.litros_autorizados > 0 ? (vale.litros_usados / vale.litros_autorizados) * 100 : 0
@@ -853,7 +864,7 @@ function ValeDetail({ vale, areaMap, equipoMap, onClose }: {
                 background: '#f8fafc', borderRadius: 8, marginBottom: 6, fontSize: 12 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600 }}>{fmtF(c.fecha)}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.equipos ? `${c.equipos.nombre}${c.equipos.placa ? ` · ${c.equipos.placa}` : ''}` : c.tipo_carga}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.id_equipo_fk ? (equipoMap[c.id_equipo_fk] ?? c.tipo_carga) : c.tipo_carga}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 700 }}>{fmtL(c.litros)}</div>
