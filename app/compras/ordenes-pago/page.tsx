@@ -450,13 +450,16 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
   // Vales de combustible en Solicitado disponibles para pagar con esta OP —
   // el proceso arranca aquí: la OP se genera con base en los vales pendientes de pago.
+  // Nota: sin embed de `areas` — PostgREST no resuelve relaciones cross-schema
+  // (ctrl -> cfg) por FK; el nombre del área se resuelve con ccAreas (ya cargado).
   useEffect(() => {
     if (form.tipo_gasto !== 'Combustible') return
     let q = dbCtrl.from('vales_combustible')
-      .select('id, folio, tipo_suministro, periodo, litros_autorizados, monto_autorizado, id_op_fk, areas:id_area_fk(nombre)')
+      .select('id, folio, tipo_suministro, periodo, litros_autorizados, monto_autorizado, id_area_fk, id_op_fk')
       .eq('status', 'Solicitado').order('created_at', { ascending: false })
     q = isEdit ? q.or(`id_op_fk.is.null,id_op_fk.eq.${opEdit.id}`) : q.is('id_op_fk', null)
-    q.then(({ data }) => {
+    q.then(({ data, error }) => {
+      if (error) console.error('fetch vales combustible:', error.message)
       setValesCombDisp(data ?? [])
       if (isEdit) setValesCombSel((data ?? []).filter((v: any) => v.id_op_fk === opEdit.id).map((v: any) => v.id))
     })
@@ -942,7 +945,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                           <input type="checkbox" checked={valesCombSel.includes(v.id)} onChange={() => toggleValeComb(v.id)} />
                           <span style={{ fontFamily: 'monospace', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{v.folio}</span>
                           <span style={{ flex: 1, color: 'var(--text-secondary)' }}>
-                            {v.tipo_suministro} · {v.areas?.nombre ?? ''}{v.periodo ? ` · ${v.periodo}` : ''} · {Number(v.litros_autorizados ?? 0).toLocaleString('es-MX')} L
+                            {v.tipo_suministro} · {ccAreas.find(a => a.id === v.id_area_fk)?.nombre ?? ''}{v.periodo ? ` · ${v.periodo}` : ''} · {Number(v.litros_autorizados ?? 0).toLocaleString('es-MX')} L
                           </span>
                           <span style={{ fontWeight: 600, color: '#059669', flexShrink: 0 }}>
                             {v.monto_autorizado != null ? `$${Number(v.monto_autorizado).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
