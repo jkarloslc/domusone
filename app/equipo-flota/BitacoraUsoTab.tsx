@@ -400,11 +400,20 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
 
   // Vales abiertos contra los que se puede "sacar" combustible por litros —
   // típicamente vales en modalidad Garrafa (pool de litros para el área).
+  // Nota: sin embed de `areas` — PostgREST no resuelve relaciones cross-schema
+  // (ctrl -> cfg) por FK; el nombre del área se resuelve aparte con un mapa.
   useEffect(() => {
-    dbCtrl.from('vales_combustible')
-      .select('id, folio, tipo_suministro, periodo, litros_autorizados, litros_usados, areas:id_area_fk(nombre)')
-      .in('status', ['Emitido', 'Parcial']).order('created_at', { ascending: false })
-      .then(({ data }) => setVales(data ?? []))
+    Promise.all([
+      dbCtrl.from('vales_combustible')
+        .select('id, folio, tipo_suministro, periodo, litros_autorizados, litros_usados, id_area_fk')
+        .in('status', ['Emitido', 'Parcial']).order('created_at', { ascending: false }),
+      dbCfg.from('areas').select('id, nombre'),
+    ]).then(([{ data: v, error: verr }, { data: a }]) => {
+      if (verr) console.error('fetch vales combustible (bitácora):', verr.message)
+      const areaMap: Record<number, string> = {}
+      ;(a ?? []).forEach((ar: any) => { areaMap[ar.id] = ar.nombre })
+      setVales((v ?? []).map((row: any) => ({ ...row, areaNombre: areaMap[row.id_area_fk] })))
+    })
   }, [])
 
   const equipo  = equipos.find(e => e.id === Number(form.id_equipo_fk))
@@ -631,7 +640,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
                 const restante = (v.litros_autorizados ?? 0) - (v.litros_usados ?? 0)
                 return (
                   <option key={v.id} value={v.id}>
-                    {v.folio} · {v.tipo_suministro} · {v.areas?.nombre ?? ''} · {fmtN(restante)} L restantes
+                    {v.folio} · {v.tipo_suministro} · {v.areaNombre ?? ''} · {fmtN(restante)} L restantes
                   </option>
                 )
               })}
