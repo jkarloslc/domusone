@@ -338,6 +338,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
     ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+    ]},
   ],
 
   compras_supervisor: [

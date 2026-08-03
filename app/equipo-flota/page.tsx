@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import { Truck } from 'lucide-react'
 import EquipoFlotaTab from './EquipoFlotaTab'
 
-const ROLES_PERMITIDOS = ['superadmin', 'admin', 'admin_lector', 'usuariomantto', 'mantenimiento']
+const ROLES_PERMITIDOS = ['superadmin', 'admin', 'admin_lector', 'usuariomantto', 'mantenimiento', 'compras']
 
 export default function EquipoFlotaPage() {
   const { authUser } = useAuth()

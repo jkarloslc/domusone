@@ -51,7 +51,11 @@ const fmtF = (d: string | null) =>
 // ══════════════════════════════════════════════════════════════
 export default function EquipoFlotaTab() {
   const { canWrite, canDelete, authUser } = useAuth()
-  const [subTab, setSubTab]     = useState<'catalogo' | 'bitacora' | 'uso' | 'combustible'>('catalogo')
+  // El rol compras solo administra combustible — sin acceso a catálogo/bitácora/uso de equipos
+  const soloCombustible = authUser?.rol === 'compras'
+  const [subTab, setSubTab]     = useState<'catalogo' | 'bitacora' | 'uso' | 'combustible'>(soloCombustible ? 'combustible' : 'catalogo')
+
+  useEffect(() => { if (soloCombustible) setSubTab('combustible') }, [soloCombustible])
 
   // ── Catálogo ─────────────────────────────────────────────
   const [equipos,   setEquipos]   = useState<any[]>([])
@@ -145,7 +149,9 @@ export default function EquipoFlotaTab() {
     <div>
       {/* Sub-tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 14 }}>
-        {([['catalogo', 'Catálogo de Equipos', Truck], ['bitacora', 'Bitácora de Servicios', Wrench], ['uso', 'Bitácora de Uso', Activity], ['combustible', 'Combustible', Fuel]] as const).map(([key, label, Icon]) => (
+        {([['catalogo', 'Catálogo de Equipos', Truck], ['bitacora', 'Bitácora de Servicios', Wrench], ['uso', 'Bitácora de Uso', Activity], ['combustible', 'Combustible', Fuel]] as const)
+          .filter(([key]) => !soloCombustible || key === 'combustible')
+          .map(([key, label, Icon]) => (
           <button key={key} onClick={() => setSubTab(key)}
             style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px',
               background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
