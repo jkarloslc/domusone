@@ -118,6 +118,7 @@ export default function POSPage() {
   const [loadingC,         setLoadingC]         = useState(false)
   const [filtroCorteDesde, setFiltroCorteDesde] = useState('')
   const [filtroCorteHasta, setFiltroCorteHasta] = useState('')
+  const [filtroCorteCentro, setFiltroCorteCentro] = useState('')
   const [pageC,            setPageC]            = useState(0)
   const [totalC,           setTotalC]           = useState(0)
   const [facturasCorteModal, setFacturasCorteModal] = useState<Corte | null>(null)
@@ -254,11 +255,12 @@ export default function POSPage() {
       .range(from, to)
     if (filtroCorteDesde) q = q.gte('fecha_corte', inicioDelDia(filtroCorteDesde))
     if (filtroCorteHasta) q = q.lte('fecha_corte', finDelDia(filtroCorteHasta))
+    if (filtroCorteCentro) q = q.eq('id_centro_fk', Number(filtroCorteCentro))
     const { data, count } = await q
     setCortes((data as Corte[]) ?? [])
     setTotalC(count ?? 0)
     setLoadingC(false)
-  }, [filtroCorteDesde, filtroCorteHasta, pageC])
+  }, [filtroCorteDesde, filtroCorteHasta, filtroCorteCentro, pageC])
 
   // ── Fetch config ─────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
@@ -1677,6 +1679,11 @@ ${facturasCorte.length > 0 ? `
                 min={filtroCorteDesde}
                 style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
+            <select value={filtroCorteCentro} onChange={e => { setFiltroCorteCentro(e.target.value); setPageC(0) }}
+              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+              <option value="">Todos los centros</option>
+              {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
             <span style={{ fontSize: 12, color: '#94a3b8' }}>{totalC} corte{totalC !== 1 ? 's' : ''}</span>
             <div style={{ flex: 1 }} />
             <button className="btn-ghost" onClick={fetchCortes} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
