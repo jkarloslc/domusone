@@ -20,7 +20,7 @@ const TIPOS_GASTO = [
   'Electricidad', 'Agua', 'Telefonía / Internet',
   'Honorarios', 'Asesoría', 'Capacitación', 'Nómina',
   'Impuestos Federales', 'Impuestos Estatales', 'Renta de Mobiliario',
-  'Servicios de Vigilancia', 'Otro',
+  'Servicios de Vigilancia', 'Perimetrales', 'Otro',
 ]
 
 type RolTipoOp = { tipo_gasto: string; modo: string; solo_propios: boolean }
@@ -349,6 +349,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [ocsSelected, setOcsSel]    = useState<{ id: number; folio: string; total: number; monto: string }[]>([])
   const [valesCombDisp, setValesCombDisp] = useState<any[]>([])
   const [valesCombSel,  setValesCombSel]  = useState<number[]>([])
+  const [vigLotesDisp, setVigLotesDisp]   = useState<any[]>([])
+  const [vigLotesSel,  setVigLotesSel]    = useState<number[]>([])
   const [conOC, setConOC] = useState<boolean | null>(
     opEdit ? (opEdit.id_oc_fk != null) : null
   )
@@ -475,6 +477,33 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (total > 0) setForm(f => ({ ...f, monto_manual: total.toFixed(2) }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [valesCombSel])
+
+  // Lotes de Vigilancia Extras en status Autorizado disponibles para pagar con esta OP
+  // (mismo patrón que vales de combustible: se capturan/autorizan en /vigilancia-extras
+  // y aquí solo se vinculan cuando el tipo de gasto es Perimetrales).
+  useEffect(() => {
+    if (form.tipo_gasto !== 'Perimetrales') return
+    let q = dbCtrl.from('vigilancia_extras_lotes')
+      .select('id, folio, fecha_desde, fecha_hasta, id_area_fk, total, id_op_fk')
+      .eq('status', 'Autorizado').order('fecha_desde', { ascending: false })
+    q = isEdit ? q.or(`id_op_fk.is.null,id_op_fk.eq.${opEdit.id}`) : q.is('id_op_fk', null)
+    q.then(({ data, error }) => {
+      if (error) console.error('fetch vigilancia_extras_lotes:', error.message)
+      setVigLotesDisp(data ?? [])
+      if (isEdit) setVigLotesSel((data ?? []).filter((l: any) => l.id_op_fk === opEdit.id).map((l: any) => l.id))
+    })
+  }, [form.tipo_gasto])
+
+  const toggleVigLote = (id: number) =>
+    setVigLotesSel(sel => sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id])
+
+  // Sugiere el monto de la OP con la suma de los lotes seleccionados (el usuario puede ajustarlo)
+  useEffect(() => {
+    if (form.tipo_gasto !== 'Perimetrales' || vigLotesSel.length === 0) return
+    const total = vigLotesDisp.filter(l => vigLotesSel.includes(l.id)).reduce((a, l) => a + (l.total ?? 0), 0)
+    if (total > 0) setForm(f => ({ ...f, monto_manual: total.toFixed(2) }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vigLotesSel])
 
   const aplicarProveedor = (provId: string) => {
     const prov = proveedores.find(p => p.id === Number(provId))
@@ -609,6 +638,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (form.tipo_gasto === 'Combustible' && valesCombSel.length === 0) {
       setError('Selecciona al menos un vale solicitado a pagar'); return
     }
+    if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length === 0) {
+      setError('Selecciona al menos un lote de Vigilancia autorizado'); return
+    }
     setSaving(true); setError('')
 
     // Obtener CC/Área/Frente de la OC cuando aplica
@@ -651,6 +683,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       if (form.tipo_gasto === 'Combustible' && valesCombSel.length > 0) {
         await dbCtrl.from('vales_combustible').update({ id_op_fk: opEdit.id }).in('id', valesCombSel)
       }
+      // Sincronizar lotes de Vigilancia Extras ligados a esta OP
+      await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: null }).eq('id_op_fk', opEdit.id)
+      if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length > 0) {
+        await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: opEdit.id }).in('id', vigLotesSel)
+      }
       // Sincronizar líneas de distribución
       await dbComp.from('ordenes_pago_det').delete().eq('id_op_fk', opEdit.id)
       if (detLines.length > 0) {
@@ -692,6 +729,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
     if (form.tipo_gasto === 'Combustible' && valesCombSel.length > 0) {
       await dbCtrl.from('vales_combustible').update({ id_op_fk: op.id }).in('id', valesCombSel)
+    }
+    if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length > 0) {
+      await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: op.id }).in('id', vigLotesSel)
     }
 
     if (conOC && ocsSelected.length > 0) {
@@ -957,6 +997,38 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
                   Al pagarse esta OP, los vales seleccionados pasan automáticamente a status Emitido.
+                </div>
+              </div>
+            )}
+
+            {!conOC && form.tipo_gasto === 'Perimetrales' && (
+              <div>
+                <label className="label">Lotes de Vigilancia autorizados a pagar *</label>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                  {vigLotesDisp.length === 0 ? (
+                    <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+                      Sin lotes en status Autorizado disponibles — captúralos y autorízalos en Residencial › Vigilancia
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: 180, overflowY: 'auto' }}>
+                      {vigLotesDisp.map(l => (
+                        <label key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                          borderBottom: '1px solid #f8fafc', cursor: 'pointer', fontSize: 12 }}>
+                          <input type="checkbox" checked={vigLotesSel.includes(l.id)} onChange={() => toggleVigLote(l.id)} />
+                          <span style={{ fontFamily: 'monospace', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{l.folio}</span>
+                          <span style={{ flex: 1, color: 'var(--text-secondary)' }}>
+                            {fmtFecha(l.fecha_desde)} – {fmtFecha(l.fecha_hasta)}
+                          </span>
+                          <span style={{ fontWeight: 600, color: '#059669', flexShrink: 0 }}>
+                            {l.total != null ? `$${Number(l.total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
+                  Cada lote es la nómina semanal de extras capturada y autorizada en el módulo de Vigilancia.
                 </div>
               </div>
             )}

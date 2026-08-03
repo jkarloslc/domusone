@@ -108,7 +108,7 @@ type AuthCtx = {
 // Módulos que admin puede ver/escribir (todo excepto usuarios y configuracion)
 const ADMIN_MODULOS = [
   'lotes', 'propietarios', 'contratos', 'escrituras',
-  'cobranza', 'facturas', 'accesos', 'incidencias',
+  'cobranza', 'facturas', 'accesos', 'incidencias', 'vigilancia-extras',
   'proyectos', 'mantenimiento', 'comunicados',
   'compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago',
   'transferencias', 'recepciones',
@@ -191,7 +191,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'incidencias', 'proyectos', 'mantenimiento', 'comunicados', 'reportes'],
   cobranza:            ['lotes', 'propietarios', 'cobranza', 'facturas', 'reportes'],
-  vigilancia:          ['lotes', 'propietarios', 'accesos', 'incidencias'],
+  vigilancia:          ['lotes', 'propietarios', 'accesos', 'incidencias', 'vigilancia-extras'],
   compras:             ['compras', 'reportes', 'equipo-flota'],
   compras_supervisor:  ['compras', 'reportes'],
   almacen:             ['compras', 'reportes'],
@@ -225,7 +225,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'incidencias', 'proyectos', 'mantenimiento', 'comunicados'],
   cobranza:            ['cobranza', 'facturas'],
-  vigilancia:          ['accesos', 'incidencias'],
+  vigilancia:          ['accesos', 'incidencias', 'vigilancia-extras'],
   compras:             ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores', 'articulos', 'mantenimiento'],
   compras_supervisor:  ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores', 'articulos'],
   almacen:             ['compras', 'articulos', 'almacenes', 'areas'],
