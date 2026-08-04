@@ -31,18 +31,20 @@ CREATE INDEX IF NOT EXISTS idx_vig_extras_lotes_op     ON ctrl.vigilancia_extras
 
 -- ── Guardia dentro del lote ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS ctrl.vigilancia_extras_guardias (
-  id           SERIAL PRIMARY KEY,
-  id_lote_fk   INTEGER NOT NULL REFERENCES ctrl.vigilancia_extras_lotes(id) ON DELETE CASCADE,
-  nombre       TEXT NOT NULL,
-  zona         TEXT,                        -- 'Recorrido' | 'Elite' | otro
-  puesto       TEXT DEFAULT 'VIG.',
-  costo_dia    NUMERIC(12,2) NOT NULL DEFAULT 0,
-  dias         INTEGER NOT NULL DEFAULT 0,   -- calculado desde asistencias
-  costo        NUMERIC(12,2) NOT NULL DEFAULT 0,  -- calculado desde asistencias
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                SERIAL PRIMARY KEY,
+  id_lote_fk        INTEGER NOT NULL REFERENCES ctrl.vigilancia_extras_lotes(id) ON DELETE CASCADE,
+  id_colaborador_fk INTEGER REFERENCES cfg.colaboradores(id),  -- se elige vía popup de Colaboradores
+  nombre            TEXT NOT NULL,           -- copia del nombre completo al momento de captura
+  zona              TEXT,                    -- 'Recorrido' | 'Elite' | otro
+  puesto            TEXT DEFAULT 'VIG.',
+  costo_dia         NUMERIC(12,2) NOT NULL DEFAULT 0,
+  dias              INTEGER NOT NULL DEFAULT 0,   -- calculado desde asistencias
+  costo             NUMERIC(12,2) NOT NULL DEFAULT 0,  -- calculado desde asistencias
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_vig_extras_guardias_lote ON ctrl.vigilancia_extras_guardias(id_lote_fk);
+CREATE INDEX IF NOT EXISTS idx_vig_extras_guardias_colab ON ctrl.vigilancia_extras_guardias(id_colaborador_fk);
 
 -- ── Asistencia día x turno (la cuadrícula L-D del PDF) ──────────────────────
 CREATE TABLE IF NOT EXISTS ctrl.vigilancia_extras_asistencias (

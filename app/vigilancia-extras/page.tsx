@@ -1,13 +1,14 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  ShieldCheck, Plus, ArrowLeft, X, Save, Loader, Eye, Edit2,
-  CheckCircle, XCircle, Trash2, AlertTriangle,
+  ShieldCheck, Plus, ArrowLeft, Save, Loader, Eye,
+  CheckCircle, XCircle, Trash2, AlertTriangle, User, ChevronDown, Search,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
+import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 
 const TURNOS = ['A-D', 'A-M', 'A-N'] as const
 const TURNO_LABEL: Record<string, string> = {
@@ -61,6 +62,7 @@ const diaLabel = (fecha: string) => {
 type Guardia = {
   tempId: number
   id?: number
+  id_colaborador_fk: number | null
   nombre: string
   zona: string
   puesto: string
@@ -213,6 +215,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
       setGuardias(guardiasData.map((g: any, i: number) => ({
         tempId: i,
         id: g.id,
+        id_colaborador_fk: g.id_colaborador_fk ?? null,
         nombre: g.nombre,
         zona: g.zona ?? 'Recorrido',
         puesto: g.puesto ?? 'VIG.',
@@ -226,7 +229,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   const dias = diasEnRango(fechaDesde, fechaHasta)
 
   const addGuardia = () => {
-    setGuardias(g => [...g, { tempId: nextTempId, nombre: '', zona: 'Recorrido', puesto: 'VIG.', costo_dia: '500', asistencias: {} }])
+    setGuardias(g => [...g, { tempId: nextTempId, id_colaborador_fk: null, nombre: '', zona: 'Recorrido', puesto: 'VIG.', costo_dia: '500', asistencias: {} }])
     setNextTempId(n => n + 1)
   }
   const removeGuardia = (tempId: number) => setGuardias(g => g.filter(x => x.tempId !== tempId))
@@ -244,7 +247,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   const handleSave = async () => {
     if (!fechaDesde || !fechaHasta) { setError('Captura el periodo (fecha desde / hasta)'); return }
     if (guardias.length === 0) { setError('Agrega al menos un guardia'); return }
-    if (guardias.some(g => !g.nombre.trim())) { setError('Todos los guardias deben tener nombre'); return }
+    if (guardias.some(g => !g.id_colaborador_fk)) { setError('Selecciona el colaborador para todos los guardias'); return }
     if (guardias.every(g => diasGuardia(g) === 0)) { setError('Marca al menos un día trabajado'); return }
     setSaving(true); setError('')
 
@@ -283,6 +286,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
     for (const g of guardias) {
       const { data: gRow, error: gErr } = await dbCtrl.from('vigilancia_extras_guardias').insert({
         id_lote_fk: loteId,
+        id_colaborador_fk: g.id_colaborador_fk,
         nombre: g.nombre.trim(),
         zona: g.zona || null,
         puesto: g.puesto.trim() || 'VIG.',
@@ -433,7 +437,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: '#f8fafc' }}>
-                  <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 140 }}>Nombre</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 180 }}>Nombre</th>
                   <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 90 }}>Zona</th>
                   <th style={{ padding: '6px 8px', textAlign: 'right', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 80 }}>$/día</th>
                   {dias.map(f => {
@@ -451,8 +455,14 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
                 ) : guardias.map(g => (
                   <tr key={g.tempId} style={{ borderTop: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '4px 6px' }}>
-                      <input className="input" style={{ padding: '4px 6px', fontSize: 12 }} value={g.nombre} disabled={!editable}
-                        onChange={e => updateGuardia(g.tempId, { nombre: e.target.value })} placeholder="Nombre del guardia" />
+                      {editable ? (
+                        <ColaboradorPopup
+                          value={{ id: g.id_colaborador_fk, nombre: g.nombre }}
+                          onChange={c => updateGuardia(g.tempId, { id_colaborador_fk: c?.id ?? null, nombre: c?.nombre ?? '' })}
+                        />
+                      ) : (
+                        <span style={{ fontSize: 12 }}>{g.nombre || '—'}</span>
+                      )}
                     </td>
                     <td style={{ padding: '4px 6px' }}>
                       <select className="select" style={{ padding: '4px 6px', fontSize: 12 }} value={g.zona} disabled={!editable}
@@ -506,5 +516,79 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
         A-D Asistencia Día · A-M Asistencia Mixto · A-N Asistencia Noche
       </div>
     </ModalShell>
+  )
+}
+
+// ── Popup selector de Colaborador (cfg.colaboradores) ────────────────────
+function ColaboradorPopup({ value, onChange }: {
+  value: { id: number | null; nombre: string }
+  onChange: (c: { id: number; nombre: string } | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
+  const [query, setQuery] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    dbCfg.from('colaboradores').select('*').eq('activo', true).order('nombre')
+      .then(({ data }) => setColaboradores((data ?? []) as Colaborador[]))
+  }, [open])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const filtrados = colaboradores.filter(c => nombreCompletoColaborador(c).toLowerCase().includes(query.toLowerCase()))
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+          background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6,
+          padding: '4px 8px', fontSize: 12, cursor: 'pointer',
+          color: value.nombre ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+        <User size={12} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
+        <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {value.nombre || 'Seleccionar…'}
+        </span>
+        <ChevronDown size={11} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, minWidth: 240, zIndex: 9999,
+          background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,.12)', marginTop: 4, overflow: 'hidden' }}>
+          <div style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Search size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar colaborador…"
+              style={{ border: 'none', outline: 'none', width: '100%', fontSize: 12, background: 'transparent' }} />
+          </div>
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filtrados.length === 0 ? (
+              <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-muted)' }}>Sin resultados</div>
+            ) : filtrados.map(c => {
+              const nombre = nombreCompletoColaborador(c)
+              const selected = c.id === value.id
+              return (
+                <button key={c.id} type="button"
+                  onClick={() => { onChange({ id: c.id, nombre }); setOpen(false); setQuery('') }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px',
+                    fontSize: 12, background: selected ? '#eff6ff' : 'transparent',
+                    color: selected ? 'var(--blue)' : 'var(--text-primary)',
+                    border: 'none', cursor: 'pointer' }}>
+                  {nombre}
+                  {c.puesto && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 6 }}>{c.puesto}</span>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
