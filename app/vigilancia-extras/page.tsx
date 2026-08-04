@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  ShieldCheck, Plus, ArrowLeft, Save, Loader, Eye,
+  ShieldCheck, Plus, ArrowLeft, Save, Loader, Eye, Printer,
   CheckCircle, XCircle, Trash2, AlertTriangle, User, ChevronDown, Search,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -336,6 +336,113 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
 
   const mostrarAutorizacion = isEdit && puedeAutorizar && lote.status === 'Capturado'
 
+  const imprimir = async () => {
+    if (!lote?.id) return
+    const areaNombre = areaId ? (areas.find(a => a.id === Number(areaId))?.nombre ?? '—') : '—'
+
+    // Config de organización (mismo patrón que Órdenes de Pago)
+    let orgNombre = 'Organización'
+    let orgSubtitulo = ''
+    let orgLogo = ''
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const sb = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+
+    const html = `<!DOCTYPE html><html><head><title>Perimetral ${lote.folio}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #64748b; }
+        .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+        .sub { color: #64748b; font-size: 12px; margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        td, th { border: 1px solid #e2e8f0; padding: 6px 8px; font-size: 11px; }
+        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
+        .total { background: #eff6ff; font-size: 14px; font-weight: 700; color: #0D4F80; }
+        .firmas { display: flex; gap: 60px; margin-top: 60px; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
+        .leyenda { font-size: 10px; color: #64748b; margin-top: 6px; }
+        @page { margin: 1.2cm; }
+      </style></head><body>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="doc-title">Vigilancia — Perimetral (Extras)</div>
+          <div class="sub" style="margin:0">Folio: <strong>${lote.folio}</strong> &nbsp;·&nbsp; Periodo: ${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}</div>
+        </div>
+      </div>
+      <table>
+        <tr><th>Área correspondiente</th><td>${areaNombre}</td><th>Status</th><td style="font-weight:700">${lote.status}</td></tr>
+        ${notas ? `<tr><th>Notas</th><td colspan="3">${notas}</td></tr>` : ''}
+      </table>
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th><th>Zona</th><th style="text-align:right">$/día</th>
+            ${dias.map(f => { const { letra, num } = diaLabel(f); return `<th style="text-align:center">${letra} ${num}</th>` }).join('')}
+            <th style="text-align:center">Días</th><th style="text-align:right">Costo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${guardias.map(g => `<tr>
+            <td>${g.nombre || '—'}</td>
+            <td>${g.zona || '—'}</td>
+            <td style="text-align:right">${fmt(Number(g.costo_dia))}</td>
+            ${dias.map(f => `<td style="text-align:center;font-weight:${g.asistencias[f] ? 700 : 400}">${g.asistencias[f] || '—'}</td>`).join('')}
+            <td style="text-align:center;font-weight:700">${diasGuardia(g)}</td>
+            <td style="text-align:right;font-weight:700">${fmt(costoGuardia(g))}</td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot>
+          <tr><th colspan="${3 + dias.length + 1}" style="text-align:right" class="total">TOTAL DEL PERIMETRAL</th><td class="total" style="text-align:right">${fmt(totalLote)}</td></tr>
+        </tfoot>
+      </table>
+      <div class="leyenda">A-D Asistencia Día · A-M Asistencia Mixto · A-N Asistencia Noche</div>
+      <div class="firmas">
+        <div class="firma">
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${lote.captured_by ?? 'Sin registro'}</div>
+          Capturó
+        </div>
+        <div class="firma">
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${lote.authorized_by ?? 'Sin registro'}</div>
+          Autorizó
+          ${lote.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(lote.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+        </div>
+      </div>
+      </body></html>`
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
+  }
+
   return (
     <ModalShell
       modulo="accesos"
@@ -347,6 +454,11 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
       footer={
         <>
           <button className="btn-ghost" onClick={onClose}>Cerrar</button>
+          {isEdit && lote.status === 'Autorizado' && (
+            <button className="btn-secondary" onClick={imprimir}>
+              <Printer size={14} style={{ marginRight: 4 }} /> Imprimir
+            </button>
+          )}
           {mostrarAutorizacion && !rechazando && (
             <>
               <button className="btn-ghost" style={{ color: '#dc2626' }} onClick={() => setRechazando(true)}>
