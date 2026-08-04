@@ -111,12 +111,12 @@ export default function VigilanciaExtrasPage() {
           <button className="btn-ghost" onClick={() => router.push('/residencial')}><ArrowLeft size={15} /></button>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Vigilancia — Extras</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Nómina semanal de guardias extra · {rows.length} lotes</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Nómina semanal de guardias extra · {rows.length} perimetrales</p>
           </div>
         </div>
         {puedeCapturar && (
           <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Plus size={15} /> Nuevo Lote
+            <Plus size={15} /> Nuevo Perimetral
           </button>
         )}
       </div>
@@ -147,7 +147,7 @@ export default function VigilanciaExtrasPage() {
             {loading ? (
               <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={16} className="animate-spin" /></td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Sin lotes capturados</td></tr>
+              <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Sin perimetrales capturados</td></tr>
             ) : rows.map(l => (
               <tr key={l.id} style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }} onClick={() => openEdit(l)}>
                 <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)' }}>{l.folio}</td>
@@ -339,7 +339,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   return (
     <ModalShell
       modulo="accesos"
-      titulo={isEdit ? `Lote ${lote.folio}` : 'Nuevo Lote de Extras'}
+      titulo={isEdit ? `Perimetral ${lote.folio}` : 'Nuevo Perimetral de Extras'}
       subtitulo="Vigilancia · nómina semanal"
       icono={ShieldCheck}
       maxWidth={880}
@@ -389,7 +389,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
         <div style={{ marginBottom: 14 }}>
           <label className="label">Motivo del rechazo *</label>
           <textarea className="input" rows={2} value={motivoRechazo} onChange={e => setMotivoRechazo(e.target.value)}
-            placeholder="Explica por qué se rechaza este lote" />
+            placeholder="Explica por qué se rechaza este perimetral" />
         </div>
       )}
 
@@ -502,7 +502,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
               {guardias.length > 0 && (
                 <tfoot>
                   <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                    <td colSpan={dias.length + 4} style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: 12 }}>Total del lote</td>
+                    <td colSpan={dias.length + 4} style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: 12 }}>Total del perimetral</td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#059669', fontSize: 13 }}>{fmt(totalLote)}</td>
                     {editable && <td></td>}
                   </tr>

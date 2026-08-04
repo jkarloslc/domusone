@@ -639,7 +639,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       setError('Selecciona al menos un vale solicitado a pagar'); return
     }
     if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length === 0) {
-      setError('Selecciona al menos un lote de Vigilancia autorizado'); return
+      setError('Selecciona al menos un perimetral de Vigilancia autorizado'); return
     }
     setSaving(true); setError('')
 
@@ -1003,11 +1003,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
             {!conOC && form.tipo_gasto === 'Perimetrales' && (
               <div>
-                <label className="label">Lotes de Vigilancia autorizados a pagar *</label>
+                <label className="label">Perimetrales de Vigilancia autorizados a pagar *</label>
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
                   {vigLotesDisp.length === 0 ? (
                     <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
-                      Sin lotes en status Autorizado disponibles — captúralos y autorízalos en Residencial › Vigilancia
+                      Sin perimetrales en status Autorizado disponibles — captúralos y autorízalos en Residencial › Vigilancia
                     </div>
                   ) : (
                     <div style={{ maxHeight: 180, overflowY: 'auto' }}>
@@ -1028,7 +1028,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                   )}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
-                  Cada lote es la nómina semanal de extras capturada y autorizada en el módulo de Vigilancia.
+                  Cada perimetral es la nómina semanal de extras capturada y autorizada en el módulo de Vigilancia.
                 </div>
               </div>
             )}
