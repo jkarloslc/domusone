@@ -415,23 +415,38 @@ function ValeModal({ vale, areas, onClose, onSaved }: {
     return true
   }
 
+  // Basado en el máximo folio del año en curso (no en un conteo de filas): un
+  // conteo se desincroniza si se borran/cancelan vales y genera folios repetidos.
+  // Aun así puede chocar si dos personas guardan al mismo tiempo, por eso
+  // handleSave reintenta ante un 23505 (unique_violation) en vez de fallar.
+  const generarFolioVale = async () => {
+    const anio = new Date().getFullYear()
+    const prefijo = `VAL-${anio}-`
+    const { data } = await dbCtrl.from('vales_combustible')
+      .select('folio').ilike('folio', `${prefijo}%`)
+      .order('folio', { ascending: false }).limit(1)
+    const ultimo = data?.[0]?.folio ? Number(data[0].folio.slice(prefijo.length)) : 0
+    return `${prefijo}${String((ultimo || 0) + 1).padStart(4, '0')}`
+  }
+
   const handleSave = async () => {
     if (!validar()) return
     setSaving(true); setError('')
 
     const payload: any = { ...buildPayload() }
-    if (isNew) {
-      payload.status = 'Solicitado'
-      const { count } = await dbCtrl.from('vales_combustible').select('id', { count: 'exact', head: true })
-      payload.folio = `VAL-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, '0')}`
+    if (isNew) payload.status = 'Solicitado'
+
+    for (let intento = 0; intento < 3; intento++) {
+      if (isNew) payload.folio = await generarFolioVale()
+
+      const { error: err } = isNew
+        ? await dbCtrl.from('vales_combustible').insert(payload)
+        : await dbCtrl.from('vales_combustible').update(payload).eq('id', vale.id)
+
+      if (!err) { onSaved(); return }
+      if (isNew && err.code === '23505' && intento < 2) continue
+      setError(err.message); setSaving(false); return
     }
-
-    const { error: err } = isNew
-      ? await dbCtrl.from('vales_combustible').insert(payload)
-      : await dbCtrl.from('vales_combustible').update(payload).eq('id', vale.id)
-
-    if (err) { setError(err.message); setSaving(false); return }
-    onSaved()
   }
 
   const handleEmitir = async () => {
