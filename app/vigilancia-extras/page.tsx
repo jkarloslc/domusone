@@ -531,7 +531,7 @@ function ColaboradorPopup({ value, onChange }: {
 
   useEffect(() => {
     if (!open) return
-    dbCfg.from('colaboradores').select('*').eq('activo', true).order('nombre')
+    dbCfg.from('colaboradores').select('*').eq('activo', true).eq('puesto', 'Vigilancia').order('nombre')
       .then(({ data }) => setColaboradores((data ?? []) as Colaborador[]))
   }, [open])
 
