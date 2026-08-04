@@ -816,6 +816,7 @@ function CuotasGolfPanel() {
 // ══════════════════════════════════════════════════════════════
 // Colaboradores — personal operativo (Asignado a / Supervisor de OT)
 // ══════════════════════════════════════════════════════════════
+const PUESTOS_COLABORADOR = ['Vigilancia', 'Mantto. Res', 'Mantto. Campo', 'Golf Servicios', 'Hipico', 'Areas Publicas']
 const emptyColabForm = () => ({
   nombre: '', apellido_paterno: '', apellido_materno: '', fecha_ingreso: '', puesto: '',
   sueldo_bruto_mensual: '', sueldo_neto_mensual: '',
@@ -1013,7 +1014,10 @@ function ColaboradoresPanel() {
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="label">Puesto / Cargo</label>
-                <input className="input" value={form.puesto} onChange={e => setForm(f => ({ ...f, puesto: e.target.value }))} />
+                <select className="select" value={form.puesto} onChange={e => setForm(f => ({ ...f, puesto: e.target.value }))}>
+                  <option value="">— Seleccionar —</option>
+                  {PUESTOS_COLABORADOR.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
               </div>
               <div>
                 <label className="label">Sueldo Bruto Mensual</label>
