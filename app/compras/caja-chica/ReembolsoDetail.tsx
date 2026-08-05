@@ -30,6 +30,8 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
   const [notasAuth,    setNotasAuth]    = useState('')
   const [loading,      setLoading]      = useState(false)
   const [loadingDet,   setLoadingDet]   = useState(true)
+  const [notasCancel,  setNotasCancel]  = useState('')
+  const [cancelando,   setCancelando]   = useState(false)
 
   useEffect(() => {
     setLoadingDet(true)
@@ -147,6 +149,54 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
   const canAuthorize = canAuth && r.status === 'Pendiente Auth'
 
+  // Solo admin/superadmin pueden cancelar un reembolso ya autorizado
+  const canCancelarAutorizado = (authUser?.rol === 'admin' || authUser?.rol === 'superadmin') && r.status === 'Autorizado'
+
+  const handleCancelar = async () => {
+    if (!confirm('¿Cancelar este reembolso ya autorizado? Esta acción no se puede deshacer.')) return
+    setCancelando(true)
+
+    if (r.id_op_fk) {
+      const { data: opRow, error: opFetchErr } = await dbComp.from('ordenes_pago')
+        .select('status, saldo, monto').eq('id', r.id_op_fk).single()
+
+      if (opFetchErr) {
+        alert(`Error al verificar la Orden de Pago asociada: ${opFetchErr.message}`)
+        setCancelando(false); return
+      }
+      if (opRow && opRow.status !== 'Pendiente') {
+        alert(opRow.status === 'Pagada'
+          ? 'No se puede cancelar: la Orden de Pago asociada ya fue pagada.'
+          : `No se puede cancelar: la Orden de Pago asociada está en status "${opRow.status}". Ajústala manualmente en Tesorería primero.`)
+        setCancelando(false); return
+      }
+      if (opRow && opRow.saldo != null && opRow.monto != null && opRow.saldo < opRow.monto) {
+        alert('No se puede cancelar: la Orden de Pago asociada ya tiene abonos registrados. Ajústala manualmente en Tesorería primero.')
+        setCancelando(false); return
+      }
+
+      const { error: opCancelErr } = await dbComp.from('ordenes_pago').update({ status: 'Cancelada' }).eq('id', r.id_op_fk)
+      if (opCancelErr) {
+        alert(`Error al cancelar la Orden de Pago asociada: ${opCancelErr.message}`)
+        setCancelando(false); return
+      }
+    }
+
+    const motivo = notasCancel.trim()
+    const notasFinal = motivo
+      ? `[Cancelado por ${authUser?.nombre ?? authUser?.user?.email ?? ''}]: ${motivo}${r.notas_auth ? '\n' + r.notas_auth : ''}`
+      : r.notas_auth ?? null
+
+    const { error } = await dbComp.from('reembolsos').update({
+      status:     'Cancelado',
+      notas_auth: notasFinal,
+    }).eq('id', r.id)
+
+    if (error) { alert(`Error al cancelar reembolso: ${error.message}`); setCancelando(false); return }
+    setCancelando(false)
+    onUpdated()
+  }
+
   const imprimir = async () => {
     // Cargar configuración de organización
     let orgNombre    = 'Organización'
@@ -170,11 +220,11 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
     const statusLabel: Record<string, string> = {
       'Borrador': 'BORRADOR', 'Pendiente Auth': 'PENDIENTE AUTORIZACIÓN',
-      'Autorizado': 'AUTORIZADO', 'Pagado': 'PAGADO', 'Rechazado': 'RECHAZADO',
+      'Autorizado': 'AUTORIZADO', 'Pagado': 'PAGADO', 'Rechazado': 'RECHAZADO', 'Cancelado': 'CANCELADO',
     }
     const statusColor: Record<string, string> = {
       'Borrador': '#64748b', 'Pendiente Auth': '#d97706',
-      'Autorizado': '#059669', 'Pagado': '#2563eb', 'Rechazado': '#dc2626',
+      'Autorizado': '#059669', 'Pagado': '#2563eb', 'Rechazado': '#dc2626', 'Cancelado': '#64748b',
     }
 
     const filasDetalle = detalles.map((d, i) => `
@@ -328,7 +378,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
       onClose={onClose} maxWidth={640}
       footer={<>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className={`badge ${r.status === 'Pagado' ? 'badge-vendido' : r.status === 'Autorizado' ? 'badge-libre' : r.status === 'Pendiente Auth' ? 'badge-bloqueado' : r.status === 'Rechazado' ? 'badge-cancelado' : 'badge-default'}`}>
+          <span className={`badge ${r.status === 'Pagado' ? 'badge-vendido' : r.status === 'Autorizado' ? 'badge-libre' : r.status === 'Pendiente Auth' ? 'badge-bloqueado' : (r.status === 'Rechazado' || r.status === 'Cancelado') ? 'badge-cancelado' : 'badge-default'}`}>
             {r.status}
           </span>
         </div>
@@ -456,6 +506,22 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
                   <CheckCircle size={13} /> Autorizar y generar OP
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Cancelar reembolso ya autorizado (solo admin/superadmin) */}
+          {canCancelarAutorizado && (
+            <div style={{ padding: '14px', background: '#1a1a2e', border: '1px solid var(--border)', borderRadius: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
+                Cancelar reembolso autorizado
+              </div>
+              <textarea className="input" rows={2} value={notasCancel} onChange={e => setNotasCancel(e.target.value)}
+                placeholder="Motivo de la cancelación (opcional)…"
+                style={{ resize: 'vertical', marginBottom: 10 }} />
+              <button className="btn-secondary" style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                onClick={handleCancelar} disabled={cancelando}>
+                <XCircle size={13} /> {cancelando ? 'Cancelando…' : 'Cancelar Reembolso'}
+              </button>
             </div>
           )}
         </div>

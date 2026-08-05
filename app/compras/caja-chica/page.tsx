@@ -14,6 +14,7 @@ const STATUS_COLORS: Record<string, string> = {
   'Autorizado':     'badge-libre',
   'Pagado':         'badge-vendido',
   'Rechazado':      'badge-cancelado',
+  'Cancelado':      'badge-cancelado',
 }
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   'Borrador':       <Clock size={11} />,
@@ -21,6 +22,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   'Autorizado':     <CheckCircle size={11} />,
   'Pagado':         <DollarSign size={11} />,
   'Rechazado':      <Ban size={11} />,
+  'Cancelado':      <Ban size={11} />,
 }
 
 export default function CajaChicaPage() {
@@ -163,7 +165,7 @@ export default function CajaChicaPage() {
         <>
           {/* Filtros */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            {['', 'Borrador', 'Pendiente Auth', 'Autorizado', 'Pagado', 'Rechazado'].map(s => (
+            {['', 'Borrador', 'Pendiente Auth', 'Autorizado', 'Pagado', 'Rechazado', 'Cancelado'].map(s => (
               <button key={s} onClick={() => setFilterStatus(s)}
                 className={filterStatus === s ? 'btn-primary' : 'btn-secondary'}
                 style={{ fontSize: 12, padding: '5px 12px' }}>
@@ -183,7 +185,7 @@ export default function CajaChicaPage() {
                 {filtered.length === 0
                   ? <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 24 }}>Sin reembolsos</td></tr>
                   : filtered.map(r => (
-                    <tr key={r.id} style={{ opacity: r.status === 'Rechazado' ? 0.5 : 1 }}>
+                    <tr key={r.id} style={{ opacity: r.status === 'Rechazado' || r.status === 'Cancelado' ? 0.5 : 1 }}>
                       <td style={{ fontFamily: 'monospace', fontSize: 13 }}>{r.folio ?? `#${r.id}`}</td>
                       <td style={{ fontSize: 13 }}>{r.usuario_nombre ?? r.id_usuario_fk}</td>
                       <td style={{ fontSize: 13 }}>{r.fecha}</td>
