@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight,
   CreditCard, Receipt, AlertCircle, Loader, Printer, DollarSign, Zap, FileText, Trash2, List,
+  XCircle, AlertTriangle,
 } from 'lucide-react'
 import Link from 'next/link'
 import AsignacionModal, { type AsignacionData } from './AsignacionModal'
@@ -166,6 +167,9 @@ export default function CobranzaLocalesPage() {
   const [imprimiendo, setImprimiendo]       = useState(false)
   const [genTicketR, setGenTicketR]         = useState(false)
   const [ticketErrR, setTicketErrR]         = useState('')
+  const [cancelando, setCancelando]         = useState<ReciboRow | null>(null)
+  const [motivoCancel, setMotivoCancel]     = useState('')
+  const [savingCancel, setSavingCancel]     = useState(false)
 
   // ── Cuotas (listado completo) ─────────────────────────────
   const [cuotasAll, setCuotasAll]           = useState<CuotaRow[]>([])
@@ -476,6 +480,68 @@ export default function CobranzaLocalesPage() {
       setTicketErrR(e?.message ?? 'Error al generar ticket')
     } finally {
       setGenTicketR(false)
+    }
+  }
+
+  // ── Cancelar recibo ────────────────────────────────────────
+  // Revierte el saldo de cada cuota cubierta (para poder volver a cobrarlas) y
+  // cancela el ticket POS vinculado, si existe.
+  const handleCancelarRecibo = async () => {
+    if (!cancelando) return
+    setSavingCancel(true)
+    try {
+      const detCuotas = cancelando.recibos_loc_det.filter(d => d.id_cuota_fk != null)
+      if (detCuotas.length > 0) {
+        const ids = Array.from(new Set(detCuotas.map(d => d.id_cuota_fk as number)))
+        const { data: cuotasActuales, error: eq } = await dbCtrl.from('loc_cxc')
+          .select('id, saldo, monto_final, status').in('id', ids)
+        if (eq) throw eq
+        const porId = new Map(((cuotasActuales ?? []) as { id: number; saldo: number | null; monto_final: number; status: string }[]).map(c => [c.id, c]))
+        const abonadoPorCuota = new Map<number, number>()
+        for (const d of detCuotas) {
+          const idC = d.id_cuota_fk as number
+          abonadoPorCuota.set(idC, (abonadoPorCuota.get(idC) ?? 0) + d.monto_final)
+        }
+        const updates = Array.from(abonadoPorCuota.entries()).map(([idC, abonado]) => {
+          const c = porId.get(idC)
+          if (!c) return null
+          const saldoActual = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
+          const nuevoSaldo = Math.min(c.monto_final, parseFloat((saldoActual + abonado).toFixed(2)))
+          return dbCtrl.from('loc_cxc').update({
+            saldo:      nuevoSaldo,
+            status:     nuevoSaldo >= c.monto_final - 0.005 ? 'PENDIENTE' : 'PAGO_PARCIAL',
+            fecha_pago: null,
+            forma_pago: null,
+          }).eq('id', idC)
+        }).filter(Boolean) as PromiseLike<any>[]
+        const results = await Promise.all(updates)
+        const updErr = (results as any[]).find(r => r.error)?.error
+        if (updErr) throw updErr
+      }
+
+      if (cancelando.id_venta_pos_fk) {
+        await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', cancelando.id_venta_pos_fk)
+      }
+
+      const { error: erRec } = await dbCtrl.from('loc_recibos').update({
+        status: 'CANCELADO',
+        observaciones: motivoCancel
+          ? `${cancelando.observaciones ? cancelando.observaciones + ' | ' : ''}Cancelado: ${motivoCancel}`
+          : cancelando.observaciones,
+      }).eq('id', cancelando.id)
+      if (erRec) throw erRec
+
+      setCancelando(null)
+      setMotivoCancel('')
+      setDetalleRecibo(null)
+      fetchRecibos()
+      fetchAsignaciones()
+      if (tab === 'cobranza') fetchCobranza()
+      if (tab === 'cuotas')   fetchCuotasAll()
+    } catch (e: any) {
+      alert(`Error al cancelar: ${e?.message ?? e}`)
+    } finally {
+      setSavingCancel(false)
     }
   }
 
@@ -1096,7 +1162,17 @@ export default function CobranzaLocalesPage() {
                           <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: sc.bg, color: sc.color }}>{sc.label}</span>
                         </td>
                         <td style={{ padding: '10px 14px' }}>
-                          <FileText size={14} style={{ color: 'var(--text-muted)' }} />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <FileText size={14} style={{ color: 'var(--text-muted)' }} />
+                            {puedeEscribir && r.status === 'VIGENTE' && (
+                              <button
+                                onClick={e => { e.stopPropagation(); setCancelando(r); setMotivoCancel('') }}
+                                title="Cancelar recibo"
+                                style={{ display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>
+                                <XCircle size={13} />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     )
@@ -1317,7 +1393,12 @@ export default function CobranzaLocalesPage() {
             onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
-                <div style={{ fontFamily: 'monospace', fontSize: 18, fontWeight: 700, color: '#0f766e' }}>{detalleRecibo.folio}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: 18, fontWeight: 700, color: '#0f766e' }}>{detalleRecibo.folio}</span>
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: (STATUS_COLOR[detalleRecibo.status] ?? STATUS_COLOR.VIGENTE).bg, color: (STATUS_COLOR[detalleRecibo.status] ?? STATUS_COLOR.VIGENTE).color }}>
+                    {(STATUS_COLOR[detalleRecibo.status] ?? STATUS_COLOR.VIGENTE).label}
+                  </span>
+                </div>
                 <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{fmtFecha(detalleRecibo.fecha_recibo)} · {fmtNombre(detalleRecibo.cat_arrendatarios)}</div>
               </div>
               <button onClick={() => { setDetalleRecibo(null); setTicketErrR('') }}
@@ -1352,13 +1433,54 @@ export default function CobranzaLocalesPage() {
             {ticketErrR && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6, marginBottom: 12 }}>{ticketErrR}</div>}
 
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              {puedeEscribir && detalleRecibo.status === 'VIGENTE' && (
+                <button onClick={() => { setCancelando(detalleRecibo); setMotivoCancel('') }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #fecaca', borderRadius: 10, background: '#fef2f2', color: '#dc2626', cursor: 'pointer', marginRight: 'auto' }}>
+                  <XCircle size={14} /> Cancelar recibo
+                </button>
+              )}
               <button onClick={() => handleImprimirRecibo(detalleRecibo)} disabled={imprimiendo}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #99f6e4', borderRadius: 10, background: '#f0fdfa', color: '#0f766e', cursor: 'pointer', opacity: imprimiendo ? 0.6 : 1 }}>
                 <Printer size={14} /> {imprimiendo ? 'Imprimiendo…' : 'Imprimir'}
               </button>
-              <button onClick={() => handleTicketPOS(detalleRecibo)} disabled={genTicketR}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 10, background: '#0f766e', color: '#fff', cursor: 'pointer', opacity: genTicketR ? 0.6 : 1 }}>
-                <Receipt size={14} /> {genTicketR ? 'Generando…' : 'Ticket POS'}
+              {detalleRecibo.status === 'VIGENTE' && (
+                <button onClick={() => handleTicketPOS(detalleRecibo)} disabled={genTicketR}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 10, background: '#0f766e', color: '#fff', cursor: 'pointer', opacity: genTicketR ? 0.6 : 1 }}>
+                  <Receipt size={14} /> {genTicketR ? 'Generando…' : 'Ticket POS'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cancelar Recibo */}
+      {cancelando && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1010, padding: 20 }}
+          onClick={() => { if (!savingCancel) setCancelando(null) }}>
+          <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 440, boxShadow: '0 20px 50px rgba(0,0,0,0.25)', padding: 28 }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ background: '#fee2e2', borderRadius: 8, padding: 8 }}><AlertTriangle size={20} color="#dc2626" /></div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>Cancelar recibo</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>{cancelando.folio} · {fmtNombre(cancelando.cat_arrendatarios)}</div>
+              </div>
+            </div>
+            <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
+              Las cuotas cubiertas por este recibo volverán a estar pendientes de cobro por el monto correspondiente
+              {cancelando.id_venta_pos_fk ? <> y se cancelará el <strong>ticket POS</strong> generado</> : null}. Esta acción no se puede deshacer.
+            </p>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
+            <textarea
+              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', marginBottom: 20, boxSizing: 'border-box' }}
+              value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)} placeholder="Opcional…" />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setCancelando(null)} disabled={savingCancel}
+                style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cerrar</button>
+              <button onClick={handleCancelarRecibo} disabled={savingCancel}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
+                {savingCancel ? <Loader size={13} /> : <XCircle size={14} />} {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
               </button>
             </div>
           </div>
