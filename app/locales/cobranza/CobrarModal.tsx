@@ -583,15 +583,18 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cuotas pendientes — selecciona las que se liquidan</span>
-            {cuotasAnteriores.length > 0 ? (
-              <button onClick={toggleAnteriores} style={{ fontSize: 11, fontWeight: 600, color: todasAnterioresSel ? '#64748b' : '#d97706', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
-                {todasAnterioresSel ? 'Excluir meses anteriores' : `Incluir meses anteriores (+${cuotasAnteriores.length} · ${fmt$(montoAnteriores)})`}
-              </button>
-            ) : cuotas.length > 1 && (
-              <button onClick={toggleTodas} style={{ fontSize: 11, fontWeight: 600, color: '#0f766e', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
-                {seleccionados.size === cuotas.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              {cuotasAnteriores.length > 0 && (
+                <button onClick={toggleAnteriores} style={{ fontSize: 11, fontWeight: 600, color: todasAnterioresSel ? '#64748b' : '#d97706', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
+                  {todasAnterioresSel ? 'Excluir meses anteriores' : `Incluir meses anteriores (+${cuotasAnteriores.length} · ${fmt$(montoAnteriores)})`}
+                </button>
+              )}
+              {cuotas.length > 1 && (
+                <button onClick={toggleTodas} style={{ fontSize: 11, fontWeight: 600, color: '#0f766e', background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px' }}>
+                  {seleccionados.size === cuotas.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
+                </button>
+              )}
+            </div>
           </div>
           {cuotas.length === 0 ? (
             <div style={{ fontSize: 12, color: '#16a34a', padding: '12px 0' }}>Sin cuotas pendientes</div>

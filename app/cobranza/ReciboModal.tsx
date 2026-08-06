@@ -2,7 +2,9 @@
 import { useState, useEffect } from 'react'
 import { dbCat, dbCtrl, dbCfg, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Save, Loader, Plus, Trash2, CheckCircle, Printer, Receipt } from 'lucide-react'
+import { Save, Loader, Plus, Trash2, CheckCircle, Printer, Receipt } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
+import { prorratearDescuento } from '@/lib/prorateoDescuento'
 import { type ReciboDetalle, type ReciboPago, type Cargo, fmt, MESES, CUENTAS } from './types'
 
 type Lote = { id: number; cve_lote: string | null; lote: number | null }
@@ -77,6 +79,14 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
   const [cargoAdicionalStr, setCargoAdicionalStr] = useState('')
   const [descuentoExtra, setDescuentoExtra]       = useState('')
 
+  // Cobro parcial — homologado con golf/hípico/locales
+  const [parcialHabilitado, setParcialHabilitado] = useState(false)
+  const [montoParcialStr, setMontoParcialStr]     = useState('')
+  const toggleParcial = () => {
+    if (parcialHabilitado) { setParcialHabilitado(false); setMontoParcialStr('') }
+    else setParcialHabilitado(true)
+  }
+
   const [exito, setExito]                 = useState<{ id: number; folio: string } | null>(null)
   const [idVentaPos, setIdVentaPos]       = useState<number | null>(null)
   const [generandoTicket, setGenerandoTicket] = useState(false)
@@ -128,8 +138,22 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
   const subtotalConCargo = totalLineas + cargoAdicional
   const descExtra        = Math.min(parseFloat(descuentoExtra) || 0, subtotalConCargo)
   const totalRecibo      = Math.max(0, subtotalConCargo - descExtra)
+
+  // Cobro parcial
+  const montoCobrar   = parcialHabilitado
+    ? Math.min(parseFloat(montoParcialStr) || totalRecibo, totalRecibo)
+    : totalRecibo
+  const saldoRestante = Math.max(0, parseFloat((totalRecibo - montoCobrar).toFixed(2)))
+  const esParcial      = saldoRestante > 0
+
   const totalPagado      = pagos.reduce((a, p) => a + (Number(p.monto) || 0), 0)
-  const diferencia       = parseFloat((totalRecibo - totalPagado).toFixed(2))
+  const diferencia       = parseFloat((montoCobrar - totalPagado).toFixed(2))
+
+  // Sincroniza la única línea de pago con el monto a cobrar (homologado con golf/hípico/locales)
+  useEffect(() => {
+    setPagos(prev => prev.length !== 1 ? prev : [{ ...prev[0], monto: montoCobrar > 0 ? montoCobrar : 0 }])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [montoCobrar])
 
   const formaNombre = (id: number | null | undefined) =>
     formasPago.find(f => f.id === id)?.nombre ?? '—'
@@ -141,7 +165,7 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
     const pagosValidos = pagos.filter(p => Number(p.monto) > 0)
     if (!pagosValidos.length) { setError('Agrega al menos una forma de pago con monto'); return }
     if (Math.abs(diferencia) > 0.01) {
-      setError(`La suma de los pagos (${fmt(totalPagado)}) debe ser igual al total del recibo (${fmt(totalRecibo)})`)
+      setError(`La suma de los pagos (${fmt(totalPagado)}) debe ser igual al monto a cobrar (${fmt(montoCobrar)})`)
       return
     }
     setSaving(true); setError('')
@@ -156,7 +180,7 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       propietario:      form.propietario.trim() || null,
       empresa:          form.empresa.trim() || null,
       cuenta_receptora: form.cuenta_receptora ? Number(form.cuenta_receptora) : null,
-      monto:            totalRecibo,
+      monto:            montoCobrar,
       rfc_factura:      form.rfc_factura.trim() || null,
       folio_factura:    form.folio_factura.trim() || null,
       tipo_concepto:    'Pago de Cuota',
@@ -167,9 +191,18 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
     if (err1) { setError(err1.message); setSaving(false); return }
     const reciboId = recibo.id
 
-    // Detalle: líneas capturadas + cargo/descuento adicionales como líneas propias
-    // (igual que el modal de golf) para que recibo, impresión y ticket POS cuadren.
-    const detRows = lineasValidas.map(l => ({
+    // Detalle: el cargo adicional se cobra primero, luego las líneas. El descuento adicional
+    // (descExtra) y, en su caso, el cobro parcial, se prorratean dentro de cada línea con el
+    // mismo helper que golf/hípico/locales (lib/prorateoDescuento) — así el detalle nunca
+    // desglosa el descuento aparte y siempre cuadra exactamente con lo realmente cobrado.
+    const cargoAplicado = cargoAdicional > 0 ? Math.min(montoCobrar, cargoAdicional) : 0
+    const detalleNeto = prorratearDescuento(
+      lineasValidas,
+      l => l.total,
+      parseFloat((montoCobrar - cargoAplicado + descExtra).toFixed(2)),
+      parseFloat((montoCobrar - cargoAplicado).toFixed(2)),
+    )
+    const detRows = detalleNeto.map(({ item: l, montoNeto }) => ({
       id_recibo_fk:     reciboId,
       id_cargo_fk:      (l as any).id_cargo_fk ?? null,
       id_cuota_lote_fk: l.id_cuota_lote_fk ?? null,
@@ -177,27 +210,19 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       cantidad:         l.cantidad,
       precio_unitario:  l.precio_unitario,
       descuento:        l.descuento ?? 0,
-      subtotal:         l.subtotal,
+      subtotal:         montoNeto,
       iva:              0,
-      total:            l.total,
+      total:            montoNeto,
       periodo_mes:      l.periodo_mes ?? null,
       periodo_anio:     l.periodo_anio ?? null,
     }))
-    if (cargoAdicional > 0) {
-      detRows.push({
+    if (cargoAplicado > 0) {
+      detRows.unshift({
         id_recibo_fk: reciboId, id_cargo_fk: null, id_cuota_lote_fk: null,
-        concepto: 'Cargo adicional', cantidad: 1, precio_unitario: cargoAdicional,
-        descuento: 0, subtotal: cargoAdicional, iva: 0, total: cargoAdicional,
+        concepto: 'Cargo adicional', cantidad: 1, precio_unitario: cargoAplicado,
+        descuento: 0, subtotal: cargoAplicado, iva: 0, total: cargoAplicado,
         periodo_mes: null, periodo_anio: null,
-      })
-    }
-    if (descExtra > 0) {
-      detRows.push({
-        id_recibo_fk: reciboId, id_cargo_fk: null, id_cuota_lote_fk: null,
-        concepto: 'Descuento adicional', cantidad: 1, precio_unitario: -descExtra,
-        descuento: 0, subtotal: -descExtra, iva: 0, total: -descExtra,
-        periodo_mes: null, periodo_anio: null,
-      })
+      } as any)
     }
 
     const { error: err2 } = await dbCtrl.from('recibos_detalle').insert(detRows)
@@ -214,17 +239,17 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
     )
     if (err3) { setError(err3.message); setSaving(false); return }
 
-    // Actualizar saldo de cada cargo vinculado
-    for (const linea of lineasValidas) {
-      if ((linea as any).id_cargo_fk) {
-        const cargoId = (linea as any).id_cargo_fk
-        const { data: cargoDB, error: errC } = await dbCtrl.from('cargos').select('monto_pagado').eq('id', cargoId).single()
-        if (errC) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errC.message}`); break }
-        if (cargoDB) {
-          const nuevoPagado = (cargoDB.monto_pagado ?? 0) + linea.total
-          const { error: errU } = await dbCtrl.from('cargos').update({ monto_pagado: nuevoPagado }).eq('id', cargoId)
-          if (errU) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errU.message}`); break }
-        }
+    // Actualizar saldo de cada cargo vinculado — con el monto neto realmente aplicado
+    // (ya prorrateado por descuento/cobro parcial), no el bruto de la línea.
+    for (const { item: linea, montoNeto } of detalleNeto) {
+      const cargoId = (linea as any).id_cargo_fk
+      if (!cargoId) continue
+      const { data: cargoDB, error: errC } = await dbCtrl.from('cargos').select('monto_pagado').eq('id', cargoId).single()
+      if (errC) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errC.message}`); break }
+      if (cargoDB) {
+        const nuevoPagado = (cargoDB.monto_pagado ?? 0) + montoNeto
+        const { error: errU } = await dbCtrl.from('cargos').update({ monto_pagado: nuevoPagado }).eq('id', cargoId)
+        if (errU) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errU.message}`); break }
       }
     }
 
@@ -251,8 +276,18 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
 
-    const lineasValidas = lineas.filter(l => l.concepto.trim() && l.total > 0)
-    const filas = lineasValidas.map(l => `
+    // Detalle/pagos reales guardados en BD (no el estado del formulario) — así el recibo
+    // impreso siempre cuadra con lo realmente cobrado, incluso en pagos parciales.
+    const [{ data: detDB }, { data: pagosDB }] = await Promise.all([
+      dbCtrl.from('recibos_detalle')
+        .select('concepto, cantidad, precio_unitario, descuento, total, periodo_mes, periodo_anio')
+        .eq('id_recibo_fk', exito.id),
+      dbCtrl.from('recibos_pagos')
+        .select('monto, referencia, id_forma_pago_fk')
+        .eq('id_recibo_fk', exito.id),
+    ])
+    const detList = (detDB ?? []) as { concepto: string; cantidad: number; precio_unitario: number; descuento: number; total: number; periodo_mes: string | null; periodo_anio: number | null }[]
+    const filas = detList.map(l => `
       <tr>
         <td>${l.concepto}</td>
         <td>${l.periodo_mes ? `${l.periodo_mes} ${l.periodo_anio ?? ''}` : '—'}</td>
@@ -261,8 +296,9 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
         <td class="right">${(l.descuento ?? 0) > 0 ? fmt(l.descuento) : '—'}</td>
         <td class="right" style="font-weight:600">${fmt(l.total)}</td>
       </tr>`).join('')
+    const totalImpreso = detList.reduce((a, l) => a + l.total, 0)
 
-    const pagosValidos = pagos.filter(p => Number(p.monto) > 0)
+    const pagosValidos = ((pagosDB ?? []) as { monto: number; referencia: string | null; id_forma_pago_fk: number | null }[])
     const fechaLarga = new Date(form.fecha_recibo + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
 
     const win = window.open('', '_blank', 'width=750,height=900')
@@ -321,10 +357,8 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
         <tbody>${filas}</tbody>
       </table>
       <div class="totales">
-        <div class="totales-row"><span>Subtotal</span><span>${fmt(totalLineas)}</span></div>
-        ${cargoAdicional > 0 ? `<div class="totales-row"><span>Cargo adicional</span><span style="color:#059669">+ ${fmt(cargoAdicional)}</span></div>` : ''}
-        ${descExtra > 0 ? `<div class="totales-row"><span>Descuento adicional</span><span style="color:#dc2626">– ${fmt(descExtra)}</span></div>` : ''}
-        <div class="totales-row total"><span>TOTAL</span><span>${fmt(totalRecibo)}</span></div>
+        ${esParcial ? `<div class="totales-row"><span>Saldo pendiente</span><span style="color:#d97706">${fmt(saldoRestante)}</span></div>` : ''}
+        <div class="totales-row total"><span>${esParcial ? 'COBRADO AHORA' : 'TOTAL'}</span><span>${fmt(totalImpreso)}</span></div>
       </div>
       <div class="pago-box">
         <div class="pago-label">Forma${pagosValidos.length > 1 ? 's' : ''} de pago</div>
@@ -442,58 +476,69 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
 
   const filteredLotes = lotes.filter(l => l.cve_lote?.toLowerCase().includes(loteSearch.toLowerCase())).slice(0, 6)
 
-  // ── Pantalla de éxito ─────────────────────────────────────
+  // ── Pantalla de éxito (homologada con golf/hípico/locales) ────
   if (exito) {
     return (
-      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onSaved()}>
-        <div className="modal" style={{ maxWidth: 460 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <CheckCircle size={20} color="#15803d" /> Cobro registrado
-            </h2>
-            <button className="btn-ghost" onClick={onSaved}><X size={16} /></button>
+      <ModalShell modulo="residencial" titulo="Cobro registrado" icono={CheckCircle} onClose={onSaved} maxWidth={420}
+        footer={<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button className="btn-ghost" onClick={onSaved}>Cerrar</button></div>}
+      >
+        <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>Cobro registrado</div>
+          <div style={{ fontFamily: 'monospace', fontSize: 20, fontWeight: 700, color: '#1e3a5f', letterSpacing: 1 }}>{exito.folio}</div>
+          <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
+            {form.propietario || loteSearch || '—'}{' · '}{fmt(montoCobrar)}
+            {esParcial && <span style={{ marginLeft: 6, color: '#d97706', fontWeight: 600 }}>PAGO PARCIAL</span>}
           </div>
-          <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ textAlign: 'center', padding: '4px 0 8px' }}>
-              <div style={{ fontFamily: 'monospace', fontSize: 22, fontWeight: 700, color: 'var(--blue)', letterSpacing: 1 }}>{exito.folio}</div>
-              <div style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
-                {form.propietario || loteSearch || '—'}{' · '}{fmt(totalRecibo)}
-              </div>
-              {idVentaPos && (
-                <div style={{ fontSize: 12, color: '#15803d', fontWeight: 600, marginTop: 6 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</div>
-              )}
+          {esParcial && (
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e', textAlign: 'left' }}>
+              Se cobró {fmt(montoCobrar)} de {fmt(totalRecibo)} adeudado. Saldo pendiente: <strong>{fmt(saldoRestante)}</strong>.
             </div>
-            <button onClick={handlePrint}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: 'none', borderRadius: 10, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
-              <Printer size={16} /> Imprimir Recibo
-            </button>
-            <button onClick={handleTicketPOS} disabled={generandoTicket}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 10, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicket ? 0.6 : 1 }}>
-              {generandoTicket ? <Loader size={16} className="animate-spin" /> : <Receipt size={16} />}
-              {generandoTicket ? 'Generando…' : idVentaPos ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
-            </button>
-            {ticketErr && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{ticketErr}</div>}
-            {error && <div style={{ fontSize: 12, color: '#d97706', background: '#fffbeb', padding: '8px 12px', borderRadius: 6 }}>{error}</div>}
-          </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-            <button className="btn-secondary" onClick={onSaved}>Cerrar</button>
-          </div>
+          )}
+          {idVentaPos && (
+            <div style={{ fontSize: 12, color: '#15803d', fontWeight: 600, marginTop: 6 }}>Ticket POS #{String(idVentaPos).padStart(6, '0')}</div>
+          )}
         </div>
-      </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={handlePrint}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: 'none', borderRadius: 10, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
+            <Printer size={16} /> Imprimir Recibo
+          </button>
+          <button onClick={handleTicketPOS} disabled={generandoTicket}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 18px', fontSize: 14, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 10, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicket ? 0.6 : 1 }}>
+            {generandoTicket ? <Loader size={16} className="animate-spin" /> : <Receipt size={16} />}
+            {generandoTicket ? 'Generando…' : idVentaPos ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
+          </button>
+          {ticketErr && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{ticketErr}</div>}
+          {error && <div style={{ fontSize: 12, color: '#d97706', background: '#fffbeb', padding: '8px 12px', borderRadius: 6 }}>{error}</div>}
+        </div>
+      </ModalShell>
     )
   }
 
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 780, maxHeight: '92vh' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600 }}>
-            {cargoInicial ? `Pagar: ${cargoInicial.concepto}` : 'Nuevo Recibo'}
-          </h2>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+    <ModalShell modulo="residencial" titulo={cargoInicial ? `Pagar: ${cargoInicial.concepto}` : 'Nuevo Recibo'} icono={Receipt} maxWidth={780} onClose={onClose}
+      footer={
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
+          <div style={{ marginRight: 'auto' }}>
+            <div style={{ fontSize: 11, color: '#64748b' }}>{lineas.filter(l => l.concepto.trim() && l.total > 0).length} concepto{lineas.filter(l => l.concepto.trim() && l.total > 0).length !== 1 ? 's' : ''} · subtotal {fmt(totalLineas)}</div>
+            {cargoAdicional > 0 && <div style={{ fontSize: 11, color: '#059669' }}>+ cargo adicional {fmt(cargoAdicional)}</div>}
+            {descExtra > 0 && <div style={{ fontSize: 11, color: '#dc2626' }}>– descuento {fmt(descExtra)}</div>}
+            <span style={{ fontSize: 15, fontWeight: 700, color: esParcial ? '#d97706' : '#16a34a' }}>
+              {fmt(montoCobrar)}
+              {esParcial && <span style={{ fontSize: 11, color: '#64748b', marginLeft: 6, fontWeight: 400 }}>de {fmt(totalRecibo)}</span>}
+            </span>
+          </div>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSubmit} disabled={saving}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: esParcial ? '#d97706' : undefined }}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+            {saving ? 'Guardando…' : esParcial ? 'Emitir Recibo Parcial' : 'Guardar Recibo'}
+          </button>
         </div>
-
-        <div style={{ padding: '20px 24px', overflowY: 'auto', maxHeight: 'calc(92vh - 130px)', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13 }}>{error}</div>}
 
           {/* Cabecera */}
@@ -624,6 +669,50 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
             </div>
           </Section>
 
+          {/* Cobro parcial — homologado con golf/hípico/locales */}
+          <div style={{ border: `1px solid ${parcialHabilitado ? '#fde68a' : '#e2e8f0'}`, borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.2s' }}>
+            <div
+              onClick={toggleParcial}
+              style={{ padding: '10px 14px', background: parcialHabilitado ? '#fffbeb' : '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', borderBottom: parcialHabilitado ? '1px solid #fde68a' : 'none' }}>
+              <div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: parcialHabilitado ? '#92400e' : '#475569' }}>Cobro parcial</span>
+                {!parcialHabilitado && <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>Cobrar menos del total del recibo</span>}
+              </div>
+              <div style={{ width: 40, height: 22, borderRadius: 11, background: parcialHabilitado ? '#d97706' : '#cbd5e1', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: parcialHabilitado ? 20 : 2, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
+              </div>
+            </div>
+
+            {parcialHabilitado && (
+              <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 11, color: '#92400e', marginBottom: 4, display: 'block', fontWeight: 600 }}>Monto a cobrar ahora</label>
+                    <input
+                      // eslint-disable-next-line jsx-a11y/no-autofocus
+                      autoFocus
+                      className="input" type="number" min={0.01} step={0.01} max={totalRecibo}
+                      value={montoParcialStr} onChange={e => setMontoParcialStr(e.target.value)}
+                      placeholder={`Máx. ${fmt(totalRecibo)}`}
+                      style={{ width: '100%', fontWeight: 700, border: '1px solid #fbbf24' }} />
+                  </div>
+                  <button
+                    onClick={() => setMontoParcialStr(totalRecibo.toFixed(2))}
+                    style={{ padding: '8px 10px', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer', flexShrink: 0, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                    Total
+                  </button>
+                </div>
+                {esParcial ? (
+                  <div style={{ padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    ⚠ Saldo pendiente: <strong>{fmt(saldoRestante)}</strong>
+                  </div>
+                ) : montoParcialStr ? (
+                  <div style={{ fontSize: 11, color: '#15803d' }}>✓ Cubre el total del recibo</div>
+                ) : null}
+              </div>
+            )}
+          </div>
+
           {/* Formas de pago */}
           <Section label="Formas de Pago">
             {pagos.map((p, i) => (
@@ -657,21 +746,12 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
                 {Math.abs(diferencia) < 0.01 ? '✓ Suma cuadrada' : diferencia > 0 ? 'Falta distribuir' : 'Exceso'}
               </span>
               <span style={{ fontWeight: 700, color: Math.abs(diferencia) < 0.01 ? '#15803d' : '#dc2626' }}>
-                {Math.abs(diferencia) < 0.01 ? fmt(totalRecibo) : fmt(Math.abs(diferencia))}
+                {Math.abs(diferencia) < 0.01 ? fmt(montoCobrar) : fmt(Math.abs(diferencia))}
               </span>
             </div>
           </Section>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {saving ? 'Guardando…' : 'Guardar Recibo'}
-          </button>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   )
 }
 
