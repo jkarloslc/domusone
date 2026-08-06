@@ -142,8 +142,6 @@ export default function CobranzaHipicoPage() {
     const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
 
-  // ── Stats ─────────────────────────────────────────────────
-  const [stats, setStats] = useState({ activas: 0, pendientes: 0, montoPendiente: 0, vencidas: 0 })
 
   // ── Cobranza ──────────────────────────────────────────────
   const [mesCobranza, setMesCobranza]       = useState(() => {
@@ -227,13 +225,6 @@ export default function CobranzaHipicoPage() {
       con_adeudo:      adeudoPorAsig[a.id] ?? false,
     }))
     setAsignaciones(result)
-    const activas = result.filter(a => a.activo)
-    setStats({
-      activas:         activas.length,
-      pendientes:      activas.reduce((s, a) => s + a.pendientes, 0),
-      montoPendiente:  activas.reduce((s, a) => s + a.monto_pendiente, 0),
-      vencidas:        activas.filter(a => a.con_adeudo).length,
-    })
     setLoadingA(false)
   }, [soloActivas])
 
@@ -636,6 +627,15 @@ export default function CobranzaHipicoPage() {
     return norm(fmtNombre(a.cat_arrendatarios)).includes(q) ||
            norm(a.cat_caballerizas?.clave ?? '').includes(q)
   })
+
+  // Stats de las cards: reflejan la misma búsqueda/filtro de situación que la tabla de abajo
+  const asigActivasFiltradas = asigFiltradas.filter(a => a.activo)
+  const stats = {
+    activas:        asigActivasFiltradas.length,
+    pendientes:     asigActivasFiltradas.reduce((s, a) => s + a.pendientes, 0),
+    montoPendiente: asigActivasFiltradas.reduce((s, a) => s + a.monto_pendiente, 0),
+    vencidas:       asigActivasFiltradas.filter(a => a.con_adeudo).length,
+  }
 
   // ── Filtros Cobranza ──────────────────────────────────────
   const cuotasFiltradas = cuotasMes.filter(c => {
