@@ -1233,8 +1233,8 @@ export default function CobranzaHipicoPage() {
                 </button>
               ))}
             </div>
-            <select className="input" value={filtroPeriodoQ} onChange={e => { setFiltroPeriodoQ(e.target.value); setPaginaQ(1) }}
-              style={{ padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }}>
+            <select value={filtroPeriodoQ} onChange={e => { setFiltroPeriodoQ(e.target.value); setPaginaQ(1) }}
+              style={{ width: 150, flexShrink: 0, padding: '7px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }}>
               <option value="todos">Todos los periodos</option>
               {periodosQ.map(p => <option key={p} value={p}>{fmtMes(p)}</option>)}
             </select>
