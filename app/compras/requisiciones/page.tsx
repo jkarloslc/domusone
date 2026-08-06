@@ -5,7 +5,7 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Edit2, Eye, Save, Loader,
-  ArrowLeft, CheckCircle, XCircle, Trash2, ChevronLeft, ChevronRight, Printer
+  ArrowLeft, CheckCircle, XCircle, Trash2, ChevronLeft, ChevronRight, Printer, AlertTriangle, Ban
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
@@ -14,6 +14,8 @@ import { type Articulo, fmt, fmtFecha, folioGen, StatusBadge, UNIDADES } from '.
 const PAGE_SIZE = 20
 
 type Det = { id?: number; id_articulo_fk: number | null; descripcion: string; cantidad: string; unidad: string; notas: string }
+
+const ESTADOS_NO_CANCELABLES = ['Cancelada', 'Rechazada', 'Cerrada']
 
 export default function RequisicionesPage() {
   const { authUser, canWrite, canDelete, canAuth: canAuthFn } = useAuth()
@@ -34,6 +36,10 @@ export default function RequisicionesPage() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
   const [detail, setDetail]   = useState<any | null>(null)
+  const [cancelando, setCancelando]     = useState<any | null>(null)
+  const [motivoCancel, setMotivoCancel] = useState('')
+  const [savingCancel, setSavingCancel] = useState(false)
+  const [cancelError, setCancelError]   = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -72,6 +78,50 @@ export default function RequisicionesPage() {
 
   const canAuth = canAuthFn('requisiciones')
 
+  // ── Cancelar requisición ────────────────────────────────────
+  // Solo se puede si no existe una OC generada a partir de ella; si tiene RFQ, se cancela también.
+  const handleCancelar = async () => {
+    if (!cancelando) return
+    setSavingCancel(true); setCancelError('')
+    try {
+      const { data: rfqs, error: eRfq } = await dbComp.from('rfq')
+        .select('id, status').eq('id_requisicion_fk', cancelando.id)
+      if (eRfq) throw eRfq
+
+      const rfqIds = (rfqs ?? []).map((r: any) => r.id)
+      if (rfqIds.length > 0) {
+        const { data: ocs, error: eOc } = await dbComp.from('ordenes_compra')
+          .select('id').in('id_rfq_fk', rfqIds)
+        if (eOc) throw eOc
+        if ((ocs ?? []).length > 0) {
+          setCancelError('No se puede cancelar: ya existe una Orden de Compra generada a partir de esta requisición.')
+          setSavingCancel(false)
+          return
+        }
+      }
+
+      const rfqsACancelar = (rfqs ?? []).filter((r: any) => r.status !== 'Cancelada')
+      if (rfqsACancelar.length > 0) {
+        const { error: eRfqUpd } = await dbComp.from('rfq')
+          .update({ status: 'Cancelada' }).in('id', rfqsACancelar.map((r: any) => r.id))
+        if (eRfqUpd) throw eRfqUpd
+      }
+
+      const notaCancel = `Cancelada por ${authUser?.nombre ?? 'Sistema'}${motivoCancel ? `: ${motivoCancel}` : ''}`
+      const { error: eReq } = await dbComp.from('requisiciones').update({
+        status: 'Cancelada',
+        comentario_auth: cancelando.comentario_auth ? `${cancelando.comentario_auth} | ${notaCancel}` : notaCancel,
+      }).eq('id', cancelando.id)
+      if (eReq) throw eReq
+
+      setCancelando(null); setMotivoCancel(''); setDetail(null); fetchData()
+    } catch (e: any) {
+      setCancelError(e?.message ?? 'Error al cancelar la requisición')
+    } finally {
+      setSavingCancel(false)
+    }
+  }
+
   return (
     <div style={{ padding: '32px 36px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -91,7 +141,7 @@ export default function RequisicionesPage() {
           </div>
           <select className="select" style={{ width: 160 }} value={filterStatus} onChange={e => { setFilter(e.target.value); setPage(0) }}>
             <option value="">Todos los status</option>
-            {['Borrador','Enviada','Aprobada','Rechazada','En Proceso','Cerrada'].map(s => <option key={s}>{s}</option>)}
+            {['Borrador','Enviada','Aprobada','Rechazada','En Proceso','Cerrada','Cancelada'].map(s => <option key={s}>{s}</option>)}
           </select>
           <select className="select" style={{ width: 220 }} value={filterCC}
             onChange={e => { setFilterCC(e.target.value); setFilterArea(''); setPage(0) }}>
@@ -157,6 +207,12 @@ export default function RequisicionesPage() {
                     {(r.status === 'Borrador' || esAdminPleno) && canWrite('requisiciones') && (
                       <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setModal(r)} title="Editar"><Edit2 size={13} /></button>
                     )}
+                    {canWrite('requisiciones') && !ESTADOS_NO_CANCELABLES.includes(r.status) && (
+                      <button className="btn-ghost" style={{ padding: '4px 6px', color: '#dc2626' }}
+                        onClick={() => { setCancelando(r); setMotivoCancel(''); setCancelError('') }} title="Cancelar requisición">
+                        <Ban size={13} />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -175,7 +231,45 @@ export default function RequisicionesPage() {
       </div>
 
       {modal !== null && <RequisicionModal row={modal==='new'?null:modal} esAdminPleno={esAdminPleno} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}
-      {detail && <RequisicionDetail key={detail.id} req={detail} canAuth={canAuth} onClose={() => setDetail(null)} onAuth={handleAuth} />}
+      {detail && (
+        <RequisicionDetail key={detail.id} req={detail} canAuth={canAuth} onClose={() => setDetail(null)} onAuth={handleAuth}
+          puedeCancelar={canWrite('requisiciones') && !ESTADOS_NO_CANCELABLES.includes(detail.status)}
+          onCancelar={() => { setCancelando(detail); setMotivoCancel(''); setCancelError('') }} />
+      )}
+
+      {/* Modal Cancelar Requisición */}
+      {cancelando && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1010, padding: 20 }}
+          onClick={() => { if (!savingCancel) setCancelando(null) }}>
+          <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 440, boxShadow: '0 20px 50px rgba(0,0,0,0.25)', padding: 28 }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ background: '#fee2e2', borderRadius: 8, padding: 8 }}><AlertTriangle size={20} color="#dc2626" /></div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>Cancelar requisición</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>{cancelando.folio} · {cancelando.area_solicitante}</div>
+              </div>
+            </div>
+            <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
+              Solo se puede cancelar si no existe una Orden de Compra generada a partir de esta requisición.
+              Si tiene una Cotización (RFQ) asociada sin OC, también se cancelará. Esta acción no se puede deshacer.
+            </p>
+            {cancelError && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13, marginBottom: 16 }}>{cancelError}</div>}
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
+            <textarea
+              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', marginBottom: 20, boxSizing: 'border-box' }}
+              value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)} placeholder="Opcional…" />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setCancelando(null)} disabled={savingCancel}
+                style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cerrar</button>
+              <button onClick={handleCancelar} disabled={savingCancel}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
+                {savingCancel ? <Loader size={13} className="animate-spin" /> : <Ban size={14} />} {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -614,7 +708,7 @@ function RequisicionModal({ row, esAdminPleno, onClose, onSaved }: { row: any | 
 }
 
 // ── Vista de detalle + autorización ────────────────────────
-function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAuth: boolean; onClose: () => void; onAuth: (id: number, ap: boolean, c: string) => void }) {
+function RequisicionDetail({ req, canAuth, onClose, onAuth, puedeCancelar, onCancelar }: { req: any; canAuth: boolean; onClose: () => void; onAuth: (id: number, ap: boolean, c: string) => void; puedeCancelar: boolean; onCancelar: () => void }) {
   const [det, setDet]           = useState<any[]>([])
   const [comentario, setComent] = useState('')
   const [showAuth, setShowAuth] = useState(false)
@@ -651,9 +745,16 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth }: { req: any; canAut
           <StatusBadge status={req.status} />
           <span style={{ fontSize: 11, fontWeight: 600, color: req.prioridad === 'Crítica' ? '#dc2626' : req.prioridad === 'Urgente' ? '#d97706' : '#64748b' }}>● {req.prioridad}</span>
         </div>
-        <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => imprimirRequisicion(req, det)}>
-          <Printer size={13} /> Imprimir
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {puedeCancelar && (
+            <button className="btn-secondary" style={{ fontSize: 12, color: '#dc2626' }} onClick={onCancelar}>
+              <Ban size={13} /> Cancelar
+            </button>
+          )}
+          <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => imprimirRequisicion(req, det)}>
+            <Printer size={13} /> Imprimir
+          </button>
+        </div>
       </>}
     >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
