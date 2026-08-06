@@ -252,7 +252,7 @@ export default function InicioPage() {
             items.push({
               id:    'ing-hoy',
               texto: `${fmtK(total)} en ingresos confirmados hoy`,
-              href:  '/ingresos/recibos',
+              href:  '/ingresos',
             })
           }
         }

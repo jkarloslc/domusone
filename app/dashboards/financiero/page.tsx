@@ -497,7 +497,7 @@ export default function DashboardFinancieroPage() {
       {/* KPIs */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         {[
-          { label: 'Ingresos',      value: fmtK(stats.ingresos),  color: '#059669', bg: '#f0fdf4', icon: TrendingUp,   onClick: () => router.push('/ingresos/recibos') },
+          { label: 'Ingresos',      value: fmtK(stats.ingresos),  color: '#059669', bg: '#f0fdf4', icon: TrendingUp,   onClick: () => router.push('/ingresos') },
           { label: 'Egresos',       value: fmtK(stats.egresos),   color: '#dc2626', bg: '#fef2f2', icon: TrendingDown, onClick: () => router.push('/compras/ordenes-pago') },
           { label: 'Balance neto',  value: fmtK(Math.abs(stats.balance)), color: isPositive ? '#059669' : '#dc2626', bg: isPositive ? '#f0fdf4' : '#fef2f2', icon: Scale, onClick: undefined },
           { label: 'CXP pendiente', value: fmtK(stats.cxp),       color: '#d97706', bg: '#fffbeb', icon: FileText,     onClick: () => router.push('/tesoreria/cxp') },
@@ -592,7 +592,7 @@ export default function DashboardFinancieroPage() {
               </div>
             </div>
           </div>
-          <button onClick={() => router.push('/ingresos/recibos')} className="btn-primary"
+          <button onClick={() => router.push('/ingresos')} className="btn-primary"
             style={{ width: '100%', marginTop: 16, justifyContent: 'center' }}>
             <Receipt size={13} /> Nuevo Recibo
           </button>
@@ -611,7 +611,7 @@ export default function DashboardFinancieroPage() {
                   ? `Últimos Recibos — ${secciones.find(s => String(s.id) === filtroSeccion)?.nombre ?? ''}`
                   : 'Últimos Recibos'}
             </div>
-            <button onClick={() => router.push('/ingresos/recibos')}
+            <button onClick={() => router.push('/ingresos')}
               style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
               Ver todos <ChevronRight size={11} />
