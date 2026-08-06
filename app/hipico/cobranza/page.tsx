@@ -179,6 +179,7 @@ export default function CobranzaHipicoPage() {
   const [loadingQ, setLoadingQ]             = useState(false)
   const [busquedaQ, setBusquedaQ]           = useState('')
   const [filtroStatusQ, setFiltroStatusQ]   = useState<'todas' | 'PENDIENTE' | 'PAGADO' | 'PAGO_PARCIAL' | 'CANCELADO'>('todas')
+  const [filtroPeriodoQ, setFiltroPeriodoQ] = useState('todos')
   const [eliminandoQ, setEliminandoQ]       = useState<number | null>(null)
   const [editCuota, setEditCuota]           = useState<CuotaEditData | null>(null)
   const [paginaQ, setPaginaQ]               = useState(1)
@@ -691,8 +692,10 @@ export default function CobranzaHipicoPage() {
   )
 
   // ── Filtros Cuotas ────────────────────────────────────────
+  const periodosQ = Array.from(new Set(cuotasAll.map(c => c.periodo).filter((p): p is string => !!p))).sort((a, b) => b.localeCompare(a))
   const cuotasAllFiltradas = cuotasAll.filter(c => {
     if (filtroStatusQ !== 'todas' && c.status !== filtroStatusQ) return false
+    if (filtroPeriodoQ !== 'todos' && c.periodo !== filtroPeriodoQ) return false
     if (!busquedaQ.trim()) return true
     const q = norm(busquedaQ)
     return norm(fmtNombre(c.cat_arrendatarios)).includes(q) || norm(c.concepto).includes(q) || norm(c.periodo ?? '').includes(q)
@@ -1230,6 +1233,11 @@ export default function CobranzaHipicoPage() {
                 </button>
               ))}
             </div>
+            <select className="input" value={filtroPeriodoQ} onChange={e => { setFiltroPeriodoQ(e.target.value); setPaginaQ(1) }}
+              style={{ padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none' }}>
+              <option value="todos">Todos los periodos</option>
+              {periodosQ.map(p => <option key={p} value={p}>{fmtMes(p)}</option>)}
+            </select>
             <button className="btn-ghost" onClick={fetchCuotasAll} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <RefreshCw size={13} />
             </button>
