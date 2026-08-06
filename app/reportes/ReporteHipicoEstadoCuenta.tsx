@@ -59,6 +59,7 @@ export default function ReporteHipicoEstadoCuenta() {
 
   const [cargos, setCargos] = useState<Cargo[]>([])
   const [pagos, setPagos] = useState<Pago[]>([])
+  const [saldoPendienteTotal, setSaldoPendienteTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [buscado, setBuscado] = useState(false)
 
@@ -96,8 +97,21 @@ export default function ReporteHipicoEstadoCuenta() {
       .lte('fecha_recibo', fechaHasta)
       .order('fecha_recibo', { ascending: true })
 
+    // Saldo pendiente REAL a la fecha "Hasta" — no solo el de los cargos con
+    // vencimiento dentro del rango, sino todo el adeudo acumulado (incluye
+    // cargos vencidos antes de "Desde" que siguen sin pagarse).
+    const { data: pendData } = await dbHip
+      .from('cxc_hip')
+      .select('saldo, monto_final, status')
+      .eq('id_arrendatario_fk', idArr)
+      .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+      .lte('fecha_vencimiento', fechaHasta)
+    const totalPendiente = ((pendData ?? []) as { saldo: number | null; monto_final: number; status: string }[])
+      .reduce((s, c) => s + (c.saldo ?? c.monto_final), 0)
+
     setCargos((cargosData as unknown as Cargo[]) ?? [])
     setPagos((pagosData as unknown as Pago[]) ?? [])
+    setSaldoPendienteTotal(totalPendiente)
     setLoading(false)
   }, [idArr, fechaDesde, fechaHasta])
 
@@ -105,10 +119,13 @@ export default function ReporteHipicoEstadoCuenta() {
   const saldoCargo = (c: Cargo) => c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
 
   // KPIs
-  const totalCargos    = cargos.reduce((s, c) => s + c.monto_final, 0)
-  const totalPagado    = pagos.reduce((s, p) => s + p.total, 0)
-  const saldoPendiente = cargos.filter(c => c.status !== 'PAGADO').reduce((s, c) => s + saldoCargo(c), 0)
-  const cargosVencidos = cargos.filter(c => c.status === 'PENDIENTE' && c.fecha_vencimiento && c.fecha_vencimiento < hoyStr)
+  const totalCargos          = cargos.reduce((s, c) => s + c.monto_final, 0)
+  const totalPagado          = pagos.reduce((s, p) => s + p.total, 0)
+  // Saldo pendiente de solo los cargos mostrados en la tabla (dentro del rango de fechas) —
+  // se usa para el total al pie de esa tabla, no como KPI de adeudo real (ver saldoPendienteTotal).
+  const saldoPendientePeriodo = cargos.filter(c => c.status !== 'PAGADO').reduce((s, c) => s + saldoCargo(c), 0)
+  const adeudoAnterior        = Math.max(0, parseFloat((saldoPendienteTotal - saldoPendientePeriodo).toFixed(2)))
+  const cargosVencidos       = cargos.filter(c => c.status === 'PENDIENTE' && c.fecha_vencimiento && c.fecha_vencimiento < hoyStr)
 
   return (
     <div>
@@ -163,14 +180,18 @@ export default function ReporteHipicoEstadoCuenta() {
           {/* KPIs */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Total Cargos',     value: fmt$(totalCargos),     color: '#2563eb', bg: '#eff6ff' },
-              { label: 'Total Pagado',     value: fmt$(totalPagado),     color: '#16a34a', bg: '#f0fdf4' },
-              { label: 'Saldo Pendiente',  value: fmt$(saldoPendiente),  color: saldoPendiente > 0 ? '#dc2626' : '#16a34a', bg: saldoPendiente > 0 ? '#fef2f2' : '#f0fdf4' },
-              { label: 'Cargos Vencidos',  value: cargosVencidos.length.toString(), color: '#dc2626', bg: '#fef2f2' },
+              { label: 'Total Cargos',     value: fmt$(totalCargos),          color: '#2563eb', bg: '#eff6ff', sub: null as string | null },
+              { label: 'Total Pagado',     value: fmt$(totalPagado),          color: '#16a34a', bg: '#f0fdf4', sub: null },
+              {
+                label: 'Saldo Pendiente',  value: fmt$(saldoPendienteTotal),  color: saldoPendienteTotal > 0 ? '#dc2626' : '#16a34a', bg: saldoPendienteTotal > 0 ? '#fef2f2' : '#f0fdf4',
+                sub: adeudoAnterior > 0 ? `incluye ${fmt$(adeudoAnterior)} de antes de "Desde"` : null,
+              },
+              { label: 'Cargos Vencidos',  value: cargosVencidos.length.toString(), color: '#dc2626', bg: '#fef2f2', sub: null },
             ].map(k => (
               <div key={k.label} className="card" style={{ flex: '1 1 140px', padding: '12px 16px' }}>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 2 }}>{k.label}</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
+                {k.sub && <div style={{ fontSize: 10, color: '#92400e', marginTop: 2 }}>{k.sub}</div>}
               </div>
             ))}
           </div>
@@ -214,7 +235,7 @@ export default function ReporteHipicoEstadoCuenta() {
                   <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
                     <td colSpan={3} style={{ padding: '9px 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL</td>
                     <td style={{ padding: '9px 12px', fontWeight: 700, color: '#2563eb' }}>{fmt$(totalCargos)}</td>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: saldoPendiente > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(saldoPendiente)}</td>
+                    <td style={{ padding: '9px 12px', fontWeight: 700, color: saldoPendientePeriodo > 0 ? '#dc2626' : '#16a34a' }}>{fmt$(saldoPendientePeriodo)}</td>
                     <td></td>
                   </tr>
                 </tbody>
