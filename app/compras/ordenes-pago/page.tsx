@@ -15,12 +15,12 @@ import ModalShell from '@/components/ui/ModalShell'
 const PAGE_SIZES = [10, 25, 50, 100]
 
 const TIPOS_GASTO = [
-  'Servicios Profesionales', 'Mantenimiento', 'Reparación',
-  'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
-  'Electricidad', 'Agua', 'Telefonía / Internet',
-  'Honorarios', 'Asesoría', 'Capacitación', 'Nómina',
-  'Impuestos Federales', 'Impuestos Estatales', 'Renta de Mobiliario',
-  'Servicios de Vigilancia', 'Perimetrales', 'Otro',
+  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Combustible',
+  'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot', 'Honorarios',
+  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Mantenimiento',
+  'Nómina', 'Otro', 'Perimetrales', 'PTU', 'Publicidad',
+  'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
+  'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
 ]
 
 type RolTipoOp = { tipo_gasto: string; modo: string; solo_propios: boolean }
