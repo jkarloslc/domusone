@@ -303,7 +303,7 @@ export default function ComparativoPage() {
           <p className="page-subtitle">{mesLabel} · {selPpto?.nombre}</p>
         </div>
         <div className="page-header-actions">
-          <select className="input" style={{ minWidth: 230 }}
+          <select className="input" style={{ width: 280, flex: '0 0 auto' }}
             value={selId ?? ''} onChange={e => onChangePpto(Number(e.target.value))}>
             {presupuestos.map(p => (
               <option key={p.id} value={p.id}>{p.anio} — {p.nombre}</option>
@@ -317,9 +317,9 @@ export default function ComparativoPage() {
       </div>
 
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
         {/* Mes */}
-        <select className="input" style={{ minWidth: 160 }}
+        <select className="input" style={{ width: 180, flex: '0 0 auto' }}
           value={filterMes} onChange={e => setFilterMes(Number(e.target.value))}>
           <option value={0}>Acumulado año</option>
           {MESES.map((m, i) => (
@@ -328,7 +328,7 @@ export default function ComparativoPage() {
         </select>
 
         {/* Tipo */}
-        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px' }}>
+        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {(['', 'ingreso', 'egreso'] as const).map(t => (
             <button key={t} onClick={() => setFilterTipo(t)}
               style={{
