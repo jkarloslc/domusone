@@ -325,6 +325,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Residencial',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
+    { section: 'Finanzas', items: [
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+    ]},
   ],
 
   vigilancia: [
