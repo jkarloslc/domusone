@@ -495,6 +495,10 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
 
   const handleSave = async () => {
     if (!form.titulo.trim()) { setError('El título es obligatorio'); return }
+    if (form.por_conceptos && conceptosOT.length === 0) {
+      setError('Agrega al menos un concepto (busca, captura cantidad y da clic en "Agregar") o desactiva "Costeo por Conceptos"')
+      return
+    }
     setSaving(true); setError('')
     const isNew = !ot
     let otId = ot?.id
@@ -560,10 +564,11 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
       }
       const nuevosConceptos = conceptosOT.filter(c => !c.id)
       if (nuevosConceptos.length) {
-        await dbCtrl.from('ot_conceptos').insert(nuevosConceptos.map((c, i) => ({
+        const { error: errConceptos } = await dbCtrl.from('ot_conceptos').insert(nuevosConceptos.map((c, i) => ({
           id_ot_fk: otId, id_concepto_fk: c.id_concepto_fk, codigo: c.codigo, descripcion: c.descripcion,
           unidad: c.unidad, cantidad: Number(c.cantidad), costo_unitario: Number(c.costo_unitario), orden: i,
         })))
+        if (errConceptos) { setError(`Error al guardar conceptos: ${errConceptos.message}`); setSaving(false); return }
       }
       setSaving(false); onSaved()
       return
@@ -1386,6 +1391,12 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {!loading && ot.por_conceptos && conceptos.length === 0 && (
+            <div style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+              Esta OT está marcada como "Costeo por Conceptos" pero no tiene conceptos capturados. Edítala y agrega al menos uno.
             </div>
           )}
 
