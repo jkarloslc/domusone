@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Search, Home, Users, Shield, FileText, Building2,
-  AlertTriangle, Wrench, Zap, ChevronDown, ChevronRight,
+  AlertTriangle, HardHat, Zap, ChevronDown, ChevronRight,
   X, Clock, MapPin, Phone, Mail, Car,
   User, Calendar, DollarSign, Loader, MessageSquare, MapPinned, List
 } from 'lucide-react'
@@ -159,7 +159,7 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
   const [contratos, setContratos]       = useState<any[]>([])
   const [escrituras, setEscrituras]     = useState<any[]>([])
   const [incidencias, setIncidencias]   = useState<any[]>([])
-  const [proyectos, setProyectos]       = useState<any[]>([])
+  const [construcciones, setConstrucciones] = useState<any[]>([])
   const [cargos, setCargos]             = useState<any[]>([])
   const [cfe, setCfe]                   = useState<any[]>([])
   const [agua, setAgua]                 = useState<any[]>([])
@@ -180,13 +180,13 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
     setLote(null)
     setPropietarios([]); setAccesos([]); setVisitantes([]); setVehiculos([])
     setContratos([]); setEscrituras([]); setIncidencias([])
-    setProyectos([]); setCargos([]); setCfe([]); setAgua([])
+    setConstrucciones([]); setCargos([]); setCfe([]); setAgua([])
     setComunicados([])
 
     const [
       { data: loteData }, { data: plRows }, { data: acs }, { data: vists }, { data: vehs },
       { data: conts }, { data: escs }, { data: incs },
-      { data: projs }, { data: cars }, { data: cfes }, { data: aguas }
+      { data: constrs }, { data: cars }, { data: cfes }, { data: aguas }
     ] = await Promise.all([
       dbCat.from('lotes').select('*').eq('id', id).single(),
       dbCtrl.from('propietarios_lotes').select('*').eq('id_lote_fk', id).eq('activo', true).order('es_principal', { ascending: false }),
@@ -196,7 +196,7 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
       dbCtrl.from('contratos').select('*').eq('id_lote_fk', id).order('fecha', { ascending: false }),
       dbCtrl.from('escrituras').select('*').eq('id_lote_fk', id).order('fecha', { ascending: false }),
       dbCtrl.from('incidencias').select('*').eq('id_lote_fk', id).order('fecha', { ascending: false }),
-      dbCtrl.from('proyectos').select('*').eq('id_lote_fk', id).order('created_at', { ascending: false }),
+      dbCtrl.from('construcciones').select('*').eq('id_lote_fk', id).order('created_at', { ascending: false }),
       dbCtrl.from('cargos').select('*').eq('id_lote_fk', id).in('status', ['Pendiente', 'Parcial']).order('fecha_cargo', { ascending: false }),
       dbCtrl.from('servicios_cfe').select('*').eq('id_lote_fk', id),
       dbCtrl.from('servicios_agua').select('*').eq('id_lote_fk', id),
@@ -219,7 +219,7 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
     setPropietarios((plRows ?? []).map((r: any) => ({ ...r, propietarios: propsMap[r.id_propietario_fk] ?? null })))
     setAccesos(acs ?? []); setVisitantes(vists ?? []); setVehiculos(vehs ?? [])
     setContratos(conts ?? []); setEscrituras(escs ?? []); setIncidencias(incs ?? [])
-    setProyectos(projs ?? []); setCargos(cars ?? []); setCfe(cfes ?? []); setAgua(aguas ?? [])
+    setConstrucciones(constrs ?? []); setCargos(cars ?? []); setCfe(cfes ?? []); setAgua(aguas ?? [])
 
     const envios = enviosRes.data ?? []
     if (envios.length > 0) {
@@ -406,13 +406,13 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
               }
             </Section>
 
-            <Section icon={Wrench} title="Proyectos" count={proyectos.length} color="#059669">
-              {proyectos.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin proyectos</div>
-                : proyectos.map(pr => (
-                  <div key={pr.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
+            <Section icon={HardHat} title="Construcciones" count={construcciones.length} color="#d97706">
+              {construcciones.length === 0 ? <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>Sin expedientes de construcción</div>
+                : construcciones.map(c => (
+                  <div key={c.id} style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: 7, marginBottom: 6, border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{pr.nombre ?? pr.tipo ?? 'Proyecto'}</span>
-                      {statusBadge(pr.status)}
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{c.motivo ?? 'Construcción'}</span>
+                      {statusBadge(c.status)}
                     </div>
                   </div>
                 ))

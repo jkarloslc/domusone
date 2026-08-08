@@ -79,8 +79,13 @@ export default function ConstruccionesPage() {
             <span className="page-eyebrow-label">Módulo</span>
           </div>
           <h1 className="page-title-xl">Construcciones</h1>
-          <p className="page-subtitle">Expedientes de obra: proyecto autorizado, deslinde, fianza, licencia, avances, incidencias y cierre</p>
+          <p className="page-subtitle">{total} expedientes de obra registrados</p>
         </div>
+        {canWrite('construcciones') && (
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={14} /> Nuevo Expediente</button>
+          </div>
+        )}
       </div>
 
       {/* Stats por status */}
@@ -98,24 +103,21 @@ export default function ConstruccionesPage() {
         })}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'space-between', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 280 }}>
-            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input className="input" style={{ paddingLeft: 30 }} placeholder="Buscar responsable, descripción…"
-              value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} />
-          </div>
-          <select className="select" style={{ maxWidth: 180 }} value={filterMotivo} onChange={e => { setFilterMotivo(e.target.value); setPage(0) }}>
-            <option value="">Todos los motivos</option>
-            {MOTIVOS.map(m => <option key={m}>{m}</option>)}
-          </select>
-          <select className="select" style={{ maxWidth: 160 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}>
-            <option value="">Todos los status</option>
-            {STATUS_CONSTRUCCION.map(s => <option key={s}>{s}</option>)}
-          </select>
-          <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 280 }}>
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input className="input" style={{ paddingLeft: 30 }} placeholder="Buscar responsable, descripción…"
+            value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} />
         </div>
-        {canWrite('construcciones') && <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={14} /> Nuevo Expediente</button>}
+        <select className="select" style={{ width: 180 }} value={filterMotivo} onChange={e => { setFilterMotivo(e.target.value); setPage(0) }}>
+          <option value="">Todos los motivos</option>
+          {MOTIVOS.map(m => <option key={m}>{m}</option>)}
+        </select>
+        <select className="select" style={{ width: 160 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}>
+          <option value="">Todos los status</option>
+          {STATUS_CONSTRUCCION.map(s => <option key={s}>{s}</option>)}
+        </select>
+        <button className="btn-ghost" onClick={fetchData} title="Actualizar"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>

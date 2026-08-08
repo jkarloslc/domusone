@@ -2,9 +2,10 @@
 import { useDebounce } from '@/lib/useDebounce'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCat, dbCtrl } from '@/lib/supabase'
+import { useAuth } from '@/lib/AuthContext'
 import {
-  Plus, Search, RefreshCw, Edit2, Trash2, X, Save,
-  Loader, Eye, MessageSquare, Clock, CheckCircle, DollarSign
+  Plus, Search, RefreshCw, Edit2, Trash2, Save,
+  Loader, MessageSquare, Clock, DollarSign, Scale,
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -55,7 +56,8 @@ const fmtFecha = (d: string | null) =>
 const fmt = (v: number | null) =>
   v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
 
-export default function AfectacionesTab() {
+export default function AfectacionesPage() {
+  const { canWrite } = useAuth()
   const [afectaciones, setAfectaciones] = useState<Afectacion[]>([])
   const [total, setTotal]               = useState(0)
   const [search, setSearch]             = useState('')
@@ -76,7 +78,7 @@ export default function AfectacionesTab() {
     const { data, count, error } = await q
     if (!error) { setAfectaciones(data as Afectacion[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [search, filterStatus])
+  }, [debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -87,7 +89,24 @@ export default function AfectacionesTab() {
   }
 
   return (
-    <div>
+    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
+      {/* Header */}
+      <div className="page-header">
+        <div className="page-header-left" style={{ display: 'block' }}>
+          <div className="page-eyebrow">
+            <Scale size={16} style={{ color: '#0284c7' }} />
+            <span className="page-eyebrow-label">Módulo</span>
+          </div>
+          <h1 className="page-title-xl">Servidumbres y Afectaciones</h1>
+          <p className="page-subtitle">{total} afectaciones registradas</p>
+        </div>
+        {canWrite('afectaciones') && (
+          <div className="page-header-actions">
+            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={14} /> Nueva Afectación</button>
+          </div>
+        )}
+      </div>
+
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         {STATUS_AFECT.map(s => {
@@ -96,7 +115,7 @@ export default function AfectacionesTab() {
           return (
             <div key={s} className="card card-hover" style={{ padding: '10px 16px', cursor: 'pointer', minWidth: 100 }}
               onClick={() => setFilter(filterStatus === s ? '' : s)}>
-              <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: filterStatus === s ? 'var(--blue)' : 'var(--text-primary)' }}>{count}</div>
+              <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', color: filterStatus === s ? '#0284c7' : 'var(--text-primary)' }}>{count}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{s}</div>
             </div>
           )
@@ -110,22 +129,17 @@ export default function AfectacionesTab() {
       </div>
 
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'space-between', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: 10, flex: 1 }}>
-          <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 300 }}>
-            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input className="input" style={{ paddingLeft: 30 }} placeholder="Buscar descripción, beneficiario…"
-              value={search} onChange={e => { setSearch(e.target.value) }} />
-          </div>
-          <select className="select" style={{ width: 150 }} value={filterStatus} onChange={e => setFilter(e.target.value)}>
-            <option value="">Todos los status</option>
-            {STATUS_AFECT.map(s => <option key={s}>{s}</option>)}
-          </select>
-          <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 300 }}>
+          <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input className="input" style={{ paddingLeft: 30 }} placeholder="Buscar descripción, beneficiario…"
+            value={search} onChange={e => { setSearch(e.target.value) }} />
         </div>
-        <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-          <Plus size={14} /> Nueva Afectación
-        </button>
+        <select className="select" style={{ width: 150 }} value={filterStatus} onChange={e => setFilter(e.target.value)}>
+          <option value="">Todos los status</option>
+          {STATUS_AFECT.map(s => <option key={s}>{s}</option>)}
+        </select>
+        <button className="btn-ghost" onClick={fetchData} title="Actualizar"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -270,7 +284,7 @@ function AfectacionModal({ afectacion, onClose, onSaved }: { afectacion: Afectac
   }
 
   return (
-    <ModalShell modulo="proyectos" titulo={isNew ? 'Nueva Afectación / Servidumbre' : 'Editar Afectación'} onClose={onClose} maxWidth={620}
+    <ModalShell modulo="afectaciones" titulo={isNew ? 'Nueva Afectación / Servidumbre' : 'Editar Afectación'} onClose={onClose} maxWidth={620}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Cancelar</button>
         <button className="btn-primary" onClick={handleSave} disabled={saving}>
@@ -424,7 +438,7 @@ function AfectacionDetail({ afectacion: a, onClose, onEdit }: { afectacion: Afec
   }
 
   return (
-    <ModalShell modulo="proyectos" titulo="Modal" onClose={onClose} maxWidth={600}
+    <ModalShell modulo="afectaciones" titulo={`Afectación — ${a.tipo ?? 'Detalle'}`} onClose={onClose} maxWidth={600}
     >
 
         <div style={{ padding: '20px 24px', maxHeight: 'calc(90vh - 100px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 18 }}>

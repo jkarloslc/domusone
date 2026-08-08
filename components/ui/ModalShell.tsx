@@ -6,7 +6,7 @@ import React from 'react'
 export type ModalModulo =
   | 'residencial' | 'lotes' | 'propietarios' | 'contratos' | 'escrituras'
   | 'cobranza' | 'facturas' | 'facturacion' | 'accesos' | 'incidencias' | 'comunicados'
-  | 'mantenimiento' | 'proyectos' | 'construcciones' | 'capex'
+  | 'mantenimiento' | 'afectaciones' | 'construcciones' | 'capex'
   | 'compras' | 'proveedores' | 'articulos' | 'almacenes'
   | 'tesoreria' | 'ingresos' | 'presupuestos'
   | 'golf' | 'golf-miembros' | 'golf-accesos' | 'golf-pos' | 'golf-carritos'
@@ -37,7 +37,7 @@ export const MODAL_PALETTES: Record<ModalModulo, Palette> = {
 
   // Mantenimiento / Proyectos — violeta
   mantenimiento: { from: '#4c1d95', to: '#7c3aed', accent: '#7c3aed' },
-  proyectos:     { from: '#4c1d95', to: '#8b5cf6', accent: '#8b5cf6' },
+  afectaciones:  { from: '#0c4a6e', to: '#0284c7', accent: '#0284c7' },
   construcciones:{ from: '#78350f', to: '#d97706', accent: '#d97706' },
   capex:         { from: '#1e3a5f', to: '#1d4ed8', accent: '#3b82f6' },
 

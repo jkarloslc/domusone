@@ -1,7 +1,7 @@
 'use client'
 import {
   MapPin, MapPinned, Users, FileText, Receipt, Shield,
-  AlertTriangle, Building2, Wrench, Home, ChevronRight, MessageSquare, ShieldCheck, HardHat,
+  AlertTriangle, Building2, Home, ChevronRight, MessageSquare, ShieldCheck, HardHat, Scale,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -16,8 +16,8 @@ const MODULOS = [
   { key: 'vigilancia-extras', permKey: 'vigilancia-extras', label: 'Vigilancia', icon: ShieldCheck, color: '#334155', desc: 'Extras de vigilancia: captura, autorización y OP', href: '/vigilancia-extras' },
   { key: 'contratos',    permKey: 'contratos',    label: 'Contratos',    icon: FileText,      color: '#7c3aed', desc: 'Gestión de contratos de compraventa',           href: '/contratos'    },
   { key: 'escrituras',   permKey: 'escrituras',   label: 'Escrituras',   icon: Building2,     color: '#d97706', desc: 'Documentos notariales y escrituración',         href: '/escrituras'   },
-  { key: 'proyectos',    permKey: 'proyectos',    label: 'Proyectos',    icon: Wrench,        color: '#059669', desc: 'Avance de obras y proyectos de desarrollo',     href: '/proyectos'    },
   { key: 'construcciones', permKey: 'construcciones', label: 'Construcciones', icon: HardHat, color: '#d97706', desc: 'Expedientes de obra: checklist, avances e incidencias', href: '/construcciones' },
+  { key: 'afectaciones', permKey: 'afectaciones', label: 'Servidumbres y Afectaciones', icon: Scale, color: '#0284c7', desc: 'Servidumbres, pasos y afectaciones sobre lotes', href: '/afectaciones' },
   { key: 'comunicados',  permKey: 'comunicados',  label: 'Comunicados',  icon: MessageSquare, color: '#0d9488', desc: 'Avisos y comunicados a residentes',             href: '/comunicados'  },
 ]
 
