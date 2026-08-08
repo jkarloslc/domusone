@@ -871,6 +871,7 @@ function ReciboModal({
 export default function IngresosPage() {
   const router = useRouter()
   const { authUser, canWrite } = useAuth()
+  const esCobranza = authUser?.rol === 'cobranza'
   const [rows, setRows]         = useState<Recibo[]>([])
   const [centros, setCentros]   = useState<Centro[]>([])
   const [secciones, setSecciones] = useState<Seccion[]>([])
@@ -886,6 +887,10 @@ export default function IngresosPage() {
   const [modal, setModal]       = useState(false)
   const [detalle, setDetalle]   = useState<Recibo | null>(null)
   const [stats, setStats]       = useState({ hoy: 0, mes: 0, confirmados: 0 })
+
+  // cobranza: solo Cuotas Residencial (tipo 'cuotas' en cfg.centros_ingreso)
+  const centrosPermitidos = esCobranza ? centros.filter(c => c.tipo === 'cuotas') : centros
+  const cuotasCentroIds   = centros.filter(c => c.tipo === 'cuotas').map(c => c.id)
 
   // Stats generales (independientes de los filtros de la tabla)
   useEffect(() => {
@@ -935,11 +940,14 @@ export default function IngresosPage() {
     if (filterFechaFin) q = q.lte('fecha', filterFechaFin)
     if (search)         q = q.ilike('folio', `%${search}%`)
 
+    // cobranza: solo ve recibos de centros tipo 'cuotas' (Cuotas Residencial)
+    if (esCobranza) q = q.in('id_centro_ingreso_fk', cuotasCentroIds.length > 0 ? cuotasCentroIds : [-1])
+
     const { data, count } = await q
     setRows((data ?? []) as Recibo[])
     setTotal(count ?? 0)
     setLoading(false)
-  }, [page, filterStatus, filterCentro, filterFechaIni, filterFechaFin, search])
+  }, [page, filterStatus, filterCentro, filterFechaIni, filterFechaFin, search, esCobranza, cuotasCentroIds.join(',')])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -966,9 +974,11 @@ export default function IngresosPage() {
           </p>
         </div>
         <div className="page-header-actions" style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-ghost" onClick={() => router.push('/ingresos/centros')}>
-            <Tag size={14} /> Centros de Ingreso
-          </button>
+          {!esCobranza && (
+            <button className="btn-ghost" onClick={() => router.push('/ingresos/centros')}>
+              <Tag size={14} /> Centros de Ingreso
+            </button>
+          )}
           {canWrite('ingresos') && (
             <button className="btn-primary" onClick={() => setModal(true)}>
               <Plus size={14} /> Nuevo Recibo
@@ -1008,7 +1018,7 @@ export default function IngresosPage() {
         </div>
         <select className="select" style={{ width: 180 }} value={filterCentro} onChange={e => { setFilterCentro(e.target.value); setPage(0) }}>
           <option value="">Todos los centros</option>
-          {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          {centrosPermitidos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select className="select" style={{ width: 150 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}>
           <option value="">Todos los status</option>
@@ -1171,7 +1181,7 @@ export default function IngresosPage() {
       {modal && (
         <ReciboModal
           recibo={null}
-          centros={centros}
+          centros={centrosPermitidos}
           secciones={secciones}
           onClose={() => setModal(false)}
           onSaved={() => { setModal(false); fetchData() }}
@@ -1184,7 +1194,7 @@ export default function IngresosPage() {
       {detalle && (
         <ReciboModal
           recibo={detalle}
-          centros={centros}
+          centros={centrosPermitidos}
           secciones={secciones}
           onClose={() => setDetalle(null)}
           onSaved={() => { setDetalle(null); fetchData() }}

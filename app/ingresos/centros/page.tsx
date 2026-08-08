@@ -125,7 +125,8 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
 // ── Página principal ──────────────────────────────────────────
 export default function CentrosIngresoPage() {
   const router = useRouter()
-  const { canWrite } = useAuth()
+  const { canWrite, authUser } = useAuth()
+  const puedeEscribir = canWrite('ingresos') && authUser?.rol !== 'cobranza'
   const [centros, setCentros] = useState<Centro[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState(false)
@@ -158,7 +159,7 @@ export default function CentrosIngresoPage() {
             Configura los centros y su tipo de captura
           </p>
         </div>
-        {canWrite('ingresos') && (
+        {puedeEscribir && (
           <div className="page-header-actions">
             <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
               <Plus size={14} /> Nuevo Centro
@@ -219,7 +220,7 @@ export default function CentrosIngresoPage() {
                       {c.notas && <span style={{ fontSize: 11, color: '#94a3b8' }}>· {c.notas}</span>}
                     </div>
                   </div>
-                  {canWrite('ingresos') && (
+                  {puedeEscribir && (
                     <button className="btn-ghost" style={{ padding: '5px 8px' }} onClick={() => { setEditing(c); setModal(true) }}>
                       <Edit2 size={13} />
                     </button>
