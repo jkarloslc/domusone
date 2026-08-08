@@ -5,7 +5,8 @@ import { dbCtrl, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
-  Camera, Trash2, ExternalLink, CheckCircle, Wrench, ChevronDown, Printer, Filter
+  Camera, Trash2, ExternalLink, CheckCircle, Wrench, ChevronDown, Printer, Filter,
+  ClipboardList, Boxes,
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import ColaboradorPicker from '@/components/ui/ColaboradorPicker'
@@ -26,6 +27,40 @@ const STATUS_STYLE: Record<string, { color: string; bg: string; border: string }
   'En Pausa':   { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
   'Completada': { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
   'Cancelada':  { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+}
+
+const TIPO_INSUMO_STYLE: Record<string, { color: string; bg: string; label: string }> = {
+  mano_obra:         { color: '#7c3aed', bg: '#ede9fe', label: 'Mano de Obra' },
+  material:          { color: '#1d4ed8', bg: '#dbeafe', label: 'Material' },
+  equipo:            { color: '#15803d', bg: '#dcfce7', label: 'Equipo' },
+  herramienta_menor: { color: '#d97706', bg: '#fef3c7', label: 'Herramienta Menor' },
+}
+
+// Explota los insumos (mano de obra, material, equipo, herramienta menor) de
+// los conceptos elegidos en una OT: multiplica cada renglón de la matriz de
+// PU del concepto (ctrl.mant_conceptos_insumos) por la cantidad capturada en
+// la OT, y agrupa por tipo+insumo para no duplicar filas repetidas entre
+// conceptos distintos.
+async function explotarInsumos(conceptosOT: any[]): Promise<any[]> {
+  const ids = Array.from(new Set(conceptosOT.map(c => c.id_concepto_fk).filter(Boolean)))
+  if (ids.length === 0) return []
+  const { data } = await dbCtrl.from('mant_conceptos_insumos').select('*').in('id_concepto_fk', ids)
+  const qtyByConcepto: Record<number, number> = {}
+  conceptosOT.forEach(c => {
+    if (c.id_concepto_fk) qtyByConcepto[c.id_concepto_fk] = (qtyByConcepto[c.id_concepto_fk] ?? 0) + (Number(c.cantidad) || 0)
+  })
+  const grouped: Record<string, any> = {}
+  ;(data ?? []).forEach((r: any) => {
+    const q = qtyByConcepto[r.id_concepto_fk] ?? 0
+    if (!q) return
+    const key = `${r.tipo}__${r.id_insumo_fk ?? r.descripcion}`
+    const cantidad = r.cantidad * q
+    const importe  = cantidad * r.costo_unitario
+    if (!grouped[key]) grouped[key] = { tipo: r.tipo, descripcion: r.descripcion, unidad: r.unidad, cantidad: 0, importe: 0 }
+    grouped[key].cantidad += cantidad
+    grouped[key].importe  += importe
+  })
+  return Object.values(grouped)
 }
 
 const Badge = ({ text, map }: { text: string; map: Record<string, any> }) => {
@@ -371,6 +406,7 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
     supervisor:         ot?.supervisor        ?? '',
     fecha_inicio:       ot?.fecha_inicio      ?? '',
     fecha_limite:       ot?.fecha_limite      ?? '',
+    por_conceptos:      ot?.por_conceptos     ?? false,
   })
   const [recursos, setRecursos] = useState<any[]>(
     ot ? [] : [{ cantidad: '', descripcion: '', tipo: 'Material', costo: '0' }]
@@ -395,8 +431,56 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
             })))
           }
         })
+      dbCtrl.from('ot_conceptos').select('*').eq('id_ot_fk', ot.id).order('orden').order('id')
+        .then(({ data }) => { if (data) setConceptosOT(data) })
     }
   }, [ot?.id])
+
+  // ── Costeo "Por Conceptos" ────────────────────────────────────
+  const [conceptosOT, setConceptosOT] = useState<any[]>([])
+  const [formConcepto, setFormConcepto] = useState({
+    search: '', id_concepto_fk: null as number | null,
+    codigo: '', descripcion: '', unidad: '', cantidad: '', costo_unitario: '',
+  })
+  const [conceptoResults, setConceptoResults] = useState<any[]>([])
+  const [searchingConcepto, setSearchingConcepto] = useState(false)
+  const dSearchConcepto = useDebounce(formConcepto.search, 250)
+  const [explosion, setExplosion] = useState<any[]>([])
+  const [explosionLoading, setExplosionLoading] = useState(false)
+
+  useEffect(() => {
+    if (dSearchConcepto.length < 2) { setConceptoResults([]); return }
+    setSearchingConcepto(true)
+    dbCtrl.from('mant_conceptos').select('id, codigo, descripcion, unidad, pu_venta').eq('activo', true)
+      .or(`codigo.ilike.%${dSearchConcepto}%,descripcion.ilike.%${dSearchConcepto}%`).limit(8)
+      .then(({ data }) => { setConceptoResults(data ?? []); setSearchingConcepto(false) })
+  }, [dSearchConcepto])
+
+  const selectConcepto = (c: any) => {
+    setFormConcepto(f => ({ ...f, id_concepto_fk: c.id, codigo: c.codigo, descripcion: c.descripcion,
+      unidad: c.unidad, costo_unitario: String(c.pu_venta ?? 0), search: `${c.codigo} · ${c.descripcion}` }))
+    setConceptoResults([])
+  }
+
+  const addConcepto = () => {
+    if (!formConcepto.id_concepto_fk || !formConcepto.cantidad) return
+    setConceptosOT(list => [...list, {
+      id_concepto_fk: formConcepto.id_concepto_fk, codigo: formConcepto.codigo, descripcion: formConcepto.descripcion,
+      unidad: formConcepto.unidad, cantidad: Number(formConcepto.cantidad), costo_unitario: Number(formConcepto.costo_unitario || 0),
+    }])
+    setFormConcepto({ search: '', id_concepto_fk: null, codigo: '', descripcion: '', unidad: '', cantidad: '', costo_unitario: '' })
+  }
+
+  const removeConcepto = (idx: number) => setConceptosOT(list => list.filter((_, i) => i !== idx))
+
+  const costoConceptosTotal = conceptosOT.reduce((a, c) => a + (Number(c.cantidad) || 0) * (Number(c.costo_unitario) || 0), 0)
+
+  useEffect(() => {
+    if (!form.por_conceptos || conceptosOT.length === 0) { setExplosion([]); return }
+    setExplosionLoading(true)
+    explotarInsumos(conceptosOT).then(rows => { setExplosion(rows); setExplosionLoading(false) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conceptosOT, form.por_conceptos])
 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -434,6 +518,7 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
         fecha_inicio: form.fecha_inicio || null, fecha_limite: form.fecha_limite || null,
         semana_no: form.status === 'Completada' ? semanaActual() : null,
         anio: new Date().getFullYear(), created_by: authUser?.nombre ?? null,
+        por_conceptos: form.por_conceptos,
       }).select('id').single()
       if (err) { setError(err.message); setSaving(false); return }
       otId = newOT.id
@@ -453,9 +538,40 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
         semana_no: form.status === 'Completada' ? semanaActual() : null,
         fecha_cierre: form.status === 'Completada' ? new Date().toISOString().slice(0,10) : null,
         updated_at: new Date().toISOString(),
+        por_conceptos: form.por_conceptos,
       }).eq('id', ot.id)
       if (err) { setError(err.message); setSaving(false); return }
     }
+
+    // Costeo por Conceptos vs. manual (Mano de Obra + Recursos): al cambiar
+    // de modo se limpia el otro para no arrastrar costos duplicados/obsoletos.
+    if (otId && form.por_conceptos) {
+      await dbCtrl.from('ot_recursos').delete().eq('id_ot_fk', otId)
+      await dbCtrl.from('ot_mano_obra').delete().eq('id_ot_fk', otId)
+      const idsExistentesConcepto = conceptosOT.filter(c => c.id).map(c => c.id)
+      const { data: conceptosActuales } = await dbCtrl.from('ot_conceptos').select('id').eq('id_ot_fk', otId)
+      const idsAEliminarConcepto = (conceptosActuales ?? []).filter((r: any) => !idsExistentesConcepto.includes(r.id)).map((r: any) => r.id)
+      if (idsAEliminarConcepto.length) await dbCtrl.from('ot_conceptos').delete().in('id', idsAEliminarConcepto)
+      for (const c of conceptosOT.filter(c => c.id)) {
+        await dbCtrl.from('ot_conceptos').update({
+          id_concepto_fk: c.id_concepto_fk, codigo: c.codigo, descripcion: c.descripcion, unidad: c.unidad,
+          cantidad: Number(c.cantidad), costo_unitario: Number(c.costo_unitario),
+        }).eq('id', c.id)
+      }
+      const nuevosConceptos = conceptosOT.filter(c => !c.id)
+      if (nuevosConceptos.length) {
+        await dbCtrl.from('ot_conceptos').insert(nuevosConceptos.map((c, i) => ({
+          id_ot_fk: otId, id_concepto_fk: c.id_concepto_fk, codigo: c.codigo, descripcion: c.descripcion,
+          unidad: c.unidad, cantidad: Number(c.cantidad), costo_unitario: Number(c.costo_unitario), orden: i,
+        })))
+      }
+      setSaving(false); onSaved()
+      return
+    }
+    if (otId && !form.por_conceptos) {
+      await dbCtrl.from('ot_conceptos').delete().eq('id_ot_fk', otId)
+    }
+
     const recursosValidos = recursos.filter(r => r.descripcion.trim())
     if (otId) {
       if (!isNew) {
@@ -599,7 +715,40 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
           </div>
           <div><label className="label" style={{ fontSize: 11 }}>Notas</label>
             <textarea className="input" rows={2} value={form.notas} onChange={setF('notas')} style={{ fontSize: 13, resize: 'vertical' }} /></div>
+
+          {/* Toggle Por Conceptos */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            padding: '10px 12px', borderRadius: 8,
+            background: form.por_conceptos ? '#ecfdf5' : '#f8fafc',
+            border: `1px solid ${form.por_conceptos ? '#6ee7b7' : '#e2e8f0'}` }}>
+            <div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: form.por_conceptos ? '#047857' : 'var(--text-secondary)' }}>
+                Costeo por Conceptos
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                Arma el costo eligiendo conceptos del catálogo (con su explosión de insumos) en vez de capturar Mano de Obra/Recursos manualmente
+              </div>
+            </div>
+            <button type="button" onClick={() => setForm(f => ({ ...f, por_conceptos: !f.por_conceptos }))}
+              style={{ width: 42, height: 24, borderRadius: 20, border: 'none', cursor: 'pointer', position: 'relative',
+                background: form.por_conceptos ? '#10b981' : '#cbd5e1', flexShrink: 0, transition: 'background .15s' }}>
+              <span style={{ position: 'absolute', top: 2, left: form.por_conceptos ? 20 : 2, width: 20, height: 20,
+                borderRadius: '50%', background: '#fff', transition: 'left .15s', boxShadow: '0 1px 2px rgba(0,0,0,.3)' }} />
+            </button>
+          </div>
+
+          {form.por_conceptos && (
+            <ConceptosPanel
+              conceptosOT={conceptosOT} formConcepto={formConcepto} setFormConcepto={setFormConcepto}
+              conceptoResults={conceptoResults} searchingConcepto={searchingConcepto}
+              selectConcepto={selectConcepto} addConcepto={addConcepto} removeConcepto={removeConcepto}
+              costoConceptosTotal={costoConceptosTotal}
+              explosion={explosion} explosionLoading={explosionLoading}
+            />
+          )}
+
           {/* Mano de Obra */}
+          {!form.por_conceptos && (
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: '#b45309', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Mano de Obra</div>
             {manoObra.map((r, i) => {
@@ -637,7 +786,9 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
               })()}
             </div>
           </div>
+          )}
           {/* Recursos */}
+          {!form.por_conceptos && (
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Recursos</div>
             {recursos.map((r, i) => (
@@ -663,10 +814,168 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
               </div>}
             </div>
           </div>
+          )}
         </div>
     </ModalShell>
   )
 }
+
+// ── ConceptosPanel ────────────────────────────────────────────
+// Sección "Por Conceptos" del formulario de OT: búsqueda/alta de
+// conceptos del catálogo (con cantidad y PU) + explosión de insumos
+// (incluye mano de obra) derivada de los conceptos elegidos.
+function ConceptosPanel({ conceptosOT, formConcepto, setFormConcepto, conceptoResults, searchingConcepto,
+  selectConcepto, addConcepto, removeConcepto, costoConceptosTotal, explosion, explosionLoading }: {
+  conceptosOT: any[]
+  formConcepto: { search: string; id_concepto_fk: number | null; codigo: string; descripcion: string; unidad: string; cantidad: string; costo_unitario: string }
+  setFormConcepto: React.Dispatch<React.SetStateAction<any>>
+  conceptoResults: any[]; searchingConcepto: boolean
+  selectConcepto: (c: any) => void
+  addConcepto: () => void
+  removeConcepto: (idx: number) => void
+  costoConceptosTotal: number
+  explosion: any[]; explosionLoading: boolean
+}) {
+  const byTipo = (t: string) => explosion.filter(e => e.tipo === t)
+  return (
+    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Conceptos elegidos */}
+      <div>
+        <div style={{ fontSize: 9, fontWeight: 700, color: '#0f766e', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <ClipboardList size={11} /> Conceptos
+        </div>
+        {conceptosOT.length > 0 && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 8 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                <th style={thOT}>Código</th>
+                <th style={{ ...thOT, textAlign: 'left' }}>Concepto</th>
+                <th style={thOT}>Unidad</th>
+                <th style={{ ...thOT, textAlign: 'right' }}>Cantidad</th>
+                <th style={{ ...thOT, textAlign: 'right' }}>PU</th>
+                <th style={{ ...thOT, textAlign: 'right' }}>Importe</th>
+                <th style={{ ...thOT, width: 24 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {conceptosOT.map((c, i) => (
+                <tr key={c.id ?? `n${i}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={tdOT}>{c.codigo ?? '—'}</td>
+                  <td style={tdOT}>{c.descripcion}</td>
+                  <td style={{ ...tdOT, textAlign: 'center', color: 'var(--text-muted)' }}>{c.unidad ?? '—'}</td>
+                  <td style={{ ...tdOT, textAlign: 'right' }}>{Number(c.cantidad).toLocaleString('es-MX', { maximumFractionDigits: 4 })}</td>
+                  <td style={{ ...tdOT, textAlign: 'right' }}>${Number(c.costo_unitario).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                  <td style={{ ...tdOT, textAlign: 'right', fontWeight: 600 }}>${(Number(c.cantidad) * Number(c.costo_unitario)).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                  <td style={tdOT}><button className="btn-ghost" style={{ padding: 2 }} onClick={() => removeConcepto(i)}><X size={11} /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {costoConceptosTotal > 0 && (
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#0f766e', textAlign: 'right', marginBottom: 8 }}>
+            Total: ${costoConceptosTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+          </div>
+        )}
+        {/* Buscar y agregar concepto */}
+        <div style={{ background: '#fafafa', border: '1px solid #e2e8f0', borderRadius: 6, padding: 10 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Buscar concepto (código o descripción)</div>
+              <input className="input" style={{ fontSize: 11 }} placeholder="Buscar en catálogo de conceptos…"
+                value={formConcepto.search}
+                onChange={e => setFormConcepto((f: any) => ({ ...f, search: e.target.value, id_concepto_fk: null }))} />
+              {conceptoResults.length > 0 && (
+                <div className="card" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, maxHeight: 180, overflowY: 'auto', padding: '4px 0' }}>
+                  {conceptoResults.map(c => (
+                    <button key={c.id} onClick={() => selectConcepto(c)}
+                      style={{ display: 'flex', width: '100%', textAlign: 'left', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                      <span style={{ color: '#0f766e', fontWeight: 600, minWidth: 60 }}>{c.codigo}</span>
+                      <span style={{ flex: 1 }}>{c.descripcion}</span>
+                      <span style={{ color: 'var(--text-muted)' }}>${Number(c.pu_venta ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}/{c.unidad}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchingConcepto && <Loader size={11} className="animate-spin" style={{ position: 'absolute', right: 8, top: 28 }} />}
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>Cantidad</div>
+              <input className="input" type="number" step="0.0001" style={{ fontSize: 11, width: 90 }} placeholder="0"
+                value={formConcepto.cantidad} onChange={e => setFormConcepto((f: any) => ({ ...f, cantidad: e.target.value }))} />
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 3 }}>PU</div>
+              <input className="input" type="number" step="0.01" style={{ fontSize: 11, width: 90 }} placeholder="0.00"
+                value={formConcepto.costo_unitario} onChange={e => setFormConcepto((f: any) => ({ ...f, costo_unitario: e.target.value }))} />
+            </div>
+            <button className="btn-primary" style={{ padding: '6px 12px', fontSize: 11 }} onClick={addConcepto}
+              disabled={!formConcepto.id_concepto_fk || !formConcepto.cantidad}>
+              <Plus size={11} /> Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Explosión de insumos */}
+      {conceptosOT.length > 0 && (
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Boxes size={11} /> Explosión de Insumos
+            {explosionLoading && <Loader size={10} className="animate-spin" />}
+          </div>
+          {explosion.length === 0 && !explosionLoading ? (
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 0' }}>
+              Los conceptos elegidos no tienen insumos capturados en su matriz de PU.
+            </div>
+          ) : (
+            (['mano_obra', 'material', 'equipo', 'herramienta_menor'] as const).map(tipo => {
+              const list = byTipo(tipo)
+              if (list.length === 0) return null
+              const tc = TIPO_INSUMO_STYLE[tipo]
+              const subtotal = list.reduce((s, e) => s + e.importe, 0)
+              return (
+                <div key={tipo} style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.bg, color: tc.color }}>{tc.label}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Subtotal: <strong>${subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></span>
+                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc' }}>
+                        <th style={{ ...thOT, textAlign: 'left' }}>Insumo</th>
+                        <th style={thOT}>Unidad</th>
+                        <th style={{ ...thOT, textAlign: 'right' }}>Cantidad</th>
+                        <th style={{ ...thOT, textAlign: 'right' }}>Costo Unit.</th>
+                        <th style={{ ...thOT, textAlign: 'right' }}>Importe</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {list.map((e, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={tdOT}>{e.descripcion}</td>
+                          <td style={{ ...tdOT, textAlign: 'center', color: 'var(--text-muted)' }}>{e.unidad ?? '—'}</td>
+                          <td style={{ ...tdOT, textAlign: 'right' }}>{e.cantidad.toLocaleString('es-MX', { maximumFractionDigits: 4 })}</td>
+                          <td style={{ ...tdOT, textAlign: 'right' }}>${(e.cantidad > 0 ? e.importe / e.cantidad : 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                          <td style={{ ...tdOT, textAlign: 'right', fontWeight: 600 }}>${e.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            })
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const thOT: React.CSSProperties = { padding: '5px 8px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8', whiteSpace: 'nowrap', textAlign: 'center' }
+const tdOT: React.CSSProperties = { padding: '5px 8px', verticalAlign: 'middle' }
 
 // ── OTDetail ───────────────────────────────────────────────────
 function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }: {
@@ -684,6 +993,8 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
   const [manoObra,    setManoObra]   = useState<any[]>([])
   const [catMO,       setCatMO]      = useState<Record<number, string>>({})
   const [evidencias,  setEvidencias] = useState<any[]>([])
+  const [conceptos,   setConceptos]  = useState<any[]>([])
+  const [explosion,   setExplosion]  = useState<any[]>([])
   const [loading,     setLoading]    = useState(true)
   const [uploadingAntes,   setUploadingAntes]   = useState(false)
   const [uploadingDespues, setUploadingDespues] = useState(false)
@@ -696,11 +1007,12 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
 
   const fetchDetalle = useCallback(async () => {
     setLoading(true)
-    const [{ data: rec }, { data: mo }, { data: ev }, { data: cats }] = await Promise.all([
+    const [{ data: rec }, { data: mo }, { data: ev }, { data: cats }, { data: conc }] = await Promise.all([
       dbCtrl.from('ot_recursos').select('*').eq('id_ot_fk', ot.id).order('id'),
       dbCtrl.from('ot_mano_obra').select('*').eq('id_ot_fk', ot.id).order('id'),
       dbCtrl.from('ot_evidencias').select('*').eq('id_ot_fk', ot.id).order('created_at'),
       dbCfg.from('cat_categorias_mano_obra').select('id, categoria, costo_hora_referencia').eq('activo', true),
+      dbCtrl.from('ot_conceptos').select('*').eq('id_ot_fk', ot.id).order('orden').order('id'),
     ])
     setRecursos(rec ?? [])
     setManoObra(mo ?? [])
@@ -708,13 +1020,16 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
     ;(cats ?? []).forEach((c: any) => { m[c.id] = c.categoria })
     setCatMO(m)
     setEvidencias(ev ?? [])
+    setConceptos(conc ?? [])
+    setExplosion(await explotarInsumos(conc ?? []))
     setLoading(false)
   }, [ot.id])
 
   useEffect(() => { fetchDetalle() }, [fetchDetalle])
 
-  const costoRecursos = recursos.reduce((a, r) => a + Number(r.costo || 0), 0)
-  const costoTotal    = costoRecursos
+  const costoRecursos  = recursos.reduce((a, r) => a + Number(r.costo || 0), 0)
+  const costoConceptos = conceptos.reduce((a, c) => a + Number(c.cantidad || 0) * Number(c.costo_unitario || 0), 0)
+  const costoTotal     = ot.por_conceptos ? costoConceptos : costoRecursos
 
   const cambiarStatus = async (nuevoStatus: string) => {
     setUpdatingStatus(true)
@@ -814,7 +1129,41 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
         </tr>`
       : ''
 
-    const costoGranTotal = costoMOTotal + costoRecTotal
+    const TIPO_INSUMO_LABEL: Record<string, string> = {
+      mano_obra: 'Mano de Obra', material: 'Material', equipo: 'Equipo', herramienta_menor: 'Herramienta Menor',
+    }
+    const conceptoRows = conceptos.map(c => `<tr>
+        <td>${c.codigo ?? '—'}</td>
+        <td>${c.descripcion}</td>
+        <td style="text-align:center">${c.unidad ?? '—'}</td>
+        <td style="text-align:right">${Number(c.cantidad).toLocaleString('es-MX', { maximumFractionDigits: 4 })}</td>
+        <td style="text-align:right">$${Number(c.costo_unitario).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+        <td style="text-align:right">$${(Number(c.cantidad) * Number(c.costo_unitario)).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      </tr>`).join('')
+    const costoConceptosHtml = costoConceptos > 0
+      ? `<tr style="background:#f0fdfa;font-weight:700">
+          <td colspan="5" style="color:#0f766e">TOTAL CONCEPTOS</td>
+          <td style="text-align:right;color:#0f766e">$${costoConceptos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+        </tr>`
+      : ''
+
+    const explosionRowsHtml = explosion.map(e => `<tr>
+        <td>${TIPO_INSUMO_LABEL[e.tipo] ?? e.tipo}</td>
+        <td>${e.descripcion}</td>
+        <td style="text-align:center">${e.unidad ?? '—'}</td>
+        <td style="text-align:right">${e.cantidad.toLocaleString('es-MX', { maximumFractionDigits: 4 })}</td>
+        <td style="text-align:right">$${(e.cantidad > 0 ? e.importe / e.cantidad : 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+        <td style="text-align:right">$${e.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+      </tr>`).join('')
+    const explosionTotal = explosion.reduce((a, e) => a + e.importe, 0)
+    const explosionTotalHtml = explosionTotal > 0
+      ? `<tr style="background:#f1f5f9;font-weight:700">
+          <td colspan="5">TOTAL INSUMOS (COSTO DIRECTO)</td>
+          <td style="text-align:right">$${explosionTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+        </tr>`
+      : ''
+
+    const costoGranTotal = ot.por_conceptos ? costoConceptos : (costoMOTotal + costoRecTotal)
     const granTotalHtml = costoGranTotal > 0
       ? `<tr style="background:#0D4F80;color:#fff;font-weight:700;font-size:13px;">
           <td colspan="3">COSTO TOTAL DE LA OT</td>
@@ -908,6 +1257,26 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
         </tbody>
       </table>` : ''}
 
+      ${ot.por_conceptos && conceptos.length > 0 ? `
+      <h2 style="color:#0f766e;border-bottom-color:#99f6e4;">Conceptos</h2>
+      <table>
+        <thead><tr><th>Código</th><th>Concepto</th><th>Unidad</th><th style="text-align:right">Cantidad</th><th style="text-align:right">PU</th><th style="text-align:right">Importe</th></tr></thead>
+        <tbody>
+          ${conceptoRows}
+          ${costoConceptosHtml}
+        </tbody>
+      </table>` : ''}
+
+      ${ot.por_conceptos && explosion.length > 0 ? `
+      <h2>Explosión de Insumos</h2>
+      <table>
+        <thead><tr><th>Tipo</th><th>Insumo</th><th>Unidad</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Costo Unit.</th><th style="text-align:right">Importe</th></tr></thead>
+        <tbody>
+          ${explosionRowsHtml}
+          ${explosionTotalHtml}
+        </tbody>
+      </table>` : ''}
+
       ${costoGranTotal > 0 ? `
       <table style="margin-top:6px;">
         <tbody>${granTotalHtml}</tbody>
@@ -992,7 +1361,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
             </div>
           )}
 
-          {!loading && recursos.length > 0 && (
+          {!loading && !ot.por_conceptos && recursos.length > 0 && (
             <div>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Recursos</div>
               <div className="card" style={{ overflow: 'hidden' }}>
@@ -1008,15 +1377,82 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
                         </td>
                       </tr>
                     ))}
-                    {costoTotal > 0 && (
+                    {costoRecursos > 0 && (
                       <tr style={{ background: 'var(--blue-pale)', fontWeight: 700 }}>
                         <td colSpan={2} style={{ color: 'var(--blue)' }}>TOTAL</td>
-                        <td style={{ textAlign: 'right', color: 'var(--blue)' }}>${costoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                        <td style={{ textAlign: 'right', color: 'var(--blue)' }}>${costoRecursos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {!loading && ot.por_conceptos && conceptos.length > 0 && (
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#0f766e', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <ClipboardList size={11} /> Conceptos
+              </div>
+              <div className="card" style={{ overflow: 'hidden' }}>
+                <table>
+                  <thead><tr><th>Código</th><th>Concepto</th><th style={{ textAlign: 'right' }}>Cantidad</th><th style={{ textAlign: 'right' }}>PU</th><th style={{ textAlign: 'right' }}>Importe</th></tr></thead>
+                  <tbody>
+                    {conceptos.map(c => (
+                      <tr key={c.id}>
+                        <td style={{ fontSize: 12 }}>{c.codigo ?? '—'}</td>
+                        <td style={{ fontSize: 13 }}>{c.descripcion}</td>
+                        <td style={{ textAlign: 'right', fontSize: 12 }}>{Number(c.cantidad).toLocaleString('es-MX', { maximumFractionDigits: 4 })}</td>
+                        <td style={{ textAlign: 'right', fontSize: 12 }}>${Number(c.costo_unitario).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                        <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600 }}>${(Number(c.cantidad) * Number(c.costo_unitario)).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    ))}
+                    {costoConceptos > 0 && (
+                      <tr style={{ background: '#f0fdfa', fontWeight: 700 }}>
+                        <td colSpan={4} style={{ color: '#0f766e' }}>TOTAL</td>
+                        <td style={{ textAlign: 'right', color: '#0f766e' }}>${costoConceptos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {explosion.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Boxes size={11} /> Explosión de Insumos
+                  </div>
+                  {(['mano_obra', 'material', 'equipo', 'herramienta_menor'] as const).map(tipo => {
+                    const list = explosion.filter(e => e.tipo === tipo)
+                    if (list.length === 0) return null
+                    const tc = TIPO_INSUMO_STYLE[tipo]
+                    const subtotal = list.reduce((s, e) => s + e.importe, 0)
+                    return (
+                      <div key={tipo} style={{ marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.bg, color: tc.color }}>{tc.label}</span>
+                          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Subtotal: <strong>${subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></span>
+                        </div>
+                        <div className="card" style={{ overflow: 'hidden' }}>
+                          <table>
+                            <thead><tr><th>Insumo</th><th style={{ textAlign: 'right' }}>Cantidad</th><th style={{ textAlign: 'right' }}>Costo Unit.</th><th style={{ textAlign: 'right' }}>Importe</th></tr></thead>
+                            <tbody>
+                              {list.map((e, i) => (
+                                <tr key={i}>
+                                  <td style={{ fontSize: 12 }}>{e.descripcion}</td>
+                                  <td style={{ textAlign: 'right', fontSize: 12 }}>{e.cantidad.toLocaleString('es-MX', { maximumFractionDigits: 4 })}</td>
+                                  <td style={{ textAlign: 'right', fontSize: 12 }}>${(e.cantidad > 0 ? e.importe / e.cantidad : 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                  <td style={{ textAlign: 'right', fontSize: 12, fontWeight: 600 }}>${e.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
