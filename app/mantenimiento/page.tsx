@@ -1,25 +1,49 @@
 'use client'
 import {
   Wrench, Truck, Hammer, Building2, ChevronRight, ClipboardList,
+  ClipboardCheck, ListChecks, Zap,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
 
-const MODULOS = [
-  { key: 'mantenimiento', permKey: 'mantenimiento', label: 'Mantenimiento',          icon: Wrench,        color: '#b45309', desc: 'Programa anual, órdenes de trabajo y servicios',    href: '/mantenimiento/gestion' },
-  { key: 'conceptos',     permKey: 'mantenimiento', label: 'Catálogo de Conceptos',  icon: ClipboardList, color: '#0f766e', desc: 'Conceptos de obra/mantenimiento y matriz de PU',     href: '/mantenimiento/conceptos' },
-  { key: 'equipo-flota',  permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria', icon: Truck,         color: '#0891b2', desc: 'Flotilla, mantenimientos y bitácora de uso',         href: '/equipo-flota'  },
-  { key: 'herramientas',  permKey: 'herramientas',  label: 'Equipo y Herramienta',   icon: Hammer,        color: '#7c3aed', desc: 'Catálogo, préstamos y mantenimiento de herramienta', href: '/herramientas'  },
-  { key: 'capex',         permKey: 'capex',         label: 'Proyectos CAPEX',        icon: Building2,     color: '#059669', desc: 'Avance y presupuesto de proyectos de inversión',     href: '/capex'         },
+const GRUPOS = [
+  {
+    label: 'Mantenimiento',
+    color: '#b45309',
+    items: [
+      { key: 'mantenimiento',  permKey: 'mantenimiento', label: 'Mantenimiento',           icon: Wrench,        desc: 'Programa anual de mantenimiento preventivo',          href: '/mantenimiento/gestion' },
+      { key: 'ot-residencial', permKey: 'mantenimiento', label: 'OT Mantto. Residencial',  icon: ClipboardList, desc: 'Órdenes de trabajo del mantenimiento residencial',    href: '/mantenimiento/ot-residencial' },
+      { key: 'ot-generales',   permKey: 'mantenimiento', label: "OT's Generales",          icon: ClipboardCheck, desc: 'Órdenes de trabajo de la cuadrilla general',          href: '/mantenimiento/ot-generales' },
+      { key: 'equipo-flota',   permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria',  icon: Truck,         desc: 'Flotilla, mantenimientos y bitácora de uso',           href: '/equipo-flota' },
+      { key: 'herramientas',   permKey: 'herramientas',  label: 'Equipo y Herramienta',    icon: Hammer,        desc: 'Catálogo, préstamos y mantenimiento de herramienta',   href: '/herramientas' },
+    ],
+  },
+  {
+    label: 'Capex',
+    color: '#059669',
+    items: [
+      { key: 'conceptos', permKey: 'mantenimiento', label: 'Catálogo de Conceptos', icon: ListChecks, desc: 'Conceptos de obra/mantenimiento y matriz de PU',   href: '/mantenimiento/conceptos' },
+      { key: 'capex',     permKey: 'capex',         label: 'Proyectos CAPEX',       icon: Building2,  desc: 'Avance y presupuesto de proyectos de inversión',    href: '/capex' },
+    ],
+  },
+  {
+    label: 'Servicios',
+    color: '#0891b2',
+    items: [
+      { key: 'servicios', permKey: 'mantenimiento', label: 'Servicios', icon: Zap, desc: 'Medidores de CFE y Agua: consumo y facturación', href: '/mantenimiento/servicios' },
+    ],
+  },
 ]
 
 export default function OperacionesPage() {
   const { can } = useAuth()
   const router  = useRouter()
 
-  const visibles = MODULOS.filter(m => can(m.permKey))
+  const gruposVisibles = GRUPOS
+    .map(g => ({ ...g, items: g.items.filter(m => can(m.permKey)) }))
+    .filter(g => g.items.length > 0)
 
-  if (visibles.length === 0) {
+  if (gruposVisibles.length === 0) {
     return (
       <div style={{ padding: '48px 36px', textAlign: 'center', color: 'var(--text-muted)' }}>
         Sin acceso a módulos de operaciones.
@@ -42,27 +66,37 @@ export default function OperacionesPage() {
         </div>
       </div>
 
-      {/* Grid de módulos */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-        {visibles.map(m => {
-          const Icon = m.icon
-          return (
-            <button key={m.key}
-              onClick={() => router.push(m.href)}
-              className="card card-hover"
-              style={{ padding: '18px 20px', textAlign: 'left', background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: m.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon size={18} style={{ color: m.color }} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
-              </div>
-              <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
-            </button>
-          )
-        })}
-      </div>
+      {/* Grupos */}
+      {gruposVisibles.map(grupo => (
+        <div key={grupo.label} style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <div style={{ width: 4, height: 16, borderRadius: 2, background: grupo.color }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: grupo.color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              {grupo.label}
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
+            {grupo.items.map(m => {
+              const Icon = m.icon
+              return (
+                <button key={m.key}
+                  onClick={() => router.push(m.href)}
+                  className="card card-hover"
+                  style={{ padding: '18px 20px', textAlign: 'left', background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: grupo.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={18} style={{ color: grupo.color }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{m.label}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{m.desc}</div>
+                  </div>
+                  <ChevronRight size={14} style={{ color: '#cbd5e1', flexShrink: 0 }} />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

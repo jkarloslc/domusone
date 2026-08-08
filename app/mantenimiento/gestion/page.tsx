@@ -4,11 +4,9 @@ import { dbCtrl, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Eye, X, Save, Loader,
-  Calendar, Edit2, Trash2, ChevronLeft, ChevronRight,
-  ClipboardList, Wrench, Zap, User, Search, ChevronDown
+  Edit2, Trash2, ChevronLeft, ChevronRight,
+  Wrench, User, Search, ChevronDown
 } from 'lucide-react'
-import OrdenesTrabajoTab from './OrdenesTrabajoTab'
-import ServiciosTab from './ServiciosTab'
 import ModalShell from '@/components/ui/ModalShell'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import { FRECUENCIAS, startOfDay, addDays, toISODate, getSemana, estaActivoEnFecha, proximasFechas } from '@/lib/mantProgramas'
@@ -52,7 +50,6 @@ const fmtDate = (d: string | Date) => {
 // ═══════════════════════════════════════════════════════════════
 export default function MantenimientoPage() {
   const { authUser, canWrite, canDelete } = useAuth()
-  const [tab,          setTab]        = useState<'programa' | 'ordenes' | 'ordenes_cuadrilla' | 'servicios'>('programa')
   const [innerTab,     setInnerTab]   = useState<'ejecucion' | 'programas'>('ejecucion')
   const [programas,    setProgramas]  = useState<any[]>([])
   const [cuadrantes,    setCuadrantes]    = useState<any[]>([])
@@ -286,42 +283,17 @@ export default function MantenimientoPage() {
         <div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Mantenimiento</h1>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-            Programa anual · Órdenes de trabajo · {filterAnio}
+            Programa anual de mantenimiento · {filterAnio}
           </p>
         </div>
-        {tab === 'programa' && innerTab === 'programas' && canWrite('mantenimiento') && (
+        {innerTab === 'programas' && canWrite('mantenimiento') && (
           <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
             <Plus size={14} /> Nuevo Programa
           </button>
         )}
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
-        {([
-          { key: 'programa',          label: 'Programa Anual', icon: <Calendar size={13} /> },
-          { key: 'ordenes',           label: 'OT Mantto. Res', icon: <ClipboardList size={13} /> },
-          { key: 'ordenes_cuadrilla', label: "OT's Generales",   icon: <Wrench size={13} /> },
-          { key: 'servicios',         label: 'Servicios',      icon: <Zap size={13} /> },
-        ] as const).map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
-              background: 'none', border: 'none', cursor: 'pointer', fontSize: 13,
-              fontWeight: tab === t.key ? 600 : 400,
-              color: tab === t.key ? 'var(--blue)' : 'var(--text-muted)',
-              borderBottom: tab === t.key ? '2px solid var(--blue)' : '2px solid transparent',
-              marginBottom: -1 }}>
-            {t.icon}{t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'ordenes'           && <OrdenesTrabajoTab empresa="Balvanera" modulo="mantenimiento" />}
-      {tab === 'ordenes_cuadrilla' && <OrdenesTrabajoTab empresa="Cuadrilla" modulo="generales" />}
-      {tab === 'servicios'         && <ServiciosTab />}
-
-      {tab === 'programa' && (
-        <div>
+      <div>
           {/* Sub-tabs: Ejecución Semanal / Programas */}
           <div style={{ display: 'flex', gap: 2, marginBottom: 18 }}>
             {([
@@ -515,7 +487,6 @@ export default function MantenimientoPage() {
             </>
           )}
         </div>
-      )}
 
       {modal  && <ProgramaModal cuadrantes={cuadrantes} areas={areas} areasComunes={areasComunes} areaToAcs={areaToAcs} prog={editing}
         onClose={() => setModal(false)}
