@@ -307,12 +307,15 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
             <Field label="Motivo (detalle)">
               <textarea className="input" rows={2} value={form.motivo_detalle} onChange={set('motivo_detalle')} style={{ resize: 'vertical' }} />
             </Field>
-            <Field label="Pertenece a Asociación de Condóminos">
-              <select className="select" value={form.pertenece_asociacion ? 'Sí' : 'No'} onChange={setBool('pertenece_asociacion')}>
-                <option value="No">No</option>
-                <option value="Sí">Sí</option>
-              </select>
-            </Field>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
+              <input
+                type="checkbox"
+                checked={form.pertenece_asociacion}
+                onChange={e => setForm(f => ({ ...f, pertenece_asociacion: e.target.checked }))}
+                style={{ width: 16, height: 16, cursor: 'pointer' }}
+              />
+              Pertenece a Asociación de Condóminos (AC)
+            </label>
           </Section>
 
           <Section label="Plan de Pago">

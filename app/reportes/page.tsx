@@ -54,6 +54,7 @@ import ReportePropietariosDesgloseLotes from './ReportePropietariosDesgloseLotes
 import ReporteLotesPorStatus from './ReporteLotesPorStatus'
 import ReporteSeccionesLotes from './ReporteSeccionesLotes'
 import ReporteCobranzaCorrienteVencida from './ReporteCobranzaCorrienteVencida'
+import ReporteLotesAsociacion from './ReporteLotesAsociacion'
 
 const GRUPOS = [
   {
@@ -69,6 +70,7 @@ const GRUPOS = [
       { id: 'lotes-resumen-clasif',   label: 'Resumen por Sección y Clasificación', icon: MapPin, desc: 'Tabla resumen sin desglose: una fila por clasificación dentro de cada sección, con subtotales y total general' },
       { id: 'propietarios-desglose',  label: 'Propietarios — Desglose de Lotes',   icon: Users, desc: 'Informe jerárquico: Propietario → Sección → Clasificación → Lote, con superficie, status y valor' },
       { id: 'lotes-por-status',       label: 'Lotes por Status',                   icon: MapPin, desc: 'Lotes agrupados por status (Vendido / Libre / Bloqueado) con conteo, % y totales de superficie y valor' },
+      { id: 'lotes-asociacion',       label: 'Lotes por Asociación de Condóminos', icon: MapPin, desc: 'Catálogo de lotes filtrable por si pertenecen o no a la Asociación de Condóminos (AC)' },
       { id: 'lotes-propietarios',   label: 'Lotes y Propietarios',       icon: Users,         desc: 'Relación de lotes con su propietario asignado' },
       { id: 'propietarios',         label: 'Directorio de Propietarios', icon: Users,         desc: 'Datos completos de todos los propietarios' },
       { id: 'incidencias',          label: 'Incidencias por Lote',       icon: AlertTriangle, desc: 'Historial de incidencias filtrado por lote' },
@@ -272,6 +274,7 @@ function ReportesContent() {
       {active === 'lotes-resumen-clasif'  && <ReporteLotesResumenClasif />}
       {active === 'propietarios-desglose' && <ReportePropietariosDesgloseLotes />}
       {active === 'lotes-por-status'      && <ReporteLotesPorStatus />}
+      {active === 'lotes-asociacion'      && <ReporteLotesAsociacion />}
       {active === 'lotes-propietarios'   && <ReporteLotesPropietarios />}
       {active === 'propietarios'         && <ReportePropietarios />}
       {active === 'incidencias'          && <ReporteIncidencias />}
