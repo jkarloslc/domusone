@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase, dbGolf } from '@/lib/supabase'
 import TabCobranzaSocio from './TabCobranzaSocio'
 import TabRecibosSocio from './TabRecibosSocio'
-import { X, Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt, Edit2 } from 'lucide-react'
+import { X, Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt, Edit2, Printer } from 'lucide-react'
 
 export type Socio = {
   id: number
@@ -21,6 +21,8 @@ export type Socio = {
   curp: string | null
   numero_tarjeta: string | null
   nacionalidad: string | null
+  lugar_nacimiento: string | null
+  domicilio: string | null
   activo: boolean
   derecho_intercambios?: boolean
   observaciones: string | null
@@ -56,6 +58,8 @@ type Contrato = {
   fecha_inicio: string | null
   fecha_fin: string | null
   monto: number | null
+  monto_inscripcion: number | null
+  monto_anual: number | null
   vigente: boolean
   archivo_url: string | null
   notas: string | null
@@ -81,7 +85,8 @@ type ContratoForm = {
   anio: string
   fecha_inicio: string
   fecha_fin: string
-  monto: string
+  monto_inscripcion: string
+  monto_anual: string
   notas: string
 }
 
@@ -89,7 +94,8 @@ const CONTRATO_VACIO: ContratoForm = {
   anio: String(new Date().getFullYear()),
   fecha_inicio: '',
   fecha_fin: '',
-  monto: '',
+  monto_inscripcion: '',
+  monto_anual: '',
   notas: '',
 }
 
@@ -204,6 +210,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const fileConRef = useRef<HTMLInputElement>(null)
   const [uploadingCon, setUploadingCon] = useState(false)
   const [archivoConUrl, setArchivoConUrl] = useState('')
+  const [contratoImprimirId, setContratoImprimirId] = useState<number | ''>('')
 
   // ── Federación ──
   const [federaciones, setFederaciones]         = useState<Federacion[]>([])
@@ -247,6 +254,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     curp:              socio?.curp              ?? '',
     numero_tarjeta:    socio?.numero_tarjeta    ?? '',
     nacionalidad:      socio?.nacionalidad      ?? 'Mexicana',
+    lugar_nacimiento:  socio?.lugar_nacimiento  ?? '',
+    domicilio:         socio?.domicilio         ?? '',
     activo:                 socio?.activo                ?? true,
     derecho_intercambios:   socio?.derecho_intercambios  ?? false,
     observaciones:          socio?.observaciones         ?? '',
@@ -294,7 +303,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     setLoadingCon(true)
     const { data } = await dbGolf
       .from('ctrl_contratos_membresia')
-      .select('id, id_socio_fk, anio, fecha_inicio, fecha_fin, monto, vigente, archivo_url, notas, created_at')
+      .select('id, id_socio_fk, anio, fecha_inicio, fecha_fin, monto, monto_inscripcion, monto_anual, vigente, archivo_url, notas, created_at')
       .eq('id_socio_fk', socio.id)
       .order('anio', { ascending: false })
     setContratos((data as Contrato[]) ?? [])
@@ -302,8 +311,16 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   }
 
   useEffect(() => {
-    if (tab === 4 && !isNew) fetchContratos()
+    if ((tab === 1 || tab === 4) && !isNew) fetchContratos()
   }, [tab])
+
+  // Preselecciona el contrato vigente (o el más reciente) para imprimir
+  useEffect(() => {
+    if (contratos.length === 0) { setContratoImprimirId(''); return }
+    setContratoImprimirId(prev =>
+      prev && contratos.some(c => c.id === prev) ? prev : (contratos.find(c => c.vigente) ?? contratos[0]).id
+    )
+  }, [contratos])
 
   // ── Federación ──
   const fetchFederaciones = async () => {
@@ -435,6 +452,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       curp:               form.curp              || null,
       numero_tarjeta:      form.numero_tarjeta        || null,
       nacionalidad:        form.nacionalidad          || null,
+      lugar_nacimiento:    form.lugar_nacimiento     || null,
+      domicilio:           form.domicilio             || null,
       activo:               form.activo,
       derecho_intercambios: (form as any).derecho_intercambios ?? false,
       observaciones:        form.observaciones         || null,
@@ -516,7 +535,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       anio:         Number(nuevoCon.anio),
       fecha_inicio: nuevoCon.fecha_inicio || null,
       fecha_fin:    nuevoCon.fecha_fin    || null,
-      monto:        nuevoCon.monto        ? Number(nuevoCon.monto) : null,
+      monto_inscripcion: nuevoCon.monto_inscripcion ? Number(nuevoCon.monto_inscripcion) : null,
+      monto_anual:       nuevoCon.monto_anual       ? Number(nuevoCon.monto_anual)       : null,
       vigente:      false,
       archivo_url:  archivoConUrl         || null,
       notas:        nuevoCon.notas        || null,
@@ -576,6 +596,33 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     await dbGolf.from('ctrl_contratos_membresia').delete().eq('id', id)
     setEliminandoCon(null)
     fetchContratos()
+  }
+
+  // ── Imprimir contrato de membresía (ciclo seleccionado) ──
+  const handleImprimirContrato = () => {
+    if (!socio || !contratoImprimirId) return
+    const contrato = contratos.find(c => c.id === contratoImprimirId)
+    if (!contrato) return
+    const categoriaNombre = categorias.find(c => c.id === form.id_categoria_fk)?.nombre
+      ?? socio.cat_categorias_socios?.nombre ?? ''
+    const data = {
+      membresia:          categoriaNombre,
+      nombre:             [form.nombre, form.apellido_paterno, form.apellido_materno].filter(Boolean).join(' '),
+      lugar_nacimiento:   form.lugar_nacimiento || '',
+      fecha_nacimiento:   form.fecha_nacimiento || '',
+      curp:               form.curp || '',
+      domicilio:          form.domicilio || '',
+      telefono:           form.telefono || '',
+      email:              form.email || '',
+      anio:               contrato.anio,
+      fecha_inicio:       contrato.fecha_inicio,
+      fecha_fin:          contrato.fecha_fin,
+      fecha_firma:        contrato.fecha_inicio,
+      monto_inscripcion:  contrato.monto_inscripcion,
+      monto_anual:        contrato.monto_anual,
+    }
+    const encoded = encodeURIComponent(JSON.stringify(data))
+    window.open(`/contrato-membresia.html?data=${encoded}`, '_blank')
   }
 
   // ── Datos Fiscales CRUD ──
@@ -774,6 +821,10 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                   <input style={inputStyle} type="date" value={form.fecha_nacimiento} onChange={e => set('fecha_nacimiento', e.target.value)} />
                 </div>
                 <div>
+                  <label style={labelStyle}>Lugar de Nacimiento</label>
+                  <input style={inputStyle} value={form.lugar_nacimiento} onChange={e => set('lugar_nacimiento', e.target.value)} placeholder="Ciudad, Estado" />
+                </div>
+                <div>
                   <label style={labelStyle}>RFC</label>
                   <input style={inputStyle} value={form.rfc} onChange={e => set('rfc', e.target.value.toUpperCase())} placeholder="XXXX000000XXX" />
                 </div>
@@ -792,6 +843,10 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                 <div>
                   <label style={labelStyle}>Email</label>
                   <input style={inputStyle} type="email" value={form.email} onChange={e => set('email', e.target.value)} />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={labelStyle}>Domicilio</label>
+                  <input style={inputStyle} value={form.domicilio} onChange={e => set('domicilio', e.target.value)} placeholder="Calle, número, colonia, ciudad" />
                 </div>
               </div>
             </div>
@@ -841,6 +896,41 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                   </div>
                 </div>
               </div>
+
+              {!isNew && (
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <Printer size={15} style={{ color: '#7c3aed' }} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Contrato de membresía</span>
+                  </div>
+                  {loadingCon ? (
+                    <div style={{ fontSize: 12, color: '#94a3b8' }}>Cargando ciclos…</div>
+                  ) : contratos.length === 0 ? (
+                    <div style={{ fontSize: 12, color: '#64748b' }}>
+                      Este socio no tiene contratos registrados. Ve a la pestaña <b>Contratos</b> para agregar el ciclo.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+                      <div style={{ flex: '0 0 auto' }}>
+                        <label style={labelStyle}>Ciclo a imprimir</label>
+                        <select
+                          style={{ ...inputStyle, width: 'auto', minWidth: 160 }}
+                          value={contratoImprimirId}
+                          onChange={e => setContratoImprimirId(e.target.value ? Number(e.target.value) : '')}
+                        >
+                          {contratos.map(c => (
+                            <option key={c.id} value={c.id}>{c.anio}{c.vigente ? ' (Vigente)' : ''}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button onClick={handleImprimirContrato} disabled={!contratoImprimirId}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: contratoImprimirId ? 'pointer' : 'not-allowed', opacity: contratoImprimirId ? 1 : 0.6 }}>
+                        <Printer size={13} /> Imprimir contrato
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1054,12 +1144,16 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                       <input style={inputStyle} type="number" value={nuevoCon.anio} onChange={e => setCon('anio', e.target.value)} placeholder="2025" />
                     </div>
                     <div>
-                      <label style={labelStyle}>Monto (MXN)</label>
-                      <input style={inputStyle} type="number" value={nuevoCon.monto} onChange={e => setCon('monto', e.target.value)} placeholder="0.00" />
-                    </div>
-                    <div>
                       <label style={labelStyle}>Fecha inicio</label>
                       <input style={inputStyle} type="date" value={nuevoCon.fecha_inicio} onChange={e => setCon('fecha_inicio', e.target.value)} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Cuota de Inscripción (MXN)</label>
+                      <input style={inputStyle} type="number" value={nuevoCon.monto_inscripcion} onChange={e => setCon('monto_inscripcion', e.target.value)} placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Cuota Anual (MXN)</label>
+                      <input style={inputStyle} type="number" value={nuevoCon.monto_anual} onChange={e => setCon('monto_anual', e.target.value)} placeholder="0.00" />
                     </div>
                     <div>
                       <label style={labelStyle}>Fecha fin</label>
@@ -1134,7 +1228,8 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                         <div style={{ fontSize: 11, color: '#64748b', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
                           {c.fecha_inicio && <span>{new Date(c.fecha_inicio + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                           {c.fecha_fin && <span>→ {new Date(c.fecha_fin + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
-                          {c.monto != null && <span style={{ color: '#16a34a', fontWeight: 600 }}>${Number(c.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>}
+                          {c.monto_inscripcion != null && <span style={{ color: '#16a34a', fontWeight: 600 }}>Inscripción: ${Number(c.monto_inscripcion).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>}
+                          {c.monto_anual != null && <span style={{ color: '#16a34a', fontWeight: 600 }}>Anual: ${Number(c.monto_anual).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>}
                           {c.archivo_url && (
                             <ContratoLink path={c.archivo_url} />
                           )}
