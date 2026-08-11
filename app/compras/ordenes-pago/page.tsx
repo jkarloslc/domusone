@@ -33,6 +33,15 @@ const URGENCIA_COLOR: Record<string, string> = {
   'Baja':    '#64748b',
 }
 
+// Mismos colores que app/equipo-flota/CombustibleTab.tsx (VALE_STATUS_STYLE)
+const VALE_STATUS_COLOR: Record<string, { color: string; bg: string; border: string }> = {
+  'Solicitado': { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
+  'Emitido':    { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+  'Parcial':    { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  'Completado': { color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  'Cancelado':  { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+}
+
 export default function OrdenesPagoPage() {
   const { canWrite } = useAuth()
   const router = useRouter()
@@ -1208,6 +1217,14 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [areaMap, setAreaMap]     = useState<Record<number, string>>({})
   const [areaCcMap, setAreaCcMap] = useState<Record<number, number>>({})
   const [frMap,  setFrMap]        = useState<Record<number, string>>({})
+  const [equiposMap, setEquiposMap] = useState<Record<number, string>>({})
+  const [valesComb, setValesComb] = useState<any[]>([])
+  const [eventosRel, setEventosRel] = useState<any[]>([])
+  const [bitacorasRel, setBitacorasRel] = useState<any[]>([])
+  const [vigilanciaRel, setVigilanciaRel] = useState<any[]>([])
+  const [reembolsoRel, setReembolsoRel] = useState<any | null>(null)
+  const [servicioCat, setServicioCat] = useState<any | null>(null)
+  const [servicioRegistros, setServicioRegistros] = useState<any[]>([])
   const [abonos, setAbonos]       = useState<any[]>([])
   const [loadingAbonos, setLoadingAbonos] = useState(true)
   const [authComment, setAuthCom] = useState('')
@@ -1292,18 +1309,20 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
       .then(({ data }) => setOcsRel(data ?? []))
     dbComp.from('ordenes_pago_det').select('*').eq('id_op_fk', op.id).order('id')
       .then(({ data }) => setDetLinesView(data ?? []))
-    // Cargar catálogos para CC/Área/Frente
+    // Cargar catálogos para CC/Área/Frente/Equipos
     import('@/lib/supabase').then(({ dbCfg }) => {
       Promise.all([
         dbCfg.from('centros_costo').select('id, nombre'),
         dbCfg.from('areas').select('id, nombre, id_centro_costo_fk'),
         dbCfg.from('frentes').select('id, nombre'),
-      ]).then(([{ data: cc }, { data: ar }, { data: fr }]) => {
+        dbCfg.from('equipos').select('id, nombre, placa'),
+      ]).then(([{ data: cc }, { data: ar }, { data: fr }, { data: eq }]) => {
         const cm: Record<number, string> = {}; (cc ?? []).forEach((r: any) => { cm[r.id] = r.nombre })
         const am: Record<number, string> = {}; (ar ?? []).forEach((r: any) => { am[r.id] = r.nombre })
         const acm: Record<number, number> = {}; (ar ?? []).forEach((r: any) => { if (r.id_centro_costo_fk) acm[r.id] = r.id_centro_costo_fk })
         const fm: Record<number, string> = {}; (fr ?? []).forEach((r: any) => { fm[r.id] = r.nombre })
-        setCcMap(cm); setAreaMap(am); setAreaCcMap(acm); setFrMap(fm)
+        const em: Record<number, string> = {}; (eq ?? []).forEach((r: any) => { em[r.id] = r.placa ? `${r.nombre} (${r.placa})` : r.nombre })
+        setCcMap(cm); setAreaMap(am); setAreaCcMap(acm); setFrMap(fm); setEquiposMap(em)
       })
     })
 
@@ -1311,6 +1330,48 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     dbComp.from('cxp_abonos').select('*').eq('id_op_fk', op.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => { setAbonos(data ?? []); setLoadingAbonos(false) })
+
+    // Vales de combustible pagados con esta OP
+    dbCtrl.from('vales_combustible').select('*').eq('id_op_fk', op.id).order('id')
+      .then(({ data }) => setValesComb(data ?? []))
+
+    // Eventos (Hospitality / Torneos Golf / Eventos Ecuestres) vinculados a esta OP
+    dbCtrl.from('eventos_ops').select('id_evento_fk').eq('id_op_fk', op.id)
+      .then(async ({ data }) => {
+        const ids = Array.from(new Set((data ?? []).map((r: any) => r.id_evento_fk)))
+        if (!ids.length) { setEventosRel([]); return }
+        const { data: evs } = await dbCtrl.from('eventos').select('id, folio, nombre, modulo').in('id', ids)
+        setEventosRel(evs ?? [])
+      })
+
+    // Bitácora de Equipo & Flota (mantenimiento vehicular) vinculada a esta OP
+    dbCtrl.from('bitacora_equipo_ops').select('id_bitacora_fk, monto').eq('id_op_fk', op.id)
+      .then(async ({ data }) => {
+        const rows = data ?? []
+        if (!rows.length) { setBitacorasRel([]); return }
+        const ids = Array.from(new Set(rows.map((r: any) => r.id_bitacora_fk)))
+        const { data: bits } = await dbCtrl.from('bitacora_equipos').select('id, folio, tipo, descripcion, id_equipo_fk').in('id', ids)
+        const bm: Record<number, any> = {}; (bits ?? []).forEach((b: any) => { bm[b.id] = b })
+        setBitacorasRel(rows.map((r: any) => ({ ...r, bitacora: bm[r.id_bitacora_fk] })))
+      })
+
+    // Lote de Vigilancia Extras (Perimetrales) pagado con esta OP
+    dbCtrl.from('vigilancia_extras_lotes').select('*').eq('id_op_fk', op.id)
+      .then(({ data }) => setVigilanciaRel(data ?? []))
+
+    // Reembolso de Caja Chica que originó esta OP
+    dbComp.from('reembolsos').select('id, folio, total, status, usuario_nombre, fecha').eq('id_op_fk', op.id).maybeSingle()
+      .then(({ data }) => setReembolsoRel(data ?? null))
+
+    // Servicio de suministro (CFE/Agua) al que está ligada esta OP + consumos registrados desde ella
+    if (op.id_servicio_fk) {
+      dbCtrl.from('servicios_catalogo').select('id, no_servicio, tipo_servicio, ubicacion').eq('id', op.id_servicio_fk).maybeSingle()
+        .then(({ data }) => setServicioCat(data ?? null))
+    } else {
+      setServicioCat(null)
+    }
+    dbCtrl.from('servicios_registros').select('*').eq('id_op_fk', op.id)
+      .then(({ data }) => setServicioRegistros(data ?? []))
   }, [op.id])
 
   const cancelar = async () => {
@@ -1442,6 +1503,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tr><th>Centro de Costo</th><td colspan="3">${centroCostoNombre}</td></tr>
         ${detLinesView.length === 0 ? `<tr><th>Área</th><td>${areaNombre}</td><th>Frente</th><td>${frenteNombre}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
+        ${valesComb.length ? `<tr><th>Vale(s) de Combustible</th><td colspan="3">${valesComb.map(v => v.folio ?? `#${v.id}`).join(', ')}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
       ${detLinesView.length > 0 ? `
@@ -1824,6 +1886,133 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                   </tbody>
                 </table>
               </div>
+            </Sec>
+          )}
+
+          {valesComb.length > 0 && (
+            <Sec label="Vales de Combustible Asociados">
+              <div className="card" style={{ overflow: 'hidden' }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Folio</th><th>Suministro</th><th>Equipo / Área</th>
+                      <th style={{ textAlign: 'right' }}>Litros Aut.</th>
+                      <th style={{ textAlign: 'right' }}>Litros Cons.</th>
+                      <th style={{ textAlign: 'right' }}>Monto Aut.</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {valesComb.map((v: any) => {
+                      const s = VALE_STATUS_COLOR[v.status] ?? VALE_STATUS_COLOR['Solicitado']
+                      return (
+                        <tr key={v.id}>
+                          <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio ?? `#${v.id}`}</td>
+                          <td style={{ fontSize: 12 }}>{v.tipo_suministro ?? '—'}</td>
+                          <td style={{ fontSize: 12 }}>{v.id_equipo_fk ? (equiposMap[v.id_equipo_fk] ?? `#${v.id_equipo_fk}`) : (v.id_area_fk ? (areaMap[v.id_area_fk] ?? `#${v.id_area_fk}`) : '—')}</td>
+                          <td style={{ textAlign: 'right', fontSize: 12 }}>{v.litros_autorizados ?? '—'}</td>
+                          <td style={{ textAlign: 'right', fontSize: 12 }}>{v.litros_consumidos ?? 0}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(v.monto_autorizado)}</td>
+                          <td>
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                              color: s.color, background: s.bg, border: `1px solid ${s.border}`, whiteSpace: 'nowrap' }}>
+                              {v.status}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Sec>
+          )}
+
+          {eventosRel.length > 0 && (
+            <Sec label="Eventos Relacionados">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {eventosRel.map((e: any) => (
+                  <div key={e.id} style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <div>
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{e.folio}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{e.nombre}</span>
+                    </div>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{e.modulo}</span>
+                  </div>
+                ))}
+              </div>
+            </Sec>
+          )}
+
+          {bitacorasRel.length > 0 && (
+            <Sec label="Bitácora de Equipo & Flota Relacionada">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {bitacorasRel.map((r: any, i: number) => (
+                  <div key={i} style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <div>
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.bitacora?.folio ?? `#${r.id_bitacora_fk}`}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>
+                        {r.bitacora?.tipo ?? '—'} · {r.bitacora?.id_equipo_fk ? (equiposMap[r.bitacora.id_equipo_fk] ?? `#${r.bitacora.id_equipo_fk}`) : '—'}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{fmt(r.monto)}</span>
+                  </div>
+                ))}
+              </div>
+            </Sec>
+          )}
+
+          {vigilanciaRel.length > 0 && (
+            <Sec label="Vigilancia Extras (Perimetrales) Relacionada">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {vigilanciaRel.map((r: any) => (
+                  <div key={r.id} style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <div>
+                      <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{fmtFecha(r.fecha_desde)} – {fmtFecha(r.fecha_hasta)}</span>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{fmt(r.total)}</span>
+                  </div>
+                ))}
+              </div>
+            </Sec>
+          )}
+
+          {reembolsoRel && (
+            <Sec label="Reembolso de Caja Chica de Origen">
+              <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <div>
+                  <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{reembolsoRel.folio ?? `#${reembolsoRel.id}`}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{reembolsoRel.usuario_nombre ?? '—'} · {fmtFecha(reembolsoRel.fecha)}</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>{fmt(reembolsoRel.total)}</span>
+              </div>
+            </Sec>
+          )}
+
+          {(servicioCat || servicioRegistros.length > 0) && (
+            <Sec label="Servicio de Suministro (CFE / Agua) Relacionado">
+              {servicioCat && (
+                <div style={{ marginBottom: servicioRegistros.length > 0 ? 8 : 0, fontSize: 13 }}>
+                  <strong>{servicioCat.no_servicio}</strong> — {servicioCat.tipo_servicio}{servicioCat.ubicacion ? ` · ${servicioCat.ubicacion}` : ''}
+                </div>
+              )}
+              {servicioRegistros.length > 0 && (
+                <div className="card" style={{ overflow: 'hidden' }}>
+                  <table>
+                    <thead><tr><th>Periodo</th><th style={{ textAlign: 'right' }}>Consumo</th><th style={{ textAlign: 'right' }}>Monto</th></tr></thead>
+                    <tbody>
+                      {servicioRegistros.map((r: any) => (
+                        <tr key={r.id}>
+                          <td style={{ fontSize: 12 }}>{fmtFecha(r.fecha_periodo)}</td>
+                          <td style={{ textAlign: 'right', fontSize: 12 }}>{r.consumo_periodo ?? '—'}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(r.monto_periodo)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </Sec>
           )}
 
