@@ -1503,7 +1503,6 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tr><th>Centro de Costo</th><td colspan="3">${centroCostoNombre}</td></tr>
         ${detLinesView.length === 0 ? `<tr><th>Área</th><td>${areaNombre}</td><th>Frente</th><td>${frenteNombre}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
-        ${valesComb.length ? `<tr><th>Vale(s) de Combustible</th><td colspan="3">${valesComb.map(v => v.folio ?? `#${v.id}`).join(', ')}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
       ${detLinesView.length > 0 ? `
@@ -1520,6 +1519,27 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         </tbody>
         <tfoot><tr><th colspan="3">Total distribución</th><th style="text-align:right">${fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}</th></tr></tfoot>
       </table>` : ''}
+      ${valesComb.length > 0 ? `
+      <h3 style="font-size:13px;font-weight:700;color:#0D4F80;margin:18px 0 8px">Vales de Combustible Asociados</h3>
+      <table>
+        <thead><tr><th>Folio</th><th>Suministro</th><th>Equipo / Área</th><th style="text-align:right">Litros Aut.</th><th style="text-align:right">Litros Cons.</th><th style="text-align:right">Monto Aut.</th><th>Status</th></tr></thead>
+        <tbody>
+          ${valesComb.map((v: any) => `<tr>
+            <td style="font-family:monospace">${v.folio ?? `#${v.id}`}</td>
+            <td>${v.tipo_suministro ?? '—'}</td>
+            <td>${v.id_equipo_fk ? (equiposMap[v.id_equipo_fk] ?? `#${v.id_equipo_fk}`) : (v.id_area_fk ? (areaMap[v.id_area_fk] ?? `#${v.id_area_fk}`) : '—')}</td>
+            <td style="text-align:right">${v.litros_autorizados ?? '—'}</td>
+            <td style="text-align:right">${v.litros_consumidos ?? 0}</td>
+            <td style="text-align:right;font-weight:600">${fmt(v.monto_autorizado)}</td>
+            <td>${v.status}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : ''}
+      ${eventosRel.length > 0 ? `<p style="font-size:12px;margin:10px 0 0"><strong>Evento(s) relacionado(s):</strong> ${eventosRel.map((e: any) => `${e.folio} — ${e.nombre}`).join(', ')}</p>` : ''}
+      ${bitacorasRel.length > 0 ? `<p style="font-size:12px;margin:6px 0 0"><strong>Bitácora Equipo &amp; Flota:</strong> ${bitacorasRel.map((r: any) => r.bitacora?.folio ?? `#${r.id_bitacora_fk}`).join(', ')}</p>` : ''}
+      ${vigilanciaRel.length > 0 ? `<p style="font-size:12px;margin:6px 0 0"><strong>Lote(s) Vigilancia Extras:</strong> ${vigilanciaRel.map((r: any) => r.folio ?? `#${r.id}`).join(', ')}</p>` : ''}
+      ${reembolsoRel ? `<p style="font-size:12px;margin:6px 0 0"><strong>Reembolso Caja Chica de origen:</strong> ${reembolsoRel.folio ?? `#${reembolsoRel.id}`}</p>` : ''}
+      ${servicioCat ? `<p style="font-size:12px;margin:6px 0 0"><strong>Servicio de Suministro:</strong> ${servicioCat.no_servicio} — ${servicioCat.tipo_servicio}${servicioCat.ubicacion ? ` · ${servicioCat.ubicacion}` : ''}</p>` : ''}
       ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
       <div style="margin-top:18px;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">
         <div style="background:#eff6ff;padding:8px 14px;font-size:11px;font-weight:700;color:#1e40af;letter-spacing:.06em;text-transform:uppercase">
