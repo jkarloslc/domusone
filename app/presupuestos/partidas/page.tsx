@@ -48,7 +48,7 @@ type Concepto = { id: number; nombre: string; id_centro_ingreso_fk: number | nul
 const TIPOS_GASTO = [
   'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Combustible',
   'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot', 'Honorarios',
-  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Mantenimiento',
+  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Licencias de Software', 'Mantenimiento',
   'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Perimetrales', 'PTU', 'Publicidad',
   'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
   'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
