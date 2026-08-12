@@ -8,7 +8,7 @@ import ModalShell from '@/components/ui/ModalShell'
 
 type FuenteReal = 'seccion' | 'concepto' | 'op_area' | 'manual'
 
-const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos']
+const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', 'Flujo']
 
 const MODULO_COLOR: Record<string, { bg: string; color: string }> = {
   General:       { bg: '#f1f5f9', color: '#475569' },
@@ -19,6 +19,7 @@ const MODULO_COLOR: Record<string, { bg: string; color: string }> = {
   Polo:          { bg: '#fff7ed', color: '#c2410c' },
   Eventos:       { bg: '#fff1f2', color: '#be123c' },
   Hospitalidad:  { bg: '#ecfdf5', color: '#065f46' },
+  Flujo:         { bg: '#eef2ff', color: '#4338ca' },
 }
 
 type Partida = {

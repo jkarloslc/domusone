@@ -1,13 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, BookOpen, BarChart3, Settings } from 'lucide-react'
+import { LayoutDashboard, BookOpen, BarChart3, Settings, Wallet } from 'lucide-react'
 
 const NAV = [
-  { href: '/presupuestos/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/presupuestos/captura',     label: 'Captura',     icon: BookOpen        },
-  { href: '/presupuestos/comparativo', label: 'Comparativo', icon: BarChart3       },
-  { href: '/presupuestos/partidas',    label: 'Partidas',    icon: Settings        },
+  { href: '/presupuestos/dashboard',   label: 'Dashboard',           icon: LayoutDashboard },
+  { href: '/presupuestos/captura',     label: 'Captura',             icon: BookOpen        },
+  { href: '/presupuestos/comparativo', label: 'Comparativo',         icon: BarChart3       },
+  { href: '/presupuestos/flujo',       label: 'Flujo de Efectivo',   icon: Wallet          },
+  { href: '/presupuestos/partidas',    label: 'Partidas',            icon: Settings        },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
