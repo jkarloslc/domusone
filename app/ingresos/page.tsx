@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbCfg } from '@/lib/supabase'
+import { dbCtrl, dbCfg, dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Receipt, ChevronLeft, ChevronRight,
@@ -20,7 +20,7 @@ type SeccionRow = { id_seccion_fk: number; nombre_seccion: string; monto: number
 type Concepto = { id: number; nombre: string; clave: string | null; orden: number }
 type ConceptoRow = { id_concepto_fk: number; nombre_concepto: string; monto: number; notas: string }
 type FormaPago = { id: number; nombre: string }
-type FormaPagoRow = { id_forma_pago_fk: number; nombre_forma_pago: string; monto: number }
+type FormaPagoRow = { id_forma_pago_fk: number; nombre_forma_pago: string; monto: number; id_cuenta_bancaria_fk: number | null }
 type Recibo = {
   id: number; folio: string | null; fecha: string
   id_centro_ingreso_fk: number | null
@@ -91,6 +91,7 @@ function ReciboModal({
   const [secRows, setSecRows]             = useState<SeccionRow[]>([])
   const [conceptoRows, setConceptoRows]   = useState<ConceptoRow[]>([])
   const [formaPagoRows, setFormaPagoRows] = useState<FormaPagoRow[]>([])
+  const [cuentasBanc, setCuentasBanc]     = useState<any[]>([])
   const [loadingSecs, setLoadingSecs] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [cancelling, setCancelling] = useState(false)
@@ -181,7 +182,7 @@ function ReciboModal({
     if (recibo) {
       Promise.all([
         dbCtrl.from('recibos_ingreso_formas_pago')
-          .select('id_forma_pago_fk, nombre_forma_pago, monto')
+          .select('id_forma_pago_fk, nombre_forma_pago, monto, id_cuenta_bancaria_fk')
           .eq('id_recibo_fk', recibo.id),
         dbCfg.from('formas_pago')
           .select('id, nombre')
@@ -191,7 +192,7 @@ function ReciboModal({
         const savedRows = (saved ?? []) as FormaPagoRow[]
         const full = (cfg ?? []).map((f: FormaPago) => {
           const match = savedRows.find(r => r.id_forma_pago_fk === f.id)
-          return match ? { ...match } : { id_forma_pago_fk: f.id, nombre_forma_pago: f.nombre, monto: 0 }
+          return match ? { ...match } : { id_forma_pago_fk: f.id, nombre_forma_pago: f.nombre, monto: 0, id_cuenta_bancaria_fk: null }
         })
         setFormaPagoRows(full)
       })
@@ -210,8 +211,16 @@ function ReciboModal({
       id_forma_pago_fk: f.id,
       nombre_forma_pago: f.nombre,
       monto: 0,
+      id_cuenta_bancaria_fk: null,
     })))
   }
+
+  // ── Catálogo de cuentas bancarias (para asociar cada forma de cobro) ──
+  useEffect(() => {
+    dbCfg.from('cuentas_bancarias').select('id, banco, numero_cuenta, clabe, saldo')
+      .eq('activo', true).order('banco')
+      .then(({ data }) => setCuentasBanc(data ?? []))
+  }, [])
 
   const initSecRowsVal = () =>
     secciones.map(s => ({ id_seccion_fk: s.id, nombre_seccion: s.nombre, monto: 0, notas: '' }))
@@ -240,6 +249,57 @@ function ReciboModal({
     setConceptoRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
   const setFormaPagoMonto  = (idx: number, val: number) =>
     setFormaPagoRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
+  const setFormaPagoCuenta = (idx: number, val: number | null) =>
+    setFormaPagoRows(rows => rows.map((r, i) => i === idx ? { ...r, id_cuenta_bancaria_fk: val } : r))
+
+  // ── Revierte los movimientos bancarios ya registrados para este recibo ──
+  // (restaura el saldo de cada cuenta afectada y borra el kardex previo).
+  const revertirMovimientosBancarios = async (reciboId: number) => {
+    const { data: existentes } = await dbComp.from('movimientos_bancarios')
+      .select('id, id_cuenta_fk, monto').eq('id_recibo_ingreso_fk', reciboId)
+    if (!existentes || existentes.length === 0) return
+    for (const m of existentes as any[]) {
+      const { data: cb } = await dbCfg.from('cuentas_bancarias').select('saldo').eq('id', m.id_cuenta_fk).single()
+      const saldoActual = (cb as any)?.saldo ?? 0
+      await dbCfg.from('cuentas_bancarias').update({ saldo: saldoActual - m.monto }).eq('id', m.id_cuenta_fk)
+    }
+    await dbComp.from('movimientos_bancarios').delete().eq('id_recibo_ingreso_fk', reciboId)
+  }
+
+  // ── Registra en el kardex bancario (Abono) las formas de cobro con cuenta asignada ──
+  // Se ejecuta al crear/editar un recibo Confirmado, para que el auxiliar de bancos
+  // (Reporte Estado de Cuenta) refleje también los ingresos, no solo los pagos de OP.
+  const registrarMovimientosBancarios = async (reciboId: number, fecha: string, folio: string, rows: FormaPagoRow[]) => {
+    const conCuenta = rows.filter(r => r.id_cuenta_bancaria_fk && r.monto > 0)
+    for (const r of conCuenta) {
+      const { data: cb } = await dbCfg.from('cuentas_bancarias').select('saldo').eq('id', r.id_cuenta_bancaria_fk!).single()
+      const saldoAntes   = (cb as any)?.saldo ?? 0
+      const saldoDespues = saldoAntes + r.monto
+      await Promise.all([
+        dbComp.from('movimientos_bancarios').insert({
+          id_cuenta_fk:          r.id_cuenta_bancaria_fk,
+          id_recibo_ingreso_fk:  reciboId,
+          tipo:                  'Abono',
+          monto:                 r.monto,
+          saldo_antes:           saldoAntes,
+          saldo_despues:         saldoDespues,
+          concepto:              `Ingreso ${folio} · ${r.nombre_forma_pago}`,
+          fecha_movimiento:      fecha,
+          created_by:            authUser?.nombre ?? null,
+        }),
+        dbCfg.from('cuentas_bancarias').update({
+          saldo: saldoDespues, updated_at: new Date().toISOString(),
+        }).eq('id', r.id_cuenta_bancaria_fk!),
+      ])
+    }
+  }
+
+  const syncMovimientosBancarios = async (reciboId: number, fecha: string, folio: string, rows: FormaPagoRow[], esEdicion: boolean) => {
+    try {
+      if (esEdicion) await revertirMovimientosBancarios(reciboId)
+      await registrarMovimientosBancarios(reciboId, fecha, folio, rows)
+    } catch (_) { /* no bloquear el guardado del recibo si falla el kardex bancario */ }
+  }
 
   // Total calculado
   const totalFormasPago = formaPagoRows.reduce((a, r) => a + (r.monto || 0), 0)
@@ -306,8 +366,16 @@ function ReciboModal({
     if (formaPagoRows.some(r => r.monto > 0 && r.id_forma_pago_fk > 0)) {
       const formasPayload = formaPagoRows
         .filter(r => r.monto > 0 && r.id_forma_pago_fk > 0)
-        .map(r => ({ id_recibo_fk: newRec.id, id_forma_pago_fk: r.id_forma_pago_fk, nombre_forma_pago: r.nombre_forma_pago, monto: r.monto }))
+        .map(r => ({
+          id_recibo_fk: newRec.id, id_forma_pago_fk: r.id_forma_pago_fk,
+          nombre_forma_pago: r.nombre_forma_pago, monto: r.monto,
+          id_cuenta_bancaria_fk: r.id_cuenta_bancaria_fk || null,
+        }))
       await dbCtrl.from('recibos_ingreso_formas_pago').insert(formasPayload)
+    }
+
+    if (form.status === 'Confirmado') {
+      await syncMovimientosBancarios(newRec.id, form.fecha, folio, formaPagoRows, false)
     }
 
     setSaving(false)
@@ -369,8 +437,16 @@ function ReciboModal({
       await dbCtrl.from('recibos_ingreso_formas_pago').insert(
         formaPagoRows
           .filter(r => r.monto > 0 && r.id_forma_pago_fk > 0)
-          .map(r => ({ id_recibo_fk: recibo.id, id_forma_pago_fk: r.id_forma_pago_fk, nombre_forma_pago: r.nombre_forma_pago, monto: r.monto }))
+          .map(r => ({
+            id_recibo_fk: recibo.id, id_forma_pago_fk: r.id_forma_pago_fk,
+            nombre_forma_pago: r.nombre_forma_pago, monto: r.monto,
+            id_cuenta_bancaria_fk: r.id_cuenta_bancaria_fk || null,
+          }))
       )
+    }
+
+    if (recibo.status === 'Confirmado') {
+      await syncMovimientosBancarios(recibo.id, form.fecha, recibo.folio ?? fmtFolioIng(recibo.id), formaPagoRows, true)
     }
 
     setSaving(false)
@@ -387,8 +463,9 @@ function ReciboModal({
       fecha_cancela: new Date().toISOString(),
       motivo_cancelacion: cancelMotivo.trim(),
     }).eq('id', recibo!.id)
+    if (err) { setCancelling(false); setError(err.message); return }
+    try { await revertirMovimientosBancarios(recibo!.id) } catch (_) { /* no bloquear la cancelación */ }
     setCancelling(false)
-    if (err) { setError(err.message); return }
     onSaved()
   }
 
@@ -789,6 +866,20 @@ function ReciboModal({
                       disabled={isView && !isEditMode}
                       style={{ fontVariantNumeric: 'tabular-nums' }}
                     />
+                    {cuentasBanc.length > 0 && (row.monto > 0 || row.id_cuenta_bancaria_fk) && (
+                      <select
+                        className="select" value={row.id_cuenta_bancaria_fk ?? ''}
+                        onChange={e => setFormaPagoCuenta(i, e.target.value ? Number(e.target.value) : null)}
+                        disabled={isView && !isEditMode}
+                        style={{ marginTop: 4, fontSize: 12, padding: '4px 8px' }}>
+                        <option value="">— Cuenta bancaria (opcional) —</option>
+                        {cuentasBanc.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.banco}{c.numero_cuenta ? ` · ${c.numero_cuenta}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 ))}
               </div>
