@@ -46,10 +46,12 @@ type Seccion  = { id: number; nombre: string }
 type Concepto = { id: number; nombre: string; id_centro_ingreso_fk: number | null }
 
 const TIPOS_GASTO = [
-  'Servicios Profesionales', 'Mantenimiento', 'Reparación',
-  'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
-  'Electricidad', 'Agua', 'Telefonía / Internet',
-  'Honorarios', 'Asesoría', 'Capacitación', 'Nómina', 'Otro',
+  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Combustible',
+  'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot', 'Honorarios',
+  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Mantenimiento',
+  'Nómina', 'Otro', 'Perimetrales', 'PTU', 'Publicidad',
+  'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
+  'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
 ]
 
 const EMPTY: Omit<Partida, 'id'> = {
