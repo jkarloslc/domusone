@@ -18,7 +18,7 @@ const TIPOS_GASTO = [
   'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Combustible',
   'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot', 'Honorarios',
   'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Mantenimiento',
-  'Nómina', 'Otro', 'Perimetrales', 'PTU', 'Publicidad',
+  'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Perimetrales', 'PTU', 'Publicidad',
   'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
   'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
 ]
