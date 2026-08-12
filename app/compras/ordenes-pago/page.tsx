@@ -15,11 +15,11 @@ import ModalShell from '@/components/ui/ModalShell'
 const PAGE_SIZES = [10, 25, 50, 100]
 
 const TIPOS_GASTO = [
-  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Combustible',
+  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
   'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot', 'Honorarios',
   'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Licencias de Software', 'Mantenimiento',
   'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Perimetrales', 'PTU', 'Publicidad',
-  'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
+  'Recolección de Basura', 'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
   'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
 ]
 

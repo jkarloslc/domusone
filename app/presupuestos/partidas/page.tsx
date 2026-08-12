@@ -46,11 +46,11 @@ type Seccion  = { id: number; nombre: string }
 type Concepto = { id: number; nombre: string; id_centro_ingreso_fk: number | null }
 
 const TIPOS_GASTO = [
-  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Combustible',
+  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
   'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot', 'Honorarios',
   'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Licencias de Software', 'Mantenimiento',
   'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Perimetrales', 'PTU', 'Publicidad',
-  'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
+  'Recolección de Basura', 'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
   'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
 ]
 
