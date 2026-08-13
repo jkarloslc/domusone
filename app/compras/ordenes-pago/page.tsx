@@ -16,7 +16,7 @@ const PAGE_SIZES = [10, 25, 50, 100]
 
 const TIPOS_GASTO = [
   'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
-  'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot', 'Honorarios',
+  'Depósitos en Garantía (Fianzas)', 'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot', 'Honorarios',
   'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Licencias de Software', 'Mantenimiento',
   'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Perimetrales', 'PTU', 'Publicidad',
   'Recolección de Basura', 'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
