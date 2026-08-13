@@ -239,7 +239,7 @@ const CATALOGOS: CatConfig[] = [
   {
     key:    'conceptos_ingreso',
     tabla:  'conceptos_ingreso',
-    label:  'Conceptos de Cobro',
+    label:  'Conceptos de Ingreso',
     icon:   Tag,
     color:  '#7c3aed',
     desc:   'Conceptos adicionales de cobro en recibos de ingreso (No identificados, Deslindes, Tags, Intereses, etc.)',
