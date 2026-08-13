@@ -128,6 +128,7 @@ export default function POSPage() {
 
   // Config
   const [productos,      setProductos]      = useState<Producto[]>([])
+  const [filtroCatalogoCentro, setFiltroCatalogoCentro] = useState('')
   const [formasPago,     setFormasPago]     = useState<FormaPago[]>([])
   const [cfgPos,            setCfgPos]            = useState<CfgPos | null>(null)
   const [loadingCfg,        setLoadingCfg]        = useState(false)
@@ -1825,14 +1826,21 @@ ${facturasCorte.length > 0 ? `
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Productos y Servicios</div>
-                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{productos.length} registros · el precio es el monto final cobrado al cliente</div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{productos.filter(p => !filtroCatalogoCentro || String(p.id_centro_fk ?? '') === filtroCatalogoCentro).length} registros · el precio es el monto final cobrado al cliente</div>
                 </div>
-                {puedeEscribir && (
-                  <button onClick={() => setEditingProd({ tipo: 'SERVICIO', aplica_iva: true, iva_pct: 16, activo: true, precio: 0, costo: 0, precio_variable: false, id_centro_fk: centros[0]?.id ?? null })}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
-                    <Plus size={13} /> Nuevo producto / servicio
-                  </button>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <select value={filtroCatalogoCentro} onChange={e => setFiltroCatalogoCentro(e.target.value)}
+                    style={{ padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', background: '#fff', color: '#475569' }}>
+                    <option value="">Todos los centros</option>
+                    {centros.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
+                  </select>
+                  {puedeEscribir && (
+                    <button onClick={() => setEditingProd({ tipo: 'SERVICIO', aplica_iva: true, iva_pct: 16, activo: true, precio: 0, costo: 0, precio_variable: false, id_centro_fk: centros[0]?.id ?? null })}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
+                      <Plus size={13} /> Nuevo producto / servicio
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Form edición */}
@@ -1920,7 +1928,7 @@ ${facturasCorte.length > 0 ? `
 
               {/* Lista */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {productos.map(p => {
+                {productos.filter(p => !filtroCatalogoCentro || String(p.id_centro_fk ?? '') === filtroCatalogoCentro).map(p => {
                   const centro = centros.find(c => c.id === p.id_centro_fk)
                   const concepto = conceptosIngreso.find(co => co.id === p.id_concepto_ingreso_fk)
                   return (
@@ -1963,6 +1971,11 @@ ${facturasCorte.length > 0 ? `
                 {productos.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8', fontSize: 13 }}>
                     Sin productos configurados. Usa el botón "Nuevo producto / servicio" para agregar.
+                  </div>
+                )}
+                {productos.length > 0 && filtroCatalogoCentro && productos.filter(p => String(p.id_centro_fk ?? '') === filtroCatalogoCentro).length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8', fontSize: 13 }}>
+                    Sin productos para el centro de venta seleccionado.
                   </div>
                 )}
               </div>
