@@ -19,4 +19,4 @@ CREATE INDEX IF NOT EXISTS idx_movimientos_bancarios_recibo_ingreso
 -- Si ya ejecutaste una versión anterior de esta migración que agregaba la columna
 -- a recibos_ingreso_formas_pago (enfoque descartado: cuenta por forma de cobro en
 -- vez de por recibo completo), puedes eliminarla — ya no se usa:
--- ALTER TABLE ctrl.recibos_ingreso_formas_pago DROP COLUMN IF EXISTS id_cuenta_bancaria_fk;
+ALTER TABLE ctrl.recibos_ingreso_formas_pago DROP COLUMN IF EXISTS id_cuenta_bancaria_fk;
