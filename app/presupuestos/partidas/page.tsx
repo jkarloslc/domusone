@@ -320,7 +320,7 @@ export default function PartidasPage() {
               {grupo.data.length === 0 ? (
                 <p style={{ color: '#94a3b8', fontSize: 14, padding: '8px 0' }}>Sin partidas registradas</p>
               ) : (
-                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
