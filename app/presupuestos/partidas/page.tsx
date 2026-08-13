@@ -8,7 +8,7 @@ import ModalShell from '@/components/ui/ModalShell'
 
 type FuenteReal = 'seccion' | 'concepto' | 'op_area' | 'manual'
 
-const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', 'Flujo']
+const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos']
 
 const MODULO_COLOR: Record<string, { bg: string; color: string }> = {
   General:       { bg: '#f1f5f9', color: '#475569' },
@@ -19,7 +19,6 @@ const MODULO_COLOR: Record<string, { bg: string; color: string }> = {
   Polo:          { bg: '#fff7ed', color: '#c2410c' },
   Eventos:       { bg: '#fff1f2', color: '#be123c' },
   Hospitalidad:  { bg: '#ecfdf5', color: '#065f46' },
-  Flujo:         { bg: '#eef2ff', color: '#4338ca' },
 }
 
 type Partida = {
@@ -37,6 +36,8 @@ type Partida = {
   tipo_gasto:           string | null
   orden: number
   activo: boolean
+  incluir_presupuesto: boolean
+  incluir_flujo:        boolean
 }
 
 type CC       = { id: number; nombre: string }
@@ -58,6 +59,7 @@ const EMPTY: Omit<Partida, 'id'> = {
   nombre: '', descripcion: null, tipo: 'egreso', modulo: 'Golf', fuente_real: 'op_area',
   id_centro_costo_fk: null, id_area_fk: null, id_centro_ingreso_fk: null,
   id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, orden: 0, activo: true,
+  incluir_presupuesto: true, incluir_flujo: true,
 }
 
 const FUENTE_LABEL: Record<FuenteReal, string> = {
@@ -128,6 +130,8 @@ export default function PartidasPage() {
       id_seccion_fk: p.id_seccion_fk, id_concepto_fk: p.id_concepto_fk,
       tipo_gasto: p.tipo_gasto,
       orden: p.orden, activo: p.activo,
+      incluir_presupuesto: p.incluir_presupuesto ?? true,
+      incluir_flujo:       p.incluir_flujo ?? true,
     })
     setModal(true)
   }
@@ -143,6 +147,8 @@ export default function PartidasPage() {
       fuente_real:          form.tipo === 'egreso' ? 'op_area' : form.fuente_real,
       orden:                form.orden,
       activo:               form.activo,
+      incluir_presupuesto:  form.incluir_presupuesto,
+      incluir_flujo:        form.incluir_flujo,
       // Egresos
       id_centro_costo_fk:   form.tipo === 'egreso' ? form.id_centro_costo_fk : null,
       id_area_fk:           form.tipo === 'egreso' ? form.id_area_fk         : null,
@@ -260,6 +266,7 @@ export default function PartidasPage() {
                         <th style={th}>Módulo</th>
                         <th style={th}>Fuente Real</th>
                         <th style={th}>Vínculo</th>
+                        <th style={th}>Aparece en</th>
                         <th style={{ ...th, textAlign: 'center' }}>Orden</th>
                         <th style={{ ...th, textAlign: 'center' }}>Activo</th>
                         {puedeEscribir && <th style={th}></th>}
@@ -304,6 +311,23 @@ export default function PartidasPage() {
                               </span>
                             </td>
                             <td style={{ ...td, color: '#475569', fontSize: 13 }}>{vinculo}</td>
+                            <td style={td}>
+                              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                {(p.incluir_presupuesto ?? true) && (
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#eff6ff', color: '#1d4ed8' }}>
+                                    Presupuesto
+                                  </span>
+                                )}
+                                {(p.incluir_flujo ?? true) && (
+                                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#eef2ff', color: '#4338ca' }}>
+                                    Flujo
+                                  </span>
+                                )}
+                                {!(p.incluir_presupuesto ?? true) && !(p.incluir_flujo ?? true) && (
+                                  <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>
+                                )}
+                              </div>
+                            </td>
                             <td style={{ ...td, textAlign: 'center' }}>{p.orden}</td>
                             <td style={{ ...td, textAlign: 'center' }}>
                               <span style={{
@@ -498,6 +522,25 @@ export default function PartidasPage() {
                 )}
               </>
             )}
+
+            <div>
+              <span style={{ ...lbl, marginBottom: 6, display: 'block' }}>Aparece en</span>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={form.incluir_presupuesto}
+                    onChange={e => setForm(f => ({ ...f, incluir_presupuesto: e.target.checked }))} />
+                  Presupuesto
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={form.incluir_flujo}
+                    onChange={e => setForm(f => ({ ...f, incluir_flujo: e.target.checked }))} />
+                  Flujo de Efectivo
+                </label>
+              </div>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                Desmarca &quot;Presupuesto&quot; para partidas solo de financiamiento (aportaciones, pago de capital de deuda, etc.) que no deben contarse en el presupuesto operativo.
+              </span>
+            </div>
 
             <div style={{ display: 'flex', gap: 12 }}>
               <label style={{ ...lbl, flex: 1 }}>

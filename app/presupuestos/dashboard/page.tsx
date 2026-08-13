@@ -102,6 +102,7 @@ export default function DashboardPpto() {
     let qPartidas = dbCtrl.from('ppto_partidas')
       .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto')
       .eq('activo', true)
+      .eq('incluir_presupuesto', true)
     if (modulo) qPartidas = (qPartidas as any).eq('modulo', modulo)
     const { data: pData } = await qPartidas
     const parts = (pData ?? []) as Partida[]
