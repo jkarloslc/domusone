@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Edit2, Loader, Save, ChevronRight, BookOpen } from 'lucide-react'
+import { Plus, Edit2, Loader, Save, ChevronRight, BookOpen, Copy } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -45,6 +45,13 @@ type Area     = { id: number; nombre: string; id_centro_costo_fk: number }
 type CI       = { id: number; nombre: string }
 type Seccion  = { id: number; nombre: string }
 type Concepto = { id: number; nombre: string; id_centro_ingreso_fk: number | null }
+
+type DupTarget = {
+  selected: boolean
+  nombre: string
+  id_centro_costo_fk: number | null
+  id_area_fk:          number | null
+}
 
 const TIPOS_GASTO = [
   'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
@@ -93,6 +100,12 @@ export default function PartidasPage() {
   const [errorMsg, setErrorMsg]       = useState<string | null>(null)
   const [filterTipo, setFilterTipo]   = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterModulo, setFilterModulo] = useState('')
+
+  const [dupModal, setDupModal]   = useState(false)
+  const [dupSource, setDupSource] = useState<Partida | null>(null)
+  const [dupTargets, setDupTargets] = useState<Record<string, DupTarget>>({})
+  const [dupSaving, setDupSaving] = useState(false)
+  const [dupError, setDupError]   = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -164,6 +177,54 @@ export default function PartidasPage() {
     setSaving(false)
     if (error) { setErrorMsg(error.message); return }
     setModal(false); load()
+  }
+
+  function openDup(p: Partida) {
+    setDupSource(p)
+    setDupError(null)
+    const targets: Record<string, DupTarget> = {}
+    MODULOS.filter(m => m !== (p.modulo ?? 'General')).forEach(m => {
+      targets[m] = { selected: false, nombre: p.nombre, id_centro_costo_fk: null, id_area_fk: null }
+    })
+    setDupTargets(targets)
+    setDupModal(true)
+  }
+
+  function patchDupTarget(modulo: string, patch: Partial<DupTarget>) {
+    setDupTargets(prev => ({ ...prev, [modulo]: { ...prev[modulo], ...patch } }))
+  }
+
+  async function saveDup() {
+    if (!dupSource) return
+    const toCreate = Object.entries(dupTargets).filter(([, t]) => t.selected)
+    if (toCreate.length === 0) return
+    if (dupSource.tipo === 'egreso') {
+      const faltante = toCreate.find(([, t]) => !t.id_area_fk)
+      if (faltante) { setDupError(`Selecciona un área para el módulo "${faltante[0]}"`); return }
+    }
+    setDupSaving(true); setDupError(null)
+    const payload = toCreate.map(([modulo, t]) => ({
+      nombre:               t.nombre.trim() || dupSource.nombre,
+      descripcion:          dupSource.descripcion,
+      tipo:                 dupSource.tipo,
+      modulo,
+      fuente_real:          dupSource.fuente_real,
+      orden:                dupSource.orden,
+      activo:               true,
+      incluir_presupuesto:  dupSource.incluir_presupuesto,
+      incluir_flujo:        dupSource.incluir_flujo,
+      id_centro_costo_fk:   dupSource.tipo === 'egreso' ? t.id_centro_costo_fk : null,
+      id_area_fk:           dupSource.tipo === 'egreso' ? t.id_area_fk         : null,
+      tipo_gasto:           dupSource.tipo === 'egreso' ? dupSource.tipo_gasto : null,
+      id_centro_ingreso_fk: dupSource.tipo === 'ingreso' ? dupSource.id_centro_ingreso_fk : null,
+      id_seccion_fk:        (dupSource.tipo === 'ingreso' && dupSource.fuente_real === 'seccion')  ? dupSource.id_seccion_fk  : null,
+      id_concepto_fk:       (dupSource.tipo === 'ingreso' && dupSource.fuente_real === 'concepto') ? dupSource.id_concepto_fk : null,
+    }))
+    const { error } = await dbCtrl.from('ppto_partidas').insert(payload)
+    setDupSaving(false)
+    if (error) { setDupError(error.message); return }
+    setDupModal(false)
+    load()
   }
 
   const areasFiltradas     = areas.filter(a =>
@@ -339,7 +400,12 @@ export default function PartidasPage() {
                               </span>
                             </td>
                             {puedeEscribir && (
-                              <td style={{ ...td, textAlign: 'right' }}>
+                              <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                <button className="btn-ghost" onClick={() => openDup(p)}
+                                  title="Duplicar a otros módulos"
+                                  style={{ padding: '4px 8px', fontSize: 12 }}>
+                                  <Copy size={13} />
+                                </button>
                                 <button className="btn-ghost" onClick={() => openEdit(p)}
                                   style={{ padding: '4px 8px', fontSize: 12 }}>
                                   <Edit2 size={13} />
@@ -557,6 +623,89 @@ export default function PartidasPage() {
                 </select>
               </label>
             </div>
+          </div>
+        </ModalShell>
+      )}
+
+      {/* Modal duplicar a otros módulos */}
+      {dupModal && dupSource && (
+        <ModalShell
+          modulo="presupuestos"
+          titulo="Duplicar Partida a Otros Módulos"
+          subtitulo={`Partida base: ${dupSource.nombre}`}
+          icono={Copy}
+          maxWidth={620}
+          onClose={() => setDupModal(false)}
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setDupModal(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={saveDup}
+                disabled={dupSaving || Object.values(dupTargets).every(t => !t.selected)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {dupSaving ? <Loader size={14} className="animate-spin" /> : <Copy size={14} />}
+                Crear duplicados
+              </button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {dupError && (
+              <div style={{
+                padding: '10px 14px', borderRadius: 8, background: '#fef2f2',
+                border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13,
+              }}>
+                {dupError}
+              </div>
+            )}
+            <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+              Elige en qué otros módulos crear una copia de <strong>{dupSource.nombre}</strong>
+              {dupSource.tipo === 'egreso' ? ' — indica el Centro de Costo y Área correspondiente en cada uno' : ''}.
+            </p>
+            {Object.entries(dupTargets).map(([modulo, t]) => {
+              const areasDeModulo = areas.filter(a =>
+                t.id_centro_costo_fk ? a.id_centro_costo_fk === t.id_centro_costo_fk : true)
+              const mc = MODULO_COLOR[modulo] ?? MODULO_COLOR.General
+              return (
+                <div key={modulo} style={{
+                  border: '1px solid #e2e8f0', borderRadius: 8, padding: 12,
+                  background: t.selected ? '#f8fafc' : '#fff',
+                }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={t.selected}
+                      onChange={e => patchDupTarget(modulo, { selected: e.target.checked })} />
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: mc.bg, color: mc.color }}>
+                      {modulo}
+                    </span>
+                  </label>
+                  {t.selected && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 26, marginTop: 10 }}>
+                      <input className="input" value={t.nombre}
+                        onChange={e => patchDupTarget(modulo, { nombre: e.target.value })}
+                        placeholder="Nombre" style={{ fontSize: 13 }} />
+                      {dupSource.tipo === 'egreso' && (
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <select className="input" style={{ flex: 1, fontSize: 13 }}
+                            value={t.id_centro_costo_fk ?? ''}
+                            onChange={e => patchDupTarget(modulo, {
+                              id_centro_costo_fk: e.target.value ? Number(e.target.value) : null,
+                              id_area_fk: null,
+                            })}>
+                            <option value="">Centro de Costo</option>
+                            {ccs.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                          </select>
+                          <select className="input" style={{ flex: 1, fontSize: 13 }}
+                            value={t.id_area_fk ?? ''}
+                            onChange={e => patchDupTarget(modulo, { id_area_fk: e.target.value ? Number(e.target.value) : null })}>
+                            <option value="">Área *</option>
+                            {areasDeModulo.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </ModalShell>
       )}
