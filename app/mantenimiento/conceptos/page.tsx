@@ -5,7 +5,7 @@ import { dbCtrl, dbComp } from '@/lib/supabase'
 import { useDebounce } from '@/lib/useDebounce'
 import ModalShell from '@/components/ui/ModalShell'
 import {
-  Plus, Search, RefreshCw, Edit2, Trash2, Loader, Save, X, RotateCcw,
+  Plus, Search, RefreshCw, Edit2, Trash2, Loader, Save, X,
   ClipboardList, Boxes,
 } from 'lucide-react'
 
@@ -462,6 +462,23 @@ function MatrizPUPanel({ conceptoId, factorIndirectos, puedeEscribir, onTotalesC
 
   useEffect(() => { if (!loading) recalcConcepto(items) }, [items, loading, recalcConcepto])
 
+  const manoObraSubtotal = items.filter(i => i.tipo === 'mano_obra').reduce((s, i) => s + (i.importe ?? 0), 0)
+
+  // Recalcula en automático el costo unitario de las filas "herramienta menor"
+  // en cuanto el subtotal de mano de obra vigente cambia (agregar/quitar M.O.)
+  useEffect(() => {
+    if (loading) return
+    const desalineadas = items.filter(i => i.tipo === 'herramienta_menor' && Math.abs(i.costo_unitario - manoObraSubtotal) > 0.0001)
+    if (desalineadas.length === 0) return
+    let cancelled = false
+    ;(async () => {
+      await Promise.all(desalineadas.map(i => dbCtrl.from('mant_conceptos_insumos').update({ costo_unitario: manoObraSubtotal }).eq('id', i.id)))
+      if (!cancelled) await load()
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, loading])
+
   // Búsqueda en catálogo de insumos base (según tipo, excepto herramienta_menor)
   useEffect(() => {
     if (form.tipo === 'herramienta_menor' || dSearch.length < 2) { setResults([]); return }
@@ -475,8 +492,6 @@ function MatrizPUPanel({ conceptoId, factorIndirectos, puedeEscribir, onTotalesC
     setForm(f => ({ ...f, id_insumo_fk: r.id, descripcion: `${r.codigo} · ${r.descripcion}`, unidad: r.unidad, costo_unitario: String(r.costo), search: `${r.codigo} · ${r.descripcion}` }))
     setResults([])
   }
-
-  const manoObraSubtotal = items.filter(i => i.tipo === 'mano_obra').reduce((s, i) => s + (i.importe ?? 0), 0)
 
   const usarSubtotalMO = () => setForm(f => ({ ...f, costo_unitario: String(manoObraSubtotal) }))
 
@@ -500,14 +515,6 @@ function MatrizPUPanel({ conceptoId, factorIndirectos, puedeEscribir, onTotalesC
 
   const deleteItem = async (id: number) => {
     await dbCtrl.from('mant_conceptos_insumos').delete().eq('id', id)
-    await load()
-  }
-
-  // Recalcula el costo unitario de las filas "herramienta menor" con el subtotal de M.O. vigente
-  const recalcularHerramientaMenor = async () => {
-    const filas = items.filter(i => i.tipo === 'herramienta_menor')
-    if (filas.length === 0) return
-    await Promise.all(filas.map(i => dbCtrl.from('mant_conceptos_insumos').update({ costo_unitario: manoObraSubtotal }).eq('id', i.id)))
     await load()
   }
 
@@ -540,11 +547,6 @@ function MatrizPUPanel({ conceptoId, factorIndirectos, puedeEscribir, onTotalesC
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                   <span style={{ padding: '1px 7px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: tc.bg, color: tc.color }}>{tc.label}</span>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Subtotal: <strong>{fmtC(subtotal)}</strong></span>
-                  {tipo === 'herramienta_menor' && puedeEscribir && (
-                    <button className="btn-ghost" style={{ padding: '1px 6px', fontSize: 10 }} onClick={recalcularHerramientaMenor} title="Recalcular sobre el subtotal de mano de obra actual">
-                      <RotateCcw size={10} /> Recalcular
-                    </button>
-                  )}
                 </div>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
