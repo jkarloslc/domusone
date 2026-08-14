@@ -6,7 +6,7 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, Save, Loader, Pencil,
-  ArrowLeft, CheckCircle, XCircle, Printer, Trash2
+  ArrowLeft, CheckCircle, XCircle, Printer, Trash2, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, nextFolio, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP } from '../types'
@@ -64,6 +64,7 @@ export default function OrdenesPage() {
   }, [])
 
   const canAuth = canAuthFn('ordenes')
+  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const handleAuth = async (id: number, aprobar: boolean, comentario = '') => {
     await dbComp.from('ordenes_compra').update({
@@ -167,6 +168,15 @@ export default function OrdenesPage() {
             ))}
           </tbody>
         </table>
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pág. {page + 1} de {totalPages}</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
+              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
+            </div>
+          </div>
+        )}
       </div>
 
       {modal !== null && <OCModal row={modal === 'new' ? null : modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}
