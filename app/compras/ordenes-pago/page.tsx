@@ -7,7 +7,7 @@ import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
   ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight,
   Edit2, Upload, ExternalLink, FileText, AlertTriangle, MessageSquare, Send, Tag,
-  RotateCcw, Copy
+  RotateCcw, Copy, Unlock
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, nextFolio, StatusBadge, FORMAS_PAGO_COMP } from '../types'
@@ -1255,6 +1255,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [reabrirLoading, setReabrirLoading] = useState(false)
   const [duplicarLoading, setDuplicarLoading] = useState(false)
   const [reabrirDuplicarError, setReabrirDuplicarError] = useState('')
+  const [liberandoVales, setLiberandoVales] = useState(false)
   const [folioSustituta, setFolioSustituta] = useState<string | null>(null)
   const [folioOriginal, setFolioOriginal]   = useState<string | null>(null)
 
@@ -1561,6 +1562,23 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     }).eq('id', op.id)
 
     setDuplicarLoading(false)
+    onAuthorized()
+  }
+
+  // Liberar vales de combustible / lotes de vigilancia extras (superadmin,
+  // solo Rechazada o Sustituida): estos quedan ligados a la OP por
+  // id_op_fk incluso después de Reabrir/Duplicar — si la OP ya no va a
+  // pagarse (Rechazada sin reabrir, o Sustituida y ya no editable), el
+  // vale/lote queda huérfano y nunca vuelve a aparecer como disponible
+  // para otra OP. Esto lo libera (id_op_fk = null) para que se pueda
+  // volver a seleccionar.
+  const handleLiberarVales = async () => {
+    const n = valesComb.length + vigilanciaRel.length
+    if (!confirm(`¿Liberar ${n} registro(s) (vales de combustible / perimetrales) de ${op.folio}? Quedarán disponibles para usarse en otra OP.`)) return
+    setLiberandoVales(true)
+    await dbCtrl.from('vales_combustible').update({ id_op_fk: null }).eq('id_op_fk', op.id)
+    await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: null }).eq('id_op_fk', op.id)
+    setLiberandoVales(false)
     onAuthorized()
   }
 
@@ -2364,6 +2382,23 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                   {duplicarLoading ? <Loader size={13} className="animate-spin" /> : <Copy size={13} />} Duplicar con folio nuevo
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Liberar vales de combustible / perimetrales (solo superadmin,
+              Rechazada o Sustituida) — Duplicar NO mueve estos vínculos a la
+              OP nueva, así que quedan huérfanos ligados a esta OP; en
+              Sustituida ya no se puede ni editar para desligarlos a mano. */}
+          {authUser?.rol === 'superadmin' && (op.status === 'Rechazada' || op.status === 'Sustituida') && (valesComb.length > 0 || vigilanciaRel.length > 0) && (
+            <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
+                Esta OP tiene {valesComb.length > 0 ? `${valesComb.length} vale(s) de combustible` : ''}
+                {valesComb.length > 0 && vigilanciaRel.length > 0 ? ' y ' : ''}
+                {vigilanciaRel.length > 0 ? `${vigilanciaRel.length} lote(s) de perimetrales` : ''} ligados — libéralos para volver a usarlos en otra OP
+              </div>
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={handleLiberarVales} disabled={liberandoVales}>
+                {liberandoVales ? <Loader size={13} className="animate-spin" /> : <Unlock size={13} />} Liberar vales / perimetrales
+              </button>
             </div>
           )}
 
