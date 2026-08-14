@@ -153,6 +153,39 @@ export default function FlujoEfectivoPage() {
         : Promise.resolve({ data: [] }),
     ])
 
+    // OP con distribución por área (ordenes_pago_det): el encabezado queda con
+    // id_area_fk null, así que sus abonos no los captura la consulta de arriba.
+    // Cada abono se prorratea entre las líneas según la proporción de cada línea
+    // sobre el monto total de la OP.
+    let abonosDistribuidos: any[] = []
+    if (areaIds.length > 0) {
+      const { data: abonosDist } = await (dbComp.from('cxp_abonos') as any)
+        .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, tipo_gasto, status, monto)')
+        .is('ordenes_pago.id_area_fk', null)
+        .neq('ordenes_pago.status', 'Cancelada')
+        .gte('fecha_abono', `${anio}-01-01`)
+        .lte('fecha_abono', `${anio}-12-31`)
+      const opIdsDist = Array.from(new Set((abonosDist ?? []).map((a: any) => a.id_op_fk)))
+      if (opIdsDist.length > 0) {
+        const { data: detDist } = await (dbComp.from('ordenes_pago_det') as any)
+          .select('id_op_fk, id_area_fk, monto')
+          .in('id_op_fk', opIdsDist)
+          .in('id_area_fk', areaIds)
+        abonosDistribuidos = (abonosDist ?? []).flatMap((a: any) => {
+          const montoOP = Number(a.ordenes_pago.monto) || 0
+          if (montoOP <= 0) return []
+          return (detDist ?? [])
+            .filter((d: any) => d.id_op_fk === a.id_op_fk)
+            .map((d: any) => ({
+              monto: Number(a.monto) * (Number(d.monto) / montoOP),
+              fecha_abono: a.fecha_abono,
+              ordenes_pago: { id_area_fk: d.id_area_fk, tipo_gasto: a.ordenes_pago.tipo_gasto, status: a.ordenes_pago.status },
+            }))
+        })
+      }
+    }
+    const abonosTodos = [...(abonosData ?? []), ...abonosDistribuidos]
+
     // ── Construir realMap ────────────────────────────────────────
     const rm: DetMap = {}
 
@@ -191,7 +224,7 @@ export default function FlujoEfectivoPage() {
     areaParts.forEach(p => {
       rm[p.id] = {}
       const tiposCubiertos = !p.tipo_gasto && p.id_area_fk ? tiposEspecificosPorArea[p.id_area_fk] : null
-      ;(abonosData ?? []).filter((a: any) => {
+      abonosTodos.filter((a: any) => {
           const op = a.ordenes_pago
           if (!op) return false
           if (p.id_area_fk && op.id_area_fk !== p.id_area_fk) return false

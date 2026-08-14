@@ -129,7 +129,7 @@ export default function ComparativoPage() {
     const areaIds = Array.from(new Set(areaParts.map(p => p.id_area_fk!)))
 
     // ── Consultas en paralelo ────────────────────────────────────
-    const [{ data: secData }, { data: concData }, { data: opsData }] = await Promise.all([
+    const [{ data: secData }, { data: concData }, { data: opsData }, { data: opsDetData }] = await Promise.all([
       secIds.length > 0
         ? (dbCtrl.from('recibos_ingreso_secciones') as any)
             .select('id_seccion_fk, monto, recibos_ingreso!inner(status, fecha)')
@@ -154,7 +154,27 @@ export default function ComparativoPage() {
             .lte('fecha_op', `${anio}-12-31`)
             .not('status', 'in', '("Cancelada","Rechazada")')
         : Promise.resolve({ data: [] }),
+      // OP con distribución por área (ordenes_pago_det): el encabezado queda con
+      // id_area_fk null, así que no las captura el .in('id_area_fk', areaIds) de
+      // arriba — hay que sumar cada línea por su propia área.
+      areaIds.length > 0
+        ? (dbComp.from('ordenes_pago_det') as any)
+            .select('id_area_fk, monto, ordenes_pago!inner(tipo_gasto, fecha_op, status, id_area_fk)')
+            .in('id_area_fk', areaIds)
+            .is('ordenes_pago.id_area_fk', null)
+            .gte('ordenes_pago.fecha_op', `${anio}-01-01`)
+            .lte('ordenes_pago.fecha_op', `${anio}-12-31`)
+            .not('ordenes_pago.status', 'in', '("Cancelada","Rechazada")')
+        : Promise.resolve({ data: [] }),
     ])
+    const opsDistribuidas = (opsDetData ?? []).map((r: any) => ({
+      id_area_fk: r.id_area_fk,
+      tipo_gasto: r.ordenes_pago.tipo_gasto,
+      fecha_op:   r.ordenes_pago.fecha_op,
+      status:     r.ordenes_pago.status,
+      monto:      r.monto,
+    }))
+    const opsTodas = [...(opsData ?? []), ...opsDistribuidas]
 
     // ── Construir realMap ────────────────────────────────────────
     const rm: DetMap = {}
@@ -193,7 +213,7 @@ export default function ComparativoPage() {
     areaParts.forEach(p => {
       rm[p.id] = {}
       const tiposCubiertos = !p.tipo_gasto && p.id_area_fk ? tiposEspecificosPorArea[p.id_area_fk] : null
-      ;(opsData ?? []).filter((op: any) => {
+      opsTodas.filter((op: any) => {
           if (p.id_area_fk && op.id_area_fk !== p.id_area_fk) return false
           if (p.tipo_gasto && op.tipo_gasto !== p.tipo_gasto) return false
           if (tiposCubiertos && op.tipo_gasto && tiposCubiertos.has(op.tipo_gasto)) return false
