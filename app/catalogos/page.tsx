@@ -820,6 +820,7 @@ const PUESTOS_COLABORADOR = ['Vigilancia', 'Mantto. Res', 'Mantto. Campo', 'Golf
 const emptyColabForm = () => ({
   nombre: '', apellido_paterno: '', apellido_materno: '', fecha_ingreso: '', puesto: '',
   sueldo_bruto_mensual: '', sueldo_neto_mensual: '', sueldo_diario: '',
+  id_centro_costo_fk: '',
   es_asignado: false, es_supervisor: false,
 })
 
@@ -827,6 +828,7 @@ function ColaboradoresPanel() {
   const { authUser } = useAuth()
   const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<Colaborador[]>([])
+  const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string }[]>([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [viewing, setViewing]   = useState<Colaborador | null>(null)
@@ -842,8 +844,12 @@ function ColaboradoresPanel() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const { data: colabs } = await dbCfg.from('colaboradores').select('*').order('nombre')
+    const [{ data: colabs }, { data: ccs }] = await Promise.all([
+      dbCfg.from('colaboradores').select('*').order('nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+    ])
     setItems((colabs as Colaborador[]) ?? [])
+    setCentrosCosto(ccs ?? [])
     setLoading(false)
   }, [])
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -856,6 +862,7 @@ function ColaboradoresPanel() {
       fecha_ingreso: c.fecha_ingreso ?? '', puesto: c.puesto ?? '',
       sueldo_bruto_mensual: c.sueldo_bruto_mensual?.toString() ?? '', sueldo_neto_mensual: c.sueldo_neto_mensual?.toString() ?? '',
       sueldo_diario: c.sueldo_diario?.toString() ?? '',
+      id_centro_costo_fk: c.id_centro_costo_fk?.toString() ?? '',
       es_asignado: c.es_asignado, es_supervisor: c.es_supervisor,
     })
     setError(''); setViewing(null); setShowForm(true)
@@ -873,6 +880,7 @@ function ColaboradoresPanel() {
       sueldo_bruto_mensual: form.sueldo_bruto_mensual ? Number(form.sueldo_bruto_mensual) : null,
       sueldo_neto_mensual: form.sueldo_neto_mensual ? Number(form.sueldo_neto_mensual) : null,
       sueldo_diario: form.sueldo_diario ? Number(form.sueldo_diario) : null,
+      id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
       es_asignado: form.es_asignado,
       es_supervisor: form.es_supervisor,
       updated_at: new Date().toISOString(),
@@ -1021,6 +1029,13 @@ function ColaboradoresPanel() {
                   {PUESTOS_COLABORADOR.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="label">Centro de Costo</label>
+                <select className="select" value={form.id_centro_costo_fk} onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value }))}>
+                  <option value="">— Sin asignar —</option>
+                  {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
               <div>
                 <label className="label">Sueldo Bruto Mensual</label>
                 <input className="input" type="number" min="0" step="0.01" value={form.sueldo_bruto_mensual} onChange={e => setForm(f => ({ ...f, sueldo_bruto_mensual: e.target.value }))} placeholder="0.00" />
@@ -1100,6 +1115,7 @@ function ColaboradoresPanel() {
                 { label: 'Sueldo Bruto', value: fmt$(viewing.sueldo_bruto_mensual) },
                 { label: 'Sueldo Neto', value: fmt$(viewing.sueldo_neto_mensual) },
                 { label: 'Sueldo Diario (jornal)', value: fmt$(viewing.sueldo_diario) },
+                { label: 'Centro de Costo', value: viewing.id_centro_costo_fk ? (centrosCosto.find(c => c.id === viewing.id_centro_costo_fk)?.nombre ?? '—') : '—' },
               ].map(({ label, value }) => (
                 <div key={label} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 8 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
