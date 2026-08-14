@@ -59,6 +59,26 @@ function PagoBadge({ fechaPago }: { fechaPago: Date }) {
   )
 }
 
+// Al pagar por completo una OP, cierra la(s) OC vinculada(s) (vía ordenes_pago_oc
+// y/o el FK directo legado en la propia OP) y, en cascada, su requisición origen —
+// mismo criterio de cierre que usa recepciones/page.tsx al recibir mercancía completa.
+async function cerrarOCsDeOP(idOp: number, idOcDirecta: number | null) {
+  const { data: link } = await dbComp.from('ordenes_pago_oc').select('id_oc_fk').eq('id_op_fk', idOp)
+  const ocIds = Array.from(new Set([...(link ?? []).map((r: any) => r.id_oc_fk), ...(idOcDirecta ? [idOcDirecta] : [])]))
+  if (ocIds.length === 0) return
+
+  const { data: ocsRows } = await dbComp.from('ordenes_compra').select('id, status, id_requisicion_fk').in('id', ocIds)
+  const aCerrar = (ocsRows ?? []).filter((o: any) => o.status !== 'Cerrada' && o.status !== 'Cancelada')
+  if (aCerrar.length === 0) return
+
+  await dbComp.from('ordenes_compra').update({ status: 'Cerrada' }).in('id', aCerrar.map((o: any) => o.id))
+
+  const reqIds = Array.from(new Set(aCerrar.map((o: any) => o.id_requisicion_fk).filter(Boolean)))
+  if (reqIds.length > 0) {
+    await dbComp.from('requisiciones').update({ status: 'Completada' }).in('id', reqIds)
+  }
+}
+
 // ════════════════════════════════════════════════════════════
 // Página principal CXP
 // ════════════════════════════════════════════════════════════
@@ -725,6 +745,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
     // OP de Combustible pagada: los vales ligados pasan de Solicitado a Emitido solos.
     if (nuevoStatus === 'Pagada') {
       await emitirValesPorPagoOP(op.id, authUser?.nombre ?? null)
+      await cerrarOCsDeOP(op.id, op.id_oc_fk ?? null)
     }
 
     // Movimiento bancario: actualizar saldo de cuenta origen
