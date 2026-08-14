@@ -7,6 +7,7 @@ export type Colaborador = {
   puesto: string | null
   sueldo_bruto_mensual: number | null
   sueldo_neto_mensual: number | null
+  sueldo_diario: number | null
   es_asignado: boolean
   es_supervisor: boolean
   id_cuadrante_fk: number | null

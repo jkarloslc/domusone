@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import ColaboradorPicker from '@/components/ui/ColaboradorPicker'
+import { nombreCompletoColaborador } from '@/lib/colaboradores'
 
 const TIPOS      = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Herrería','Carpintería','Mantto. Lineas Sanitarias','Otro']
 const PRIORIDADES = ['Urgente','Alta','Media','Baja']
@@ -425,10 +426,16 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
       dbCtrl.from('ot_mano_obra').select('*').eq('id_ot_fk', ot.id).order('id')
         .then(({ data }) => {
           if (data && data.length > 0) {
-            setManoObra(data.map((r: any) => ({
-              id: r.id, id_categoria_fk: r.id_categoria_fk?.toString() ?? '',
+            setManoObra(data.map((r: any) => r.id_categoria_fk ? {
+              id: r.id, tipo: 'legacy',
+              id_categoria_fk: r.id_categoria_fk.toString(),
               trabajadores: r.trabajadores?.toString() ?? '1', horas: r.horas?.toString() ?? '',
-            })))
+            } : {
+              id: r.id, tipo: 'real',
+              id_colaborador_fk: r.id_colaborador_fk ?? null, nombre: r.nombre ?? '',
+              jornales: r.jornales != null ? r.jornales.toString() : '1',
+              sueldo_diario: r.sueldo_diario != null ? r.sueldo_diario.toString() : '0',
+            }))
           }
         })
       dbCtrl.from('ot_conceptos').select('*').eq('id_ot_fk', ot.id).order('orden').order('id')
@@ -547,72 +554,78 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
       if (err) { setError(err.message); setSaving(false); return }
     }
 
-    // Costeo por Conceptos vs. manual (Mano de Obra + Recursos): al cambiar
-    // de modo se limpia el otro para no arrastrar costos duplicados/obsoletos.
-    if (otId && form.por_conceptos) {
-      await dbCtrl.from('ot_recursos').delete().eq('id_ot_fk', otId)
-      await dbCtrl.from('ot_mano_obra').delete().eq('id_ot_fk', otId)
-      const idsExistentesConcepto = conceptosOT.filter(c => c.id).map(c => c.id)
-      const { data: conceptosActuales } = await dbCtrl.from('ot_conceptos').select('id').eq('id_ot_fk', otId)
-      const idsAEliminarConcepto = (conceptosActuales ?? []).filter((r: any) => !idsExistentesConcepto.includes(r.id)).map((r: any) => r.id)
-      if (idsAEliminarConcepto.length) await dbCtrl.from('ot_conceptos').delete().in('id', idsAEliminarConcepto)
-      for (const c of conceptosOT.filter(c => c.id)) {
-        await dbCtrl.from('ot_conceptos').update({
-          id_concepto_fk: c.id_concepto_fk, codigo: c.codigo, descripcion: c.descripcion, unidad: c.unidad,
-          cantidad: Number(c.cantidad), costo_unitario: Number(c.costo_unitario),
-        }).eq('id', c.id)
-      }
-      const nuevosConceptos = conceptosOT.filter(c => !c.id)
-      if (nuevosConceptos.length) {
-        const { error: errConceptos } = await dbCtrl.from('ot_conceptos').insert(nuevosConceptos.map((c, i) => ({
-          id_ot_fk: otId, id_concepto_fk: c.id_concepto_fk, codigo: c.codigo, descripcion: c.descripcion,
-          unidad: c.unidad, cantidad: Number(c.cantidad), costo_unitario: Number(c.costo_unitario), orden: i,
-        })))
-        if (errConceptos) { setError(`Error al guardar conceptos: ${errConceptos.message}`); setSaving(false); return }
-      }
-      setSaving(false); onSaved()
-      return
-    }
-    if (otId && !form.por_conceptos) {
-      await dbCtrl.from('ot_conceptos').delete().eq('id_ot_fk', otId)
-    }
-
-    const recursosValidos = recursos.filter(r => r.descripcion.trim())
+    // Costeo por Conceptos vs. manual (Recursos): al cambiar de modo se
+    // limpia el otro para no arrastrar costos duplicados/obsoletos. Mano de
+    // Obra (asistencia real) se guarda siempre, sin importar el modo.
     if (otId) {
-      if (!isNew) {
-        const idsExistentes = recursosValidos.filter(r => r.id).map(r => r.id)
-        const { data: recActuales } = await dbCtrl.from('ot_recursos').select('id').eq('id_ot_fk', otId)
-        const idsAEliminar = (recActuales ?? []).filter((r: any) => !idsExistentes.includes(r.id)).map((r: any) => r.id)
-        if (idsAEliminar.length) await dbCtrl.from('ot_recursos').delete().in('id', idsAEliminar)
-        for (const r of recursosValidos.filter(r => r.id)) {
-          await dbCtrl.from('ot_recursos').update({ cantidad: r.cantidad || null, descripcion: r.descripcion, tipo: r.tipo || null, costo: Number(r.costo || 0) }).eq('id', r.id)
+      if (form.por_conceptos) {
+        await dbCtrl.from('ot_recursos').delete().eq('id_ot_fk', otId)
+        const idsExistentesConcepto = conceptosOT.filter(c => c.id).map(c => c.id)
+        const { data: conceptosActuales } = await dbCtrl.from('ot_conceptos').select('id').eq('id_ot_fk', otId)
+        const idsAEliminarConcepto = (conceptosActuales ?? []).filter((r: any) => !idsExistentesConcepto.includes(r.id)).map((r: any) => r.id)
+        if (idsAEliminarConcepto.length) await dbCtrl.from('ot_conceptos').delete().in('id', idsAEliminarConcepto)
+        for (const c of conceptosOT.filter(c => c.id)) {
+          await dbCtrl.from('ot_conceptos').update({
+            id_concepto_fk: c.id_concepto_fk, codigo: c.codigo, descripcion: c.descripcion, unidad: c.unidad,
+            cantidad: Number(c.cantidad), costo_unitario: Number(c.costo_unitario),
+          }).eq('id', c.id)
+        }
+        const nuevosConceptos = conceptosOT.filter(c => !c.id)
+        if (nuevosConceptos.length) {
+          const { error: errConceptos } = await dbCtrl.from('ot_conceptos').insert(nuevosConceptos.map((c, i) => ({
+            id_ot_fk: otId, id_concepto_fk: c.id_concepto_fk, codigo: c.codigo, descripcion: c.descripcion,
+            unidad: c.unidad, cantidad: Number(c.cantidad), costo_unitario: Number(c.costo_unitario), orden: i,
+          })))
+          if (errConceptos) { setError(`Error al guardar conceptos: ${errConceptos.message}`); setSaving(false); return }
+        }
+      } else {
+        await dbCtrl.from('ot_conceptos').delete().eq('id_ot_fk', otId)
+
+        const recursosValidos = recursos.filter(r => r.descripcion.trim())
+        if (!isNew) {
+          const idsExistentes = recursosValidos.filter(r => r.id).map(r => r.id)
+          const { data: recActuales } = await dbCtrl.from('ot_recursos').select('id').eq('id_ot_fk', otId)
+          const idsAEliminar = (recActuales ?? []).filter((r: any) => !idsExistentes.includes(r.id)).map((r: any) => r.id)
+          if (idsAEliminar.length) await dbCtrl.from('ot_recursos').delete().in('id', idsAEliminar)
+          for (const r of recursosValidos.filter(r => r.id)) {
+            await dbCtrl.from('ot_recursos').update({ cantidad: r.cantidad || null, descripcion: r.descripcion, tipo: r.tipo || null, costo: Number(r.costo || 0) }).eq('id', r.id)
+          }
+        }
+        const nuevos = recursosValidos.filter(r => !r.id)
+        if (nuevos.length) {
+          await dbCtrl.from('ot_recursos').insert(
+            nuevos.map(r => ({ id_ot_fk: otId, cantidad: r.cantidad || null, descripcion: r.descripcion, tipo: r.tipo || null, costo: Number(r.costo || 0) }))
+          )
         }
       }
-      const nuevos = recursosValidos.filter(r => !r.id)
-      if (nuevos.length) {
-        await dbCtrl.from('ot_recursos').insert(
-          nuevos.map(r => ({ id_ot_fk: otId, cantidad: r.cantidad || null, descripcion: r.descripcion, tipo: r.tipo || null, costo: Number(r.costo || 0) }))
-        )
-      }
-      // Mano de Obra
-      const moValidos = manoObra.filter(r => r.id_categoria_fk && r.horas)
+
+      // Mano de Obra real: trabajadores reales (cfg.colaboradores) + jornales.
+      // Las filas "legacy" (categoría genérica, capturas anteriores) son de
+      // solo lectura y solo se conservan o eliminan, nunca se editan aquí.
+      const moValidos = manoObra.filter(r => r.tipo === 'legacy'
+        ? (r.id_categoria_fk && r.horas)
+        : (r.id_colaborador_fk && r.jornales))
       if (!isNew) {
         const idsExMO = moValidos.filter(r => r.id).map(r => r.id)
         const { data: moAct } = await dbCtrl.from('ot_mano_obra').select('id').eq('id_ot_fk', otId)
         const idsDelMO = (moAct ?? []).filter((r: any) => !idsExMO.includes(r.id)).map((r: any) => r.id)
         if (idsDelMO.length) await dbCtrl.from('ot_mano_obra').delete().in('id', idsDelMO)
-        for (const r of moValidos.filter(r => r.id)) {
-          const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
-          const costo = Number(r.trabajadores || 1) * Number(r.horas) * Number(cat?.costo_hora_referencia || 0)
-          await dbCtrl.from('ot_mano_obra').update({ id_categoria_fk: Number(r.id_categoria_fk), trabajadores: Number(r.trabajadores || 1), horas: Number(r.horas), costo_total: costo }).eq('id', r.id)
+        for (const r of moValidos.filter(r => r.id && r.tipo === 'real')) {
+          const costo = Number(r.jornales) * Number(r.sueldo_diario || 0)
+          await dbCtrl.from('ot_mano_obra').update({
+            id_colaborador_fk: r.id_colaborador_fk, nombre: r.nombre,
+            jornales: Number(r.jornales), sueldo_diario: Number(r.sueldo_diario || 0), costo_total: costo,
+          }).eq('id', r.id)
         }
       }
-      const nuevosMO = moValidos.filter(r => !r.id)
+      const nuevosMO = moValidos.filter(r => !r.id && r.tipo === 'real')
       if (nuevosMO.length) {
         await dbCtrl.from('ot_mano_obra').insert(nuevosMO.map(r => {
-          const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
-          const costo = Number(r.trabajadores || 1) * Number(r.horas) * Number(cat?.costo_hora_referencia || 0)
-          return { id_ot_fk: otId, id_categoria_fk: Number(r.id_categoria_fk), trabajadores: Number(r.trabajadores || 1), horas: Number(r.horas), costo_total: costo }
+          const costo = Number(r.jornales) * Number(r.sueldo_diario || 0)
+          return {
+            id_ot_fk: otId, id_colaborador_fk: r.id_colaborador_fk, nombre: r.nombre,
+            jornales: Number(r.jornales), sueldo_diario: Number(r.sueldo_diario || 0), costo_total: costo,
+          }
         }))
       }
     }
@@ -752,24 +765,37 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
             />
           )}
 
-          {/* Mano de Obra */}
-          {!form.por_conceptos && (
+          {/* Mano de Obra real — trabajadores de cfg.colaboradores + jornales.
+              Siempre visible: es asistencia real, independiente del método
+              de costeo (Recursos o Conceptos) usado para el precio de la OT. */}
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: '#b45309', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Mano de Obra</div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: '#b45309', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>Mano de Obra</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginBottom: 6 }}>Trabajadores reales que participaron, para reportes de mano de obra</div>
             {manoObra.map((r, i) => {
-              const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
-              const costo = Number(r.trabajadores || 1) * Number(r.horas || 0) * Number(cat?.costo_hora_referencia || 0)
+              if (r.tipo === 'legacy') {
+                const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
+                const costo = Number(r.trabajadores || 1) * Number(r.horas || 0) * Number(cat?.costo_hora_referencia || 0)
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '5px 8px', background: '#f8fafc', borderRadius: 5 }}>
+                    <div style={{ flex: 1, fontSize: 11, color: 'var(--text-muted)' }}>
+                      {cat?.categoria ?? 'Categoría eliminada'} — {r.trabajadores} trab. × {r.horas}h <em>(captura anterior)</em>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{costo > 0 ? `$${costo.toLocaleString('es-MX',{minimumFractionDigits:2})}` : '—'}</div>
+                    <button className="btn-ghost" style={{ padding: '3px' }} onClick={() => setManoObra(m => m.filter((_,j) => j!==i))}><X size={10} /></button>
+                  </div>
+                )
+              }
+              const costo = Number(r.jornales || 0) * Number(r.sueldo_diario || 0)
               return (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 50px 60px 70px 24px', gap: 6, marginBottom: 6 }}>
-                  <select className="select" style={{ fontSize: 11 }} value={r.id_categoria_fk}
-                    onChange={e => setManoObra(m => m.map((x,j) => j===i ? {...x, id_categoria_fk: e.target.value} : x))}>
-                    <option value="">— Categoría —</option>
-                    {catManoObra.map(c => <option key={c.id} value={c.id}>{c.categoria}</option>)}
-                  </select>
-                  <input className="input" type="number" min="1" style={{ fontSize: 11, textAlign: 'center' }} value={r.trabajadores} placeholder="Trab."
-                    onChange={e => setManoObra(m => m.map((x,j) => j===i ? {...x, trabajadores: e.target.value} : x))} />
-                  <input className="input" type="number" step="0.5" min="0" style={{ fontSize: 11, textAlign: 'right' }} value={r.horas} placeholder="Hrs"
-                    onChange={e => setManoObra(m => m.map((x,j) => j===i ? {...x, horas: e.target.value} : x))} />
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 90px 24px', gap: 6, marginBottom: 6, alignItems: 'center' }}>
+                  <ColaboradorPicker value={r.nombre} label="Seleccionar — Mano de Obra"
+                    onChange={nombre => setManoObra(m => m.map((x,j) => j===i ? {...x, nombre} : x))}
+                    onSelect={c => setManoObra(m => m.map((x,j) => j===i ? {
+                      ...x, id_colaborador_fk: c.id, nombre: nombreCompletoColaborador(c),
+                      sueldo_diario: c.sueldo_diario != null ? String(c.sueldo_diario) : '0',
+                    } : x))} />
+                  <input className="input" type="number" step="0.5" min="0" style={{ fontSize: 11, textAlign: 'center' }} value={r.jornales} placeholder="Jorn."
+                    onChange={e => setManoObra(m => m.map((x,j) => j===i ? {...x, jornales: e.target.value} : x))} />
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 11, color: 'var(--text-secondary)' }}>
                     {costo > 0 ? `$${costo.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—'}
                   </div>
@@ -779,19 +805,21 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
             })}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button className="btn-ghost" style={{ fontSize: 11 }}
-                onClick={() => setManoObra(m => [...m, { id_categoria_fk: '', trabajadores: '1', horas: '' }])}>
+                onClick={() => setManoObra(m => [...m, { tipo: 'real', id_colaborador_fk: null, nombre: '', jornales: '1', sueldo_diario: '0' }])}>
                 <Plus size={10} /> Agregar
               </button>
               {manoObra.length > 0 && (() => {
                 const total = manoObra.reduce((acc, r) => {
-                  const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
-                  return acc + Number(r.trabajadores||1)*Number(r.horas||0)*Number(cat?.costo_hora_referencia||0)
+                  if (r.tipo === 'legacy') {
+                    const cat = catManoObra.find(c => c.id === Number(r.id_categoria_fk))
+                    return acc + Number(r.trabajadores||1)*Number(r.horas||0)*Number(cat?.costo_hora_referencia||0)
+                  }
+                  return acc + Number(r.jornales||0) * Number(r.sueldo_diario||0)
                 }, 0)
                 return total > 0 ? <div style={{ fontSize: 12, fontWeight: 700, color: '#b45309' }}>${total.toLocaleString('es-MX',{minimumFractionDigits:2})}</div> : null
               })()}
             </div>
           </div>
-          )}
           {/* Recursos */}
           {!form.por_conceptos && (
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
@@ -1034,6 +1062,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
 
   const costoRecursos  = recursos.reduce((a, r) => a + Number(r.costo || 0), 0)
   const costoConceptos = conceptos.reduce((a, c) => a + Number(c.cantidad || 0) * Number(c.costo_unitario || 0), 0)
+  const costoManoObra  = manoObra.reduce((a, r) => a + Number(r.costo_total || 0), 0)
   const costoTotal     = ot.por_conceptos ? costoConceptos : costoRecursos
 
   const cambiarStatus = async (nuevoStatus: string) => {
@@ -1101,19 +1130,20 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
     }
 
     const moRows = manoObra.map(r => {
-      const categoria = catMO[r.id_categoria_fk] ?? '—'
-      const costoMO   = Number(r.costo_total || 0)
+      const esReal   = !!r.id_colaborador_fk
+      const detalle  = esReal ? r.nombre : `${catMO[r.id_categoria_fk] ?? '—'} (${r.trabajadores ?? 1} trab.)`
+      const cantidad = esReal ? `${Number(r.jornales ?? 0).toFixed(2)} jor.` : `${Number(r.horas ?? 0).toFixed(2)} hrs`
+      const costoMO  = Number(r.costo_total || 0)
       return `<tr>
-        <td>${categoria}</td>
-        <td style="text-align:center">${r.trabajadores ?? 1}</td>
-        <td style="text-align:right">${Number(r.horas ?? 0).toFixed(2)}</td>
+        <td>${detalle}</td>
+        <td style="text-align:right">${cantidad}</td>
         <td style="text-align:right">${costoMO > 0 ? '$' + costoMO.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}</td>
       </tr>`
     }).join('')
     const costoMOTotal = manoObra.reduce((a, r) => a + Number(r.costo_total || 0), 0)
     const moTotalHtml  = costoMOTotal > 0
       ? `<tr style="background:#fef3c7;font-weight:700">
-          <td colspan="3" style="color:#b45309">TOTAL MANO DE OBRA</td>
+          <td colspan="2" style="color:#b45309">TOTAL MANO DE OBRA</td>
           <td style="text-align:right;color:#b45309">$${costoMOTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
         </tr>`
       : ''
@@ -1245,7 +1275,7 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
       ${manoObra.length > 0 ? `
       <h2 style="color:#b45309;border-bottom-color:#fde68a;">Mano de Obra</h2>
       <table>
-        <thead><tr><th>Categoría</th><th style="text-align:center">Trabajadores</th><th style="text-align:right">Horas</th><th style="text-align:right">Costo</th></tr></thead>
+        <thead><tr><th>Trabajador</th><th style="text-align:right">Jornales/Horas</th><th style="text-align:right">Costo</th></tr></thead>
         <tbody>
           ${moRows}
           ${moTotalHtml}
@@ -1363,6 +1393,40 @@ function OTDetail({ ot, areaMap, ccMap, frMap, cuadMap, acMap, onClose, onEdit }
             <div style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#d97706', marginBottom: 4 }}>Notas</div>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{ot.notas}</p>
+            </div>
+          )}
+
+          {!loading && manoObra.length > 0 && (
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#b45309', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Mano de Obra</div>
+              <div className="card" style={{ overflow: 'hidden' }}>
+                <table>
+                  <thead><tr><th>Trabajador</th><th style={{ textAlign: 'right' }}>Jornales/Horas</th><th style={{ textAlign: 'right' }}>Costo</th></tr></thead>
+                  <tbody>
+                    {manoObra.map(r => {
+                      const esReal   = !!r.id_colaborador_fk
+                      const cat      = catMO[r.id_categoria_fk]
+                      const detalle  = esReal ? r.nombre : `${cat ?? '—'} (${r.trabajadores ?? 1} trab.)`
+                      const cantidad = esReal ? `${Number(r.jornales ?? 0).toFixed(2)} jor.` : `${Number(r.horas ?? 0).toFixed(2)} hrs`
+                      return (
+                        <tr key={r.id}>
+                          <td style={{ fontSize: 13 }}>{detalle}</td>
+                          <td style={{ textAlign: 'right', fontSize: 12 }}>{cantidad}</td>
+                          <td style={{ textAlign: 'right', fontSize: 12 }}>
+                            {Number(r.costo_total) > 0 ? `$${Number(r.costo_total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                    {costoManoObra > 0 && (
+                      <tr style={{ background: '#fef3c7', fontWeight: 700 }}>
+                        <td colSpan={2} style={{ color: '#b45309' }}>TOTAL</td>
+                        <td style={{ textAlign: 'right', color: '#b45309' }}>${costoManoObra.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 

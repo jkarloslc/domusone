@@ -819,7 +819,7 @@ function CuotasGolfPanel() {
 const PUESTOS_COLABORADOR = ['Vigilancia', 'Mantto. Res', 'Mantto. Campo', 'Golf Servicios', 'Hipico', 'Areas Publicas']
 const emptyColabForm = () => ({
   nombre: '', apellido_paterno: '', apellido_materno: '', fecha_ingreso: '', puesto: '',
-  sueldo_bruto_mensual: '', sueldo_neto_mensual: '',
+  sueldo_bruto_mensual: '', sueldo_neto_mensual: '', sueldo_diario: '',
   es_asignado: false, es_supervisor: false,
 })
 
@@ -855,6 +855,7 @@ function ColaboradoresPanel() {
       nombre: c.nombre, apellido_paterno: c.apellido_paterno ?? '', apellido_materno: c.apellido_materno ?? '',
       fecha_ingreso: c.fecha_ingreso ?? '', puesto: c.puesto ?? '',
       sueldo_bruto_mensual: c.sueldo_bruto_mensual?.toString() ?? '', sueldo_neto_mensual: c.sueldo_neto_mensual?.toString() ?? '',
+      sueldo_diario: c.sueldo_diario?.toString() ?? '',
       es_asignado: c.es_asignado, es_supervisor: c.es_supervisor,
     })
     setError(''); setViewing(null); setShowForm(true)
@@ -871,6 +872,7 @@ function ColaboradoresPanel() {
       puesto: form.puesto.trim() || null,
       sueldo_bruto_mensual: form.sueldo_bruto_mensual ? Number(form.sueldo_bruto_mensual) : null,
       sueldo_neto_mensual: form.sueldo_neto_mensual ? Number(form.sueldo_neto_mensual) : null,
+      sueldo_diario: form.sueldo_diario ? Number(form.sueldo_diario) : null,
       es_asignado: form.es_asignado,
       es_supervisor: form.es_supervisor,
       updated_at: new Date().toISOString(),
@@ -1027,6 +1029,19 @@ function ColaboradoresPanel() {
                 <label className="label">Sueldo Neto Mensual</label>
                 <input className="input" type="number" min="0" step="0.01" value={form.sueldo_neto_mensual} onChange={e => setForm(f => ({ ...f, sueldo_neto_mensual: e.target.value }))} placeholder="0.00" />
               </div>
+              <div>
+                <label className="label">Sueldo Diario (jornal)</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input className="input" type="number" min="0" step="0.01" value={form.sueldo_diario} onChange={e => setForm(f => ({ ...f, sueldo_diario: e.target.value }))} placeholder="0.00" />
+                  {form.sueldo_bruto_mensual && (
+                    <button type="button" className="btn-secondary" style={{ fontSize: 11, padding: '0 10px', whiteSpace: 'nowrap' }}
+                      onClick={() => setForm(f => ({ ...f, sueldo_diario: (Number(f.sueldo_bruto_mensual) / 30).toFixed(2) }))}>
+                      Usar mensual/30
+                    </button>
+                  )}
+                </div>
+                <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3 }}>Se usa como costo de mano de obra real al capturarlo en una OT.</div>
+              </div>
               <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 24, paddingTop: 4 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', fontWeight: 500 }}>
                   <input type="checkbox" checked={form.es_asignado} onChange={e => setForm(f => ({ ...f, es_asignado: e.target.checked }))} style={{ width: 16, height: 16 }} />
@@ -1084,6 +1099,7 @@ function ColaboradoresPanel() {
                 { label: 'Antigüedad', value: antiguedad(viewing.fecha_ingreso) || '—' },
                 { label: 'Sueldo Bruto', value: fmt$(viewing.sueldo_bruto_mensual) },
                 { label: 'Sueldo Neto', value: fmt$(viewing.sueldo_neto_mensual) },
+                { label: 'Sueldo Diario (jornal)', value: fmt$(viewing.sueldo_diario) },
               ].map(({ label, value }) => (
                 <div key={label} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 8 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
@@ -1121,6 +1137,7 @@ function ColaboradoresPanel() {
               <th>Antigüedad</th>
               <th style={{ textAlign: 'right' }}>Sueldo Bruto</th>
               <th style={{ textAlign: 'right' }}>Sueldo Neto</th>
+              <th style={{ textAlign: 'right' }}>Sueldo Diario</th>
               <th style={{ textAlign: 'center' }}>Asignado</th>
               <th style={{ textAlign: 'center' }}>Supervisor</th>
               <th style={{ textAlign: 'center', width: 80 }}>Status</th>
@@ -1128,11 +1145,11 @@ function ColaboradoresPanel() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 {items.length === 0 ? 'Sin colaboradores. Crea el primero.' : 'Sin resultados con los filtros aplicados.'}
               </td></tr>
             ) : filtered.map(c => (
@@ -1143,6 +1160,7 @@ function ColaboradoresPanel() {
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{antiguedad(c.fecha_ingreso)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_bruto_mensual)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_neto_mensual)}</td>
+                <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_diario)}</td>
                 <td style={{ textAlign: 'center' }}>{c.es_asignado ? <CheckCircle size={15} style={{ color: '#0369a1' }} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                 <td style={{ textAlign: 'center' }}>{c.es_supervisor ? <CheckCircle size={15} style={{ color: '#7c3aed' }} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                 <td style={{ textAlign: 'center' }}>

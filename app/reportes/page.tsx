@@ -55,6 +55,7 @@ import ReporteLotesPorStatus from './ReporteLotesPorStatus'
 import ReporteSeccionesLotes from './ReporteSeccionesLotes'
 import ReporteCobranzaCorrienteVencida from './ReporteCobranzaCorrienteVencida'
 import ReporteLotesAsociacion from './ReporteLotesAsociacion'
+import ReporteManoDeObra from './ReporteManoDeObra'
 
 const GRUPOS = [
   {
@@ -91,6 +92,7 @@ const GRUPOS = [
       { id: 'ot-cumplimiento',        label: 'OT Cumplimiento',             icon: BarChart3,     desc: 'Tasa de completado, cumplimiento de fecha límite y desglose por CC/Área/Tipo' },
       { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Costo y cumplimiento por cuadrante, con desglose por programa y criticidad' },
       { id: 'colaboradores',          label: 'Colaboradores',               icon: Users,         desc: 'Personal operativo filtrable por cuadrante, sección, CC, área y rol (asignado/supervisor)' },
+      { id: 'mano-obra-real',         label: 'Mano de Obra Real',           icon: Wrench,        desc: 'Jornales y costo por trabajador real, agrupado por OT/Cuadrante/Área o por Trabajador, con detalle drill-down' },
     ],
   },
   {
@@ -289,6 +291,7 @@ function ReportesContent() {
       {active === 'ot-cumplimiento'         && <ReporteOTCumplimiento />}
       {active === 'programas-mantenimiento' && <ReporteProgramasMantenimiento />}
       {active === 'colaboradores'           && <ReporteColaboradores />}
+      {active === 'mano-obra-real'          && <ReporteManoDeObra />}
 
       {/* Reportes tesorería */}
       {active === 'estado-cuenta'    && <ReporteEstadoCuenta />}

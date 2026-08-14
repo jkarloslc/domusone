@@ -5,10 +5,11 @@ import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import ModalShell from './ModalShell'
 import { Search, User, X, RefreshCw, CheckCircle } from 'lucide-react'
 
-export default function ColaboradorPicker({ value, onChange, filtro, label }: {
+export default function ColaboradorPicker({ value, onChange, onSelect, filtro, label }: {
   value: string
   onChange: (nombre: string) => void
-  filtro: 'es_asignado' | 'es_supervisor'
+  onSelect?: (c: Colaborador) => void
+  filtro?: 'es_asignado' | 'es_supervisor'
   label: string
 }) {
   const [open, setOpen]         = useState(false)
@@ -18,8 +19,9 @@ export default function ColaboradorPicker({ value, onChange, filtro, label }: {
 
   const fetchItems = useCallback(async () => {
     setLoading(true)
-    const { data } = await dbCfg.from('colaboradores').select('*')
-      .eq('activo', true).eq(filtro, true).order('nombre')
+    let q = dbCfg.from('colaboradores').select('*').eq('activo', true)
+    if (filtro) q = q.eq(filtro, true)
+    const { data } = await q.order('nombre')
     setItems((data as Colaborador[]) ?? [])
     setLoading(false)
   }, [filtro])
@@ -32,6 +34,7 @@ export default function ColaboradorPicker({ value, onChange, filtro, label }: {
 
   const seleccionar = (c: Colaborador) => {
     onChange(nombreCompletoColaborador(c))
+    onSelect?.(c)
     setOpen(false)
     setBusqueda('')
   }
@@ -70,7 +73,9 @@ export default function ColaboradorPicker({ value, onChange, filtro, label }: {
             ) : filtrados.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>
                 {items.length === 0
-                  ? `Sin colaboradores marcados como "${filtro === 'es_asignado' ? 'Es Asignado' : 'Es Supervisor'}". Configúralos en Catálogos → Colaboradores.`
+                  ? filtro
+                    ? `Sin colaboradores marcados como "${filtro === 'es_asignado' ? 'Es Asignado' : 'Es Supervisor'}". Configúralos en Catálogos → Colaboradores.`
+                    : 'Sin colaboradores activos. Configúralos en Catálogos → Colaboradores.'
                   : 'Sin coincidencias'}
               </div>
             ) : filtrados.map(c => {
