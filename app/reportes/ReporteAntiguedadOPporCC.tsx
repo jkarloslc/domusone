@@ -28,6 +28,27 @@ type OP = {
   id_proveedor_fk: number | null
   id_centro_costo_fk: number | null
   id_area_fk: number | null
+  _detIdx?: number // distingue las filas sintéticas de una misma OP distribuida (ver explotarPorArea)
+}
+
+// OP con líneas de distribución (ordenes_pago_det) quedan con id_area_fk = null
+// en el encabezado — el área vive en cada línea. Las "explota" en N filas
+// sintéticas (una por línea), prorrateando el saldo según la proporción de
+// cada línea sobre el total de la OP, para que cada una caiga en su área real
+// en vez de agruparse todas bajo "Sin área".
+function explotarPorArea(ops: OP[], detByOp: Record<number, { id_area_fk: number | null; monto: number }[]>): OP[] {
+  const res: OP[] = []
+  for (const op of ops) {
+    const lineas = detByOp[op.id]
+    if (!lineas || lineas.length === 0) { res.push(op); continue }
+    const totalLineas = lineas.reduce((a, l) => a + l.monto, 0) || Number(op.monto ?? 0) || 1
+    const saldoOP = Number(op.saldo ?? op.monto ?? 0)
+    lineas.forEach((l, idx) => {
+      const share = l.monto / totalLineas
+      res.push({ ...op, id_area_fk: l.id_area_fk, monto: l.monto, saldo: saldoOP * share, _detIdx: idx })
+    })
+  }
+  return res
 }
 
 type OPConDias = OP & { _dias: number; _banda: BandaKey; _saldoReal: number }
@@ -82,7 +103,7 @@ export default function ReporteAntiguedadOPporCC() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: ccs }, { data: ars }, { data: ps }, { data: opsData }] = await Promise.all([
+    const [{ data: ccs }, { data: ars }, { data: ps }, { data: opsData }, { data: detData }] = await Promise.all([
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
@@ -90,6 +111,7 @@ export default function ReporteAntiguedadOPporCC() {
         .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk')
         .not('status', 'in', '("Pagada","Cancelada")')
         .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
+      dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, monto'),
     ])
 
     setCentros((ccs ?? []) as any)
@@ -98,7 +120,13 @@ export default function ReporteAntiguedadOPporCC() {
     const pm: Record<number, string> = {}
     ;(ps ?? []).forEach((p: any) => { pm[p.id] = p.nombre })
     setProvMap(pm)
-    setOps((opsData ?? []) as OP[])
+
+    const detByOp: Record<number, { id_area_fk: number | null; monto: number }[]> = {}
+    ;(detData ?? []).forEach((d: any) => {
+      if (!detByOp[d.id_op_fk]) detByOp[d.id_op_fk] = []
+      detByOp[d.id_op_fk].push({ id_area_fk: d.id_area_fk, monto: Number(d.monto) || 0 })
+    })
+    setOps(explotarPorArea((opsData ?? []) as OP[], detByOp))
     setLoading(false)
   }, [])
 
@@ -346,7 +374,7 @@ export default function ReporteAntiguedadOPporCC() {
                           {arOpen && ar.ops.map(op => {
                             const c = bandaColor(op._banda)
                             return (
-                              <tr key={`op-${op.id}`}>
+                              <tr key={`op-${op.id}${op._detIdx != null ? `-${op._detIdx}` : ''}`}>
                                 <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 48 }}>{op.folio}</td>
                                 <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                                 <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
