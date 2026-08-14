@@ -6,7 +6,7 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, Save, Loader, Pencil,
-  ArrowLeft, CheckCircle, XCircle, Printer, Trash2, ChevronLeft, ChevronRight
+  ArrowLeft, CheckCircle, XCircle, Printer, Trash2, ChevronLeft, ChevronRight, Tag
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, nextFolio, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP } from '../types'
@@ -642,6 +642,19 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
   const [savingOP, setSavingOP]   = useState(false)
   const [opForm, setOpForm] = useState({ forma_pago: 'Transferencia', fecha_vencimiento: '', concepto: `OC ${oc.folio}`, tipo_gasto: '', notas: '' })
 
+  // Reclasificar (superadmin) — corrige CC/Área/Frente de un documento ya
+  // capturado, sin importar status, sin tocar monto/pagos.
+  const [reclasOpen, setReclasOpen]     = useState(false)
+  const [ccList, setCcList]             = useState<{ id: number; nombre: string }[]>([])
+  const [areaList, setAreaList]         = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
+  const [frenteList, setFrenteList]     = useState<{ id: number; nombre: string }[]>([])
+  const [relAF, setRelAF]               = useState<{ id_area: number; id_frente: number }[]>([])
+  const [reclasCC, setReclasCC]         = useState('')
+  const [reclasArea, setReclasArea]     = useState('')
+  const [reclasFrente, setReclasFrente] = useState('')
+  const [reclasSaving, setReclasSaving] = useState(false)
+  const [reclasError, setReclasError]   = useState('')
+
   useEffect(() => {
     dbComp.from('ordenes_compra_det').select('*').eq('id_oc_fk', oc.id).then(({ data }) => setDet(data ?? []))
     dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle().then(({ data }) => setOP(data))
@@ -652,16 +665,44 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
     Promise.all([
       dbComp.from('almacenes').select('id, nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true),
-      dbCfg.from('areas').select('id, nombre').eq('activo', true),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true),
       dbCfg.from('frentes').select('id, nombre').eq('activo', true),
-    ]).then(([alm, cc, ar, fr]) => {
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
+    ]).then(([alm, cc, ar, fr, raf]) => {
       const mk = (rows: any[]) => Object.fromEntries(rows.map((r: any) => [r.id, r.nombre]))
       setAlmMap(mk(alm.data ?? []))
       setCCMap(mk(cc.data ?? []))
       setAreaMap(mk(ar.data ?? []))
       setFrMap(mk(fr.data ?? []))
+      setCcList((cc.data ?? []) as any); setAreaList((ar.data ?? []) as any)
+      setFrenteList((fr.data ?? []) as any); setRelAF((raf.data ?? []) as any)
     })
   }, [oc.id, oc.id_proveedor_fk])
+
+  const abrirReclasificar = () => {
+    setReclasCC(oc.id_centro_costo_fk?.toString() ?? '')
+    setReclasArea(oc.id_area_fk?.toString() ?? '')
+    setReclasFrente(oc.id_frente_fk?.toString() ?? '')
+    setReclasError('')
+    setReclasOpen(true)
+  }
+
+  // Update mínimo y explícito: SOLO estos 3 campos + auditoría. Nunca total,
+  // status, ni ningún campo relacionado a pagos.
+  const handleReclasificar = async () => {
+    setReclasSaving(true); setReclasError('')
+    const { error: err } = await dbComp.from('ordenes_compra').update({
+      id_centro_costo_fk: reclasCC ? Number(reclasCC) : null,
+      id_area_fk:          reclasArea ? Number(reclasArea) : null,
+      id_frente_fk:         reclasFrente ? Number(reclasFrente) : null,
+      reclasificado_por:       authUser?.nombre ?? null,
+      fecha_reclasificacion:   new Date().toISOString(),
+    }).eq('id', oc.id)
+    setReclasSaving(false)
+    if (err) { setReclasError(err.message); return }
+    setReclasOpen(false)
+    onClose()
+  }
 
   const crearOrdenPago = async () => {
     setSavingOP(true)
@@ -872,6 +913,7 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
             {oc.id_frente_fk       && <DI label="Frente"          value={frMap[oc.id_frente_fk]       ?? `#${oc.id_frente_fk}`} />}
             {oc.autorizado_por    && <DI label="Autorizado por" value={`${oc.autorizado_por} — ${fmtFecha(oc.fecha_autorizacion)}`} />}
             {oc.comentario_auth   && <DI label="Comentario"     value={oc.comentario_auth} />}
+            {oc.reclasificado_por && <DI label="Reclasificado por" value={`${oc.reclasificado_por} — ${fmtFecha(oc.fecha_reclasificacion)}`} />}
           </div>
 
           {canAuth && oc.status === 'Pendiente Auth' && (
@@ -941,6 +983,54 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
                 <DI label="Vencimiento"   value={fmtFecha(op.fecha_vencimiento)} />
                 <DI label="Concepto"      value={op.concepto} />
               </div>
+            </div>
+          )}
+
+          {/* Reclasificar (solo superadmin) — corrige CC/Área/Frente sin
+              importar status, nunca total ni pagos. */}
+          {authUser?.rol === 'superadmin' && (
+            <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10 }}>
+              {!reclasOpen ? (
+                <button className="btn-ghost" style={{ fontSize: 12 }} onClick={abrirReclasificar}>
+                  <Tag size={13} /> Reclasificar CC/Área/Frente
+                </button>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
+                    Reclasificar — solo corrige clasificación, no toca el total
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+                    <div><label className="label">Centro de Costo</label>
+                      <select className="select" value={reclasCC}
+                        onChange={e => { setReclasCC(e.target.value); setReclasArea(''); setReclasFrente('') }}>
+                        <option value="">— Sin asignar —</option>
+                        {ccList.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                      </select>
+                    </div>
+                    <div><label className="label">Área</label>
+                      <select className="select" value={reclasArea}
+                        onChange={e => { setReclasArea(e.target.value); setReclasFrente('') }}
+                        disabled={!reclasCC}>
+                        <option value="">— Sin asignar —</option>
+                        {areaList.filter(a => a.id_centro_costo_fk === Number(reclasCC)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                      </select>
+                    </div>
+                    <div><label className="label">Frente</label>
+                      <select className="select" value={reclasFrente} onChange={e => setReclasFrente(e.target.value)} disabled={!reclasArea}>
+                        <option value="">— Sin asignar —</option>
+                        {frenteList.filter(f => relAF.some(r => r.id_area === Number(reclasArea) && r.id_frente === f.id)).map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {reclasError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{reclasError}</p>}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleReclasificar} disabled={reclasSaving}>
+                      {reclasSaving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar reclasificación
+                    </button>
+                    <button className="btn-secondary" style={{ fontSize: 12 }} onClick={() => setReclasOpen(false)}>Cancelar</button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
