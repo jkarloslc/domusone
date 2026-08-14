@@ -266,7 +266,7 @@ const REPORTES_PERMITIDOS: Partial<Record<Rol, string[]>> = {
 const ROLES_DELETE: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_organismo']
 
 // ── Roles que pueden autorizar documentos (1ra autorización) ──────────────────
-const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'usuarioadmin', 'usuariomantto', 'compras', 'compras_supervisor', 'fraccionamiento', 'tesoreria', 'admin_organismo']
+const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'usuarioadmin', 'usuariomantto', 'compras_supervisor', 'fraccionamiento', 'tesoreria', 'admin_organismo']
 
 // ── Roles que pueden dar la 2da autorización de Órdenes de Pago (envío a CXP) ─
 const ROLES_AUTH_FINANZAS: Rol[] = ['superadmin', 'admin_finanzas']
