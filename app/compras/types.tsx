@@ -49,6 +49,7 @@ export const STATUS_COMP: Record<string, { bg: string; color: string; border: st
   'Enviada':          { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
   'Aprobada':         { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
   'Rechazada':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+  'Sustituida':       { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
   'En Proceso':       { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
   'Cerrada':          { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
   'Cancelada':        { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },

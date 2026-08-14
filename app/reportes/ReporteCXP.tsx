@@ -27,7 +27,7 @@ export default function ReporteCXP() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     const [{ data: ops }, { data: ps }] = await Promise.all([
-      dbComp.from('ordenes_pago').select('*').neq('status', 'Cancelada').order('fecha_vencimiento'),
+      dbComp.from('ordenes_pago').select('*').neq('status', 'Cancelada').neq('status', 'Rechazada').neq('status', 'Sustituida').order('fecha_vencimiento'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
     ])
     setProvs(ps ?? [])

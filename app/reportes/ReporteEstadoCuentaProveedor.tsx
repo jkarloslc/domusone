@@ -11,7 +11,7 @@ const fmtF = (s: string | null | undefined) =>
 
 const STATUS_CLR: Record<string, string> = {
   'Pendiente Auth': '#7c3aed', 'Pendiente Auth Finanzas': '#6d28d9', Pendiente: '#d97706',
-  Pagada: '#15803d', Rechazada: '#dc2626', Cancelada: '#64748b',
+  Pagada: '#15803d', Rechazada: '#dc2626', Sustituida: '#64748b', Cancelada: '#64748b',
 }
 
 type Prov = {
@@ -80,7 +80,7 @@ export default function ReporteEstadoCuentaProveedor() {
   const lineas = useMemo(() => {
     let acum = 0
     return ops.map(op => {
-      const cargo  = ['Cancelada', 'Rechazada'].includes(op.status) ? 0 : (op.monto ?? 0)
+      const cargo  = ['Cancelada', 'Rechazada', 'Sustituida'].includes(op.status) ? 0 : (op.monto ?? 0)
       const abono  = Math.max(0, (op.monto ?? 0) - (op.saldo ?? op.monto ?? 0))
       acum += cargo - abono
       return { op, cargo, abono, saldoAcum: acum }
@@ -91,7 +91,7 @@ export default function ReporteEstadoCuentaProveedor() {
   const totalAbono  = useMemo(() => lineas.reduce((s, l) => s + l.abono, 0),  [lineas])
   const saldoFinal  = totalCargo - totalAbono
 
-  const pendientes  = useMemo(() => ops.filter(o => !['Pagada','Cancelada','Rechazada'].includes(o.status)), [ops])
+  const pendientes  = useMemo(() => ops.filter(o => !['Pagada','Cancelada','Rechazada','Sustituida'].includes(o.status)), [ops])
   const hoy = new Date().toISOString().slice(0, 10)
   const vencidas = useMemo(() => pendientes.filter(o => o.fecha_vencimiento && o.fecha_vencimiento < hoy), [pendientes, hoy])
 
@@ -112,7 +112,7 @@ export default function ReporteEstadoCuentaProveedor() {
           <label className="label">Status</label>
           <select className="select" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
             <option value="">Todos</option>
-            {['Pendiente Auth','Pendiente Auth Finanzas','Pendiente','Pagada','Rechazada','Cancelada'].map(s =>
+            {['Pendiente Auth','Pendiente Auth Finanzas','Pendiente','Pagada','Rechazada','Sustituida','Cancelada'].map(s =>
               <option key={s} value={s}>{s}</option>
             )}
           </select>
@@ -223,7 +223,7 @@ export default function ReporteEstadoCuentaProveedor() {
               </thead>
               <tbody>
                 {lineas.map(({ op, cargo, abono, saldoAcum }, idx) => {
-                  const vencida = op.fecha_vencimiento && op.fecha_vencimiento < hoy && !['Pagada','Cancelada','Rechazada'].includes(op.status)
+                  const vencida = op.fecha_vencimiento && op.fecha_vencimiento < hoy && !['Pagada','Cancelada','Rechazada','Sustituida'].includes(op.status)
                   return (
                     <tr key={op.id} style={{ background: idx % 2 === 0 ? '#fff' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '8px 10px', fontWeight: 600, color: '#2563eb', fontFamily: 'monospace' }}>{op.folio}</td>

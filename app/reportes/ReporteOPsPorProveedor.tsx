@@ -10,10 +10,10 @@ const fmt  = (n: number | null | undefined) =>
 const fmtF = (s: string | null | undefined) =>
   s ? new Date(s + 'T00:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-const STATUS_OP  = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Cancelada'] as const
+const STATUS_OP  = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
 const STATUS_CLR: Record<string, string> = {
   'Pendiente Auth': '#7c3aed', 'Pendiente Auth Finanzas': '#6d28d9', Pendiente: '#d97706',
-  Pagada: '#15803d', Rechazada: '#dc2626', Cancelada: '#64748b',
+  Pagada: '#15803d', Rechazada: '#dc2626', Sustituida: '#64748b', Cancelada: '#64748b',
 }
 
 type OP = {
@@ -245,7 +245,7 @@ export default function ReporteOPsPorProveedor() {
                       {isOpen && g.ops.map(op => {
                         const opPagado = Math.max(0, (op.monto ?? 0) - (op.saldo ?? op.monto ?? 0))
                         const hoy = new Date().toISOString().slice(0, 10)
-                        const vencida = op.fecha_vencimiento && op.fecha_vencimiento < hoy && !['Pagada', 'Cancelada', 'Rechazada'].includes(op.status)
+                        const vencida = op.fecha_vencimiento && op.fecha_vencimiento < hoy && !['Pagada', 'Cancelada', 'Rechazada', 'Sustituida'].includes(op.status)
                         return (
                           <tr key={op.id} style={{ borderTop: '1px solid #f1f5f9', background: '#fff' }}>
                             <td style={{ padding: '7px 10px 7px 30px' }}>

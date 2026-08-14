@@ -6,7 +6,7 @@ import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutLi
 import * as XLSX from 'xlsx'
 
 // Status conocidos en comp.ordenes_pago
-const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Cancelada'] as const
+const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
 
 // Tipos de gasto (sincronizado con app/compras/ordenes-pago/page.tsx)
 const TIPOS_GASTO = [
@@ -25,6 +25,7 @@ const statusColor = (s: string) =>
   s === 'Pendiente Auth' ? '#7c3aed' :
   s === 'Pendiente Auth Finanzas' ? '#6d28d9' :
   s === 'Rechazada'      ? '#dc2626' :
+  s === 'Sustituida'     ? '#64748b' :
   s === 'Cancelada'      ? '#64748b' : '#64748b'
 
 type OP = {
@@ -455,7 +456,7 @@ export default function ReporteOrdenesPago() {
       <PrintBar title="Ordenes-de-Pago-por-CC-Area" count={docsTotal} reportTitle="Órdenes de Pago por Centro de Costo y Área" />
 
       {/* KPIs por status */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
         {STATUS_OP.map(s => {
           const subset = opsParaKPIs.filter(o => o.status === s)
           const tot    = subset.reduce((a, o) => a + Number(o.monto ?? 0), 0)

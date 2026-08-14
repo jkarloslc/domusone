@@ -6,7 +6,8 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
   ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight,
-  Edit2, Upload, ExternalLink, FileText, AlertTriangle, MessageSquare, Send, Tag
+  Edit2, Upload, ExternalLink, FileText, AlertTriangle, MessageSquare, Send, Tag,
+  RotateCcw, Copy
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, nextFolio, StatusBadge, FORMAS_PAGO_COMP } from '../types'
@@ -243,7 +244,7 @@ export default function OrdenesPagoPage() {
                 Sin órdenes de pago registradas
               </td></tr>
             ) : rows.map(r => (
-              <tr key={r.id} style={{ opacity: r.status === 'Cancelada' ? 0.45 : 1 }}>
+              <tr key={r.id} style={{ opacity: (r.status === 'Cancelada' || r.status === 'Sustituida') ? 0.45 : 1 }}>
                 <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
                   {r.folio}
                   {(r.pdf_factura || r.xml_factura) && (
@@ -1250,6 +1251,24 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [reclasSaving, setReclasSaving] = useState(false)
   const [reclasError, setReclasError] = useState('')
 
+  // Reabrir / Duplicar (superadmin) — solo para OP Rechazada.
+  const [reabrirLoading, setReabrirLoading] = useState(false)
+  const [duplicarLoading, setDuplicarLoading] = useState(false)
+  const [reabrirDuplicarError, setReabrirDuplicarError] = useState('')
+  const [folioSustituta, setFolioSustituta] = useState<string | null>(null)
+  const [folioOriginal, setFolioOriginal]   = useState<string | null>(null)
+
+  useEffect(() => {
+    if (op.id_op_sustituta_fk) {
+      dbComp.from('ordenes_pago').select('folio').eq('id', op.id_op_sustituta_fk).maybeSingle()
+        .then(({ data }) => setFolioSustituta(data?.folio ?? null))
+    } else setFolioSustituta(null)
+    if (op.id_op_original_fk) {
+      dbComp.from('ordenes_pago').select('folio').eq('id', op.id_op_original_fk).maybeSingle()
+        .then(({ data }) => setFolioOriginal(data?.folio ?? null))
+    } else setFolioOriginal(null)
+  }, [op.id, op.id_op_sustituta_fk, op.id_op_original_fk])
+
   const puedeAutorizar         = canAuth()
   const puedeAutorizarFinanzas = canAuthFinanzas()
 
@@ -1464,6 +1483,87 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     onAuthorized()
   }
 
+  // Reabrir (superadmin, solo Rechazada): regresa la MISMA OP al punto de
+  // autorización donde fue rechazada — a 'Pendiente Auth Finanzas' si ya
+  // tenía la 1ra autorización hecha (autorizado_por), o a 'Pendiente Auth'
+  // si fue rechazada desde el inicio. No toca monto/saldo ni el historial
+  // de quién ya autorizó.
+  const handleReabrir = async () => {
+    if (!confirm(`¿Reabrir ${op.folio}? Regresará al flujo de autorización para corregirla y volver a someterla.`)) return
+    setReabrirLoading(true); setReabrirDuplicarError('')
+    const destino = op.autorizado_por ? 'Pendiente Auth Finanzas' : 'Pendiente Auth'
+    const { error: err } = await dbComp.from('ordenes_pago').update({
+      status: destino,
+      reabierta_por:     authUser?.nombre ?? null,
+      fecha_reapertura:  new Date().toISOString(),
+      notas: `[Reabierta por ${authUser?.nombre ?? ''}]${op.notas ? '\n' + op.notas : ''}`,
+    }).eq('id', op.id)
+    setReabrirLoading(false)
+    if (err) { setReabrirDuplicarError(err.message); return }
+    onAuthorized()
+  }
+
+  // Duplicar (superadmin, solo Rechazada): crea una OP nueva (folio propio)
+  // copiando los datos de clasificación/pago de la rechazada — nunca copia
+  // el status ni nada de autorización — y dobla la original a 'Sustituida'.
+  const handleDuplicar = async () => {
+    if (!confirm(`¿Duplicar ${op.folio}? Se creará una OP nueva y ${op.folio} quedará como Sustituida.`)) return
+    setDuplicarLoading(true); setReabrirDuplicarError('')
+    let folio: string
+    try {
+      folio = await nextFolio(dbComp, 'OP')
+    } catch (e: any) {
+      setReabrirDuplicarError(e.message); setDuplicarLoading(false); return
+    }
+    const { data: nuevaOp, error: errIns } = await dbComp.from('ordenes_pago').insert({
+      folio,
+      id_proveedor_fk:     op.id_proveedor_fk,
+      id_almacen_fk:       op.id_almacen_fk,
+      id_centro_costo_fk:  op.id_centro_costo_fk,
+      id_area_fk:          op.id_area_fk,
+      id_frente_fk:         op.id_frente_fk,
+      id_oc_fk:             op.id_oc_fk,
+      forma_pago:           op.forma_pago,
+      fecha_vencimiento:    op.fecha_vencimiento,
+      concepto:             op.concepto,
+      tipo_gasto:           op.tipo_gasto,
+      urgencia:             op.urgencia,
+      banco_destino:        op.banco_destino,
+      cuenta_clabe:         op.cuenta_clabe,
+      monto:                op.monto,
+      id_servicio_fk:       op.id_servicio_fk,
+      pdf_factura:          op.pdf_factura,
+      xml_factura:          op.xml_factura,
+      soporte_url:          op.soporte_url,
+      status:               'Pendiente Auth',
+      created_by:           authUser?.nombre ?? null,
+      id_op_original_fk:    op.id,
+      notas: `Sustituye a ${op.folio} (rechazada).${op.notas ? '\n' + op.notas : ''}`,
+    }).select('id').single()
+    if (errIns || !nuevaOp) { setReabrirDuplicarError(errIns?.message ?? 'No se pudo crear la OP nueva'); setDuplicarLoading(false); return }
+
+    const { data: ocsRelData } = await dbComp.from('ordenes_pago_oc').select('id_oc_fk, monto').eq('id_op_fk', op.id)
+    if (ocsRelData && ocsRelData.length > 0) {
+      await dbComp.from('ordenes_pago_oc').insert(
+        ocsRelData.map((o: any) => ({ id_op_fk: nuevaOp.id, id_oc_fk: o.id_oc_fk, monto: o.monto }))
+      )
+    }
+    const { data: detData } = await dbComp.from('ordenes_pago_det').select('descripcion, id_area_fk, id_frente_fk, monto').eq('id_op_fk', op.id)
+    if (detData && detData.length > 0) {
+      await dbComp.from('ordenes_pago_det').insert(
+        detData.map((d: any) => ({ ...d, id_op_fk: nuevaOp.id }))
+      )
+    }
+
+    await dbComp.from('ordenes_pago').update({
+      status: 'Sustituida',
+      id_op_sustituta_fk: nuevaOp.id,
+    }).eq('id', op.id)
+
+    setDuplicarLoading(false)
+    onAuthorized()
+  }
+
   const imprimir = async () => {
     // Fresh fetch para asegurar campos actualizados (autorizado_por, referencia_pago, etc.)
     const { data: freshOP } = await dbComp.from('ordenes_pago').select('*').eq('id', op.id).single()
@@ -1481,16 +1581,19 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         ? 'Pendiente de segunda autorización (Finanzas)'
         : opData.status === 'Rechazada'
           ? 'Rechazada'
-          : opData.autorizado_finanzas_por
-            ? 'Autorizada'
-            : opData.autorizado_por
-              ? 'Autorizada (1ra autorización)'
-              : 'En proceso'
+          : opData.status === 'Sustituida'
+            ? 'Sustituida'
+            : opData.autorizado_finanzas_por
+              ? 'Autorizada'
+              : opData.autorizado_por
+                ? 'Autorizada (1ra autorización)'
+                : 'En proceso'
     const nombreElaboro = opData.created_by ?? opData.usuario_crea ?? 'Sin registro'
     const nombreAutorizo = opData.autorizado_finanzas_por ?? opData.autorizado_por
       ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización'
         : opData.status === 'Pendiente Auth Finanzas' ? 'Pendiente de segunda autorización'
-        : opData.status === 'Rechazada' ? 'Rechazada' : 'Sin registro')
+        : opData.status === 'Rechazada' ? 'Rechazada'
+        : opData.status === 'Sustituida' ? 'Sustituida' : 'Sin registro')
     // Cargar config de organización
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
@@ -1691,6 +1794,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
               {op.fecha_pago      && <DI label="Fecha Pago" value={fmtFecha(op.fecha_pago)} />}
               {op.reclasificado_por && <DI label="Reclasificado por" value={`${op.reclasificado_por} — ${fmtFecha(op.fecha_reclasificacion)}`} />}
+              {op.reabierta_por && <DI label="Reabierta por" value={`${op.reabierta_por} — ${fmtFecha(op.fecha_reapertura)}`} />}
             </div>
             {detLinesView.length > 0 && (
               <div style={{ marginTop: 8 }}>
@@ -2226,6 +2330,40 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               fontSize: 12, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={14} style={{ flexShrink: 0 }} />
               Esta Orden de Pago fue rechazada y no ingresará a Cuentas por Pagar.
+            </div>
+          )}
+
+          {/* Confirmación de sustitución */}
+          {op.status === 'Sustituida' && (
+            <div style={{ padding: '12px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 8,
+              fontSize: 12, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+              Esta Orden de Pago fue sustituida{folioSustituta ? ` por ${folioSustituta}` : ''} y no ingresará a Cuentas por Pagar.
+            </div>
+          )}
+          {op.id_op_original_fk && folioOriginal && (
+            <div style={{ padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8,
+              fontSize: 12, color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+              Esta Orden de Pago sustituye a {folioOriginal} (rechazada).
+            </div>
+          )}
+
+          {/* Reabrir / Duplicar (solo superadmin, solo Rechazada) */}
+          {authUser?.rol === 'superadmin' && op.status === 'Rechazada' && (
+            <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
+                Esta OP fue rechazada — puedes reabrirla para corregirla, o duplicarla con folio nuevo
+              </div>
+              {reabrirDuplicarError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{reabrirDuplicarError}</p>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleReabrir} disabled={reabrirLoading || duplicarLoading}>
+                  {reabrirLoading ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />} Reabrir esta OP
+                </button>
+                <button className="btn-secondary" style={{ fontSize: 12 }} onClick={handleDuplicar} disabled={reabrirLoading || duplicarLoading}>
+                  {duplicarLoading ? <Loader size={13} className="animate-spin" /> : <Copy size={13} />} Duplicar con folio nuevo
+                </button>
+              </div>
             </div>
           )}
 

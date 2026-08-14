@@ -105,9 +105,9 @@ export default function VistaEjecutivaPage() {
       dbCtrl.from('recibos_ingreso').select('monto_total')
         .eq('status', 'Confirmado').gte('fecha', mesIni).lte('fecha', hoy),
       dbComp.from('ordenes_pago').select('monto')
-        .neq('status', 'Cancelada').gte('created_at', `${mesIni}T00:00:00`),
+        .neq('status', 'Cancelada').neq('status', 'Rechazada').neq('status', 'Sustituida').gte('created_at', `${mesIni}T00:00:00`),
       dbComp.from('ordenes_pago').select('saldo, monto')
-        .neq('status', 'Cancelada').neq('status', 'Pagada'),
+        .neq('status', 'Cancelada').neq('status', 'Pagada').neq('status', 'Rechazada').neq('status', 'Sustituida'),
       // Hospitality
       dbCtrl.from('eventos').select('id, nombre, fecha_inicio, status')
         .in('status', ['Realizado', 'Confirmado', 'En curso'])

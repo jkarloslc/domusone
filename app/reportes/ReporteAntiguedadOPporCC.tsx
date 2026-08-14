@@ -5,7 +5,7 @@ import { PrintBar } from './utils'
 import { RefreshCw, Filter, ChevronDown, ChevronRight } from 'lucide-react'
 
 // Bandas de antigüedad sobre fecha_vencimiento. Se consideran OPs con saldo > 0
-// y status distinto de 'Pagada' y 'Cancelada'.
+// y status distinto de 'Pagada', 'Cancelada', 'Rechazada' y 'Sustituida'.
 const BANDAS = [
   { key: 'por-vencer', label: 'Por vencer', color: '#15803d', test: (d: number) => d <= 0 },
   { key: '0-30',       label: '0-30 días',  color: '#d97706', test: (d: number) => d >= 1  && d <= 30 },
@@ -109,7 +109,7 @@ export default function ReporteAntiguedadOPporCC() {
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
         .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk')
-        .not('status', 'in', '("Pagada","Cancelada")')
+        .not('status', 'in', '("Pagada","Cancelada","Rechazada","Sustituida")')
         .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, monto'),
     ])

@@ -758,16 +758,19 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
         ? 'Pendiente de segunda autorización (Finanzas)'
         : opData.status === 'Rechazada'
           ? 'Rechazada'
-          : opData.autorizado_finanzas_por
-            ? 'Autorizada'
-            : opData.autorizado_por
-              ? 'Autorizada (1ra autorización)'
-              : 'En proceso'
+          : opData.status === 'Sustituida'
+            ? 'Sustituida'
+            : opData.autorizado_finanzas_por
+              ? 'Autorizada'
+              : opData.autorizado_por
+                ? 'Autorizada (1ra autorización)'
+                : 'En proceso'
     const nombreElaboro   = opData.created_by ?? 'Sin registro'
     const nombreAutorizo  = opData.autorizado_finanzas_por ?? opData.autorizado_por
       ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización'
         : opData.status === 'Pendiente Auth Finanzas' ? 'Pendiente de segunda autorización'
-        : opData.status === 'Rechazada' ? 'Rechazada' : 'Sin registro')
+        : opData.status === 'Rechazada' ? 'Rechazada'
+        : opData.status === 'Sustituida' ? 'Sustituida' : 'Sin registro')
 
     let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
     try {

@@ -242,12 +242,12 @@ export default function DashboardFinancieroPage() {
 
     const egrQ = applyEgrQ(
       dbComp.from('ordenes_pago')
-        .select('monto').neq('status', 'Cancelada')
+        .select('monto').neq('status', 'Cancelada').neq('status', 'Rechazada').neq('status', 'Sustituida')
         .gte('created_at', inicioDelDia(ini)).lte('created_at', finDelDia(fin))
     )
     const cxpQ = applyEgrQ(
       dbComp.from('ordenes_pago')
-        .select('saldo, monto').neq('status', 'Cancelada').neq('status', 'Pagada')
+        .select('saldo, monto').neq('status', 'Cancelada').neq('status', 'Pagada').neq('status', 'Rechazada').neq('status', 'Sustituida')
     )
     const ultOpQ = applyEgrQ(
       dbComp.from('ordenes_pago')
@@ -322,7 +322,7 @@ export default function DashboardFinancieroPage() {
         )
       }
       const egP = applyEgrQ(
-        dbComp.from('ordenes_pago').select('monto').neq('status', 'Cancelada')
+        dbComp.from('ordenes_pago').select('monto').neq('status', 'Cancelada').neq('status', 'Rechazada').neq('status', 'Sustituida')
           .gte('created_at', inicioDelDia(m.ini)).lte('created_at', finDelDia(m.fin))
       )
       const [ig, eg] = await Promise.allSettled([igP, egP])
