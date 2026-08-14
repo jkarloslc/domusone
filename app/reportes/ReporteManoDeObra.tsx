@@ -17,6 +17,10 @@ const fmt$   = (n: number) => '$' + (n || 0).toLocaleString('es-MX', { minimumFr
 const fmtJor = (n: number) => (n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const STATUSES = ['Pendiente', 'En Proceso', 'En Pausa', 'Completada', 'Cancelada']
+const TIPOS_OT: { value: string; label: string }[] = [
+  { value: 'mantenimiento', label: 'OT Mantto. Residencial' },
+  { value: 'generales',     label: "OT's Generales" },
+]
 const statusColor = (s: string) =>
   s === 'Completada' ? '#15803d' : s === 'En Proceso' ? '#2563eb' :
   s === 'En Pausa' ? '#7c3aed' : s === 'Cancelada' ? '#94a3b8' : '#d97706'
@@ -46,6 +50,7 @@ export default function ReporteManoDeObra() {
   const [areas, setAreas]           = useState<any[]>([])
   const [loading, setLoading]       = useState(true)
 
+  const [fModulo, setFModulo]         = useState('')
   const [fCuadrante, setFCuadrante]   = useState('')
   const [fArea, setFArea]             = useState('')
   const [fTrabajador, setFTrabajador] = useState('')
@@ -90,6 +95,7 @@ export default function ReporteManoDeObra() {
     .filter((r): r is MORowOT => !!r.ot)
 
   const filtered = rowsConOT.filter(r => {
+    if (fModulo && r.ot.modulo !== fModulo) return false
     if (fCuadrante && String(r.ot.id_cuadrante_fk) !== fCuadrante) return false
     if (fArea && String(r.ot.id_area_fk) !== fArea) return false
     if (fTrabajador && String(r.id_colaborador_fk) !== fTrabajador) return false
@@ -151,6 +157,11 @@ export default function ReporteManoDeObra() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, padding: '12px 16px',
         background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+        <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px', minWidth: 170 }}
+          value={fModulo} onChange={e => setFModulo(e.target.value)}>
+          <option value="">Tipo de OT</option>
+          {TIPOS_OT.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
         <select className="select" style={{ fontSize: 12, height: 28, padding: '2px 8px', minWidth: 150 }}
           value={fCuadrante} onChange={e => { setFCuadrante(e.target.value); setFArea('') }}>
           <option value="">Cuadrante</option>
