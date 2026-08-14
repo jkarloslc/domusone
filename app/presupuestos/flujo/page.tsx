@@ -4,6 +4,8 @@ import { dbCtrl, dbComp } from '@/lib/supabase'
 import { Loader, RefreshCw, Wallet, Info } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { useAuth } from '@/lib/AuthContext'
+import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
+import { prorratearDescuento } from '@/lib/prorateoDescuento'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -145,7 +147,7 @@ export default function FlujoEfectivoPage() {
         : Promise.resolve({ data: [] }),
       areaIds.length > 0
         ? (dbComp.from('cxp_abonos') as any)
-            .select('monto, fecha_abono, ordenes_pago!inner(id_area_fk, tipo_gasto, status)')
+            .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, tipo_gasto, status, monto, id_oc_fk)')
             .in('ordenes_pago.id_area_fk', areaIds)
             .neq('ordenes_pago.status', 'Cancelada')
             .gte('fecha_abono', `${anio}-01-01`)
@@ -184,7 +186,40 @@ export default function FlujoEfectivoPage() {
         })
       }
     }
-    const abonosTodos = [...(abonosData ?? []), ...abonosDistribuidos]
+    // OP con OC (tipo_gasto null por diseño): se reatribuyen a la categoría de
+    // los artículos realmente comprados en vez de caer siempre en el catch-all.
+    // Las fracciones se resuelven una sola vez por OP y se aplican a cada uno
+    // de sus abonos. Si aún no existe una partida específica para esa
+    // categoría en el área, el catch-all la sigue capturando sin cambios (ver
+    // tiposEspecificosPorArea más abajo) — seguro desplegar antes de crear
+    // esas partidas.
+    const opIdsOC: number[] = Array.from(new Set(
+      (abonosData ?? [])
+        .filter((a: any) => a.ordenes_pago.tipo_gasto === null && a.ordenes_pago.id_oc_fk != null)
+        .map((a: any) => a.id_op_fk as number)
+    ))
+    const candidatosOC = opIdsOC.map(id => {
+      const a = (abonosData ?? []).find((x: any) => x.id_op_fk === id)
+      return { id, id_oc_fk: a.ordenes_pago.id_oc_fk }
+    })
+    const categoriasPorOp = await resolverCategoriasPorOp(candidatosOC)
+    const abonosCategoria: any[] = []
+    ;(abonosData ?? []).forEach((a: any) => {
+      const shares = categoriasPorOp.get(a.id_op_fk)
+      if (!shares) return
+      prorratearDescuento(shares, s => s.fraction, 1, Number(a.monto)).forEach(({ item, montoNeto }) => {
+        abonosCategoria.push({
+          monto: montoNeto, fecha_abono: a.fecha_abono,
+          ordenes_pago: { id_area_fk: a.ordenes_pago.id_area_fk, tipo_gasto: item.categoria, status: a.ordenes_pago.status },
+        })
+      })
+    })
+
+    const abonosTodos = [
+      ...(abonosData ?? []).filter((a: any) => !categoriasPorOp.has(a.id_op_fk)),
+      ...abonosDistribuidos,
+      ...abonosCategoria,
+    ]
 
     // ── Construir realMap ────────────────────────────────────────
     const rm: DetMap = {}

@@ -4,6 +4,8 @@ import { dbCtrl, dbComp } from '@/lib/supabase'
 import { Loader, RefreshCw, BookOpen } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { useAuth } from '@/lib/AuthContext'
+import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
+import { prorratearDescuento } from '@/lib/prorateoDescuento'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -148,7 +150,7 @@ export default function ComparativoPage() {
         : Promise.resolve({ data: [] }),
       areaIds.length > 0
         ? dbComp.from('ordenes_pago')
-            .select('id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_op, monto, status')
+            .select('id, id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_op, monto, status, id_oc_fk')
             .in('id_area_fk', areaIds)
             .gte('fecha_op', `${anio}-01-01`)
             .lte('fecha_op', `${anio}-12-31`)
@@ -174,7 +176,33 @@ export default function ComparativoPage() {
       status:     r.ordenes_pago.status,
       monto:      r.monto,
     }))
-    const opsTodas = [...(opsData ?? []), ...opsDistribuidas]
+
+    // OP con OC (tipo_gasto null por diseño): se reatribuyen a la categoría de
+    // los artículos realmente comprados en vez de caer siempre en el catch-all.
+    // Si aún no existe una partida específica para esa categoría en el área,
+    // el catch-all la sigue capturando sin cambios (ver tiposEspecificosPorArea
+    // más abajo) — seguro desplegar antes de crear esas partidas.
+    const candidatosOC = (opsData ?? [])
+      .filter((o: any) => o.tipo_gasto === null && o.id_oc_fk != null)
+      .map((o: any) => ({ id: o.id, id_oc_fk: o.id_oc_fk }))
+    const categoriasPorOp = await resolverCategoriasPorOp(candidatosOC)
+    const opsCategoria: any[] = []
+    ;(opsData ?? []).forEach((op: any) => {
+      const shares = categoriasPorOp.get(op.id)
+      if (!shares) return
+      prorratearDescuento(shares, s => s.fraction, 1, Number(op.monto)).forEach(({ item, montoNeto }) => {
+        opsCategoria.push({
+          id_area_fk: op.id_area_fk, tipo_gasto: item.categoria,
+          fecha_op: op.fecha_op, status: op.status, monto: montoNeto,
+        })
+      })
+    })
+
+    const opsTodas = [
+      ...(opsData ?? []).filter((o: any) => !categoriasPorOp.has(o.id)),
+      ...opsDistribuidas,
+      ...opsCategoria,
+    ]
 
     // ── Construir realMap ────────────────────────────────────────
     const rm: DetMap = {}
