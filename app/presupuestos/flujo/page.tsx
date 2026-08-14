@@ -488,7 +488,7 @@ export default function FlujoEfectivoPage() {
                         <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="ingreso" />
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
-                        {canWrite('presupuestos') && (
+                        {canWrite('presupuestos') && p.fuente_real === 'manual' && (
                           <button className="btn-ghost"
                             onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
                             style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
@@ -538,7 +538,7 @@ export default function FlujoEfectivoPage() {
                         <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="egreso" />
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
-                        {canWrite('presupuestos') && (
+                        {canWrite('presupuestos') && p.fuente_real === 'manual' && (
                           <button className="btn-ghost"
                             onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
                             style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>

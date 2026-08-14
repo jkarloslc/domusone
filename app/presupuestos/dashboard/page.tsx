@@ -156,7 +156,7 @@ export default function DashboardPpto() {
             .in('id_area_fk', areaIds)
             .gte('fecha_op', `${anio}-01-01`)
             .lte('fecha_op', `${anio}-12-31`)
-            .not('status', 'in', '("Cancelada","Rechazada")')
+            .not('status', 'in', '("Cancelada","Rechazada","Sustituida")')
         : Promise.resolve({ data: [] }),
       // OP con distribución por área (ordenes_pago_det): el encabezado queda con
       // id_area_fk null, hay que sumar cada línea por su propia área.
@@ -167,7 +167,7 @@ export default function DashboardPpto() {
             .is('ordenes_pago.id_area_fk', null)
             .gte('ordenes_pago.fecha_op', `${anio}-01-01`)
             .lte('ordenes_pago.fecha_op', `${anio}-12-31`)
-            .not('ordenes_pago.status', 'in', '("Cancelada","Rechazada")')
+            .not('ordenes_pago.status', 'in', '("Cancelada","Rechazada","Sustituida")')
         : Promise.resolve({ data: [] }),
     ])
     const opsDistribuidas = (opsDetData ?? []).map((r: any) => ({

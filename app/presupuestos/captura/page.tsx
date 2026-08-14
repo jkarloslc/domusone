@@ -6,7 +6,7 @@ import { Plus, BookOpen, Loader, Save, Settings, BookMarked, Edit2 } from 'lucid
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
-const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's"]
+const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's", 'Locales']
 
 type Presupuesto = {
   id: number

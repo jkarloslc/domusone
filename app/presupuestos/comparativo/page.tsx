@@ -154,7 +154,7 @@ export default function ComparativoPage() {
             .in('id_area_fk', areaIds)
             .gte('fecha_op', `${anio}-01-01`)
             .lte('fecha_op', `${anio}-12-31`)
-            .not('status', 'in', '("Cancelada","Rechazada")')
+            .not('status', 'in', '("Cancelada","Rechazada","Sustituida")')
         : Promise.resolve({ data: [] }),
       // OP con distribución por área (ordenes_pago_det): el encabezado queda con
       // id_area_fk null, así que no las captura el .in('id_area_fk', areaIds) de
@@ -166,7 +166,7 @@ export default function ComparativoPage() {
             .is('ordenes_pago.id_area_fk', null)
             .gte('ordenes_pago.fecha_op', `${anio}-01-01`)
             .lte('ordenes_pago.fecha_op', `${anio}-12-31`)
-            .not('ordenes_pago.status', 'in', '("Cancelada","Rechazada")')
+            .not('ordenes_pago.status', 'in', '("Cancelada","Rechazada","Sustituida")')
         : Promise.resolve({ data: [] }),
     ])
     const opsDistribuidas = (opsDetData ?? []).map((r: any) => ({
@@ -454,7 +454,7 @@ export default function ComparativoPage() {
                         <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="ingreso" />
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
-                        {canWrite('presupuestos') && (
+                        {canWrite('presupuestos') && p.fuente_real === 'manual' && (
                           <button className="btn-ghost"
                             onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
                             style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
@@ -504,7 +504,7 @@ export default function ComparativoPage() {
                         <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="egreso" />
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
-                        {canWrite('presupuestos') && (
+                        {canWrite('presupuestos') && p.fuente_real === 'manual' && (
                           <button className="btn-ghost"
                             onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
                             style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
