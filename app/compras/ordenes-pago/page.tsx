@@ -2091,7 +2091,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                   Pendiente de Autorización
                 </span>
                 <span style={{ fontSize: 11, color: '#a16207', marginLeft: 'auto' }}>
-                  Gasto directo sin OC — requiere aprobación
+                  {(op.id_oc_fk != null || ocsRel.length > 0) ? 'Con OC vinculada — requiere aprobación' : 'Gasto directo sin OC — requiere aprobación'}
                 </span>
               </div>
               {puedeAutorizar ? (

@@ -673,7 +673,7 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
       setSavingOP(false)
       return
     }
-    await dbComp.from('ordenes_pago').insert({
+    const { data: opIns, error: opErr } = await dbComp.from('ordenes_pago').insert({
       folio, id_oc_fk: oc.id, id_proveedor_fk: oc.id_proveedor_fk,
       id_almacen_fk:      oc.id_almacen_entrega_fk ?? null,
       id_centro_costo_fk: oc.id_centro_costo_fk ?? null,
@@ -689,7 +689,13 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
       cuenta_clabe:       prov?.cuenta_clabe ?? null,
       created_by:         authUser?.nombre ?? null,
       status:             'Pendiente Auth',
-    })
+    }).select('id').single()
+    if (!opErr && opIns) {
+      // Mantener consistencia con el flujo de "Nueva OP" (ordenes-pago/page.tsx):
+      // registrar la relación en ordenes_pago_oc y marcar la OC como enviada al proveedor.
+      await dbComp.from('ordenes_pago_oc').insert({ id_op_fk: opIns.id, id_oc_fk: oc.id, monto: oc.total })
+      await dbComp.from('ordenes_compra').update({ status: 'Enviada al Prov' }).eq('id', oc.id)
+    }
     setSavingOP(false); setCreandoOP(false)
     dbComp.from('ordenes_pago').select('*').eq('id_oc_fk', oc.id).maybeSingle().then(({ data }) => setOP(data))
   }
@@ -707,12 +713,20 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
 
     const estadoAut = opData.status === 'Pendiente Auth'
       ? 'Pendiente de autorización'
-      : opData.status === 'Rechazada'
-        ? 'Rechazada'
-        : opData.autorizado_por ? 'Autorizada' : 'En proceso'
+      : opData.status === 'Pendiente Auth Finanzas'
+        ? 'Pendiente de segunda autorización (Finanzas)'
+        : opData.status === 'Rechazada'
+          ? 'Rechazada'
+          : opData.autorizado_finanzas_por
+            ? 'Autorizada'
+            : opData.autorizado_por
+              ? 'Autorizada (1ra autorización)'
+              : 'En proceso'
     const nombreElaboro   = opData.created_by ?? 'Sin registro'
-    const nombreAutorizo  = opData.autorizado_por
-      ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización' : opData.status === 'Rechazada' ? 'Rechazada' : 'Sin registro')
+    const nombreAutorizo  = opData.autorizado_finanzas_por ?? opData.autorizado_por
+      ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización'
+        : opData.status === 'Pendiente Auth Finanzas' ? 'Pendiente de segunda autorización'
+        : opData.status === 'Rechazada' ? 'Rechazada' : 'Sin registro')
 
     let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
     try {
