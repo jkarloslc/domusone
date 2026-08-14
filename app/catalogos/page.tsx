@@ -816,7 +816,13 @@ function CuotasGolfPanel() {
 // ══════════════════════════════════════════════════════════════
 // Colaboradores — personal operativo (Asignado a / Supervisor de OT)
 // ══════════════════════════════════════════════════════════════
-const PUESTOS_COLABORADOR = ['Vigilancia', 'Mantto. Res', 'Mantto. Campo', 'Golf Servicios', 'Hipico', 'Areas Publicas']
+const PUESTOS_COLABORADOR = [
+  'Administrador de Fraccionamiento', 'Auxiliar de Motor Lobby', 'Auxiliar de Operaciones', 'Ayudante General',
+  'Caja de Mantto Residencial', 'Cajera Recepcionista', 'Coordinador de Servicios Generales',
+  'Electricista', 'Encargado', 'Encargado de Taller', 'Mantenimiento Tee De Practica',
+  'Operador', 'Operador Especializado', 'Profesional de Golf', 'Servicios Generales',
+  'Starter', 'Superintendente', 'Supervisor',
+]
 const emptyColabForm = () => ({
   nombre: '', apellido_paterno: '', apellido_materno: '', fecha_ingreso: '', puesto: '',
   sueldo_bruto_mensual: '', sueldo_neto_mensual: '', sueldo_diario: '',
