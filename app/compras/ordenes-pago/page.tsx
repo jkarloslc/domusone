@@ -362,6 +362,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [valesCombSel,  setValesCombSel]  = useState<number[]>([])
   const [vigLotesDisp, setVigLotesDisp]   = useState<any[]>([])
   const [vigLotesSel,  setVigLotesSel]    = useState<number[]>([])
+  const [bitacorasDisp, setBitacorasDisp] = useState<any[]>([])
+  const [bitacorasSel,  setBitacorasSel]  = useState<number[]>([])
+  const [equiposMapModal, setEquiposMapModal] = useState<Record<number, string>>({})
   const [conOC, setConOC] = useState<boolean | null>(
     opEdit ? (opEdit.id_oc_fk != null) : null
   )
@@ -421,6 +424,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
         .then(({ data }) => setRelAF(data ?? []))
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre')
         .then(({ data }) => setFormasPago(data ?? []))
+      dbCfg.from('equipos').select('id, nombre, placa')
+        .then(({ data }) => setEquiposMapModal(Object.fromEntries((data ?? []).map((e: any) => [e.id, e.placa ? `${e.nombre} (${e.placa})` : e.nombre]))))
     })
     // Catálogo de servicios (CFE/Agua) para cuando proveedor es id=75
     dbCtrl.from('servicios_catalogo').select('id, no_servicio, ubicacion, tipo_servicio')
@@ -515,6 +520,39 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (total > 0) setForm(f => ({ ...f, monto_manual: total.toFixed(2) }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vigLotesSel])
+
+  // Bitácoras de Servicio (Vehículos y Maquinaria) en status Cerrado, sin OP
+  // vinculada aún. A diferencia de vales/perimetrales, ctrl.bitacora_equipo_ops
+  // es tabla puente (una bitácora podría en teoría ligar a varias OP) — aquí
+  // se trata igual de simple: disponible = sin ninguna liga todavía (o solo
+  // ligada a esta misma OP, en edición).
+  useEffect(() => {
+    if (form.tipo_gasto !== 'Mantenimiento de Vehículos') return
+    Promise.all([
+      dbCtrl.from('bitacora_equipos')
+        .select('id, folio, id_equipo_fk, tipo, descripcion, fecha_fin, costo_total')
+        .eq('status', 'Cerrado').order('fecha_fin', { ascending: false }),
+      dbCtrl.from('bitacora_equipo_ops').select('id_bitacora_fk, id_op_fk'),
+    ]).then(([{ data: bits, error }, { data: links }]) => {
+      if (error) console.error('fetch bitacora_equipos:', error.message)
+      const ligadaOtra = new Set((links ?? [])
+        .filter((l: any) => !isEdit || l.id_op_fk !== opEdit.id)
+        .map((l: any) => l.id_bitacora_fk))
+      setBitacorasDisp((bits ?? []).filter((b: any) => !ligadaOtra.has(b.id)))
+      if (isEdit) setBitacorasSel((links ?? []).filter((l: any) => l.id_op_fk === opEdit.id).map((l: any) => l.id_bitacora_fk))
+    })
+  }, [form.tipo_gasto])
+
+  const toggleBitacora = (id: number) =>
+    setBitacorasSel(sel => sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id])
+
+  // Sugiere el monto de la OP con la suma de las bitácoras seleccionadas
+  useEffect(() => {
+    if (form.tipo_gasto !== 'Mantenimiento de Vehículos' || bitacorasSel.length === 0) return
+    const total = bitacorasDisp.filter(b => bitacorasSel.includes(b.id)).reduce((a, b) => a + (b.costo_total ?? 0), 0)
+    if (total > 0) setForm(f => ({ ...f, monto_manual: total.toFixed(2) }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bitacorasSel])
 
   const aplicarProveedor = (provId: string) => {
     const prov = proveedores.find(p => p.id === Number(provId))
@@ -652,6 +690,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length === 0) {
       setError('Selecciona al menos un perimetral de Vigilancia autorizado'); return
     }
+    if (form.tipo_gasto === 'Mantenimiento de Vehículos' && bitacorasSel.length === 0) {
+      setError('Selecciona al menos una bitácora de servicio cerrada'); return
+    }
     setSaving(true); setError('')
 
     // Obtener CC/Área/Frente de la OC cuando aplica
@@ -699,6 +740,27 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length > 0) {
         await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: opEdit.id }).in('id', vigLotesSel)
       }
+      // Sincronizar bitácoras de servicio ligadas a esta OP (tabla puente)
+      await dbCtrl.from('bitacora_equipo_ops').delete().eq('id_op_fk', opEdit.id)
+      if (form.tipo_gasto === 'Mantenimiento de Vehículos' && bitacorasSel.length > 0) {
+        await dbCtrl.from('bitacora_equipo_ops').insert(
+          bitacorasSel.map(id => ({
+            id_bitacora_fk: id, id_op_fk: opEdit.id,
+            monto: bitacorasDisp.find(b => b.id === id)?.costo_total ?? 0,
+          }))
+        )
+        // Si la bitácora aún no tenía costo (caso normal: se cierra antes de
+        // pagarse) y es la única seleccionada, reflejar el monto final de la
+        // OP en su costo_total — así Vehículos y Maquinaria deja de mostrarla
+        // en $0 una vez pagada. Con selección múltiple y costo en $0 se deja
+        // tal cual, para no inventar un reparto.
+        if (bitacorasSel.length === 1) {
+          const b = bitacorasDisp.find(x => x.id === bitacorasSel[0])
+          if (b && !b.costo_total) {
+            await dbCtrl.from('bitacora_equipos').update({ costo_total: Number(form.monto_manual) || 0 }).eq('id', bitacorasSel[0])
+          }
+        }
+      }
       // Sincronizar líneas de distribución
       await dbComp.from('ordenes_pago_det').delete().eq('id_op_fk', opEdit.id)
       if (detLines.length > 0) {
@@ -743,6 +805,20 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
     if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length > 0) {
       await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: op.id }).in('id', vigLotesSel)
+    }
+    if (form.tipo_gasto === 'Mantenimiento de Vehículos' && bitacorasSel.length > 0) {
+      await dbCtrl.from('bitacora_equipo_ops').insert(
+        bitacorasSel.map(id => ({
+          id_bitacora_fk: id, id_op_fk: op.id,
+          monto: bitacorasDisp.find(b => b.id === id)?.costo_total ?? 0,
+        }))
+      )
+      if (bitacorasSel.length === 1) {
+        const b = bitacorasDisp.find(x => x.id === bitacorasSel[0])
+        if (b && !b.costo_total) {
+          await dbCtrl.from('bitacora_equipos').update({ costo_total: montoTotal }).eq('id', bitacorasSel[0])
+        }
+      }
     }
 
     if (conOC && ocsSelected.length > 0) {
@@ -1040,6 +1116,38 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
                   Cada perimetral es la nómina semanal de extras capturada y autorizada en el módulo de Vigilancia.
+                </div>
+              </div>
+            )}
+
+            {!conOC && form.tipo_gasto === 'Mantenimiento de Vehículos' && (
+              <div>
+                <label className="label">Bitácoras de Servicio cerradas a pagar *</label>
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                  {bitacorasDisp.length === 0 ? (
+                    <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+                      Sin bitácoras cerradas disponibles — ciérralas en Mantenimiento › Vehículos y Maquinaria › Bitácora de Servicios
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: 180, overflowY: 'auto' }}>
+                      {bitacorasDisp.map(b => (
+                        <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                          borderBottom: '1px solid #f8fafc', cursor: 'pointer', fontSize: 12 }}>
+                          <input type="checkbox" checked={bitacorasSel.includes(b.id)} onChange={() => toggleBitacora(b.id)} />
+                          <span style={{ fontFamily: 'monospace', color: 'var(--blue)', fontWeight: 600, flexShrink: 0 }}>{b.folio}</span>
+                          <span style={{ flex: 1, color: 'var(--text-secondary)' }}>
+                            {b.tipo} · {equiposMapModal[b.id_equipo_fk] ?? `#${b.id_equipo_fk}`}{b.fecha_fin ? ` · ${fmtFecha(b.fecha_fin)}` : ''}
+                          </span>
+                          <span style={{ fontWeight: 600, color: '#059669', flexShrink: 0 }}>
+                            {b.costo_total != null ? `$${Number(b.costo_total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
+                  Cada bitácora es un servicio cerrado en Vehículos y Maquinaria › Bitácora de Servicios.
                 </div>
               </div>
             )}
@@ -1565,19 +1673,21 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     onAuthorized()
   }
 
-  // Liberar vales de combustible / lotes de vigilancia extras (superadmin,
-  // solo Rechazada o Sustituida): estos quedan ligados a la OP por
-  // id_op_fk incluso después de Reabrir/Duplicar — si la OP ya no va a
-  // pagarse (Rechazada sin reabrir, o Sustituida y ya no editable), el
-  // vale/lote queda huérfano y nunca vuelve a aparecer como disponible
-  // para otra OP. Esto lo libera (id_op_fk = null) para que se pueda
-  // volver a seleccionar.
+  // Liberar vales de combustible / lotes de vigilancia extras / bitácoras de
+  // servicio (superadmin, solo Rechazada o Sustituida): estos quedan
+  // ligados a la OP (id_op_fk directo en vales/vigilancia, fila en la
+  // tabla puente bitacora_equipo_ops) incluso después de Reabrir/Duplicar
+  // — si la OP ya no va a pagarse (Rechazada sin reabrir, o Sustituida y
+  // ya no editable), el vale/lote/bitácora queda huérfano y nunca vuelve a
+  // aparecer como disponible para otra OP. Esto lo libera para que se
+  // pueda volver a seleccionar.
   const handleLiberarVales = async () => {
-    const n = valesComb.length + vigilanciaRel.length
-    if (!confirm(`¿Liberar ${n} registro(s) (vales de combustible / perimetrales) de ${op.folio}? Quedarán disponibles para usarse en otra OP.`)) return
+    const n = valesComb.length + vigilanciaRel.length + bitacorasRel.length
+    if (!confirm(`¿Liberar ${n} registro(s) (vales de combustible / perimetrales / bitácoras de servicio) de ${op.folio}? Quedarán disponibles para usarse en otra OP.`)) return
     setLiberandoVales(true)
     await dbCtrl.from('vales_combustible').update({ id_op_fk: null }).eq('id_op_fk', op.id)
     await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: null }).eq('id_op_fk', op.id)
+    await dbCtrl.from('bitacora_equipo_ops').delete().eq('id_op_fk', op.id)
     setLiberandoVales(false)
     onAuthorized()
   }
@@ -2385,19 +2495,22 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
             </div>
           )}
 
-          {/* Liberar vales de combustible / perimetrales (solo superadmin,
-              Rechazada o Sustituida) — Duplicar NO mueve estos vínculos a la
-              OP nueva, así que quedan huérfanos ligados a esta OP; en
-              Sustituida ya no se puede ni editar para desligarlos a mano. */}
-          {authUser?.rol === 'superadmin' && (op.status === 'Rechazada' || op.status === 'Sustituida') && (valesComb.length > 0 || vigilanciaRel.length > 0) && (
+          {/* Liberar vales de combustible / perimetrales / bitácoras de
+              servicio (solo superadmin, Rechazada o Sustituida) — Duplicar
+              NO mueve estos vínculos a la OP nueva, así que quedan
+              huérfanos ligados a esta OP; en Sustituida ya no se puede ni
+              editar para desligarlos a mano. */}
+          {authUser?.rol === 'superadmin' && (op.status === 'Rechazada' || op.status === 'Sustituida') && (valesComb.length > 0 || vigilanciaRel.length > 0 || bitacorasRel.length > 0) && (
             <div style={{ padding: '14px 16px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
-                Esta OP tiene {valesComb.length > 0 ? `${valesComb.length} vale(s) de combustible` : ''}
-                {valesComb.length > 0 && vigilanciaRel.length > 0 ? ' y ' : ''}
-                {vigilanciaRel.length > 0 ? `${vigilanciaRel.length} lote(s) de perimetrales` : ''} ligados — libéralos para volver a usarlos en otra OP
+                Esta OP tiene {[
+                  valesComb.length > 0 ? `${valesComb.length} vale(s) de combustible` : null,
+                  vigilanciaRel.length > 0 ? `${vigilanciaRel.length} lote(s) de perimetrales` : null,
+                  bitacorasRel.length > 0 ? `${bitacorasRel.length} bitácora(s) de servicio` : null,
+                ].filter(Boolean).join(', ')} ligados — libéralos para volver a usarlos en otra OP
               </div>
               <button className="btn-secondary" style={{ fontSize: 12 }} onClick={handleLiberarVales} disabled={liberandoVales}>
-                {liberandoVales ? <Loader size={13} className="animate-spin" /> : <Unlock size={13} />} Liberar vales / perimetrales
+                {liberandoVales ? <Loader size={13} className="animate-spin" /> : <Unlock size={13} />} Liberar vales / perimetrales / bitácoras
               </button>
             </div>
           )}
