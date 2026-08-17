@@ -1685,6 +1685,17 @@ ${facturasCorte.length > 0 ? `
                       )
                     })}
                   </tbody>
+                  <tfoot>
+                    <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                      <td colSpan={5} style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#475569' }}>
+                        Total ({facturas.length} factura{facturas.length !== 1 ? 's' : ''})
+                      </td>
+                      <td style={{ padding: '10px 14px', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>
+                        {fmt$(facturas.reduce((a, v) => a + (Number(v.total) || 0), 0))}
+                      </td>
+                      <td colSpan={4}></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
