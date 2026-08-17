@@ -106,6 +106,7 @@ export default function POSPage() {
   const [fechaFact,     setFechaFact]     = useState(fechaLocal())
   const [fechaFactFin,  setFechaFactFin]  = useState(fechaLocal())
   const [filtroCentroFact, setFiltroCentroFact] = useState('')
+  const [filtroFormaPagoFact, setFiltroFormaPagoFact] = useState('')
   const [reenvEmail,    setReenvEmail]    = useState<number | null>(null)
   const [descargando,   setDescargando]   = useState<string | null>(null)  // 'id-pdf' | 'id-xml'
   const [cancelarFacturaV, setCancelarFacturaV] = useState<any>(null)
@@ -324,13 +325,25 @@ export default function POSPage() {
     // ctrl_ventas_cfdi puede tener varias filas por venta (historial de cancelaciones/re-timbrados);
     // se ordena por fecha_timbrado asc para que la última asignación al map sea la más reciente.
     let cfdiMap: Record<number, any> = {}
+    let pagosMap: Record<number, { id_forma_fk: number | null; forma_nombre: string; monto: number }[]> = {}
     if (ids.length > 0) {
-      const { data: cfdis } = await dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', ids).order('fecha_timbrado', { ascending: true })
+      const [{ data: cfdis }, { data: pagos }] = await Promise.all([
+        dbGolf.from('ctrl_ventas_cfdi').select('*').in('id_venta_fk', ids).order('fecha_timbrado', { ascending: true }),
+        dbGolf.from('ctrl_ventas_pagos').select('id_venta_fk, id_forma_fk, forma_nombre, monto').in('id_venta_fk', ids),
+      ])
       for (const c of cfdis ?? []) cfdiMap[c.id_venta_fk] = c
+      for (const p of pagos ?? []) (pagosMap[p.id_venta_fk] ??= []).push(p)
     }
-    setFacturas((data ?? []).map((v: any) => ({ ...v, _cfdi: cfdiMap[v.id] ?? null })))
+    let facts = (data ?? []).map((v: any) => ({ ...v, _cfdi: cfdiMap[v.id] ?? null, _pagos: pagosMap[v.id] ?? [] }))
+    if (filtroFormaPagoFact) {
+      const fp = formasPago.find(f => String(f.id) === filtroFormaPagoFact)
+      facts = facts.filter((v: any) => v._pagos.some((p: any) =>
+        p.id_forma_fk != null ? String(p.id_forma_fk) === filtroFormaPagoFact : p.forma_nombre === fp?.nombre
+      ))
+    }
+    setFacturas(facts)
     setLoadingF(false)
-  }, [fechaFact, fechaFactFin, filtroCentroFact])
+  }, [fechaFact, fechaFactFin, filtroCentroFact, filtroFormaPagoFact, formasPago])
 
   useEffect(() => { fetchStats() }, [fetchStats])
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
@@ -1529,6 +1542,11 @@ ${facturasCorte.length > 0 ? `
               <option value="">Todos los centros</option>
               {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
+            <select value={filtroFormaPagoFact} onChange={e => setFiltroFormaPagoFact(e.target.value)}
+              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
+              <option value="">Todas las formas de pago</option>
+              {formasPago.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+            </select>
             <button className="btn-ghost" onClick={fetchFacturas} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
               <RefreshCw size={12} className={loadingF ? 'animate-spin' : ''} /> Actualizar
             </button>
@@ -1547,7 +1565,7 @@ ${facturasCorte.length > 0 ? `
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                      {['Folio Factura', 'Cliente', 'Centro', 'UUID Fiscal', 'Fecha', 'Total', 'Receptor', 'Enviado', 'Acciones'].map(h => (
+                      {['Folio Factura', 'Cliente', 'Centro', 'UUID Fiscal', 'Fecha', 'Total', 'Forma de Pago', 'Receptor', 'Enviado', 'Acciones'].map(h => (
                         <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
@@ -1569,6 +1587,11 @@ ${facturasCorte.length > 0 ? `
                           </td>
                           <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>{fmtDT(v.fecha)}</td>
                           <td style={{ padding: '10px 14px', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>{fmt$(v.total)}</td>
+                          <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>
+                            {v._pagos.length > 0
+                              ? v._pagos.map((p: any) => p.forma_nombre).filter(Boolean).join(', ') || '—'
+                              : '—'}
+                          </td>
                           <td style={{ padding: '10px 14px', fontSize: 12 }}>
                             {cfdi ? (
                               <div>
