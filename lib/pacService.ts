@@ -47,6 +47,11 @@ export type ConceptoFactura = {
   importe:           number
   objeto_imp:        string    // '02' Sí objeto de impuesto
   tasa_iva:          number    // 0.16
+  // Monto de IVA ya calculado por el llamador como (total - importe), reconciliado
+  // con el total original del ticket/recibo. Si se omite, el PAC lo calcula como
+  // importe*tasa_iva — lo cual, por doble redondeo, puede dejar la factura 1-2
+  // centavos por debajo del total real cuando el precio es "IVA incluido".
+  importe_iva?:      number
 }
 
 export type ResultadoTimbrado = {

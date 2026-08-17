@@ -73,7 +73,11 @@ export async function POST(req: NextRequest) {
         const conIva   = c.objeto_imp === '02' && c.tasa_iva > 0
         // Redondear a 6 decimales para cumplir reglas SAT / Facturama
         const r6 = (n: number) => Math.round(n * 1_000_000) / 1_000_000
-        const taxTotal = conIva ? r6(c.importe * c.tasa_iva) : 0
+        // Se usa el IVA ya calculado por el llamador (total - importe) cuando viene
+        // provisto — reconciliado con el total original del ticket/recibo — en vez
+        // de recalcularlo como importe*tasa_iva, que por doble redondeo puede dejar
+        // el CFDI 1-2 centavos por debajo del total real (ej. $15,000.00 → $14,999.98).
+        const taxTotal = conIva ? (c.importe_iva ?? r6(c.importe * c.tasa_iva)) : 0
         // Total del concepto = Subtotal + IVA  (si no hay IVA, igual al Subtotal)
         const itemTotal = r6(c.importe + taxTotal)
 

@@ -96,7 +96,7 @@ export default function POSPage() {
   // Facturación POS
   const [facturandoPOS,   setFacturandoPOS]   = useState<Venta | null>(null)
   const [receptorPOS,     setReceptorPOS]     = useState<any>({})
-  const [conceptosPOS,    setConceptosPOS]    = useState<{ descripcion: string; importe: number }[]>([])
+  const [conceptosPOS,    setConceptosPOS]    = useState<{ descripcion: string; importe: number; iva?: number; tasa_iva?: number }[]>([])
   const [genericRfcData,  setGenericRfcData]  = useState<any>(null)
   const [fiscalOptionsPOS, setFiscalOptionsPOS] = useState<any[]>([])
 
@@ -347,7 +347,10 @@ export default function POSPage() {
       dbGolf.from('ctrl_ventas_det').select('concepto, subtotal, iva, iva_pct, total').eq('id_venta_fk', v.id),
       dbGolf.from('ctrl_ventas_pagos').select('forma_nombre').eq('id_venta_fk', v.id).limit(1),
     ])
-    // Para el CFDI: importe = subtotal (base sin IVA); el PAC agrega la tasa encima.
+    // Para el CFDI: importe = subtotal (base sin IVA); iva = el monto YA calculado al
+    // vender (total - subtotal, ver calcLinea en NuevaVentaModal) — se pasa tal cual en
+    // vez de recalcularlo como importe*tasa_iva, que por doble redondeo puede dejar la
+    // factura 1-2 centavos por debajo del ticket (ej. $15,000.00 → $14,999.98).
     // Si no aplica IVA (iva = 0), importe = total y tasa = 0.
     // Nota: se incluyen también líneas con total negativo (p.ej. "Descuento adicional" de un
     // cobro de cuotas con varios conceptos) — excluirlas dejaría la factura por un monto mayor
@@ -357,9 +360,10 @@ export default function POSPage() {
       .map(d => ({
         descripcion: d.concepto,
         importe:     d.subtotal,                                          // base sin IVA
+        iva:         d.iva,                                               // monto de IVA ya reconciliado con el total
         tasa_iva:    d.iva !== 0 && d.iva_pct > 0 ? d.iva_pct / 100 : 0,  // 0.16 ó 0
       }))
-    setConceptosPOS(conceptos.length ? conceptos : [{ descripcion: `Venta POS #${v.folio_dia}`, importe: v.total, tasa_iva: 0 }])
+    setConceptosPOS(conceptos.length ? conceptos : [{ descripcion: `Venta POS #${v.folio_dia}`, importe: v.total, iva: 0, tasa_iva: 0 }])
 
     // Cargar CP fiscal de la org para RFC genérico
     const { data: cfgOrg } = await dbCfg.from('configuracion').select('clave,valor').in('clave', ['org_cp_fiscal'])

@@ -18,7 +18,10 @@ export type ReceptorPreFill = {
   email?:          string
 }
 
-type Concepto = { descripcion: string; importe: number; tasa_iva?: number }
+// iva: monto de IVA ya calculado por el llamador (total - importe), preferido sobre
+// recalcularlo como importe*tasa_iva — evita el doble redondeo que dejaba facturas
+// 1-2 centavos por debajo del ticket original (ej. $15,000.00 → $14,999.98).
+type Concepto = { descripcion: string; importe: number; tasa_iva?: number; iva?: number }
 
 export type FiscalOption = ReceptorPreFill & { id: number | string; alias: string }
 
@@ -124,10 +127,12 @@ export default function FacturaUniversalModal({
   const setR = (k: keyof typeof receptor, v: string) => setReceptor(r => ({ ...r, [k]: v }))
   const setC = (k: keyof typeof cfdi,     v: string) => setCfdi(c => ({ ...c, [k]: v }))
 
-  // Totales dinámicos según tasas por renglón
+  // Totales dinámicos según tasas por renglón — se usa el iva ya calculado por el
+  // llamador cuando viene (reconciliado con el total original), en vez de
+  // recalcularlo con importe*tasa (doble redondeo, ver comentario en el tipo Concepto).
   const subtotalCalc = conceptos.reduce((s, c) => s + c.importe, 0)
   const ivaCalc      = conceptos.reduce((s, c, i) =>
-    s + Math.round(c.importe * (tasas[i] ?? 0) * 100) / 100, 0)
+    s + (c.iva ?? Math.round(c.importe * (tasas[i] ?? 0) * 100) / 100), 0)
   const totalCalc    = subtotalCalc + ivaCalc
 
   // Cargar emisor desde cfg.configuracion
@@ -219,6 +224,7 @@ export default function FacturaUniversalModal({
           importe:           c.importe,
           objeto_imp:        tiva > 0 ? '02' : '01',
           tasa_iva:          tiva,
+          importe_iva:       c.iva,
         }
       }),
     }
