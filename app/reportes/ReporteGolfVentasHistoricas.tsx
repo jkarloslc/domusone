@@ -4,6 +4,7 @@ import { dbGolf } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, FileSpreadsheet, LayoutList, BarChart2, PieChart } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import ModalShell from '@/components/ui/ModalShell'
 
 const fmt  = (n: number) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
 const fmtF = (s: string | null) => {
@@ -29,6 +30,9 @@ export default function ReporteGolfVentasHistoricas() {
   const [filtroArticulo, setFiltroArticulo] = useState('')
   const [filtroDe,       setFiltroDe]       = useState('')
   const [filtroA,        setFiltroA]        = useState('')
+
+  // Drill-down: facturas de una forma de pago
+  const [drillForma, setDrillForma] = useState<string | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -147,6 +151,29 @@ export default function ReporteGolfVentasHistoricas() {
     })
     return Array.from(map.values()).sort((a, b) => b.monto - a.monto)
   }, [filteredPagos])
+
+  // ── Drill-down: facturas que componen el monto de una forma de pago ──
+  const drillRows = useMemo(() => {
+    if (!drillForma) return []
+    return filteredPagos
+      .filter(p => (p.forma_nombre ?? 'Sin especificar') === drillForma)
+      .map(p => {
+        const v = ventaMap[p.id_venta_fk]
+        return {
+          idPago:         p.id,
+          idVenta:        p.id_venta_fk,
+          fecha:          v?.fecha ?? null,
+          folio:          v?.id ?? p.id_venta_fk,
+          nombre_cliente: v?.nombre_cliente ?? '—',
+          centro_nombre:  centroMap[v?.id_centro_fk] ?? '—',
+          monto:          p.monto ?? 0,
+          total_venta:    v?.total ?? null,
+        }
+      })
+      .sort((a, b) => new Date(b.fecha ?? 0).getTime() - new Date(a.fecha ?? 0).getTime())
+  }, [drillForma, filteredPagos, ventaMap, centroMap])
+
+  const drillTotal = useMemo(() => drillRows.reduce((s, r) => s + (r.monto ?? 0), 0), [drillRows])
 
   // ── KPIs ─────────────────────────────────────────────────
   const totalVentas   = useMemo(() => filtered.reduce((s, d) => s + (d.total ?? 0), 0), [filtered])
@@ -370,7 +397,15 @@ export default function ReporteGolfVentasHistoricas() {
               rows={porFormaPago.map(f => [
                 <span key="n" style={{ fontWeight: 500 }}>{f.nombre}</span>,
                 <span key="t" style={{ color: 'var(--text-secondary)' }}>{f.transacciones}</span>,
-                <span key="m" style={{ fontWeight: 600, color: GOLD }}>{fmt(f.monto)}</span>,
+                <button key="m" onClick={() => setDrillForma(f.nombre)}
+                  title="Ver facturas que componen este monto"
+                  style={{
+                    fontWeight: 600, color: GOLD, background: 'none', border: 'none', padding: 0,
+                    font: 'inherit', fontVariantNumeric: 'tabular-nums', cursor: 'pointer',
+                    textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3,
+                  }}>
+                  {fmt(f.monto)}
+                </button>,
                 <span key="p" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{pct(f.monto, totalPagado)}</span>,
               ])}
               footer={[
@@ -483,6 +518,54 @@ export default function ReporteGolfVentasHistoricas() {
           </div>
         )}
       </div>
+
+      {/* ── Modal drill-down: facturas por forma de pago ── */}
+      {drillForma && (
+        <ModalShell modulo="golf-pos" titulo={`Facturas — ${drillForma}`}
+          subtitulo={`${drillRows.length} factura${drillRows.length !== 1 ? 's' : ''} · ${fmt(drillTotal)}`}
+          onClose={() => setDrillForma(null)} maxWidth={760}>
+          {drillRows.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>
+              Sin facturas para esta forma de pago
+            </div>
+          ) : (
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    {['Fecha', 'Folio', 'Centro', 'Cliente', 'Monto'].map((h, i) => (
+                      <th key={h} style={{ padding: '8px 12px', textAlign: i === 4 ? 'right' : 'left',
+                        fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
+                        textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {drillRows.map((r, i) => (
+                    <tr key={r.idPago} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(r.fecha)}</td>
+                      <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>#{String(r.folio).padStart(5, '0')}</td>
+                      <td style={{ padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap' }}>{r.centro_nombre}</td>
+                      <td style={{ padding: '8px 12px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.nombre_cliente}>{r.nombre_cliente}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(r.monto)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr style={{ background: GOLD_PALE, borderTop: `2px solid ${GOLD_BORDER}` }}>
+                    <td colSpan={4} style={{ padding: '8px 12px', fontWeight: 700, color: GOLD_DARK }}>
+                      Total ({drillRows.length} factura{drillRows.length !== 1 ? 's' : ''})
+                    </td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(drillTotal)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </ModalShell>
+      )}
     </div>
   )
 }
