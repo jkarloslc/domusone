@@ -21,6 +21,7 @@ export default function ReporteGolfVentasHistoricas() {
   const [ventas,  setVentas]  = useState<any[]>([])
   const [dets,    setDets]    = useState<any[]>([])
   const [pagos,   setPagos]   = useState<any[]>([])
+  const [cfdis,   setCfdis]   = useState<any[]>([])
   const [centros, setCentros] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [tab,     setTab]     = useState<Tab>('resumen')
@@ -44,7 +45,7 @@ export default function ReporteGolfVentasHistoricas() {
 
     // Ventas cortadas PAGADA
     let q = dbGolf.from('ctrl_ventas')
-      .select('id, folio_dia, fecha, nombre_cliente, total, subtotal, iva, id_centro_fk, usuario_crea')
+      .select('id, folio_dia, fecha, nombre_cliente, total, subtotal, iva, id_centro_fk, usuario_crea, folio_fiscal, facturada, pac_cfdi_id')
       .not('id_corte_fk', 'is', null)
       .eq('status', 'PAGADA')
       .order('fecha', { ascending: false })
@@ -58,22 +59,31 @@ export default function ReporteGolfVentasHistoricas() {
 
     let detsData: any[] = []
     let pagosData: any[] = []
+    let cfdisData: any[] = []
 
     if (ids.length > 0) {
-      const [{ data: d }, { data: p }] = await Promise.all([
+      const [{ data: d }, { data: p }, { data: c }] = await Promise.all([
         dbGolf.from('ctrl_ventas_det')
           .select('id, id_venta_fk, id_producto_fk, concepto, cantidad, precio_unitario, iva, subtotal, total')
           .in('id_venta_fk', ids),
         dbGolf.from('ctrl_ventas_pagos')
           .select('id, id_venta_fk, forma_nombre, monto')
           .in('id_venta_fk', ids),
+        // ctrl_ventas_cfdi puede tener varias filas por venta (historial de cancelaciones/re-timbrados);
+        // se ordena por fecha_timbrado asc para que la última asignación al map sea la más reciente.
+        dbGolf.from('ctrl_ventas_cfdi')
+          .select('id, id_venta_fk, folio_factura, receptor_rfc, receptor_email, status, fecha_timbrado')
+          .in('id_venta_fk', ids)
+          .order('fecha_timbrado', { ascending: true }),
       ])
       detsData  = d  ?? []
       pagosData = p  ?? []
+      cfdisData = c  ?? []
     }
 
     setCentros(centrosData ?? [])
     setVentas(ventasData ?? [])
+    setCfdis(cfdisData)
     setDets(detsData)
     setPagos(pagosData)
     setLoading(false)
@@ -87,6 +97,13 @@ export default function ReporteGolfVentasHistoricas() {
 
   const ventaMap = useMemo(() =>
     Object.fromEntries(ventas.map(v => [v.id, v])), [ventas])
+
+  // Última factura (CFDI) por venta — si hay historial de re-timbrados, se queda con la más reciente
+  const cfdiMap = useMemo(() => {
+    const map: Record<number, any> = {}
+    for (const c of cfdis) map[c.id_venta_fk] = c
+    return map
+  }, [cfdis])
 
   // Dets enriquecidos
   const enrichedDets = useMemo(() => dets.map(d => ({
@@ -158,12 +175,19 @@ export default function ReporteGolfVentasHistoricas() {
     return filteredPagos
       .filter(p => (p.forma_nombre ?? 'Sin especificar') === drillForma)
       .map(p => {
-        const v = ventaMap[p.id_venta_fk]
+        const v    = ventaMap[p.id_venta_fk]
+        const cfdi = cfdiMap[p.id_venta_fk]
         return {
           idPago:         p.id,
           idVenta:        p.id_venta_fk,
           fecha:          v?.fecha ?? null,
-          folio:          v?.id ?? p.id_venta_fk,
+          folioVenta:     v?.id ?? p.id_venta_fk,
+          folioFactura:   cfdi?.folio_factura ?? null,
+          uuidFiscal:     v?.folio_fiscal ?? null,
+          receptorRfc:    cfdi?.receptor_rfc ?? null,
+          receptorEmail:  cfdi?.receptor_email ?? null,
+          cfdiStatus:     cfdi?.status ?? null,
+          facturada:      !!v?.folio_fiscal,
           nombre_cliente: v?.nombre_cliente ?? '—',
           centro_nombre:  centroMap[v?.id_centro_fk] ?? '—',
           monto:          p.monto ?? 0,
@@ -171,7 +195,7 @@ export default function ReporteGolfVentasHistoricas() {
         }
       })
       .sort((a, b) => new Date(b.fecha ?? 0).getTime() - new Date(a.fecha ?? 0).getTime())
-  }, [drillForma, filteredPagos, ventaMap, centroMap])
+  }, [drillForma, filteredPagos, ventaMap, cfdiMap, centroMap])
 
   const drillTotal = useMemo(() => drillRows.reduce((s, r) => s + (r.monto ?? 0), 0), [drillRows])
 
@@ -529,12 +553,12 @@ export default function ReporteGolfVentasHistoricas() {
               Sin facturas para esta forma de pago
             </div>
           ) : (
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    {['Fecha', 'Folio', 'Centro', 'Cliente', 'Monto'].map((h, i) => (
-                      <th key={h} style={{ padding: '8px 12px', textAlign: i === 4 ? 'right' : 'left',
+                    {['Fecha', 'Folio Factura', 'UUID Fiscal', 'Cliente / Receptor', 'Centro', 'Monto'].map((h, i) => (
+                      <th key={h} style={{ padding: '8px 12px', textAlign: i === 5 ? 'right' : 'left',
                         fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
                         textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                         {h}
@@ -546,16 +570,34 @@ export default function ReporteGolfVentasHistoricas() {
                   {drillRows.map((r, i) => (
                     <tr key={r.idPago} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{fmtF(r.fecha)}</td>
-                      <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>#{String(r.folio).padStart(5, '0')}</td>
+                      <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
+                        {r.facturada ? (
+                          <>
+                            <div style={{ fontWeight: 700, fontFamily: 'monospace', color: '#2563eb' }}>{r.folioFactura ?? '—'}</div>
+                            {r.cfdiStatus === 'Cancelada' && (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, background: '#fef2f2', color: '#dc2626' }}>Cancelada</span>
+                            )}
+                          </>
+                        ) : (
+                          <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin facturar</span>
+                        )}
+                        <div style={{ fontSize: 10, color: '#94a3b8' }}>Ticket #{String(r.folioVenta).padStart(6, '0')}</div>
+                      </td>
+                      <td style={{ padding: '8px 12px', maxWidth: 200 }}>
+                        <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>{r.uuidFiscal ?? '—'}</div>
+                      </td>
+                      <td style={{ padding: '8px 12px', maxWidth: 200 }}>
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.nombre_cliente}>{r.nombre_cliente}</div>
+                        {r.receptorRfc && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.receptorRfc}</div>}
+                      </td>
                       <td style={{ padding: '8px 12px', fontSize: 12, whiteSpace: 'nowrap' }}>{r.centro_nombre}</td>
-                      <td style={{ padding: '8px 12px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.nombre_cliente}>{r.nombre_cliente}</td>
                       <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(r.monto)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr style={{ background: GOLD_PALE, borderTop: `2px solid ${GOLD_BORDER}` }}>
-                    <td colSpan={4} style={{ padding: '8px 12px', fontWeight: 700, color: GOLD_DARK }}>
+                    <td colSpan={5} style={{ padding: '8px 12px', fontWeight: 700, color: GOLD_DARK }}>
                       Total ({drillRows.length} factura{drillRows.length !== 1 ? 's' : ''})
                     </td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: GOLD, fontVariantNumeric: 'tabular-nums' }}>{fmt(drillTotal)}</td>
