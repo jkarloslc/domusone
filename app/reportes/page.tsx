@@ -2,7 +2,7 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
-import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star, Droplets, CloudRain } from 'lucide-react'
+import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star, Droplets, CloudRain, Tag } from 'lucide-react'
 import ReporteColaboradores from './ReporteColaboradores'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
@@ -56,6 +56,8 @@ import ReporteSeccionesLotes from './ReporteSeccionesLotes'
 import ReporteCobranzaCorrienteVencida from './ReporteCobranzaCorrienteVencida'
 import ReporteLotesAsociacion from './ReporteLotesAsociacion'
 import ReporteManoDeObra from './ReporteManoDeObra'
+import ReporteOPsPorTipoGasto from './ReporteOPsPorTipoGasto'
+import ReporteOPsPorClasificacionArticulos from './ReporteOPsPorClasificacionArticulos'
 
 const GRUPOS = [
   {
@@ -135,6 +137,8 @@ const GRUPOS = [
       { id: 'compras-por-proveedor',  label: 'Compras por Proveedor',           icon: ShoppingCart, desc: 'OCs agrupadas por proveedor con totales, filtrable por CC, status y fecha' },
       { id: 'ordenes-pago-cc',   label: 'Órdenes de Pago por CC / Área', icon: Wallet,    desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
       { id: 'antiguedad-op-cc',  label: 'Antigüedad de OPs por CC / Área', icon: Clock,  desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
+      { id: 'ops-tipo-gasto',    label: 'OPs por Tipo de Gasto',      icon: Wallet,       desc: 'Órdenes de pago sin OC vinculada, agrupadas por tipo de gasto capturado en el encabezado' },
+      { id: 'ops-clasificacion-articulos', label: 'OPs por Clasificación de Artículos', icon: Tag, desc: 'Órdenes de pago con OC vinculada, repartidas por la categoría de los artículos realmente comprados' },
       { id: 'kardex',            label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
       { id: 'transferencias',  label: 'Transferencias',             icon: Package,      desc: 'Movimientos entre almacenes con filtros por origen, destino y fecha' },
       { id: 'ops-por-proveedor',        label: 'OPs por Proveedor',              icon: FileText,     desc: 'Órdenes de pago agrupadas por proveedor con totales y saldos pendientes' },
@@ -313,6 +317,8 @@ function ReportesContent() {
       {active === 'ordenes-compra'   && <ReporteOrdenesCompra />}
       {active === 'ordenes-pago-cc'  && <ReporteOrdenesPago />}
       {active === 'antiguedad-op-cc' && <ReporteAntiguedadOPporCC />}
+      {active === 'ops-tipo-gasto'   && <ReporteOPsPorTipoGasto />}
+      {active === 'ops-clasificacion-articulos' && <ReporteOPsPorClasificacionArticulos />}
       {active === 'cxp'              && <ReporteCXP />}
       {active === 'kardex'           && <ReporteKardex />}
       {active === 'transferencias'        && <ReporteTransferencias />}
