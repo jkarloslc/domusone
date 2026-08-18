@@ -85,7 +85,7 @@ export default function ReporteConsumoCentroCosto() {
   })
 
   const TIPOS_GASTO = [
-    'Servicios Profesionales','Mantenimiento','Reparación','Arrendamiento',
+    'Servicios Profesionales','Mantenimiento de Instalaciones e Infraestructura','Reparación','Arrendamiento',
     'Seguros','Publicidad','Combustible','Electricidad','Agua',
     'Telefonía / Internet','Honorarios','Asesoría','Capacitación','Otro',
   ]

@@ -9,13 +9,13 @@ const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pa
 
 // Sincronizado con app/compras/ordenes-pago/page.tsx
 const TIPOS_GASTO = [
-  'Servicios Profesionales', 'Mantenimiento', 'Reparación',
-  'Arrendamiento', 'Seguros', 'Publicidad', 'Combustible',
-  'Electricidad', 'Agua', 'Telefonía / Internet',
-  'Honorarios', 'Asesoría', 'Capacitación',
-  'Nómina Semanal', 'Nómina Quincenal',
-  'ISR', 'IMSS', 'IVA', 'IEPS', '3% SN',
-  'Renta de Mobiliario', 'Servicios de Vigilancia', 'Otro',
+  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
+  'Depósitos en Garantía (Fianzas)', 'Desazolves', 'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot',
+  'Gasto Operativo Eventos', 'Honorarios',
+  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Intercompañías BPCC', 'Intercompañías OOB', 'Intercompañías RBA', 'Licencias de Software', 'Mantenimiento de Instalaciones e Infraestructura', 'Mantenimiento de Vehículos',
+  'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Pagos a Personal Externo', 'Perimetrales', 'PTU', 'Publicidad',
+  'Recolección de Basura', 'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
+  'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
 ]
 
 const statusColor = (s: string) =>

@@ -19,7 +19,7 @@ const TIPOS_GASTO = [
   'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
   'Depósitos en Garantía (Fianzas)', 'Desazolves', 'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot',
   'Gasto Operativo Eventos', 'Honorarios',
-  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Intercompañías BPCC', 'Intercompañías OOB', 'Intercompañías RBA', 'Licencias de Software', 'Mantenimiento', 'Mantenimiento de Vehículos',
+  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Intercompañías BPCC', 'Intercompañías OOB', 'Intercompañías RBA', 'Licencias de Software', 'Mantenimiento de Instalaciones e Infraestructura', 'Mantenimiento de Vehículos',
   'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Pagos a Personal Externo', 'Perimetrales', 'PTU', 'Publicidad',
   'Recolección de Basura', 'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
   'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',

@@ -78,7 +78,7 @@ export default function ReporteConsumoSeccion() {
   const docsTotal    = rows.reduce((a, r) => a + r.docs, 0)
 
   const TIPOS_GASTO = [
-    'Servicios Profesionales','Mantenimiento','Reparación','Arrendamiento',
+    'Servicios Profesionales','Mantenimiento de Instalaciones e Infraestructura','Reparación','Arrendamiento',
     'Seguros','Publicidad','Combustible','Electricidad','Agua',
     'Telefonía / Internet','Honorarios','Asesoría','Capacitación','Otro',
   ]
