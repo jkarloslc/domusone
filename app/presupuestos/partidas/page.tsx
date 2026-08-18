@@ -285,13 +285,13 @@ export default function PartidasPage() {
         </div>
         <div className="page-header-actions">
           {/* Filtro módulo */}
-          <select className="input" style={{ fontSize: 12, padding: '5px 10px' }}
+          <select className="input" style={{ fontSize: 12, padding: '5px 8px', width: 130, flex: '0 0 auto' }}
             value={filterModulo} onChange={e => setFilterModulo(e.target.value)}>
             <option value="">Todos los módulos</option>
             {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           {/* Filtro agrupador */}
-          <select className="input" style={{ fontSize: 12, padding: '5px 10px' }}
+          <select className="input" style={{ fontSize: 12, padding: '5px 8px', width: 130, flex: '0 0 auto' }}
             value={filterAgrupador} onChange={e => setFilterAgrupador(e.target.value)}>
             <option value="">Todos los agrupadores</option>
             <option value="none">Sin agrupador</option>
