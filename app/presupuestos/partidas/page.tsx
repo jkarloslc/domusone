@@ -63,7 +63,7 @@ const TIPOS_GASTO = [
   'Gasto Operativo Eventos', 'Honorarios',
   'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Intercompañías BPCC', 'Intercompañías OOB', 'Intercompañías RBA', 'Licencias de Software', 'Mantenimiento de Instalaciones e Infraestructura', 'Mantenimiento de Vehículos',
   'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Pagos a Personal Externo', 'Perimetrales', 'PTU', 'Publicidad',
-  'Recolección de Basura', 'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
+  'Recolección de Basura', 'Renta de Mobiliario y Equipo', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
   'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
 ]
 
