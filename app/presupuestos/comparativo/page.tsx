@@ -72,6 +72,19 @@ function PctEjercidoCell({ real, ppto, tipo }: { real: number; ppto: number; tip
   )
 }
 
+function MontoDrillButton({ monto, onClick, fmt }: { monto: number; onClick: () => void; fmt: (n: number) => string }) {
+  return (
+    <button onClick={onClick} title="Ver partidas que integran este monto"
+      style={{
+        font: 'inherit', fontWeight: 'inherit', color: 'inherit', background: 'none', border: 'none',
+        padding: 0, cursor: 'pointer', fontVariantNumeric: 'tabular-nums',
+        textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3,
+      }}>
+      {fmt(monto)}
+    </button>
+  )
+}
+
 // ── Página ────────────────────────────────────────────────────────────────────
 export default function ComparativoPage() {
   const { canWrite } = useAuth()
@@ -89,6 +102,7 @@ export default function ComparativoPage() {
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
   const [vista, setVista] = useState<'detalle' | 'agrupado'>('detalle')
+  const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: { id: number; nombre: string; pptoVal: number; realVal: number; varAbs: number; varPct: number | null }[] } | null>(null)
 
   // Modal añadir real manual
   const [modalManual, setModalManual] = useState(false)
@@ -343,22 +357,23 @@ export default function ComparativoPage() {
   // Agrupa filas por agrupador (partidas sin agrupador van a "Sin Agrupador")
   const SIN_AGRUPADOR = 'Sin Agrupador'
   function agrupar(rows: typeof filas) {
-    const map = new Map<number, { nombre: string; orden: number; pptoVal: number; realVal: number }>()
+    const map = new Map<number, { nombre: string; orden: number; pptoVal: number; realVal: number; partidas: typeof rows }>()
     rows.forEach(r => {
       const agId = r.id_agrupador_fk ?? 0
       const ag = agId ? agrupadores.find(a => a.id === agId) : null
       if (!map.has(agId)) {
-        map.set(agId, { nombre: ag?.nombre ?? SIN_AGRUPADOR, orden: ag?.orden ?? Number.MAX_SAFE_INTEGER, pptoVal: 0, realVal: 0 })
+        map.set(agId, { nombre: ag?.nombre ?? SIN_AGRUPADOR, orden: ag?.orden ?? Number.MAX_SAFE_INTEGER, pptoVal: 0, realVal: 0, partidas: [] })
       }
       const g = map.get(agId)!
       g.pptoVal += r.pptoVal
       g.realVal += r.realVal
+      g.partidas.push(r)
     })
     return Array.from(map.entries())
       .map(([id, g]) => {
         const varAbs = g.realVal - g.pptoVal
         const varPct = g.pptoVal > 0 ? Math.round(((g.realVal - g.pptoVal) / g.pptoVal) * 100) : null
-        return { id: `ag-${id}`, nombre: g.nombre, orden: g.orden, pptoVal: g.pptoVal, realVal: g.realVal, varAbs, varPct }
+        return { id: `ag-${id}`, nombre: g.nombre, orden: g.orden, pptoVal: g.pptoVal, realVal: g.realVal, varAbs, varPct, partidas: g.partidas }
       })
       .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
   }
@@ -519,10 +534,10 @@ export default function ComparativoPage() {
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                        {g.pptoVal > 0 ? fmt(g.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        {g.pptoVal > 0 ? <MontoDrillButton monto={g.pptoVal} onClick={() => setDrillGrupo({ nombre: g.nombre, tipo: 'ingreso', partidas: g.partidas })} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                        {g.realVal > 0 ? fmt(g.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => setDrillGrupo({ nombre: g.nombre, tipo: 'ingreso', partidas: g.partidas })} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
                         <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="ingreso" />
@@ -587,10 +602,10 @@ export default function ComparativoPage() {
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                        {g.pptoVal > 0 ? fmt(g.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        {g.pptoVal > 0 ? <MontoDrillButton monto={g.pptoVal} onClick={() => setDrillGrupo({ nombre: g.nombre, tipo: 'egreso', partidas: g.partidas })} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                        {g.realVal > 0 ? fmt(g.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => setDrillGrupo({ nombre: g.nombre, tipo: 'egreso', partidas: g.partidas })} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
                       </td>
                       <td style={{ ...td, textAlign: 'right' }}>
                         <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="egreso" />
@@ -684,6 +699,66 @@ export default function ComparativoPage() {
                 onChange={e => setManualConc(e.target.value)}
                 placeholder="Descripción del ajuste (opcional)" />
             </label>
+          </div>
+        </ModalShell>
+      )}
+
+      {/* Modal: Partidas que integran el monto agrupado */}
+      {drillGrupo && (
+        <ModalShell
+          modulo="presupuestos"
+          titulo={`Partidas — ${drillGrupo.nombre}`}
+          subtitulo={`${drillGrupo.partidas.length} partida${drillGrupo.partidas.length !== 1 ? 's' : ''}`}
+          icono={BookOpen}
+          maxWidth={560}
+          onClose={() => setDrillGrupo(null)}
+          footer={<button className="btn-secondary" onClick={() => setDrillGrupo(null)}>Cerrar</button>}
+        >
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <th style={th}>Partida</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Presupuesto</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Real</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Variación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drillGrupo.partidas
+                  .slice()
+                  .sort((a, b) => b.realVal - a.realVal)
+                  .map((p, i) => (
+                    <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
+                      background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <td style={td}>{p.nombre}</td>
+                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                        {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                      </td>
+                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                        {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                      </td>
+                      <td style={{ ...td, textAlign: 'right' }}>
+                        <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo={drillGrupo.tipo} />
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ background: '#f1f5f9', fontWeight: 700 }}>
+                  <td style={{ ...td, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: '#475569' }}>
+                    Total
+                  </td>
+                  <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt(drillGrupo.partidas.reduce((s, p) => s + p.pptoVal, 0))}
+                  </td>
+                  <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt(drillGrupo.partidas.reduce((s, p) => s + p.realVal, 0))}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </ModalShell>
       )}

@@ -4,6 +4,7 @@ import { dbCtrl, dbComp } from '@/lib/supabase'
 import { Loader, RefreshCw, TrendingUp, TrendingDown, Scale, AlertTriangle, BookOpen, Layers, List } from 'lucide-react'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { prorratearDescuento } from '@/lib/prorateoDescuento'
+import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -87,6 +88,19 @@ function KpiCard({ label, value, sub, color, bg, icon: Icon }: {
   )
 }
 
+function MontoDrillButton({ monto, onClick }: { monto: number; onClick: () => void }) {
+  return (
+    <button onClick={onClick} title="Ver partidas que integran este monto"
+      style={{
+        font: 'inherit', fontWeight: 'inherit', color: 'inherit', background: 'none', border: 'none',
+        padding: 0, cursor: 'pointer', fontVariantNumeric: 'tabular-nums',
+        textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3,
+      }}>
+      {fmt(monto)}
+    </button>
+  )
+}
+
 // ── Página ───────────────────────────────────────────────────────────────────
 export default function DashboardPpto() {
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([])
@@ -99,6 +113,7 @@ export default function DashboardPpto() {
   const [realMap,  setRealMap]  = useState<DetMap>({})
   const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
   const [vista, setVista] = useState<'detalle' | 'agrupado'>('detalle')
+  const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: { id: number; nombre: string; pptoTotal: number; realTotal: number; varAbs: number; varPct: number | null }[] } | null>(null)
 
   const loadEverything = useCallback(async (pptoId: number, anio: number, modulo: string, silent = false) => {
     if (!silent) setLoading(true)
@@ -338,7 +353,10 @@ export default function DashboardPpto() {
   // Top 8 desvíos — vista Agrupado: por agrupador, sin mezclar ingreso/egreso
   const SIN_AGRUPADOR = 'Sin Agrupador'
   const desviosAgrupado = (() => {
-    const map = new Map<string, { nombre: string; tipo: 'ingreso' | 'egreso'; pptoTotal: number; realTotal: number }>()
+    const map = new Map<string, {
+      nombre: string; tipo: 'ingreso' | 'egreso'; pptoTotal: number; realTotal: number
+      partidas: { id: number; nombre: string; pptoTotal: number; realTotal: number; varAbs: number; varPct: number | null }[]
+    }>()
     partidas.forEach(p => {
       const pptoTotal = sumaAnual(p.id, detMap)
       const realTotal = sumaAnual(p.id, realMap)
@@ -346,16 +364,19 @@ export default function DashboardPpto() {
       const agId = p.id_agrupador_fk ?? 0
       const ag = agId ? agrupadores.find(a => a.id === agId) : null
       const key = `${p.tipo}-${agId}`
-      if (!map.has(key)) map.set(key, { nombre: ag?.nombre ?? SIN_AGRUPADOR, tipo: p.tipo, pptoTotal: 0, realTotal: 0 })
+      if (!map.has(key)) map.set(key, { nombre: ag?.nombre ?? SIN_AGRUPADOR, tipo: p.tipo, pptoTotal: 0, realTotal: 0, partidas: [] })
       const g = map.get(key)!
+      const varAbsP = realTotal - pptoTotal
+      const varPctP = pptoTotal > 0 ? Math.round(((realTotal - pptoTotal) / pptoTotal) * 100) : null
       g.pptoTotal += pptoTotal
       g.realTotal += realTotal
+      g.partidas.push({ id: p.id, nombre: p.nombre, pptoTotal, realTotal, varAbs: varAbsP, varPct: varPctP })
     })
     return Array.from(map.entries())
       .map(([key, g]) => {
         const varAbs = g.realTotal - g.pptoTotal
         const varPct = g.pptoTotal > 0 ? Math.round(((g.realTotal - g.pptoTotal) / g.pptoTotal) * 100) : null
-        return { id: key, nombre: g.nombre, tipo: g.tipo, pptoTotal: g.pptoTotal, realTotal: g.realTotal, varAbs, varPct }
+        return { id: key, nombre: g.nombre, tipo: g.tipo, pptoTotal: g.pptoTotal, realTotal: g.realTotal, varAbs, varPct, partidas: g.partidas }
       })
       .sort((a, b) => Math.abs(b.varAbs) - Math.abs(a.varAbs))
       .slice(0, 8)
@@ -523,10 +544,18 @@ export default function DashboardPpto() {
                       </span>
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {p.pptoTotal > 0 ? fmt(p.pptoTotal) : '—'}
+                      {p.pptoTotal > 0
+                        ? (vista === 'agrupado'
+                            ? <MontoDrillButton monto={p.pptoTotal} onClick={() => setDrillGrupo({ nombre: p.nombre, tipo: p.tipo, partidas: (p as typeof desviosAgrupado[number]).partidas })} />
+                            : fmt(p.pptoTotal))
+                        : '—'}
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {p.realTotal > 0 ? fmt(p.realTotal) : '—'}
+                      {p.realTotal > 0
+                        ? (vista === 'agrupado'
+                            ? <MontoDrillButton monto={p.realTotal} onClick={() => setDrillGrupo({ nombre: p.nombre, tipo: p.tipo, partidas: (p as typeof desviosAgrupado[number]).partidas })} />
+                            : fmt(p.realTotal))
+                        : '—'}
                     </td>
                     <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
                       color, fontWeight: 600 }}>
@@ -548,6 +577,72 @@ export default function DashboardPpto() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Modal: Partidas que integran el monto agrupado */}
+      {drillGrupo && (
+        <ModalShell
+          modulo="presupuestos"
+          titulo={`Partidas — ${drillGrupo.nombre}`}
+          subtitulo={`${drillGrupo.partidas.length} partida${drillGrupo.partidas.length !== 1 ? 's' : ''}`}
+          icono={BookOpen}
+          maxWidth={560}
+          onClose={() => setDrillGrupo(null)}
+          footer={<button className="btn-secondary" onClick={() => setDrillGrupo(null)}>Cerrar</button>}
+        >
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <th style={th}>Partida</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Presupuesto</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Real</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Variación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drillGrupo.partidas
+                  .slice()
+                  .sort((a, b) => b.realTotal - a.realTotal)
+                  .map((p, i) => {
+                    const esPos = p.varAbs >= 0
+                    const color = drillGrupo.tipo === 'ingreso'
+                      ? (esPos ? '#15803d' : '#dc2626')
+                      : (esPos ? '#dc2626' : '#15803d')
+                    return (
+                      <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
+                        background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                        <td style={td}>{p.nombre}</td>
+                        <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                          {p.pptoTotal > 0 ? fmt(p.pptoTotal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        </td>
+                        <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                          {p.realTotal > 0 ? fmt(p.realTotal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        </td>
+                        <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color, fontWeight: 600 }}>
+                          {p.varAbs !== 0 ? `${esPos ? '+' : ''}${fmt(p.varAbs)}` : '—'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+              </tbody>
+              <tfoot>
+                <tr style={{ background: '#f1f5f9', fontWeight: 700 }}>
+                  <td style={{ ...td, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: '#475569' }}>
+                    Total
+                  </td>
+                  <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt(drillGrupo.partidas.reduce((s, p) => s + p.pptoTotal, 0))}
+                  </td>
+                  <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt(drillGrupo.partidas.reduce((s, p) => s + p.realTotal, 0))}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </ModalShell>
       )}
     </div>
   )
