@@ -107,6 +107,7 @@ export default function POSPage() {
   const [fechaFactFin,  setFechaFactFin]  = useState(fechaLocal())
   const [filtroCentroFact, setFiltroCentroFact] = useState('')
   const [filtroFormaPagoFact, setFiltroFormaPagoFact] = useState('')
+  const [busquedaFact, setBusquedaFact] = useState('')
   const [reenvEmail,    setReenvEmail]    = useState<number | null>(null)
   const [descargando,   setDescargando]   = useState<string | null>(null)  // 'id-pdf' | 'id-xml'
   const [cancelarFacturaV, setCancelarFacturaV] = useState<any>(null)
@@ -1077,6 +1078,13 @@ ${facturasCorte.length > 0 ? `
     return v.nombre_cliente.toLowerCase().includes(q) || String(v.id).includes(q) || String(v.folio_dia).includes(q)
   })
 
+  const facturasF = facturas.filter(v => {
+    if (!busquedaFact.trim()) return true
+    const q = busquedaFact.toLowerCase()
+    const receptor = v._cfdi?.receptor_nombre ?? v.nombre_cliente ?? ''
+    return receptor.toLowerCase().includes(q)
+  })
+
   const esAdminMesa = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
 
   const TABS: { key: Tab; label: string; icon: any }[] = [
@@ -1526,6 +1534,12 @@ ${facturasCorte.length > 0 ? `
       {tab === 'facturas' && (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                placeholder="Buscar cliente (receptor)…" value={busquedaFact} onChange={e => setBusquedaFact(e.target.value)} />
+              {busquedaFact && <button onClick={() => setBusquedaFact('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>Del</span>
               <input type="date" value={fechaFact} onChange={e => setFechaFact(e.target.value)}
@@ -1554,10 +1568,10 @@ ${facturasCorte.length > 0 ? `
 
           {loadingF ? (
             <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}><Loader size={20} className="animate-spin" style={{ margin: '0 auto' }} /></div>
-          ) : facturas.length === 0 ? (
+          ) : facturasF.length === 0 ? (
             <div className="card" style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>
               <FileCheck size={32} style={{ margin: '0 auto 10px' }} />
-              <div style={{ fontWeight: 500 }}>Sin facturas emitidas en el período seleccionado</div>
+              <div style={{ fontWeight: 500 }}>{facturas.length === 0 ? 'Sin facturas emitidas en el período seleccionado' : 'Sin coincidencias para la búsqueda'}</div>
             </div>
           ) : (
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -1571,7 +1585,7 @@ ${facturasCorte.length > 0 ? `
                     </tr>
                   </thead>
                   <tbody>
-                    {facturas.map(v => {
+                    {facturasF.map(v => {
                       const cfdi = v._cfdi
                       const centro = centros.find(c => c.id === v.id_centro_fk)
                       return (
@@ -1580,7 +1594,7 @@ ${facturasCorte.length > 0 ? `
                             <div style={{ fontWeight: 700, fontFamily: 'monospace', color: '#2563eb' }}>{cfdi?.folio_factura ?? '—'}</div>
                             <div style={{ fontSize: 10, color: '#94a3b8' }}>Ticket #{String(v.id).padStart(6, '0')}</div>
                           </td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>{cfdi?.receptor_nombre ?? v.nombre_cliente}</td>
                           <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>{centro?.nombre ?? `#${v.id_centro_fk}`}</td>
                           <td style={{ padding: '10px 14px', maxWidth: 220 }}>
                             <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>{v.folio_fiscal ?? '—'}</div>
@@ -1688,10 +1702,10 @@ ${facturasCorte.length > 0 ? `
                   <tfoot>
                     <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
                       <td colSpan={5} style={{ padding: '10px 14px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: '#475569' }}>
-                        Total ({facturas.length} factura{facturas.length !== 1 ? 's' : ''})
+                        Total ({facturasF.length} factura{facturasF.length !== 1 ? 's' : ''})
                       </td>
                       <td style={{ padding: '10px 14px', fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>
-                        {fmt$(facturas.reduce((a, v) => a + (Number(v.total) || 0), 0))}
+                        {fmt$(facturasF.reduce((a, v) => a + (Number(v.total) || 0), 0))}
                       </td>
                       <td colSpan={4}></td>
                     </tr>
