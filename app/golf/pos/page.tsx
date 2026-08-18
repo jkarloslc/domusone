@@ -1081,8 +1081,7 @@ ${facturasCorte.length > 0 ? `
   const facturasF = facturas.filter(v => {
     if (!busquedaFact.trim()) return true
     const q = busquedaFact.toLowerCase()
-    const receptor = v._cfdi?.receptor_nombre ?? v.nombre_cliente ?? ''
-    return receptor.toLowerCase().includes(q)
+    return (v.nombre_cliente ?? '').toLowerCase().includes(q)
   })
 
   const esAdminMesa = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
@@ -1537,7 +1536,7 @@ ${facturasCorte.length > 0 ? `
             <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
               <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               <input style={{ width: '100%', padding: '7px 10px 7px 30px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
-                placeholder="Buscar cliente (receptor)…" value={busquedaFact} onChange={e => setBusquedaFact(e.target.value)} />
+                placeholder="Buscar cliente…" value={busquedaFact} onChange={e => setBusquedaFact(e.target.value)} />
               {busquedaFact && <button onClick={() => setBusquedaFact('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={12} /></button>}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1594,7 +1593,7 @@ ${facturasCorte.length > 0 ? `
                             <div style={{ fontWeight: 700, fontFamily: 'monospace', color: '#2563eb' }}>{cfdi?.folio_factura ?? '—'}</div>
                             <div style={{ fontSize: 10, color: '#94a3b8' }}>Ticket #{String(v.id).padStart(6, '0')}</div>
                           </td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>{cfdi?.receptor_nombre ?? v.nombre_cliente}</td>
+                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#1e293b' }}>{v.nombre_cliente}</td>
                           <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>{centro?.nombre ?? `#${v.id_centro_fk}`}</td>
                           <td style={{ padding: '10px 14px', maxWidth: 220 }}>
                             <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#7c3aed', wordBreak: 'break-all' }}>{v.folio_fiscal ?? '—'}</div>
