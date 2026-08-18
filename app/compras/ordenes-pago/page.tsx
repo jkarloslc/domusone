@@ -20,7 +20,7 @@ const TIPOS_GASTO = [
   'Depósitos en Garantía (Fianzas)', 'Desazolves', 'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot',
   'Gasto Operativo Eventos', 'Honorarios',
   'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Intercompañías BPCC', 'Intercompañías OOB', 'Intercompañías RBA', 'Licencias de Software', 'Mantenimiento', 'Mantenimiento de Vehículos',
-  'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Pagos a Personal', 'Perimetrales', 'PTU', 'Publicidad',
+  'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Pagos a Personal Externo', 'Perimetrales', 'PTU', 'Publicidad',
   'Recolección de Basura', 'Renta de Mobiliario', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
   'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
 ]
