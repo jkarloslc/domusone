@@ -279,42 +279,38 @@ export default function ReporteOPsPorTipoGasto() {
 
   return (
     <div>
-      {/* Filtros fila 1 */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Filtros */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <Filter size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        <select className="select" style={{ minWidth: 160 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+        <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 150, flex: '0 0 auto' }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
           <option value="">Todos los status</option>
           {STATUS_OP.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 200 }} value={filtroCC} onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}>
-          <option value="">Todos los centros de costo</option>
+        <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 160, flex: '0 0 auto' }} value={filtroCC} onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}>
+          <option value="">Todos los CC</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
-          <option value="">Todas las áreas{filtroCC ? ' del CC' : ''}</option>
+        <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 140, flex: '0 0 auto' }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
+          <option value="">Todas las áreas</option>
           {areasDelCC.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 145 }} />
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>–</span>
-          <input className="input" type="date" value={filtroA} onChange={e => setFiltroA(e.target.value)} style={{ width: 145 }} />
-        </div>
-        <button className="btn-ghost" onClick={fetchData} title="Recargar">
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-        </button>
-      </div>
-
-      {/* Filtros fila 2 */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <select className="select" style={{ minWidth: 220 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
+        <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 160, flex: '0 0 auto' }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
           <option value="">Todos los proveedores</option>
           {provs.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 200 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+        <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 150, flex: '0 0 auto' }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
           {TIPOS_GASTO.map(t => <option key={t}>{t}</option>)}
         </select>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: '0 0 auto' }}>
+          <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ fontSize: 12, padding: '5px 8px', width: 118 }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>–</span>
+          <input className="input" type="date" value={filtroA} onChange={e => setFiltroA(e.target.value)} style={{ fontSize: 12, padding: '5px 8px', width: 118 }} />
+        </div>
+        <button className="btn-ghost" onClick={fetchData} title="Recargar" style={{ flex: '0 0 auto' }}>
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+        </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flex: '0 0 auto' }}>
           <button className="btn-secondary" onClick={exportExcel} style={{ fontSize: 12 }}>
             <FileSpreadsheet size={13} /> Exportar Excel
           </button>
