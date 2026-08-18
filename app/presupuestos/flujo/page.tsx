@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp } from '@/lib/supabase'
-import { Loader, RefreshCw, Wallet, Info } from 'lucide-react'
+import { Loader, RefreshCw, Wallet, Info, Layers, List } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { useAuth } from '@/lib/AuthContext'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
@@ -18,7 +18,9 @@ type Partida     = {
   id_seccion_fk:        number | null
   id_concepto_fk:       number | null
   tipo_gasto:           string | null
+  id_agrupador_fk:      number | null
 }
+type Agrupador = { id: number; nombre: string; orden: number }
 type DetMap = Record<number, Record<number, number>>
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
@@ -74,10 +76,12 @@ export default function FlujoEfectivoPage() {
   const [partidas, setPartidas] = useState<Partida[]>([])
   const [detMap,   setDetMap]   = useState<DetMap>({})
   const [realMap,  setRealMap]  = useState<DetMap>({})
+  const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
 
   // Filtros
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
+  const [vista, setVista] = useState<'detalle' | 'agrupado'>('detalle')
 
   // Modal añadir real manual (partidas adicionales de flujo, financiamiento, etc.)
   const [modalManual, setModalManual] = useState(false)
@@ -91,7 +95,7 @@ export default function FlujoEfectivoPage() {
     if (!silent) setLoading(true); else setRefreshing(true)
 
     let partidasQ = dbCtrl.from('ppto_partidas')
-      .select('id, nombre, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto')
+      .select('id, nombre, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk')
       .eq('activo', true)
       .eq('incluir_flujo', true)
     if (modulo) partidasQ = (partidasQ as any).eq('modulo', modulo)
@@ -296,6 +300,8 @@ export default function FlujoEfectivoPage() {
           loadEverything(list[0].id, list[0].anio, list[0].modulo)
         } else setLoading(false)
       })
+    dbCtrl.from('ppto_agrupadores').select('id, nombre, orden').eq('activo', true).order('orden').order('nombre')
+      .then(({ data }) => setAgrupadores((data ?? []) as Agrupador[]))
   }, [loadEverything])
 
   const selPpto = presupuestos.find(p => p.id === selId)
@@ -352,6 +358,31 @@ export default function FlujoEfectivoPage() {
   function totalSeccion(rows: typeof filas, field: 'pptoVal' | 'realVal') {
     return rows.reduce((s, r) => s + r[field], 0)
   }
+
+  // Agrupa filas por agrupador (partidas sin agrupador van a "Sin Agrupador")
+  const SIN_AGRUPADOR = 'Sin Agrupador'
+  function agrupar(rows: typeof filas) {
+    const map = new Map<number, { nombre: string; orden: number; pptoVal: number; realVal: number }>()
+    rows.forEach(r => {
+      const agId = r.id_agrupador_fk ?? 0
+      const ag = agId ? agrupadores.find(a => a.id === agId) : null
+      if (!map.has(agId)) {
+        map.set(agId, { nombre: ag?.nombre ?? SIN_AGRUPADOR, orden: ag?.orden ?? Number.MAX_SAFE_INTEGER, pptoVal: 0, realVal: 0 })
+      }
+      const g = map.get(agId)!
+      g.pptoVal += r.pptoVal
+      g.realVal += r.realVal
+    })
+    return Array.from(map.entries())
+      .map(([id, g]) => {
+        const varAbs = g.realVal - g.pptoVal
+        const varPct = g.pptoVal > 0 ? Math.round(((g.realVal - g.pptoVal) / g.pptoVal) * 100) : null
+        return { id: `ag-${id}`, nombre: g.nombre, orden: g.orden, pptoVal: g.pptoVal, realVal: g.realVal, varAbs, varPct }
+      })
+      .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
+  }
+  const ingRowsAgrupado = agrupar(ingRows)
+  const egrRowsAgrupado = agrupar(egrRows)
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
@@ -437,6 +468,26 @@ export default function FlujoEfectivoPage() {
             </button>
           ))}
         </div>
+
+        {/* Vista: Detalle / Agrupado */}
+        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
+          {([
+            { v: 'detalle',  label: 'Detalle',  icon: List },
+            { v: 'agrupado', label: 'Agrupado', icon: Layers },
+          ] as const).map(({ v, label, icon: Icon }) => (
+            <button key={v} onClick={() => setVista(v)}
+              style={{
+                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: vista === v ? '#fff' : 'transparent',
+                color: vista === v ? '#1e293b' : '#64748b',
+                fontWeight: vista === v ? 600 : 400,
+                boxShadow: vista === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+              }}>
+              <Icon size={12} /> {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Tabla */}
@@ -471,7 +522,7 @@ export default function FlujoEfectivoPage() {
                       Ingresos (cobrado)
                     </td>
                   </tr>
-                  {ingRows.map((p, i) => (
+                  {vista === 'detalle' ? ingRows.map((p, i) => (
                     <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span></td>
@@ -497,6 +548,24 @@ export default function FlujoEfectivoPage() {
                         )}
                       </td>
                     </tr>
+                  )) : ingRowsAgrupado.map((g, i) => (
+                    <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
+                      background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
+                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                        {g.pptoVal > 0 ? fmt(g.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                      </td>
+                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                        {g.realVal > 0 ? fmt(g.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                      </td>
+                      <td style={{ ...td, textAlign: 'right' }}>
+                        <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="ingreso" />
+                      </td>
+                      <td style={{ ...td, textAlign: 'center' }}>
+                        <PctEjercidoCell real={g.realVal} ppto={g.pptoVal} tipo="ingreso" />
+                      </td>
+                      <td style={td}></td>
+                    </tr>
                   ))}
                   <TotalSectionRow
                     label="Total Ingresos"
@@ -521,7 +590,7 @@ export default function FlujoEfectivoPage() {
                       Egresos (pagado)
                     </td>
                   </tr>
-                  {egrRows.map((p, i) => (
+                  {vista === 'detalle' ? egrRows.map((p, i) => (
                     <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span></td>
@@ -546,6 +615,24 @@ export default function FlujoEfectivoPage() {
                           </button>
                         )}
                       </td>
+                    </tr>
+                  )) : egrRowsAgrupado.map((g, i) => (
+                    <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
+                      background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
+                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                        {g.pptoVal > 0 ? fmt(g.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                      </td>
+                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                        {g.realVal > 0 ? fmt(g.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                      </td>
+                      <td style={{ ...td, textAlign: 'right' }}>
+                        <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="egreso" />
+                      </td>
+                      <td style={{ ...td, textAlign: 'center' }}>
+                        <PctEjercidoCell real={g.realVal} ppto={g.pptoVal} tipo="egreso" />
+                      </td>
+                      <td style={td}></td>
                     </tr>
                   ))}
                   <TotalSectionRow

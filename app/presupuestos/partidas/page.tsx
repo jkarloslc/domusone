@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Edit2, Loader, Save, ChevronRight, BookOpen, Copy } from 'lucide-react'
+import { Plus, Edit2, Loader, Save, ChevronRight, BookOpen, Copy, Tag, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -36,17 +36,19 @@ type Partida = {
   id_seccion_fk:        number | null
   id_concepto_fk:       number | null
   tipo_gasto:           string | null
+  id_agrupador_fk: number | null
   orden: number
   activo: boolean
   incluir_presupuesto: boolean
   incluir_flujo:        boolean
 }
 
-type CC       = { id: number; nombre: string }
-type Area     = { id: number; nombre: string; id_centro_costo_fk: number }
-type CI       = { id: number; nombre: string }
-type Seccion  = { id: number; nombre: string }
-type Concepto = { id: number; nombre: string; id_centro_ingreso_fk: number | null }
+type CC        = { id: number; nombre: string }
+type Area      = { id: number; nombre: string; id_centro_costo_fk: number }
+type CI        = { id: number; nombre: string }
+type Seccion   = { id: number; nombre: string }
+type Concepto  = { id: number; nombre: string; id_centro_ingreso_fk: number | null }
+type Agrupador = { id: number; nombre: string; orden: number; activo: boolean }
 
 type DupTarget = {
   selected: boolean
@@ -68,7 +70,7 @@ const TIPOS_GASTO = [
 const EMPTY: Omit<Partida, 'id'> = {
   nombre: '', descripcion: null, tipo: 'egreso', modulo: 'Golf', fuente_real: 'op_area',
   id_centro_costo_fk: null, id_area_fk: null, id_centro_ingreso_fk: null,
-  id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, orden: 0, activo: true,
+  id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, id_agrupador_fk: null, orden: 0, activo: true,
   incluir_presupuesto: true, incluir_flujo: true,
 }
 
@@ -95,6 +97,7 @@ export default function PartidasPage() {
   const [centrosIng, setCentrosIng]   = useState<CI[]>([])
   const [secciones, setSecciones]     = useState<Seccion[]>([])
   const [conceptos, setConceptos]     = useState<Concepto[]>([])
+  const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
   const [loading, setLoading]         = useState(true)
   const [modal, setModal]             = useState(false)
   const [edit, setEdit]               = useState<Partida | null>(null)
@@ -103,6 +106,8 @@ export default function PartidasPage() {
   const [errorMsg, setErrorMsg]       = useState<string | null>(null)
   const [filterTipo, setFilterTipo]   = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterModulo, setFilterModulo] = useState('')
+
+  const [agModal, setAgModal]         = useState(false)
 
   const [dupModal, setDupModal]   = useState(false)
   const [dupSource, setDupSource] = useState<Partida | null>(null)
@@ -117,8 +122,14 @@ export default function PartidasPage() {
     setLoading(false)
   }, [])
 
+  const loadAgrupadores = useCallback(async () => {
+    const { data } = await dbCtrl.from('ppto_agrupadores').select('id, nombre, orden, activo').order('orden').order('nombre')
+    setAgrupadores((data ?? []) as Agrupador[])
+  }, [])
+
   useEffect(() => {
     load()
+    loadAgrupadores()
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setCCs((data ?? []) as CC[]))
     dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
@@ -129,7 +140,7 @@ export default function PartidasPage() {
       .then(({ data }) => setSecciones((data ?? []) as Seccion[]))
     dbCfg.from('conceptos_ingreso').select('id, nombre, id_centro_ingreso_fk').eq('activo', true).order('nombre')
       .then(({ data }) => setConceptos((data ?? []) as Concepto[]))
-  }, [load])
+  }, [load, loadAgrupadores])
 
   function openNew() {
     setEdit(null); setForm(EMPTY); setErrorMsg(null); setModal(true)
@@ -144,7 +155,7 @@ export default function PartidasPage() {
       id_centro_costo_fk: p.id_centro_costo_fk, id_area_fk: p.id_area_fk,
       id_centro_ingreso_fk: p.id_centro_ingreso_fk,
       id_seccion_fk: p.id_seccion_fk, id_concepto_fk: p.id_concepto_fk,
-      tipo_gasto: p.tipo_gasto,
+      tipo_gasto: p.tipo_gasto, id_agrupador_fk: p.id_agrupador_fk,
       orden: p.orden, activo: p.activo,
       incluir_presupuesto: p.incluir_presupuesto ?? true,
       incluir_flujo:       p.incluir_flujo ?? true,
@@ -161,6 +172,7 @@ export default function PartidasPage() {
       tipo:                 form.tipo,
       modulo:               form.modulo,
       fuente_real:          form.tipo === 'egreso' ? 'op_area' : form.fuente_real,
+      id_agrupador_fk:      form.id_agrupador_fk,
       orden:                form.orden,
       activo:               form.activo,
       incluir_presupuesto:  form.incluir_presupuesto,
@@ -212,6 +224,7 @@ export default function PartidasPage() {
       tipo:                 dupSource.tipo,
       modulo,
       fuente_real:          dupSource.fuente_real,
+      id_agrupador_fk:      dupSource.id_agrupador_fk,
       orden:                dupSource.orden,
       activo:               true,
       incluir_presupuesto:  dupSource.incluir_presupuesto,
@@ -240,6 +253,7 @@ export default function PartidasPage() {
   const ciMap   = Object.fromEntries(centrosIng.map(c => [c.id, c.nombre]))
   const secMap  = Object.fromEntries(secciones.map(s => [s.id, s.nombre]))
   const concMap = Object.fromEntries(conceptos.map(c => [c.id, c.nombre]))
+  const agMap   = Object.fromEntries(agrupadores.map(a => [a.id, a.nombre]))
 
   const rows     = partidas
     .filter(p => !filterTipo   || p.tipo   === filterTipo)
@@ -289,6 +303,12 @@ export default function PartidasPage() {
             ))}
           </div>
           {puedeEscribir && (
+            <button className="btn-ghost" onClick={() => setAgModal(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Tag size={14} /> Agrupadores
+            </button>
+          )}
+          {puedeEscribir && (
             <button className="btn-primary" onClick={openNew}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Plus size={15} /> Nueva Partida
@@ -328,6 +348,7 @@ export default function PartidasPage() {
                       <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                         <th style={th}>Nombre</th>
                         <th style={th}>Módulo</th>
+                        <th style={th}>Agrupador</th>
                         <th style={th}>Fuente Real</th>
                         <th style={th}>Vínculo</th>
                         <th style={th}>Aparece en</th>
@@ -365,6 +386,15 @@ export default function PartidasPage() {
                                   </span>
                                 )
                               })()}
+                            </td>
+                            <td style={td}>
+                              {p.id_agrupador_fk && agMap[p.id_agrupador_fk] ? (
+                                <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: '#f5f3ff', color: '#6d28d9' }}>
+                                  {agMap[p.id_agrupador_fk]}
+                                </span>
+                              ) : (
+                                <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>
+                              )}
                             </td>
                             <td style={td}>
                               <span style={{
@@ -478,6 +508,18 @@ export default function PartidasPage() {
                 onChange={e => setForm(f => ({ ...f, modulo: e.target.value }))}>
                 {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
+            </label>
+
+            <label style={lbl}>
+              Agrupador
+              <select className="input" value={form.id_agrupador_fk ?? ''}
+                onChange={e => setForm(f => ({ ...f, id_agrupador_fk: e.target.value ? Number(e.target.value) : null }))}>
+                <option value="">— Sin agrupador —</option>
+                {agrupadores.filter(a => a.activo).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              </select>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                Usado para la vista sumarizada de Dashboard, Comparativo y Flujo de Efectivo.
+              </span>
             </label>
 
             <label style={lbl}>
@@ -712,7 +754,140 @@ export default function PartidasPage() {
           </div>
         </ModalShell>
       )}
+
+      {/* Modal gestionar agrupadores */}
+      {agModal && (
+        <AgrupadoresModal
+          agrupadores={agrupadores}
+          onClose={() => setAgModal(false)}
+          onSaved={loadAgrupadores}
+        />
+      )}
     </div>
+  )
+}
+
+// ── Modal: gestión del catálogo de agrupadores ──────────────────────────────────
+function AgrupadoresModal({ agrupadores, onClose, onSaved }: {
+  agrupadores: Agrupador[]; onClose: () => void; onSaved: () => void
+}) {
+  const [nombre, setNombre]   = useState('')
+  const [orden, setOrden]     = useState(0)
+  const [saving, setSaving]   = useState(false)
+  const [error, setError]     = useState<string | null>(null)
+  const [editId, setEditId]         = useState<number | null>(null)
+  const [editNombre, setEditNombre] = useState('')
+  const [editOrden, setEditOrden]   = useState(0)
+
+  async function handleAdd() {
+    if (!nombre.trim()) return
+    setSaving(true); setError(null)
+    const { error: err } = await dbCtrl.from('ppto_agrupadores').insert({ nombre: nombre.trim(), orden, activo: true })
+    setSaving(false)
+    if (err) { setError(err.message); return }
+    setNombre(''); setOrden(0)
+    onSaved()
+  }
+
+  function startEdit(a: Agrupador) {
+    setEditId(a.id); setEditNombre(a.nombre); setEditOrden(a.orden); setError(null)
+  }
+
+  async function saveEdit(id: number) {
+    if (!editNombre.trim()) return
+    const { error: err } = await dbCtrl.from('ppto_agrupadores').update({ nombre: editNombre.trim(), orden: editOrden }).eq('id', id)
+    if (err) { setError(err.message); return }
+    setEditId(null)
+    onSaved()
+  }
+
+  async function toggleActivo(a: Agrupador) {
+    await dbCtrl.from('ppto_agrupadores').update({ activo: !a.activo }).eq('id', a.id)
+    onSaved()
+  }
+
+  async function handleDelete(a: Agrupador) {
+    if (!confirm(`¿Eliminar el agrupador "${a.nombre}"?`)) return
+    const { error: err } = await dbCtrl.from('ppto_agrupadores').delete().eq('id', a.id)
+    if (err) { setError('No se puede eliminar: hay partidas asignadas a este agrupador. Desactívalo en su lugar.'); return }
+    onSaved()
+  }
+
+  return (
+    <ModalShell
+      modulo="presupuestos"
+      titulo="Agrupadores de Partidas"
+      subtitulo="Catálogo usado por la vista sumarizada del Dashboard, Comparativo y Flujo de Efectivo"
+      icono={Tag}
+      maxWidth={520}
+      onClose={onClose}
+      footer={<button className="btn-secondary" onClick={onClose}>Cerrar</button>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {error && (
+          <div style={{
+            padding: '10px 14px', borderRadius: 8, background: '#fef2f2',
+            border: '1px solid #fecaca', color: '#b91c1c', fontSize: 13,
+          }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input className="input" placeholder="Nombre del agrupador" value={nombre}
+            onChange={e => setNombre(e.target.value)} style={{ flex: 1 }}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()} />
+          <input className="input" type="number" title="Orden" value={orden}
+            onChange={e => setOrden(Number(e.target.value))} style={{ width: 80 }} />
+          <button className="btn-primary" onClick={handleAdd} disabled={saving || !nombre.trim()}
+            style={{ display: 'flex', alignItems: 'center' }}>
+            {saving ? <Loader size={14} className="animate-spin" /> : <Plus size={14} />}
+          </button>
+        </div>
+
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+          {agrupadores.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: 20, color: '#94a3b8', fontSize: 13 }}>Sin agrupadores registrados</p>
+          ) : agrupadores.map((a, i) => (
+            <div key={a.id} style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+              borderBottom: i < agrupadores.length - 1 ? '1px solid #f1f5f9' : 'none',
+              background: a.activo ? '#fff' : '#fafafa', opacity: a.activo ? 1 : 0.6,
+            }}>
+              {editId === a.id ? (
+                <>
+                  <input className="input" value={editNombre} autoFocus
+                    onChange={e => setEditNombre(e.target.value)} style={{ flex: 1, fontSize: 13 }}
+                    onKeyDown={e => { if (e.key === 'Enter') saveEdit(a.id); if (e.key === 'Escape') setEditId(null) }} />
+                  <input className="input" type="number" value={editOrden}
+                    onChange={e => setEditOrden(Number(e.target.value))} style={{ width: 70, fontSize: 13 }} />
+                  <button className="btn-ghost" onClick={() => saveEdit(a.id)} style={{ padding: '4px 8px' }}>
+                    <Save size={13} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#1e293b', cursor: 'pointer' }}
+                    onClick={() => startEdit(a)} title="Clic para editar">
+                    {a.nombre}
+                  </span>
+                  <span style={{ fontSize: 11, color: '#94a3b8' }}>#{a.orden}</span>
+                  <button onClick={() => toggleActivo(a)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                    {a.activo
+                      ? <ToggleRight size={18} style={{ color: '#15803d' }} />
+                      : <ToggleLeft size={18} style={{ color: '#cbd5e1' }} />}
+                  </button>
+                  <button className="btn-ghost" onClick={() => handleDelete(a)} style={{ padding: '4px 6px', color: '#dc2626' }}>
+                    <Trash2 size={13} />
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </ModalShell>
   )
 }
 

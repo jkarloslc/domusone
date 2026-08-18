@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp } from '@/lib/supabase'
-import { Loader, RefreshCw, TrendingUp, TrendingDown, Scale, AlertTriangle, BookOpen } from 'lucide-react'
+import { Loader, RefreshCw, TrendingUp, TrendingDown, Scale, AlertTriangle, BookOpen, Layers, List } from 'lucide-react'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { prorratearDescuento } from '@/lib/prorateoDescuento'
 
@@ -16,7 +16,9 @@ type Partida     = {
   id_seccion_fk:        number | null
   id_concepto_fk:       number | null
   tipo_gasto:           string | null
+  id_agrupador_fk:      number | null
 }
+type Agrupador = { id: number; nombre: string; orden: number }
 type DetMap      = Record<number, Record<number, number>>
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
@@ -95,6 +97,8 @@ export default function DashboardPpto() {
   const [partidas, setPartidas] = useState<Partida[]>([])
   const [detMap,   setDetMap]   = useState<DetMap>({})
   const [realMap,  setRealMap]  = useState<DetMap>({})
+  const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
+  const [vista, setVista] = useState<'detalle' | 'agrupado'>('detalle')
 
   const loadEverything = useCallback(async (pptoId: number, anio: number, modulo: string, silent = false) => {
     if (!silent) setLoading(true)
@@ -102,7 +106,7 @@ export default function DashboardPpto() {
 
     // Partidas activas filtradas por módulo del presupuesto
     let qPartidas = dbCtrl.from('ppto_partidas')
-      .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto')
+      .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk')
       .eq('activo', true)
       .eq('incluir_presupuesto', true)
     if (modulo) qPartidas = (qPartidas as any).eq('modulo', modulo)
@@ -278,6 +282,8 @@ export default function DashboardPpto() {
           setLoading(false)
         }
       })
+    dbCtrl.from('ppto_agrupadores').select('id, nombre, orden').eq('activo', true).order('orden').order('nombre')
+      .then(({ data }) => setAgrupadores((data ?? []) as Agrupador[]))
   }, [loadEverything])
 
   const selPpto = presupuestos.find(p => p.id === selId)
@@ -316,18 +322,46 @@ export default function DashboardPpto() {
     real: egresos.reduce((s, p) => s + (realMap[p.id]?.[i + 1] ?? 0), 0),
   }))
 
-  // Top 5 desvíos
-  const desvios = partidas
+  // Top 8 desvíos — vista Detalle: por partida
+  const desviosDetalle = partidas
     .map(p => {
       const pptoTotal = sumaAnual(p.id, detMap)
       const realTotal = sumaAnual(p.id, realMap)
       const varAbs    = realTotal - pptoTotal
       const varPct    = pptoTotal > 0 ? Math.round(((realTotal - pptoTotal) / pptoTotal) * 100) : null
-      return { ...p, pptoTotal, realTotal, varAbs, varPct }
+      return { id: p.id as number | string, nombre: p.nombre, tipo: p.tipo, pptoTotal, realTotal, varAbs, varPct }
     })
     .filter(p => p.pptoTotal > 0 || p.realTotal > 0)
     .sort((a, b) => Math.abs(b.varAbs) - Math.abs(a.varAbs))
     .slice(0, 8)
+
+  // Top 8 desvíos — vista Agrupado: por agrupador, sin mezclar ingreso/egreso
+  const SIN_AGRUPADOR = 'Sin Agrupador'
+  const desviosAgrupado = (() => {
+    const map = new Map<string, { nombre: string; tipo: 'ingreso' | 'egreso'; pptoTotal: number; realTotal: number }>()
+    partidas.forEach(p => {
+      const pptoTotal = sumaAnual(p.id, detMap)
+      const realTotal = sumaAnual(p.id, realMap)
+      if (pptoTotal <= 0 && realTotal <= 0) return
+      const agId = p.id_agrupador_fk ?? 0
+      const ag = agId ? agrupadores.find(a => a.id === agId) : null
+      const key = `${p.tipo}-${agId}`
+      if (!map.has(key)) map.set(key, { nombre: ag?.nombre ?? SIN_AGRUPADOR, tipo: p.tipo, pptoTotal: 0, realTotal: 0 })
+      const g = map.get(key)!
+      g.pptoTotal += pptoTotal
+      g.realTotal += realTotal
+    })
+    return Array.from(map.entries())
+      .map(([key, g]) => {
+        const varAbs = g.realTotal - g.pptoTotal
+        const varPct = g.pptoTotal > 0 ? Math.round(((g.realTotal - g.pptoTotal) / g.pptoTotal) * 100) : null
+        return { id: key, nombre: g.nombre, tipo: g.tipo, pptoTotal: g.pptoTotal, realTotal: g.realTotal, varAbs, varPct }
+      })
+      .sort((a, b) => Math.abs(b.varAbs) - Math.abs(a.varAbs))
+      .slice(0, 8)
+  })()
+
+  const desvios = vista === 'detalle' ? desviosDetalle : desviosAgrupado
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
@@ -428,19 +462,39 @@ export default function DashboardPpto() {
       </div>
 
       {/* Top desvíos */}
-      {desvios.length > 0 && (
+      {(desviosDetalle.length > 0 || desviosAgrupado.length > 0) && (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9',
-            display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertTriangle size={15} color="#d97706" />
-            <span style={{ fontWeight: 600, fontSize: 14, color: '#1e293b' }}>
-              Partidas con mayor desvío
-            </span>
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={15} color="#d97706" />
+              <span style={{ fontWeight: 600, fontSize: 14, color: '#1e293b' }}>
+                {vista === 'detalle' ? 'Partidas con mayor desvío' : 'Agrupadores con mayor desvío'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px' }}>
+              {([
+                { v: 'detalle',  label: 'Detalle',  icon: List },
+                { v: 'agrupado', label: 'Agrupado', icon: Layers },
+              ] as const).map(({ v, label, icon: Icon }) => (
+                <button key={v} onClick={() => setVista(v)}
+                  style={{
+                    padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    background: vista === v ? '#fff' : 'transparent',
+                    color: vista === v ? '#1e293b' : '#64748b',
+                    fontWeight: vista === v ? 600 : 400,
+                    boxShadow: vista === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+                  }}>
+                  <Icon size={12} /> {label}
+                </button>
+              ))}
+            </div>
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                <th style={th}>Partida</th>
+                <th style={th}>{vista === 'detalle' ? 'Partida' : 'Agrupador'}</th>
                 <th style={{ ...th, textAlign: 'center' }}>Tipo</th>
                 <th style={{ ...th, textAlign: 'right' }}>Presupuesto</th>
                 <th style={{ ...th, textAlign: 'right' }}>Real</th>
