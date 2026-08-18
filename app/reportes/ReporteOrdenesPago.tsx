@@ -1,23 +1,13 @@
 'use client'
 import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
+import { useTiposGasto } from '@/lib/useTiposGasto'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 // Status conocidos en comp.ordenes_pago
 const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
-
-// Tipos de gasto (sincronizado con app/compras/ordenes-pago/page.tsx)
-const TIPOS_GASTO = [
-  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
-  'Depósitos en Garantía (Fianzas)', 'Desazolves', 'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot',
-  'Gasto Operativo Eventos', 'Honorarios',
-  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Intercompañías BPCC', 'Intercompañías OOB', 'Intercompañías RBA', 'Licencias de Software', 'Mantenimiento de Instalaciones e Infraestructura', 'Mantenimiento de Vehículos',
-  'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Pagos a Personal Externo', 'Perimetrales', 'PTU', 'Publicidad',
-  'Recolección de Basura', 'Renta de Mobiliario y Equipo', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
-  'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
-]
 
 const statusColor = (s: string) =>
   s === 'Pagada'         ? '#15803d' :
@@ -87,6 +77,7 @@ type CCBucket = {
 type Tab = 'jerarquico' | 'matriz'
 
 export default function ReporteOrdenesPago() {
+  const tiposGasto = useTiposGasto()
   const [ops, setOps]               = useState<OP[]>([])
   const [centrosCosto, setCentros]  = useState<{ id: number; nombre: string }[]>([])
   const [areas, setAreas]           = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
@@ -396,7 +387,7 @@ export default function ReporteOrdenesPago() {
         </select>
         <select className="select" style={{ minWidth: 200 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
-          {TIPOS_GASTO.map(t => <option key={t}>{t}</option>)}
+          {tiposGasto.map(t => <option key={t}>{t}</option>)}
         </select>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
           <button className="btn-secondary" onClick={exportExcel} style={{ fontSize: 12 }}>

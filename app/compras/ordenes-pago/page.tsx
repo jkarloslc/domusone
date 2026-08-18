@@ -1,5 +1,6 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
+import { useTiposGasto } from '@/lib/useTiposGasto'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { dbComp, dbCfg, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
@@ -14,16 +15,6 @@ import { fmt, fmtFecha, nextFolio, StatusBadge, FORMAS_PAGO_COMP } from '../type
 import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZES = [10, 25, 50, 100]
-
-const TIPOS_GASTO = [
-  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
-  'Depósitos en Garantía (Fianzas)', 'Desazolves', 'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot',
-  'Gasto Operativo Eventos', 'Honorarios',
-  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Intercompañías BPCC', 'Intercompañías OOB', 'Intercompañías RBA', 'Licencias de Software', 'Mantenimiento de Instalaciones e Infraestructura', 'Mantenimiento de Vehículos',
-  'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Pagos a Personal Externo', 'Perimetrales', 'PTU', 'Publicidad',
-  'Recolección de Basura', 'Renta de Mobiliario y Equipo', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
-  'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
-]
 
 type RolTipoOp = { tipo_gasto: string; modo: string; solo_propios: boolean }
 
@@ -48,6 +39,7 @@ export default function OrdenesPagoPage() {
   const { canWrite } = useAuth()
   const router = useRouter()
   const { authUser } = useAuth()
+  const tiposGasto = useTiposGasto()
   const [rows, setRows]         = useState<any[]>([])
   const [provMap, setProvMap]   = useState<Record<number, string>>({})
   const [almMap, setAlmMap]     = useState<Record<number, string>>({})
@@ -194,7 +186,7 @@ export default function OrdenesPagoPage() {
           <select className="select" style={{ width: 180 }} value={filterTipoGasto}
             onChange={e => { setFilterTipoGasto(e.target.value); setPage(0) }}>
             <option value="">Todos los tipos</option>
-            {TIPOS_GASTO
+            {tiposGasto
               .filter(t => !tiposExcluidos || !tiposExcluidos.includes(t))
               .map(t => <option key={t}>{t}</option>)}
           </select>
@@ -343,6 +335,7 @@ export default function OrdenesPagoPage() {
 // ════════════════════════════════════════════════════════════
 function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => void; onSaved: () => void }) {
   const { authUser } = useAuth()
+  const tiposGasto = useTiposGasto()
   const isEdit = !!opEdit
   const [rolRestriccionesModal, setRolRestriccionesModal] = useState<RolTipoOp[] | null>(null)
   const [saving, setSaving]       = useState(false)
@@ -1039,7 +1032,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                     return (
                       <select className="select" value={form.tipo_gasto} onChange={setF('tipo_gasto')}>
                         <option value="">— Seleccionar —</option>
-                        {TIPOS_GASTO
+                        {tiposGasto
                           .filter(t => !excluidos || !excluidos.includes(t))
                           .map(t => <option key={t}>{t}</option>)}
                       </select>
@@ -1311,6 +1304,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
   const { authUser, canWrite, canAuth, canAuthFinanzas } = useAuth()
+  const tiposGasto = useTiposGasto()
   const puedePublicarInstruccion = Boolean(
     authUser && (canWrite('ordenes-pago') || authUser.rol === 'tesoreria')
   )
@@ -2553,7 +2547,7 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                     <div><label className="label">Tipo de Gasto</label>
                       <select className="select" value={reclasTipoGasto} onChange={e => setReclasTipoGasto(e.target.value)}>
                         <option value="">— Sin asignar —</option>
-                        {TIPOS_GASTO.map(t => <option key={t} value={t}>{t}</option>)}
+                        {tiposGasto.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
                   </div>

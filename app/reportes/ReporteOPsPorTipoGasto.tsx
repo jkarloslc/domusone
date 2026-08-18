@@ -2,23 +2,13 @@
 import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { useTiposGasto } from '@/lib/useTiposGasto'
 import { PrintBar } from './utils'
 import ModalShell from '@/components/ui/ModalShell'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3, Pencil, Tag, Save, Loader } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
-
-// Sincronizado con app/compras/ordenes-pago/page.tsx
-const TIPOS_GASTO = [
-  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
-  'Depósitos en Garantía (Fianzas)', 'Desazolves', 'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot',
-  'Gasto Operativo Eventos', 'Honorarios',
-  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Intercompañías BPCC', 'Intercompañías OOB', 'Intercompañías RBA', 'Licencias de Software', 'Mantenimiento de Instalaciones e Infraestructura', 'Mantenimiento de Vehículos',
-  'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Pagos a Personal Externo', 'Perimetrales', 'PTU', 'Publicidad',
-  'Recolección de Basura', 'Renta de Mobiliario y Equipo', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
-  'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
-]
 
 const statusColor = (s: string) =>
   s === 'Pagada'         ? '#15803d' :
@@ -62,6 +52,7 @@ type Tab = 'jerarquico' | 'matriz'
 export default function ReporteOPsPorTipoGasto() {
   const { authUser } = useAuth()
   const esSuperadmin = authUser?.rol === 'superadmin'
+  const tiposGasto = useTiposGasto()
 
   const [ops, setOps]               = useState<OP[]>([])
   const [centrosCosto, setCentros]  = useState<{ id: number; nombre: string }[]>([])
@@ -354,7 +345,7 @@ export default function ReporteOPsPorTipoGasto() {
         </select>
         <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 150, flex: '0 0 auto' }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
-          {TIPOS_GASTO.map(t => <option key={t}>{t}</option>)}
+          {tiposGasto.map(t => <option key={t}>{t}</option>)}
         </select>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: '0 0 auto' }}>
           <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ fontSize: 12, padding: '5px 8px', width: 118 }} />
@@ -614,7 +605,7 @@ export default function ReporteOPsPorTipoGasto() {
             <div><label className="label">Tipo de Gasto</label>
               <select className="select" value={reclasTipoGasto} onChange={e => setReclasTipoGasto(e.target.value)}>
                 <option value="">— Sin asignar —</option>
-                {TIPOS_GASTO.map(t => <option key={t} value={t}>{t}</option>)}
+                {tiposGasto.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
           </div>

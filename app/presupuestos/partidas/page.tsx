@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { useTiposGasto } from '@/lib/useTiposGasto'
 import { Plus, Edit2, Loader, Save, ChevronRight, BookOpen, Copy, Tag, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
@@ -57,16 +58,6 @@ type DupTarget = {
   id_area_fk:          number | null
 }
 
-const TIPOS_GASTO = [
-  'Agua', 'Arrendamiento', 'Asesoría', 'Capacitación', 'Comisiones Bancarias', 'Combustible',
-  'Depósitos en Garantía (Fianzas)', 'Desazolves', 'Electricidad', 'Finiquitos y Liquidaciones', 'Fonacot',
-  'Gasto Operativo Eventos', 'Honorarios',
-  'Impuestos Estatales', 'Impuestos Federales', 'IMSS', 'Intercompañías BPCC', 'Intercompañías OOB', 'Intercompañías RBA', 'Licencias de Software', 'Mantenimiento de Instalaciones e Infraestructura', 'Mantenimiento de Vehículos',
-  'Nómina Semanal', 'Nómina Quincenal', 'Otro', 'Pagos a Personal Externo', 'Perimetrales', 'PTU', 'Publicidad',
-  'Recolección de Basura', 'Renta de Mobiliario y Equipo', 'Reparación', 'Seguros', 'Servicios de Vigilancia',
-  'Servicios Profesionales', 'Telefonía / Internet', 'Vales Despensa',
-]
-
 const EMPTY: Omit<Partida, 'id'> = {
   nombre: '', descripcion: null, tipo: 'egreso', modulo: 'Golf', fuente_real: 'op_area',
   id_centro_costo_fk: null, id_area_fk: null, id_centro_ingreso_fk: null,
@@ -90,6 +81,7 @@ const FUENTE_COLOR: Record<FuenteReal, { bg: string; color: string }> = {
 export default function PartidasPage() {
   const { canWrite } = useAuth()
   const puedeEscribir = canWrite('presupuestos')
+  const tiposGasto = useTiposGasto()
 
   const [partidas, setPartidas]       = useState<Partida[]>([])
   const [ccs, setCCs]                 = useState<CC[]>([])
@@ -582,7 +574,7 @@ export default function PartidasPage() {
                   <select className="input" value={form.tipo_gasto ?? ''}
                     onChange={e => setForm(f => ({ ...f, tipo_gasto: e.target.value || null }))}>
                     <option value="">— Todos (sin filtro) —</option>
-                    {TIPOS_GASTO.map(t => <option key={t} value={t}>{t}</option>)}
+                    {tiposGasto.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <span style={{ fontSize: 11, color: '#94a3b8' }}>
                     Filtra OPs por tipo de gasto dentro del área. Dejar vacío = tomar todo el área.

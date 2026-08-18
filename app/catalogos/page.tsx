@@ -104,6 +104,17 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
+    key:   'tipos_gasto',
+    tabla: 'tipos_gasto',
+    label: 'Tipos de Gasto',
+    icon:  Tag,
+    color: '#d97706',
+    desc:  'Tipos de gasto para clasificar Órdenes de Pago y partidas de Presupuestos',
+    campos: [
+      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+    ],
+  },
+  {
     key:       'areas',
     tabla:     'areas',
     label:     'Áreas',

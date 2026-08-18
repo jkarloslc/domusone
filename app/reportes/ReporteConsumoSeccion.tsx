@@ -1,10 +1,12 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
+import { useTiposGasto } from '@/lib/useTiposGasto'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter } from 'lucide-react'
 
 export default function ReporteConsumoSeccion() {
+  const tiposGasto = useTiposGasto()
   const [rows, setRows]           = useState<any[]>([])
   const [areas, setAreas] = useState<any[]>([])
   const [provMap, setProvMap]     = useState<Record<number, string>>({})
@@ -77,11 +79,6 @@ export default function ReporteConsumoSeccion() {
   const totalGeneral = rows.reduce((a, r) => a + r.total, 0)
   const docsTotal    = rows.reduce((a, r) => a + r.docs, 0)
 
-  const TIPOS_GASTO = [
-    'Servicios Profesionales','Mantenimiento de Instalaciones e Infraestructura','Reparación','Arrendamiento',
-    'Seguros','Publicidad','Combustible','Electricidad','Agua',
-    'Telefonía / Internet','Honorarios','Asesoría','Capacitación','Otro',
-  ]
 
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const toggle = (id: number) => setExpanded(prev => {
@@ -103,7 +100,7 @@ export default function ReporteConsumoSeccion() {
         </div>
         <select className="select" style={{ minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
-          {TIPOS_GASTO.map(t => <option key={t}>{t}</option>)}
+          {tiposGasto.map(t => <option key={t}>{t}</option>)}
         </select>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 145 }} />
