@@ -1,8 +1,10 @@
 'use client'
 import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
+import { useAuth } from '@/lib/AuthContext'
 import { PrintBar } from './utils'
-import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3 } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
+import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3, Pencil, Tag, Save, Loader } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 const STATUS_OP = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Pagada', 'Rechazada', 'Sustituida', 'Cancelada'] as const
@@ -40,7 +42,10 @@ type OP = {
   id_proveedor_fk: number | null
   id_centro_costo_fk: number | null
   id_area_fk: number | null
+  id_frente_fk: number | null
   id_oc_fk: number | null
+  reclasificado_por: string | null
+  fecha_reclasificacion: string | null
 }
 
 type TipoBucket = {
@@ -55,9 +60,14 @@ type TipoBucket = {
 type Tab = 'jerarquico' | 'matriz'
 
 export default function ReporteOPsPorTipoGasto() {
+  const { authUser } = useAuth()
+  const esSuperadmin = authUser?.rol === 'superadmin'
+
   const [ops, setOps]               = useState<OP[]>([])
   const [centrosCosto, setCentros]  = useState<{ id: number; nombre: string }[]>([])
   const [areas, setAreas]           = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
+  const [frentes, setFrentes]       = useState<{ id: number; nombre: string }[]>([])
+  const [relAF, setRelAF]           = useState<{ id_area: number; id_frente: number }[]>([])
   const [provs, setProvs]           = useState<{ id: number; nombre: string }[]>([])
   const [provMap, setProvMap]       = useState<Record<number, string>>({})
   const [loading, setLoading]       = useState(true)
@@ -75,18 +85,22 @@ export default function ReporteOPsPorTipoGasto() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: ccs }, { data: ars }, { data: ps }, { data: opsData }, { data: junction }] = await Promise.all([
+    const [{ data: ccs }, { data: ars }, { data: frs }, { data: raf }, { data: ps }, { data: opsData }, { data: junction }] = await Promise.all([
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('frentes').select('id, nombre').order('nombre'),
+      dbCfg.from('rel_area_frente').select('id_area, id_frente'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, concepto, tipo_gasto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_oc_fk')
+        .select('id, folio, concepto, tipo_gasto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_frente_fk, id_oc_fk, reclasificado_por, fecha_reclasificacion')
         .order('fecha_op', { ascending: false }),
       dbComp.from('ordenes_pago_oc').select('id_op_fk'),
     ])
 
     setCentros((ccs ?? []) as any)
     setAreas((ars ?? []) as any)
+    setFrentes((frs ?? []) as any)
+    setRelAF((raf ?? []) as any)
     setProvs((ps ?? []) as any)
     const pm: Record<number, string> = {}
     ;(ps ?? []).forEach((p: any) => { pm[p.id] = p.nombre })
@@ -193,6 +207,46 @@ export default function ReporteOPsPorTipoGasto() {
   })
   const expandAll   = () => setExpandedTipo(new Set(grupos.map(g => g.nombre)))
   const collapseAll = () => setExpandedTipo(new Set())
+
+  // Reclasificar (solo superadmin) — mismo alcance y reglas que el panel del
+  // modal de OP en app/compras/ordenes-pago/page.tsx: corrige CC/Área/Frente/
+  // Tipo de Gasto sin importar status, nunca toca monto/saldo/pagos.
+  const [reclasOp, setReclasOp]         = useState<OP | null>(null)
+  const [reclasCC, setReclasCC]         = useState('')
+  const [reclasArea, setReclasArea]     = useState('')
+  const [reclasFrente, setReclasFrente] = useState('')
+  const [reclasTipoGasto, setReclasTipoGasto] = useState('')
+  const [reclasSaving, setReclasSaving] = useState(false)
+  const [reclasError, setReclasError]   = useState('')
+
+  const abrirReclasificar = (op: OP) => {
+    setReclasOp(op)
+    setReclasCC(op.id_centro_costo_fk?.toString() ?? '')
+    setReclasArea(op.id_area_fk?.toString() ?? '')
+    setReclasFrente(op.id_frente_fk?.toString() ?? '')
+    setReclasTipoGasto(op.tipo_gasto ?? '')
+    setReclasError('')
+  }
+  const cerrarReclasificar = () => { setReclasOp(null); setReclasError('') }
+
+  // Update mínimo y explícito: SOLO estos 4 campos + auditoría. Nunca monto,
+  // saldo, status, ni ningún campo de pago.
+  const handleReclasificar = async () => {
+    if (!reclasOp) return
+    setReclasSaving(true); setReclasError('')
+    const { error: err } = await dbComp.from('ordenes_pago').update({
+      id_centro_costo_fk: reclasCC ? Number(reclasCC) : null,
+      id_area_fk:         reclasArea ? Number(reclasArea) : null,
+      id_frente_fk:        reclasFrente ? Number(reclasFrente) : null,
+      tipo_gasto:          reclasTipoGasto || null,
+      reclasificado_por:      authUser?.nombre ?? null,
+      fecha_reclasificacion:  new Date().toISOString(),
+    }).eq('id', reclasOp.id)
+    setReclasSaving(false)
+    if (err) { setReclasError(err.message); return }
+    setReclasOp(null)
+    fetchData()
+  }
 
   // KPIs por status (ignora el filtro de status, respeta el resto)
   const opsParaKPIs = useMemo(() => {
@@ -406,6 +460,7 @@ export default function ReporteOPsPorTipoGasto() {
                 <th style={{ textAlign: 'right' }}>Pagado</th>
                 <th style={{ textAlign: 'right' }}>Saldo</th>
                 <th>Status</th>
+                {esSuperadmin && <th></th>}
               </tr>
             </thead>
             <tbody>
@@ -427,6 +482,7 @@ export default function ReporteOPsPorTipoGasto() {
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#15803d' }}>{fmt(g.pagado)}</td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: g.saldo > 0 ? '#dc2626' : '#15803d' }}>{fmt(g.saldo)}</td>
                       <td></td>
+                      {esSuperadmin && <td></td>}
                     </tr>
 
                     {open && g.ops.map(op => {
@@ -453,6 +509,14 @@ export default function ReporteOPsPorTipoGasto() {
                               {op.status}
                             </span>
                           </td>
+                          {esSuperadmin && (
+                            <td style={{ textAlign: 'center' }}>
+                              <button className="btn-ghost" title="Reclasificar CC/Área/Frente/Tipo de Gasto"
+                                style={{ padding: '4px 6px' }} onClick={() => abrirReclasificar(op)}>
+                                <Pencil size={13} />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       )
                     })}
@@ -466,6 +530,7 @@ export default function ReporteOPsPorTipoGasto() {
                 <td style={{ textAlign: 'right', color: '#15803d', fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(pagadoGeneral)}</td>
                 <td style={{ textAlign: 'right', color: saldoGeneral > 0 ? '#dc2626' : '#15803d', fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(saldoGeneral)}</td>
                 <td></td>
+                {esSuperadmin && <td></td>}
               </tr>
             </tbody>
           </table>
@@ -510,6 +575,57 @@ export default function ReporteOPsPorTipoGasto() {
           </div>
         )}
       </div>
+
+      {reclasOp && (
+        <ModalShell modulo="compras" titulo="Reclasificar Orden de Pago" subtitulo={reclasOp.folio}
+          icono={Tag} maxWidth={480} onClose={cerrarReclasificar}
+          footer={<>
+            <button className="btn-secondary" style={{ fontSize: 12 }} onClick={cerrarReclasificar}>Cancelar</button>
+            <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleReclasificar} disabled={reclasSaving}>
+              {reclasSaving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar reclasificación
+            </button>
+          </>}
+        >
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 0, marginBottom: 16 }}>
+            Solo corrige clasificación (CC / Área / Frente / Tipo de Gasto). Nunca toca monto, saldo ni pagos.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+            <div><label className="label">Centro de Costo</label>
+              <select className="select" value={reclasCC}
+                onChange={e => { setReclasCC(e.target.value); setReclasArea(''); setReclasFrente('') }}>
+                <option value="">— Sin asignar —</option>
+                {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <div><label className="label">Área</label>
+              <select className="select" value={reclasArea}
+                onChange={e => { setReclasArea(e.target.value); setReclasFrente('') }}
+                disabled={!reclasCC}>
+                <option value="">— Sin asignar —</option>
+                {areas.filter(a => a.id_centro_costo_fk === Number(reclasCC)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              </select>
+            </div>
+            <div><label className="label">Frente</label>
+              <select className="select" value={reclasFrente} onChange={e => setReclasFrente(e.target.value)} disabled={!reclasArea}>
+                <option value="">— Sin asignar —</option>
+                {frentes.filter(f => relAF.some(r => r.id_area === Number(reclasArea) && r.id_frente === f.id)).map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+              </select>
+            </div>
+            <div><label className="label">Tipo de Gasto</label>
+              <select className="select" value={reclasTipoGasto} onChange={e => setReclasTipoGasto(e.target.value)}>
+                <option value="">— Sin asignar —</option>
+                {TIPOS_GASTO.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          {reclasError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 0 }}>{reclasError}</p>}
+          {reclasOp.reclasificado_por && (
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12, marginBottom: 0 }}>
+              Última reclasificación: {reclasOp.reclasificado_por} — {reclasOp.fecha_reclasificacion ? new Date(reclasOp.fecha_reclasificacion).toLocaleString('es-MX') : ''}
+            </p>
+          )}
+        </ModalShell>
+      )}
     </div>
   )
 }
