@@ -106,6 +106,7 @@ export default function PartidasPage() {
   const [errorMsg, setErrorMsg]       = useState<string | null>(null)
   const [filterTipo, setFilterTipo]   = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterModulo, setFilterModulo] = useState('')
+  const [filterAgrupador, setFilterAgrupador] = useState('')
 
   const [agModal, setAgModal]         = useState(false)
 
@@ -258,6 +259,9 @@ export default function PartidasPage() {
   const rows     = partidas
     .filter(p => !filterTipo   || p.tipo   === filterTipo)
     .filter(p => !filterModulo || (p.modulo ?? 'General') === filterModulo)
+    .filter(p => !filterAgrupador || (
+      filterAgrupador === 'none' ? !p.id_agrupador_fk : p.id_agrupador_fk === Number(filterAgrupador)
+    ))
   const ingresos = rows.filter(p => p.tipo === 'ingreso')
   const egresos  = rows.filter(p => p.tipo === 'egreso')
 
@@ -285,6 +289,13 @@ export default function PartidasPage() {
             value={filterModulo} onChange={e => setFilterModulo(e.target.value)}>
             <option value="">Todos los módulos</option>
             {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          {/* Filtro agrupador */}
+          <select className="input" style={{ fontSize: 12, padding: '5px 10px' }}
+            value={filterAgrupador} onChange={e => setFilterAgrupador(e.target.value)}>
+            <option value="">Todos los agrupadores</option>
+            <option value="none">Sin agrupador</option>
+            {agrupadores.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
           </select>
           {/* Filtro tipo */}
           <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px' }}>
