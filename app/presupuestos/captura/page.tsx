@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import { dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, BookOpen, Loader, Save, Settings, BookMarked, Edit2 } from 'lucide-react'
@@ -17,11 +17,21 @@ type Presupuesto = {
   status: 'borrador' | 'aprobado' | 'cerrado'
 }
 
+type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
+
 type Partida = {
   id: number
   nombre: string
   tipo: 'ingreso' | 'egreso'
   orden: number
+  clasificacion: Clasificacion
+}
+
+const CLASIFICACIONES: Clasificacion[] = ['operativo', 'financiero', 'intercompanias']
+const CLASIFICACION_LABELS: Record<Clasificacion, { ingresos: string; egresos: string; balance: string }> = {
+  operativo:      { ingresos: 'Ingresos',                 egresos: 'Egresos',                 balance: 'Balance Operativo' },
+  financiero:     { ingresos: 'Ingreso Financiero',        egresos: 'Egreso Financiero',        balance: 'Balance Financiero' },
+  intercompanias: { ingresos: 'Ingreso Intercompañías',    egresos: 'Egreso Intercompañías',    balance: 'Balance Intercompañías' },
 }
 
 type DetMap = Record<number, Record<number, number>>
@@ -73,7 +83,7 @@ export default function CapturaPpto() {
   }, [])
 
   const loadPartidas = useCallback(async (modulo?: string) => {
-    let q = dbCtrl.from('ppto_partidas').select('id, nombre, tipo, orden')
+    let q = dbCtrl.from('ppto_partidas').select('id, nombre, tipo, orden, clasificacion')
       .eq('activo', true)
     if (modulo && modulo !== 'General') q = (q as any).eq('modulo', modulo)
     const { data } = await q.order('tipo').order('orden').order('nombre')
@@ -178,8 +188,12 @@ export default function CapturaPpto() {
   }
 
   const selPpto = presupuestos.find(p => p.id === selId)
+  // Ingresos/Egresos combinando TODAS las clasificaciones — usados para el
+  // Balance Neto final (grand total) al pie de la tabla.
   const ingresos = partidas.filter(p => p.tipo === 'ingreso')
   const egresos  = partidas.filter(p => p.tipo === 'egreso')
+  const porClasificacion = (lista: Partida[], clas: Clasificacion) =>
+    lista.filter(p => (p.clasificacion ?? 'operativo') === clas)
   const cerrado  = selPpto?.status === 'cerrado'
 
   const totalPartida  = (pid: number) => MESES.reduce((s, _, i) => s + (detMap[pid]?.[i + 1] ?? 0), 0)
@@ -329,49 +343,82 @@ export default function CapturaPpto() {
                   </tr>
                 </thead>
                 <tbody>
-                  {/* INGRESOS */}
-                  {ingresos.length > 0 && (
-                    <>
-                      <SectionHeader label="Ingresos" color="#15803d" bg="#f0fdf4" border="#bbf7d0" />
-                      {ingresos.map((p, i) => (
-                        <PartidaRow key={p.id} p={p} detMap={detMap}
-                          editCell={editCell} editVal={editVal}
-                          setEditVal={setEditVal} inputRef={inputRef}
-                          onOpen={openCell} onCommit={commitCell}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); commitCell() }
-                            if (e.key === 'Escape') setEditCell(null)
-                          }}
-                          puedeEscribir={puedeEscribir && !cerrado}
-                          rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#f0fdf4" />
-                      ))}
-                      <TotalRow label="Total Ingresos" lista={ingresos} detMap={detMap}
-                        color="#15803d" bg="#dcfce7" bgTotal="#bbf7d0"
-                        totalMesFn={totalMes} totalGeneralFn={totalGeneral} />
-                    </>
-                  )}
+                  {CLASIFICACIONES.map(clas => {
+                    const ing = porClasificacion(ingresos, clas)
+                    const egr = porClasificacion(egresos, clas)
+                    const labels = CLASIFICACION_LABELS[clas]
+                    if (ing.length === 0 && egr.length === 0) return null
+                    return (
+                      <Fragment key={clas}>
+                        {ing.length > 0 && (
+                          <>
+                            <SectionHeader label={labels.ingresos} color="#15803d" bg="#f0fdf4" border="#bbf7d0" />
+                            {ing.map((p, i) => (
+                              <PartidaRow key={p.id} p={p} detMap={detMap}
+                                editCell={editCell} editVal={editVal}
+                                setEditVal={setEditVal} inputRef={inputRef}
+                                onOpen={openCell} onCommit={commitCell}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); commitCell() }
+                                  if (e.key === 'Escape') setEditCell(null)
+                                }}
+                                puedeEscribir={puedeEscribir && !cerrado}
+                                rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#f0fdf4" />
+                            ))}
+                            <TotalRow label={`Total ${labels.ingresos}`} lista={ing} detMap={detMap}
+                              color="#15803d" bg="#dcfce7" bgTotal="#bbf7d0"
+                              totalMesFn={totalMes} totalGeneralFn={totalGeneral} />
+                          </>
+                        )}
 
-                  {/* EGRESOS */}
-                  {egresos.length > 0 && (
-                    <>
-                      <SectionHeader label="Egresos" color="#b91c1c" bg="#fef2f2" border="#fecaca" />
-                      {egresos.map((p, i) => (
-                        <PartidaRow key={p.id} p={p} detMap={detMap}
-                          editCell={editCell} editVal={editVal}
-                          setEditVal={setEditVal} inputRef={inputRef}
-                          onOpen={openCell} onCommit={commitCell}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); commitCell() }
-                            if (e.key === 'Escape') setEditCell(null)
-                          }}
-                          puedeEscribir={puedeEscribir && !cerrado}
-                          rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#fef2f2" />
-                      ))}
-                      <TotalRow label="Total Egresos" lista={egresos} detMap={detMap}
-                        color="#b91c1c" bg="#fee2e2" bgTotal="#fecaca"
-                        totalMesFn={totalMes} totalGeneralFn={totalGeneral} />
-                    </>
-                  )}
+                        {egr.length > 0 && (
+                          <>
+                            <SectionHeader label={labels.egresos} color="#b91c1c" bg="#fef2f2" border="#fecaca" />
+                            {egr.map((p, i) => (
+                              <PartidaRow key={p.id} p={p} detMap={detMap}
+                                editCell={editCell} editVal={editVal}
+                                setEditVal={setEditVal} inputRef={inputRef}
+                                onOpen={openCell} onCommit={commitCell}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); commitCell() }
+                                  if (e.key === 'Escape') setEditCell(null)
+                                }}
+                                puedeEscribir={puedeEscribir && !cerrado}
+                                rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#fef2f2" />
+                            ))}
+                            <TotalRow label={`Total ${labels.egresos}`} lista={egr} detMap={detMap}
+                              color="#b91c1c" bg="#fee2e2" bgTotal="#fecaca"
+                              totalMesFn={totalMes} totalGeneralFn={totalGeneral} />
+                          </>
+                        )}
+
+                        {ing.length > 0 && egr.length > 0 && (
+                          <tr style={{ background: '#334155', color: '#fff', fontWeight: 700 }}>
+                            <td style={{ ...tdS, position: 'sticky', left: 0, background: '#334155', zIndex: 1,
+                              fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                              {labels.balance}
+                            </td>
+                            {MESES.map((_, i) => {
+                              const bal = totalMes(i + 1, ing) - totalMes(i + 1, egr)
+                              return (
+                                <td key={i} style={{ ...tdS, textAlign: 'right', color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                                  {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
+                                </td>
+                              )
+                            })}
+                            <td style={{ ...tdS, textAlign: 'right', background: '#1e293b' }}>
+                              {(() => {
+                                const bal = totalGeneral(ing) - totalGeneral(egr)
+                                return <span style={{ color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                                  {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
+                                </span>
+                              })()}
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    )
+                  })}
 
                   {/* BALANCE */}
                   {ingresos.length > 0 && egresos.length > 0 && (

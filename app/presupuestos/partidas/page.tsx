@@ -8,6 +8,18 @@ import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
 type FuenteReal = 'seccion' | 'concepto' | 'op_area' | 'manual'
+type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
+
+const CLASIFICACION_LABEL: Record<Clasificacion, string> = {
+  operativo:      'Operativo',
+  financiero:     'Financiero',
+  intercompanias: 'Intercompañías',
+}
+const CLASIFICACION_COLOR: Record<Clasificacion, { bg: string; color: string }> = {
+  operativo:      { bg: '#f1f5f9', color: '#475569' },
+  financiero:     { bg: '#eef2ff', color: '#4338ca' },
+  intercompanias: { bg: '#fff7ed', color: '#c2410c' },
+}
 
 const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's", 'Locales']
 
@@ -38,6 +50,7 @@ type Partida = {
   id_concepto_fk:       number | null
   tipo_gasto:           string | null
   id_agrupador_fk: number | null
+  clasificacion: Clasificacion
   orden: number
   activo: boolean
   incluir_presupuesto: boolean
@@ -61,7 +74,8 @@ type DupTarget = {
 const EMPTY: Omit<Partida, 'id'> = {
   nombre: '', descripcion: null, tipo: 'egreso', modulo: 'Golf', fuente_real: 'op_area',
   id_centro_costo_fk: null, id_area_fk: null, id_centro_ingreso_fk: null,
-  id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, id_agrupador_fk: null, orden: 0, activo: true,
+  id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, id_agrupador_fk: null,
+  clasificacion: 'operativo', orden: 0, activo: true,
   incluir_presupuesto: true, incluir_flujo: true,
 }
 
@@ -99,6 +113,7 @@ export default function PartidasPage() {
   const [filterTipo, setFilterTipo]   = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterModulo, setFilterModulo] = useState('')
   const [filterAgrupador, setFilterAgrupador] = useState('')
+  const [filterClasificacion, setFilterClasificacion] = useState<'' | Clasificacion>('')
 
   const [agModal, setAgModal]         = useState(false)
 
@@ -149,6 +164,7 @@ export default function PartidasPage() {
       id_centro_ingreso_fk: p.id_centro_ingreso_fk,
       id_seccion_fk: p.id_seccion_fk, id_concepto_fk: p.id_concepto_fk,
       tipo_gasto: p.tipo_gasto, id_agrupador_fk: p.id_agrupador_fk,
+      clasificacion: p.clasificacion ?? 'operativo',
       orden: p.orden, activo: p.activo,
       incluir_presupuesto: p.incluir_presupuesto ?? true,
       incluir_flujo:       p.incluir_flujo ?? true,
@@ -166,6 +182,7 @@ export default function PartidasPage() {
       modulo:               form.modulo,
       fuente_real:          form.tipo === 'egreso' ? 'op_area' : form.fuente_real,
       id_agrupador_fk:      form.id_agrupador_fk,
+      clasificacion:        form.clasificacion,
       orden:                form.orden,
       activo:               form.activo,
       incluir_presupuesto:  form.incluir_presupuesto,
@@ -218,6 +235,7 @@ export default function PartidasPage() {
       modulo,
       fuente_real:          dupSource.fuente_real,
       id_agrupador_fk:      dupSource.id_agrupador_fk,
+      clasificacion:        dupSource.clasificacion,
       orden:                dupSource.orden,
       activo:               true,
       incluir_presupuesto:  dupSource.incluir_presupuesto,
@@ -251,6 +269,7 @@ export default function PartidasPage() {
   const rows     = partidas
     .filter(p => !filterTipo   || p.tipo   === filterTipo)
     .filter(p => !filterModulo || (p.modulo ?? 'General') === filterModulo)
+    .filter(p => !filterClasificacion || (p.clasificacion ?? 'operativo') === filterClasificacion)
     .filter(p => !filterAgrupador || (
       filterAgrupador === 'none' ? !p.id_agrupador_fk : p.id_agrupador_fk === Number(filterAgrupador)
     ))
@@ -281,6 +300,14 @@ export default function PartidasPage() {
             value={filterModulo} onChange={e => setFilterModulo(e.target.value)}>
             <option value="">Todos los módulos</option>
             {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          {/* Filtro clasificación */}
+          <select className="input" style={{ fontSize: 12, padding: '5px 8px', width: 130, flex: '0 0 auto' }}
+            value={filterClasificacion} onChange={e => setFilterClasificacion(e.target.value as '' | Clasificacion)}>
+            <option value="">Todas las clasificaciones</option>
+            {(Object.keys(CLASIFICACION_LABEL) as Clasificacion[]).map(c => (
+              <option key={c} value={c}>{CLASIFICACION_LABEL[c]}</option>
+            ))}
           </select>
           {/* Filtro agrupador */}
           <select className="input" style={{ fontSize: 12, padding: '5px 8px', width: 130, flex: '0 0 auto' }}
@@ -351,6 +378,7 @@ export default function PartidasPage() {
                       <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                         <th style={th}>Nombre</th>
                         <th style={th}>Módulo</th>
+                        <th style={th}>Clasificación</th>
                         <th style={th}>Agrupador</th>
                         <th style={th}>Fuente Real</th>
                         <th style={th}>Vínculo</th>
@@ -386,6 +414,16 @@ export default function PartidasPage() {
                                 return (
                                   <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: mc.bg, color: mc.color }}>
                                     {p.modulo ?? 'General'}
+                                  </span>
+                                )
+                              })()}
+                            </td>
+                            <td style={td}>
+                              {(() => {
+                                const cc = CLASIFICACION_COLOR[p.clasificacion ?? 'operativo']
+                                return (
+                                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: cc.bg, color: cc.color }}>
+                                    {CLASIFICACION_LABEL[p.clasificacion ?? 'operativo']}
                                   </span>
                                 )
                               })()}
@@ -511,6 +549,20 @@ export default function PartidasPage() {
                 onChange={e => setForm(f => ({ ...f, modulo: e.target.value }))}>
                 {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
+            </label>
+
+            <label style={lbl}>
+              Clasificación *
+              <select className="input" value={form.clasificacion}
+                onChange={e => setForm(f => ({ ...f, clasificacion: e.target.value as Clasificacion }))}>
+                {(Object.keys(CLASIFICACION_LABEL) as Clasificacion[]).map(c => (
+                  <option key={c} value={c}>{CLASIFICACION_LABEL[c]}</option>
+                ))}
+              </select>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                Operativo = negocio normal. Financiero/Intercompañías se muestran en apartados
+                separados en Comparativo, Flujo, Captura y Dashboard, fuera del Balance/Flujo operativo.
+              </span>
             </label>
 
             <label style={lbl}>

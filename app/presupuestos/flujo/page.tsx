@@ -9,6 +9,7 @@ import { prorratearDescuento } from '@/lib/prorateoDescuento'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
+type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type Partida     = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'; orden: number
   fuente_real:          string | null
@@ -19,9 +20,18 @@ type Partida     = {
   id_concepto_fk:       number | null
   tipo_gasto:           string | null
   id_agrupador_fk:      number | null
+  clasificacion:        Clasificacion
 }
 type Agrupador = { id: number; nombre: string; orden: number }
 type DetMap = Record<number, Record<number, number>>
+type FilaPartida = Partida & { pptoVal: number; realVal: number; varAbs: number; varPct: number | null }
+type FilaGrupo   = { id: string; nombre: string; orden: number; pptoVal: number; realVal: number; varAbs: number; varPct: number | null; partidas: FilaPartida[] }
+
+const CLASIFICACION_LABELS: Record<Clasificacion, { ingresos: string; egresos: string; balance: string }> = {
+  operativo:      { ingresos: 'Ingresos (cobrado)',                 egresos: 'Egresos (pagado)',                 balance: 'Flujo Operativo' },
+  financiero:     { ingresos: 'Ingreso Financiero (cobrado)',        egresos: 'Egreso Financiero (pagado)',        balance: 'Flujo Financiero' },
+  intercompanias: { ingresos: 'Ingreso Intercompañías (cobrado)',    egresos: 'Egreso Intercompañías (pagado)',    balance: 'Flujo Intercompañías' },
+}
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
@@ -95,7 +105,7 @@ export default function FlujoEfectivoPage() {
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
   const [vista, setVista] = useState<'detalle' | 'agrupado'>('detalle')
-  const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: { id: number; nombre: string; pptoVal: number; realVal: number; varAbs: number; varPct: number | null }[] } | null>(null)
+  const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
   // Modal añadir real manual (partidas adicionales de flujo, financiamiento, etc.)
   const [modalManual, setModalManual] = useState(false)
@@ -109,7 +119,7 @@ export default function FlujoEfectivoPage() {
     if (!silent) setLoading(true); else setRefreshing(true)
 
     let partidasQ = dbCtrl.from('ppto_partidas')
-      .select('id, nombre, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk')
+      .select('id, nombre, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion')
       .eq('activo', true)
       .eq('incluir_flujo', true)
     if (modulo) partidasQ = (partidasQ as any).eq('modulo', modulo)
@@ -355,7 +365,7 @@ export default function FlujoEfectivoPage() {
   }
 
   // ── Datos de tabla ──────────────────────────────────────────────
-  const filas = partidas
+  const filas: FilaPartida[] = partidas
     .filter(p => !filterTipo || p.tipo === filterTipo)
     .map(p => {
       const pptoVal = pptoPartida(p.id)
@@ -366,17 +376,23 @@ export default function FlujoEfectivoPage() {
     })
     .filter(p => p.pptoVal > 0 || p.realVal > 0)
 
+  // Ingresos/Egresos combinando TODAS las clasificaciones — usados para el
+  // Flujo Neto final (grand total) al pie de la tabla.
   const ingRows = filas.filter(p => p.tipo === 'ingreso')
   const egrRows = filas.filter(p => p.tipo === 'egreso')
 
-  function totalSeccion(rows: typeof filas, field: 'pptoVal' | 'realVal') {
+  function totalSeccion(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
     return rows.reduce((s, r) => s + r[field], 0)
+  }
+
+  function porClasificacion(rows: FilaPartida[], clas: Clasificacion) {
+    return rows.filter(p => (p.clasificacion ?? 'operativo') === clas)
   }
 
   // Agrupa filas por agrupador (partidas sin agrupador van a "Sin Agrupador")
   const SIN_AGRUPADOR = 'Sin Agrupador'
-  function agrupar(rows: typeof filas) {
-    const map = new Map<number, { nombre: string; orden: number; pptoVal: number; realVal: number; partidas: typeof rows }>()
+  function agrupar(rows: FilaPartida[]): FilaGrupo[] {
+    const map = new Map<number, { nombre: string; orden: number; pptoVal: number; realVal: number; partidas: FilaPartida[] }>()
     rows.forEach(r => {
       const agId = r.id_agrupador_fk ?? 0
       const ag = agId ? agrupadores.find(a => a.id === agId) : null
@@ -396,8 +412,15 @@ export default function FlujoEfectivoPage() {
       })
       .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
   }
-  const ingRowsAgrupado = agrupar(ingRows)
-  const egrRowsAgrupado = agrupar(egrRows)
+
+  const CLASIFICACIONES: Clasificacion[] = ['operativo', 'financiero', 'intercompanias']
+
+  function handleManual(pid: number) {
+    setManualPid(pid); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true)
+  }
+  function handleDrill(nombre: string, tipo: 'ingreso' | 'egreso', partidasGrupo: FilaPartida[]) {
+    setDrillGrupo({ nombre, tipo, partidas: partidasGrupo })
+  }
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
@@ -524,141 +547,19 @@ export default function FlujoEfectivoPage() {
               </tr>
             </thead>
             <tbody>
-              {/* INGRESOS */}
-              {ingRows.length > 0 && (
-                <>
-                  <tr>
-                    <td colSpan={6} style={{
-                      padding: '7px 16px', background: '#f0fdf4',
-                      fontWeight: 700, fontSize: 11, color: '#15803d',
-                      textTransform: 'uppercase', letterSpacing: '.06em',
-                      borderTop: '2px solid #bbf7d0',
-                    }}>
-                      Ingresos (cobrado)
-                    </td>
-                  </tr>
-                  {vista === 'detalle' ? ingRows.map((p, i) => (
-                    <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
-                      background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                      <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span></td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                        {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
-                      </td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                        {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
-                      </td>
-                      <td style={{ ...td, textAlign: 'right' }}>
-                        <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo="ingreso" />
-                      </td>
-                      <td style={{ ...td, textAlign: 'center' }}>
-                        <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="ingreso" />
-                      </td>
-                      <td style={{ ...td, textAlign: 'right' }}>
-                        {canWrite('presupuestos') && p.fuente_real === 'manual' && (
-                          <button className="btn-ghost"
-                            onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
-                            style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
-                            + Manual
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )) : ingRowsAgrupado.map((g, i) => (
-                    <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
-                      background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                      <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                        {g.pptoVal > 0 ? <MontoDrillButton monto={g.pptoVal} onClick={() => setDrillGrupo({ nombre: g.nombre, tipo: 'ingreso', partidas: g.partidas })} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
-                      </td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                        {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => setDrillGrupo({ nombre: g.nombre, tipo: 'ingreso', partidas: g.partidas })} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
-                      </td>
-                      <td style={{ ...td, textAlign: 'right' }}>
-                        <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="ingreso" />
-                      </td>
-                      <td style={{ ...td, textAlign: 'center' }}>
-                        <PctEjercidoCell real={g.realVal} ppto={g.pptoVal} tipo="ingreso" />
-                      </td>
-                      <td style={td}></td>
-                    </tr>
-                  ))}
-                  <TotalSectionRow
-                    label="Total Ingresos"
-                    ppto={totalSeccion(ingRows, 'pptoVal')}
-                    real={totalSeccion(ingRows, 'realVal')}
-                    tipo="ingreso"
-                    bg="#dcfce7" color="#15803d" bgTotal="#bbf7d0"
+              {CLASIFICACIONES.map(clas => {
+                const ing = porClasificacion(ingRows, clas)
+                const egr = porClasificacion(egrRows, clas)
+                return (
+                  <SeccionClasificacion key={clas}
+                    labels={CLASIFICACION_LABELS[clas]}
+                    ingRows={ing} egrRows={egr}
+                    ingRowsAgrupado={agrupar(ing)} egrRowsAgrupado={agrupar(egr)}
+                    vista={vista} canWriteManual={canWrite('presupuestos')}
+                    onManual={handleManual} onDrill={handleDrill}
                   />
-                </>
-              )}
-
-              {/* EGRESOS */}
-              {egrRows.length > 0 && (
-                <>
-                  <tr>
-                    <td colSpan={6} style={{
-                      padding: '7px 16px', background: '#fef2f2',
-                      fontWeight: 700, fontSize: 11, color: '#b91c1c',
-                      textTransform: 'uppercase', letterSpacing: '.06em',
-                      borderTop: '2px solid #fecaca',
-                    }}>
-                      Egresos (pagado)
-                    </td>
-                  </tr>
-                  {vista === 'detalle' ? egrRows.map((p, i) => (
-                    <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
-                      background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                      <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span></td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                        {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
-                      </td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                        {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
-                      </td>
-                      <td style={{ ...td, textAlign: 'right' }}>
-                        <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo="egreso" />
-                      </td>
-                      <td style={{ ...td, textAlign: 'center' }}>
-                        <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="egreso" />
-                      </td>
-                      <td style={{ ...td, textAlign: 'right' }}>
-                        {canWrite('presupuestos') && p.fuente_real === 'manual' && (
-                          <button className="btn-ghost"
-                            onClick={() => { setManualPid(p.id); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true) }}
-                            style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
-                            + Manual
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )) : egrRowsAgrupado.map((g, i) => (
-                    <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
-                      background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                      <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                        {g.pptoVal > 0 ? <MontoDrillButton monto={g.pptoVal} onClick={() => setDrillGrupo({ nombre: g.nombre, tipo: 'egreso', partidas: g.partidas })} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
-                      </td>
-                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                        {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => setDrillGrupo({ nombre: g.nombre, tipo: 'egreso', partidas: g.partidas })} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
-                      </td>
-                      <td style={{ ...td, textAlign: 'right' }}>
-                        <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="egreso" />
-                      </td>
-                      <td style={{ ...td, textAlign: 'center' }}>
-                        <PctEjercidoCell real={g.realVal} ppto={g.pptoVal} tipo="egreso" />
-                      </td>
-                      <td style={td}></td>
-                    </tr>
-                  ))}
-                  <TotalSectionRow
-                    label="Total Egresos"
-                    ppto={totalSeccion(egrRows, 'pptoVal')}
-                    real={totalSeccion(egrRows, 'realVal')}
-                    tipo="egreso"
-                    bg="#fee2e2" color="#b91c1c" bgTotal="#fecaca"
-                  />
-                </>
-              )}
+                )
+              })}
 
               {/* Flujo neto */}
               {ingRows.length > 0 && egrRows.length > 0 && (() => {
@@ -802,6 +703,182 @@ export default function FlujoEfectivoPage() {
 }
 
 // ── Sub-componentes ───────────────────────────────────────────────────────────
+function totalSeccionRows(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
+  return rows.reduce((s, r) => s + r[field], 0)
+}
+
+function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, onManual, onDrill }: {
+  labels: { ingresos: string; egresos: string; balance: string }
+  ingRows: FilaPartida[]; egrRows: FilaPartida[]
+  ingRowsAgrupado: FilaGrupo[]; egrRowsAgrupado: FilaGrupo[]
+  vista: 'detalle' | 'agrupado'
+  canWriteManual: boolean
+  onManual: (pid: number) => void
+  onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: FilaPartida[]) => void
+}) {
+  if (ingRows.length === 0 && egrRows.length === 0) return null
+  return (
+    <>
+      {ingRows.length > 0 && (
+        <>
+          <tr>
+            <td colSpan={6} style={{
+              padding: '7px 16px', background: '#f0fdf4',
+              fontWeight: 700, fontSize: 11, color: '#15803d',
+              textTransform: 'uppercase', letterSpacing: '.06em',
+              borderTop: '2px solid #bbf7d0',
+            }}>
+              {labels.ingresos}
+            </td>
+          </tr>
+          {vista === 'detalle' ? ingRows.map((p, i) => (
+            <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
+              background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span></td>
+              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+              </td>
+              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+              </td>
+              <td style={{ ...td, textAlign: 'right' }}>
+                <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo="ingreso" />
+              </td>
+              <td style={{ ...td, textAlign: 'center' }}>
+                <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="ingreso" />
+              </td>
+              <td style={{ ...td, textAlign: 'right' }}>
+                {canWriteManual && p.fuente_real === 'manual' && (
+                  <button className="btn-ghost" onClick={() => onManual(p.id)}
+                    style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
+                    + Manual
+                  </button>
+                )}
+              </td>
+            </tr>
+          )) : ingRowsAgrupado.map((g, i) => (
+            <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
+              background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
+              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                {g.pptoVal > 0 ? <MontoDrillButton monto={g.pptoVal} onClick={() => onDrill(g.nombre, 'ingreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
+              </td>
+              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => onDrill(g.nombre, 'ingreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
+              </td>
+              <td style={{ ...td, textAlign: 'right' }}>
+                <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="ingreso" />
+              </td>
+              <td style={{ ...td, textAlign: 'center' }}>
+                <PctEjercidoCell real={g.realVal} ppto={g.pptoVal} tipo="ingreso" />
+              </td>
+              <td style={td}></td>
+            </tr>
+          ))}
+          <TotalSectionRow
+            label={`Total ${labels.ingresos}`}
+            ppto={totalSeccionRows(ingRows, 'pptoVal')}
+            real={totalSeccionRows(ingRows, 'realVal')}
+            tipo="ingreso"
+            bg="#dcfce7" color="#15803d" bgTotal="#bbf7d0"
+          />
+        </>
+      )}
+
+      {egrRows.length > 0 && (
+        <>
+          <tr>
+            <td colSpan={6} style={{
+              padding: '7px 16px', background: '#fef2f2',
+              fontWeight: 700, fontSize: 11, color: '#b91c1c',
+              textTransform: 'uppercase', letterSpacing: '.06em',
+              borderTop: '2px solid #fecaca',
+            }}>
+              {labels.egresos}
+            </td>
+          </tr>
+          {vista === 'detalle' ? egrRows.map((p, i) => (
+            <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
+              background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span></td>
+              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+              </td>
+              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+              </td>
+              <td style={{ ...td, textAlign: 'right' }}>
+                <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo="egreso" />
+              </td>
+              <td style={{ ...td, textAlign: 'center' }}>
+                <PctEjercidoCell real={p.realVal} ppto={p.pptoVal} tipo="egreso" />
+              </td>
+              <td style={{ ...td, textAlign: 'right' }}>
+                {canWriteManual && p.fuente_real === 'manual' && (
+                  <button className="btn-ghost" onClick={() => onManual(p.id)}
+                    style={{ fontSize: 11, padding: '3px 8px', color: '#64748b' }}>
+                    + Manual
+                  </button>
+                )}
+              </td>
+            </tr>
+          )) : egrRowsAgrupado.map((g, i) => (
+            <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
+              background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
+              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
+                {g.pptoVal > 0 ? <MontoDrillButton monto={g.pptoVal} onClick={() => onDrill(g.nombre, 'egreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
+              </td>
+              <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => onDrill(g.nombre, 'egreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
+              </td>
+              <td style={{ ...td, textAlign: 'right' }}>
+                <VariacionCell varAbs={g.varAbs} varPct={g.varPct} tipo="egreso" />
+              </td>
+              <td style={{ ...td, textAlign: 'center' }}>
+                <PctEjercidoCell real={g.realVal} ppto={g.pptoVal} tipo="egreso" />
+              </td>
+              <td style={td}></td>
+            </tr>
+          ))}
+          <TotalSectionRow
+            label={`Total ${labels.egresos}`}
+            ppto={totalSeccionRows(egrRows, 'pptoVal')}
+            real={totalSeccionRows(egrRows, 'realVal')}
+            tipo="egreso"
+            bg="#fee2e2" color="#b91c1c" bgTotal="#fecaca"
+          />
+        </>
+      )}
+
+      {ingRows.length > 0 && egrRows.length > 0 && (() => {
+        const pptoB = totalSeccionRows(ingRows, 'pptoVal') - totalSeccionRows(egrRows, 'pptoVal')
+        const realB = totalSeccionRows(ingRows, 'realVal') - totalSeccionRows(egrRows, 'realVal')
+        const varAbs = realB - pptoB
+        return (
+          <tr style={{ background: '#334155', fontWeight: 700 }}>
+            <td style={{ ...td, color: '#f1f5f9', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+              {labels.balance}
+            </td>
+            <td style={{ ...td, textAlign: 'right', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+              {fmt(pptoB)}
+            </td>
+            <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+              color: realB >= 0 ? '#86efac' : '#fca5a5' }}>
+              {fmt(realB)}
+            </td>
+            <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+              color: varAbs >= 0 ? '#86efac' : '#fca5a5' }}>
+              {varAbs !== 0 ? `${varAbs > 0 ? '+' : '-'}${fmt(Math.abs(varAbs))}` : '—'}
+            </td>
+            <td colSpan={2} />
+          </tr>
+        )
+      })()}
+    </>
+  )
+}
+
 function TotalSectionRow({ label, ppto, real, tipo, bg, color, bgTotal }: {
   label: string; ppto: number; real: number; tipo: 'ingreso' | 'egreso'
   bg: string; color: string; bgTotal: string

@@ -8,6 +8,7 @@ import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
+type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type Partida     = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'
   fuente_real:          string | null
@@ -18,9 +19,16 @@ type Partida     = {
   id_concepto_fk:       number | null
   tipo_gasto:           string | null
   id_agrupador_fk:      number | null
+  clasificacion:        Clasificacion
 }
 type Agrupador = { id: number; nombre: string; orden: number }
 type DetMap      = Record<number, Record<number, number>>
+
+const CLASIFICACION_TITULOS: Record<Clasificacion, string> = {
+  operativo:      'Operativo',
+  financiero:     'Financiero',
+  intercompanias: 'Intercompañías',
+}
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
@@ -88,6 +96,106 @@ function KpiCard({ label, value, sub, color, bg, icon: Icon }: {
   )
 }
 
+// ── Bloque KPIs + gráficas de una clasificación (Operativo/Financiero/Intercompañías) ──
+function ResumenClasificacion({ titulo, ingresos, egresos, detMap, realMap }: {
+  titulo: string; ingresos: Partida[]; egresos: Partida[]; detMap: DetMap; realMap: DetMap
+}) {
+  const sumaAnual = (pid: number, map: DetMap) =>
+    MESES.reduce((s, _, i) => s + (map[pid]?.[i + 1] ?? 0), 0)
+
+  const totalPptoIng = ingresos.reduce((s, p) => s + sumaAnual(p.id, detMap), 0)
+  const totalPptoEgr = egresos.reduce((s, p) => s + sumaAnual(p.id, detMap), 0)
+  const totalRealIng = ingresos.reduce((s, p) => s + sumaAnual(p.id, realMap), 0)
+  const totalRealEgr = egresos.reduce((s, p) => s + sumaAnual(p.id, realMap), 0)
+  const balancePpto  = totalPptoIng - totalPptoEgr
+  const balanceReal  = totalRealIng - totalRealEgr
+  const pctIng       = pct(totalRealIng, totalPptoIng)
+  const pctEgr       = pct(totalRealEgr, totalPptoEgr)
+
+  const graficaIng = MESES.map((label, i) => ({
+    label,
+    ppto: ingresos.reduce((s, p) => s + (detMap[p.id]?.[i + 1] ?? 0), 0),
+    real: ingresos.reduce((s, p) => s + (realMap[p.id]?.[i + 1] ?? 0), 0),
+  }))
+  const graficaEgr = MESES.map((label, i) => ({
+    label,
+    ppto: egresos.reduce((s, p) => s + (detMap[p.id]?.[i + 1] ?? 0), 0),
+    real: egresos.reduce((s, p) => s + (realMap[p.id]?.[i + 1] ?? 0), 0),
+  }))
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <span style={{
+          fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 12,
+          background: '#f1f5f9', color: '#475569', textTransform: 'uppercase', letterSpacing: '.05em',
+        }}>
+          {titulo}
+        </span>
+      </div>
+
+      {/* KPI Cards */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <KpiCard
+          label="% Ejercido Ingresos"
+          value={pctIng !== null ? `${pctIng}%` : 'Sin ppto'}
+          sub={`${fmt(totalRealIng)} de ${fmt(totalPptoIng)}`}
+          color={clrPct(pctIng, 'ingreso')} bg={`${clrPct(pctIng, 'ingreso')}18`}
+          icon={TrendingUp}
+        />
+        <KpiCard
+          label="% Ejercido Egresos"
+          value={pctEgr !== null ? `${pctEgr}%` : 'Sin ppto'}
+          sub={`${fmt(totalRealEgr)} de ${fmt(totalPptoEgr)}`}
+          color={clrPct(pctEgr, 'egreso')} bg={`${clrPct(pctEgr, 'egreso')}18`}
+          icon={TrendingDown}
+        />
+        <KpiCard
+          label="Balance Presupuestado"
+          value={fmt(balancePpto)}
+          sub={balancePpto >= 0 ? 'Superávit proyectado' : 'Déficit proyectado'}
+          color={balancePpto >= 0 ? '#0f766e' : '#dc2626'}
+          bg={balancePpto >= 0 ? '#f0fdfa' : '#fef2f2'}
+          icon={Scale}
+        />
+        <KpiCard
+          label="Balance Real"
+          value={fmt(balanceReal)}
+          sub={balanceReal >= 0 ? 'Superávit acumulado' : 'Déficit acumulado'}
+          color={balanceReal >= 0 ? '#15803d' : '#dc2626'}
+          bg={balanceReal >= 0 ? '#f0fdf4' : '#fef2f2'}
+          icon={Scale}
+        />
+      </div>
+
+      {/* Gráficas */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {[
+          { label: 'Ingresos — Ppto vs Real', datos: graficaIng },
+          { label: 'Egresos — Ppto vs Real',  datos: graficaEgr },
+        ].map(chart => (
+          <div key={chart.label} className="card" style={{ padding: '18px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{chart.label}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: '#94a3b8' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#93c5fd', display: 'inline-block' }} />
+                  Presupuesto
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#1d4ed8', display: 'inline-block' }} />
+                  Real
+                </span>
+              </div>
+            </div>
+            <BarChart12 datos={chart.datos} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function MontoDrillButton({ monto, onClick }: { monto: number; onClick: () => void }) {
   return (
     <button onClick={onClick} title="Ver partidas que integran este monto"
@@ -121,7 +229,7 @@ export default function DashboardPpto() {
 
     // Partidas activas filtradas por módulo del presupuesto
     let qPartidas = dbCtrl.from('ppto_partidas')
-      .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk')
+      .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion')
       .eq('activo', true)
       .eq('incluir_presupuesto', true)
     if (modulo) qPartidas = (qPartidas as any).eq('modulo', modulo)
@@ -312,30 +420,16 @@ export default function DashboardPpto() {
   // ── Cálculos ──────────────────────────────────────────────────
   const ingresos = partidas.filter(p => p.tipo === 'ingreso')
   const egresos  = partidas.filter(p => p.tipo === 'egreso')
+  const porClasificacion = (lista: Partida[], clas: Clasificacion) =>
+    lista.filter(p => (p.clasificacion ?? 'operativo') === clas)
 
   const sumaAnual = (pid: number, map: DetMap) =>
     MESES.reduce((s, _, i) => s + (map[pid]?.[i + 1] ?? 0), 0)
 
-  const totalPptoIng  = ingresos.reduce((s, p) => s + sumaAnual(p.id, detMap), 0)
-  const totalPptoEgr  = egresos.reduce((s, p) => s + sumaAnual(p.id, detMap), 0)
-  const totalRealIng  = ingresos.reduce((s, p) => s + sumaAnual(p.id, realMap), 0)
-  const totalRealEgr  = egresos.reduce((s, p) => s + sumaAnual(p.id, realMap), 0)
-  const balancePpto   = totalPptoIng - totalPptoEgr
-  const balanceReal   = totalRealIng - totalRealEgr
-  const pctIng        = pct(totalRealIng, totalPptoIng)
-  const pctEgr        = pct(totalRealEgr, totalPptoEgr)
-
-  // Datos gráfica 12 meses (ingresos)
-  const graficaIng = MESES.map((label, i) => ({
-    label,
-    ppto: ingresos.reduce((s, p) => s + (detMap[p.id]?.[i + 1] ?? 0), 0),
-    real: ingresos.reduce((s, p) => s + (realMap[p.id]?.[i + 1] ?? 0), 0),
-  }))
-  const graficaEgr = MESES.map((label, i) => ({
-    label,
-    ppto: egresos.reduce((s, p) => s + (detMap[p.id]?.[i + 1] ?? 0), 0),
-    real: egresos.reduce((s, p) => s + (realMap[p.id]?.[i + 1] ?? 0), 0),
-  }))
+  const ingFinanciero = porClasificacion(ingresos, 'financiero')
+  const egrFinanciero = porClasificacion(egresos, 'financiero')
+  const ingIntercompanias = porClasificacion(ingresos, 'intercompanias')
+  const egrIntercompanias = porClasificacion(egresos, 'intercompanias')
 
   // Top 8 desvíos — vista Detalle: por partida
   const desviosDetalle = partidas
@@ -423,64 +517,22 @@ export default function DashboardPpto() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
-        <KpiCard
-          label="% Ejercido Ingresos"
-          value={pctIng !== null ? `${pctIng}%` : 'Sin ppto'}
-          sub={`${fmt(totalRealIng)} de ${fmt(totalPptoIng)}`}
-          color={clrPct(pctIng, 'ingreso')} bg={`${clrPct(pctIng, 'ingreso')}18`}
-          icon={TrendingUp}
-        />
-        <KpiCard
-          label="% Ejercido Egresos"
-          value={pctEgr !== null ? `${pctEgr}%` : 'Sin ppto'}
-          sub={`${fmt(totalRealEgr)} de ${fmt(totalPptoEgr)}`}
-          color={clrPct(pctEgr, 'egreso')} bg={`${clrPct(pctEgr, 'egreso')}18`}
-          icon={TrendingDown}
-        />
-        <KpiCard
-          label="Balance Presupuestado"
-          value={fmt(balancePpto)}
-          sub={balancePpto >= 0 ? 'Superávit proyectado' : 'Déficit proyectado'}
-          color={balancePpto >= 0 ? '#0f766e' : '#dc2626'}
-          bg={balancePpto >= 0 ? '#f0fdfa' : '#fef2f2'}
-          icon={Scale}
-        />
-        <KpiCard
-          label="Balance Real"
-          value={fmt(balanceReal)}
-          sub={balanceReal >= 0 ? 'Superávit acumulado' : 'Déficit acumulado'}
-          color={balanceReal >= 0 ? '#15803d' : '#dc2626'}
-          bg={balanceReal >= 0 ? '#f0fdf4' : '#fef2f2'}
-          icon={Scale}
-        />
-      </div>
+      {/* KPIs + Gráficas por clasificación */}
+      <ResumenClasificacion titulo={CLASIFICACION_TITULOS.operativo}
+        ingresos={porClasificacion(ingresos, 'operativo')} egresos={porClasificacion(egresos, 'operativo')}
+        detMap={detMap} realMap={realMap} />
 
-      {/* Gráficas */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-        {[
-          { label: 'Ingresos — Ppto vs Real', datos: graficaIng },
-          { label: 'Egresos — Ppto vs Real',  datos: graficaEgr },
-        ].map(chart => (
-          <div key={chart.label} className="card" style={{ padding: '18px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{chart.label}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: '#94a3b8' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#93c5fd', display: 'inline-block' }} />
-                  Presupuesto
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#1d4ed8', display: 'inline-block' }} />
-                  Real
-                </span>
-              </div>
-            </div>
-            <BarChart12 datos={chart.datos} />
-          </div>
-        ))}
-      </div>
+      {(ingFinanciero.length > 0 || egrFinanciero.length > 0) && (
+        <ResumenClasificacion titulo={CLASIFICACION_TITULOS.financiero}
+          ingresos={ingFinanciero} egresos={egrFinanciero}
+          detMap={detMap} realMap={realMap} />
+      )}
+
+      {(ingIntercompanias.length > 0 || egrIntercompanias.length > 0) && (
+        <ResumenClasificacion titulo={CLASIFICACION_TITULOS.intercompanias}
+          ingresos={ingIntercompanias} egresos={egrIntercompanias}
+          detMap={detMap} realMap={realMap} />
+      )}
 
       {/* Top desvíos */}
       {(desviosDetalle.length > 0 || desviosAgrupado.length > 0) && (
