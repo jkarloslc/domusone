@@ -93,8 +93,9 @@ const FUENTE_COLOR: Record<FuenteReal, { bg: string; color: string }> = {
 }
 
 export default function PartidasPage() {
-  const { canWrite } = useAuth()
+  const { canWrite, authUser } = useAuth()
   const puedeEscribir = canWrite('presupuestos')
+  const esSuperadmin  = authUser?.rol === 'superadmin'
   const tiposGasto = useTiposGasto()
 
   const [partidas, setPartidas]       = useState<Partida[]>([])
@@ -122,6 +123,8 @@ export default function PartidasPage() {
   const [dupTargets, setDupTargets] = useState<Record<string, DupTarget>>({})
   const [dupSaving, setDupSaving] = useState(false)
   const [dupError, setDupError]   = useState<string | null>(null)
+
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -251,6 +254,22 @@ export default function PartidasPage() {
     setDupSaving(false)
     if (error) { setDupError(error.message); return }
     setDupModal(false)
+    load()
+  }
+
+  async function handleDelete(p: Partida) {
+    if (!confirm(`¿Eliminar la partida "${p.nombre}"? Esta acción no se puede deshacer.`)) return
+    setDeletingId(p.id)
+    const { error } = await dbCtrl.from('ppto_partidas').delete().eq('id', p.id)
+    setDeletingId(null)
+    if (error) {
+      alert(
+        error.code === '23503'
+          ? `No se puede eliminar "${p.nombre}": ya tiene presupuesto o real capturado. Desactívala en su lugar (Activo = No).`
+          : error.message
+      )
+      return
+    }
     load()
   }
 
@@ -484,6 +503,16 @@ export default function PartidasPage() {
                                   style={{ padding: '4px 8px', fontSize: 12 }}>
                                   <Edit2 size={13} />
                                 </button>
+                                {esSuperadmin && (
+                                  <button className="btn-ghost" onClick={() => handleDelete(p)}
+                                    disabled={deletingId === p.id}
+                                    title="Eliminar partida"
+                                    style={{ padding: '4px 8px', fontSize: 12, color: '#dc2626' }}>
+                                    {deletingId === p.id
+                                      ? <Loader size={13} className="animate-spin" />
+                                      : <Trash2 size={13} />}
+                                  </button>
+                                )}
                               </td>
                             )}
                           </tr>
