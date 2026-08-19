@@ -354,7 +354,10 @@ export default function ComparativoPage() {
       const varPct  = pptoVal > 0 ? Math.round(((realVal - pptoVal) / pptoVal) * 100) : null
       return { ...p, pptoVal, realVal, varAbs, varPct }
     })
-    .filter(p => p.pptoVal > 0 || p.realVal > 0)
+    // Partidas con fuente_real='manual' se conservan aunque sigan en $0 —
+    // son las únicas con botón "+ Manual"; sin esto no había forma de
+    // capturarles el primer monto (no aparecían en la tabla para hacer clic).
+    .filter(p => p.pptoVal > 0 || p.realVal > 0 || p.fuente_real === 'manual')
 
   // Ingresos/Egresos combinando TODAS las clasificaciones — usados para el
   // Balance Neto final (grand total) al pie de la tabla.
