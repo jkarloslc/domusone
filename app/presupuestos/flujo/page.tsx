@@ -23,9 +23,16 @@ type Partida     = {
   clasificacion:        Clasificacion
 }
 type Agrupador = { id: number; nombre: string; orden: number }
+type Proveedor = { id: number; nombre: string }
 type DetMap = Record<number, Record<number, number>>
 type FilaPartida = Partida & { pptoVal: number; realVal: number; varAbs: number; varPct: number | null }
 type FilaGrupo   = { id: string; nombre: string; orden: number; pptoVal: number; realVal: number; varAbs: number; varPct: number | null; partidas: FilaPartida[] }
+type DetalleTransaccion = {
+  fecha: string; monto: number
+  folio?: string | null; id_proveedor_fk?: number | null
+  tipo_gasto?: string | null; descripcion?: string | null
+}
+type DetMapTx = Record<number, DetalleTransaccion[]>
 
 const CLASIFICACION_LABELS: Record<Clasificacion, { ingresos: string; egresos: string; balance: string }> = {
   operativo:      { ingresos: 'Ingresos (cobrado)',                 egresos: 'Egresos (pagado)',                 balance: 'Flujo Operativo' },
@@ -37,6 +44,9 @@ const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov'
 
 const fmt = (n: number) =>
   '$' + Math.abs(n).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+const fmtFecha = (f: string) =>
+  new Date(f + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 
 function VariacionCell({ varAbs, varPct, tipo }: { varAbs: number; varPct: number | null; tipo: 'ingreso' | 'egreso' }) {
   if (varAbs === 0 && !varPct) return <span style={{ color: '#94a3b8' }}>—</span>
@@ -99,7 +109,10 @@ export default function FlujoEfectivoPage() {
   const [partidas, setPartidas] = useState<Partida[]>([])
   const [detMap,   setDetMap]   = useState<DetMap>({})
   const [realMap,  setRealMap]  = useState<DetMap>({})
+  const [realDetalle, setRealDetalle] = useState<DetMapTx>({})
   const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
+  const [proveedores, setProveedores] = useState<Proveedor[]>([])
+  const [drillOps, setDrillOps] = useState<{ partida: string; tipo: 'ingreso' | 'egreso'; conOp: boolean; rows: DetalleTransaccion[] } | null>(null)
 
   // Filtros
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
@@ -163,7 +176,7 @@ export default function FlujoEfectivoPage() {
     const [{ data: secData }, { data: concData }, { data: abonosData }] = await Promise.all([
       secIds.length > 0
         ? (dbCtrl.from('recibos_ingreso_secciones') as any)
-            .select('id_seccion_fk, monto, recibos_ingreso!inner(status, fecha)')
+            .select('id_seccion_fk, monto, recibos_ingreso!inner(status, fecha, folio, descripcion)')
             .in('id_seccion_fk', secIds)
             .eq('recibos_ingreso.status', 'Confirmado')
             .gte('recibos_ingreso.fecha', `${anio}-01-01`)
@@ -171,7 +184,7 @@ export default function FlujoEfectivoPage() {
         : Promise.resolve({ data: [] }),
       concIds.length > 0
         ? (dbCtrl.from('recibos_ingreso_conceptos') as any)
-            .select('id_concepto_fk, monto, recibos_ingreso!inner(status, fecha)')
+            .select('id_concepto_fk, monto, recibos_ingreso!inner(status, fecha, folio, descripcion)')
             .in('id_concepto_fk', concIds)
             .eq('recibos_ingreso.status', 'Confirmado')
             .gte('recibos_ingreso.fecha', `${anio}-01-01`)
@@ -179,7 +192,7 @@ export default function FlujoEfectivoPage() {
         : Promise.resolve({ data: [] }),
       areaIds.length > 0
         ? (dbComp.from('cxp_abonos') as any)
-            .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, tipo_gasto, status, monto, id_oc_fk)')
+            .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, tipo_gasto, status, monto, id_oc_fk, folio, concepto, id_proveedor_fk)')
             .in('ordenes_pago.id_area_fk', areaIds)
             .neq('ordenes_pago.status', 'Cancelada')
             .gte('fecha_abono', `${anio}-01-01`)
@@ -194,7 +207,7 @@ export default function FlujoEfectivoPage() {
     let abonosDistribuidos: any[] = []
     if (areaIds.length > 0) {
       const { data: abonosDist } = await (dbComp.from('cxp_abonos') as any)
-        .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, tipo_gasto, status, monto)')
+        .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, tipo_gasto, status, monto, folio, concepto, id_proveedor_fk)')
         .is('ordenes_pago.id_area_fk', null)
         .neq('ordenes_pago.status', 'Cancelada')
         .gte('fecha_abono', `${anio}-01-01`)
@@ -213,7 +226,10 @@ export default function FlujoEfectivoPage() {
             .map((d: any) => ({
               monto: Number(a.monto) * (Number(d.monto) / montoOP),
               fecha_abono: a.fecha_abono,
-              ordenes_pago: { id_area_fk: d.id_area_fk, tipo_gasto: a.ordenes_pago.tipo_gasto, status: a.ordenes_pago.status },
+              ordenes_pago: {
+                id_area_fk: d.id_area_fk, tipo_gasto: a.ordenes_pago.tipo_gasto, status: a.ordenes_pago.status,
+                folio: a.ordenes_pago.folio, concepto: a.ordenes_pago.concepto, id_proveedor_fk: a.ordenes_pago.id_proveedor_fk,
+              },
             }))
         })
       }
@@ -242,7 +258,10 @@ export default function FlujoEfectivoPage() {
       prorratearDescuento(shares, s => s.fraction, 1, Number(a.monto)).forEach(({ item, montoNeto }) => {
         abonosCategoria.push({
           monto: montoNeto, fecha_abono: a.fecha_abono,
-          ordenes_pago: { id_area_fk: a.ordenes_pago.id_area_fk, tipo_gasto: item.categoria, status: a.ordenes_pago.status },
+          ordenes_pago: {
+            id_area_fk: a.ordenes_pago.id_area_fk, tipo_gasto: item.categoria, status: a.ordenes_pago.status,
+            folio: a.ordenes_pago.folio, concepto: a.ordenes_pago.concepto, id_proveedor_fk: a.ordenes_pago.id_proveedor_fk,
+          },
         })
       })
     })
@@ -253,26 +272,31 @@ export default function FlujoEfectivoPage() {
       ...abonosCategoria,
     ]
 
-    // ── Construir realMap ────────────────────────────────────────
+    // ── Construir realMap + detalle transaccional (drill-down por OP/recibo) ──
     const rm: DetMap = {}
+    const rd: DetMapTx = {}
 
     // Por sección
     secParts.forEach(p => {
       rm[p.id] = {}
+      rd[p.id] = []
       ;(secData ?? []).filter((r: any) => r.id_seccion_fk === p.id_seccion_fk)
         .forEach((r: any) => {
           const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(r.monto)
+          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto: Number(r.monto), folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
         })
     })
 
     // Por concepto
     concParts.forEach(p => {
       rm[p.id] = {}
+      rd[p.id] = []
       ;(concData ?? []).filter((r: any) => r.id_concepto_fk === p.id_concepto_fk)
         .forEach((r: any) => {
           const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(r.monto)
+          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto: Number(r.monto), folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
         })
     })
 
@@ -290,6 +314,7 @@ export default function FlujoEfectivoPage() {
 
     areaParts.forEach(p => {
       rm[p.id] = {}
+      rd[p.id] = []
       const tiposCubiertos = !p.tipo_gasto && p.id_area_fk ? tiposEspecificosPorArea[p.id_area_fk] : null
       abonosTodos.filter((a: any) => {
           const op = a.ordenes_pago
@@ -303,6 +328,10 @@ export default function FlujoEfectivoPage() {
           if (!a.fecha_abono) return
           const mes = new Date(a.fecha_abono + 'T12:00:00').getMonth() + 1
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(a.monto)
+          rd[p.id].push({
+            fecha: a.fecha_abono, monto: Number(a.monto), folio: a.ordenes_pago.folio,
+            id_proveedor_fk: a.ordenes_pago.id_proveedor_fk, tipo_gasto: a.ordenes_pago.tipo_gasto, descripcion: a.ordenes_pago.concepto,
+          })
         })
     })
 
@@ -313,6 +342,7 @@ export default function FlujoEfectivoPage() {
     })
 
     setRealMap(rm)
+    setRealDetalle(rd)
     setLoading(false)
     setRefreshing(false)
   }, [])
@@ -330,6 +360,8 @@ export default function FlujoEfectivoPage() {
       })
     dbCtrl.from('ppto_agrupadores').select('id, nombre, orden').eq('activo', true).order('orden').order('nombre')
       .then(({ data }) => setAgrupadores((data ?? []) as Agrupador[]))
+    dbComp.from('proveedores').select('id, nombre').order('nombre')
+      .then(({ data }) => setProveedores((data ?? []) as Proveedor[]))
   }, [loadEverything])
 
   const selPpto = presupuestos.find(p => p.id === selId)
@@ -466,6 +498,15 @@ export default function FlujoEfectivoPage() {
   }
   function handleDrill(nombre: string, tipo: 'ingreso' | 'egreso', partidasGrupo: FilaPartida[]) {
     setDrillGrupo({ nombre, tipo, partidas: partidasGrupo })
+  }
+  const provMap = Object.fromEntries(proveedores.map(pr => [pr.id, pr.nombre]))
+
+  function handleDrillOps(p: FilaPartida) {
+    const meses = getMeses()
+    const rows = (realDetalle[p.id] ?? [])
+      .filter(r => meses.includes(new Date(r.fecha + 'T12:00:00').getMonth() + 1))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha))
+    setDrillOps({ partida: p.nombre, tipo: p.tipo, conOp: p.fuente_real === 'op_area', rows })
   }
 
   if (loading) return (
@@ -604,7 +645,7 @@ export default function FlujoEfectivoPage() {
                     ingRows={ing} egrRows={egr}
                     ingRowsAgrupado={agrupar(ing)} egrRowsAgrupado={agrupar(egr)}
                     vista={vista} canWriteManual={canWrite('presupuestos')}
-                    onManual={handleManual} onDrill={handleDrill}
+                    onManual={handleManual} onDrill={handleDrill} onDrillOps={handleDrillOps}
                   />
                 )
               })}
@@ -801,6 +842,65 @@ export default function FlujoEfectivoPage() {
           </div>
         </ModalShell>
       )}
+
+      {/* Modal: Detalle de OP's / recibos que integran el monto real */}
+      {drillOps && (
+        <ModalShell
+          modulo="presupuestos"
+          titulo={`Real — ${drillOps.partida}`}
+          subtitulo={`${drillOps.rows.length} movimiento${drillOps.rows.length !== 1 ? 's' : ''} · ${mesLabel}`}
+          icono={Wallet}
+          maxWidth={620}
+          onClose={() => setDrillOps(null)}
+          footer={<button className="btn-secondary" onClick={() => setDrillOps(null)}>Cerrar</button>}
+        >
+          {drillOps.rows.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>
+              Sin movimientos para el período seleccionado
+            </div>
+          ) : (
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    <th style={th}>Fecha</th>
+                    <th style={th}>Folio</th>
+                    <th style={th}>{drillOps.conOp ? 'Proveedor' : 'Descripción'}</th>
+                    {drillOps.conOp && <th style={th}>Tipo de Gasto</th>}
+                    <th style={{ ...th, textAlign: 'right' }}>Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {drillOps.rows.map((r, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9',
+                      background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                      <td style={td}>{fmtFecha(r.fecha)}</td>
+                      <td style={{ ...td, fontWeight: 600, color: '#1e293b' }}>{r.folio ?? '—'}</td>
+                      <td style={{ ...td, color: '#475569' }}>
+                        {drillOps.conOp ? (r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? `#${r.id_proveedor_fk}`) : (r.descripcion ?? '—')) : (r.descripcion ?? '—')}
+                      </td>
+                      {drillOps.conOp && <td style={{ ...td, color: '#64748b', fontSize: 12 }}>{r.tipo_gasto ?? '—'}</td>}
+                      <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                        {fmt(r.monto)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr style={{ background: '#f1f5f9', fontWeight: 700 }}>
+                    <td colSpan={drillOps.conOp ? 4 : 3} style={{ ...td, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color: '#475569' }}>
+                      Total
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                      {fmt(drillOps.rows.reduce((s, r) => s + r.monto, 0))}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </ModalShell>
+      )}
     </div>
   )
 }
@@ -810,7 +910,7 @@ function totalSeccionRows(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
   return rows.reduce((s, r) => s + r[field], 0)
 }
 
-function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, onManual, onDrill }: {
+function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, onManual, onDrill, onDrillOps }: {
   labels: { ingresos: string; egresos: string; balance: string }
   ingRows: FilaPartida[]; egrRows: FilaPartida[]
   ingRowsAgrupado: FilaGrupo[]; egrRowsAgrupado: FilaGrupo[]
@@ -818,6 +918,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsAgrupado, egrRo
   canWriteManual: boolean
   onManual: (pid: number) => void
   onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: FilaPartida[]) => void
+  onDrillOps: (p: FilaPartida) => void
 }) {
   if (ingRows.length === 0 && egrRows.length === 0) return null
   return (
@@ -842,7 +943,10 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsAgrupado, egrRo
                 {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                {p.realVal > 0
+                  ? <MontoDrillButton monto={p.realVal} fmt={fmt}
+                      onClick={() => p.fuente_real === 'manual' ? onManual(p.id) : onDrillOps(p)} />
+                  : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
               <td style={{ ...td, textAlign: 'right' }}>
                 <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo="ingreso" />
@@ -908,7 +1012,10 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsAgrupado, egrRo
                 {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-                {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                {p.realVal > 0
+                  ? <MontoDrillButton monto={p.realVal} fmt={fmt}
+                      onClick={() => p.fuente_real === 'manual' ? onManual(p.id) : onDrillOps(p)} />
+                  : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
               <td style={{ ...td, textAlign: 'right' }}>
                 <VariacionCell varAbs={p.varAbs} varPct={p.varPct} tipo="egreso" />
