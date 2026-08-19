@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp } from '@/lib/supabase'
-import { Loader, RefreshCw, BookOpen, Layers, List } from 'lucide-react'
+import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { useAuth } from '@/lib/AuthContext'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
@@ -114,9 +114,13 @@ export default function ComparativoPage() {
   const [vista, setVista] = useState<'detalle' | 'agrupado'>('detalle')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
-  // Modal añadir real manual
+  // Modal añadir/editar real manual
   const [modalManual, setModalManual] = useState(false)
   const [manualPid,   setManualPid]   = useState<number | null>(null)
+  const [manualEntries, setManualEntries] = useState<{ id: number; mes: number; monto: number; concepto: string | null }[]>([])
+  const [editManualId,    setEditManualId]    = useState<number | null>(null)
+  const [editManualMonto, setEditManualMonto] = useState('')
+  const [editManualConc,  setEditManualConc]  = useState('')
   const [manualMes,   setManualMes]   = useState(new Date().getMonth() + 1)
   const [manualMonto, setManualMonto] = useState('')
   const [manualConc,  setManualConc]  = useState('')
@@ -316,6 +320,22 @@ export default function ComparativoPage() {
     if (p) loadEverything(p.id, p.anio, p.modulo, true)
   }
 
+  // Carga los registros de real manual ya capturados para una partida
+  const loadManualEntries = useCallback(async (pid: number) => {
+    if (!selId) return
+    const { data } = await dbCtrl.from('ppto_presupuesto_real_manual')
+      .select('id, mes, monto, concepto')
+      .eq('id_presupuesto_fk', selId).eq('id_partida_fk', pid)
+      .order('mes')
+    setManualEntries((data ?? []) as typeof manualEntries)
+  }, [selId])
+
+  function refreshManual() {
+    const p = presupuestos.find(x => x.id === selId)
+    if (p) loadEverything(p.id, p.anio, p.modulo, true)
+    if (manualPid) loadManualEntries(manualPid)
+  }
+
   // Agrega real manual
   async function saveManual() {
     if (!manualPid || !selId) return
@@ -327,11 +347,29 @@ export default function ComparativoPage() {
       mes: manualMes, monto, concepto: manualConc || null,
     })
     setSavingManual(false)
-    setModalManual(false)
     setManualMonto('')
     setManualConc('')
-    const p = presupuestos.find(x => x.id === selId)
-    if (p) loadEverything(p.id, p.anio, p.modulo, true)
+    refreshManual()
+  }
+
+  function startEditManual(e: { id: number; monto: number; concepto: string | null }) {
+    setEditManualId(e.id); setEditManualMonto(String(e.monto)); setEditManualConc(e.concepto ?? '')
+  }
+
+  async function saveEditManual(id: number) {
+    const monto = parseFloat(editManualMonto.replace(/,/g, '')) || 0
+    if (monto <= 0) return
+    await dbCtrl.from('ppto_presupuesto_real_manual').update({
+      monto, concepto: editManualConc || null,
+    }).eq('id', id)
+    setEditManualId(null)
+    refreshManual()
+  }
+
+  async function deleteManualEntry(id: number) {
+    if (!confirm('¿Eliminar este monto capturado?')) return
+    await dbCtrl.from('ppto_presupuesto_real_manual').delete().eq('id', id)
+    refreshManual()
   }
 
   // ── Helpers de agregación ──────────────────────────────────────
@@ -402,7 +440,10 @@ export default function ComparativoPage() {
   const CLASIFICACIONES: Clasificacion[] = ['operativo', 'financiero', 'intercompanias']
 
   function handleManual(pid: number) {
-    setManualPid(pid); setManualMes(filterMes || new Date().getMonth() + 1); setModalManual(true)
+    setManualPid(pid); setManualMes(filterMes || new Date().getMonth() + 1)
+    setEditManualId(null); setManualMonto(''); setManualConc('')
+    setModalManual(true)
+    loadManualEntries(pid)
   }
   function handleDrill(nombre: string, tipo: 'ingreso' | 'egreso', partidasGrupo: FilaPartida[]) {
     setDrillGrupo({ nombre, tipo, partidas: partidasGrupo })
@@ -564,49 +605,104 @@ export default function ComparativoPage() {
         </div>
       )}
 
-      {/* Modal: Agregar Real Manual */}
+      {/* Modal: Real Manual — agregar, editar y eliminar */}
       {modalManual && manualPid && (
         <ModalShell
           modulo="presupuestos"
-          titulo="Agregar Real Manual"
+          titulo="Real Manual"
           subtitulo={`Partida: ${partidas.find(p => p.id === manualPid)?.nombre ?? ''}`}
           icono={BookOpen}
-          maxWidth={400}
+          maxWidth={460}
           onClose={() => setModalManual(false)}
-          footer={
-            <>
-              <button className="btn-secondary" onClick={() => setModalManual(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={saveManual}
-                disabled={savingManual || !manualMonto}
-                style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {savingManual ? <Loader size={14} className="animate-spin" /> : null}
-                Guardar
-              </button>
-            </>
-          }
+          footer={<button className="btn-secondary" onClick={() => setModalManual(false)}>Cerrar</button>}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
-              Captura un monto real adicional que no proviene de recibos de ingreso ni órdenes de pago.
+              Montos reales adicionales que no provienen de recibos de ingreso ni órdenes de pago.
+              Si un mismo mes tiene más de un registro, se suman.
             </p>
-            <label style={lbl}>
-              Mes
-              <select className="input" value={manualMes} onChange={e => setManualMes(Number(e.target.value))}>
-                {MESES.map((m, i) => <option key={i + 1} value={i + 1}>{m} {selPpto?.anio}</option>)}
-              </select>
-            </label>
-            <label style={lbl}>
-              Monto *
-              <input className="input" type="number" min={0} step={0.01}
-                value={manualMonto} onChange={e => setManualMonto(e.target.value)}
-                placeholder="0.00" />
-            </label>
-            <label style={lbl}>
-              Concepto
-              <input className="input" value={manualConc}
-                onChange={e => setManualConc(e.target.value)}
-                placeholder="Descripción del ajuste (opcional)" />
-            </label>
+
+            {manualEntries.length > 0 && (
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                {manualEntries.map((e, i) => (
+                  <div key={e.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                    borderBottom: i < manualEntries.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  }}>
+                    {editManualId === e.id ? (
+                      <>
+                        <span style={{ fontSize: 12, color: '#64748b', width: 34, flexShrink: 0 }}>
+                          {MESES[e.mes - 1]}
+                        </span>
+                        <input className="input" type="number" min={0} step={0.01} autoFocus
+                          value={editManualMonto} onChange={ev => setEditManualMonto(ev.target.value)}
+                          style={{ width: 100, fontSize: 13 }}
+                          onKeyDown={ev => { if (ev.key === 'Enter') saveEditManual(e.id); if (ev.key === 'Escape') setEditManualId(null) }} />
+                        <input className="input" value={editManualConc}
+                          onChange={ev => setEditManualConc(ev.target.value)}
+                          placeholder="Concepto" style={{ flex: 1, fontSize: 13 }} />
+                        <button className="btn-ghost" onClick={() => saveEditManual(e.id)} style={{ padding: '4px 8px' }}>
+                          <Save size={13} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 12, color: '#64748b', width: 34, flexShrink: 0 }}>
+                          {MESES[e.mes - 1]}
+                        </span>
+                        <button onClick={() => startEditManual(e)} title="Clic para editar"
+                          style={{
+                            font: 'inherit', fontWeight: 600, color: '#1e293b', background: 'none', border: 'none',
+                            padding: 0, cursor: 'pointer', fontVariantNumeric: 'tabular-nums',
+                            textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3,
+                          }}>
+                          {fmt(e.monto)}
+                        </button>
+                        <span style={{ flex: 1, fontSize: 12, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {e.concepto ?? '—'}
+                        </span>
+                        <button className="btn-ghost" onClick={() => deleteManualEntry(e.id)}
+                          style={{ padding: '4px 6px', color: '#dc2626' }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ borderTop: manualEntries.length > 0 ? '1px solid #f1f5f9' : undefined, paddingTop: manualEntries.length > 0 ? 14 : 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 8 }}>
+                Agregar nuevo
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={lbl}>
+                  Mes
+                  <select className="input" value={manualMes} onChange={e => setManualMes(Number(e.target.value))}>
+                    {MESES.map((m, i) => <option key={i + 1} value={i + 1}>{m} {selPpto?.anio}</option>)}
+                  </select>
+                </label>
+                <label style={lbl}>
+                  Monto *
+                  <input className="input" type="number" min={0} step={0.01}
+                    value={manualMonto} onChange={e => setManualMonto(e.target.value)}
+                    placeholder="0.00" />
+                </label>
+                <label style={lbl}>
+                  Concepto
+                  <input className="input" value={manualConc}
+                    onChange={e => setManualConc(e.target.value)}
+                    placeholder="Descripción del ajuste (opcional)" />
+                </label>
+                <button className="btn-primary" onClick={saveManual}
+                  disabled={savingManual || !manualMonto}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, alignSelf: 'flex-start' }}>
+                  {savingManual ? <Loader size={14} className="animate-spin" /> : null}
+                  Agregar
+                </button>
+              </div>
+            </div>
           </div>
         </ModalShell>
       )}
