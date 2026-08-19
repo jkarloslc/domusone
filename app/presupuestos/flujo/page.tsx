@@ -455,12 +455,6 @@ export default function FlujoEfectivoPage() {
           <p className="page-subtitle">{mesLabel} · {selPpto?.nombre}</p>
         </div>
         <div className="page-header-actions">
-          <select className="input" style={{ width: 280, flex: '0 0 auto' }}
-            value={selId ?? ''} onChange={e => onChangePpto(Number(e.target.value))}>
-            {presupuestos.map(p => (
-              <option key={p.id} value={p.id}>{p.anio} — {p.nombre}</option>
-            ))}
-          </select>
           <button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true)}
             style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px' }}>
             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
@@ -485,6 +479,14 @@ export default function FlujoEfectivoPage() {
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Presupuesto */}
+        <select className="input" style={{ width: 280, flex: '0 0 auto' }}
+          value={selId ?? ''} onChange={e => onChangePpto(Number(e.target.value))}>
+          {presupuestos.map(p => (
+            <option key={p.id} value={p.id}>{p.anio} — {p.nombre}</option>
+          ))}
+        </select>
+
         {/* Mes */}
         <select className="input" style={{ width: 180, flex: '0 0 auto' }}
           value={filterMes} onChange={e => setFilterMes(Number(e.target.value))}>
