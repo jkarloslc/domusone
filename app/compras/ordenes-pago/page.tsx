@@ -94,7 +94,9 @@ export default function OrdenesPagoPage() {
     if (tiposExcluidos && tiposExcluidos.length === 1) {
       q = q.or(`tipo_gasto.is.null,tipo_gasto.neq.${tiposExcluidos[0]}`)
     } else if (tiposExcluidos && tiposExcluidos.length > 1) {
-      q = q.not('tipo_gasto', 'in', `(${tiposExcluidos.join(',')})`)
+      // NOT (tipo_gasto IN (...)) es NULL (excluye la fila) cuando tipo_gasto es NULL en SQL —
+      // hay que incluir tipo_gasto.is.null explícitamente o las OP sin tipo de gasto desaparecen.
+      q = q.or(`tipo_gasto.is.null,tipo_gasto.not.in.(${tiposExcluidos.join(',')})`)
     }
 
     const { data, count } = await q
