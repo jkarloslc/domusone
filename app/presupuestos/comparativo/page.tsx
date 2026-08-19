@@ -354,10 +354,12 @@ export default function ComparativoPage() {
       const varPct  = pptoVal > 0 ? Math.round(((realVal - pptoVal) / pptoVal) * 100) : null
       return { ...p, pptoVal, realVal, varAbs, varPct }
     })
-    // Partidas con fuente_real='manual' se conservan aunque sigan en $0 —
-    // son las únicas con botón "+ Manual"; sin esto no había forma de
-    // capturarles el primer monto (no aparecían en la tabla para hacer clic).
-    .filter(p => p.pptoVal > 0 || p.realVal > 0 || p.fuente_real === 'manual')
+    // Operativo se sigue ocultando en $0 (son cientos de partidas por CC/área).
+    // Financiero/Intercompañías siempre se muestran, aunque sigan en $0 —
+    // son pocas partidas curadas y el usuario necesita verlas para poder
+    // capturarles el primer monto (Captura, "+ Manual", o esperando la OP).
+    .filter(p => p.pptoVal > 0 || p.realVal > 0 || p.fuente_real === 'manual'
+      || p.clasificacion === 'financiero' || p.clasificacion === 'intercompanias')
 
   // Ingresos/Egresos combinando TODAS las clasificaciones — usados para el
   // Balance Neto final (grand total) al pie de la tabla.
