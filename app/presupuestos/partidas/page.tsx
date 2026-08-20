@@ -80,8 +80,8 @@ const EMPTY: Omit<Partida, 'id'> = {
 }
 
 const TIPO_LABEL: Record<'ingreso' | 'egreso', string> = { ingreso: 'Ingreso', egreso: 'Egreso' }
-function descripcionAuto(tipo: 'ingreso' | 'egreso', modulo: string) {
-  return `${TIPO_LABEL[tipo]} ${modulo}`
+function descripcionAuto(tipo: 'ingreso' | 'egreso', modulo: string, areaNombre?: string | null) {
+  return `${TIPO_LABEL[tipo]} ${modulo}${areaNombre ? ' ' + areaNombre : ''}`
 }
 
 const FUENTE_LABEL: Record<FuenteReal, string> = {
@@ -185,7 +185,7 @@ export default function PartidasPage() {
     setSaving(true); setErrorMsg(null)
     const payload = {
       nombre:               form.nombre.trim(),
-      descripcion:          descripcionAuto(form.tipo, form.modulo),
+      descripcion:          descripcionAuto(form.tipo, form.modulo, form.tipo === 'egreso' ? areaMap[form.id_area_fk ?? -1] : null),
       tipo:                 form.tipo,
       modulo:               form.modulo,
       fuente_real:          form.tipo === 'egreso' ? 'op_area' : form.fuente_real,
@@ -238,7 +238,7 @@ export default function PartidasPage() {
     setDupSaving(true); setDupError(null)
     const payload = toCreate.map(([modulo, t]) => ({
       nombre:               t.nombre.trim() || dupSource.nombre,
-      descripcion:          descripcionAuto(dupSource.tipo, modulo),
+      descripcion:          descripcionAuto(dupSource.tipo, modulo, dupSource.tipo === 'egreso' ? areaMap[t.id_area_fk ?? -1] : null),
       tipo:                 dupSource.tipo,
       modulo,
       fuente_real:          dupSource.fuente_real,
@@ -580,10 +580,11 @@ export default function PartidasPage() {
 
             <label style={lbl}>
               Descripción
-              <input className="input" value={descripcionAuto(form.tipo, form.modulo)}
+              <input className="input"
+                value={descripcionAuto(form.tipo, form.modulo, form.tipo === 'egreso' ? areaMap[form.id_area_fk ?? -1] : null)}
                 readOnly disabled style={{ background: '#f8fafc', color: '#64748b' }} />
               <span style={{ fontSize: 11, color: '#94a3b8' }}>
-                Se genera automáticamente a partir de Tipo + Módulo.
+                Se genera automáticamente a partir de Tipo + Módulo + Área.
               </span>
             </label>
 
