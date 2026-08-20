@@ -459,7 +459,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
     dbComp.from('ordenes_pago').select('*')
       .eq('id_proveedor_fk', prov.id)
       .neq('status', 'Cancelada')
-      .order('fecha_vencimiento')
+      .order('folio', { ascending: true })
       .then(({ data }) => { setOps(data ?? []); setLoading(false) })
   }, [prov.id, refreshKey])
 
