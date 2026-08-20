@@ -79,6 +79,11 @@ const EMPTY: Omit<Partida, 'id'> = {
   incluir_presupuesto: true, incluir_flujo: true,
 }
 
+const TIPO_LABEL: Record<'ingreso' | 'egreso', string> = { ingreso: 'Ingreso', egreso: 'Egreso' }
+function descripcionAuto(tipo: 'ingreso' | 'egreso', modulo: string) {
+  return `${TIPO_LABEL[tipo]} ${modulo}`
+}
+
 const FUENTE_LABEL: Record<FuenteReal, string> = {
   seccion:  'Por Sección',
   concepto: 'Por Concepto',
@@ -180,7 +185,7 @@ export default function PartidasPage() {
     setSaving(true); setErrorMsg(null)
     const payload = {
       nombre:               form.nombre.trim(),
-      descripcion:          form.descripcion,
+      descripcion:          descripcionAuto(form.tipo, form.modulo),
       tipo:                 form.tipo,
       modulo:               form.modulo,
       fuente_real:          form.tipo === 'egreso' ? 'op_area' : form.fuente_real,
@@ -233,7 +238,7 @@ export default function PartidasPage() {
     setDupSaving(true); setDupError(null)
     const payload = toCreate.map(([modulo, t]) => ({
       nombre:               t.nombre.trim() || dupSource.nombre,
-      descripcion:          dupSource.descripcion,
+      descripcion:          descripcionAuto(dupSource.tipo, modulo),
       tipo:                 dupSource.tipo,
       modulo,
       fuente_real:          dupSource.fuente_real,
@@ -566,18 +571,20 @@ export default function PartidasPage() {
             </label>
 
             <label style={lbl}>
-              Descripción
-              <input className="input" value={form.descripcion ?? ''}
-                onChange={e => setForm(f => ({ ...f, descripcion: e.target.value || null }))}
-                placeholder="Opcional" />
-            </label>
-
-            <label style={lbl}>
               Módulo *
               <select className="input" value={form.modulo}
                 onChange={e => setForm(f => ({ ...f, modulo: e.target.value }))}>
                 {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
+            </label>
+
+            <label style={lbl}>
+              Descripción
+              <input className="input" value={descripcionAuto(form.tipo, form.modulo)}
+                readOnly disabled style={{ background: '#f8fafc', color: '#64748b' }} />
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                Se genera automáticamente a partir de Tipo + Módulo.
+              </span>
             </label>
 
             <label style={lbl}>
