@@ -68,6 +68,25 @@ type Contrato = {
 
 const PARENTESCOS = ['Esposo','Esposa', 'Hijo', 'Hija', 'Padre', 'Madre', 'Hermano', 'Hermana', 'Sobrino', 'Usuario']
 
+// Catálogo estático de gentilicios — no requiere mantenimiento por el usuario
+// (a diferencia de catálogos operativos como tipos_gasto o centros_costo),
+// por eso se hardcodea aquí en vez de crear una tabla en Supabase.
+// 'Mexicana' va primero por ser el valor por default más común en este club.
+const NACIONALIDADES = [
+  'Mexicana',
+  'Alemana', 'Argentina', 'Australiana', 'Austriaca', 'Belga', 'Boliviana',
+  'Brasileña', 'Británica', 'Canadiense', 'Checa', 'Chilena', 'China',
+  'Colombiana', 'Coreana', 'Costarricense', 'Cubana', 'Danesa', 'Dominicana',
+  'Ecuatoriana', 'Egipcia', 'Salvadoreña', 'Emiratí', 'Escocesa', 'Eslovaca',
+  'Española', 'Estadounidense', 'Filipina', 'Finlandesa', 'Francesa', 'Griega',
+  'Guatemalteca', 'Holandesa', 'Hondureña', 'Húngara', 'India', 'Indonesia',
+  'Inglesa', 'Irlandesa', 'Israelí', 'Italiana', 'Japonesa', 'Malasia',
+  'Marroquí', 'Neozelandesa', 'Nicaragüense', 'Noruega', 'Panameña',
+  'Paraguaya', 'Peruana', 'Polaca', 'Portuguesa', 'Puertorriqueña', 'Rumana',
+  'Rusa', 'Sueca', 'Suiza', 'Sudafricana', 'Tailandesa', 'Turca',
+  'Ucraniana', 'Uruguaya', 'Venezolana', 'Vietnamita', 'Otra',
+]
+
 type FamiliarForm = {
   nombre: string
   apellido_paterno: string
@@ -834,7 +853,13 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                 </div>
                 <div>
                   <label style={labelStyle}>Nacionalidad</label>
-                  <input style={inputStyle} value={form.nacionalidad} onChange={e => set('nacionalidad', e.target.value)} placeholder="Mexicana" />
+                  <select style={inputStyle} value={form.nacionalidad} onChange={e => set('nacionalidad', e.target.value)}>
+                    <option value="">— Seleccionar —</option>
+                    {form.nacionalidad && !NACIONALIDADES.includes(form.nacionalidad) && (
+                      <option value={form.nacionalidad}>{form.nacionalidad}</option>
+                    )}
+                    {NACIONALIDADES.map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label style={labelStyle}>Teléfono</label>
@@ -979,7 +1004,13 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                     </div>
                     <div>
                       <label style={labelStyle}>Nacionalidad</label>
-                      <input style={inputStyle} value={nuevoFam.nacionalidad} onChange={e => setFam('nacionalidad', e.target.value)} placeholder="Mexicana" />
+                      <select style={inputStyle} value={nuevoFam.nacionalidad} onChange={e => setFam('nacionalidad', e.target.value)}>
+                        <option value="">— Seleccionar —</option>
+                        {nuevoFam.nacionalidad && !NACIONALIDADES.includes(nuevoFam.nacionalidad) && (
+                          <option value={nuevoFam.nacionalidad}>{nuevoFam.nacionalidad}</option>
+                        )}
+                        {NACIONALIDADES.map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
                     </div>
                   </div>
                   {errorFam && (
