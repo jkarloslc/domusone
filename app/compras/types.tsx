@@ -85,10 +85,12 @@ export const PRIORIDAD_COLOR: Record<string, string> = {
 export const UNIDADES = ['PZA', 'KG', 'LT', 'MT', 'M2', 'M3', 'CAJA', 'PAQ', 'ROLLO', 'BULTO', 'TONELADA', 'GALÓN', 'SERVICIO']
 export const CATEGORIAS_ART = [
   'Agroquimicos',
+  'Agua en Garrafón',
   'Alimento para caballos',
   'Construcción, Ferreteria y Pinturas',
   'Jardineria',
   'Limpieza y Suministros',
+  'Miscelaneos',
   'Papeleria',
   'Refacciones',
   'Servicios',
