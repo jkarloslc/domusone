@@ -8,8 +8,12 @@ import { dbCfg } from '@/lib/supabase'
 export function useTiposGasto(): string[] {
   const [tipos, setTipos] = useState<string[]>([])
   useEffect(() => {
-    dbCfg.from('tipos_gasto').select('nombre').eq('activo', true).order('orden')
-      .then(({ data }) => setTipos((data ?? []).map((r: any) => r.nombre)))
+    dbCfg.from('tipos_gasto').select('nombre').eq('activo', true)
+      .then(({ data }) => {
+        const nombres = (data ?? []).map((r: any) => r.nombre as string)
+        nombres.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+        setTipos(nombres)
+      })
   }, [])
   return tipos
 }
