@@ -835,9 +835,41 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                 return ciclo ? <PagoBadge fechaPago={ciclo.fechaPago} /> : null
               })()}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{op._provNombre ?? '—'} · {op.concepto ?? '—'}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{op._provNombre ?? '—'}</div>
           </div>
           <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+        </div>
+
+        {/* Concepto / datos de factura */}
+        <div style={{ padding: '10px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', flexWrap: 'wrap', gap: '4px 20px' }}>
+          <div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Concepto</div>
+            <div style={{ fontSize: 13 }}>{op.concepto ?? '—'}</div>
+          </div>
+          {op.folio_factura && (
+            <div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Folio Factura</div>
+              <div style={{ fontSize: 13, fontFamily: 'monospace' }}>{op.folio_factura}</div>
+            </div>
+          )}
+          {op.fecha_factura && (
+            <div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fecha Factura</div>
+              <div style={{ fontSize: 13 }}>{fmtFecha(op.fecha_factura)}</div>
+            </div>
+          )}
+          {op.subtotal != null && (
+            <div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subtotal</div>
+              <div style={{ fontSize: 13 }}>{fmt(op.subtotal)}</div>
+            </div>
+          )}
+          {op.iva != null && (
+            <div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>IVA</div>
+              <div style={{ fontSize: 13 }}>{fmt(op.iva)}</div>
+            </div>
+          )}
         </div>
 
         {/* Saldo */}

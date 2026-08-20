@@ -212,6 +212,8 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
     id_area_fk:            row?.id_area_fk?.toString() ?? '',
     id_frente_fk:          row?.id_frente_fk?.toString() ?? '',
     notas:                 row?.notas ?? '',
+    fecha_factura:         row?.fecha_factura ?? '',
+    folio_factura:         row?.folio_factura ?? '',
   })
   const [det, setDet] = useState<any[]>([{ id_articulo_fk: null, descripcion: '', cantidad: '1', unidad: 'PZA', precio_unitario: '', tasa_iva: '0' }])
   const [artSearches, setArtSearches] = useState<string[]>([''])
@@ -407,6 +409,8 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
       id_area_fk:            form.id_area_fk ? Number(form.id_area_fk) : null,
       id_frente_fk:          form.id_frente_fk ? Number(form.id_frente_fk) : null,
       notas:                 form.notas.trim() || null,
+      fecha_factura:         form.fecha_factura || null,
+      folio_factura:         form.folio_factura.trim() || null,
       subtotal, iva, total: subtotal + iva,
       status:                enviar ? 'Pendiente Auth' : 'Borrador',
     }
@@ -619,6 +623,19 @@ function OCModal({ row, onClose, onSaved }: { row: any | null; onClose: () => vo
             </div>
           </Sec>
 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label className="label">Folio Factura</label>
+              <input className="input" value={form.folio_factura}
+                onChange={e => setForm(f => ({ ...f, folio_factura: e.target.value }))} placeholder="ej. A-1024" />
+            </div>
+            <div>
+              <label className="label">Fecha Factura</label>
+              <input className="input" type="date" value={form.fecha_factura}
+                onChange={e => setForm(f => ({ ...f, fecha_factura: e.target.value }))} />
+            </div>
+          </div>
+
           <div>
             <label className="label">Notas</label>
             <textarea className="input" rows={2} value={form.notas}
@@ -723,6 +740,10 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
       id_area_fk:         oc.id_area_fk ?? null,
       id_frente_fk:       oc.id_frente_fk ?? null,
       monto:              oc.total,
+      fecha_factura:      oc.fecha_factura ?? null,
+      folio_factura:      oc.folio_factura ?? null,
+      subtotal:           oc.subtotal ?? null,
+      iva:                oc.iva ?? null,
       forma_pago:         opForm.forma_pago,
       fecha_vencimiento:  opForm.fecha_vencimiento || null,
       concepto:           opForm.concepto,
@@ -827,6 +848,8 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
         <tr><th>Centro de Costo</th><td colspan="3">${centroCostoNombre}</td></tr>
         <tr><th>Área</th><td>${areaNombre}</td><th>Frente</th><td>${frenteNombre}</td></tr>
         <tr><th>OC Relacionada</th><td colspan="3">${oc.folio}</td></tr>
+        ${(opData.folio_factura || opData.fecha_factura) ? `<tr><th>Folio Factura</th><td>${opData.folio_factura ?? '—'}</td><th>Fecha Factura</th><td>${fmtFecha(opData.fecha_factura)}</td></tr>` : ''}
+        ${(opData.subtotal != null || opData.iva != null) ? `<tr><th>Subtotal</th><td>${fmt(opData.subtotal)}</td><th>IVA</th><td>${fmt(opData.iva)}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
       ${opData.notas ? `<p style="font-size:12px;color:#64748b"><em>Notas: ${opData.notas}</em></p>` : ''}
@@ -913,6 +936,8 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
             <DI label="Condiciones de Pago" value={oc.condiciones_pago} />
             <DI label="Entrega Estimada"    value={fmtFecha(oc.fecha_entrega_est)} />
             <DI label="Almacén de Entrega"  value={oc.id_almacen_entrega_fk ? (almMap[oc.id_almacen_entrega_fk] ?? `#${oc.id_almacen_entrega_fk}`) : null} />
+            <DI label="Folio Factura"       value={oc.folio_factura} />
+            <DI label="Fecha Factura"       value={fmtFecha(oc.fecha_factura)} />
             {oc.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[oc.id_centro_costo_fk] ?? `#${oc.id_centro_costo_fk}`} />}
             {oc.id_area_fk         && <DI label="Área"            value={areaMap[oc.id_area_fk]       ?? `#${oc.id_area_fk}`} />}
             {oc.id_frente_fk       && <DI label="Frente"          value={frMap[oc.id_frente_fk]       ?? `#${oc.id_frente_fk}`} />}

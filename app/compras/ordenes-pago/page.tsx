@@ -391,6 +391,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     cuenta_clabe:      opEdit?.cuenta_clabe      ?? '',
     notas:             opEdit?.notas             ?? '',
     monto_manual:      opEdit?.monto?.toString() ?? '',
+    fecha_factura:     opEdit?.fecha_factura     ?? '',
+    folio_factura:     opEdit?.folio_factura     ?? '',
+    subtotal:          opEdit?.subtotal?.toString() ?? '',
+    iva:               opEdit?.iva?.toString()      ?? '',
     pdf_factura:       opEdit?.pdf_factura       ?? '',
     xml_factura:       opEdit?.xml_factura       ?? '',
     soporte_url:       opEdit?.soporte_url       ?? '',
@@ -401,7 +405,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     Promise.all([
       dbComp.from('proveedores').select('id, nombre, banco, cuenta_clabe, condiciones_pago').eq('activo', true).order('nombre'),
       dbComp.from('almacenes').select('id, nombre, tipo').eq('activo', true).order('nombre'),
-      dbComp.from('ordenes_compra').select('id, folio, total, id_proveedor_fk').eq('status', 'Autorizada').order('folio'),
+      dbComp.from('ordenes_compra').select('id, folio, total, id_proveedor_fk, subtotal, iva, fecha_factura, folio_factura').eq('status', 'Autorizada').order('folio'),
     ]).then(([{ data: provs }, { data: alms }, { data: ocs }]) => {
       setProvs(provs ?? [])
       setAlms(alms ?? [])
@@ -565,6 +569,16 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (!oc || ocsSelected.some(o => o.id === oc.id)) return
     setOcsSel(prev => {
       const next = [...prev, { id: oc.id, folio: oc.folio, total: oc.total, monto: oc.total?.toString() ?? '' }]
+      // Precargar datos de factura de la primera OC (informativo, editable)
+      if (next.length === 1) {
+        setForm(f => ({
+          ...f,
+          subtotal:      oc.subtotal?.toString()      ?? f.subtotal,
+          iva:           oc.iva?.toString()            ?? f.iva,
+          fecha_factura: oc.fecha_factura              ?? f.fecha_factura,
+          folio_factura: oc.folio_factura              ?? f.folio_factura,
+        }))
+      }
       // Cargar preview de CC/Área/Frente de la primera OC
       if (next.length === 1) {
         dbComp.from('ordenes_compra')
@@ -613,11 +627,18 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       ? { ...x, [field]: value, ...(field === 'id_area_fk' ? { id_frente_fk: '' } : {}) }
       : x))
   const detTotal   = detLines.reduce((a, l) => a + (Number(l.monto) || 0), 0)
+  // Combustible/Perimetrales/Mantenimiento de Vehículos: el monto se sugiere
+  // automáticamente de las selecciones (vales/lotes/bitácoras), sin desglose
+  // de factura — ahí se sigue capturando un Monto único.
+  const isVale = ['Combustible', 'Perimetrales', 'Mantenimiento de Vehículos'].includes(form.tipo_gasto)
+  const subtotalNum = Number(form.subtotal) || 0
+  const ivaNum      = Number(form.iva) || 0
+  const montoManual = (!conOC && !isVale) ? subtotalNum + ivaNum : (Number(form.monto_manual) || 0)
   const montoTotal = detLines.length > 0
     ? detTotal
     : conOC
       ? ocsSelected.reduce((a, o) => a + (Number(o.monto) || 0), 0)
-      : Number(form.monto_manual) || 0
+      : montoManual
 
   const ocsDelProv = form.id_proveedor_fk
     ? ocsDisp.filter(o => o.id_proveedor_fk === Number(form.id_proveedor_fk) && !ocsSelected.some(s => s.id === o.id))
@@ -715,6 +736,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       cuenta_clabe:      form.cuenta_clabe.trim() || null,
       notas:             form.notas.trim() || null,
       monto:             montoTotal,
+      fecha_factura:     form.fecha_factura || null,
+      folio_factura:     form.folio_factura.trim() || null,
+      subtotal:          isVale ? null : (form.subtotal ? subtotalNum : null),
+      iva:               isVale ? null : (form.iva ? ivaNum : null),
       pdf_factura:       form.pdf_factura || null,
       xml_factura:       form.xml_factura || null,
       soporte_url:       form.soporte_url || null,
@@ -1041,13 +1066,28 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                     )
                   })()}
                 </div>
-                {detLines.length === 0 && (
+                {detLines.length === 0 && isVale && (
                   <div>
                     <label className="label">Monto *</label>
                     <input className="input" type="number" step="0.01" value={form.monto_manual}
                       onChange={setF('monto_manual')} style={{ textAlign: 'right' }} />
                   </div>
                 )}
+              </div>
+            )}
+
+            {!conOC && detLines.length === 0 && !isVale && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label className="label">Subtotal *</label>
+                  <input className="input" type="number" step="0.01" value={form.subtotal}
+                    onChange={setF('subtotal')} style={{ textAlign: 'right' }} />
+                </div>
+                <div>
+                  <label className="label">IVA</label>
+                  <input className="input" type="number" step="0.01" value={form.iva}
+                    onChange={setF('iva')} style={{ textAlign: 'right' }} />
+                </div>
               </div>
             )}
 
@@ -1151,6 +1191,17 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               <label className="label">Concepto *</label>
               <input className="input" value={form.concepto} onChange={setF('concepto')}
                 placeholder={conOC ? `ej. Pago OC ${ocsSelected.map(o=>o.folio).join(', ')}` : 'ej. Servicio de mantenimiento mensual'} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label className="label">Folio Factura</label>
+                <input className="input" value={form.folio_factura} onChange={setF('folio_factura')} placeholder="ej. A-1024" />
+              </div>
+              <div>
+                <label className="label">Fecha Factura</label>
+                <input className="input" type="date" value={form.fecha_factura} onChange={setF('fecha_factura')} />
+              </div>
             </div>
 
             {/* ── Distribución por Área ── */}
@@ -1288,11 +1339,19 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
           </Sec>
 
           {/* Resumen monto */}
-          <div style={{ padding: '12px 16px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-              {conOC ? `Total de ${ocsSelected.length} OC(s)` : 'Monto'}
-            </span>
-            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(montoTotal)}</span>
+          <div style={{ padding: '12px 16px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe', borderRadius: 8 }}>
+            {!conOC && detLines.length === 0 && !isVale && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                <span>Subtotal {fmt(subtotalNum)}</span>
+                <span>IVA {fmt(ivaNum)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                {conOC ? `Total de ${ocsSelected.length} OC(s)` : 'Monto'}
+              </span>
+              <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums' }}>{fmt(montoTotal)}</span>
+            </div>
           </div>
         </div>
     </ModalShell>
@@ -1636,6 +1695,10 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
       banco_destino:        op.banco_destino,
       cuenta_clabe:         op.cuenta_clabe,
       monto:                op.monto,
+      fecha_factura:        op.fecha_factura,
+      folio_factura:        op.folio_factura,
+      subtotal:             op.subtotal,
+      iva:                  op.iva,
       id_servicio_fk:       op.id_servicio_fk,
       pdf_factura:          op.pdf_factura,
       xml_factura:          op.xml_factura,
@@ -1776,6 +1839,8 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tr><th>Centro de Costo</th><td colspan="3">${centroCostoNombre}</td></tr>
         ${detLinesView.length === 0 ? `<tr><th>Área</th><td>${areaNombre}</td><th>Frente</th><td>${frenteNombre}</td></tr>` : ''}
         ${ocsRel.length ? `<tr><th>OC(s) Relacionadas</th><td colspan="3">${ocsRel.map(r => r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`).join(', ')}</td></tr>` : ''}
+        ${(opData.folio_factura || opData.fecha_factura) ? `<tr><th>Folio Factura</th><td>${opData.folio_factura ?? '—'}</td><th>Fecha Factura</th><td>${fmtFecha(opData.fecha_factura)}</td></tr>` : ''}
+        ${(opData.subtotal != null || opData.iva != null) ? `<tr><th>Subtotal</th><td>${fmt(opData.subtotal)}</td><th>IVA</th><td>${fmt(opData.iva)}</td></tr>` : ''}
         <tr><th class="total">TOTAL A PAGAR</th><td colspan="3" class="total">${fmt(opData.monto)}</td></tr>
       </table>
       ${detLinesView.length > 0 ? `
@@ -1906,6 +1971,10 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               <DI label="Tipo de Gasto"   value={op.tipo_gasto} />
               <DI label="Almacén"         value={op._almNombre} />
               <DI label="Vencimiento"     value={fmtFecha(op.fecha_vencimiento)} />
+              <DI label="Folio Factura"   value={op.folio_factura} mono />
+              <DI label="Fecha Factura"   value={fmtFecha(op.fecha_factura)} />
+              {op.subtotal != null && <DI label="Subtotal" value={fmt(op.subtotal)} />}
+              {op.iva      != null && <DI label="IVA"      value={fmt(op.iva)} />}
               {op.urgencia && (
                 <div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Urgencia</div>
