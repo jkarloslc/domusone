@@ -571,7 +571,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
           <table>
             <thead>
               <tr>
-                <th>Folio</th><th>Concepto</th>
+                <th>Folio</th><th>Folio Factura</th><th>Concepto</th>
                 <th>Vencimiento</th><th style={{ textAlign: 'right' }}>Monto</th>
                 <th style={{ textAlign: 'right' }}>Pagado</th>
                 <th style={{ textAlign: 'right' }}>Saldo</th>
@@ -580,15 +580,16 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
               ) : opsFiltradas.length === 0 ? (
-                <tr><td colSpan={10} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Sin OPs con este status</td></tr>
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Sin OPs con este status</td></tr>
               ) : opsFiltradas.map(op => {
                 const dias = diasVencido(op.fecha_vencimiento)
                 const vencido = dias > 0 && op.status !== 'Pagada'
                 return (
                   <tr key={op.id}>
                     <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>{op.folio_factura ?? '—'}</td>
                     <td style={{ fontSize: 12, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
                     <td style={{ fontSize: 12, color: vencido ? '#dc2626' : 'var(--text-secondary)', fontWeight: vencido ? 600 : 400 }}>
                       {fmtFecha(op.fecha_vencimiento)}
