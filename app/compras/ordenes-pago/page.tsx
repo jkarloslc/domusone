@@ -1776,11 +1776,12 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                 ? 'Autorizada (1ra autorización)'
                 : 'En proceso'
     const nombreElaboro = opData.created_by ?? opData.usuario_crea ?? 'Sin registro'
-    const nombreAutorizo = opData.autorizado_finanzas_por ?? opData.autorizado_por
-      ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización'
-        : opData.status === 'Pendiente Auth Finanzas' ? 'Pendiente de segunda autorización'
-        : opData.status === 'Rechazada' ? 'Rechazada'
-        : opData.status === 'Sustituida' ? 'Sustituida' : 'Sin registro')
+    const nombreAutorizo1 = opData.autorizado_por
+      ?? (opData.status === 'Rechazada' ? 'Rechazada' : 'Pendiente de autorización')
+    const nombreAutorizo2 = opData.autorizado_finanzas_por
+      ?? (opData.status === 'Rechazada' ? 'Rechazada'
+        : opData.status === 'Sustituida' ? 'Sustituida'
+        : opData.autorizado_por ? 'Pendiente de autorización (Finanzas)' : 'Pendiente')
     // Cargar config de organización
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
@@ -1814,8 +1815,8 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         td, th { border: 1px solid #e2e8f0; padding: 8px 12px; }
         th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
         .total { background: #eff6ff; font-size: 16px; font-weight: 700; color: #0D4F80; }
-        .firmas { display: flex; gap: 60px; margin-top: 60px; }
-        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
+        .firmas { display: flex; gap: 30px; margin-top: 60px; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 150px; font-size: 11px; color: #64748b; }
         @page { margin: 1.2cm; }
       </style></head><body>
       <div class="org-header">
@@ -1898,9 +1899,14 @@ function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
           Elaboró
         </div>
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo1}</div>
           Autorizó
           ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+        </div>
+        <div class="firma">
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo2}</div>
+          Autorizó Finanzas
+          ${opData.fecha_autorizacion_finanzas ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion_finanzas).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
         </div>
         <div class="firma">Recibió</div>
       </div>

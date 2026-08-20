@@ -789,11 +789,12 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
                 ? 'Autorizada (1ra autorización)'
                 : 'En proceso'
     const nombreElaboro   = opData.created_by ?? 'Sin registro'
-    const nombreAutorizo  = opData.autorizado_finanzas_por ?? opData.autorizado_por
-      ?? (opData.status === 'Pendiente Auth' ? 'Pendiente de autorización'
-        : opData.status === 'Pendiente Auth Finanzas' ? 'Pendiente de segunda autorización'
-        : opData.status === 'Rechazada' ? 'Rechazada'
-        : opData.status === 'Sustituida' ? 'Sustituida' : 'Sin registro')
+    const nombreAutorizo1 = opData.autorizado_por
+      ?? (opData.status === 'Rechazada' ? 'Rechazada' : 'Pendiente de autorización')
+    const nombreAutorizo2 = opData.autorizado_finanzas_por
+      ?? (opData.status === 'Rechazada' ? 'Rechazada'
+        : opData.status === 'Sustituida' ? 'Sustituida'
+        : opData.autorizado_por ? 'Pendiente de autorización (Finanzas)' : 'Pendiente')
 
     let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
     try {
@@ -824,8 +825,8 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
         td, th { border: 1px solid #e2e8f0; padding: 8px 12px; }
         th { background: #f1f5f9; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; text-align: left; }
         .total { background: #eff6ff; font-size: 16px; font-weight: 700; color: #0D4F80; }
-        .firmas { display: flex; gap: 60px; margin-top: 60px; }
-        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 180px; font-size: 11px; color: #64748b; }
+        .firmas { display: flex; gap: 30px; margin-top: 60px; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 150px; font-size: 11px; color: #64748b; }
         @page { margin: 1.2cm; }
       </style></head><body>
       <div class="org-header">
@@ -859,11 +860,11 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
         </div>
         <table style="margin:0">
           <tr><th>Estatus</th><td>${estadoAut}</td></tr>
-          ${opData.autorizado_por     ? `<tr><th>Autorizado por</th><td>${opData.autorizado_por}</td></tr>` : ''}
-          ${opData.fecha_autorizacion ? `<tr><th>Fecha autorización</th><td>${new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</td></tr>` : ''}
+          ${opData.autorizado_por     ? `<tr><th>1ra Autorización</th><td>${opData.autorizado_por}${opData.fecha_autorizacion ? ' · ' + new Date(opData.fecha_autorizacion).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}) : ''}</td></tr>` : ''}
+          ${opData.autorizado_finanzas_por ? `<tr><th>2da Autorización (Finanzas)</th><td>${opData.autorizado_finanzas_por}${opData.fecha_autorizacion_finanzas ? ' · ' + new Date(opData.fecha_autorizacion_finanzas).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}) : ''}</td></tr>` : ''}
           ${opData.referencia_pago    ? `<tr><th>Ref. de Pago</th><td style="font-family:monospace">${opData.referencia_pago}</td></tr>` : ''}
           ${opData.instrucciones_pago ? `<tr><th>Instrucciones</th><td style="white-space:pre-wrap;color:#92400e;background:#fffbeb">${opData.instrucciones_pago}</td></tr>` : ''}
-          ${!opData.autorizado_por && !opData.fecha_autorizacion && !opData.referencia_pago && !opData.instrucciones_pago ? `<tr><th>Detalle</th><td>Sin datos adicionales de autorización/pago.</td></tr>` : ''}
+          ${!opData.autorizado_por && !opData.autorizado_finanzas_por && !opData.referencia_pago && !opData.instrucciones_pago ? `<tr><th>Detalle</th><td>Sin datos adicionales de autorización/pago.</td></tr>` : ''}
         </table>
       </div>
       <div class="firmas">
@@ -872,9 +873,14 @@ function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: 
           Elaboró
         </div>
         <div class="firma">
-          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo}</div>
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo1}</div>
           Autorizó
           ${opData.fecha_autorizacion ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
+        </div>
+        <div class="firma">
+          <div style="margin-bottom:2px;font-weight:600;color:#1e293b">${nombreAutorizo2}</div>
+          Autorizó Finanzas
+          ${opData.fecha_autorizacion_finanzas ? `<div style="font-size:10px;color:#64748b;margin-top:2px">${new Date(opData.fecha_autorizacion_finanzas).toLocaleDateString('es-MX',{dateStyle:'short'})}</div>` : ''}
         </div>
         <div class="firma">Recibió</div>
       </div>
