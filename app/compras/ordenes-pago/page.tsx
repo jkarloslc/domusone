@@ -446,7 +446,64 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
             setNextTempId(data.length)
           }
         })
+      // Cargar la(s) OC vinculada(s) al editar — la OC ya no está en status
+      // 'Autorizada' (se movió a 'Enviada al Prov' al generar la OP), así que
+      // no aparece en ocsDisp y nunca se restauraba en ocsSelected: el monto
+      // quedaba en $0 apenas se abría el editor.
+      if (opEdit.id_oc_fk != null) {
+        dbComp.from('ordenes_pago_oc')
+          .select('id_oc_fk, monto, ordenes_compra(folio, total, subtotal, iva, fecha_factura, folio_factura)')
+          .eq('id_op_fk', opEdit.id)
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              setOcsSel(data.map((r: any) => ({
+                id:    r.id_oc_fk,
+                folio: r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`,
+                total: r.ordenes_compra?.total ?? 0,
+                monto: r.monto?.toString() ?? '0',
+              })))
+              // Si la OP no trae su propio desglose de factura (dato legacy previo
+              // a esa columna), se rescata de la OC — ahí sí existía desde antes.
+              if (opEdit.subtotal == null && opEdit.iva == null) {
+                const oc0 = data[0].ordenes_compra as any
+                setForm(f => ({
+                  ...f,
+                  subtotal:      oc0?.subtotal?.toString()      ?? f.subtotal,
+                  iva:           oc0?.iva?.toString()            ?? f.iva,
+                  fecha_factura: f.fecha_factura || oc0?.fecha_factura || '',
+                  folio_factura: f.folio_factura || oc0?.folio_factura || '',
+                }))
+              }
+            }
+          })
+        if (opEdit.id_centro_costo_fk || opEdit.id_area_fk || opEdit.id_frente_fk) {
+          import('@/lib/supabase').then(async ({ dbCfg: cfg }) => {
+            const [{ data: ccData }, { data: secData }, { data: frData }] = await Promise.all([
+              opEdit.id_centro_costo_fk ? cfg.from('centros_costo').select('nombre').eq('id', opEdit.id_centro_costo_fk).single() : Promise.resolve({ data: null }),
+              opEdit.id_area_fk         ? cfg.from('areas').select('nombre').eq('id', opEdit.id_area_fk).single()             : Promise.resolve({ data: null }),
+              opEdit.id_frente_fk       ? cfg.from('frentes').select('nombre').eq('id', opEdit.id_frente_fk).single()        : Promise.resolve({ data: null }),
+            ])
+            setOcCCPreview({
+              cc:     (ccData as any)?.nombre  ?? '—',
+              sec:    (secData as any)?.nombre ?? '—',
+              frente: (frData as any)?.nombre  ?? '—',
+            })
+          })
+        }
+      }
     }
+  }, [])
+
+  // OP manual (sin OC) con datos legacy: si nunca se capturó Subtotal/IVA
+  // (columnas agregadas 2026-08-19) pero sí tiene Monto, se usa como punto de
+  // partida editable en vez de dejar los campos en blanco — de lo contrario,
+  // al guardar sin tocarlos, Monto se recalculaba como Subtotal(0)+IVA(0)=0.
+  useEffect(() => {
+    if (!isEdit || !opEdit) return
+    if (opEdit.id_oc_fk != null) return
+    if (opEdit.subtotal != null || opEdit.iva != null) return
+    if (opEdit.monto == null || opEdit.monto <= 0) return
+    setForm(f => (f.subtotal === '' && f.iva === '') ? { ...f, subtotal: opEdit.monto.toString(), iva: '0' } : f)
   }, [])
 
   useEffect(() => {
