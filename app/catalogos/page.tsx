@@ -13,6 +13,7 @@ import { antiguedad } from '@/lib/dateUtils'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import ModalShell from '@/components/ui/ModalShell'
 import CuotasConfigPanel from '@/components/golf/CuotasConfigPanel'
+import ClaveProdServPicker from '@/components/ui/ClaveProdServPicker'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type CatConfig = {
@@ -33,7 +34,7 @@ type CatConfig = {
 type Campo = {
   key:       string
   label:     string
-  type:      'text' | 'number' | 'textarea' | 'date' | 'select' | 'file'
+  type:      'text' | 'number' | 'textarea' | 'date' | 'select' | 'file' | 'claveSat'
   required?: boolean
   selectTabla?:   string
   selectSchema?:  'cfg' | 'comp' | 'golf'
@@ -260,6 +261,7 @@ const CATALOGOS: CatConfig[] = [
       { key: 'clave',                label: 'Clave interna',     type: 'text' },
       { key: 'id_centro_ingreso_fk', label: 'Centro de Ingreso', type: 'select',  selectTabla: 'centros_ingreso' },
       { key: 'orden',                label: 'Orden de aparición',type: 'number' },
+      { key: 'clave_prod_serv',      label: 'Clave SAT (Producto/Servicio)', type: 'claveSat', hideInTable: true },
     ],
   },
   // ── Mantenimiento ────────────────────────────────────────────
@@ -370,6 +372,7 @@ type CuotaHeader = {
   periodicidad: string | null
   descripcion: string | null
   activo: boolean
+  id_concepto_ingreso_fk: number | null
   _lineCount?: number
 }
 
@@ -393,17 +396,20 @@ function CuotasEstandarPanel() {
   const [editing, setEditing]       = useState<CuotaHeader | null>(null)
   const [saving, setSaving]         = useState(false)
   const [preciosFor, setPreciosFor] = useState<CuotaHeader | null>(null)
-  const [form, setForm] = useState({ nombre: '', periodicidad: 'Mensual', descripcion: '' })
+  const [form, setForm] = useState({ nombre: '', periodicidad: 'Mensual', descripcion: '', id_concepto_ingreso_fk: null as number | null })
+  const [conceptosIngreso, setConceptosIngreso] = useState<{ id: number; nombre: string }[]>([])
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [{ data: rows }, { data: dets }] = await Promise.all([
-      dbCfg.from('cuotas_estandar').select('id, nombre, periodicidad, descripcion, activo').order('nombre'),
+    const [{ data: rows }, { data: dets }, { data: conceptos }] = await Promise.all([
+      dbCfg.from('cuotas_estandar').select('id, nombre, periodicidad, descripcion, activo, id_concepto_ingreso_fk').order('nombre'),
       dbCfg.from('cuotas_estandar_det').select('id_cuota_fk').eq('activo', true),
+      dbCfg.from('conceptos_ingreso').select('id, nombre').order('nombre'),
     ])
     const countMap = new Map<number, number>()
     ;(dets ?? []).forEach((d: any) => countMap.set(d.id_cuota_fk, (countMap.get(d.id_cuota_fk) ?? 0) + 1))
     setCuotas((rows ?? []).map((c: any) => ({ ...c, _lineCount: countMap.get(c.id) ?? 0 })))
+    setConceptosIngreso((conceptos ?? []) as { id: number; nombre: string }[])
     setLoading(false)
   }, [])
 
@@ -411,13 +417,13 @@ function CuotasEstandarPanel() {
 
   const openNew = () => {
     setEditing(null)
-    setForm({ nombre: '', periodicidad: 'Mensual', descripcion: '' })
+    setForm({ nombre: '', periodicidad: 'Mensual', descripcion: '', id_concepto_ingreso_fk: null })
     setFormOpen(true)
   }
 
   const openEdit = (c: CuotaHeader) => {
     setEditing(c)
-    setForm({ nombre: c.nombre, periodicidad: c.periodicidad ?? 'Mensual', descripcion: c.descripcion ?? '' })
+    setForm({ nombre: c.nombre, periodicidad: c.periodicidad ?? 'Mensual', descripcion: c.descripcion ?? '', id_concepto_ingreso_fk: c.id_concepto_ingreso_fk })
     setFormOpen(true)
   }
 
@@ -428,6 +434,7 @@ function CuotasEstandarPanel() {
       nombre:       form.nombre.trim(),
       periodicidad: form.periodicidad || null,
       descripcion:  form.descripcion.trim() || null,
+      id_concepto_ingreso_fk: form.id_concepto_ingreso_fk,
     }
     if (editing) await dbCfg.from('cuotas_estandar').update(payload).eq('id', editing.id)
     else          await dbCfg.from('cuotas_estandar').insert({ ...payload, activo: true })
@@ -511,6 +518,18 @@ function CuotasEstandarPanel() {
               <input className="input" value={form.descripcion}
                 onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
                 placeholder="Descripción opcional" />
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelSt}>Concepto de Ingreso</label>
+              <select className="select" value={form.id_concepto_ingreso_fk ?? ''}
+                onChange={e => setForm(f => ({ ...f, id_concepto_ingreso_fk: e.target.value ? Number(e.target.value) : null }))}>
+                <option value="">— Sin asignar —</option>
+                {conceptosIngreso.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
+              </select>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                Clasifica el ticket POS que se genera al cobrar esta cuota (corte, distribución
+                de ingreso y clave SAT de facturación).
+              </span>
             </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
@@ -3017,6 +3036,10 @@ function CatalogoModal({ config, row, onClose, onSaved }:
                     : (selectOpts[c.key] ?? []).map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)
                   }
                 </select>
+              )}
+
+              {c.type === 'claveSat' && (
+                <ClaveProdServPicker value={form[c.key] ?? ''} onChange={v => setForm(f => ({ ...f, [c.key]: v }))} label={c.label} />
               )}
 
               {c.type === 'file' && (

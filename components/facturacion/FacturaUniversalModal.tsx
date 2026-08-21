@@ -21,7 +21,10 @@ export type ReceptorPreFill = {
 // iva: monto de IVA ya calculado por el llamador (total - importe), preferido sobre
 // recalcularlo como importe*tasa_iva — evita el doble redondeo que dejaba facturas
 // 1-2 centavos por debajo del ticket original (ej. $15,000.00 → $14,999.98).
-type Concepto = { descripcion: string; importe: number; tasa_iva?: number; iva?: number }
+// clave_prod_serv: clave SAT propia del renglón (resuelta por el llamador desde el
+// producto/concepto de ingreso de origen) — si se omite, el renglón usa el campo
+// global "Clave de Producto/Servicio" del comprobante (cfdi.clave_prod_serv).
+type Concepto = { descripcion: string; importe: number; tasa_iva?: number; iva?: number; clave_prod_serv?: string }
 
 export type FiscalOption = ReceptorPreFill & { id: number | string; alias: string }
 
@@ -218,7 +221,7 @@ export default function FacturaUniversalModal({
         return {
           cantidad:          1,
           unidad:            'E48',
-          clave_prod_serv:   cfdi.clave_prod_serv,
+          clave_prod_serv:   c.clave_prod_serv || cfdi.clave_prod_serv,
           descripcion:       c.descripcion || cfdi.descripcion,
           precio_unitario:   c.importe,
           importe:           c.importe,

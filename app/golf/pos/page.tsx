@@ -14,6 +14,7 @@ import CorteModal from './CorteModal'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 import ModalShell from '@/components/ui/ModalShell'
+import ClaveProdServPicker from '@/components/ui/ClaveProdServPicker'
 import { cancelarCFDI } from '@/lib/pacService'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
@@ -55,6 +56,7 @@ type Producto = {
   tipo: string; activo: boolean; id_centro_fk: number | null
   precio_variable: boolean
   id_concepto_ingreso_fk: number | null
+  clave_prod_serv: string | null
 }
 type ConceptoIngreso = { id: number; nombre: string; id_centro_ingreso_fk: number | null; activo: boolean }
 type FormaPago = { id: number; nombre: string; activo: boolean }
@@ -96,7 +98,7 @@ export default function POSPage() {
   // Facturación POS
   const [facturandoPOS,   setFacturandoPOS]   = useState<Venta | null>(null)
   const [receptorPOS,     setReceptorPOS]     = useState<any>({})
-  const [conceptosPOS,    setConceptosPOS]    = useState<{ descripcion: string; importe: number; iva?: number; tasa_iva?: number }[]>([])
+  const [conceptosPOS,    setConceptosPOS]    = useState<{ descripcion: string; importe: number; iva?: number; tasa_iva?: number; clave_prod_serv?: string }[]>([])
   const [genericRfcData,  setGenericRfcData]  = useState<any>(null)
   const [fiscalOptionsPOS, setFiscalOptionsPOS] = useState<any[]>([])
 
@@ -358,9 +360,24 @@ export default function POSPage() {
   const abrirFacturarPOS = async (v: Venta) => {
     // Cargar detalle de la venta y datos fiscales del socio si aplica
     const [{ data: det }, { data: pagos }] = await Promise.all([
-      dbGolf.from('ctrl_ventas_det').select('concepto, subtotal, iva, iva_pct, total').eq('id_venta_fk', v.id),
+      dbGolf.from('ctrl_ventas_det').select('concepto, subtotal, iva, iva_pct, total, id_producto_fk, id_concepto_ingreso_fk').eq('id_venta_fk', v.id),
       dbGolf.from('ctrl_ventas_pagos').select('forma_nombre').eq('id_venta_fk', v.id).limit(1),
     ])
+    // Clave de Producto/Servicio SAT por línea: se resuelve vía id_producto_fk
+    // (cat_productos_pos, ventas nativas del POS) o id_concepto_ingreso_fk
+    // (conceptos_ingreso, cuotas/renta de Golf, Hípico, Locales, Residencial) —
+    // ver migración 20260821120000_clave_prod_serv_sat.sql. Si ninguna resuelve,
+    // el renglón cae al campo global de la factura (FacturaUniversalModal).
+    const detArr = (det ?? []) as { concepto: string; subtotal: number; iva: number; iva_pct: number; total: number; id_producto_fk: number | null; id_concepto_ingreso_fk: number | null }[]
+    const idsProducto = Array.from(new Set(detArr.map(d => d.id_producto_fk).filter((x): x is number => x != null)))
+    const idsConcepto = Array.from(new Set(detArr.map(d => d.id_concepto_ingreso_fk).filter((x): x is number => x != null)))
+    const [{ data: prodClaves }, { data: conceptoClaves }] = await Promise.all([
+      idsProducto.length ? dbGolf.from('cat_productos_pos').select('id, clave_prod_serv').in('id', idsProducto) : Promise.resolve({ data: [] as any[] }),
+      idsConcepto.length ? dbCfg.from('conceptos_ingreso').select('id, clave_prod_serv').in('id', idsConcepto) : Promise.resolve({ data: [] as any[] }),
+    ])
+    const mapaProducto = new Map((prodClaves ?? []).map((p: any) => [p.id, p.clave_prod_serv as string | null]))
+    const mapaConcepto = new Map((conceptoClaves ?? []).map((c: any) => [c.id, c.clave_prod_serv as string | null]))
+
     // Para el CFDI: importe = subtotal (base sin IVA); iva = el monto YA calculado al
     // vender (total - subtotal, ver calcLinea en NuevaVentaModal) — se pasa tal cual en
     // vez de recalcularlo como importe*tasa_iva, que por doble redondeo puede dejar la
@@ -369,13 +386,16 @@ export default function POSPage() {
     // Nota: se incluyen también líneas con total negativo (p.ej. "Descuento adicional" de un
     // cobro de cuotas con varios conceptos) — excluirlas dejaría la factura por un monto mayor
     // al realmente cobrado en el ticket POS.
-    const conceptos = ((det ?? []) as { concepto: string; subtotal: number; iva: number; iva_pct: number; total: number }[])
+    const conceptos = detArr
       .filter(d => d.total !== 0)
       .map(d => ({
         descripcion: d.concepto,
         importe:     d.subtotal,                                          // base sin IVA
         iva:         d.iva,                                               // monto de IVA ya reconciliado con el total
         tasa_iva:    d.iva !== 0 && d.iva_pct > 0 ? d.iva_pct / 100 : 0,  // 0.16 ó 0
+        clave_prod_serv: (d.id_producto_fk != null ? mapaProducto.get(d.id_producto_fk) : null)
+          ?? (d.id_concepto_ingreso_fk != null ? mapaConcepto.get(d.id_concepto_ingreso_fk) : null)
+          ?? undefined,
       }))
     setConceptosPOS(conceptos.length ? conceptos : [{ descripcion: `Venta POS #${v.folio_dia}`, importe: v.total, iva: 0, tasa_iva: 0 }])
 
@@ -1029,6 +1049,7 @@ ${facturasCorte.length > 0 ? `
       activo:          editingProd.activo ?? true,
       id_centro_fk:    editingProd.id_centro_fk ?? null,
       id_concepto_ingreso_fk: editingProd.id_concepto_ingreso_fk ?? null,
+      clave_prod_serv: editingProd.clave_prod_serv || null,
     }
     if (editingProd.id) {
       await dbGolf.from('cat_productos_pos').update(payload).eq('id', editingProd.id)
@@ -1943,6 +1964,11 @@ ${facturasCorte.length > 0 ? `
                           })
                           .map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
                       </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', marginBottom: 3, display: 'block' }}>Clave SAT (Producto/Servicio)</label>
+                      <ClaveProdServPicker value={editingProd.clave_prod_serv ?? ''}
+                        onChange={clave => setEditingProd(p => ({ ...p, clave_prod_serv: clave || null }))} />
                     </div>
                   </div>
                   {!editingProd.id_concepto_ingreso_fk && (

@@ -401,10 +401,35 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       }) ?? centrosPos[0]
 
       const { data: detDB } = await dbCtrl.from('recibos_detalle')
-        .select('concepto, cantidad, precio_unitario, descuento, subtotal, total, periodo_mes, periodo_anio')
+        .select('concepto, cantidad, precio_unitario, descuento, subtotal, total, periodo_mes, periodo_anio, id_cargo_fk, id_cuota_lote_fk')
         .eq('id_recibo_fk', exito.id)
-      const detList = ((detDB ?? []) as { concepto: string; cantidad: number; precio_unitario: number; descuento: number; subtotal: number; total: number; periodo_mes: string | null; periodo_anio: number | null }[])
+      const detList = ((detDB ?? []) as { concepto: string; cantidad: number; precio_unitario: number; descuento: number; subtotal: number; total: number; periodo_mes: string | null; periodo_anio: number | null; id_cargo_fk: number | null; id_cuota_lote_fk: number | null }[])
       if (!detList.length) throw new Error('El recibo no tiene detalle.')
+
+      // Clasifica cada línea a su Concepto de Ingreso (para distribución del corte
+      // y clave SAT de facturación) siguiendo la misma cadena que ya usa el resto
+      // del módulo de cuotas: cargo/cuota_lote → cuotas_estandar.id_concepto_ingreso_fk.
+      // Se prefiere id_cargo_fk (más directo); id_cuota_lote_fk queda como respaldo.
+      const idsCargo = Array.from(new Set(detList.map(d => d.id_cargo_fk).filter((x): x is number => x != null)))
+      const idsCuotaLote = Array.from(new Set(detList.map(d => d.id_cuota_lote_fk).filter((x): x is number => x != null)))
+      const [{ data: cargosDB }, { data: cuotasLoteDB }] = await Promise.all([
+        idsCargo.length ? dbCtrl.from('cargos').select('id, id_cuota_estandar_fk').in('id', idsCargo) : Promise.resolve({ data: [] as any[] }),
+        idsCuotaLote.length ? dbCtrl.from('cuotas_lotes').select('id, id_cuota_estandar_fk').in('id', idsCuotaLote) : Promise.resolve({ data: [] as any[] }),
+      ])
+      const mapaCargoCuota = new Map((cargosDB ?? []).map((c: any) => [c.id, c.id_cuota_estandar_fk as number | null]))
+      const mapaCuotaLoteCuota = new Map((cuotasLoteDB ?? []).map((c: any) => [c.id, c.id_cuota_estandar_fk as number | null]))
+      const idsCuotaEstandar = Array.from(new Set(Array.from(mapaCargoCuota.values()).concat(Array.from(mapaCuotaLoteCuota.values())).filter((x): x is number => x != null)))
+      const { data: cuotasEstandarDB } = idsCuotaEstandar.length
+        ? await dbCfg.from('cuotas_estandar').select('id, id_concepto_ingreso_fk').in('id', idsCuotaEstandar)
+        : { data: [] as any[] }
+      const mapaCuotaConcepto = new Map((cuotasEstandarDB ?? []).map((c: any) => [c.id, c.id_concepto_ingreso_fk as number | null]))
+
+      const conceptoPorLinea = (d: typeof detList[number]): number | null => {
+        const idCuotaEstandar = (d.id_cargo_fk != null ? mapaCargoCuota.get(d.id_cargo_fk) : null)
+          ?? (d.id_cuota_lote_fk != null ? mapaCuotaLoteCuota.get(d.id_cuota_lote_fk) : null)
+          ?? null
+        return idCuotaEstandar != null ? (mapaCuotaConcepto.get(idCuotaEstandar) ?? null) : null
+      }
 
       let ventaId = rf.id_venta_pos_fk
       let folioDia = 0
@@ -428,7 +453,7 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
         const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detList.map(d => ({
-          id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: null,
+          id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: conceptoPorLinea(d),
           concepto: d.concepto, cantidad: d.cantidad, precio_unitario: d.precio_unitario,
           descuento: d.descuento ?? 0, iva_pct: 0, iva: 0, subtotal: d.total, total: d.total,
           notas: d.periodo_mes ? `${d.periodo_mes} ${d.periodo_anio ?? ''}`.trim() : null,
