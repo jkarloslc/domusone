@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp } from '@/lib/supabase'
-import { Loader, RefreshCw, Wallet, Info, Layers, List, Trash2, Save } from 'lucide-react'
+import { Loader, RefreshCw, Wallet, Info, Layers, List, Trash2, Save, Building2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { useAuth } from '@/lib/AuthContext'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
@@ -117,7 +117,7 @@ export default function FlujoEfectivoPage() {
   // Filtros
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
-  const [vista, setVista] = useState<'detalle' | 'agrupado'>('detalle')
+  const [vista, setVista] = useState<'detalle' | 'concepto' | 'agrupado'>('detalle')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
   // Modal añadir/editar real manual (partidas adicionales de flujo, financiamiento, etc.)
@@ -488,6 +488,32 @@ export default function FlujoEfectivoPage() {
       .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
   }
 
+  // Agrupa filas por concepto (tipo_gasto) dentro de un mismo Centro de Costo —
+  // nivel intermedio entre Detalle (partida × área) y Agrupado (agrupador
+  // general). Partidas sin tipo_gasto (ingreso por sección/concepto/manual)
+  // no tienen "concepto" que compartir con nadie más, así que quedan como
+  // grupos de 1 (misma fila que en Detalle).
+  function agruparPorConcepto(rows: FilaPartida[]): FilaGrupo[] {
+    const map = new Map<string, { nombre: string; pptoVal: number; realVal: number; partidas: FilaPartida[] }>()
+    rows.forEach(r => {
+      const key = r.tipo_gasto ? `${r.id_centro_costo_fk ?? 0}-${r.tipo_gasto}` : `p-${r.id}`
+      if (!map.has(key)) {
+        map.set(key, { nombre: r.tipo_gasto ?? r.nombre, pptoVal: 0, realVal: 0, partidas: [] })
+      }
+      const g = map.get(key)!
+      g.pptoVal += r.pptoVal
+      g.realVal += r.realVal
+      g.partidas.push(r)
+    })
+    return Array.from(map.entries())
+      .map(([id, g]) => {
+        const varAbs = g.realVal - g.pptoVal
+        const varPct = g.pptoVal > 0 ? Math.round(((g.realVal - g.pptoVal) / g.pptoVal) * 100) : null
+        return { id: `co-${id}`, nombre: g.nombre, orden: 0, pptoVal: g.pptoVal, realVal: g.realVal, varAbs, varPct, partidas: g.partidas }
+      })
+      .sort((a, b) => a.nombre.localeCompare(b.nombre))
+  }
+
   const CLASIFICACIONES: Clasificacion[] = ['operativo', 'financiero', 'intercompanias']
 
   function handleManual(pid: number) {
@@ -596,10 +622,11 @@ export default function FlujoEfectivoPage() {
           ))}
         </div>
 
-        {/* Vista: Detalle / Agrupado */}
+        {/* Vista: Detalle / Concepto (CC) / Agrupado */}
         <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {([
             { v: 'detalle',  label: 'Detalle',  icon: List },
+            { v: 'concepto', label: 'Concepto', icon: Building2 },
             { v: 'agrupado', label: 'Agrupado', icon: Layers },
           ] as const).map(({ v, label, icon: Icon }) => (
             <button key={v} onClick={() => setVista(v)}
@@ -643,6 +670,7 @@ export default function FlujoEfectivoPage() {
                   <SeccionClasificacion key={clas}
                     labels={CLASIFICACION_LABELS[clas]}
                     ingRows={ing} egrRows={egr}
+                    ingRowsConcepto={agruparPorConcepto(ing)} egrRowsConcepto={agruparPorConcepto(egr)}
                     ingRowsAgrupado={agrupar(ing)} egrRowsAgrupado={agrupar(egr)}
                     vista={vista} canWriteManual={canWrite('presupuestos')}
                     onManual={handleManual} onDrill={handleDrill} onDrillOps={handleDrillOps}
@@ -910,17 +938,20 @@ function totalSeccionRows(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
   return rows.reduce((s, r) => s + r[field], 0)
 }
 
-function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, onManual, onDrill, onDrillOps }: {
+function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRowsConcepto, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, onManual, onDrill, onDrillOps }: {
   labels: { ingresos: string; egresos: string; balance: string }
   ingRows: FilaPartida[]; egrRows: FilaPartida[]
+  ingRowsConcepto: FilaGrupo[]; egrRowsConcepto: FilaGrupo[]
   ingRowsAgrupado: FilaGrupo[]; egrRowsAgrupado: FilaGrupo[]
-  vista: 'detalle' | 'agrupado'
+  vista: 'detalle' | 'concepto' | 'agrupado'
   canWriteManual: boolean
   onManual: (pid: number) => void
   onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: FilaPartida[]) => void
   onDrillOps: (p: FilaPartida) => void
 }) {
   if (ingRows.length === 0 && egrRows.length === 0) return null
+  const ingGrupo = vista === 'concepto' ? ingRowsConcepto : ingRowsAgrupado
+  const egrGrupo = vista === 'concepto' ? egrRowsConcepto : egrRowsAgrupado
   return (
     <>
       {ingRows.length > 0 && (
@@ -963,7 +994,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsAgrupado, egrRo
                 )}
               </td>
             </tr>
-          )) : ingRowsAgrupado.map((g, i) => (
+          )) : ingGrupo.map((g, i) => (
             <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
               <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
@@ -1032,7 +1063,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsAgrupado, egrRo
                 )}
               </td>
             </tr>
-          )) : egrRowsAgrupado.map((g, i) => (
+          )) : egrGrupo.map((g, i) => (
             <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
               <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
