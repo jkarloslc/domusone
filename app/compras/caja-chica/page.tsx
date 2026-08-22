@@ -81,8 +81,8 @@ export default function CajaChicaPage() {
           </div>
         </div>
         <div className="page-header-actions">
-          {(misFondos.length > 0 || isAdmin) && fondos.length > 0 && (
-            <button className="btn-primary" onClick={() => setRemModal({ open: true, fondo: misFondos[0] ?? fondos[0] })}>
+          {misFondos.length > 0 && (
+            <button className="btn-primary" onClick={() => setRemModal({ open: true, fondo: misFondos[0] })}>
               <Plus size={13} /> Nuevo Reembolso
             </button>
           )}
