@@ -74,15 +74,21 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
 
       // 2a. Buscar proveedor-empleado existente
       const { data: provRows, error: findErr } = await dbComp.from('proveedores')
-        .select('id').eq('clave', claveEmp).limit(1)
+        .select('id, nombre').eq('clave', claveEmp).limit(1)
 
       if (!findErr && provRows && provRows.length > 0) {
         idProvFk = provRows[0].id
+        // Re-sincroniza el nombre con el usuario real (cfg.usuarios es la fuente de verdad;
+        // evita que un nombre editado/corrompido a mano en Proveedores quede pegado para siempre)
+        if (provRows[0].nombre !== usuarioNombre) {
+          await dbComp.from('proveedores').update({ nombre: usuarioNombre }).eq('id', idProvFk)
+        }
       } else {
         // 2b. Crear proveedor-empleado
         const { data: provNew, error: provErr } = await dbComp.from('proveedores').insert({
           clave:  claveEmp,
           nombre: usuarioNombre,
+          interno: true,
           activo: true,
         }).select('id').single()
 
