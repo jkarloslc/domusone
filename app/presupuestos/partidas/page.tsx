@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { useTiposGasto } from '@/lib/useTiposGasto'
-import { Plus, Edit2, Loader, Save, ChevronRight, BookOpen, Copy, Tag, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, Edit2, Loader, Save, ChevronRight, BookOpen, Copy, Tag, Trash2, ToggleLeft, ToggleRight, Search } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -116,6 +116,7 @@ export default function PartidasPage() {
   const [form, setForm]               = useState<Omit<Partida, 'id'>>(EMPTY)
   const [saving, setSaving]           = useState(false)
   const [errorMsg, setErrorMsg]       = useState<string | null>(null)
+  const [filterNombre, setFilterNombre] = useState('')
   const [filterTipo, setFilterTipo]   = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterModulo, setFilterModulo] = useState('')
   const [filterAgrupador, setFilterAgrupador] = useState('')
@@ -291,6 +292,7 @@ export default function PartidasPage() {
   const agMap   = Object.fromEntries(agrupadores.map(a => [a.id, a.nombre]))
 
   const rows     = partidas
+    .filter(p => !filterNombre || p.nombre.toLowerCase().includes(filterNombre.trim().toLowerCase()))
     .filter(p => !filterTipo   || p.tipo   === filterTipo)
     .filter(p => !filterModulo || (p.modulo ?? 'General') === filterModulo)
     .filter(p => !filterClasificacion || (p.clasificacion ?? 'operativo') === filterClasificacion)
@@ -319,6 +321,13 @@ export default function PartidasPage() {
           <p className="page-subtitle">Define las partidas y su fuente de datos real automático</p>
         </div>
         <div className="page-header-actions">
+          {/* Filtro nombre */}
+          <div style={{ position: 'relative', flex: '0 0 auto' }}>
+            <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <input className="input" placeholder="Buscar por nombre…"
+              value={filterNombre} onChange={e => setFilterNombre(e.target.value)}
+              style={{ fontSize: 12, padding: '5px 8px 5px 26px', width: 160 }} />
+          </div>
           {/* Filtro módulo */}
           <select className="input" style={{ fontSize: 12, padding: '5px 8px', width: 130, flex: '0 0 auto' }}
             value={filterModulo} onChange={e => setFilterModulo(e.target.value)}>
