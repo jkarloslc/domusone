@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbComp } from '@/lib/supabase'
+import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import { useAuth } from '@/lib/AuthContext'
@@ -33,6 +33,11 @@ type DetalleTransaccion = {
   tipo_gasto?: string | null; descripcion?: string | null
 }
 type DetMapTx = Record<number, DetalleTransaccion[]>
+type CentroIng    = { id: number; nombre: string; tipo_desglose: string }
+type SeccionF     = { id: number; nombre: string }
+type ConceptoF    = { id: number; nombre: string; id_centro_ingreso_fk: number | null }
+type CentroCostoF = { id: number; nombre: string }
+type AreaF        = { id: number; nombre: string; id_centro_costo_fk: number }
 
 const CLASIFICACION_LABELS: Record<Clasificacion, { ingresos: string; egresos: string; balance: string }> = {
   operativo:      { ingresos: 'Ingresos',                 egresos: 'Egresos',                 balance: 'Balance Operativo' },
@@ -47,6 +52,17 @@ const fmt = (n: number) =>
 
 const fmtFecha = (f: string) =>
   new Date(f + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+
+// Filtro por CC/Sección/Área — mismo estilo visual que /dashboards/financiero
+const ING = { border: '#bbf7d0', bg: '#f0fdf4', text: '#15803d' }
+const EGR = { border: '#fecaca', bg: '#fef2f2', text: '#dc2626' }
+const selStyle = (active: boolean, color: { border: string; bg: string; text: string }, width: number): React.CSSProperties => ({
+  fontSize: 11, padding: '4px 8px', borderRadius: 6, width,
+  border: `1px solid ${color.border}`,
+  background: active ? color.bg : '#f8fafc',
+  color: active ? color.text : 'var(--text-secondary)',
+  cursor: 'pointer',
+})
 
 function pctBar(real: number, ppto: number) {
   if (ppto <= 0) return null
@@ -120,6 +136,18 @@ export default function ComparativoPage() {
   const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [drillOps, setDrillOps] = useState<{ partida: string; tipo: 'ingreso' | 'egreso'; conOp: boolean; rows: DetalleTransaccion[] } | null>(null)
+
+  // Catálogos para filtro por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que /dashboards/financiero
+  const [centrosIng, setCentrosIng]     = useState<CentroIng[]>([])
+  const [seccionesF, setSeccionesF]     = useState<SeccionF[]>([])
+  const [conceptosF, setConceptosF]     = useState<ConceptoF[]>([])
+  const [centrosCostoF, setCentrosCostoF] = useState<CentroCostoF[]>([])
+  const [areasF, setAreasF]             = useState<AreaF[]>([])
+  const [filtroCentroIng, setFiltroCentroIng] = useState('')
+  const [filtroSeccion,   setFiltroSeccion]   = useState('')
+  const [filtroConcepto,  setFiltroConcepto]  = useState('')
+  const [filtroCC,   setFiltroCC]   = useState('')
+  const [filtroArea, setFiltroArea] = useState('')
 
   // Filtros
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
@@ -340,6 +368,16 @@ export default function ComparativoPage() {
       .then(({ data }) => setAgrupadores((data ?? []) as Agrupador[]))
     dbComp.from('proveedores').select('id, nombre').order('nombre')
       .then(({ data }) => setProveedores((data ?? []) as Proveedor[]))
+    dbCfg.from('centros_ingreso').select('id, nombre, tipo_desglose').order('nombre')
+      .then(({ data }) => setCentrosIng((data ?? []) as CentroIng[]))
+    dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setSeccionesF((data ?? []) as SeccionF[]))
+    dbCfg.from('conceptos_ingreso').select('id, nombre, id_centro_ingreso_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setConceptosF((data ?? []) as ConceptoF[]))
+    dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre')
+      .then(({ data }) => setCentrosCostoF((data ?? []) as CentroCostoF[]))
+    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setAreasF((data ?? []) as AreaF[]))
   }, [loadEverything])
 
   const selPpto = presupuestos.find(p => p.id === selId)
@@ -348,7 +386,19 @@ export default function ComparativoPage() {
     setSelId(id)
     const p = presupuestos.find(x => x.id === id)
     if (p) loadEverything(p.id, p.anio, p.modulo, true)
+    setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('')
+    setFiltroCC(''); setFiltroArea('')
   }
+
+  const centroIngSel = centrosIng.find(c => String(c.id) === filtroCentroIng)
+  const esSecciones  = centroIngSel?.tipo_desglose === 'secciones'
+  const esConceptos  = centroIngSel?.tipo_desglose === 'conceptos'
+  const conceptosOpts = filtroCentroIng
+    ? conceptosF.filter(c => c.id_centro_ingreso_fk === Number(filtroCentroIng) || c.id_centro_ingreso_fk === null)
+    : conceptosF
+  const areasFFiltradas = filtroCC ? areasF.filter(a => a.id_centro_costo_fk === Number(filtroCC)) : areasF
+  const hayFiltroIng = !!(filtroCentroIng || filtroSeccion || filtroConcepto)
+  const hayFiltroEgr = !!(filtroCC || filtroArea)
 
   // Carga los registros de real manual ya capturados para una partida
   const loadManualEntries = useCallback(async (pid: number) => {
@@ -415,6 +465,19 @@ export default function ComparativoPage() {
   // ── Datos de tabla ──────────────────────────────────────────────
   const filas: FilaPartida[] = partidas
     .filter(p => !filterTipo || p.tipo === filterTipo)
+    // Filtro por Centro de Ingreso/Sección/Concepto (ingresos) o Centro de
+    // Costo/Área (egresos) — mismo modelo que /dashboards/financiero.
+    .filter(p => {
+      if (p.tipo === 'ingreso') {
+        if (filtroCentroIng && p.id_centro_ingreso_fk !== Number(filtroCentroIng)) return false
+        if (filtroSeccion && p.id_seccion_fk !== Number(filtroSeccion)) return false
+        if (filtroConcepto && p.id_concepto_fk !== Number(filtroConcepto)) return false
+      } else {
+        if (filtroCC && p.id_centro_costo_fk !== Number(filtroCC)) return false
+        if (filtroArea && p.id_area_fk !== Number(filtroArea)) return false
+      }
+      return true
+    })
     .map(p => {
       const pptoVal = pptoPartida(p.id)
       const realVal = realPartida(p.id)
@@ -605,6 +668,78 @@ export default function ComparativoPage() {
               <Icon size={12} /> {label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Filtros por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que Dashboard Financiero */}
+      <div style={{ display: 'flex', gap: 14, marginBottom: 18, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+            textTransform: 'uppercase', color: '#059669', paddingLeft: 2 }}>
+            Ingresos
+          </span>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <select value={filtroCentroIng}
+              onChange={e => { setFiltroCentroIng(e.target.value); setFiltroSeccion(''); setFiltroConcepto('') }}
+              style={selStyle(!!filtroCentroIng, ING, 148)}>
+              <option value="">Todos los centros</option>
+              {centrosIng.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+            {esSecciones && (
+              <select value={filtroSeccion} onChange={e => setFiltroSeccion(e.target.value)}
+                style={selStyle(!!filtroSeccion, ING, 130)}>
+                <option value="">Todas las secciones</option>
+                {seccionesF.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              </select>
+            )}
+            {esConceptos && conceptosOpts.length > 0 && (
+              <select value={filtroConcepto} onChange={e => setFiltroConcepto(e.target.value)}
+                style={selStyle(!!filtroConcepto, ING, 140)}>
+                <option value="">Todos los conceptos</option>
+                {conceptosOpts.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            )}
+            {hayFiltroIng && (
+              <button onClick={() => { setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
+                title="Limpiar filtro ingresos"
+                style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #bbf7d0',
+                  background: '#f0fdf4', color: '#16a34a', cursor: 'pointer', fontSize: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+            textTransform: 'uppercase', color: '#dc2626', paddingLeft: 2 }}>
+            Egresos
+          </span>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            <select value={filtroCC}
+              onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}
+              style={selStyle(!!filtroCC, EGR, 148)}>
+              <option value="">Todos los CC</option>
+              {centrosCostoF.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+            {filtroCC && (
+              <select value={filtroArea} onChange={e => setFiltroArea(e.target.value)}
+                style={selStyle(!!filtroArea, EGR, 130)}>
+                <option value="">Todas las áreas</option>
+                {areasFFiltradas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              </select>
+            )}
+            {hayFiltroEgr && (
+              <button onClick={() => { setFiltroCC(''); setFiltroArea('') }}
+                title="Limpiar filtro egresos"
+                style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #fecaca',
+                  background: '#fef2f2', color: '#dc2626', cursor: 'pointer', fontSize: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
