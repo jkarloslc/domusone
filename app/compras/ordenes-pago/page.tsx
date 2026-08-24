@@ -230,6 +230,7 @@ export default function OrdenesPagoPage() {
 
       {/* Tabla */}
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -317,6 +318,7 @@ export default function OrdenesPagoPage() {
             )
           })()}
         </table>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Mostrar</span>
