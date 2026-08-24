@@ -74,12 +74,26 @@ export default function OrdenesPagoPage() {
   const fetchData = useCallback(async () => {
     if (rolRestricciones === null) return
     setLoading(true)
+
+    // OP con distribución por área (ordenes_pago_det) quedan con id_area_fk null
+    // en el encabezado — sin esto el filtro de Área las excluye por completo.
+    let idsDistribuidos: number[] = []
+    if (filterArea) {
+      const { data: detRows } = await dbComp.from('ordenes_pago_det')
+        .select('id_op_fk').eq('id_area_fk', Number(filterArea))
+      idsDistribuidos = Array.from(new Set((detRows ?? []).map((d: any) => d.id_op_fk)))
+    }
+
     let q = dbComp.from('ordenes_pago').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(page * pageSize, page * pageSize + pageSize - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
-    if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
+    if (filterArea) {
+      q = idsDistribuidos.length > 0
+        ? q.or(`id_area_fk.eq.${Number(filterArea)},id.in.(${idsDistribuidos.join(',')})`)
+        : q.eq('id_area_fk', Number(filterArea))
+    }
     if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
     if (filterTipoGasto) q = q.eq('tipo_gasto', filterTipoGasto)
     if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
