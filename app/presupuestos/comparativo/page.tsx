@@ -11,7 +11,7 @@ import { prorratearDescuento } from '@/lib/prorateoDescuento'
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
 type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type Partida     = {
-  id: number; nombre: string; tipo: 'ingreso' | 'egreso'; orden: number
+  id: number; nombre: string; descripcion: string | null; tipo: 'ingreso' | 'egreso'; orden: number
   fuente_real:          string | null
   id_centro_ingreso_fk: number | null
   id_centro_costo_fk:   number | null
@@ -171,7 +171,7 @@ export default function ComparativoPage() {
     if (!silent) setLoading(true); else setRefreshing(true)
 
     let partidasQ = dbCtrl.from('ppto_partidas')
-      .select('id, nombre, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion')
+      .select('id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion')
       .eq('activo', true)
       .eq('incluir_presupuesto', true)
     if (modulo) partidasQ = (partidasQ as any).eq('modulo', modulo)
@@ -1067,7 +1067,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
           {vista === 'detalle' ? ingRows.map((p, i) => (
             <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span></td>
+              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>{p.descripcion && <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{p.descripcion}</span>}</td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
                 {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
@@ -1136,7 +1136,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
           {vista === 'detalle' ? egrRows.map((p, i) => (
             <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span></td>
+              <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>{p.descripcion && <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{p.descripcion}</span>}</td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
                 {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
