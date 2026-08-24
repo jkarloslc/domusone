@@ -25,6 +25,12 @@ const URGENCIA_COLOR: Record<string, string> = {
   'Media':   '#2563eb',
   'Baja':    '#64748b',
 }
+const URGENCIA_BADGE: Record<string, { color: string; bg: string; border: string }> = {
+  'Crítica': { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+  'Alta':    { color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  'Media':   { color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+  'Baja':    { color: '#64748b', bg: '#f8fafc', border: '#e2e8f0' },
+}
 
 // Mismos colores que app/equipo-flota/CombustibleTab.tsx (VALE_STATUS_STYLE)
 const VALE_STATUS_COLOR: Record<string, { color: string; bg: string; border: string }> = {
@@ -237,7 +243,7 @@ export default function OrdenesPagoPage() {
               <th style={{ width: 110 }}>Folio</th>
               <th>Proveedor</th>
               <th>Concepto / Tipo</th>
-              <th style={{ width: 100 }}>Vencimiento</th>
+              <th style={{ width: 90 }}>Urgencia</th>
               <th style={{ textAlign: 'right', width: 110 }}>Monto</th>
               <th style={{ whiteSpace: 'nowrap' }}>Status</th>
               <th style={{ width: 60 }}></th>
@@ -273,10 +279,14 @@ export default function OrdenesPagoPage() {
                   {r.tipo_gasto && <span style={{ fontSize: 10, marginLeft: 6, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span>}
                   {r.id_centro_costo_fk && !r.id_area_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#7c3aed', background: '#f5f3ff', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
                 </td>
-                <td style={{ fontSize: 12, whiteSpace: 'nowrap',
-                  color: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? '#dc2626' : 'var(--text-secondary)',
-                  fontWeight: r.fecha_vencimiento && new Date(r.fecha_vencimiento) < new Date() && r.status === 'Pendiente' ? 600 : 400 }}>
-                  {fmtFecha(r.fecha_vencimiento)}
+                <td style={{ whiteSpace: 'nowrap' }}>
+                  {r.urgencia ? (
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                      background: URGENCIA_BADGE[r.urgencia]?.bg, color: URGENCIA_BADGE[r.urgencia]?.color,
+                      border: `1px solid ${URGENCIA_BADGE[r.urgencia]?.border}` }}>
+                      {r.urgencia}
+                    </span>
+                  ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                 </td>
                 <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>{fmt(r.monto)}</td>
                 <td style={{ whiteSpace: 'nowrap' }}><StatusBadge status={r.status} /></td>
