@@ -3,7 +3,7 @@ import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
-import { CATEGORIAS_ART } from '../compras/types'
+import { useCategoriasArticulo } from '@/lib/useCategoriasArticulo'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
@@ -53,6 +53,7 @@ type CatBucket = {
 type Tab = 'jerarquico' | 'matriz'
 
 export default function ReporteOPsPorClasificacionArticulos() {
+  const CATEGORIAS_ART = useCategoriasArticulo()
   const [opsConOC, setOpsConOC]     = useState<OP[]>([])
   const [opsCat, setOpsCat]         = useState<OPCat[]>([])
   const [centrosCosto, setCentros]  = useState<{ id: number; nombre: string }[]>([])

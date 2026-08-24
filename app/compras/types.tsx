@@ -83,18 +83,8 @@ export const PRIORIDAD_COLOR: Record<string, string> = {
 }
 
 export const UNIDADES = ['PZA', 'KG', 'LT', 'MT', 'M2', 'M3', 'CAJA', 'PAQ', 'ROLLO', 'BULTO', 'TONELADA', 'GALÓN', 'SERVICIO']
-export const CATEGORIAS_ART = [
-  'Agroquimicos',
-  'Agua en Garrafón',
-  'Alimento para caballos',
-  'Construcción, Ferreteria y Pinturas',
-  'Jardineria',
-  'Limpieza y Suministros',
-  'Miscelaneos',
-  'Papeleria',
-  'Refacciones',
-  'Servicios',
-]
+// Categorías de artículo: ver lib/useCategoriasArticulo.ts (cfg.tipos_gasto
+// con es_articulo=true) — ya no es un array hardcodeado aquí.
 export const FORMAS_PAGO_COMP = ['Transferencia', 'Cheque', 'Efectivo', 'Tarjeta', 'Crédito 30 días', 'Crédito 60 días', 'Crédito 90 días']
 export const CONDICIONES_PAGO_PROV = ['Contado', 'Crédito 30 días', 'Crédito 60 días', 'Crédito 90 días']
 

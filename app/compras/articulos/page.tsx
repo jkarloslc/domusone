@@ -8,7 +8,8 @@ import {
   Package, ArrowLeft, AlertTriangle, Filter
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { type Articulo, fmt, UNIDADES, CATEGORIAS_ART, nextFolio } from '../types'
+import { type Articulo, fmt, UNIDADES, nextFolio } from '../types'
+import { useCategoriasArticulo } from '@/lib/useCategoriasArticulo'
 import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZE = 50
@@ -16,6 +17,7 @@ const PAGE_SIZE = 50
 export default function ArticulosPage() {
   const { canWrite, canDelete } = useAuth()
   const router = useRouter()
+  const CATEGORIAS_ART = useCategoriasArticulo()
   const [rows, setRows]         = useState<Articulo[]>([])
   const [inventario, setInv]    = useState<Record<number, number>>({})  // articuloId → saldo total
   const [total, setTotal]       = useState(0)
@@ -241,6 +243,7 @@ export default function ArticulosPage() {
 // Modal
 // ════════════════════════════════════════════════════════════
 function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClose: () => void; onSaved: () => void }) {
+  const CATEGORIAS_ART = useCategoriasArticulo()
   const isNew = !row
   const [saving, setSaving] = useState(false)
   const [loadingClave, setLoadingClave] = useState(false)
