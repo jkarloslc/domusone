@@ -6,6 +6,8 @@ import ModalShell from '@/components/ui/ModalShell'
 import { useAuth } from '@/lib/AuthContext'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { prorratearDescuento } from '@/lib/prorateoDescuento'
+import { OPDetail } from '@/components/compras/OPDetailModal'
+import { useRouter } from 'next/navigation'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -31,6 +33,7 @@ type DetalleTransaccion = {
   fecha: string; monto: number
   folio?: string | null; id_proveedor_fk?: number | null
   tipo_gasto?: string | null; descripcion?: string | null
+  id_op_fk?: number | null
 }
 type DetMapTx = Record<number, DetalleTransaccion[]>
 type CentroIng    = { id: number; nombre: string; tipo_desglose: string }
@@ -124,6 +127,7 @@ function MontoDrillButton({ monto, onClick, fmt }: { monto: number; onClick: () 
 // ── Página ────────────────────────────────────────────────────────────────────
 export default function ComparativoPage() {
   const { canWrite } = useAuth()
+  const router = useRouter()
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([])
   const [selId, setSelId]               = useState<number | null>(null)
   const [loading, setLoading]           = useState(true)
@@ -136,6 +140,16 @@ export default function ComparativoPage() {
   const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [drillOps, setDrillOps] = useState<{ partida: string; tipo: 'ingreso' | 'egreso'; conOp: boolean; rows: DetalleTransaccion[] } | null>(null)
+  const [opDetalle, setOpDetalle]   = useState<any | null>(null)
+  const [opLoading,  setOpLoading]  = useState(false)
+
+  const abrirOP = async (id: number) => {
+    setOpLoading(true)
+    const { data, error } = await dbComp.from('ordenes_pago').select('*').eq('id', id).single()
+    setOpLoading(false)
+    if (error || !data) { alert('No se pudo cargar la orden de pago.'); return }
+    setOpDetalle({ ...data, _provNombre: proveedores.find(p => p.id === data.id_proveedor_fk)?.nombre })
+  }
 
   // Catálogos para filtro por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que /dashboards/financiero
   const [centrosIng, setCentrosIng]     = useState<CentroIng[]>([])
@@ -234,7 +248,7 @@ export default function ComparativoPage() {
       // arriba — hay que sumar cada línea por su propia área.
       areaIds.length > 0
         ? (dbComp.from('ordenes_pago_det') as any)
-            .select('id_area_fk, monto, ordenes_pago!inner(tipo_gasto, fecha_op, status, id_area_fk, folio, concepto, id_proveedor_fk)')
+            .select('id_area_fk, monto, ordenes_pago!inner(id, tipo_gasto, fecha_op, status, id_area_fk, folio, concepto, id_proveedor_fk)')
             .in('id_area_fk', areaIds)
             .is('ordenes_pago.id_area_fk', null)
             .gte('ordenes_pago.fecha_op', `${anio}-01-01`)
@@ -243,6 +257,7 @@ export default function ComparativoPage() {
         : Promise.resolve({ data: [] }),
     ])
     const opsDistribuidas = (opsDetData ?? []).map((r: any) => ({
+      id:         r.ordenes_pago.id,
       id_area_fk: r.id_area_fk,
       tipo_gasto: r.ordenes_pago.tipo_gasto,
       fecha_op:   r.ordenes_pago.fecha_op,
@@ -268,7 +283,7 @@ export default function ComparativoPage() {
       if (!shares) return
       prorratearDescuento(shares, s => s.fraction, 1, Number(op.monto)).forEach(({ item, montoNeto }) => {
         opsCategoria.push({
-          id_area_fk: op.id_area_fk, tipo_gasto: item.categoria,
+          id: op.id, id_area_fk: op.id_area_fk, tipo_gasto: item.categoria,
           fecha_op: op.fecha_op, status: op.status, monto: montoNeto,
           folio: op.folio, concepto: op.concepto, id_proveedor_fk: op.id_proveedor_fk,
         })
@@ -337,6 +352,7 @@ export default function ComparativoPage() {
           rd[p.id].push({
             fecha: op.fecha_op, monto: Number(op.monto), folio: op.folio,
             id_proveedor_fk: op.id_proveedor_fk, tipo_gasto: op.tipo_gasto, descripcion: op.concepto,
+            id_op_fk: op.id,
           })
         })
     })
@@ -1001,7 +1017,15 @@ export default function ComparativoPage() {
                     <tr key={i} style={{ borderBottom: '1px solid #f1f5f9',
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={td}>{fmtFecha(r.fecha)}</td>
-                      <td style={{ ...td, fontWeight: 600, color: '#1e293b' }}>{r.folio ?? '—'}</td>
+                      <td style={{ ...td, fontWeight: 600, color: r.id_op_fk ? '#2563eb' : '#1e293b' }}>
+                        {r.id_op_fk ? (
+                          <button onClick={() => abrirOP(r.id_op_fk!)} disabled={opLoading}
+                            style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontWeight: 600,
+                              fontFamily: 'inherit', fontSize: 'inherit', cursor: opLoading ? 'default' : 'pointer', textDecoration: 'underline' }}>
+                            {r.folio ?? '—'}
+                          </button>
+                        ) : (r.folio ?? '—')}
+                      </td>
                       <td style={{ ...td, color: '#475569' }}>
                         {drillOps.conOp ? (r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? `#${r.id_proveedor_fk}`) : (r.descripcion ?? '—')) : (r.descripcion ?? '—')}
                       </td>
@@ -1026,6 +1050,16 @@ export default function ComparativoPage() {
             </div>
           )}
         </ModalShell>
+      )}
+
+      {opDetalle && (
+        <OPDetail
+          op={opDetalle}
+          onClose={() => setOpDetalle(null)}
+          onCanceled={() => { setOpDetalle(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
+          onAuthorized={() => { setOpDetalle(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
+          onEdit={() => router.push('/compras/ordenes-pago')}
+        />
       )}
     </div>
   )

@@ -6,6 +6,8 @@ import ModalShell from '@/components/ui/ModalShell'
 import { useAuth } from '@/lib/AuthContext'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { prorratearDescuento } from '@/lib/prorateoDescuento'
+import { OPDetail } from '@/components/compras/OPDetailModal'
+import { useRouter } from 'next/navigation'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -31,6 +33,7 @@ type DetalleTransaccion = {
   fecha: string; monto: number
   folio?: string | null; id_proveedor_fk?: number | null
   tipo_gasto?: string | null; descripcion?: string | null
+  id_op_fk?: number | null
 }
 type DetMapTx = Record<number, DetalleTransaccion[]>
 type CentroIng    = { id: number; nombre: string; tipo_desglose: string }
@@ -117,6 +120,7 @@ function MontoDrillButton({ monto, onClick, fmt }: { monto: number; onClick: () 
 // ── Página ────────────────────────────────────────────────────────────────────
 export default function FlujoEfectivoPage() {
   const { canWrite } = useAuth()
+  const router = useRouter()
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([])
   const [selId, setSelId]               = useState<number | null>(null)
   const [loading, setLoading]           = useState(true)
@@ -129,6 +133,16 @@ export default function FlujoEfectivoPage() {
   const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
   const [drillOps, setDrillOps] = useState<{ partida: string; tipo: 'ingreso' | 'egreso'; conOp: boolean; rows: DetalleTransaccion[] } | null>(null)
+  const [opDetalle, setOpDetalle] = useState<any | null>(null)
+  const [opLoading, setOpLoading] = useState(false)
+
+  const abrirOP = async (id: number) => {
+    setOpLoading(true)
+    const { data, error } = await dbComp.from('ordenes_pago').select('*').eq('id', id).single()
+    setOpLoading(false)
+    if (error || !data) { alert('No se pudo cargar la orden de pago.'); return }
+    setOpDetalle({ ...data, _provNombre: proveedores.find(p => p.id === data.id_proveedor_fk)?.nombre })
+  }
 
   // Catálogos para filtro por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que /dashboards/financiero
   const [centrosIng, setCentrosIng]     = useState<CentroIng[]>([])
@@ -254,6 +268,7 @@ export default function FlujoEfectivoPage() {
             .map((d: any) => ({
               monto: Number(a.monto) * (Number(d.monto) / montoOP),
               fecha_abono: a.fecha_abono,
+              id_op_fk: a.id_op_fk,
               ordenes_pago: {
                 id_area_fk: d.id_area_fk, tipo_gasto: a.ordenes_pago.tipo_gasto, status: a.ordenes_pago.status,
                 folio: a.ordenes_pago.folio, concepto: a.ordenes_pago.concepto, id_proveedor_fk: a.ordenes_pago.id_proveedor_fk,
@@ -286,6 +301,7 @@ export default function FlujoEfectivoPage() {
       prorratearDescuento(shares, s => s.fraction, 1, Number(a.monto)).forEach(({ item, montoNeto }) => {
         abonosCategoria.push({
           monto: montoNeto, fecha_abono: a.fecha_abono,
+          id_op_fk: a.id_op_fk,
           ordenes_pago: {
             id_area_fk: a.ordenes_pago.id_area_fk, tipo_gasto: item.categoria, status: a.ordenes_pago.status,
             folio: a.ordenes_pago.folio, concepto: a.ordenes_pago.concepto, id_proveedor_fk: a.ordenes_pago.id_proveedor_fk,
@@ -359,6 +375,7 @@ export default function FlujoEfectivoPage() {
           rd[p.id].push({
             fecha: a.fecha_abono, monto: Number(a.monto), folio: a.ordenes_pago.folio,
             id_proveedor_fk: a.ordenes_pago.id_proveedor_fk, tipo_gasto: a.ordenes_pago.tipo_gasto, descripcion: a.ordenes_pago.concepto,
+            id_op_fk: a.id_op_fk,
           })
         })
     })
@@ -1038,7 +1055,15 @@ export default function FlujoEfectivoPage() {
                     <tr key={i} style={{ borderBottom: '1px solid #f1f5f9',
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={td}>{fmtFecha(r.fecha)}</td>
-                      <td style={{ ...td, fontWeight: 600, color: '#1e293b' }}>{r.folio ?? '—'}</td>
+                      <td style={{ ...td, fontWeight: 600, color: r.id_op_fk ? '#2563eb' : '#1e293b' }}>
+                        {r.id_op_fk ? (
+                          <button onClick={() => abrirOP(r.id_op_fk!)} disabled={opLoading}
+                            style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontWeight: 600,
+                              fontFamily: 'inherit', fontSize: 'inherit', cursor: opLoading ? 'default' : 'pointer', textDecoration: 'underline' }}>
+                            {r.folio ?? '—'}
+                          </button>
+                        ) : (r.folio ?? '—')}
+                      </td>
                       <td style={{ ...td, color: '#475569' }}>
                         {drillOps.conOp ? (r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? `#${r.id_proveedor_fk}`) : (r.descripcion ?? '—')) : (r.descripcion ?? '—')}
                       </td>
@@ -1063,6 +1088,16 @@ export default function FlujoEfectivoPage() {
             </div>
           )}
         </ModalShell>
+      )}
+
+      {opDetalle && (
+        <OPDetail
+          op={opDetalle}
+          onClose={() => setOpDetalle(null)}
+          onCanceled={() => { setOpDetalle(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
+          onAuthorized={() => { setOpDetalle(null); selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true) }}
+          onEdit={() => router.push('/compras/ordenes-pago')}
+        />
       )}
     </div>
   )
