@@ -3,8 +3,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { recomputeValeCombustible } from '@/lib/combustible'
+import ModalShell from '@/components/ui/ModalShell'
 import {
-  Plus, X, Save, Loader, RefreshCw, Eye, Edit2,
+  Plus, X, Save, Loader, RefreshCw, Eye, Edit2, Printer,
   Fuel, Droplets, FileText, Search, Upload, CheckCircle, AlertTriangle
 } from 'lucide-react'
 
@@ -47,6 +48,139 @@ const fmtL = (n: number | null | undefined) =>
 const fmtF = (d: string | null) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
+// ── Imprimir vale de combustible (compartido por modal y detalle) ──
+async function imprimirVale(
+  vale: any,
+  areaMap: Record<number, string>,
+  areaCCMap: Record<number, string>,
+  equipoMap: Record<number, string>,
+) {
+  const { data: cargas } = await dbCtrl.from('cargas_combustible')
+    .select('*')
+    .eq('id_vale_fk', vale.id).eq('activo', true)
+    .order('fecha', { ascending: false })
+
+  let orgNombre = 'Organización'
+  let orgSubtitulo = ''
+  let orgLogo = ''
+  const { data: cfgRows } = await dbCfg.from('configuracion')
+    .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+  ;(cfgRows ?? []).forEach((r: any) => {
+    if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+    if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+    if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+  })
+  const logoHtml = orgLogo
+    ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+    : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+
+  const pct = vale.litros_autorizados > 0 ? (vale.litros_usados / vale.litros_autorizados) * 100 : 0
+
+  const filasCargas = (cargas ?? []).map((c: any) => `
+    <tr>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px">${fmtF(c.fecha)}</td>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px">${c.tipo_carga ?? ''}</td>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:12px">${c.id_equipo_fk ? (equipoMap[c.id_equipo_fk] ?? '—') : '—'}</td>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:12px;font-weight:600">${fmtL(c.litros)}</td>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:12px">${c.precio_unitario ? `$${Number(c.precio_unitario).toFixed(4)}` : '—'}</td>
+      <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-size:12px;font-weight:700;color:#059669">${fmt$(c.monto_total)}</td>
+    </tr>`
+  ).join('')
+
+  const html = `<!DOCTYPE html><html><head><title>Vale ${vale.folio ?? ''}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
+      .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #7c3aed; margin-bottom: 18px; }
+      .org-nombre { font-size: 18px; font-weight: 700; color: #4c1d95; margin: 0 0 2px; }
+      .org-sub { font-size: 11px; color: #64748b; }
+      .doc-title { font-size: 14px; font-weight: 600; color: #4c1d95; margin-bottom: 2px; }
+      .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 18px; }
+      .info-item label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 2px; }
+      .info-item span { font-size: 13px; color: #1e293b; }
+      .progreso { margin: 14px 0 18px; }
+      .progreso-bar { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+      .progreso-fill { height: 100%; background: ${pct >= 100 ? '#dc2626' : pct >= 80 ? '#d97706' : '#10b981'}; width: ${Math.min(pct, 100)}%; }
+      table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+      thead th { background: #f1f5f9; padding: 8px 10px; font-size: 10px; text-transform: uppercase;
+        letter-spacing: 0.05em; text-align: left; border: 1px solid #e2e8f0; color: #64748b; }
+      .firmas { display: flex; gap: 40px; margin-top: 64px; justify-content: space-around; }
+      .firma { text-align: center; min-width: 160px; }
+      .firma-linea { border-top: 1px solid #1e293b; padding-top: 8px; margin-top: 48px; font-size: 11px; color: #64748b; }
+      .firma-nombre { font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+      .nota { font-size: 11px; color: #94a3b8; font-style: italic; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+      @page { margin: 1.2cm; }
+    </style></head><body>
+    <div class="org-header">
+      ${logoHtml}
+      <div>
+        <div class="org-nombre">${orgNombre}</div>
+        ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div class="doc-title">Vale de Combustible</div>
+        <div style="font-size:16px;font-weight:700;color:#4c1d95;font-family:monospace">${vale.folio ?? 'Borrador'}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px">Status: <strong>${vale.status ?? '—'}</strong> &nbsp;·&nbsp; ${vale.tipo_suministro ?? ''}</div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item"><label>Solicitante</label><span>${vale.solicitante ?? '—'}</span></div>
+      <div class="info-item"><label>Área</label><span>${areaMap[vale.id_area_fk] ?? '—'}</span></div>
+      <div class="info-item"><label>Centro de Costo</label><span>${areaCCMap[vale.id_area_fk] ?? '—'}</span></div>
+      <div class="info-item"><label>Periodo</label><span>${vale.periodo ?? '—'}</span></div>
+      <div class="info-item"><label>Vigencia</label><span>${fmtF(vale.vigencia)}</span></div>
+      <div class="info-item"><label>Litros Autorizados</label><span>${fmtL(vale.litros_autorizados)}</span></div>
+      <div class="info-item"><label>Litros Usados</label><span>${fmtL(vale.litros_usados)}</span></div>
+      <div class="info-item"><label>Monto Autorizado</label><span>${fmt$(vale.monto_autorizado)}</span></div>
+      <div class="info-item"><label>Emitido por</label><span>${vale.emitido_por ?? '—'}</span></div>
+      ${vale.id_op_fk ? `<div class="info-item"><label>OP Vinculada</label><span>OP #${vale.id_op_fk}</span></div>` : ''}
+      ${vale.notas ? `<div class="info-item" style="grid-column:span 2"><label>Notas</label><span>${vale.notas}</span></div>` : ''}
+    </div>
+
+    <div class="progreso">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:4px">
+        <span>Consumo del vale</span><span>${pct.toFixed(1)}%</span>
+      </div>
+      <div class="progreso-bar"><div class="progreso-fill"></div></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Fecha</th><th>Tipo</th><th>Equipo</th><th style="text-align:right">Litros</th><th style="text-align:right">Precio/L</th><th style="text-align:right">Total</th></tr>
+      </thead>
+      <tbody>${filasCargas || '<tr><td colspan="6" style="padding:14px;text-align:center;color:#94a3b8;border:1px solid #e2e8f0;font-size:12px">Sin cargas registradas</td></tr>'}</tbody>
+    </table>
+
+    <div class="firmas">
+      <div class="firma">
+        <div class="firma-nombre">${vale.solicitante ?? ''}</div>
+        <div class="firma-linea">Solicitó</div>
+      </div>
+      <div class="firma">
+        <div class="firma-nombre">${vale.emitido_por ?? ''}</div>
+        <div class="firma-linea">Emitió (Tesorería)</div>
+      </div>
+      <div class="firma">
+        <div class="firma-nombre"></div>
+        <div class="firma-linea">Recibió</div>
+      </div>
+    </div>
+    <div class="nota">Este documento es un formato de control interno de vale de combustible.</div>
+    </body></html>`
+
+  const iframe = document.createElement('iframe')
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+  document.body.appendChild(iframe)
+  iframe.contentDocument!.open()
+  iframe.contentDocument!.write(html)
+  iframe.contentDocument!.close()
+  setTimeout(() => {
+    iframe.contentWindow!.focus()
+    iframe.contentWindow!.print()
+    setTimeout(() => document.body.removeChild(iframe), 2000)
+  }, 300)
+}
+
 // ══════════════════════════════════════════════════════════════
 export default function CombustibleTab() {
   const { canWrite, authUser } = useAuth()
@@ -74,18 +208,23 @@ export default function CombustibleTab() {
   const [areas,    setAreas]    = useState<any[]>([])
   const [areaMap,  setAreaMap]  = useState<Record<number, string>>({})
   const [equipoMap,setEquipoMap]= useState<Record<number, string>>({})
+  const [areaCCMap,setAreaCCMap]= useState<Record<number, string>>({})
 
   const fetchCatalogos = useCallback(async () => {
-    const [{ data: eqs }, { data: ars }] = await Promise.all([
+    const [{ data: eqs }, { data: ars }, { data: ccs }] = await Promise.all([
       dbCfg.from('equipos').select('id, nombre, placa, unidad_odometro').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
     ])
     setEquipos(eqs ?? [])
     setAreas(ars ?? [])
     const am: Record<number, string> = {}; (ars ?? []).forEach((a: any) => { am[a.id] = a.nombre })
     const em: Record<number, string> = {}; (eqs ?? []).forEach((e: any) => { em[e.id] = e.nombre })
+    const ccm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { ccm[c.id] = c.nombre })
+    const acm: Record<number, string> = {}; (ars ?? []).forEach((a: any) => { if (a.id_centro_costo_fk) acm[a.id] = ccm[a.id_centro_costo_fk] ?? '' })
     setAreaMap(am)
     setEquipoMap(em)
+    setAreaCCMap(acm)
   }, [])
 
   const fetchVales = useCallback(async () => {
@@ -338,7 +477,7 @@ export default function CombustibleTab() {
       {/* Modales */}
       {modalV.open && (
         <ValeModal
-          vale={modalV.vale} areas={areas}
+          vale={modalV.vale} areas={areas} areaMap={areaMap} areaCCMap={areaCCMap} equipoMap={equipoMap}
           onClose={() => setModalV({ open: false })}
           onSaved={() => { setModalV({ open: false }); fetchVales() }}
         />
@@ -351,7 +490,7 @@ export default function CombustibleTab() {
         />
       )}
       {detailV && (
-        <ValeDetail vale={detailV} areaMap={areaMap} equipoMap={equipoMap} onClose={() => setDetailV(null)} />
+        <ValeDetail vale={detailV} areaMap={areaMap} areaCCMap={areaCCMap} equipoMap={equipoMap} onClose={() => setDetailV(null)} />
       )}
     </div>
   )
@@ -360,13 +499,15 @@ export default function CombustibleTab() {
 // ══════════════════════════════════════════════════════════════
 // Modal: Crear / Editar Vale
 // ══════════════════════════════════════════════════════════════
-function ValeModal({ vale, areas, onClose, onSaved }: {
-  vale?: any; areas: any[]; onClose: () => void; onSaved: () => void
+function ValeModal({ vale, areas, areaMap, areaCCMap, equipoMap, onClose, onSaved }: {
+  vale?: any; areas: any[]; areaMap: Record<number, string>; areaCCMap: Record<number, string>; equipoMap: Record<number, string>
+  onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
   const [uploading, setUploading] = useState(false)
+  const [printing, setPrinting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const isNew = !vale?.folio
@@ -374,6 +515,7 @@ function ValeModal({ vale, areas, onClose, onSaved }: {
 
   const [form, setForm] = useState({
     tipo_suministro:    vale?.tipo_suministro    ?? 'Gasolinería',
+    solicitante:        vale?.solicitante         ?? (authUser?.nombre ?? ''),
     id_area_fk:         vale?.id_area_fk?.toString()   ?? '',
     periodo:            vale?.periodo            ?? '',
     litros_autorizados: vale?.litros_autorizados?.toString() ?? '',
@@ -399,6 +541,7 @@ function ValeModal({ vale, areas, onClose, onSaved }: {
 
   const buildPayload = () => ({
     tipo_suministro:   form.tipo_suministro,
+    solicitante:       form.solicitante.trim() || null,
     id_area_fk:        Number(form.id_area_fk),
     periodo:           form.periodo.trim() || null,
     litros_autorizados:Number(form.litros_autorizados),
@@ -410,6 +553,7 @@ function ValeModal({ vale, areas, onClose, onSaved }: {
   })
 
   const validar = () => {
+    if (!form.solicitante.trim())  { setError('El solicitante es obligatorio'); return false }
     if (!form.id_area_fk)          { setError('El área es obligatoria'); return false }
     if (!form.litros_autorizados)  { setError('Los litros son obligatorios'); return false }
     return true
@@ -470,115 +614,121 @@ function ValeModal({ vale, areas, onClose, onSaved }: {
   const status = vale?.status ?? 'Solicitado'
   const soloLectura = ['Completado', 'Cancelado'].includes(status)
 
+  const handleImprimir = async () => {
+    setPrinting(true)
+    try { await imprimirVale(vale, areaMap, areaCCMap, equipoMap) }
+    finally { setPrinting(false) }
+  }
+
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 540 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600 }}>
-              {isNew ? 'Solicitar Vale de Combustible' : 'Editar Vale'}
-            </h2>
-            {!isNew && <Badge text={status} map={VALE_STATUS_STYLE} />}
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-        </div>
-        <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
-          {soloLectura && (
-            <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, color: 'var(--text-muted)', fontSize: 12 }}>
-              Este vale está {status.toLowerCase()} y ya no se puede modificar.
-            </div>
+    <ModalShell modulo="mantenimiento" icono={Fuel}
+      titulo={isNew ? 'Solicitar Vale de Combustible' : `Editar Vale ${vale?.folio ?? ''}`}
+      subtitulo={!isNew ? status : undefined}
+      onClose={onClose} maxWidth={560}
+      footer={<>
+        <div style={{ marginRight: 'auto', display: 'flex', gap: 8 }}>
+          {!isNew && !soloLectura && (
+            <button className="btn-ghost" onClick={handleCancelar} disabled={saving}
+              style={{ fontSize: 12, color: '#dc2626' }}>
+              Cancelar Vale
+            </button>
           )}
-
-          <fieldset disabled={soloLectura} style={{ border: 'none', padding: 0, margin: 0, display: 'contents' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <div>
-              <label className="label" style={{ fontSize: 11 }}>Tipo de Suministro *</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.tipo_suministro} onChange={setF('tipo_suministro')}>
-                {TIPOS_SUMINISTRO.map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label" style={{ fontSize: 11 }}>Área *</label>
-              <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk} onChange={setF('id_area_fk')}>
-                <option value="">— Seleccionar —</option>
-                {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label" style={{ fontSize: 11 }}>Periodo</label>
-              <input className="input" style={{ fontSize: 12 }} placeholder="ej. Abril 2026" value={form.periodo} onChange={setF('periodo')} />
-            </div>
-            <div>
-              <label className="label" style={{ fontSize: 11 }}>Vigencia</label>
-              <input className="input" type="date" style={{ fontSize: 12 }} value={form.vigencia} onChange={setF('vigencia')} />
-            </div>
-            <div>
-              <label className="label" style={{ fontSize: 11 }}>{status === 'Solicitado' ? 'Litros Solicitados *' : 'Litros Autorizados *'}</label>
-              <input className="input" type="number" step="0.01" style={{ fontSize: 12 }} value={form.litros_autorizados} onChange={setF('litros_autorizados')} placeholder="0.00" />
-            </div>
-            <div>
-              <label className="label" style={{ fontSize: 11 }}>Monto Autorizado ($)</label>
-              <input className="input" type="number" step="0.01" style={{ fontSize: 12 }} value={form.monto_autorizado} onChange={setF('monto_autorizado')} placeholder="0.00" />
-            </div>
-          </div>
-
-          {!isNew && vale?.id_op_fk && (
-            <div style={{ padding: '6px 10px', background: '#eff6ff', borderRadius: 6, fontSize: 11, color: 'var(--blue)' }}>
-              Vinculado a la OP #{vale.id_op_fk} — se emitirá automáticamente cuando esa OP se pague.
-            </div>
+          {!isNew && (
+            <button className="btn-secondary" onClick={handleImprimir} disabled={printing} style={{ fontSize: 12 }}>
+              {printing ? <Loader size={12} className="animate-spin" /> : <Printer size={12} />} Imprimir
+            </button>
           )}
-
-          {/* Documento del vale */}
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
-            <label className="label" style={{ fontSize: 11 }}>Documento del Vale (PDF / imagen)</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-              {form.comprobante_url && (
-                <a href={form.comprobante_url} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 11, color: 'var(--blue)', textDecoration: 'underline' }}>Ver documento actual</a>
-              )}
-              <button className="btn-secondary" style={{ fontSize: 11 }} onClick={() => fileRef.current?.click()} disabled={uploading}>
-                {uploading ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
-                {uploading ? 'Subiendo…' : form.comprobante_url ? 'Reemplazar' : 'Subir documento'}
-              </button>
-              <input ref={fileRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleUpload} />
-            </div>
-          </div>
-
-          <div>
-            <label className="label" style={{ fontSize: 11 }}>Notas</label>
-            <textarea className="input" rows={2} style={{ fontSize: 12, resize: 'vertical' }} value={form.notas} onChange={setF('notas')} />
-          </div>
-          </fieldset>
         </div>
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-          <div>
-            {!isNew && !soloLectura && (
-              <button className="btn-ghost" onClick={handleCancelar} disabled={saving}
-                style={{ fontSize: 12, color: '#dc2626' }}>
-                Cancelar Vale
-              </button>
-            )}
+        <button className="btn-secondary" onClick={onClose} style={{ fontSize: 12 }}>Cerrar</button>
+        {!soloLectura && (
+          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: 12 }}>
+            {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button>
+        )}
+        {!isNew && status === 'Solicitado' && puedeEmitir && (
+          <button className="btn-primary" onClick={handleEmitir} disabled={saving}
+            style={{ fontSize: 12, background: '#15803d' }}>
+            {saving ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+            {saving ? 'Emitiendo…' : 'Emitir Vale'}
+          </button>
+        )}
+      </>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+        {soloLectura && (
+          <div style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, color: 'var(--text-muted)', fontSize: 12 }}>
+            Este vale está {status.toLowerCase()} y ya no se puede modificar.
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-secondary" onClick={onClose} style={{ fontSize: 12 }}>Cerrar</button>
-            {!soloLectura && (
-              <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize: 12 }}>
-                {saving ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
-                {saving ? 'Guardando…' : 'Guardar'}
-              </button>
-            )}
-            {!isNew && status === 'Solicitado' && puedeEmitir && (
-              <button className="btn-primary" onClick={handleEmitir} disabled={saving}
-                style={{ fontSize: 12, background: '#15803d' }}>
-                {saving ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                {saving ? 'Emitiendo…' : 'Emitir Vale'}
-              </button>
-            )}
+        )}
+
+        <fieldset disabled={soloLectura} style={{ border: 'none', padding: 0, margin: 0, display: 'contents' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Tipo de Suministro *</label>
+            <select className="select" style={{ fontSize: 12 }} value={form.tipo_suministro} onChange={setF('tipo_suministro')}>
+              {TIPOS_SUMINISTRO.map(t => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Solicitante *</label>
+            <input className="input" style={{ fontSize: 12 }} value={form.solicitante} onChange={setF('solicitante')} placeholder="Nombre de quien solicita" />
+          </div>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Área *</label>
+            <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk} onChange={setF('id_area_fk')}>
+              <option value="">— Seleccionar —</option>
+              {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Periodo</label>
+            <input className="input" style={{ fontSize: 12 }} placeholder="ej. Abril 2026" value={form.periodo} onChange={setF('periodo')} />
+          </div>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Vigencia</label>
+            <input className="input" type="date" style={{ fontSize: 12 }} value={form.vigencia} onChange={setF('vigencia')} />
+          </div>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>{status === 'Solicitado' ? 'Litros Solicitados *' : 'Litros Autorizados *'}</label>
+            <input className="input" type="number" step="0.01" style={{ fontSize: 12 }} value={form.litros_autorizados} onChange={setF('litros_autorizados')} placeholder="0.00" />
+          </div>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Monto Autorizado ($)</label>
+            <input className="input" type="number" step="0.01" style={{ fontSize: 12 }} value={form.monto_autorizado} onChange={setF('monto_autorizado')} placeholder="0.00" />
           </div>
         </div>
+
+        {!isNew && vale?.id_op_fk && (
+          <div style={{ padding: '6px 10px', background: '#eff6ff', borderRadius: 6, fontSize: 11, color: 'var(--blue)' }}>
+            Vinculado a la OP #{vale.id_op_fk} — se emitirá automáticamente cuando esa OP se pague.
+          </div>
+        )}
+
+        {/* Documento del vale */}
+        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+          <label className="label" style={{ fontSize: 11 }}>Documento del Vale (PDF / imagen)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+            {form.comprobante_url && (
+              <a href={form.comprobante_url} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 11, color: 'var(--blue)', textDecoration: 'underline' }}>Ver documento actual</a>
+            )}
+            <button className="btn-secondary" style={{ fontSize: 11 }} onClick={() => fileRef.current?.click()} disabled={uploading}>
+              {uploading ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+              {uploading ? 'Subiendo…' : form.comprobante_url ? 'Reemplazar' : 'Subir documento'}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleUpload} />
+          </div>
+        </div>
+
+        <div>
+          <label className="label" style={{ fontSize: 11 }}>Notas</label>
+          <textarea className="input" rows={2} style={{ fontSize: 12, resize: 'vertical' }} value={form.notas} onChange={setF('notas')} />
+        </div>
+        </fieldset>
       </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -797,11 +947,12 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
 // ══════════════════════════════════════════════════════════════
 // Detail: Vale
 // ══════════════════════════════════════════════════════════════
-function ValeDetail({ vale, areaMap, equipoMap, onClose }: {
-  vale: any; areaMap: Record<number, string>; equipoMap: Record<number, string>; onClose: () => void
+function ValeDetail({ vale, areaMap, areaCCMap, equipoMap, onClose }: {
+  vale: any; areaMap: Record<number, string>; areaCCMap: Record<number, string>; equipoMap: Record<number, string>; onClose: () => void
 }) {
   const [cargas, setCargas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [printing, setPrinting] = useState(false)
 
   useEffect(() => {
     // Sin embed de `equipos` — cross-schema (ctrl → cfg), se resuelve con equipoMap.
@@ -818,81 +969,90 @@ function ValeDetail({ vale, areaMap, equipoMap, onClose }: {
 
   const pct = vale.litros_autorizados > 0 ? (vale.litros_usados / vale.litros_autorizados) * 100 : 0
 
+  const handleImprimir = async () => {
+    setPrinting(true)
+    try { await imprimirVale(vale, areaMap, areaCCMap, equipoMap) }
+    finally { setPrinting(false) }
+  }
+
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 520 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, margin: 0 }}>{vale.folio}</h2>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{vale.tipo_suministro}{vale.periodo ? ` · ${vale.periodo}` : ''}</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Badge text={vale.status} map={VALE_STATUS_STYLE} />
-            <button className="btn-ghost" onClick={onClose}><X size={14} /></button>
-          </div>
+    <ModalShell modulo="mantenimiento" icono={FileText}
+      titulo={vale.folio}
+      subtitulo={`${vale.tipo_suministro}${vale.periodo ? ` · ${vale.periodo}` : ''}`}
+      onClose={onClose} maxWidth={540}
+      footer={<>
+        <button className="btn-secondary" onClick={handleImprimir} disabled={printing} style={{ fontSize: 12 }}>
+          {printing ? <Loader size={12} className="animate-spin" /> : <Printer size={12} />} Imprimir
+        </button>
+        <button className="btn-primary" onClick={onClose} style={{ fontSize: 12 }}>Cerrar</button>
+      </>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Badge text={vale.status} map={VALE_STATUS_STYLE} />
         </div>
-        <div style={{ padding: '16px 20px', overflowY: 'auto', maxHeight: 'calc(90vh - 110px)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Progreso litros */}
-          <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>Litros usados</span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtL(vale.litros_usados)} / {fmtL(vale.litros_autorizados)}</span>
-            </div>
-            <div style={{ height: 10, background: '#e2e8f0', borderRadius: 5 }}>
-              <div style={{ height: '100%', borderRadius: 5, width: `${Math.min(pct, 100)}%`,
-                background: pct >= 100 ? '#dc2626' : pct >= 80 ? '#d97706' : '#10b981',
-                transition: 'width 0.3s' }} />
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>{pct.toFixed(1)}%</div>
+        {/* Progreso litros */}
+        <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600 }}>Litros usados</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtL(vale.litros_usados)} / {fmtL(vale.litros_autorizados)}</span>
           </div>
+          <div style={{ height: 10, background: '#e2e8f0', borderRadius: 5 }}>
+            <div style={{ height: '100%', borderRadius: 5, width: `${Math.min(pct, 100)}%`,
+              background: pct >= 100 ? '#dc2626' : pct >= 80 ? '#d97706' : '#10b981',
+              transition: 'width 0.3s' }} />
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'right' }}>{pct.toFixed(1)}%</div>
+        </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {[
-              { label: 'Área',       value: areaMap[vale.id_area_fk] },
-              { label: 'Monto auth.', value: fmt$(vale.monto_autorizado) },
-              { label: 'Vigencia',   value: fmtF(vale.vigencia) },
-              { label: 'Emitido por',value: vale.emitido_por },
-              { label: 'OP vinculada',value: vale.id_op_fk ? `OP #${vale.id_op_fk}` : null },
-            ].map(({ label, value }) => (
-              <div key={label}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
-                <div style={{ fontSize: 13 }}>{value ?? '—'}</div>
-              </div>
-            ))}
-          </div>
-          {vale.notas && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: '#f8fafc', borderRadius: 8, padding: '10px 12px' }}>{vale.notas}</div>}
-          {vale.comprobante_url && (
-            <a href={vale.comprobante_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--blue)' }}>
-              Ver documento del vale
-            </a>
-          )}
-
-          {/* Cargas del vale */}
-          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-              Cargas registradas ({cargas.length})
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {[
+            { label: 'Solicitante', value: vale.solicitante },
+            { label: 'Área',       value: areaMap[vale.id_area_fk] },
+            { label: 'Centro de Costo', value: areaCCMap[vale.id_area_fk] },
+            { label: 'Monto auth.', value: fmt$(vale.monto_autorizado) },
+            { label: 'Vigencia',   value: fmtF(vale.vigencia) },
+            { label: 'Emitido por',value: vale.emitido_por },
+            { label: 'OP vinculada',value: vale.id_op_fk ? `OP #${vale.id_op_fk}` : null },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+              <div style={{ fontSize: 13 }}>{value ?? '—'}</div>
             </div>
-            {loading ? <Loader size={14} className="animate-spin" style={{ color: 'var(--blue)' }} />
-            : cargas.length === 0 ? <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: 12 }}>Sin cargas</div>
-            : cargas.map(c => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px',
-                background: '#f8fafc', borderRadius: 8, marginBottom: 6, fontSize: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{fmtF(c.fecha)}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.id_equipo_fk ? (equipoMap[c.id_equipo_fk] ?? c.tipo_carga) : c.tipo_carga}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 700 }}>{fmtL(c.litros)}</div>
-                  <div style={{ fontSize: 11, color: '#059669' }}>{fmt$(c.monto_total)}</div>
-                </div>
-                {c.comprobante_url && (
-                  <a href={c.comprobante_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--blue)' }}>Ticket</a>
-                )}
-              </div>
-            ))}
+          ))}
+        </div>
+        {vale.notas && <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: '#f8fafc', borderRadius: 8, padding: '10px 12px' }}>{vale.notas}</div>}
+        {vale.comprobante_url && (
+          <a href={vale.comprobante_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--blue)' }}>
+            Ver documento del vale
+          </a>
+        )}
+
+        {/* Cargas del vale */}
+        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+            Cargas registradas ({cargas.length})
           </div>
+          {loading ? <Loader size={14} className="animate-spin" style={{ color: 'var(--blue)' }} />
+          : cargas.length === 0 ? <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: 12 }}>Sin cargas</div>
+          : cargas.map(c => (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px',
+              background: '#f8fafc', borderRadius: 8, marginBottom: 6, fontSize: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600 }}>{fmtF(c.fecha)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.id_equipo_fk ? (equipoMap[c.id_equipo_fk] ?? c.tipo_carga) : c.tipo_carga}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontWeight: 700 }}>{fmtL(c.litros)}</div>
+                <div style={{ fontSize: 11, color: '#059669' }}>{fmt$(c.monto_total)}</div>
+              </div>
+              {c.comprobante_url && (
+                <a href={c.comprobante_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--blue)' }}>Ticket</a>
+              )}
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+    </ModalShell>
   )
 }
