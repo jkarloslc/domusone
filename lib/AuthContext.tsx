@@ -113,7 +113,7 @@ const ADMIN_MODULOS = [
   'compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago',
   'transferencias', 'recepciones',
   'proveedores', 'articulos', 'almacenes', 'areas',
-  'tesoreria', 'ingresos', 'presupuestos', 'reportes', 'catalogos',
+  'tesoreria', 'cxp', 'ingresos', 'presupuestos', 'reportes', 'catalogos',
   'dashboards',
   'golf', 'golf-torneos', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
   'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
@@ -166,7 +166,7 @@ const HOSPITALITY_MODULOS = [
 // usuarioadmin: igual que admin pero sin mantenimiento
 const USUARIOADMIN_MODULOS = ADMIN_MODULOS.filter(m => m !== 'mantenimiento')
 // usuariomantto: igual que admin pero sin tesoreria ni golf
-const USUARIOMANTTO_MODULOS = ADMIN_MODULOS.filter(m => m !== 'tesoreria' && m !== 'golf' && !m.startsWith('golf-'))
+const USUARIOMANTTO_MODULOS = ADMIN_MODULOS.filter(m => m !== 'tesoreria' && m !== 'cxp' && m !== 'golf' && !m.startsWith('golf-'))
 
 // Módulo Compras completo (todas las sub-secciones del hub)
 const COMPRAS_MODULOS = [
@@ -177,7 +177,7 @@ const COMPRAS_MODULOS = [
 // Tesorería, Ingresos, Presupuestos y Catálogos — sin Residencial ni Golf/Hípico/Hospitality
 const ADMIN_ORGANISMO_MODULOS = [
   ...COMPRAS_MODULOS, 'mantenimiento', 'equipo-flota', 'herramientas', 'capex',
-  'tesoreria', 'ingresos', 'presupuestos', 'catalogos',
+  'tesoreria', 'cxp', 'ingresos', 'presupuestos', 'catalogos',
 ]
 
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
@@ -192,15 +192,15 @@ const LEER: Record<Rol, string[] | '*'> = {
                         'incidencias', 'afectaciones', 'construcciones', 'mantenimiento', 'comunicados', 'reportes'],
   cobranza:            ['lotes', 'propietarios', 'cobranza', 'facturas', 'ingresos', 'reportes'],
   vigilancia:          ['lotes', 'propietarios', 'accesos', 'incidencias', 'vigilancia-extras'],
-  compras:             ['compras', 'reportes', 'equipo-flota'],
-  compras_supervisor:  ['compras', 'reportes'],
+  compras:             ['compras', 'cxp', 'reportes', 'equipo-flota'],
+  compras_supervisor:  ['compras', 'cxp', 'reportes'],
   almacen:             ['compras', 'reportes'],
   mantenimiento:       ['lotes', 'propietarios', 'mantenimiento', 'reportes', 'dashboards'],
   fraccionamiento:     ['lotes', 'propietarios', 'contratos', 'escrituras',
                         'afectaciones', 'construcciones', 'mantenimiento', 'accesos', 'incidencias',
-                        'cobranza', 'facturas', 'compras', 'tesoreria', 'ingresos',
+                        'cobranza', 'facturas', 'compras', 'tesoreria', 'cxp', 'ingresos',
                         'presupuestos', 'comunicados', 'reportes', 'dashboards'],
-  tesoreria:           ['tesoreria', 'ingresos', 'presupuestos', 'reportes', 'dashboards'],
+  tesoreria:           ['tesoreria', 'cxp', 'ingresos', 'presupuestos', 'reportes', 'dashboards'],
   seguridad:           ['lotes', 'accesos', 'incidencias', 'compras', 'vigilancia-extras'],
   usuario_solicitante: ['compras', 'requisiciones', 'transferencias'],
   ingresos:            ['ingresos', 'reportes', 'dashboards'],
@@ -362,6 +362,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const canCompras = (key?: string): 'all' | 'compras' | 'almacen' | 'seguridad' | 'solicitante' | 'nomina' | false => {
     if (!authUser) return false
     const r = authUser.rol
+    // usuariomantto no tiene acceso a Tesorería, por lo que tampoco ve CXP
+    if (r === 'usuariomantto' && key === 'cxp') return false
     // superadmin / admin / fraccionamiento: acceso total
     if (r === 'superadmin' || r === 'admin' || r === 'admin_lector' || r === 'admin_finanzas' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento' || r === 'admin_organismo') return 'all'
     if (r === 'compras' || r === 'compras_supervisor') return 'compras'

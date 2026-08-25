@@ -92,7 +92,7 @@ export default function ComprasPage() {
           const Icon = m.icon
           return (
             <button key={m.key}
-              onClick={() => router.push(`/compras/${m.key}`)}
+              onClick={() => router.push(m.key === 'cxp' ? '/tesoreria/cxp' : `/compras/${m.key}`)}
               className="card card-hover"
               style={{ padding: '18px 20px', textAlign: 'left', background: 'none', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: m.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

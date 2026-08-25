@@ -35,6 +35,10 @@ function getModulo(pathname: string): string | undefined {
   if (first === 'golf' && parts[1] === 'salidas-carritos') return 'golf-carritos'
   if (first === 'golf' && parts[1]) return `golf-${parts[1]}`
 
+  // tesoreria/cxp usa su propio permiso 'cxp' para que roles de Compras
+  // (sin acceso al resto de Tesorería) también puedan entrar
+  if (first === 'tesoreria' && parts[1] === 'cxp') return 'cxp'
+
   // compras/**  → 'compras'  (sub-rutas como /compras/requisiciones usan el mismo módulo)
   // ingresos/** → 'ingresos'
   // tesoreria/**→ 'tesoreria'
