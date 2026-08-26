@@ -4,6 +4,7 @@ import { dbComp, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { useTiposGasto } from '@/lib/useTiposGasto'
 import { fmt, fmtFecha, nextFolio, StatusBadge } from '@/app/compras/types'
+import { OCDetail } from '@/components/compras/OCDetailModal'
 import ModalShell from '@/components/ui/ModalShell'
 import {
   Save, Loader, Printer, CheckCircle, Trash2, Edit2, Upload, ExternalLink,
@@ -87,6 +88,19 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [liberandoVales, setLiberandoVales] = useState(false)
   const [folioSustituta, setFolioSustituta] = useState<string | null>(null)
   const [folioOriginal, setFolioOriginal]   = useState<string | null>(null)
+
+  // Consulta de OC relacionada (clic en folio, dentro de "Órdenes de Compra Relacionadas")
+  const [ocDetalle, setOcDetalle] = useState<any | null>(null)
+  const abrirOC = async (idOc: number) => {
+    const { data: ocData } = await dbComp.from('ordenes_compra').select('*').eq('id', idOc).single()
+    if (!ocData) return
+    let provNombre = ''
+    if (ocData.id_proveedor_fk) {
+      const { data: provData } = await dbComp.from('proveedores').select('nombre').eq('id', ocData.id_proveedor_fk).maybeSingle()
+      provNombre = provData?.nombre ?? ''
+    }
+    setOcDetalle({ ...ocData, _provNombre: provNombre })
+  }
 
   useEffect(() => {
     if (op.id_op_sustituta_fk) {
@@ -591,6 +605,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   }
 
   return (
+    <>
     <ModalShell
       modulo="compras"
       titulo={op.folio}
@@ -914,7 +929,13 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                   <tbody>
                     {ocsRel.map((r, i) => (
                       <tr key={i}>
-                        <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`}</td>
+                        <td style={{ fontSize: 12 }}>
+                          <button type="button" onClick={() => abrirOC(r.id_oc_fk)}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                              fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, textDecoration: 'underline' }}>
+                            {r.ordenes_compra?.folio ?? `#${r.id_oc_fk}`}
+                          </button>
+                        </td>
                         <td style={{ textAlign: 'right', fontSize: 12 }}>{fmt(r.ordenes_compra?.total)}</td>
                         <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmt(r.monto)}</td>
                       </tr>
@@ -1312,6 +1333,10 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
           )}
         </div>
     </ModalShell>
+    {ocDetalle && (
+      <OCDetail oc={ocDetalle} canAuth={false} onAuth={() => {}} onClose={() => setOcDetalle(null)} />
+    )}
+    </>
   )
 }
 
