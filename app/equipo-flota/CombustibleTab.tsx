@@ -520,7 +520,7 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
 
   const [form, setForm] = useState({
     tipo_suministro:    vale?.tipo_suministro    ?? 'Gasolinería',
-    solicitante:        vale?.solicitante         ?? (authUser?.nombre ?? ''),
+    solicitante:        vale?.solicitante         ?? '',
     id_area_fk:         vale?.id_area_fk?.toString()   ?? '',
     periodo:            vale?.periodo            ?? '',
     litros_autorizados: vale?.litros_autorizados?.toString() ?? '',
@@ -532,9 +532,12 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
-  // Dropdown de Solicitante: filtra cfg.colaboradores en cada tecleo (sin ida a
-  // la BD — ya está precargado en fetchCatalogos, la lista es chica).
-  const solicitanteQ = form.solicitante.trim().toLowerCase()
+  // Dropdown de Solicitante: solo se puede elegir de cfg.colaboradores, sin texto
+  // libre. `solicitanteInput` es lo que se teclea para buscar; `form.solicitante`
+  // (el valor que se guarda) solo cambia al seleccionar una opción de la lista.
+  // Si se sale del campo sin seleccionar, el texto tecleado se descarta.
+  const [solicitanteInput, setSolicitanteInput] = useState(form.solicitante)
+  const solicitanteQ = solicitanteInput.trim().toLowerCase()
   const solicitanteOptions = colaboradores
     .map(c => ({ id: c.id, nombre: nombreCompletoColaborador(c) }))
     .filter(c => !solicitanteQ || c.nombre.toLowerCase().includes(solicitanteQ))
@@ -689,11 +692,11 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
             <input
               className="input"
               style={{ fontSize: 12 }}
-              value={form.solicitante}
-              onChange={e => { setF('solicitante')(e); setSolicitanteOpen(true) }}
+              value={solicitanteInput}
+              onChange={e => { setSolicitanteInput(e.target.value); setSolicitanteOpen(true) }}
               onFocus={() => setSolicitanteOpen(true)}
-              onBlur={() => setTimeout(() => setSolicitanteOpen(false), 150)}
-              placeholder="Escribe para buscar…"
+              onBlur={() => setTimeout(() => { setSolicitanteInput(form.solicitante); setSolicitanteOpen(false) }, 150)}
+              placeholder="Buscar colaborador…"
               autoComplete="off"
             />
             {solicitanteOpen && solicitanteOptions.length > 0 && (
@@ -702,7 +705,12 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
                 boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
                 {solicitanteOptions.map(c => (
                   <button key={c.id} type="button"
-                    onMouseDown={e => { e.preventDefault(); setForm(f => ({ ...f, solicitante: c.nombre })); setSolicitanteOpen(false) }}
+                    onMouseDown={e => {
+                      e.preventDefault()
+                      setForm(f => ({ ...f, solicitante: c.nombre }))
+                      setSolicitanteInput(c.nombre)
+                      setSolicitanteOpen(false)
+                    }}
                     style={{ display: 'block', width: '100%', textAlign: 'left',
                       padding: '8px 12px', background: 'none', border: 'none', fontSize: 12,
                       cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
@@ -711,6 +719,13 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
                     {c.nombre}
                   </button>
                 ))}
+              </div>
+            )}
+            {solicitanteOpen && solicitanteQ && solicitanteOptions.length === 0 && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.12)', padding: '8px 12px', fontSize: 11, color: 'var(--text-muted)' }}>
+                Sin coincidencias en Colaboradores
               </div>
             )}
           </div>
