@@ -10,6 +10,7 @@ import {
   User, ChevronDown, Search,
 } from 'lucide-react'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
+import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ type VentaPOS = {
   nombre_cliente: string
   total: number
   status: string
+  id_centro_fk: number
 }
 
 type OP = {
@@ -346,10 +348,11 @@ export default function EventosPage() {
   const [ingresos, setIngresos] = useState<Ingreso[]>([])
   const [ingresoForm, setIngresoForm] = useState({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null as number | null })
   const [savingIngreso, setSavingIngreso] = useState(false)
-  const [busqVentaPOS, setBusqVentaPOS] = useState('')
+  const [fechaBusqVentaPOS, setFechaBusqVentaPOS] = useState(fechaLocal())
   const [ventasPOS, setVentasPOS] = useState<VentaPOS[]>([])
   const [loadingVentasPOS, setLoadingVentasPOS] = useState(false)
-  const [tipoIngreso, setTipoIngreso] = useState<'pos' | 'manual'>('pos')
+  const [buscoVentasPOS, setBuscoVentasPOS] = useState(false)
+  const [centrosVentaIds, setCentrosVentaIds] = useState<Record<number, string>>({})
   const [ventaPosMap, setVentaPosMap] = useState<Record<number, VentaPOS>>({})
 
   // OPs
@@ -390,6 +393,12 @@ export default function EventosPage() {
         const m: Record<number, string> = {}
         ;(data ?? []).forEach((p: any) => { m[p.id] = p.nombre })
         setProvMap(m)
+      })
+    dbGolf.from('cat_centros_venta').select('id, nombre').in('nombre', ['Eventos', 'Hípico'])
+      .then(({ data }: any) => {
+        const m: Record<number, string> = {}
+        ;(data ?? []).forEach((c: any) => { m[c.id] = c.nombre })
+        setCentrosVentaIds(m)
       })
   }, [])
 
@@ -444,7 +453,7 @@ export default function EventosPage() {
     const ventaIds = Array.from(new Set(ingRows.map(i => i.id_venta_pos_fk).filter((v): v is number => !!v)))
     if (ventaIds.length > 0) {
       const { data: ventasData } = await dbGolf.from('ctrl_ventas')
-        .select('id, folio_dia, fecha, nombre_cliente, total, status')
+        .select('id, folio_dia, fecha, nombre_cliente, total, status, id_centro_fk')
         .in('id', ventaIds)
       const m: Record<number, VentaPOS> = {}
       ;((ventasData as VentaPOS[]) ?? []).forEach(v => { m[v.id] = v })
@@ -555,9 +564,9 @@ export default function EventosPage() {
     setActiveTab('info')
     setErr('')
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
-    setBusqVentaPOS('')
+    setFechaBusqVentaPOS(fechaLocal())
     setVentasPOS([])
-    setTipoIngreso('pos')
+    setBuscoVentasPOS(false)
     setVentaPosMap({})
     setChecklistFiles(emptyChecklistFiles())
     setChecklistLoading(emptyChecklistLoading())
@@ -615,9 +624,9 @@ export default function EventosPage() {
     setActiveTab('info')
     setErr('')
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
-    setBusqVentaPOS('')
+    setFechaBusqVentaPOS(fechaLocal())
     setVentasPOS([])
-    setTipoIngreso('pos')
+    setBuscoVentasPOS(false)
     setChecklistFiles(emptyChecklistFiles())
     setChecklistLoading(emptyChecklistLoading())
     setLoadingChecklistFiles(false)
@@ -762,24 +771,19 @@ export default function EventosPage() {
   }
 
   const buscarVentasPOS = async () => {
-    if (!busqVentaPOS.trim()) return
-    setLoadingVentasPOS(true)
-    const t = busqVentaPOS.trim().toLowerCase()
-    const qNum = Number(t)
+    if (!fechaBusqVentaPOS) return
+    const centroIds = Object.keys(centrosVentaIds).map(Number)
+    if (centroIds.length === 0) return
+    setLoadingVentasPOS(true); setBuscoVentasPOS(true)
 
-    let q = dbGolf.from('ctrl_ventas')
-      .select('id, folio_dia, fecha, nombre_cliente, total, status')
+    const { data, error } = await dbGolf.from('ctrl_ventas')
+      .select('id, folio_dia, fecha, nombre_cliente, total, status, id_centro_fk')
       .eq('status', 'PAGADA')
+      .in('id_centro_fk', centroIds)
+      .gte('fecha', inicioDelDia(fechaBusqVentaPOS))
+      .lte('fecha', finDelDia(fechaBusqVentaPOS))
       .order('fecha', { ascending: false })
-      .limit(20)
 
-    if (!Number.isNaN(qNum)) {
-      q = q.or(`id.eq.${qNum},folio_dia.eq.${qNum}`)
-    } else {
-      q = q.ilike('nombre_cliente', `%${t}%`)
-    }
-
-    const { data, error } = await q
     if (error) console.error('Error buscando ventas POS:', error)
     setVentasPOS((data as unknown as VentaPOS[]) ?? [])
     setLoadingVentasPOS(false)
@@ -810,6 +814,7 @@ export default function EventosPage() {
   // ── Save ingreso ───────────────────────────────────────────
   const saveIngreso = async () => {
     if (!editEvt) return
+    if (!ingresoForm.id_venta_pos_fk) { setErr('Selecciona una venta POS del día para vincular como ingreso'); return }
     if (!ingresoForm.descripcion.trim()) { setErr('Descripción requerida'); return }
     if (!ingresoForm.monto || Number(ingresoForm.monto) <= 0) { setErr('Monto debe ser mayor a 0'); return }
     setSavingIngreso(true); setErr('')
@@ -834,9 +839,9 @@ export default function EventosPage() {
     }
     setSavingIngreso(false)
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
-    setBusqVentaPOS('')
+    setFechaBusqVentaPOS(fechaLocal())
     setVentasPOS([])
-    setTipoIngreso('pos')
+    setBuscoVentasPOS(false)
     await loadEventoDetalle(editEvt.id)
   }
 
@@ -1894,47 +1899,31 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               <div className="card" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#9333ea', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Registrar ingreso</div>
 
-                <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                  <button type="button"
-                    onClick={() => setTipoIngreso('pos')}
-                    style={{
-                      flex: 1, fontSize: 12, fontWeight: 600, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
-                      border: tipoIngreso === 'pos' ? '1px solid #9333ea' : '1px solid #e5e7eb',
-                      background: tipoIngreso === 'pos' ? '#f3e8ff' : '#fff',
-                      color: tipoIngreso === 'pos' ? '#7e22ce' : 'var(--text-muted)',
-                    }}>
-                    {tipoIngreso === 'pos' ? '✓ ' : ''}POS Ventas
-                  </button>
-                  <button type="button"
-                    onClick={() => {
-                      setTipoIngreso('manual')
-                      setBusqVentaPOS('')
-                      setVentasPOS([])
-                      setIngresoForm(f => ({ ...f, id_venta_pos_fk: null }))
-                    }}
-                    style={{
-                      flex: 1, fontSize: 12, fontWeight: 600, padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
-                      border: tipoIngreso === 'manual' ? '1px solid #9333ea' : '1px solid #e5e7eb',
-                      background: tipoIngreso === 'manual' ? '#f3e8ff' : '#fff',
-                      color: tipoIngreso === 'manual' ? '#7e22ce' : 'var(--text-muted)',
-                    }}>
-                    {tipoIngreso === 'manual' ? '✓ ' : ''}Manual
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 10, alignItems: 'end' }}>
+                  <div>
+                    <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>
+                      <Calendar size={11} style={{ verticalAlign: -1, marginRight: 3 }} />
+                      Fecha de venta (centros Eventos e Hípico)
+                    </label>
+                    <input className="input" type="date" value={fechaBusqVentaPOS}
+                      onChange={e => setFechaBusqVentaPOS(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && buscarVentasPOS()} style={{ fontSize: 12, width: '100%' }} />
+                  </div>
+                  <button className="btn-primary" onClick={buscarVentasPOS} disabled={loadingVentasPOS} style={{ fontSize: 12, background: '#7e22ce' }}>
+                    {loadingVentasPOS ? '…' : 'Buscar ventas del día'}
                   </button>
                 </div>
 
-                {tipoIngreso === 'pos' && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 10 }}>
-                    <input className="input" placeholder="Buscar venta POS por folio, día o cliente…"
-                      value={busqVentaPOS} onChange={e => setBusqVentaPOS(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && buscarVentasPOS()} style={{ fontSize: 12, width: '100%' }} />
-                    <button className="btn-primary" onClick={buscarVentasPOS} disabled={loadingVentasPOS} style={{ fontSize: 12, background: '#7e22ce' }}>
-                      {loadingVentasPOS ? '…' : 'Buscar POS'}
-                    </button>
+                {!loadingVentasPOS && ventasPOS.length === 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+                    {buscoVentasPOS
+                      ? 'Sin ventas POS de Eventos o Hípico para esta fecha.'
+                      : 'Elige una fecha y busca las ventas POS de Eventos e Hípico de ese día.'}
                   </div>
                 )}
 
-                {tipoIngreso === 'pos' && ventasPOS.length > 0 && (
-                  <div style={{ maxHeight: 150, overflowY: 'auto', border: '1px solid #e9d5ff', borderRadius: 8, marginBottom: 10, background: '#fff' }}>
+                {ventasPOS.length > 0 && (
+                  <div style={{ maxHeight: 180, overflowY: 'auto', border: '1px solid #e9d5ff', borderRadius: 8, marginBottom: 10, background: '#fff' }}>
                     {ventasPOS.map(v => (
                       <button key={v.id}
                         onClick={() => seleccionarVentaPOS(v)}
@@ -1945,13 +1934,16 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         </div>
                         <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
                           {v.nombre_cliente} · {new Date(v.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 8, fontWeight: 600, background: '#f3e8ff', color: '#7e22ce' }}>
+                            {centrosVentaIds[v.id_centro_fk] ?? `Centro #${v.id_centro_fk}`}
+                          </span>
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
 
-                {tipoIngreso === 'pos' && ingresoForm.id_venta_pos_fk && (
+                {ingresoForm.id_venta_pos_fk && (
                   <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', border: '1px solid #ddd6fe', borderRadius: 8, background: '#f5f3ff' }}>
                     <div style={{ fontSize: 12, color: '#6d28d9' }}>
                       Venta POS asociada: <strong>#{String(ingresoForm.id_venta_pos_fk).padStart(6, '0')}</strong>
