@@ -52,8 +52,7 @@ const fmtF = (d: string | null) =>
 // ── Imprimir vale de combustible (compartido por modal y detalle) ──
 async function imprimirVale(
   vale: any,
-  areaMap: Record<number, string>,
-  areaCCMap: Record<number, string>,
+  ccMap: Record<number, string>,
   equipoMap: Record<number, string>,
 ) {
   const { data: cargas } = await dbCtrl.from('cargas_combustible')
@@ -126,8 +125,7 @@ async function imprimirVale(
 
     <div class="info-grid">
       <div class="info-item"><label>Solicitante</label><span>${vale.solicitante ?? '—'}</span></div>
-      <div class="info-item"><label>Área</label><span>${areaMap[vale.id_area_fk] ?? '—'}</span></div>
-      <div class="info-item"><label>Centro de Costo</label><span>${areaCCMap[vale.id_area_fk] ?? '—'}</span></div>
+      <div class="info-item"><label>Centro de Costo</label><span>${ccMap[vale.id_centro_costo_fk] ?? '—'}</span></div>
       <div class="info-item"><label>Periodo</label><span>${vale.periodo ?? '—'}</span></div>
       <div class="info-item"><label>Vigencia</label><span>${fmtF(vale.vigencia)}</span></div>
       <div class="info-item"><label>Litros Autorizados</label><span>${fmtL(vale.litros_autorizados)}</span></div>
@@ -207,28 +205,29 @@ export default function CombustibleTab() {
   // ── Catálogos compartidos ─────────────────────────────────────
   const [equipos,  setEquipos]  = useState<any[]>([])
   const [areas,    setAreas]    = useState<any[]>([])
+  const [centrosCosto, setCentrosCosto] = useState<any[]>([])
   const [colaboradores, setColaboradores] = useState<any[]>([])
   const [areaMap,  setAreaMap]  = useState<Record<number, string>>({})
   const [equipoMap,setEquipoMap]= useState<Record<number, string>>({})
-  const [areaCCMap,setAreaCCMap]= useState<Record<number, string>>({})
+  const [ccMap,    setCcMap]    = useState<Record<number, string>>({})
 
   const fetchCatalogos = useCallback(async () => {
     const [{ data: eqs }, { data: ars }, { data: ccs }, { data: cols }] = await Promise.all([
       dbCfg.from('equipos').select('id, nombre, placa, unidad_odometro').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('colaboradores').select('id, nombre, apellido_paterno, apellido_materno').eq('activo', true).order('nombre'),
     ])
     setEquipos(eqs ?? [])
     setAreas(ars ?? [])
+    setCentrosCosto(ccs ?? [])
     setColaboradores(cols ?? [])
     const am: Record<number, string> = {}; (ars ?? []).forEach((a: any) => { am[a.id] = a.nombre })
     const em: Record<number, string> = {}; (eqs ?? []).forEach((e: any) => { em[e.id] = e.nombre })
     const ccm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { ccm[c.id] = c.nombre })
-    const acm: Record<number, string> = {}; (ars ?? []).forEach((a: any) => { if (a.id_centro_costo_fk) acm[a.id] = ccm[a.id_centro_costo_fk] ?? '' })
     setAreaMap(am)
     setEquipoMap(em)
-    setAreaCCMap(acm)
+    setCcMap(ccm)
   }, [])
 
   const fetchVales = useCallback(async () => {
@@ -281,7 +280,7 @@ export default function CombustibleTab() {
     if (!searchV) return true
     const q = searchV.toLowerCase()
     return (v.folio ?? '').toLowerCase().includes(q)
-      || (areaMap[v.id_area_fk] ?? '').toLowerCase().includes(q)
+      || (ccMap[v.id_centro_costo_fk] ?? '').toLowerCase().includes(q)
       || (v.periodo ?? '').toLowerCase().includes(q)
   })
   const filteredCargas = cargas.filter(c => {
@@ -364,7 +363,7 @@ export default function CombustibleTab() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    {['Folio', 'Tipo', 'Área', 'Periodo', 'Litros Auth.', 'Litros Usados', 'Monto Auth.', 'Vigencia', 'Status', ''].map(h => (
+                    {['Folio', 'Tipo', 'Centro de Costo', 'Periodo', 'Litros Auth.', 'Litros Usados', 'Monto Auth.', 'Vigencia', 'Status', ''].map(h => (
                       <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -376,7 +375,7 @@ export default function CombustibleTab() {
                       <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                         <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio}</td>
                         <td style={{ padding: '8px 10px' }}><Badge text={v.tipo_suministro} map={CARGA_TIPO_STYLE} /></td>
-                        <td style={{ padding: '8px 10px', fontSize: 12 }}>{areaMap[v.id_area_fk] ?? '—'}</td>
+                        <td style={{ padding: '8px 10px', fontSize: 12 }}>{ccMap[v.id_centro_costo_fk] ?? '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>{v.periodo ?? '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12, textAlign: 'right' }}>{fmtL(v.litros_autorizados)}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>
@@ -481,20 +480,20 @@ export default function CombustibleTab() {
       {/* Modales */}
       {modalV.open && (
         <ValeModal
-          vale={modalV.vale} areas={areas} colaboradores={colaboradores} areaMap={areaMap} areaCCMap={areaCCMap} equipoMap={equipoMap}
+          vale={modalV.vale} centrosCosto={centrosCosto} colaboradores={colaboradores} ccMap={ccMap} equipoMap={equipoMap}
           onClose={() => setModalV({ open: false })}
           onSaved={() => { setModalV({ open: false }); fetchVales() }}
         />
       )}
       {modalC.open && (
         <CargaModal
-          carga={modalC.carga} equipos={equipos} areas={areas} vales={vales.filter(v => ['Emitido', 'Parcial'].includes(v.status))}
+          carga={modalC.carga} equipos={equipos} areas={areas} centrosCosto={centrosCosto} vales={vales.filter(v => ['Emitido', 'Parcial'].includes(v.status))}
           onClose={() => setModalC({ open: false })}
           onSaved={() => { setModalC({ open: false }); fetchCargas(); fetchVales() }}
         />
       )}
       {detailV && (
-        <ValeDetail vale={detailV} areaMap={areaMap} areaCCMap={areaCCMap} equipoMap={equipoMap} onClose={() => setDetailV(null)} />
+        <ValeDetail vale={detailV} ccMap={ccMap} equipoMap={equipoMap} onClose={() => setDetailV(null)} />
       )}
     </div>
   )
@@ -503,8 +502,8 @@ export default function CombustibleTab() {
 // ══════════════════════════════════════════════════════════════
 // Modal: Crear / Editar Vale
 // ══════════════════════════════════════════════════════════════
-function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, onClose, onSaved }: {
-  vale?: any; areas: any[]; colaboradores: any[]; areaMap: Record<number, string>; areaCCMap: Record<number, string>; equipoMap: Record<number, string>
+function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClose, onSaved }: {
+  vale?: any; centrosCosto: any[]; colaboradores: any[]; ccMap: Record<number, string>; equipoMap: Record<number, string>
   onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
@@ -521,7 +520,7 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
   const [form, setForm] = useState({
     tipo_suministro:    vale?.tipo_suministro    ?? 'Gasolinería',
     solicitante:        vale?.solicitante         ?? '',
-    id_area_fk:         vale?.id_area_fk?.toString()   ?? '',
+    id_centro_costo_fk: vale?.id_centro_costo_fk?.toString() ?? '',
     periodo:            vale?.periodo            ?? '',
     litros_autorizados: vale?.litros_autorizados?.toString() ?? '',
     monto_autorizado:   vale?.monto_autorizado?.toString()   ?? '',
@@ -558,7 +557,7 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
   const buildPayload = () => ({
     tipo_suministro:   form.tipo_suministro,
     solicitante:       form.solicitante.trim() || null,
-    id_area_fk:        Number(form.id_area_fk),
+    id_centro_costo_fk:Number(form.id_centro_costo_fk),
     periodo:           form.periodo.trim() || null,
     litros_autorizados:Number(form.litros_autorizados),
     monto_autorizado:  form.monto_autorizado ? Number(form.monto_autorizado) : null,
@@ -570,7 +569,7 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
 
   const validar = () => {
     if (!form.solicitante.trim())  { setError('El solicitante es obligatorio'); return false }
-    if (!form.id_area_fk)          { setError('El área es obligatoria'); return false }
+    if (!form.id_centro_costo_fk)  { setError('El centro de costo es obligatorio'); return false }
     if (!form.litros_autorizados)  { setError('Los litros son obligatorios'); return false }
     return true
   }
@@ -632,7 +631,7 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
 
   const handleImprimir = async () => {
     setPrinting(true)
-    try { await imprimirVale(vale, areaMap, areaCCMap, equipoMap) }
+    try { await imprimirVale(vale, ccMap, equipoMap) }
     finally { setPrinting(false) }
   }
 
@@ -730,10 +729,10 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
             )}
           </div>
           <div>
-            <label className="label" style={{ fontSize: 11 }}>Área *</label>
-            <select className="select" style={{ fontSize: 12 }} value={form.id_area_fk} onChange={setF('id_area_fk')}>
+            <label className="label" style={{ fontSize: 11 }}>Centro de Costo *</label>
+            <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
               <option value="">— Seleccionar —</option>
-              {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </div>
           <div>
@@ -789,8 +788,8 @@ function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, 
 // ══════════════════════════════════════════════════════════════
 // Modal: Nueva / Editar Carga
 // ══════════════════════════════════════════════════════════════
-function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
-  carga?: any; equipos: any[]; areas: any[]; vales: any[]
+function CargaModal({ carga, equipos, areas, centrosCosto, vales, onClose, onSaved }: {
+  carga?: any; equipos: any[]; areas: any[]; centrosCosto: any[]; vales: any[]
   onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
@@ -919,7 +918,7 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
                 <option value="">— Sin vale / Emergencia —</option>
                 {valesFiltrados.map(v => (
                   <option key={v.id} value={v.id}>
-                    {v.folio} · {areas.find(a => a.id === v.id_area_fk)?.nombre ?? ''}{v.periodo ? ` · ${v.periodo}` : ''}
+                    {v.folio} · {centrosCosto.find(c => c.id === v.id_centro_costo_fk)?.nombre ?? ''}{v.periodo ? ` · ${v.periodo}` : ''}
                   </option>
                 ))}
               </select>
@@ -1001,8 +1000,8 @@ function CargaModal({ carga, equipos, areas, vales, onClose, onSaved }: {
 // ══════════════════════════════════════════════════════════════
 // Detail: Vale
 // ══════════════════════════════════════════════════════════════
-function ValeDetail({ vale, areaMap, areaCCMap, equipoMap, onClose }: {
-  vale: any; areaMap: Record<number, string>; areaCCMap: Record<number, string>; equipoMap: Record<number, string>; onClose: () => void
+function ValeDetail({ vale, ccMap, equipoMap, onClose }: {
+  vale: any; ccMap: Record<number, string>; equipoMap: Record<number, string>; onClose: () => void
 }) {
   const [cargas, setCargas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -1025,7 +1024,7 @@ function ValeDetail({ vale, areaMap, areaCCMap, equipoMap, onClose }: {
 
   const handleImprimir = async () => {
     setPrinting(true)
-    try { await imprimirVale(vale, areaMap, areaCCMap, equipoMap) }
+    try { await imprimirVale(vale, ccMap, equipoMap) }
     finally { setPrinting(false) }
   }
 
@@ -1062,8 +1061,7 @@ function ValeDetail({ vale, areaMap, areaCCMap, equipoMap, onClose }: {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {[
             { label: 'Solicitante', value: vale.solicitante },
-            { label: 'Área',       value: areaMap[vale.id_area_fk] },
-            { label: 'Centro de Costo', value: areaCCMap[vale.id_area_fk] },
+            { label: 'Centro de Costo', value: ccMap[vale.id_centro_costo_fk] },
             { label: 'Monto auth.', value: fmt$(vale.monto_autorizado) },
             { label: 'Vigencia',   value: fmtF(vale.vigencia) },
             { label: 'Emitido por',value: vale.emitido_por },
