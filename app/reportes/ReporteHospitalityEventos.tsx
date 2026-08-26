@@ -14,6 +14,7 @@ type Evento = {
   fecha_fin: string | null
   status: string
   cliente_nombre: string | null
+  precio_pactado: number | null
   cat_tipos_evento?: { nombre: string; color: string }
   cat_lugares?: { nombre: string }
 }
@@ -85,7 +86,7 @@ export default function ReporteHospitalityEventos() {
 
     // 1. Eventos del período
     let q = dbCtrl.from('eventos')
-      .select('id, folio, nombre, fecha_inicio, fecha_fin, status, cliente_nombre, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
+      .select('id, folio, nombre, fecha_inicio, fecha_fin, status, cliente_nombre, precio_pactado, cat_tipos_evento(nombre, color), cat_lugares(nombre)')
       .gte('fecha_inicio', filtroDesde)
       .lte('fecha_inicio', filtroHasta)
       .order('fecha_inicio', { ascending: false })
@@ -255,7 +256,7 @@ export default function ReporteHospitalityEventos() {
           ) : (
             /* overflowX auto en pantalla; el print de utils.tsx maneja landscape */
             <div className="card" style={{ overflowX: 'auto', padding: 0 }}>
-              <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 900 }}>
+              <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 1010 }}>
                 <thead>
                   <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
                     <th style={{ ...thSt, width: 110 }}>Folio</th>
@@ -264,6 +265,7 @@ export default function ReporteHospitalityEventos() {
                     <th style={{ ...thSt, width: 120 }}>Lugar</th>
                     <th style={{ ...thSt, width: 100 }}>Fecha</th>
                     <th style={{ ...thSt, width: 120 }}>Cliente</th>
+                    <th style={{ ...thSt, width: 110, textAlign: 'right' }}>Precio Pactado</th>
                     <th style={{ ...thSt, width: 90 }}>Status</th>
                     <th style={{ ...thSt, width: 120, textAlign: 'right' }}>Ingresos</th>
                     <th style={{ ...thSt, width: 130, textAlign: 'right' }}>Gastos</th>
@@ -312,6 +314,11 @@ export default function ReporteHospitalityEventos() {
                           {r.cliente_nombre ?? '—'}
                         </td>
 
+                        {/* Precio Pactado */}
+                        <td style={{ ...tdSt, color: '#1d4ed8', fontWeight: 600, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {r.precio_pactado != null ? fmt$(r.precio_pactado) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                        </td>
+
                         {/* Status */}
                         <td style={tdSt}>
                           <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 10, fontWeight: 600, background: sc.bg, color: sc.color, whiteSpace: 'nowrap' }}>
@@ -351,7 +358,7 @@ export default function ReporteHospitalityEventos() {
 
                   {/* Fila de totales */}
                   <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
-                    <td colSpan={7} style={{ ...tdSt, fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
+                    <td colSpan={8} style={{ ...tdSt, fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
                       TOTAL — {rows.length} evento{rows.length !== 1 ? 's' : ''}
                     </td>
                     <td style={{ ...tdSt, fontWeight: 700, color: '#16a34a', textAlign: 'right', whiteSpace: 'nowrap' }}>
