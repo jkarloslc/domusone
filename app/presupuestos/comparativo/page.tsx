@@ -8,6 +8,7 @@ import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { prorratearDescuento } from '@/lib/prorateoDescuento'
 import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
+import { esComodin } from '@/lib/pptoComodin'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -324,12 +325,12 @@ export default function ComparativoPage() {
         })
     })
 
-    // Por área (ordenes de pago) — una partida "catch-all" (sin tipo_gasto) de un área
-    // excluye los tipo_gasto que ya cubre otra partida específica de esa misma área,
-    // para no contar la misma OP dos veces.
+    // Por área (ordenes de pago) — la partida comodín de un área ("Otros", o
+    // legado sin tipo_gasto) excluye los tipo_gasto que ya cubre otra partida
+    // específica de esa misma área, para no contar la misma OP dos veces.
     const tiposEspecificosPorArea: Record<number, Set<string>> = {}
     areaParts.forEach(p => {
-      if (p.tipo_gasto && p.id_area_fk) {
+      if (p.tipo_gasto && !esComodin(p.tipo_gasto) && p.id_area_fk) {
         if (!tiposEspecificosPorArea[p.id_area_fk]) tiposEspecificosPorArea[p.id_area_fk] = new Set()
         tiposEspecificosPorArea[p.id_area_fk].add(p.tipo_gasto)
       }
@@ -338,10 +339,10 @@ export default function ComparativoPage() {
     areaParts.forEach(p => {
       rm[p.id] = {}
       rd[p.id] = []
-      const tiposCubiertos = !p.tipo_gasto && p.id_area_fk ? tiposEspecificosPorArea[p.id_area_fk] : null
+      const tiposCubiertos = esComodin(p.tipo_gasto) && p.id_area_fk ? tiposEspecificosPorArea[p.id_area_fk] : null
       opsTodas.filter((op: any) => {
           if (p.id_area_fk && op.id_area_fk !== p.id_area_fk) return false
-          if (p.tipo_gasto && op.tipo_gasto !== p.tipo_gasto) return false
+          if (p.tipo_gasto && !esComodin(p.tipo_gasto) && op.tipo_gasto !== p.tipo_gasto) return false
           if (tiposCubiertos && op.tipo_gasto && tiposCubiertos.has(op.tipo_gasto)) return false
           return true
         })
