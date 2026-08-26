@@ -575,13 +575,14 @@ export default function FlujoEfectivoPage() {
   // no tienen "concepto" que compartir con nadie más, así que quedan como
   // grupos de 1 (misma fila que en Detalle).
   function agruparPorConcepto(rows: FilaPartida[]): FilaGrupo[] {
-    const map = new Map<string, { nombre: string; pptoVal: number; realVal: number; partidas: FilaPartida[] }>()
+    const map = new Map<string, { nombre: string; orden: number; pptoVal: number; realVal: number; partidas: FilaPartida[] }>()
     rows.forEach(r => {
       const key = r.tipo_gasto ? `${r.id_centro_costo_fk ?? 0}-${r.tipo_gasto}` : `p-${r.id}`
       if (!map.has(key)) {
-        map.set(key, { nombre: r.tipo_gasto ?? r.nombre, pptoVal: 0, realVal: 0, partidas: [] })
+        map.set(key, { nombre: r.tipo_gasto ?? r.nombre, orden: r.orden, pptoVal: 0, realVal: 0, partidas: [] })
       }
       const g = map.get(key)!
+      g.orden = Math.min(g.orden, r.orden)
       g.pptoVal += r.pptoVal
       g.realVal += r.realVal
       g.partidas.push(r)
@@ -590,9 +591,9 @@ export default function FlujoEfectivoPage() {
       .map(([id, g]) => {
         const varAbs = g.realVal - g.pptoVal
         const varPct = g.pptoVal > 0 ? Math.round(((g.realVal - g.pptoVal) / g.pptoVal) * 100) : null
-        return { id: `co-${id}`, nombre: g.nombre, orden: 0, pptoVal: g.pptoVal, realVal: g.realVal, varAbs, varPct, partidas: g.partidas }
+        return { id: `co-${id}`, nombre: g.nombre, orden: g.orden, pptoVal: g.pptoVal, realVal: g.realVal, varAbs, varPct, partidas: g.partidas }
       })
-      .sort((a, b) => a.nombre.localeCompare(b.nombre))
+      .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
   }
 
   const CLASIFICACIONES: Clasificacion[] = ['operativo', 'financiero', 'intercompanias']
