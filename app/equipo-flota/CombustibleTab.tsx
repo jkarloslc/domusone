@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { recomputeValeCombustible } from '@/lib/combustible'
+import { nombreCompletoColaborador } from '@/lib/colaboradores'
 import ModalShell from '@/components/ui/ModalShell'
 import {
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2, Printer,
@@ -206,18 +207,21 @@ export default function CombustibleTab() {
   // ── Catálogos compartidos ─────────────────────────────────────
   const [equipos,  setEquipos]  = useState<any[]>([])
   const [areas,    setAreas]    = useState<any[]>([])
+  const [colaboradores, setColaboradores] = useState<any[]>([])
   const [areaMap,  setAreaMap]  = useState<Record<number, string>>({})
   const [equipoMap,setEquipoMap]= useState<Record<number, string>>({})
   const [areaCCMap,setAreaCCMap]= useState<Record<number, string>>({})
 
   const fetchCatalogos = useCallback(async () => {
-    const [{ data: eqs }, { data: ars }, { data: ccs }] = await Promise.all([
+    const [{ data: eqs }, { data: ars }, { data: ccs }, { data: cols }] = await Promise.all([
       dbCfg.from('equipos').select('id, nombre, placa, unidad_odometro').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('colaboradores').select('id, nombre, apellido_paterno, apellido_materno').eq('activo', true).order('nombre'),
     ])
     setEquipos(eqs ?? [])
     setAreas(ars ?? [])
+    setColaboradores(cols ?? [])
     const am: Record<number, string> = {}; (ars ?? []).forEach((a: any) => { am[a.id] = a.nombre })
     const em: Record<number, string> = {}; (eqs ?? []).forEach((e: any) => { em[e.id] = e.nombre })
     const ccm: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { ccm[c.id] = c.nombre })
@@ -477,7 +481,7 @@ export default function CombustibleTab() {
       {/* Modales */}
       {modalV.open && (
         <ValeModal
-          vale={modalV.vale} areas={areas} areaMap={areaMap} areaCCMap={areaCCMap} equipoMap={equipoMap}
+          vale={modalV.vale} areas={areas} colaboradores={colaboradores} areaMap={areaMap} areaCCMap={areaCCMap} equipoMap={equipoMap}
           onClose={() => setModalV({ open: false })}
           onSaved={() => { setModalV({ open: false }); fetchVales() }}
         />
@@ -499,8 +503,8 @@ export default function CombustibleTab() {
 // ══════════════════════════════════════════════════════════════
 // Modal: Crear / Editar Vale
 // ══════════════════════════════════════════════════════════════
-function ValeModal({ vale, areas, areaMap, areaCCMap, equipoMap, onClose, onSaved }: {
-  vale?: any; areas: any[]; areaMap: Record<number, string>; areaCCMap: Record<number, string>; equipoMap: Record<number, string>
+function ValeModal({ vale, areas, colaboradores, areaMap, areaCCMap, equipoMap, onClose, onSaved }: {
+  vale?: any; areas: any[]; colaboradores: any[]; areaMap: Record<number, string>; areaCCMap: Record<number, string>; equipoMap: Record<number, string>
   onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
@@ -508,6 +512,7 @@ function ValeModal({ vale, areas, areaMap, areaCCMap, equipoMap, onClose, onSave
   const [error,  setError]  = useState('')
   const [uploading, setUploading] = useState(false)
   const [printing, setPrinting] = useState(false)
+  const [solicitanteOpen, setSolicitanteOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const isNew = !vale?.folio
@@ -526,6 +531,14 @@ function ValeModal({ vale, areas, areaMap, areaCCMap, equipoMap, onClose, onSave
   })
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
+
+  // Dropdown de Solicitante: filtra cfg.colaboradores en cada tecleo (sin ida a
+  // la BD — ya está precargado en fetchCatalogos, la lista es chica).
+  const solicitanteQ = form.solicitante.trim().toLowerCase()
+  const solicitanteOptions = colaboradores
+    .map(c => ({ id: c.id, nombre: nombreCompletoColaborador(c) }))
+    .filter(c => !solicitanteQ || c.nombre.toLowerCase().includes(solicitanteQ))
+    .slice(0, 8)
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return
@@ -671,9 +684,35 @@ function ValeModal({ vale, areas, areaMap, areaCCMap, equipoMap, onClose, onSave
               {TIPOS_SUMINISTRO.map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
-          <div>
+          <div style={{ position: 'relative' }}>
             <label className="label" style={{ fontSize: 11 }}>Solicitante *</label>
-            <input className="input" style={{ fontSize: 12 }} value={form.solicitante} onChange={setF('solicitante')} placeholder="Nombre de quien solicita" />
+            <input
+              className="input"
+              style={{ fontSize: 12 }}
+              value={form.solicitante}
+              onChange={e => { setF('solicitante')(e); setSolicitanteOpen(true) }}
+              onFocus={() => setSolicitanteOpen(true)}
+              onBlur={() => setTimeout(() => setSolicitanteOpen(false), 150)}
+              placeholder="Escribe para buscar…"
+              autoComplete="off"
+            />
+            {solicitanteOpen && solicitanteOptions.length > 0 && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto' }}>
+                {solicitanteOptions.map(c => (
+                  <button key={c.id} type="button"
+                    onMouseDown={e => { e.preventDefault(); setForm(f => ({ ...f, solicitante: c.nombre })); setSolicitanteOpen(false) }}
+                    style={{ display: 'block', width: '100%', textAlign: 'left',
+                      padding: '8px 12px', background: 'none', border: 'none', fontSize: 12,
+                      cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                    {c.nombre}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="label" style={{ fontSize: 11 }}>Área *</label>
