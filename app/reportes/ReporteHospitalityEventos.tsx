@@ -158,6 +158,7 @@ export default function ReporteHospitalityEventos() {
   // KPIs
   const totalIngresos = rows.reduce((s, r) => s + r.total_ingresos, 0)
   const totalGastos   = rows.reduce((s, r) => s + r.total_gastos, 0)
+  const totalPrecioPactado = rows.reduce((s, r) => s + (r.precio_pactado ?? 0), 0)
   const balanceTotal  = totalIngresos - totalGastos
   const realizados    = rows.filter(r => r.status === 'Realizado').length
   const confirmados   = rows.filter(r => r.status === 'Confirmado' || r.status === 'En curso').length
@@ -358,9 +359,13 @@ export default function ReporteHospitalityEventos() {
 
                   {/* Fila de totales */}
                   <tr style={{ borderTop: '2px solid var(--border)', background: 'var(--surface-700)' }}>
-                    <td colSpan={8} style={{ ...tdSt, fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
+                    <td colSpan={6} style={{ ...tdSt, fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>
                       TOTAL — {rows.length} evento{rows.length !== 1 ? 's' : ''}
                     </td>
+                    <td style={{ ...tdSt, fontWeight: 700, color: '#1d4ed8', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {fmt$(totalPrecioPactado)}
+                    </td>
+                    <td style={tdSt} />
                     <td style={{ ...tdSt, fontWeight: 700, color: '#16a34a', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {fmt$(totalIngresos)}
                     </td>
