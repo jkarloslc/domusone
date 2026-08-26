@@ -700,6 +700,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // automáticamente de las selecciones (vales/lotes/bitácoras), sin desglose
   // de factura — ahí se sigue capturando un Monto único.
   const isVale = ['Combustible', 'Perimetrales', 'Mantenimiento de Vehículos'].includes(form.tipo_gasto)
+  const servicioObligatorio = Number(form.id_proveedor_fk) === 75 && form.tipo_gasto === 'Electricidad'
   const subtotalNum = Number(form.subtotal) || 0
   const ivaNum      = Number(form.iva) || 0
   const montoManual = (!conOC && !isVale) ? subtotalNum + ivaNum : (Number(form.monto_manual) || 0)
@@ -777,6 +778,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
     if (form.tipo_gasto === 'Mantenimiento de Vehículos' && bitacorasSel.length === 0) {
       setError('Selecciona al menos una bitácora de servicio cerrada'); return
+    }
+    if (Number(form.id_proveedor_fk) === 75 && form.tipo_gasto === 'Electricidad' && !form.id_servicio_fk) {
+      setError('Selecciona el servicio de suministro para registrar el detalle de consumo'); return
     }
     // La distribución por área (detLines) reemplaza al monto total con su propia
     // suma — si además hay OC, vale/factura de por medio, ambos totales deben
@@ -975,7 +979,6 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
         servicioId={savedOpForConsumo.servicioId}
         opId={savedOpForConsumo.opId}
         montoSugerido={savedOpForConsumo.monto}
-        onClose={onClose}
         onDone={onSaved}
       />
     )
@@ -1089,7 +1092,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               <div style={{ padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a',
                 borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: '#92400e', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  ⚡ Servicio de suministro asociado
+                  ⚡ Servicio de suministro asociado {servicioObligatorio && '*'}
                 </div>
                 <select className="select" value={form.id_servicio_fk} onChange={setF('id_servicio_fk')}>
                   <option value="">— Seleccionar servicio —</option>
@@ -1099,9 +1102,13 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                     </option>
                   ))}
                 </select>
-                {form.id_servicio_fk && (
+                {form.id_servicio_fk ? (
                   <div style={{ fontSize: 11, color: '#92400e' }}>
                     Al guardar la OP se abrirá un modal para registrar el consumo del servicio.
+                  </div>
+                ) : servicioObligatorio && (
+                  <div style={{ fontSize: 11, color: '#b45309' }}>
+                    Obligatorio para OP de Electricidad con CFE — se necesita para capturar el detalle de consumo.
                   </div>
                 )}
               </div>
@@ -1458,11 +1465,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 // ════════════════════════════════════════════════════════════
 // Modal de consumo — se abre tras guardar OP con proveedor id=75
 // ════════════════════════════════════════════════════════════
-function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onClose, onDone }: {
+function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
   servicioId: number
   opId:       number
   montoSugerido: number
-  onClose:    () => void
   onDone:     () => void
 }) {
   const hoy     = new Date()
@@ -1483,8 +1489,13 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onClose, onDone 
   const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
+  const puedeGuardar = !!form.monto && Number(form.monto) > 0 && !!form.consumo && Number(form.consumo) > 0
+
   const handleSave = async () => {
-    if (!form.monto || Number(form.monto) <= 0) return
+    if (!puedeGuardar) {
+      setSaveError('Ingresa el consumo del periodo y el monto para poder guardar')
+      return
+    }
     setSaving(true)
     setSaveError('')
     // id_op_fk es trazabilidad opcional — omitirlo si la columna aún no existe
@@ -1511,15 +1522,20 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onClose, onDone 
     ? `${servicio.tipo_servicio} · ${servicio.no_servicio}${servicio.ubicacion ? ` · ${servicio.ubicacion}` : ''}`
     : '…'
 
+  // Este modal no puede esquivarse: no hay botón "Omitir" y el cierre por X /
+  // clic en el fondo (ModalShell.onClose) se intercepta para exigir primero
+  // guardar el consumo — la OP ya se generó, pero el detalle de consumo es
+  // obligatorio para servicios CFE/Electricidad (ver id_servicio_fk arriba).
+  const bloquearCierre = () => setSaveError('Debes registrar el consumo antes de continuar')
+
   return (
     <ModalShell modulo="compras"
       titulo="Registrar Consumo de Servicio"
       subtitulo={servLabel}
-      onClose={onClose}
+      onClose={bloquearCierre}
       maxWidth={480}
       footer={<>
-        <button className="btn-secondary" onClick={onDone}>Omitir</button>
-        <button className="btn-primary" onClick={handleSave} disabled={saving || !form.monto || Number(form.monto) <= 0}>
+        <button className="btn-primary" onClick={handleSave} disabled={saving || !puedeGuardar}>
           {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
           Guardar Consumo
         </button>
@@ -1532,7 +1548,7 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onClose, onDone 
         )}
         <div style={{ padding: '10px 12px', background: '#eff6ff', border: '1px solid #bfdbfe',
           borderRadius: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-          La OP fue generada. Registra el consumo para mantener el historial del servicio actualizado, o usa <strong>Omitir</strong> si lo harás después.
+          La OP fue generada. Registra el consumo de este periodo para continuar — es obligatorio.
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
@@ -1546,7 +1562,7 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onClose, onDone 
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
-            <label className="label">Consumo ({unidad})</label>
+            <label className="label">Consumo ({unidad}) *</label>
             <input className="input" type="number" step="0.01" placeholder="0"
               value={form.consumo} onChange={setF('consumo')} />
           </div>
