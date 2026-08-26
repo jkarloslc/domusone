@@ -778,6 +778,34 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (form.tipo_gasto === 'Mantenimiento de Vehículos' && bitacorasSel.length === 0) {
       setError('Selecciona al menos una bitácora de servicio cerrada'); return
     }
+    // La distribución por área (detLines) reemplaza al monto total con su propia
+    // suma — si además hay OC, vale/factura de por medio, ambos totales deben
+    // coincidir o la OP queda descuadrada contra la fuente (OC, vale, factura).
+    if (detLines.length > 0 && conOC) {
+      const ocTotal = ocsSelected.reduce((a, o) => a + (Number(o.monto) || 0), 0)
+      if (Math.abs(detTotal - ocTotal) > 0.01) {
+        setError(`El total de distribución (${fmt(detTotal)}) no coincide con el total de las OC seleccionadas (${fmt(ocTotal)})`)
+        return
+      }
+    }
+    if (detLines.length > 0 && !conOC && isVale) {
+      const sourceTotal = form.tipo_gasto === 'Combustible'
+        ? valesCombDisp.filter(v => valesCombSel.includes(v.id)).reduce((a, v) => a + (Number(v.monto_autorizado) || 0), 0)
+        : form.tipo_gasto === 'Perimetrales'
+          ? vigLotesDisp.filter(l => vigLotesSel.includes(l.id)).reduce((a, l) => a + (Number(l.total) || 0), 0)
+          : bitacorasDisp.filter(b => bitacorasSel.includes(b.id)).reduce((a, b) => a + (Number(b.costo_total) || 0), 0)
+      if (Math.abs(detTotal - sourceTotal) > 0.01) {
+        setError(`El total de distribución (${fmt(detTotal)}) no coincide con el monto de lo seleccionado (${fmt(sourceTotal)})`)
+        return
+      }
+    }
+    if (detLines.length > 0 && !conOC && !isVale) {
+      const facturaTotal = subtotalNum + ivaNum
+      if (Math.abs(detTotal - facturaTotal) > 0.01) {
+        setError(`El total de distribución (${fmt(detTotal)}) no coincide con Subtotal + IVA (${fmt(facturaTotal)})`)
+        return
+      }
+    }
     setSaving(true); setError('')
 
     // Obtener CC/Área/Frente de la OC cuando aplica
@@ -1145,7 +1173,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               </div>
             )}
 
-            {!conOC && detLines.length === 0 && !isVale && (
+            {!conOC && !isVale && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
                   <label className="label">Subtotal *</label>
@@ -1409,7 +1437,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
           {/* Resumen monto */}
           <div style={{ padding: '12px 16px', background: 'var(--blue-pale)', border: '1px solid #bfdbfe', borderRadius: 8 }}>
-            {!conOC && detLines.length === 0 && !isVale && (
+            {!conOC && !isVale && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
                 <span>Subtotal {fmt(subtotalNum)}</span>
                 <span>IVA {fmt(ivaNum)}</span>
