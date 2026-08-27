@@ -13,8 +13,14 @@ export async function distribuirConceptosRecibo(idRecibo: number, idCentroIngres
     .select('tipo_desglose').eq('id', idCentroIngreso).maybeSingle()
   if ((centro as any)?.tipo_desglose !== 'conceptos') return
 
+  // Segunda capa de defensa: aunque el llamador ya debería filtrar a solo ventas
+  // PAGADA, se vuelve a verificar aquí contra ctrl_ventas.status — una venta
+  // cancelada nunca debe sumar a recibos_ingreso_conceptos (bug real detectado
+  // 2026-08-26: dos recibos con conceptos inflados por ventas ya canceladas).
   const { data: det } = await dbGolf.from('ctrl_ventas_det')
-    .select('id_producto_fk, id_concepto_ingreso_fk, total').in('id_venta_fk', ventaIds)
+    .select('id_producto_fk, id_concepto_ingreso_fk, total, ctrl_ventas!inner(status)')
+    .in('id_venta_fk', ventaIds)
+    .eq('ctrl_ventas.status', 'PAGADA')
   const detRows = (det ?? []) as { id_producto_fk: number | null; id_concepto_ingreso_fk: number | null; total: number }[]
   if (detRows.length === 0) return
 

@@ -1016,8 +1016,10 @@ ${facturasCorte.length > 0 ? `
         )
       }
 
-      // Distribuir el ingreso por concepto (solo si el centro de ingreso lo requiere)
-      const { data: ventasCorte } = await dbGolf.from('ctrl_ventas').select('id').eq('id_corte_fk', c.id)
+      // Distribuir el ingreso por concepto (solo si el centro de ingreso lo requiere) —
+      // solo ventas PAGADAS; una cancelada no debe sumar a recibos_ingreso_conceptos
+      // aunque siga marcada con este corte.
+      const { data: ventasCorte } = await dbGolf.from('ctrl_ventas').select('id').eq('id_corte_fk', c.id).eq('status', 'PAGADA')
       if (ventasCorte && ventasCorte.length > 0) {
         await distribuirConceptosRecibo(recibo.id, idCentroIngreso, ventasCorte.map((v: any) => v.id))
       }

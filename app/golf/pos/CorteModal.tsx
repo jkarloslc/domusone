@@ -176,9 +176,10 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
       )
     }
 
-    // 3. Actualizar ventas: asignar id_corte_fk
+    // 3. Actualizar ventas: asignar id_corte_fk — a TODAS (incluidas canceladas,
+    // para que dejen de aparecer como pendientes de corte en el siguiente preview).
     const { data: ventasActivas } = await dbGolf.from('ctrl_ventas')
-      .select('id')
+      .select('id, status')
       .eq('id_centro_fk', idCentro)
       .is('id_corte_fk', null)
       .gte('fecha', inicioDelDia(f1))
@@ -188,6 +189,10 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
       const ids = ventasActivas.map((v: any) => v.id)
       await dbGolf.from('ctrl_ventas').update({ id_corte_fk: corte.id }).in('id', ids)
     }
+
+    // Solo las PAGADAS deben distribuirse por concepto — una cancelada nunca debe
+    // sumar a recibos_ingreso_conceptos aunque sí quede marcada con este corte.
+    const idsPagadas = (ventasActivas ?? []).filter((v: any) => v.status === 'PAGADA').map((v: any) => v.id)
 
     // 4. Crear recibo en módulo Ingresos — solo si genera_recibo_automatico = true en el mapeo
     try {
@@ -245,8 +250,8 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
       }
 
       // Distribuir el ingreso por concepto (solo si el centro de ingreso lo requiere)
-      if (recibo && ventasActivas && ventasActivas.length > 0) {
-        await distribuirConceptosRecibo(recibo.id, idCentroIngreso, ventasActivas.map((v: any) => v.id))
+      if (recibo && idsPagadas.length > 0) {
+        await distribuirConceptosRecibo(recibo.id, idCentroIngreso, idsPagadas)
       }
 
       // Guardar FK en el corte
