@@ -653,44 +653,9 @@ export default function ComparativoPage() {
           ))}
         </select>
 
-        {/* Tipo */}
-        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
-          {(['', 'ingreso', 'egreso'] as const).map(t => (
-            <button key={t} onClick={() => setFilterTipo(t)}
-              style={{
-                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
-                background: filterTipo === t ? '#fff' : 'transparent',
-                color: filterTipo === t ? '#1e293b' : '#64748b',
-                fontWeight: filterTipo === t ? 600 : 400,
-                boxShadow: filterTipo === t ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
-              }}>
-              {t === '' ? 'Todos' : t === 'ingreso' ? 'Ingresos' : 'Egresos'}
-            </button>
-          ))}
-        </div>
-
-        {/* Vista: Detalle / Concepto (CC) / Agrupado */}
-        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
-          {([
-            { v: 'detalle',  label: 'Detalle',  icon: List },
-            { v: 'concepto', label: 'Concepto', icon: Building2 },
-            { v: 'agrupado', label: 'Agrupado', icon: Layers },
-          ] as const).map(({ v, label, icon: Icon }) => (
-            <button key={v} onClick={() => setVista(v)}
-              style={{
-                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
-                display: 'flex', alignItems: 'center', gap: 5,
-                background: vista === v ? '#fff' : 'transparent',
-                color: vista === v ? '#1e293b' : '#64748b',
-                fontWeight: vista === v ? 600 : 400,
-                boxShadow: vista === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
-              }}>
-              <Icon size={12} /> {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Filtros por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que Dashboard Financiero */}
+        {/* Filtros por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que Dashboard Financiero.
+            Van antes que Tipo/Vista para que, si el ancho no alcanza, sean Tipo/Vista
+            los que bajen de línea — estos filtros de datos se quedan junto a Presupuesto/Mes. */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
             textTransform: 'uppercase', color: '#059669', paddingLeft: 2 }}>
@@ -758,6 +723,43 @@ export default function ComparativoPage() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Tipo */}
+        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
+          {(['', 'ingreso', 'egreso'] as const).map(t => (
+            <button key={t} onClick={() => setFilterTipo(t)}
+              style={{
+                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
+                background: filterTipo === t ? '#fff' : 'transparent',
+                color: filterTipo === t ? '#1e293b' : '#64748b',
+                fontWeight: filterTipo === t ? 600 : 400,
+                boxShadow: filterTipo === t ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+              }}>
+              {t === '' ? 'Todos' : t === 'ingreso' ? 'Ingresos' : 'Egresos'}
+            </button>
+          ))}
+        </div>
+
+        {/* Vista: Detalle / Concepto (CC) / Agrupado */}
+        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
+          {([
+            { v: 'detalle',  label: 'Detalle',  icon: List },
+            { v: 'concepto', label: 'Concepto', icon: Building2 },
+            { v: 'agrupado', label: 'Agrupado', icon: Layers },
+          ] as const).map(({ v, label, icon: Icon }) => (
+            <button key={v} onClick={() => setVista(v)}
+              style={{
+                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: vista === v ? '#fff' : 'transparent',
+                color: vista === v ? '#1e293b' : '#64748b',
+                fontWeight: vista === v ? 600 : 400,
+                boxShadow: vista === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+              }}>
+              <Icon size={12} /> {label}
+            </button>
+          ))}
         </div>
       </div>
 
