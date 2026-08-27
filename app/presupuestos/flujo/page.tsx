@@ -9,6 +9,7 @@ import { prorratearDescuento } from '@/lib/prorateoDescuento'
 import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
+import { PrintBar } from '@/app/reportes/utils'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -50,6 +51,7 @@ const CLASIFICACION_LABELS: Record<Clasificacion, { ingresos: string; egresos: s
 }
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+const VISTA_LABEL = { detalle: 'Detalle', concepto: 'Concepto', agrupado: 'Agrupado' } as const
 
 const fmt = (n: number) =>
   '$' + Math.abs(n).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -804,8 +806,18 @@ export default function FlujoEfectivoPage() {
           Sin datos para el período seleccionado
         </div>
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <>
+          <PrintBar title="Flujo-de-Efectivo" count={ingRows.length + egrRows.length}
+            reportTitle={`Flujo de Efectivo — ${mesLabel} · ${selPpto?.nombre ?? ''} · Vista ${VISTA_LABEL[vista]}`} />
+          <style>{`
+            @media print {
+              #reporte-print-area .ppto-print-band { page-break-after: avoid !important; break-after: avoid !important; }
+              #reporte-print-area .ppto-print-total { page-break-before: avoid !important; break-before: avoid !important; }
+              #reporte-print-area .btn-ghost { display: none !important; }
+            }
+          `}</style>
+          <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <th style={th}>Partida</th>
@@ -838,7 +850,7 @@ export default function FlujoEfectivoPage() {
                 const realB = totalSeccion(ingRows, 'realVal') - totalSeccion(egrRows, 'realVal')
                 const varAbs = realB - pptoB
                 return (
-                  <tr style={{ background: '#1e293b', fontWeight: 700 }}>
+                  <tr className="ppto-print-total" style={{ background: '#1e293b', fontWeight: 700 }}>
                     <td style={{ ...td, color: '#f1f5f9', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.05em' }}>
                       Flujo Neto de Efectivo
                     </td>
@@ -859,7 +871,8 @@ export default function FlujoEfectivoPage() {
               })()}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       {/* Modal: Real Manual — agregar, editar y eliminar */}
@@ -1128,7 +1141,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
     <>
       {ingRows.length > 0 && (
         <>
-          <tr>
+          <tr className="ppto-print-band">
             <td colSpan={6} style={{
               padding: '7px 16px', background: '#f0fdf4',
               fontWeight: 700, fontSize: 11, color: '#15803d',
@@ -1197,7 +1210,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
 
       {egrRows.length > 0 && (
         <>
-          <tr>
+          <tr className="ppto-print-band">
             <td colSpan={6} style={{
               padding: '7px 16px', background: '#fef2f2',
               fontWeight: 700, fontSize: 11, color: '#b91c1c',
@@ -1299,7 +1312,7 @@ function TotalSectionRow({ label, ppto, real, tipo, bg, color, bgTotal }: {
   const varAbs = real - ppto
   const varPct = ppto > 0 ? Math.round(((real - ppto) / ppto) * 100) : null
   return (
-    <tr style={{ background: bg, fontWeight: 700 }}>
+    <tr className="ppto-print-total" style={{ background: bg, fontWeight: 700 }}>
       <td style={{ padding: '10px 16px', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em', color }}>
         {label}
       </td>
