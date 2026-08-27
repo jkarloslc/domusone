@@ -672,7 +672,7 @@ export default function FlujoEfectivoPage() {
       </div>
 
       {/* Filtros */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         {/* Presupuesto */}
         <select className="input" style={{ width: 280, flex: '0 0 auto' }}
           value={selId ?? ''} onChange={e => onChangePpto(Number(e.target.value))}>
@@ -726,10 +726,8 @@ export default function FlujoEfectivoPage() {
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Filtros por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que Dashboard Financiero */}
-      <div style={{ display: 'flex', gap: 14, marginBottom: 18, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        {/* Filtros por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que Dashboard Financiero */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
             textTransform: 'uppercase', color: '#059669', paddingLeft: 2 }}>
