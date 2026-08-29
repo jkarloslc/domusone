@@ -9,11 +9,15 @@ import InvitadoModal from './InvitadoModal'
 type Invitado = {
   id: number
   nombre: string
+  apellido_paterno: string
+  apellido_materno: string
   telefono: string | null
   email: string | null
   observaciones: string | null
   activo: boolean
 }
+
+const nombreCompletoInv = (i: Invitado) => [i.nombre, i.apellido_paterno, i.apellido_materno].filter(Boolean).join(' ')
 
 type Visita = {
   id: number
@@ -73,7 +77,7 @@ export default function InvitadosPage() {
   const fetchInvitados = useCallback(async () => {
     setLoading(true)
 
-    let q = dbGolf.from('cat_invitados').select('id, nombre, telefono, email, observaciones, activo').order('nombre')
+    let q = dbGolf.from('cat_invitados').select('id, nombre, apellido_paterno, apellido_materno, telefono, email, observaciones, activo').order('nombre')
     if (soloActivos) q = q.eq('activo', true)
     const { data: invData } = await q
 
@@ -101,7 +105,7 @@ export default function InvitadosPage() {
   useEffect(() => { fetchInvitados() }, [fetchInvitados])
 
   const handleDelete = async (inv: Invitado) => {
-    if (!confirm(`¿Eliminar al invitado "${inv.nombre}"? Esta acción no se puede deshacer.`)) return
+    if (!confirm(`¿Eliminar al invitado "${nombreCompletoInv(inv)}"? Esta acción no se puede deshacer.`)) return
     setDeletingId(inv.id)
     const { error } = await dbGolf.from('cat_invitados').delete().eq('id', inv.id)
     setDeletingId(null)
@@ -117,7 +121,7 @@ export default function InvitadosPage() {
 
   const invitadosFiltrados = invitados.filter(i => {
     if (!busqueda.trim()) return true
-    return i.nombre.toLowerCase().includes(busqueda.toLowerCase())
+    return nombreCompletoInv(i).toLowerCase().includes(busqueda.toLowerCase())
   })
 
   const stats = {
@@ -255,7 +259,7 @@ export default function InvitadosPage() {
                         {abierto ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </td>
                       <td style={{ padding: '10px 14px' }}>
-                        <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{inv.nombre}</div>
+                        <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{nombreCompletoInv(inv)}</div>
                         {!inv.activo && <div style={{ fontSize: 11, color: '#94a3b8' }}>Inactivo</div>}
                       </td>
                       <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>{inv.telefono ?? '—'}</td>

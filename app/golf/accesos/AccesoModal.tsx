@@ -10,7 +10,9 @@ type Socio = { id: number; numero_socio: string | null; nombre: string; apellido
 type Familiar = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null }
 type Espacio = { id: number; nombre: string }
 type AdeudoRow = { id: number; concepto: string; monto_final: number; fecha_vencimiento: string | null }
-type InvitadoCat = { id: number; nombre: string }
+type InvitadoCat = { id: number; nombre: string; apellido_paterno: string; apellido_materno: string }
+const nombreCompletoInvitado = (i: InvitadoCat) => [i.nombre, i.apellido_paterno, i.apellido_materno].filter(Boolean).join(' ')
+const soloMayusculas = (v: string) => v.toUpperCase()
 
 const fmt$ = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 
@@ -38,31 +40,51 @@ function InvitadoPicker({ value, nombreActual, onSelect, placeholder, borderColo
   const [search, setSearch]   = useState('')
   const [results, setResults] = useState<InvitadoCat[]>([])
   const [buscando, setBuscando] = useState(false)
-  const [creando, setCreando]   = useState(false)
+
+  // Alta de invitado nuevo — con nombre y apellidos por separado (no se
+  // adivinan a partir del texto buscado) para reducir el riesgo de
+  // duplicados por captura; el upsert además los bloquea a nivel de BD.
+  const [showNuevo, setShowNuevo] = useState(false)
+  const [nuevo, setNuevo] = useState({ nombre: '', apellido_paterno: '', apellido_materno: '' })
+  const [creando, setCreando]     = useState(false)
+  const [errorNuevo, setErrorNuevo] = useState('')
 
   useEffect(() => {
     if (search.trim().length < 2) { setResults([]); return }
     const t = setTimeout(async () => {
       setBuscando(true)
-      const { data } = await dbGolf.from('cat_invitados')
-        .select('id, nombre')
-        .eq('activo', true)
-        .ilike('nombre', `%${search.trim()}%`)
-        .order('nombre')
-        .limit(6)
+      const words = search.trim().split(/\s+/).filter(Boolean)
+      let qb: any = dbGolf.from('cat_invitados').select('id, nombre, apellido_paterno, apellido_materno').eq('activo', true)
+      for (const w of words) {
+        qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%`)
+      }
+      const { data } = await qb.order('nombre').limit(6)
       setResults((data as InvitadoCat[]) ?? [])
       setBuscando(false)
     }, 300)
     return () => clearTimeout(t)
   }, [search])
 
+  const abrirNuevo = () => {
+    setNuevo({ nombre: soloMayusculas(search.trim()), apellido_paterno: '', apellido_materno: '' })
+    setErrorNuevo('')
+    setShowNuevo(true)
+  }
+
   const crearInvitado = async () => {
-    const nombre = search.trim()
-    if (!nombre) return
-    setCreando(true)
-    const { data } = await dbGolf.from('cat_invitados').insert({ nombre }).select('id, nombre').single()
+    const nombre = nuevo.nombre.trim()
+    if (!nombre) { setErrorNuevo('El nombre es obligatorio'); return }
+    setCreando(true); setErrorNuevo('')
+    const { data, error } = await dbGolf.from('cat_invitados')
+      .upsert(
+        { nombre, apellido_paterno: nuevo.apellido_paterno.trim(), apellido_materno: nuevo.apellido_materno.trim() },
+        { onConflict: 'nombre,apellido_paterno,apellido_materno' }
+      )
+      .select('id, nombre, apellido_paterno, apellido_materno')
+      .single()
     setCreando(false)
-    if (data) { onSelect(data as InvitadoCat); setSearch(''); setResults([]) }
+    if (error) { setErrorNuevo(error.message); return }
+    if (data) { onSelect(data as InvitadoCat); setSearch(''); setResults([]); setShowNuevo(false) }
   }
 
   if (value) return (
@@ -78,9 +100,9 @@ function InvitadoPicker({ value, nombreActual, onSelect, placeholder, borderColo
         style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: `1px solid ${borderColor}`, borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
         placeholder={placeholder}
         value={search}
-        onChange={e => setSearch(e.target.value)}
+        onChange={e => { setSearch(e.target.value); setShowNuevo(false) }}
       />
-      {search.trim().length >= 2 && (
+      {search.trim().length >= 2 && !showNuevo && (
         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4, maxHeight: 220, overflowY: 'auto' }}>
           {buscando ? (
             <div style={{ padding: 10, fontSize: 12, color: '#94a3b8' }}>Buscando…</div>
@@ -89,16 +111,50 @@ function InvitadoPicker({ value, nombreActual, onSelect, placeholder, borderColo
               {results.map(inv => (
                 <button key={inv.id} onClick={() => { onSelect(inv); setSearch(''); setResults([]) }}
                   style={{ display: 'block', width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#1e293b', borderBottom: '1px solid #f1f5f9' }}>
-                  {inv.nombre}
+                  {nombreCompletoInvitado(inv)}
                 </button>
               ))}
-              <button onClick={crearInvitado} disabled={creando}
+              <button onClick={abrirNuevo}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '8px 12px', background: '#f0fdf4', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#16a34a' }}>
-                {creando ? <Loader size={12} className="animate-spin" /> : <Plus size={12} />}
-                Crear invitado &quot;{search.trim()}&quot;
+                <Plus size={12} /> Registrar invitado nuevo
               </button>
             </>
           )}
+        </div>
+      )}
+      {showNuevo && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4, padding: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <input
+            style={{ width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, textTransform: 'uppercase', boxSizing: 'border-box' }}
+            placeholder="Nombre(s) *"
+            value={nuevo.nombre}
+            onChange={e => setNuevo(n => ({ ...n, nombre: soloMayusculas(e.target.value) }))}
+            autoFocus
+          />
+          <input
+            style={{ width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, textTransform: 'uppercase', boxSizing: 'border-box' }}
+            placeholder="Apellido Paterno"
+            value={nuevo.apellido_paterno}
+            onChange={e => setNuevo(n => ({ ...n, apellido_paterno: soloMayusculas(e.target.value) }))}
+          />
+          <input
+            style={{ width: '100%', padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, textTransform: 'uppercase', boxSizing: 'border-box' }}
+            placeholder="Apellido Materno"
+            value={nuevo.apellido_materno}
+            onChange={e => setNuevo(n => ({ ...n, apellido_materno: soloMayusculas(e.target.value) }))}
+          />
+          {errorNuevo && <div style={{ fontSize: 11, color: '#dc2626' }}>{errorNuevo}</div>}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={crearInvitado} disabled={creando}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 10px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 6, background: '#16a34a', color: '#fff', cursor: 'pointer', opacity: creando ? 0.7 : 1 }}>
+              {creando ? <Loader size={12} className="animate-spin" /> : <Plus size={12} />}
+              Guardar
+            </button>
+            <button onClick={() => setShowNuevo(false)}
+              style={{ padding: '7px 10px', fontSize: 12, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -388,7 +444,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
   const setAcompInvitado = (i: number, inv: InvitadoCat | null) => {
     setAcomp(a => a.map((x, idx) => idx === i
-      ? { ...x, id_invitado: inv?.id, nombre: inv?.nombre ?? '' }
+      ? { ...x, id_invitado: inv?.id, nombre: inv ? nombreCompletoInvitado(inv) : '' }
       : x
     ))
   }

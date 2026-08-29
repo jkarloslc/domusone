@@ -7,6 +7,8 @@ import ModalShell from '@/components/ui/ModalShell'
 type Invitado = {
   id: number
   nombre: string
+  apellido_paterno: string
+  apellido_materno: string
   telefono: string | null
   email: string | null
   observaciones: string | null
@@ -29,33 +31,44 @@ export default function InvitadoModal({ invitado, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
   const [form, setForm] = useState({
-    nombre:        invitado?.nombre ?? '',
-    telefono:      invitado?.telefono ?? '',
-    email:         invitado?.email ?? '',
-    observaciones: invitado?.observaciones ?? '',
-    activo:        invitado?.activo ?? true,
+    nombre:            invitado?.nombre ?? '',
+    apellido_paterno:  invitado?.apellido_paterno ?? '',
+    apellido_materno:  invitado?.apellido_materno ?? '',
+    telefono:          invitado?.telefono ?? '',
+    email:             invitado?.email ?? '',
+    observaciones:     invitado?.observaciones ?? '',
+    activo:            invitado?.activo ?? true,
   })
 
   const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const setMayus = (k: 'nombre' | 'apellido_paterno' | 'apellido_materno', v: string) => set(k, v.toUpperCase())
 
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
     setSaving(true); setError('')
 
     const payload = {
-      nombre:        form.nombre.trim(),
-      telefono:      form.telefono.trim() || null,
-      email:         form.email.trim() || null,
-      observaciones: form.observaciones.trim() || null,
-      activo:        form.activo,
+      nombre:            form.nombre.trim(),
+      apellido_paterno:  form.apellido_paterno.trim(),
+      apellido_materno:  form.apellido_materno.trim(),
+      telefono:          form.telefono.trim() || null,
+      email:             form.email.trim() || null,
+      observaciones:     form.observaciones.trim() || null,
+      activo:            form.activo,
     }
 
+    // El índice único (nombre, apellido_paterno, apellido_materno) rechaza
+    // duplicados exactos — al crear, se reutiliza la ficha existente en vez
+    // de fallar; al editar, se avisa si el nuevo nombre choca con otro invitado.
     const { error: err } = invitado
       ? await dbGolf.from('cat_invitados').update(payload).eq('id', invitado.id)
-      : await dbGolf.from('cat_invitados').insert(payload)
+      : await dbGolf.from('cat_invitados').upsert(payload, { onConflict: 'nombre,apellido_paterno,apellido_materno' })
 
     setSaving(false)
-    if (err) { setError(err.message); return }
+    if (err) {
+      setError(err.code === '23505' ? 'Ya existe un invitado con ese nombre completo' : err.message)
+      return
+    }
     onSaved()
   }
 
@@ -76,8 +89,19 @@ export default function InvitadoModal({ invitado, onClose, onSaved }: Props) {
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <label style={labelStyle}>Nombre completo *</label>
-          <input style={inputStyle} value={form.nombre} onChange={e => set('nombre', e.target.value)} autoFocus />
+          <label style={labelStyle}>Nombre(s) *</label>
+          <input style={{ ...inputStyle, textTransform: 'uppercase' }} value={form.nombre} onChange={e => setMayus('nombre', e.target.value)} autoFocus />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={labelStyle}>Apellido Paterno</label>
+            <input style={{ ...inputStyle, textTransform: 'uppercase' }} value={form.apellido_paterno} onChange={e => setMayus('apellido_paterno', e.target.value)} />
+          </div>
+          <div>
+            <label style={labelStyle}>Apellido Materno</label>
+            <input style={{ ...inputStyle, textTransform: 'uppercase' }} value={form.apellido_materno} onChange={e => setMayus('apellido_materno', e.target.value)} />
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
