@@ -116,7 +116,7 @@ const ADMIN_MODULOS = [
   'tesoreria', 'cxp', 'ingresos', 'presupuestos', 'reportes', 'catalogos',
   'dashboards',
   'golf', 'golf-torneos', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
-  'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
+  'golf-pases', 'golf-invitados', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
   'golf-cuotas', 'golf-cxc', 'golf-recibos', 'golf-intercambios', 'golf-catalogos',
   'golf-riego', 'golf-mantenimiento-campo', 'golf-tee-practica',
   'golf-administracion', 'golf-mantto-campo', 'golf-estatus-campo',
@@ -147,7 +147,7 @@ const HIPICO_MODULOS = [
 // Incluye módulo Hípico completo (acceso agregado 2026-07-28)
 const GOLF_MODULOS = [
   'golf', 'golf-torneos', 'golf-miembros', 'golf-accesos', 'golf-reservaciones',
-  'golf-pases', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
+  'golf-pases', 'golf-invitados', 'golf-clinicas', 'golf-pos', 'golf-carritos', 'golf-casilleros',
   'golf-cuotas', 'golf-cxc', 'golf-recibos', 'golf-intercambios', 'golf-catalogos',
   'golf-riego', 'golf-mantenimiento-campo', 'golf-tee-practica',
   'golf-administracion', 'golf-mantto-campo', 'golf-estatus-campo',

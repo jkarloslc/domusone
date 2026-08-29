@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import {
-  Users, Tag, Car, Receipt, CreditCard, ChevronRight, Building2,
+  Users, Tag, Car, Receipt, CreditCard, ChevronRight, Building2, UserPlus,
 } from 'lucide-react'
 
 const MODULOS = [
@@ -19,6 +19,14 @@ const MODULOS = [
     icon: Tag,
     color: '#d97706',
     href: '/golf/pases',
+  },
+  {
+    key: 'invitados',
+    label: 'Invitados',
+    desc: 'Catálogo de invitados, historial de visitas y tope anual',
+    icon: UserPlus,
+    color: '#b91c1c',
+    href: '/golf/invitados',
   },
   {
     key: 'carritos',

@@ -10,6 +10,7 @@ type Socio = { id: number; numero_socio: string | null; nombre: string; apellido
 type Familiar = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; parentesco: string | null }
 type Espacio = { id: number; nombre: string }
 type AdeudoRow = { id: number; concepto: string; monto_final: number; fecha_vencimiento: string | null }
+type InvitadoCat = { id: number; nombre: string }
 
 const fmt$ = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 
@@ -17,10 +18,121 @@ const fmt$ = (n: number) => `$${n.toLocaleString('es-MX', { minimumFractionDigit
 type Acomp = {
   tipo: 'familiar' | 'libre' | 'externo' | 'intercambio'
   id_familiar?: number
+  id_invitado?: number
   nombre: string
   club_origen?: string
   _pase_mov_id?: number | null
   _origen_pago?: string | null
+}
+
+// Buscador/creador de invitados contra el catálogo golf.cat_invitados —
+// da identidad persistente al invitado (antes era solo texto libre),
+// lo que permite contar su frecuencia de asistencia entre distintos socios.
+function InvitadoPicker({ value, nombreActual, onSelect, placeholder, borderColor }: {
+  value: number | undefined
+  nombreActual: string
+  onSelect: (inv: InvitadoCat | null) => void
+  placeholder: string
+  borderColor: string
+}) {
+  const [search, setSearch]   = useState('')
+  const [results, setResults] = useState<InvitadoCat[]>([])
+  const [buscando, setBuscando] = useState(false)
+  const [creando, setCreando]   = useState(false)
+
+  useEffect(() => {
+    if (search.trim().length < 2) { setResults([]); return }
+    const t = setTimeout(async () => {
+      setBuscando(true)
+      const { data } = await dbGolf.from('cat_invitados')
+        .select('id, nombre')
+        .eq('activo', true)
+        .ilike('nombre', `%${search.trim()}%`)
+        .order('nombre')
+        .limit(6)
+      setResults((data as InvitadoCat[]) ?? [])
+      setBuscando(false)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [search])
+
+  const crearInvitado = async () => {
+    const nombre = search.trim()
+    if (!nombre) return
+    setCreando(true)
+    const { data } = await dbGolf.from('cat_invitados').insert({ nombre }).select('id, nombre').single()
+    setCreando(false)
+    if (data) { onSelect(data as InvitadoCat); setSearch(''); setResults([]) }
+  }
+
+  if (value) return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', background: '#f8fafc', border: `1px solid ${borderColor}`, borderRadius: 8, minWidth: 0 }}>
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreActual}</span>
+      <button onClick={() => onSelect(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', flexShrink: 0 }}><X size={13} /></button>
+    </div>
+  )
+
+  return (
+    <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
+      <input
+        style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: `1px solid ${borderColor}`, borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+        placeholder={placeholder}
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+      {search.trim().length >= 2 && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4, maxHeight: 220, overflowY: 'auto' }}>
+          {buscando ? (
+            <div style={{ padding: 10, fontSize: 12, color: '#94a3b8' }}>Buscando…</div>
+          ) : (
+            <>
+              {results.map(inv => (
+                <button key={inv.id} onClick={() => { onSelect(inv); setSearch(''); setResults([]) }}
+                  style={{ display: 'block', width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#1e293b', borderBottom: '1px solid #f1f5f9' }}>
+                  {inv.nombre}
+                </button>
+              ))}
+              <button onClick={crearInvitado} disabled={creando}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '8px 12px', background: '#f0fdf4', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#16a34a' }}>
+                {creando ? <Loader size={12} className="animate-spin" /> : <Plus size={12} />}
+                Crear invitado &quot;{search.trim()}&quot;
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Badge con las visitas del invitado en el año en curso — cuenta cruzada
+// entre todos los socios que lo hayan traído, no solo el socio actual.
+function InvitadoVisitasBadge({ idInvitado, limite }: { idInvitado: number; limite: number }) {
+  const [count, setCount] = useState<number | null>(null)
+  const anio = new Date().getFullYear()
+
+  useEffect(() => {
+    let cancel = false
+    dbGolf.from('ctrl_acceso_acomp')
+      .select('id, ctrl_accesos!inner(fecha_entrada)', { count: 'exact', head: true })
+      .eq('id_invitado_fk', idInvitado)
+      .gte('ctrl_accesos.fecha_entrada', `${anio}-01-01T00:00:00`)
+      .lt('ctrl_accesos.fecha_entrada', `${anio + 1}-01-01T00:00:00`)
+      .then(({ count: c, error }) => {
+        if (error) console.error('[InvitadoVisitasBadge] error:', error.message)
+        if (!cancel) setCount(c ?? 0)
+      })
+    return () => { cancel = true }
+  }, [idInvitado, anio])
+
+  if (count === null) return <span style={{ fontSize: 11, color: '#94a3b8' }}>Verificando visitas…</span>
+  const alTope = count >= limite
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: alTope ? '#fef2f2' : '#f0fdf4', color: alTope ? '#dc2626' : '#15803d' }}>
+      {alTope && <AlertTriangle size={11} />}
+      Visitas {anio}: {count}/{limite}{alTope ? ' — tope alcanzado' : ''}
+    </span>
+  )
 }
 
 type Props = { onClose: () => void; onSaved: () => void }
@@ -165,6 +277,13 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
   const totalPasesDisp = pasesDisponibles.reduce((a, p) => a + (p.cantidad_disponible ?? 0), 0)
 
+  // Tope anual de visitas por invitado (igual para todo tipo de socio)
+  const [limiteInvitados, setLimiteInvitados] = useState(20)
+  useEffect(() => {
+    dbGolf.from('cfg_invitados_politica').select('limite_anual').order('id').limit(1).maybeSingle()
+      .then(({ data }) => { if (data?.limite_anual) setLimiteInvitados(data.limite_anual) })
+  }, [])
+
   // La salida se considera "Green Fee" si hay algún acompañante marcado como tal,
   // o un invitado sin pases disponibles (se cobrará como green fee al no poder descontar un pase).
   const tieneGreenFee = acompanantes.some(a =>
@@ -267,6 +386,13 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     ))
   }
 
+  const setAcompInvitado = (i: number, inv: InvitadoCat | null) => {
+    setAcomp(a => a.map((x, idx) => idx === i
+      ? { ...x, id_invitado: inv?.id, nombre: inv?.nombre ?? '' }
+      : x
+    ))
+  }
+
   const setAcompClubOrigen = (i: number, v: string) => {
     setAcomp(a => a.map((x, idx) => idx === i
       ? { ...x, club_origen: v }
@@ -289,6 +415,29 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       setError('Captura y valida el folio del Ticket de Venta (Green Fees) del POS de Golf, emitido el día de hoy')
       return
     }
+
+    const acompFiltrados = acompanantes
+      .map((a, i) => ({ ...a, orden: i + 1 }))
+      .filter(a => a.nombre.trim())
+
+    // Invitados (pase o Green Fee) deben venir del catálogo y no haber
+    // alcanzado el tope anual de visitas (cuenta cruzada entre todos los socios)
+    const anioActual = new Date().getFullYear()
+    for (const a of acompFiltrados) {
+      if (a.tipo !== 'externo' && a.tipo !== 'libre') continue
+      if (!a.id_invitado) { setError(`Selecciona o crea del catálogo al invitado "${a.nombre}"`); return }
+      const { count, error: countErr } = await dbGolf.from('ctrl_acceso_acomp')
+        .select('id, ctrl_accesos!inner(fecha_entrada)', { count: 'exact', head: true })
+        .eq('id_invitado_fk', a.id_invitado)
+        .gte('ctrl_accesos.fecha_entrada', `${anioActual}-01-01T00:00:00`)
+        .lt('ctrl_accesos.fecha_entrada', `${anioActual + 1}-01-01T00:00:00`)
+      if (countErr) { setError(countErr.message); return }
+      if ((count ?? 0) >= limiteInvitados) {
+        setError(`${a.nombre} ya alcanzó el límite de ${limiteInvitados} visitas este año — no se puede registrar su acceso`)
+        return
+      }
+    }
+
     setSaving(true); setError('')
 
     const { data: acceso, error: err } = await dbGolf
@@ -305,11 +454,6 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       .single()
 
     if (err || !acceso) { setError(err?.message ?? 'Error al guardar'); setSaving(false); return }
-
-    // insertar acompañantes con FK a familiar si aplica
-    const acompFiltrados = acompanantes
-      .map((a, i) => ({ ...a, orden: i + 1 }))
-      .filter(a => a.nombre.trim())
 
     // Cuántos acompañantes externos hay — intentar descontar pases
     const externosFiltrados = acompFiltrados.filter(a => a.tipo === 'externo')
@@ -359,6 +503,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
               ? 'INTERCAMBIO'
               : ((a as any)._origen_pago ?? null),
           id_pase_mov_fk: (a as any)._pase_mov_id ?? null,
+          id_invitado_fk: (a.tipo === 'externo' || a.tipo === 'libre') ? (a.id_invitado ?? null) : null,
         }))
       )
       if (acompErr) {
@@ -627,14 +772,23 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                       onChange={e => setAcompClubOrigen(i, e.target.value)}
                     />
                   </div>
+                ) : (a.tipo === 'externo' || a.tipo === 'libre') ? (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                    <InvitadoPicker
+                      value={a.id_invitado}
+                      nombreActual={a.nombre}
+                      onSelect={inv => setAcompInvitado(i, inv)}
+                      placeholder={a.tipo === 'externo'
+                        ? `Buscar o crear invitado ${i + 1} (consumirá 1 pase)`
+                        : `Buscar o crear invitado ${i + 1} (green fee)`}
+                      borderColor={a.tipo === 'externo' ? '#fde68a' : '#e2e8f0'}
+                    />
+                    {a.id_invitado && <InvitadoVisitasBadge idInvitado={a.id_invitado} limite={limiteInvitados} />}
+                  </div>
                 ) : (
                   <input
-                    style={{ ...inputStyle, flex: 1, borderColor: a.tipo === 'externo' ? '#fde68a' : '#e2e8f0' }}
-                    placeholder={a.tipo === 'externo'
-                      ? `Nombre del invitado ${i + 1} (consumirá 1 pase)`
-                      : a.tipo === 'libre'
-                        ? `Nombre del visitante ${i + 1} (green fee)`
-                        : `Nombre del acompañante ${i + 1}`}
+                    style={{ ...inputStyle, flex: 1, borderColor: '#e2e8f0' }}
+                    placeholder={`Nombre del acompañante ${i + 1}`}
                     value={a.nombre}
                     onChange={e => setAcompLibre(i, e.target.value)}
                   />
