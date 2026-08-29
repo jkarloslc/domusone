@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight, Settings, Save, Loader, AlertTriangle } from 'lucide-react'
+import { Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight, Settings, Save, Loader, AlertTriangle, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import InvitadoModal from './InvitadoModal'
 
@@ -30,10 +30,12 @@ const fmtFecha = (d: string) =>
   new Date(d).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
 
 export default function InvitadosPage() {
-  const { canWrite } = useAuth()
+  const { canWrite, authUser } = useAuth()
   const puedeEscribir = canWrite('golf-invitados')
+  const esSuperAdmin  = authUser?.rol === 'superadmin'
 
   const [invitados, setInvitados]   = useState<Invitado[]>([])
+  const [deletingId, setDeletingId] = useState<number | null>(null)
   const [visitasPorInvitado, setVisitasPorInvitado] = useState<Record<number, Visita[]>>({})
   const [loading, setLoading]       = useState(true)
   const [busqueda, setBusqueda]     = useState('')
@@ -97,6 +99,18 @@ export default function InvitadosPage() {
   }, [soloActivos])
 
   useEffect(() => { fetchInvitados() }, [fetchInvitados])
+
+  const handleDelete = async (inv: Invitado) => {
+    if (!confirm(`¿Eliminar al invitado "${inv.nombre}"? Esta acción no se puede deshacer.`)) return
+    setDeletingId(inv.id)
+    const { error } = await dbGolf.from('cat_invitados').delete().eq('id', inv.id)
+    setDeletingId(null)
+    if (error) {
+      alert('No se puede eliminar: tiene visitas registradas en su historial. Márcalo como inactivo en su lugar.')
+      return
+    }
+    fetchInvitados()
+  }
 
   const visitasAnio = (id: number) =>
     (visitasPorInvitado[id] ?? []).filter(v => new Date(v.fecha_entrada).getFullYear() === anioActual).length
@@ -211,16 +225,16 @@ export default function InvitadosPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                {['', 'Invitado', 'Teléfono', `Visitas ${anioActual}`, 'Visitas Históricas', 'Anfitriones'].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                {['', 'Invitado', 'Teléfono', `Visitas ${anioActual}`, 'Visitas Históricas', 'Anfitriones', ...(esSuperAdmin ? [''] : [])].map((h, i) => (
+                  <th key={`${h}-${i}`} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+                <tr><td colSpan={esSuperAdmin ? 7 : 6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
               ) : invitadosFiltrados.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <tr><td colSpan={esSuperAdmin ? 7 : 6} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin invitados registrados</div>
                   <div style={{ fontSize: 12 }}>Se dan de alta automáticamente al registrar una salida al campo, o desde &quot;Nuevo Invitado&quot;</div>
                 </td></tr>
@@ -255,11 +269,22 @@ export default function InvitadosPage() {
                       <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: 12 }}>
                         {anfitriones.length === 0 ? '—' : anfitriones.length === 1 ? anfitriones[0] : `${anfitriones.length} socios distintos`}
                       </td>
+                      {esSuperAdmin && (
+                        <td style={{ padding: '10px 14px' }}>
+                          <button
+                            onClick={e => { e.stopPropagation(); handleDelete(inv) }}
+                            disabled={deletingId === inv.id}
+                            title="Eliminar invitado"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 4, opacity: deletingId === inv.id ? 0.5 : 1 }}>
+                            {deletingId === inv.id ? <Loader size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                          </button>
+                        </td>
+                      )}
                     </tr>
 
                     {abierto && (
                       <tr key={`${inv.id}-det`}>
-                        <td colSpan={6} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
+                        <td colSpan={esSuperAdmin ? 7 : 6} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
                           <div style={{ padding: '16px 20px 20px 48px', background: '#fafafa' }}>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
