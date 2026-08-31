@@ -25,19 +25,21 @@ type Acomp = {
   club_origen?: string
   _pase_mov_id?: number | null
   _origen_pago?: string | null
+  _searchInvitado?: string
 }
 
 // Buscador/creador de invitados contra el catálogo golf.cat_invitados —
 // da identidad persistente al invitado (antes era solo texto libre),
 // lo que permite contar su frecuencia de asistencia entre distintos socios.
-function InvitadoPicker({ value, nombreActual, onSelect, placeholder, borderColor }: {
+function InvitadoPicker({ value, nombreActual, search, onSearchChange, onSelect, placeholder, borderColor }: {
   value: number | undefined
   nombreActual: string
+  search: string
+  onSearchChange: (v: string) => void
   onSelect: (inv: InvitadoCat | null) => void
   placeholder: string
   borderColor: string
 }) {
-  const [search, setSearch]   = useState('')
   const [results, setResults] = useState<InvitadoCat[]>([])
   const [buscando, setBuscando] = useState(false)
 
@@ -84,7 +86,7 @@ function InvitadoPicker({ value, nombreActual, onSelect, placeholder, borderColo
       .single()
     setCreando(false)
     if (error) { setErrorNuevo(error.message); return }
-    if (data) { onSelect(data as InvitadoCat); setSearch(''); setResults([]); setShowNuevo(false) }
+    if (data) { onSelect(data as InvitadoCat); onSearchChange(''); setResults([]); setShowNuevo(false) }
   }
 
   if (value) return (
@@ -100,7 +102,7 @@ function InvitadoPicker({ value, nombreActual, onSelect, placeholder, borderColo
         style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: `1px solid ${borderColor}`, borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
         placeholder={placeholder}
         value={search}
-        onChange={e => { setSearch(e.target.value); setShowNuevo(false) }}
+        onChange={e => { onSearchChange(e.target.value); setShowNuevo(false) }}
       />
       {search.trim().length >= 2 && !showNuevo && (
         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 60, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', marginTop: 4, maxHeight: 220, overflowY: 'auto' }}>
@@ -109,7 +111,7 @@ function InvitadoPicker({ value, nombreActual, onSelect, placeholder, borderColo
           ) : (
             <>
               {results.map(inv => (
-                <button key={inv.id} onClick={() => { onSelect(inv); setSearch(''); setResults([]) }}
+                <button key={inv.id} onClick={() => { onSelect(inv); onSearchChange(''); setResults([]) }}
                   style={{ display: 'block', width: '100%', padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#1e293b', borderBottom: '1px solid #f1f5f9' }}>
                   {nombreCompletoInvitado(inv)}
                 </button>
@@ -340,6 +342,12 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       .then(({ data }) => { if (data?.limite_anual) setLimiteInvitados(data.limite_anual) })
   }, [])
 
+  // Fila de invitado con texto buscado pero sin confirmar (ni seleccionado
+  // de la lista ni dado de alta) — se bloquea el guardado para no perderla en silencio.
+  const hayInvitadoSinConfirmar = acompanantes.some(a =>
+    (a.tipo === 'externo' || a.tipo === 'libre') && !a.id_invitado && (a._searchInvitado ?? '').trim()
+  )
+
   // La salida se considera "Green Fee" si hay algún acompañante marcado como tal,
   // o un invitado sin pases disponibles (se cobrará como green fee al no poder descontar un pase).
   const tieneGreenFee = acompanantes.some(a =>
@@ -444,9 +452,13 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
 
   const setAcompInvitado = (i: number, inv: InvitadoCat | null) => {
     setAcomp(a => a.map((x, idx) => idx === i
-      ? { ...x, id_invitado: inv?.id, nombre: inv ? nombreCompletoInvitado(inv) : '' }
+      ? { ...x, id_invitado: inv?.id, nombre: inv ? nombreCompletoInvitado(inv) : '', _searchInvitado: '' }
       : x
     ))
+  }
+
+  const setAcompSearchInvitado = (i: number, v: string) => {
+    setAcomp(a => a.map((x, idx) => idx === i ? { ...x, _searchInvitado: v } : x))
   }
 
   const setAcompClubOrigen = (i: number, v: string) => {
@@ -470,6 +482,18 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
     if (tieneGreenFee && !folioValidado?.ok) {
       setError('Captura y valida el folio del Ticket de Venta (Green Fees) del POS de Golf, emitido el día de hoy')
       return
+    }
+
+    // Si el usuario escribió una búsqueda de invitado pero nunca confirmó un
+    // resultado (ni dio de alta uno nuevo), la fila quedaría con nombre vacío
+    // y se descartaría en silencio del guardado — sin invitado, sin pase
+    // consumido y sin ningún aviso. Se bloquea el guardado en ese caso.
+    for (let i = 0; i < acompanantes.length; i++) {
+      const a = acompanantes[i]
+      if ((a.tipo === 'externo' || a.tipo === 'libre') && !a.id_invitado && (a._searchInvitado ?? '').trim()) {
+        setError(`Falta confirmar al invitado de la fila ${i + 1} — selecciónalo de la lista o da clic en "Registrar invitado nuevo" y guarda sus datos`)
+        return
+      }
     }
 
     const acompFiltrados = acompanantes
@@ -638,7 +662,7 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
       maxWidth={560}
       footer={<>
         <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn-primary" onClick={handleSave} disabled={saving || verificandoAdeudo || tieneAdeudo || (tieneGreenFee && !folioValidado?.ok)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button className="btn-primary" onClick={handleSave} disabled={saving || verificandoAdeudo || tieneAdeudo || hayInvitadoSinConfirmar || (tieneGreenFee && !folioValidado?.ok)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
           Registrar Salida
         </button>
@@ -833,6 +857,8 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                     <InvitadoPicker
                       value={a.id_invitado}
                       nombreActual={a.nombre}
+                      search={a._searchInvitado ?? ''}
+                      onSearchChange={v => setAcompSearchInvitado(i, v)}
                       onSelect={inv => setAcompInvitado(i, inv)}
                       placeholder={a.tipo === 'externo'
                         ? `Buscar o crear invitado ${i + 1} (consumirá 1 pase)`
@@ -840,6 +866,9 @@ export default function AccesoModal({ onClose, onSaved }: Props) {
                       borderColor={a.tipo === 'externo' ? '#fde68a' : '#e2e8f0'}
                     />
                     {a.id_invitado && <InvitadoVisitasBadge idInvitado={a.id_invitado} limite={limiteInvitados} />}
+                    {!a.id_invitado && (a._searchInvitado ?? '').trim() && (
+                      <span style={{ fontSize: 11, color: '#dc2626' }}>Falta confirmar — selecciona un resultado o registra al invitado nuevo</span>
+                    )}
                   </div>
                 ) : (
                   <input
