@@ -64,6 +64,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
     id_arrendatario_fk: asignacion?.id_arrendatario_fk ?? 0,
     id_propiedad_fk:    asignacion?.id_propiedad_fk    ?? 0,
     fecha_inicio:       asignacion?.fecha_inicio        ?? hoy(),
+    fecha_fin:          asignacion?.fecha_fin           ?? '',
     monto_mensual:      asignacion?.monto_mensual       ?? montoExistente ?? 0,
     dia_pago:           asignacion?.dia_pago            ?? 1,
     activo:             asignacion?.activo              ?? true,
@@ -133,6 +134,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
     if (esEdicion && asigId) {
       const payload = {
         fecha_inicio: form.fecha_inicio,
+        fecha_fin: form.fecha_fin || null,
         monto_mensual: form.monto_mensual,
         dia_pago: form.dia_pago,
         activo: form.activo,
@@ -140,6 +142,27 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
       }
       const { error } = await dbCtrl.from('loc_asignaciones').update(payload).eq('id', asigId)
       if (error) { setErr(error.message); setSaving(false); return }
+
+      // El contrato pasó de activo a inactivo (finalizado manualmente o por vencimiento):
+      // libera la propiedad si ya no tiene otra asignación activa.
+      const idProp = asignacion!.id_propiedad_fk
+      if (asignacion!.activo && !form.activo) {
+        const { data: otras } = await dbCtrl.from('loc_asignaciones')
+          .select('id').eq('id_propiedad_fk', idProp).eq('activo', true).neq('id', asigId).limit(1)
+        if (!otras || otras.length === 0) {
+          await dbCtrl.from('loc_propiedades').update({ status: 'Libre' }).eq('id', idProp)
+        }
+      } else if (!asignacion!.activo && form.activo) {
+        // Reactivación de un contrato: solo si la propiedad no está ocupada por otro contrato vigente.
+        const { data: prop } = await dbCtrl.from('loc_propiedades').select('status').eq('id', idProp).single()
+        if ((prop as { status: string } | null)?.status === 'Rentada') {
+          setErr('No se puede reactivar: la propiedad ya está rentada bajo otro contrato.')
+          setSaving(false)
+          return
+        }
+        await dbCtrl.from('loc_propiedades').update({ status: 'Rentada' }).eq('id', idProp)
+      }
+
       onSaved()
       return
     }
@@ -149,6 +172,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
         id_arrendatario_fk: form.id_arrendatario_fk,
         id_propiedad_fk:    form.id_propiedad_fk,
         fecha_inicio:       form.fecha_inicio,
+        fecha_fin:          form.fecha_fin || null,
         monto_mensual:      form.monto_mensual,
         dia_pago:           form.dia_pago,
         activo:             true,
@@ -280,20 +304,32 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                 </div>
               </div>
 
-              {/* Fecha inicio + activo */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'end' }}>
+              {/* Fecha inicio + fecha fin (vencimiento de contrato) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={labelStyle}>Fecha inicio</label>
                   <input style={inputStyle} type="date" value={form.fecha_inicio}
                     onChange={e => set('fecha_inicio', e.target.value)} />
                 </div>
-                {esEdicion && (
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer', paddingBottom: 8 }}>
+                <div>
+                  <label style={labelStyle}>Vencimiento de contrato</label>
+                  <input style={inputStyle} type="date" value={form.fecha_fin ?? ''} min={form.fecha_inicio || undefined}
+                    onChange={e => set('fecha_fin', e.target.value)} />
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Opcional. No tiene que ser de 1 año — cualquier duración.</div>
+                </div>
+              </div>
+
+              {esEdicion && (
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
                     <input type="checkbox" checked={form.activo} onChange={e => set('activo', e.target.checked)} />
                     Activa
                   </label>
-                )}
-              </div>
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                    Al desactivar (finalizar contrato) o al vencer la fecha de vencimiento, la propiedad se libera automáticamente y queda disponible para asignarse bajo otro contrato.
+                  </div>
+                </div>
+              )}
 
               {/* Observaciones */}
               <div>

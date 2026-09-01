@@ -181,9 +181,34 @@ export default function CobranzaLocalesPage() {
   const PAGE_SIZE_Q = 50
   const esSuperadmin = authUser?.rol === 'superadmin'
 
+  // ── Liberar contratos vencidos ─────────────────────────────
+  // Asignaciones activas cuyo fecha_fin ya pasó: se desactivan y, si la
+  // propiedad no tiene otra asignación activa, vuelve a status 'Libre'
+  // para poder asignarse de nuevo bajo otro contrato.
+  const liberarContratosVencidos = useCallback(async () => {
+    const { data: vencidas } = await dbCtrl.from('loc_asignaciones')
+      .select('id, id_propiedad_fk')
+      .eq('activo', true)
+      .not('fecha_fin', 'is', null)
+      .lt('fecha_fin', hoy)
+    const lista = (vencidas ?? []) as { id: number; id_propiedad_fk: number }[]
+    if (lista.length === 0) return
+    const idsVencidas = lista.map(v => v.id)
+    await dbCtrl.from('loc_asignaciones').update({ activo: false }).in('id', idsVencidas)
+    const propiedadesUnicas = Array.from(new Set(lista.map(v => v.id_propiedad_fk)))
+    for (const idProp of propiedadesUnicas) {
+      const { data: otras } = await dbCtrl.from('loc_asignaciones')
+        .select('id').eq('id_propiedad_fk', idProp).eq('activo', true).limit(1)
+      if (!otras || otras.length === 0) {
+        await dbCtrl.from('loc_propiedades').update({ status: 'Libre' }).eq('id', idProp)
+      }
+    }
+  }, [])
+
   // ── Fetch Asignaciones ────────────────────────────────────
   const fetchAsignaciones = useCallback(async () => {
     setLoadingA(true)
+    await liberarContratosVencidos()
     let q = dbCtrl.from('loc_asignaciones')
       .select(`id, id_arrendatario_fk, id_propiedad_fk, fecha_inicio, fecha_fin,
         monto_mensual, dia_pago, activo, observaciones,
@@ -223,7 +248,7 @@ export default function CobranzaLocalesPage() {
       vencidas:        activas.filter(a => a.con_adeudo).length,
     })
     setLoadingA(false)
-  }, [soloActivas])
+  }, [soloActivas, liberarContratosVencidos])
 
   // ── Cobrar desde asignación ───────────────────────────────
   const abrirCobroAsig = async (a: Asignacion) => {
