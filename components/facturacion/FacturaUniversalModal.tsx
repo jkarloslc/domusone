@@ -116,6 +116,13 @@ export default function FacturaUniversalModal({
     email:          receptorInit.email          ?? '',
   })
 
+  // Clave Prod/Serv SAT: si todos los renglones resolvieron la misma clave desde su
+  // producto/concepto de origen, se precarga aquí para que lo que se ve en el modal
+  // coincida con lo que realmente se manda a timbrar (este campo solo aplica como
+  // respaldo cuando un renglón no trae su propia clave — ver payload más abajo).
+  const clavesResueltas = Array.from(new Set(conceptos.map(c => c.clave_prod_serv).filter(Boolean)))
+  const claveComunInicial = clavesResueltas.length === 1 ? clavesResueltas[0]! : '80101601'
+
   // Datos del comprobante
   const [cfdi, setCfdi] = useState({
     serie:          serieFactura ?? 'A',
@@ -124,7 +131,7 @@ export default function FacturaUniversalModal({
     descripcion:    conceptos.length === 1
       ? conceptos[0].descripcion
       : 'Servicios de club y membresía',
-    clave_prod_serv: '80101601',
+    clave_prod_serv: claveComunInicial,
   })
 
   const setR = (k: keyof typeof receptor, v: string) => setReceptor(r => ({ ...r, [k]: v }))
@@ -520,21 +527,28 @@ export default function FacturaUniversalModal({
                   onChange={e => setC('serie', e.target.value)} placeholder="A" />
               </div>
               <div>
-                <label style={labelStyle}>Clave Prod/Serv SAT</label>
+                <label style={labelStyle}>Clave Prod/Serv SAT (respaldo)</label>
                 <input style={{ ...inputStyle, fontFamily: 'monospace' }} value={cfdi.clave_prod_serv} onChange={e => setC('clave_prod_serv', e.target.value)} placeholder="80101601" />
+                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>
+                  Solo aplica a renglones sin clave propia — revisa la columna "Clave SAT" abajo.
+                </div>
               </div>
             </div>
 
             {/* Conceptos — IVA fijo desde el catálogo, solo lectura */}
             <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', marginTop: 4 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 80px', padding: '8px 12px', background: '#f8fafc', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', gap: 8 }}>
-                <span>Concepto</span><span style={{ textAlign: 'right' }}>Base</span><span style={{ textAlign: 'center' }}>IVA</span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 80px', padding: '8px 12px', background: '#f8fafc', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', gap: 8 }}>
+                <span>Concepto</span><span>Clave SAT</span><span style={{ textAlign: 'right' }}>Base</span><span style={{ textAlign: 'center' }}>IVA</span>
               </div>
               {conceptos.map((c, i) => {
                 const tiva = tasas[i] ?? 0
+                const claveEfectiva = c.clave_prod_serv || cfdi.clave_prod_serv
                 return (
-                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 110px 80px', padding: '8px 12px', borderTop: '1px solid #f1f5f9', fontSize: 12, gap: 8, alignItems: 'center' }}>
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 110px 80px', padding: '8px 12px', borderTop: '1px solid #f1f5f9', fontSize: 12, gap: 8, alignItems: 'center' }}>
                     <span style={{ color: '#475569' }}>{c.descripcion}</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: 11, color: c.clave_prod_serv ? '#0f766e' : '#cbd5e1' }} title={c.clave_prod_serv ? 'Resuelta del catálogo' : 'Usa el respaldo global'}>
+                      {claveEfectiva}
+                    </span>
                     <span style={{ fontWeight: 700, color: '#1e293b', textAlign: 'right' }}>{fmt$(c.importe)}</span>
                     <span style={{ textAlign: 'center' }}>
                       <span style={{
