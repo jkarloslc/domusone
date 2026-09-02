@@ -57,14 +57,17 @@ async function generarFolio(): Promise<string> {
   return `RL-${anio}-${String(num).padStart(3, '0')}`
 }
 
-// Resuelve el concepto de ingreso por cada línea de un ticket POS, siguiendo la
-// cadena cuota (loc_cxc) → asignación (loc_asignaciones) → propiedad (loc_propiedades).
-// Si la propiedad no tiene concepto propio (o la línea no viene de una cuota,
-// como "Cargo adicional"/"Descuento adicional"), el corte la clasifica en "Otros".
+// Resuelve el concepto de ingreso por cada línea de un ticket POS.
+// - Renta: sigue la cadena cuota (loc_cxc) → asignación (loc_asignaciones) → propiedad
+//   (loc_propiedades), usando el concepto propio de la propiedad. Si la propiedad no
+//   tiene concepto propio (o la línea no viene de una cuota, como "Cargo adicional"),
+//   el corte la clasifica en "Otros".
+// - Servicios de Mantto: siempre cae en el concepto compartido "Servicio de
+//   Mantenimiento" del centro de Locales Comerciales, sin importar la propiedad.
 export async function resolveConceptosPorCuota(idsCuota: number[]): Promise<Record<number, number | null>> {
   if (idsCuota.length === 0) return {}
-  const { data: cxc } = await dbCtrl.from('loc_cxc').select('id, id_asignacion_fk').in('id', idsCuota)
-  const cxcRows = (cxc ?? []) as { id: number; id_asignacion_fk: number | null }[]
+  const { data: cxc } = await dbCtrl.from('loc_cxc').select('id, id_asignacion_fk, tipo').in('id', idsCuota)
+  const cxcRows = (cxc ?? []) as { id: number; id_asignacion_fk: number | null; tipo: string | null }[]
 
   const idsAsig = Array.from(new Set(cxcRows.map(c => c.id_asignacion_fk).filter((v): v is number => v != null)))
   const { data: asigs } = idsAsig.length
@@ -82,8 +85,19 @@ export async function resolveConceptosPorCuota(idsCuota: number[]): Promise<Reco
   const asigConcepto: Record<number, number | null> =
     Object.fromEntries(asigRows.map(a => [a.id, propConcepto[a.id_propiedad_fk] ?? null]))
 
+  // Concepto compartido de mantenimiento — se resuelve una sola vez si hay alguna cuota de ese tipo
+  let idConceptoMantto: number | null = null
+  if (cxcRows.some(c => c.tipo === 'SERVICIOS_MANTTO')) {
+    const { data: centros } = await dbCfg.from('centros_ingreso').select('id, nombre').eq('activo', true)
+    const centroLoc = ((centros ?? []) as { id: number; nombre: string }[]).find(c => norm(c.nombre).includes('local'))
+    const q = dbCfg.from('conceptos_ingreso').select('id, nombre').eq('activo', true).ilike('nombre', '%mantenimiento%')
+    const { data: cons } = centroLoc ? await q.eq('id_centro_ingreso_fk', centroLoc.id) : await q
+    idConceptoMantto = ((cons ?? []) as { id: number; nombre: string }[])[0]?.id ?? null
+  }
+
   const cuotaConcepto: Record<number, number | null> = {}
   for (const c of cxcRows) {
+    if (c.tipo === 'SERVICIOS_MANTTO') { cuotaConcepto[c.id] = idConceptoMantto; continue }
     cuotaConcepto[c.id] = c.id_asignacion_fk != null ? (asigConcepto[c.id_asignacion_fk] ?? null) : null
   }
   return cuotaConcepto
