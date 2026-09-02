@@ -203,14 +203,32 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
       await dbCtrl.from('loc_propiedades').update({ status: 'Rentada' }).eq('id', form.id_propiedad_fk)
     }
 
-    // 2. Generar cuotas en cxc_loc — renta y, si aplica, Servicios de Mantto
+    // 2. Evitar duplicar cuotas ya existentes de esta asignación (por periodo y tipo)
+    const { data: existentes } = asigId
+      ? await dbCtrl.from('loc_cxc').select('periodo, tipo').eq('id_asignacion_fk', asigId)
+      : { data: [] as { periodo: string | null; tipo: string | null }[] }
+    const existRows = (existentes ?? []) as { periodo: string | null; tipo: string | null }[]
+    const periodosRentaExist  = new Set(existRows.filter(e => e.tipo !== 'SERVICIOS_MANTTO').map(e => e.periodo))
+    const periodosManttoExist = new Set(existRows.filter(e => e.tipo === 'SERVICIOS_MANTTO').map(e => e.periodo))
+    const cuotasNuevas   = cuotas.filter(c => !periodosRentaExist.has(c.periodo))
+    const manttoNuevas   = cuotasMantto.filter(c => !periodosManttoExist.has(c.periodo))
+    const omitidasRenta  = cuotas.length - cuotasNuevas.length
+    const omitidasMantto = cuotasMantto.length - manttoNuevas.length
+
+    if (cuotasNuevas.length === 0 && manttoNuevas.length === 0) {
+      setErr('Todas las cuotas del rango seleccionado ya existían para esta asignación — no se generó ninguna nueva.')
+      setSaving(false)
+      return
+    }
+
+    // 3. Generar cuotas en cxc_loc — renta y, si aplica, Servicios de Mantto
     const diaVencDe = (periodo: string) => {
       const [y, m] = periodo.split('-').map(Number)
       const diasEnMes = new Date(y, m, 0).getDate()
       const diaVenc   = Math.min(form.dia_pago, diasEnMes)
       return `${y}-${String(m).padStart(2,'0')}-${String(diaVenc).padStart(2,'0')}`
     }
-    const cuotasInsert = cuotas.map(c => ({
+    const cuotasInsert = cuotasNuevas.map(c => ({
       id_arrendatario_fk: soloCuotas ? 0 : form.id_arrendatario_fk,
       id_asignacion_fk:   asigId,
       concepto:           `Renta de Local — ${c.label}`,
@@ -224,7 +242,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
       fecha_vencimiento:  diaVencDe(c.periodo),
       tipo:               'RENTA_LOCAL',
     }))
-    const mantoInsert = cuotasMantto.map(c => ({
+    const mantoInsert = manttoNuevas.map(c => ({
       id_arrendatario_fk: soloCuotas ? 0 : form.id_arrendatario_fk,
       id_asignacion_fk:   asigId,
       concepto:           `Servicios de Mantto — ${c.label}`,
@@ -258,6 +276,13 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
 
     const { error: e2 } = await dbCtrl.from('loc_cxc').insert([...cuotasInsert, ...mantoInsert])
     if (e2) { setErr(e2.message); setSaving(false); return }
+
+    if (omitidasRenta > 0 || omitidasMantto > 0) {
+      const partes = []
+      if (omitidasRenta > 0)  partes.push(`${omitidasRenta} de renta`)
+      if (omitidasMantto > 0) partes.push(`${omitidasMantto} de mantto`)
+      alert(`Se omitieron ${partes.join(' y ')} por ya existir para esos periodos. El resto se generó correctamente.`)
+    }
 
     onSaved()
   }
