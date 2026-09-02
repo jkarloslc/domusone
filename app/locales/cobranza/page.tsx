@@ -40,6 +40,7 @@ type Asignacion = {
   fecha_inicio: string
   fecha_fin: string | null
   monto_mensual: number
+  monto_mantenimiento: number
   dia_pago: number
   activo: boolean
   observaciones: string | null
@@ -130,7 +131,7 @@ export default function CobranzaLocalesPage() {
 
   const [showAsig, setShowAsig]             = useState(false)
   const [editAsig, setEditAsig]             = useState<AsignacionData | undefined>()
-  const [modoCuotas, setModoCuotas]         = useState<{ idAsig: number; monto: number } | null>(null)
+  const [modoCuotas, setModoCuotas]         = useState<{ idAsig: number; monto: number; montoMantto: number } | null>(null)
   const [showCobrar, setShowCobrar]         = useState<{ cuotas: CuotaPendiente[]; nombreArr: string; idArr: number; nombrePropiedad: string; periodoDefault?: string } | null>(null)
   const [generandoCargo, setGenerandoCargo] = useState<number | null>(null)
   const [eliminandoA, setEliminandoA]       = useState<number | null>(null)
@@ -211,7 +212,7 @@ export default function CobranzaLocalesPage() {
     await liberarContratosVencidos()
     let q = dbCtrl.from('loc_asignaciones')
       .select(`id, id_arrendatario_fk, id_propiedad_fk, fecha_inicio, fecha_fin,
-        monto_mensual, dia_pago, activo, observaciones,
+        monto_mensual, monto_mantenimiento, dia_pago, activo, observaciones,
         cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona),
         cat_propiedades:loc_propiedades(clave, nombre, status)`)
       .order('created_at', { ascending: false })
@@ -270,14 +271,18 @@ export default function CobranzaLocalesPage() {
   }
 
   // ── Generar cargo individual ──────────────────────────────
+  // Genera la cuota de renta del mes y, si la asignación tiene Servicios de
+  // Mantto configurado, también su cuota (como fila aparte en loc_cxc).
   const handleGenerarCargoAsig = async (a: Asignacion, mes: string) => {
     setGenerandoCargo(a.id)
     const { data: existing } = await dbCtrl.from('loc_cxc')
-      .select('id').eq('id_arrendatario_fk', a.id_arrendatario_fk)
-      .eq('periodo', mes).limit(1)
-    if (existing && existing.length > 0) {
+      .select('id, tipo').eq('id_asignacion_fk', a.id).eq('periodo', mes)
+    const existentes  = (existing ?? []) as { id: number; tipo: string | null }[]
+    const yaRenta      = existentes.some(e => e.tipo !== 'SERVICIOS_MANTTO')
+    const yaMantto      = existentes.some(e => e.tipo === 'SERVICIOS_MANTTO')
+    if (yaRenta) {
       setGenerandoCargo(null)
-      alert('Ya existe una cuota para ese mes en este arrendatario.')
+      alert('Ya existe una cuota de renta para ese mes en esta asignación.')
       return
     }
     const [anio, numMes] = mes.split('-').map(Number)
@@ -286,7 +291,7 @@ export default function CobranzaLocalesPage() {
     const fechaVenc = `${anio}-${String(numMes).padStart(2, '0')}-${String(diaVenc).padStart(2, '0')}`
     const prop = a.cat_propiedades ? ` — ${a.cat_propiedades.clave}${a.cat_propiedades.nombre ? ` ${a.cat_propiedades.nombre}` : ''}` : ''
     const mesLabel = new Date(`${mes}-01T12:00:00`).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
-    await dbCtrl.from('loc_cxc').insert({
+    const inserts: object[] = [{
       id_arrendatario_fk: a.id_arrendatario_fk,
       id_asignacion_fk:   a.id,
       concepto:           `Renta de Local${prop} — ${mesLabel}`,
@@ -299,7 +304,24 @@ export default function CobranzaLocalesPage() {
       fecha_emision:      hoy,
       fecha_vencimiento:  fechaVenc,
       tipo:               'RENTA_LOCAL',
-    })
+    }]
+    if (a.monto_mantenimiento > 0 && !yaMantto) {
+      inserts.push({
+        id_arrendatario_fk: a.id_arrendatario_fk,
+        id_asignacion_fk:   a.id,
+        concepto:           `Servicios de Mantto${prop} — ${mesLabel}`,
+        periodo:            mes,
+        monto_original:     a.monto_mantenimiento,
+        descuento:          0,
+        monto_final:        a.monto_mantenimiento,
+        saldo:              a.monto_mantenimiento,
+        status:             'PENDIENTE',
+        fecha_emision:      hoy,
+        fecha_vencimiento:  fechaVenc,
+        tipo:               'SERVICIOS_MANTTO',
+      })
+    }
+    await dbCtrl.from('loc_cxc').insert(inserts)
     setGenerandoCargo(null)
     fetchAsignaciones()
   }
@@ -364,14 +386,18 @@ export default function CobranzaLocalesPage() {
   }
 
   // ── Generar cargos masivos ────────────────────────────────
+  // Además de la renta, genera la cuota de Servicios de Mantto (si la asignación
+  // la tiene configurada) como fila aparte en loc_cxc, cada una con su propio control de duplicados.
   const handleGenerarMasivo = async () => {
     setGenerando(true); setGeneradosMsg('')
     const { data: vigentes } = await dbCtrl.from('loc_asignaciones')
-      .select('id, id_arrendatario_fk, id_propiedad_fk, monto_mensual, dia_pago, cat_propiedades:loc_propiedades(clave, nombre)')
+      .select('id, id_arrendatario_fk, id_propiedad_fk, monto_mensual, monto_mantenimiento, dia_pago, cat_propiedades:loc_propiedades(clave, nombre)')
       .eq('activo', true)
     const { data: yaGenerados } = await dbCtrl.from('loc_cxc')
-      .select('id_arrendatario_fk').eq('periodo', mesGenerarAll)
-    const yaIds = new Set(((yaGenerados ?? []) as { id_arrendatario_fk: number }[]).map(c => c.id_arrendatario_fk))
+      .select('id_asignacion_fk, tipo').eq('periodo', mesGenerarAll)
+    const yaGenRows   = ((yaGenerados ?? []) as { id_asignacion_fk: number | null; tipo: string | null }[])
+    const yaRentaIds  = new Set(yaGenRows.filter(r => r.tipo !== 'SERVICIOS_MANTTO').map(r => r.id_asignacion_fk))
+    const yaManttoIds = new Set(yaGenRows.filter(r => r.tipo === 'SERVICIOS_MANTTO').map(r => r.id_asignacion_fk))
 
     const [anio, numMes] = mesGenerarAll.split('-').map(Number)
     const mesLabel  = new Date(`${mesGenerarAll}-01T12:00:00`).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
@@ -379,24 +405,41 @@ export default function CobranzaLocalesPage() {
 
     const inserts: object[] = []
     for (const a of ((vigentes ?? []) as any[])) {
-      if (yaIds.has(a.id_arrendatario_fk)) continue
       const diaVenc   = Math.min(a.dia_pago ?? 1, diasEnMes)
       const fechaVenc = `${anio}-${String(numMes).padStart(2, '0')}-${String(diaVenc).padStart(2, '0')}`
       const prop = a.cat_propiedades ? ` — ${a.cat_propiedades.clave}${a.cat_propiedades.nombre ? ` ${a.cat_propiedades.nombre}` : ''}` : ''
-      inserts.push({
-        id_arrendatario_fk: a.id_arrendatario_fk,
-        id_asignacion_fk:   a.id,
-        concepto:           `Renta de Local${prop} — ${mesLabel}`,
-        periodo:            mesGenerarAll,
-        monto_original:     a.monto_mensual,
-        descuento:          0,
-        monto_final:        a.monto_mensual,
-        saldo:              a.monto_mensual,
-        status:             'PENDIENTE',
-        fecha_emision:      hoy,
-        fecha_vencimiento:  fechaVenc,
-        tipo:               'RENTA_LOCAL',
-      })
+      if (!yaRentaIds.has(a.id)) {
+        inserts.push({
+          id_arrendatario_fk: a.id_arrendatario_fk,
+          id_asignacion_fk:   a.id,
+          concepto:           `Renta de Local${prop} — ${mesLabel}`,
+          periodo:            mesGenerarAll,
+          monto_original:     a.monto_mensual,
+          descuento:          0,
+          monto_final:        a.monto_mensual,
+          saldo:              a.monto_mensual,
+          status:             'PENDIENTE',
+          fecha_emision:      hoy,
+          fecha_vencimiento:  fechaVenc,
+          tipo:               'RENTA_LOCAL',
+        })
+      }
+      if (a.monto_mantenimiento > 0 && !yaManttoIds.has(a.id)) {
+        inserts.push({
+          id_arrendatario_fk: a.id_arrendatario_fk,
+          id_asignacion_fk:   a.id,
+          concepto:           `Servicios de Mantto${prop} — ${mesLabel}`,
+          periodo:            mesGenerarAll,
+          monto_original:     a.monto_mantenimiento,
+          descuento:          0,
+          monto_final:        a.monto_mantenimiento,
+          saldo:              a.monto_mantenimiento,
+          status:             'PENDIENTE',
+          fecha_emision:      hoy,
+          fecha_vencimiento:  fechaVenc,
+          tipo:               'SERVICIOS_MANTTO',
+        })
+      }
     }
 
     if (inserts.length === 0) {
@@ -877,7 +920,12 @@ export default function CobranzaLocalesPage() {
                               </span>
                             )}
                           </td>
-                          <td style={{ padding: '10px 14px', fontWeight: 600, color: '#0f766e', whiteSpace: 'nowrap' }}>{fmt$(a.monto_mensual)}</td>
+                          <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
+                            <div style={{ fontWeight: 600, color: '#0f766e' }}>{fmt$(a.monto_mensual)}</div>
+                            {a.monto_mantenimiento > 0 && (
+                              <div style={{ fontSize: 11, color: '#64748b' }}>+ {fmt$(a.monto_mantenimiento)} mantto</div>
+                            )}
+                          </td>
                           <td style={{ padding: '10px 14px' }}>
                             {a.pendientes > 0
                               ? <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626' }}>{a.pendientes} · {fmt$(a.monto_pendiente)}</span>
@@ -896,7 +944,7 @@ export default function CobranzaLocalesPage() {
                           <td style={{ padding: '10px 14px' }}>
                             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                               {puedeEscribir && (
-                                <button onClick={e => { e.stopPropagation(); setEditAsig({ id: a.id, id_arrendatario_fk: a.id_arrendatario_fk, id_propiedad_fk: a.id_propiedad_fk, fecha_inicio: a.fecha_inicio, fecha_fin: a.fecha_fin, monto_mensual: a.monto_mensual, dia_pago: a.dia_pago, activo: a.activo, observaciones: a.observaciones }); setShowAsig(true) }}
+                                <button onClick={e => { e.stopPropagation(); setEditAsig({ id: a.id, id_arrendatario_fk: a.id_arrendatario_fk, id_propiedad_fk: a.id_propiedad_fk, fecha_inicio: a.fecha_inicio, fecha_fin: a.fecha_fin, monto_mensual: a.monto_mensual, monto_mantenimiento: a.monto_mantenimiento, dia_pago: a.dia_pago, activo: a.activo, observaciones: a.observaciones }); setShowAsig(true) }}
                                   style={{ fontSize: 12, fontWeight: 600, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                   Editar
                                 </button>
@@ -922,6 +970,7 @@ export default function CobranzaLocalesPage() {
                                   <span><strong>Inicio:</strong> {fmtFecha(a.fecha_inicio)}</span>
                                   {a.fecha_fin && <span><strong>Fin:</strong> {fmtFecha(a.fecha_fin)}</span>}
                                   <span><strong>Día venc.:</strong> {a.dia_pago}</span>
+                                  {a.monto_mantenimiento > 0 && <span><strong>Mantto:</strong> {fmt$(a.monto_mantenimiento)}/mes</span>}
                                   {a.observaciones && <span><strong>Notas:</strong> {a.observaciones}</span>}
                                 </div>
                                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -941,7 +990,7 @@ export default function CobranzaLocalesPage() {
                                         style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 12px', borderRadius: 8, border: '1px solid #0f766e', background: '#f0fdfa', color: '#0f766e', cursor: 'pointer', opacity: generandoCargo === a.id ? 0.6 : 1 }}>
                                         {generandoCargo === a.id ? <Loader size={12} /> : <Plus size={12} />} Agregar Cuota
                                       </button>
-                                      <button onClick={e => { e.stopPropagation(); setModoCuotas({ idAsig: a.id, monto: a.monto_mensual }); setShowAsig(true) }}
+                                      <button onClick={e => { e.stopPropagation(); setModoCuotas({ idAsig: a.id, monto: a.monto_mensual, montoMantto: a.monto_mantenimiento }); setShowAsig(true) }}
                                         style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}>
                                         <Plus size={12} /> Generar cuotas (rango)
                                       </button>
@@ -1347,6 +1396,7 @@ export default function CobranzaLocalesPage() {
           idAsignacionFk={modoCuotas?.idAsig}
           modoAgregarCuotas={!!modoCuotas}
           montoExistente={modoCuotas?.monto}
+          montoMantenimientoExistente={modoCuotas?.montoMantto}
           onClose={() => { setShowAsig(false); setEditAsig(undefined); setModoCuotas(null) }}
           onSaved={() => { setShowAsig(false); setEditAsig(undefined); setModoCuotas(null); fetchAsignaciones(); if (tab === 'cobranza') fetchCobranza() }}
         />

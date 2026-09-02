@@ -14,6 +14,7 @@ export type AsignacionData = {
   fecha_inicio: string
   fecha_fin: string | null
   monto_mensual: number
+  monto_mantenimiento: number
   dia_pago: number
   activo: boolean
   observaciones: string | null
@@ -24,6 +25,7 @@ type Props = {
   idAsignacionFk?: number            // cuando se pasa = modo "agregar cuotas"
   modoAgregarCuotas?: boolean
   montoExistente?: number
+  montoMantenimientoExistente?: number
   onClose: () => void
   onSaved: () => void
 }
@@ -49,7 +51,7 @@ function diffMeses(y1: number, m1: number, y2: number, m2: number) {
 
 const hoy = () => new Date().toISOString().split('T')[0]
 
-export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgregarCuotas = false, montoExistente, onClose, onSaved }: Props) {
+export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgregarCuotas = false, montoExistente, montoMantenimientoExistente, onClose, onSaved }: Props) {
   const esEdicion       = !!asignacion?.id && !modoAgregarCuotas
   const soloCuotas      = modoAgregarCuotas && !!idAsignacionFk
 
@@ -66,6 +68,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
     fecha_inicio:       asignacion?.fecha_inicio        ?? hoy(),
     fecha_fin:          asignacion?.fecha_fin           ?? '',
     monto_mensual:      asignacion?.monto_mensual       ?? montoExistente ?? 0,
+    monto_mantenimiento: asignacion?.monto_mantenimiento ?? montoMantenimientoExistente ?? 0,
     dia_pago:           asignacion?.dia_pago            ?? 1,
     activo:             asignacion?.activo              ?? true,
     observaciones:      asignacion?.observaciones       ?? '',
@@ -96,26 +99,39 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
     })
   }, [])
 
-  // Cuotas a generar
-  const cuotas = useMemo<{ periodo: string; label: string; monto: number }[]>(() => {
-    const monto = form.monto_mensual
+  // Periodos del rango/modalidad seleccionada (comunes a renta y mantenimiento)
+  const periodos = useMemo<{ periodo: string; label: string }[]>(() => {
     if (modalidad === 'MENSUAL') {
       const diff = diffMeses(anioIni, mesIni, anioFin, mesFin)
       if (diff < 0) return []
       return Array.from({ length: diff + 1 }, (_, i) => {
         const { year: y, month: m } = addMeses(anioIni, mesIni, i)
-        return { periodo: periodoKey(y, m), label: periodoLabel(y, m), monto }
-      })
-    } else {
-      const montoConDesc = Math.max(0, monto - descuento / numMeses)
-      return Array.from({ length: numMeses }, (_, i) => {
-        const { year: y, month: m } = addMeses(anioCobro, mesInicioAnual, i)
-        return { periodo: periodoKey(y, m), label: periodoLabel(y, m), monto: montoConDesc }
+        return { periodo: periodoKey(y, m), label: periodoLabel(y, m) }
       })
     }
-  }, [form.monto_mensual, modalidad, mesIni, anioIni, mesFin, anioFin, anioCobro, mesInicioAnual, numMeses, descuento])
+    return Array.from({ length: numMeses }, (_, i) => {
+      const { year: y, month: m } = addMeses(anioCobro, mesInicioAnual, i)
+      return { periodo: periodoKey(y, m), label: periodoLabel(y, m) }
+    })
+  }, [modalidad, mesIni, anioIni, mesFin, anioFin, anioCobro, mesInicioAnual, numMeses])
+
+  // Cuotas de renta (el descuento anual, si aplica, solo afecta la renta)
+  const cuotas = useMemo<{ periodo: string; label: string; monto: number }[]>(() => {
+    if (modalidad === 'ANUAL') {
+      const montoConDesc = Math.max(0, form.monto_mensual - descuento / numMeses)
+      return periodos.map(p => ({ ...p, monto: montoConDesc }))
+    }
+    return periodos.map(p => ({ ...p, monto: form.monto_mensual }))
+  }, [periodos, modalidad, form.monto_mensual, descuento, numMeses])
+
+  // Cuotas de "Servicios de Mantto" — mismo rango de periodos, monto propio, sin descuento
+  const cuotasMantto = useMemo<{ periodo: string; label: string; monto: number }[]>(() => {
+    if (form.monto_mantenimiento <= 0) return []
+    return periodos.map(p => ({ ...p, monto: form.monto_mantenimiento }))
+  }, [periodos, form.monto_mantenimiento])
 
   const totalCuotas    = cuotas.reduce((a, c) => a + c.monto, 0)
+  const totalMantto    = cuotasMantto.reduce((a, c) => a + c.monto, 0)
   const descuentoAnual = modalidad === 'ANUAL' ? descuento : 0
   const maxMesesAnual  = 13 - mesInicioAnual
 
@@ -125,7 +141,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
       if (!form.id_propiedad_fk)    { setErr('Selecciona una propiedad'); return }
       if (form.monto_mensual <= 0)  { setErr('La renta mensual debe ser mayor a 0'); return }
     }
-    if (cuotas.length === 0) { setErr('El rango de meses no produce cuotas'); return }
+    if (periodos.length === 0) { setErr('El rango de meses no produce cuotas'); return }
     setSaving(true); setErr('')
 
     let asigId = idAsignacionFk ?? asignacion?.id ?? null
@@ -136,6 +152,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
         fecha_inicio: form.fecha_inicio,
         fecha_fin: form.fecha_fin || null,
         monto_mensual: form.monto_mensual,
+        monto_mantenimiento: form.monto_mantenimiento,
         dia_pago: form.dia_pago,
         activo: form.activo,
         observaciones: form.observaciones || null,
@@ -174,6 +191,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
         fecha_inicio:       form.fecha_inicio,
         fecha_fin:          form.fecha_fin || null,
         monto_mensual:      form.monto_mensual,
+        monto_mantenimiento: form.monto_mantenimiento,
         dia_pago:           form.dia_pago,
         activo:             true,
         observaciones:      form.observaciones || null,
@@ -185,42 +203,60 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
       await dbCtrl.from('loc_propiedades').update({ status: 'Rentada' }).eq('id', form.id_propiedad_fk)
     }
 
-    // 2. Generar cuotas en cxc_loc
-    const cuotasInsert = cuotas.map(c => {
-      const descPorCuota = modalidad === 'ANUAL' ? descuento / numMeses : 0
-      const [y, m] = c.periodo.split('-').map(Number)
+    // 2. Generar cuotas en cxc_loc — renta y, si aplica, Servicios de Mantto
+    const diaVencDe = (periodo: string) => {
+      const [y, m] = periodo.split('-').map(Number)
       const diasEnMes = new Date(y, m, 0).getDate()
       const diaVenc   = Math.min(form.dia_pago, diasEnMes)
-      return {
-        id_arrendatario_fk: soloCuotas ? 0 : form.id_arrendatario_fk,
-        id_asignacion_fk:   asigId,
-        concepto:           `Renta de Local — ${c.label}`,
-        periodo:            c.periodo,
-        monto_original:     form.monto_mensual,
-        descuento:          descPorCuota,
-        monto_final:        c.monto,
-        saldo:              c.monto,
-        status:             'PENDIENTE' as const,
-        fecha_emision:      hoy(),
-        fecha_vencimiento:  `${y}-${String(m).padStart(2,'0')}-${String(diaVenc).padStart(2,'0')}`,
-        tipo:               'RENTA_LOCAL',
-      }
-    })
+      return `${y}-${String(m).padStart(2,'0')}-${String(diaVenc).padStart(2,'0')}`
+    }
+    const cuotasInsert = cuotas.map(c => ({
+      id_arrendatario_fk: soloCuotas ? 0 : form.id_arrendatario_fk,
+      id_asignacion_fk:   asigId,
+      concepto:           `Renta de Local — ${c.label}`,
+      periodo:            c.periodo,
+      monto_original:     form.monto_mensual,
+      descuento:          modalidad === 'ANUAL' ? descuento / numMeses : 0,
+      monto_final:        c.monto,
+      saldo:              c.monto,
+      status:             'PENDIENTE' as const,
+      fecha_emision:      hoy(),
+      fecha_vencimiento:  diaVencDe(c.periodo),
+      tipo:               'RENTA_LOCAL',
+    }))
+    const mantoInsert = cuotasMantto.map(c => ({
+      id_arrendatario_fk: soloCuotas ? 0 : form.id_arrendatario_fk,
+      id_asignacion_fk:   asigId,
+      concepto:           `Servicios de Mantto — ${c.label}`,
+      periodo:            c.periodo,
+      monto_original:     form.monto_mantenimiento,
+      descuento:          0,
+      monto_final:        c.monto,
+      saldo:              c.monto,
+      status:             'PENDIENTE' as const,
+      fecha_emision:      hoy(),
+      fecha_vencimiento:  diaVencDe(c.periodo),
+      tipo:               'SERVICIOS_MANTTO',
+    }))
 
     // Si es modo solo cuotas, necesitamos recuperar el id_arrendatario de la asignación
     if (soloCuotas && asigId) {
       const { data: asigData } = await dbCtrl.from('loc_asignaciones')
-        .select('id_arrendatario_fk, id_propiedad_fk, monto_mensual').eq('id', asigId).single()
+        .select('id_arrendatario_fk, id_propiedad_fk, monto_mensual, monto_mantenimiento').eq('id', asigId).single()
       if (asigData) {
-        const ad = asigData as { id_arrendatario_fk: number; id_propiedad_fk: number; monto_mensual: number }
+        const ad = asigData as { id_arrendatario_fk: number; id_propiedad_fk: number; monto_mensual: number; monto_mantenimiento: number }
         cuotasInsert.forEach(c => {
           c.id_arrendatario_fk = ad.id_arrendatario_fk
           if (!form.monto_mensual) c.monto_original = ad.monto_mensual
         })
+        mantoInsert.forEach(c => {
+          c.id_arrendatario_fk = ad.id_arrendatario_fk
+          if (!form.monto_mantenimiento) c.monto_original = ad.monto_mantenimiento
+        })
       }
     }
 
-    const { error: e2 } = await dbCtrl.from('loc_cxc').insert(cuotasInsert)
+    const { error: e2 } = await dbCtrl.from('loc_cxc').insert([...cuotasInsert, ...mantoInsert])
     if (e2) { setErr(e2.message); setSaving(false); return }
 
     onSaved()
@@ -287,7 +323,7 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                 </div>
               )}
 
-              {/* Monto + día de pago */}
+              {/* Renta + Servicios de Mantto */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={labelStyle}>Renta mensual *</label>
@@ -296,6 +332,17 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                     onChange={e => set('monto_mensual', parseFloat(e.target.value) || 0)} />
                   <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>La renta es propia de cada asignación y puede editarse en cualquier momento.</div>
                 </div>
+                <div>
+                  <label style={labelStyle}>Servicios de Mantto</label>
+                  <input style={inputStyle} type="number" min={0} step={0.01}
+                    value={form.monto_mantenimiento}
+                    onChange={e => set('monto_mantenimiento', parseFloat(e.target.value) || 0)} />
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Opcional. Cargo aparte, variable según la propiedad.</div>
+                </div>
+              </div>
+
+              {/* Día de pago */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={labelStyle}>Día de vencimiento</label>
                   <input style={inputStyle} type="number" min={1} max={31}
@@ -434,13 +481,18 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
               {cuotas.length > 0 ? (
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-                    Cuotas a generar ({cuotas.length})
+                    Cuotas a generar ({cuotas.length}{cuotasMantto.length > 0 ? ` + ${cuotasMantto.length} de Mantto` : ''})
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 160, overflowY: 'auto' }}>
-                    {cuotas.map(c => (
+                    {cuotas.map((c, i) => (
                       <div key={c.periodo} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#475569' }}>
                         <span>{c.label}</span>
-                        <span style={{ fontWeight: 600 }}>${c.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                        <span style={{ textAlign: 'right' }}>
+                          <span style={{ fontWeight: 600 }}>${c.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                          {cuotasMantto[i] && (
+                            <span style={{ color: '#0f766e' }}> + ${cuotasMantto[i].monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })} mantto</span>
+                          )}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -452,7 +504,12 @@ export default function AsignacionModal({ asignacion, idAsignacionFk, modoAgrega
                           Descuento: -${descuentoAnual.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                         </div>
                       )}
-                      <span style={{ color: '#0f766e' }}>${totalCuotas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                      {totalMantto > 0 && (
+                        <div style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>
+                          Renta: ${totalCuotas.toLocaleString('es-MX', { minimumFractionDigits: 2 })} + Mantto: ${totalMantto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </div>
+                      )}
+                      <span style={{ color: '#0f766e' }}>${(totalCuotas + totalMantto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
