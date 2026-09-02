@@ -492,9 +492,9 @@ export default function CobranzaLocalesPage() {
       const totalIvaCuotas = detDesglosado.reduce((a, d) => a + d.iva, 0)
 
       const idsCuota = Array.from(new Set(r.recibos_loc_det.map(d => d.id_cuota_fk).filter((v): v is number => v != null)))
-      const conceptoPorCuota = await resolveConceptosPorCuota(idsCuota)
-      const conceptoDeLinea = (d: { id_cuota_fk: number | null }) =>
-        d.id_cuota_fk != null ? (conceptoPorCuota[d.id_cuota_fk] ?? null) : null
+      const clasifPorCuota = await resolveConceptosPorCuota(idsCuota)
+      const clasifDeLinea = (d: { id_cuota_fk: number | null }): { idConcepto: number | null; idProducto: number | null } =>
+        (d.id_cuota_fk != null ? clasifPorCuota[d.id_cuota_fk] : null) ?? { idConcepto: null, idProducto: null }
 
       if (!ventaId) {
         const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
@@ -513,10 +513,13 @@ export default function CobranzaLocalesPage() {
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
         if (detDesglosado.length > 0) {
-          await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
-            id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: conceptoDeLinea(d), concepto: d.concepto,
-            cantidad: 1, precio_unitario: d.monto_final, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
-          })))
+          await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => {
+            const clasif = clasifDeLinea(d)
+            return {
+              id_venta_fk: ventaId!, id_producto_fk: clasif.idProducto, id_concepto_ingreso_fk: clasif.idConcepto, concepto: d.concepto,
+              cantidad: 1, precio_unitario: d.monto_final, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
+            }
+          }))
         }
         const { data: pagosR } = await dbCtrl.from('loc_recibos_pagos').select('id_forma_pago_fk, forma_nombre, monto').eq('id_recibo_fk', r.id)
         if (pagosR && pagosR.length > 0) {

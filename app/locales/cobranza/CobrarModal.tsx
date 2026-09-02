@@ -57,14 +57,19 @@ async function generarFolio(): Promise<string> {
   return `RL-${anio}-${String(num).padStart(3, '0')}`
 }
 
-// Resuelve el concepto de ingreso por cada línea de un ticket POS.
+export type ClasifCuotaPOS = { idConcepto: number | null; idProducto: number | null }
+
+// Resuelve la clasificación (concepto de ingreso y/o producto POS) por cada línea
+// de un ticket, según el tipo de cuota:
 // - Renta: sigue la cadena cuota (loc_cxc) → asignación (loc_asignaciones) → propiedad
-//   (loc_propiedades), usando el concepto propio de la propiedad. Si la propiedad no
-//   tiene concepto propio (o la línea no viene de una cuota, como "Cargo adicional"),
-//   el corte la clasifica en "Otros".
-// - Servicios de Mantto: siempre cae en el concepto compartido "Servicio de
-//   Mantenimiento" del centro de Locales Comerciales, sin importar la propiedad.
-export async function resolveConceptosPorCuota(idsCuota: number[]): Promise<Record<number, number | null>> {
+//   (loc_propiedades), usando el concepto propio de la propiedad como id_concepto_ingreso_fk
+//   directo en la línea (sin producto POS). Si la propiedad no tiene concepto propio (o la
+//   línea no viene de una cuota, como "Cargo adicional"), el corte la clasifica en "Otros".
+// - Servicios de Mantto: usa el producto POS compartido "Servicios de Mantto" (catálogo
+//   golf.cat_productos_pos, centro Locales Comerciales) — igual que cualquier venta nativa
+//   del POS — que a su vez está mapeado al concepto "Servicio de Mantenimiento". El monto
+//   real siempre viene de la cuota (precio_variable=true en el producto).
+export async function resolveConceptosPorCuota(idsCuota: number[]): Promise<Record<number, ClasifCuotaPOS>> {
   if (idsCuota.length === 0) return {}
   const { data: cxc } = await dbCtrl.from('loc_cxc').select('id, id_asignacion_fk, tipo').in('id', idsCuota)
   const cxcRows = (cxc ?? []) as { id: number; id_asignacion_fk: number | null; tipo: string | null }[]
@@ -85,22 +90,38 @@ export async function resolveConceptosPorCuota(idsCuota: number[]): Promise<Reco
   const asigConcepto: Record<number, number | null> =
     Object.fromEntries(asigRows.map(a => [a.id, propConcepto[a.id_propiedad_fk] ?? null]))
 
-  // Concepto compartido de mantenimiento — se resuelve una sola vez si hay alguna cuota de ese tipo
-  let idConceptoMantto: number | null = null
+  // Producto POS compartido de mantenimiento — se resuelve una sola vez si hay alguna cuota de ese tipo.
+  // Si el producto todavía no existe en el catálogo (migración pendiente de correr), se usa como
+  // respaldo el concepto de ingreso directo, para no dejar la línea sin clasificar.
+  let idProductoMantto: number | null = null
+  let idConceptoManttoFallback: number | null = null
   if (cxcRows.some(c => c.tipo === 'SERVICIOS_MANTTO')) {
-    const { data: centros } = await dbCfg.from('centros_ingreso').select('id, nombre').eq('activo', true)
+    const { data: centros } = await dbGolf.from('cat_centros_venta').select('id, nombre').eq('activo', true)
     const centroLoc = ((centros ?? []) as { id: number; nombre: string }[]).find(c => norm(c.nombre).includes('local'))
-    const q = dbCfg.from('conceptos_ingreso').select('id, nombre').eq('activo', true).ilike('nombre', '%mantenimiento%')
-    const { data: cons } = centroLoc ? await q.eq('id_centro_ingreso_fk', centroLoc.id) : await q
-    idConceptoMantto = ((cons ?? []) as { id: number; nombre: string }[])[0]?.id ?? null
+    const q = dbGolf.from('cat_productos_pos').select('id, nombre').eq('activo', true).ilike('nombre', '%mantto%')
+    const { data: prods } = centroLoc ? await q.eq('id_centro_fk', centroLoc.id) : await q
+    idProductoMantto = ((prods ?? []) as { id: number; nombre: string }[])[0]?.id ?? null
+
+    if (idProductoMantto == null) {
+      const { data: centrosIng } = await dbCfg.from('centros_ingreso').select('id, nombre').eq('activo', true)
+      const centroIngLoc = ((centrosIng ?? []) as { id: number; nombre: string }[]).find(c => norm(c.nombre).includes('local'))
+      const qc = dbCfg.from('conceptos_ingreso').select('id, nombre').eq('activo', true).ilike('nombre', '%mantenimiento%')
+      const { data: cons } = centroIngLoc ? await qc.eq('id_centro_ingreso_fk', centroIngLoc.id) : await qc
+      idConceptoManttoFallback = ((cons ?? []) as { id: number; nombre: string }[])[0]?.id ?? null
+    }
   }
 
-  const cuotaConcepto: Record<number, number | null> = {}
+  const resultado: Record<number, ClasifCuotaPOS> = {}
   for (const c of cxcRows) {
-    if (c.tipo === 'SERVICIOS_MANTTO') { cuotaConcepto[c.id] = idConceptoMantto; continue }
-    cuotaConcepto[c.id] = c.id_asignacion_fk != null ? (asigConcepto[c.id_asignacion_fk] ?? null) : null
+    if (c.tipo === 'SERVICIOS_MANTTO') {
+      resultado[c.id] = idProductoMantto != null
+        ? { idConcepto: null, idProducto: idProductoMantto }
+        : { idConcepto: idConceptoManttoFallback, idProducto: null }
+      continue
+    }
+    resultado[c.id] = { idConcepto: c.id_asignacion_fk != null ? (asigConcepto[c.id_asignacion_fk] ?? null) : null, idProducto: null }
   }
-  return cuotaConcepto
+  return resultado
 }
 
 export async function printReciboLoc(reciboId: number, folio: string, nombreArrendatario: string) {
@@ -455,9 +476,9 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
       const totalIvaCuotas = detDesglosado.reduce((a, d) => a + d.iva, 0)
 
       const idsCuota = Array.from(new Set(detList.map(d => d.id_cuota_fk).filter((v): v is number => v != null)))
-      const conceptoPorCuota = await resolveConceptosPorCuota(idsCuota)
-      const conceptoDeLinea = (d: { id_cuota_fk: number | null }) =>
-        d.id_cuota_fk != null ? (conceptoPorCuota[d.id_cuota_fk] ?? null) : null
+      const clasifPorCuota = await resolveConceptosPorCuota(idsCuota)
+      const clasifDeLinea = (d: { id_cuota_fk: number | null }): { idConcepto: number | null; idProducto: number | null } =>
+        (d.id_cuota_fk != null ? clasifPorCuota[d.id_cuota_fk] : null) ?? { idConcepto: null, idProducto: null }
 
       if (!ventaId) {
         const { data: maxF } = await dbGolf.from('ctrl_ventas').select('folio_dia')
@@ -476,11 +497,14 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         if (ev || !venta) throw new Error(ev?.message ?? 'Error al crear venta POS')
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
-        await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
-          id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: conceptoDeLinea(d),
-          concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final,
-          descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
-        })))
+        await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => {
+          const clasif = clasifDeLinea(d)
+          return {
+            id_venta_fk: ventaId!, id_producto_fk: clasif.idProducto, id_concepto_ingreso_fk: clasif.idConcepto,
+            concepto: d.concepto, cantidad: 1, precio_unitario: d.monto_final,
+            descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
+          }
+        }))
 
         const { data: formasR } = await dbCtrl.from('loc_recibos_pagos').select('id_forma_pago_fk, forma_nombre, monto').eq('id_recibo_fk', exito.idRecibo)
         const formasRList = (formasR ?? []) as { id_forma_pago_fk: number | null; forma_nombre: string; monto: number }[]
