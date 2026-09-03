@@ -583,28 +583,67 @@ export default function FacturaUniversalModal({
           </div>
         )}
 
-        {/* ── Paso 3: Confirmación ── */}
+        {/* ── Paso 3: Confirmación con vista previa de la factura ── */}
         {paso === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>Confirmar y Timbrar</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>Vista Previa de la Factura</div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '14px 16px', background: '#f8fafc', borderRadius: 10, fontSize: 12 }}>
-              <div><span style={{ color: '#94a3b8' }}>Emisor RFC: </span><strong>{emisor.rfc || '—'}</strong></div>
-              <div><span style={{ color: '#94a3b8' }}>Receptor RFC: </span><strong>{receptor.rfc}</strong></div>
-              <div style={{ gridColumn: 'span 2' }}><span style={{ color: '#94a3b8' }}>Receptor: </span><strong>{receptor.razon_social}</strong></div>
-              <div><span style={{ color: '#94a3b8' }}>Uso CFDI: </span><strong>{receptor.uso_cfdi}</strong></div>
-              <div><span style={{ color: '#94a3b8' }}>CP: </span><strong>{receptor.cp}</strong></div>
-              <div><span style={{ color: '#94a3b8' }}>Método pago: </span><strong>{cfdi.metodo_pago}</strong></div>
-              <div><span style={{ color: '#94a3b8' }}>Forma pago: </span><strong>{cfdi.forma_pago}</strong></div>
-              <div>
-                <span style={{ color: '#94a3b8' }}>Folio de factura: </span>
-                <strong>{obtenerFolioFactura ? `${serieFactura ?? cfdi.serie}-???? (se asigna al timbrar)` : folio}</strong>
+            {/* Documento simulado — refleja exactamente lo que se envía a timbrar */}
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+              {/* Emisor / Receptor */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                <div style={{ padding: '12px 14px', borderRight: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Emisor</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1e293b' }}>{emisor.razon_social || '—'}</div>
+                  <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#64748b', marginTop: 2 }}>{emisor.rfc || '—'}</div>
+                  <div style={{ fontSize: 10.5, color: '#94a3b8', marginTop: 2 }}>Régimen {emisor.regimen_fiscal}</div>
+                </div>
+                <div style={{ padding: '12px 14px', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Receptor</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1e293b' }}>{receptor.razon_social || '—'}</div>
+                  <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#64748b', marginTop: 2 }}>{receptor.rfc || '—'}</div>
+                  <div style={{ fontSize: 10.5, color: '#94a3b8', marginTop: 2 }}>CP {receptor.cp || '—'} · Uso {receptor.uso_cfdi} · Rég. {receptor.regimen_fiscal}</div>
+                </div>
               </div>
-              <div><span style={{ color: '#94a3b8' }}>Subtotal: </span><strong>{fmt$(subtotalCalc)}</strong></div>
-              <div><span style={{ color: '#94a3b8' }}>IVA{ivaCalc > 0 ? ' incluido' : ' (Exento)'}: </span><strong>{fmt$(ivaCalc)}</strong></div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <span style={{ color: '#94a3b8' }}>Total: </span>
-                <strong style={{ color: '#7c3aed', fontSize: 14 }}>{fmt$(totalCalc)}</strong>
+
+              {/* Metadatos del comprobante */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, padding: '9px 14px', background: '#f8fafc', fontSize: 11, borderBottom: '1px solid #f1f5f9' }}>
+                <div><span style={{ color: '#94a3b8' }}>Folio: </span><strong>{obtenerFolioFactura ? `${serieFactura ?? cfdi.serie}-????` : `${cfdi.serie}-${folio}`}</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>Fecha: </span><strong>{fecha}</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>Método: </span><strong>{cfdi.metodo_pago}</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>Forma pago: </span><strong>{cfdi.forma_pago}</strong></div>
+              </div>
+
+              {/* Tabla de conceptos */}
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px 60px 80px', padding: '7px 14px', fontSize: 9.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', gap: 6, borderBottom: '1px solid #f1f5f9' }}>
+                <span>Clave SAT</span><span>Descripción</span><span style={{ textAlign: 'right' }}>Importe</span><span style={{ textAlign: 'center' }}>IVA</span><span style={{ textAlign: 'right' }}>Imp. IVA</span>
+              </div>
+              {conceptos.map((c, i) => {
+                const tiva = tasas[i] ?? 0
+                const claveEfectiva = c.clave_prod_serv || cfdi.clave_prod_serv
+                const importeIva = c.iva ?? Math.round(c.importe * tiva * 100) / 100
+                return (
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 80px 60px 80px', padding: '7px 14px', borderTop: i > 0 ? '1px solid #f8fafc' : undefined, fontSize: 12, gap: 6, alignItems: 'center' }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#64748b' }}>{claveEfectiva}</span>
+                    <span style={{ color: '#475569' }}>{c.descripcion || cfdi.descripcion}</span>
+                    <span style={{ textAlign: 'right', color: '#1e293b' }}>{fmt$(c.importe)}</span>
+                    <span style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: tiva > 0 ? '#065f46' : '#94a3b8' }}>{tiva > 0 ? `${Math.round(tiva * 100)}%` : 'Exento'}</span>
+                    <span style={{ textAlign: 'right', color: '#1e293b' }}>{importeIva > 0 ? fmt$(importeIva) : '—'}</span>
+                  </div>
+                )
+              })}
+
+              {/* Totales */}
+              <div style={{ borderTop: '2px solid #e2e8f0', background: '#faf5ff', padding: '10px 14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontSize: 12, color: '#64748b', marginBottom: 2 }}>
+                  <span>Subtotal</span><span style={{ minWidth: 80, textAlign: 'right' }}>{fmt$(subtotalCalc)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontSize: 12, color: '#64748b', marginBottom: 6 }}>
+                  <span>IVA{ivaCalc === 0 ? ' (Exento)' : ''}</span><span style={{ minWidth: 80, textAlign: 'right' }}>{fmt$(ivaCalc)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, fontSize: 14, fontWeight: 700, color: '#7c3aed', borderTop: '1px solid #e2e8f0', paddingTop: 6 }}>
+                  <span>Total</span><span style={{ minWidth: 80, textAlign: 'right' }}>{fmt$(totalCalc)}</span>
+                </div>
               </div>
             </div>
 
