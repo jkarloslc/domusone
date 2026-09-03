@@ -456,13 +456,18 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
     if (!exito) return
     setGenTicket(true); setTicketErr('')
     try {
-      const [{ data: centros }, { data: cfg }] = await Promise.all([
+      const [{ data: centros }, { data: cfg }, { data: arr }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+        dbCtrl.from('loc_arrendatarios').select('id_socio_fk').eq('id', idArrendatario).maybeSingle(),
       ])
       const centrosPos = (centros as { id: number; nombre: string }[]) ?? []
       if (!centrosPos.length) throw new Error('No hay centros POS activos.')
       const centroLoc = centrosPos.find(c => { const n = norm(c.nombre); return n.includes('local') || n.includes('propiedad') }) ?? centrosPos[0]
+      // Si el arrendatario está vinculado a un socio, la venta se marca como suya —
+      // así el modal de facturar (abrirFacturarPOS) precarga sus datos fiscales
+      // automáticamente, igual que ya hace con ventas nativas de Golf.
+      const idSocio = (arr as { id_socio_fk: number | null } | null)?.id_socio_fk ?? null
 
       const { data: recFull } = await dbCtrl.from('loc_recibos')
         .select('subtotal, descuento, total, fecha_recibo, id_venta_pos_fk, facturable').eq('id', exito.idRecibo).single()
@@ -494,7 +499,7 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
 
         const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
           folio_dia: folioDia, id_centro_fk: centroLoc.id, fecha: fechaIso,
-          nombre_cliente: nombreArrendatario, es_socio: false,
+          nombre_cliente: nombreArrendatario, es_socio: idSocio != null, id_socio_fk: idSocio,
           subtotal: rf.subtotal ?? rf.total, descuento: rf.descuento ?? 0, iva: totalIvaCuotas, total: rf.total,
           status: 'PAGADA', facturable: rf.facturable ?? false, usuario_crea: authUser?.nombre ?? authUser?.user?.email ?? 'locales',
           notas: `Ticket POS desde recibo de locales ${exito.folio}${esParcial ? ' [PAGO PARCIAL]' : ''}`,

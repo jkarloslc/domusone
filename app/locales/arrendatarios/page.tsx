@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl } from '@/lib/supabase'
+import { dbCtrl, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Search, RefreshCw, Edit2, Trash2, Eye, ChevronLeft } from 'lucide-react'
+import { Plus, Search, RefreshCw, Edit2, Trash2, Eye, ChevronLeft, UserCheck, X } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 
@@ -24,14 +24,21 @@ export type Arrendatario = {
   telefono_emergencia: string | null
   notas: string | null
   activo: boolean
+  id_socio_fk: number | null
   created_at: string
 }
+
+type SocioResult = { id: number; nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null }
 
 const EMPTY: Omit<Arrendatario, 'id' | 'created_at'> = {
   nombre: '', apellido_paterno: '', apellido_materno: '', razon_social: '',
   tipo_persona: 'Física', rfc: '', email: '', telefono: '', telefono_alt: '',
   direccion: '', contacto_emergencia: '', telefono_emergencia: '', notas: '', activo: true,
+  id_socio_fk: null,
 }
+
+const fmtNombreSocio = (s: SocioResult) =>
+  [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') + (s.numero_socio ? ` (#${s.numero_socio})` : '')
 
 const fmtNombre = (a: Arrendatario) =>
   a.tipo_persona === 'Moral' && a.razon_social
@@ -59,6 +66,13 @@ export default function ArrendatariosLocalesPage() {
   const [form, setForm]             = useState<Omit<Arrendatario, 'id' | 'created_at'>>(EMPTY)
   const [err, setErr]               = useState('')
   const [kpis, setKpis] = useState({ activos: 0, inactivos: 0, morales: 0, fisicas: 0 })
+  const [sociosPorId, setSociosPorId] = useState<Record<number, string>>({})
+
+  // ── Vínculo con socio (para facturación) ──────────────────
+  const [socioSearch, setSocioSearch]   = useState('')
+  const [socioResults, setSocioResults] = useState<SocioResult[]>([])
+  const [socioNombreLigado, setSocioNombreLigado] = useState('')
+  const [buscandoSocio, setBuscandoSocio] = useState(false)
 
   const fetchItems = useCallback(async () => {
     setLoading(true)
@@ -90,8 +104,20 @@ export default function ArrendatariosLocalesPage() {
       kpiQ = kpiQ.eq('activo', esActivo)
     }
     const [{ data, count }, { data: kpiData }] = await Promise.all([q, kpiQ])
-    setItems((data as Arrendatario[]) ?? [])
+    const rows = (data as Arrendatario[]) ?? []
+    setItems(rows)
     setTotal(count ?? 0)
+
+    // loc_arrendatarios (schema ctrl) y cat_socios (schema golf) no se pueden
+    // embeder vía PostgREST entre schemas — se resuelve el nombre aparte.
+    const idsSocio = Array.from(new Set(rows.map(r => r.id_socio_fk).filter((v): v is number => v != null)))
+    if (idsSocio.length > 0) {
+      const { data: socios } = await dbGolf.from('cat_socios')
+        .select('id, nombre, apellido_paterno, apellido_materno, numero_socio').in('id', idsSocio)
+      setSociosPorId(Object.fromEntries(((socios ?? []) as SocioResult[]).map(s => [s.id, fmtNombreSocio(s)])))
+    } else {
+      setSociosPorId({})
+    }
     const all = (kpiData ?? []) as { activo: boolean; tipo_persona: string }[]
     setKpis({
       activos: all.filter(x => x.activo).length,
@@ -104,12 +130,39 @@ export default function ArrendatariosLocalesPage() {
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
-  const openNew = () => { setForm(EMPTY); setEditItem(null); setErr(''); setShowModal(true) }
+  const openNew = () => { setForm(EMPTY); setEditItem(null); setErr(''); setSocioSearch(''); setSocioResults([]); setSocioNombreLigado(''); setShowModal(true) }
   const openEdit = (a: Arrendatario) => {
     setForm({ ...a })
     setEditItem(a)
     setErr('')
+    setSocioSearch('')
+    setSocioResults([])
+    setSocioNombreLigado(a.id_socio_fk != null ? (sociosPorId[a.id_socio_fk] ?? '') : '')
     setShowModal(true)
+  }
+
+  const buscarSocios = async (texto: string) => {
+    setSocioSearch(texto)
+    if (texto.trim().length < 2) { setSocioResults([]); return }
+    setBuscandoSocio(true)
+    const words = texto.trim().split(/\s+/).filter(Boolean)
+    let qb: any = dbGolf.from('cat_socios').select('id, nombre, apellido_paterno, apellido_materno, numero_socio').eq('activo', true)
+    for (const w of words) qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%,numero_socio.ilike.%${w}%`)
+    const { data } = await qb.order('apellido_paterno').limit(8)
+    setSocioResults((data as SocioResult[]) ?? [])
+    setBuscandoSocio(false)
+  }
+
+  const ligarSocio = (s: SocioResult) => {
+    setForm(f => ({ ...f, id_socio_fk: s.id }))
+    setSocioNombreLigado(fmtNombreSocio(s))
+    setSocioSearch('')
+    setSocioResults([])
+  }
+
+  const quitarSocio = () => {
+    setForm(f => ({ ...f, id_socio_fk: null }))
+    setSocioNombreLigado('')
   }
 
   const handleSave = async () => {
@@ -130,6 +183,7 @@ export default function ArrendatariosLocalesPage() {
       telefono_emergencia: form.telefono_emergencia || null,
       notas: form.notas || null,
       activo: form.activo,
+      id_socio_fk: form.id_socio_fk,
       updated_at: new Date().toISOString(),
     }
     let error
@@ -225,16 +279,16 @@ export default function ArrendatariosLocalesPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
-              {['Nombre / Razón Social', 'RFC', 'Teléfono', 'Email', 'Tipo', 'Status', ''].map(h => (
+              {['Nombre / Razón Social', 'RFC', 'Teléfono', 'Email', 'Tipo', 'Socio vinculado', 'Status', ''].map(h => (
                 <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
+              <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin registros</td></tr>
+              <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin registros</td></tr>
             ) : items.map((a, i) => (
               <tr key={a.id} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                 <td style={{ padding: '10px 14px', fontWeight: 500, color: 'var(--text-primary)' }}>{fmtNombre(a)}</td>
@@ -242,6 +296,13 @@ export default function ArrendatariosLocalesPage() {
                 <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{a.telefono ?? '—'}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{a.email ?? '—'}</td>
                 <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: 12 }}>{a.tipo_persona}</td>
+                <td style={{ padding: '10px 14px', fontSize: 12 }}>
+                  {a.id_socio_fk != null ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#0f766e', fontWeight: 500 }}>
+                      <UserCheck size={12} /> {sociosPorId[a.id_socio_fk] ?? `Socio #${a.id_socio_fk}`}
+                    </span>
+                  ) : <span style={{ color: '#cbd5e1' }}>— Público en general —</span>}
+                </td>
                 <td style={{ padding: '10px 14px' }}>
                   <span style={{
                     fontSize: 11, padding: '2px 8px', borderRadius: 10, fontWeight: 600,
@@ -340,6 +401,47 @@ export default function ArrendatariosLocalesPage() {
             {F('Email', 'email', { half: true })}
             {F('Teléfono', 'telefono', { half: true })}
             {F('Tel. Alternativo', 'telefono_alt', { half: true })}
+
+            {/* Vínculo con socio, para precargar datos fiscales al facturar */}
+            <div style={{ gridColumn: 'span 2', border: '1px solid #e2e8f0', borderRadius: 8, padding: 12, background: '#f8fafc' }}>
+              <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 6, fontWeight: 600 }}>
+                Vínculo con Socio (datos fiscales para facturar)
+              </label>
+              {form.id_socio_fk != null ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 6 }}>
+                  <UserCheck size={14} style={{ color: '#0f766e', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: '#0f766e', fontWeight: 500, flex: 1 }}>{socioNombreLigado || `Socio #${form.id_socio_fk}`}</span>
+                  <button type="button" onClick={quitarSocio} title="Quitar vínculo"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div style={{ position: 'relative' }}>
+                  <input className="input" placeholder="Buscar socio por nombre o número…" value={socioSearch}
+                    onChange={e => buscarSocios(e.target.value)} style={{ width: '100%' }} />
+                  {(socioResults.length > 0 || buscandoSocio) && (
+                    <div style={{ position: 'absolute', zIndex: 10, top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', maxHeight: 200, overflowY: 'auto' }}>
+                      {buscandoSocio ? (
+                        <div style={{ padding: 10, fontSize: 12, color: '#94a3b8' }}>Buscando…</div>
+                      ) : socioResults.map(s => (
+                        <button key={s.id} type="button" onClick={() => ligarSocio(s)}
+                          style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', fontSize: 12, border: 'none', background: 'none', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}>
+                          {fmtNombreSocio(s)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>
+                Si el arrendatario es socio del club, vincúlalo aquí para que sus datos fiscales (RFC, régimen, uso CFDI) se precarguen
+                automáticamente al facturar. Si no tiene vínculo, se factura como Público en General.
+              </div>
+            </div>
+
             {F('Dirección', 'direccion')}
             {F('Contacto Emergencia', 'contacto_emergencia', { half: true })}
             {F('Tel. Emergencia', 'telefono_emergencia', { half: true })}

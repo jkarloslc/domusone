@@ -476,13 +476,17 @@ export default function CobranzaLocalesPage() {
   const handleTicketPOS = async (r: ReciboRow) => {
     setGenTicketR(true); setTicketErrR('')
     try {
-      const [{ data: centros }, { data: cfg }] = await Promise.all([
+      const [{ data: centros }, { data: cfg }, { data: arr }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
+        dbCtrl.from('loc_arrendatarios').select('id_socio_fk').eq('id', r.id_arrendatario_fk).maybeSingle(),
       ])
       const centrosPos = (centros as { id: number; nombre: string }[]) ?? []
       if (!centrosPos.length) throw new Error('No hay centros POS activos.')
       const centroLoc = centrosPos.find(c => { const n = norm(c.nombre); return n.includes('local') || n.includes('propiedad') }) ?? centrosPos[0]
+      // Si el arrendatario está vinculado a un socio, la venta se marca como suya —
+      // así el modal de facturar precarga sus datos fiscales automáticamente.
+      const idSocio = (arr as { id_socio_fk: number | null } | null)?.id_socio_fk ?? null
 
       let ventaId = r.id_venta_pos_fk
       let folioDia = 0
@@ -504,7 +508,7 @@ export default function CobranzaLocalesPage() {
         folioDia = maxF && maxF.length > 0 ? ((maxF[0] as any).folio_dia + 1) : 1
         const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
           folio_dia: folioDia, id_centro_fk: centroLoc.id, fecha: fechaIso,
-          nombre_cliente: fmtNombre(r.cat_arrendatarios), es_socio: false,
+          nombre_cliente: fmtNombre(r.cat_arrendatarios), es_socio: idSocio != null, id_socio_fk: idSocio,
           subtotal: r.subtotal ?? r.total, descuento: r.descuento ?? 0, iva: totalIvaCuotas, total: r.total,
           status: 'PAGADA', usuario_crea: authUser?.user?.email ?? 'locales',
           notas: `Ticket POS desde recibo de locales ${r.folio}`,
