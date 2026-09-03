@@ -13,6 +13,7 @@ import CobrarModal, { type CuotaPendiente, printReciboHip } from './CobrarModal'
 import EditarCuotaModal, { type CuotaEditData } from './EditarCuotaModal'
 import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 import AgendaCobranza from '@/components/cobranza/AgendaCobranza'
+import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'cuotas' | 'config' | 'agenda'
@@ -189,6 +190,8 @@ export default function CobranzaHipicoPage() {
   const [tarifaEdit, setTarifaEdit] = useState(0)
   const [savingCfg, setSavingCfg] = useState(false)
   const [conceptoEdit, setConceptoEdit] = useState<number | null>(null)
+  const [productoEdit, setProductoEdit] = useState<number | null>(null)
+  const [idCentroHip, setIdCentroHip] = useState<number | null>(null)
   const [conceptosIngreso, setConceptosIngreso] = useState<{ id: number; nombre: string }[]>([])
 
   // ── Fetch Asignaciones ────────────────────────────────────
@@ -432,12 +435,16 @@ export default function CobranzaHipicoPage() {
       const [{ data: centros }, { data: cfg }, { data: cfgHip }] = await Promise.all([
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
-        dbHip.from('cfg_hip').select('id_concepto_ingreso_fk').single(),
+        dbHip.from('cfg_hip').select('id_concepto_ingreso_fk, id_producto_pos_fk').single(),
       ])
       const centrosPos = (centros as { id: number; nombre: string }[]) ?? []
       if (!centrosPos.length) throw new Error('No hay centros POS activos.')
       const centroHip = centrosPos.find(c => { const n = norm(c.nombre); return n.includes('hipico') || n.includes('caballeriza') }) ?? centrosPos[0]
-      const idConceptoHip = (cfgHip as { id_concepto_ingreso_fk: number | null } | null)?.id_concepto_ingreso_fk ?? null
+      // Prioridad: producto POS (ya carga concepto + clave SAT); si cfg_hip no tiene
+      // producto configurado, cae de respaldo al concepto de ingreso directo.
+      const cfgHipRow = cfgHip as { id_concepto_ingreso_fk: number | null; id_producto_pos_fk: number | null } | null
+      const idProductoHip = cfgHipRow?.id_producto_pos_fk ?? null
+      const idConceptoHip = idProductoHip != null ? null : (cfgHipRow?.id_concepto_ingreso_fk ?? null)
 
       let ventaId = r.id_venta_pos_fk
       let folioDia = 0
@@ -464,7 +471,7 @@ export default function CobranzaHipicoPage() {
 
         if (detDesglosado.length > 0) {
           await dbGolf.from('ctrl_ventas_det').insert(detDesglosado.map(d => ({
-            id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: idConceptoHip, concepto: d.concepto,
+            id_venta_fk: ventaId!, id_producto_fk: idProductoHip, id_concepto_ingreso_fk: idConceptoHip, concepto: d.concepto,
             cantidad: 1, precio_unitario: d.monto_final, descuento: 0, iva_pct: IVA_PCT_CUOTAS, iva: d.iva, subtotal: d.subtotal, total: d.monto_final, notas: null,
           })))
         }
@@ -565,14 +572,18 @@ export default function CobranzaHipicoPage() {
 
   // ── Fetch Config ──────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
-    const [{ data }, { data: cons }] = await Promise.all([
-      dbHip.from('cfg_hip').select('tarifa_mensual, id_concepto_ingreso_fk').single(),
+    const [{ data }, { data: cons }, { data: centros }] = await Promise.all([
+      dbHip.from('cfg_hip').select('tarifa_mensual, id_concepto_ingreso_fk, id_producto_pos_fk').single(),
       dbCfg.from('conceptos_ingreso').select('id, nombre').eq('activo', true).order('orden'),
+      dbGolf.from('cat_centros_venta').select('id, nombre').eq('activo', true),
     ])
     const t = (data as any)?.tarifa_mensual ?? 0
     setTarifa(t); setTarifaEdit(t)
     setConceptoEdit((data as any)?.id_concepto_ingreso_fk ?? null)
+    setProductoEdit((data as any)?.id_producto_pos_fk ?? null)
     setConceptosIngreso((cons as { id: number; nombre: string }[]) ?? [])
+    const centroHip = ((centros ?? []) as { id: number; nombre: string }[]).find(c => { const n = norm(c.nombre); return n.includes('hipico') || n.includes('caballeriza') })
+    setIdCentroHip(centroHip?.id ?? null)
   }, [])
 
   const fetchCuotasAll = useCallback(async () => {
@@ -605,7 +616,7 @@ export default function CobranzaHipicoPage() {
   const guardarTarifa = async () => {
     setSavingCfg(true)
     await dbHip.from('cfg_hip')
-      .update({ tarifa_mensual: tarifaEdit, id_concepto_ingreso_fk: conceptoEdit, updated_at: new Date().toISOString() })
+      .update({ tarifa_mensual: tarifaEdit, id_concepto_ingreso_fk: conceptoEdit, id_producto_pos_fk: productoEdit, updated_at: new Date().toISOString() })
       .eq('id', 1)
     setTarifa(tarifaEdit)
     setSavingCfg(false)
@@ -1378,14 +1389,21 @@ export default function CobranzaHipicoPage() {
               Tarifa actual: <strong>{fmt$(tarifa)}</strong> por mes
             </div>
 
+            <div style={{ fontSize: 13, fontWeight: 700, margin: '18px 0 10px', color: 'var(--text-primary)' }}>Producto POS</div>
+            <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+              Fuente real de facturación (concepto de ingreso + clave SAT)
+            </label>
+            <ProductoPosSelect idCentroFk={idCentroHip} value={productoEdit} onChange={setProductoEdit} style={{ width: '100%' }} />
+
             <div style={{ fontSize: 13, fontWeight: 700, margin: '18px 0 10px', color: 'var(--text-primary)' }}>Concepto de Ingreso</div>
             <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              Para distribuir el corte POS a su partida de presupuesto
+              Respaldo si no hay producto configurado arriba
             </label>
             <select className="input" value={conceptoEdit ?? ''} onChange={e => setConceptoEdit(e.target.value ? Number(e.target.value) : null)} style={{ width: '100%' }}>
               <option value="">— Sin asignar (cae en &quot;Otros&quot;) —</option>
               {conceptosIngreso.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
             </select>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>Usa el botón "Guardar" de arriba para aplicar los cambios de esta sección también.</div>
           </div>
         </div>
       )}

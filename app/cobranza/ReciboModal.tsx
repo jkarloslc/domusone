@@ -420,15 +420,21 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       const mapaCuotaLoteCuota = new Map((cuotasLoteDB ?? []).map((c: any) => [c.id, c.id_cuota_estandar_fk as number | null]))
       const idsCuotaEstandar = Array.from(new Set(Array.from(mapaCargoCuota.values()).concat(Array.from(mapaCuotaLoteCuota.values())).filter((x): x is number => x != null)))
       const { data: cuotasEstandarDB } = idsCuotaEstandar.length
-        ? await dbCfg.from('cuotas_estandar').select('id, id_concepto_ingreso_fk').in('id', idsCuotaEstandar)
+        ? await dbCfg.from('cuotas_estandar').select('id, id_concepto_ingreso_fk, id_producto_pos_fk').in('id', idsCuotaEstandar)
         : { data: [] as any[] }
-      const mapaCuotaConcepto = new Map((cuotasEstandarDB ?? []).map((c: any) => [c.id, c.id_concepto_ingreso_fk as number | null]))
+      // Prioridad: producto POS (ya carga concepto + clave SAT); si a la cuota estándar
+      // le falta el producto, cae de respaldo al concepto de ingreso directo.
+      const mapaCuotaClasif = new Map((cuotasEstandarDB ?? []).map((c: any) => [c.id,
+        c.id_producto_pos_fk != null
+          ? { idConcepto: null as number | null, idProducto: c.id_producto_pos_fk as number | null }
+          : { idConcepto: c.id_concepto_ingreso_fk as number | null, idProducto: null as number | null }
+      ]))
 
-      const conceptoPorLinea = (d: typeof detList[number]): number | null => {
+      const clasifPorLinea = (d: typeof detList[number]): { idConcepto: number | null; idProducto: number | null } => {
         const idCuotaEstandar = (d.id_cargo_fk != null ? mapaCargoCuota.get(d.id_cargo_fk) : null)
           ?? (d.id_cuota_lote_fk != null ? mapaCuotaLoteCuota.get(d.id_cuota_lote_fk) : null)
           ?? null
-        return idCuotaEstandar != null ? (mapaCuotaConcepto.get(idCuotaEstandar) ?? null) : null
+        return idCuotaEstandar != null ? (mapaCuotaClasif.get(idCuotaEstandar) ?? { idConcepto: null, idProducto: null }) : { idConcepto: null, idProducto: null }
       }
 
       let ventaId = rf.id_venta_pos_fk
@@ -452,12 +458,15 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
         if (ev || !venta) throw new Error(ev?.message ?? 'Error al crear venta POS')
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
-        const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detList.map(d => ({
-          id_venta_fk: ventaId!, id_producto_fk: null, id_concepto_ingreso_fk: conceptoPorLinea(d),
-          concepto: d.concepto, cantidad: d.cantidad, precio_unitario: d.precio_unitario,
-          descuento: d.descuento ?? 0, iva_pct: 0, iva: 0, subtotal: d.total, total: d.total,
-          notas: d.periodo_mes ? `${d.periodo_mes} ${d.periodo_anio ?? ''}`.trim() : null,
-        })))
+        const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detList.map(d => {
+          const clasif = clasifPorLinea(d)
+          return {
+            id_venta_fk: ventaId!, id_producto_fk: clasif.idProducto, id_concepto_ingreso_fk: clasif.idConcepto,
+            concepto: d.concepto, cantidad: d.cantidad, precio_unitario: d.precio_unitario,
+            descuento: d.descuento ?? 0, iva_pct: 0, iva: 0, subtotal: d.total, total: d.total,
+            notas: d.periodo_mes ? `${d.periodo_mes} ${d.periodo_anio ?? ''}`.trim() : null,
+          }
+        }))
         if (errDet) throw new Error(errDet.message)
 
         const pagosValidos = pagos.filter(p => Number(p.monto) > 0)

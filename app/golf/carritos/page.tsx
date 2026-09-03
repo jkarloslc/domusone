@@ -10,6 +10,7 @@ import CambiarTitularModal from './CambiarTitularModal'
 import CobrarCuotaModal from './CobrarCuotaModal'
 import MesaControl from './MesaControl'
 import { periodoCorte, cuotaExigible } from '../salidas-carritos/adeudos'
+import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Pension = {
@@ -228,6 +229,7 @@ export default function CarritosPage() {
   const [savingCentros, setSavingCentros] = useState(false)
   const [conceptosIngreso, setConceptosIngreso] = useState<{ id: number; nombre: string }[]>([])
   const [idConceptoPension, setIdConceptoPension] = useState<number | null>(null)
+  const [idProductoPension, setIdProductoPension] = useState<number | null>(null)
 
   // ── Stats ─────────────────────────────────────────────────
   const [stats, setStats] = useState({ pensionesActivas: 0, cuotasPendientes: 0, montoPendiente: 0, vencidas: 0 })
@@ -285,7 +287,7 @@ export default function CarritosPage() {
   // ── Fetch Config ──────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
     const [{ data: cfg }, { data: sl }, { data: occ }, { data: cv }, { data: cons }] = await Promise.all([
-      dbGolf.from('cfg_carritos').select('tarifa_mensual, id_centro_membresias_fk, id_centro_pension_fk, id_concepto_ingreso_fk').single(),
+      dbGolf.from('cfg_carritos').select('tarifa_mensual, id_centro_membresias_fk, id_centro_pension_fk, id_concepto_ingreso_fk, id_producto_pos_fk').single(),
       dbGolf.from('cat_slots').select('id, numero').eq('activo', true).order('numero'),
       // Cajones ocupados por pensiones activas (solo informativo en la UI)
       dbGolf.from('ctrl_pensiones').select('id_slot_fk').eq('activo', true).not('id_slot_fk', 'is', null),
@@ -301,6 +303,7 @@ export default function CarritosPage() {
     setIdCentroPension((cfg as any)?.id_centro_pension_fk ?? null)
     setConceptosIngreso((cons as { id: number; nombre: string }[]) ?? [])
     setIdConceptoPension((cfg as any)?.id_concepto_ingreso_fk ?? null)
+    setIdProductoPension((cfg as any)?.id_producto_pos_fk ?? null)
   }, [])
 
   // ── Fetch Cobranza del mes ────────────────────────────────
@@ -606,6 +609,7 @@ export default function CarritosPage() {
       id_centro_membresias_fk: idCentroMembresias,
       id_centro_pension_fk:    idCentroPension,
       id_concepto_ingreso_fk:  idConceptoPension,
+      id_producto_pos_fk:      idProductoPension,
       updated_at: new Date().toISOString(),
     }).eq('id', 1)
     setSavingCentros(false)
@@ -1407,7 +1411,12 @@ export default function CarritosPage() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Concepto de ingreso (Pensión de carrito)</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Producto POS (Pensión de carrito) — fuente real de facturación</label>
+                <ProductoPosSelect idCentroFk={idCentroPension} value={idProductoPension} onChange={setIdProductoPension}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: 13, borderRadius: 8 }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Concepto de ingreso (Pensión de carrito) — respaldo si no hay producto</label>
                 <select
                   style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}
                   value={idConceptoPension ?? ''}

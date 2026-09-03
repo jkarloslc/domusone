@@ -82,13 +82,18 @@ export async function resolveConceptosPorCuota(idsCuota: number[]): Promise<Reco
 
   const idsProp = Array.from(new Set(asigRows.map(a => a.id_propiedad_fk)))
   const { data: props } = idsProp.length
-    ? await dbCtrl.from('loc_propiedades').select('id, id_concepto_ingreso_fk').in('id', idsProp)
-    : { data: [] as { id: number; id_concepto_ingreso_fk: number | null }[] }
-  const propConcepto: Record<number, number | null> =
-    Object.fromEntries((props ?? []).map((p: any) => [p.id, p.id_concepto_ingreso_fk]))
+    ? await dbCtrl.from('loc_propiedades').select('id, id_concepto_ingreso_fk, id_producto_pos_fk').in('id', idsProp)
+    : { data: [] as { id: number; id_concepto_ingreso_fk: number | null; id_producto_pos_fk: number | null }[] }
+  // Prioridad: producto POS por propiedad (ya carga concepto + clave SAT); si a la
+  // propiedad le falta el producto, cae de respaldo al concepto de ingreso directo.
+  const propClasif: Record<number, ClasifCuotaPOS> = Object.fromEntries(
+    (props ?? []).map((p: any) => [p.id, p.id_producto_pos_fk != null
+      ? { idConcepto: null, idProducto: p.id_producto_pos_fk }
+      : { idConcepto: p.id_concepto_ingreso_fk, idProducto: null }])
+  )
 
-  const asigConcepto: Record<number, number | null> =
-    Object.fromEntries(asigRows.map(a => [a.id, propConcepto[a.id_propiedad_fk] ?? null]))
+  const asigClasif: Record<number, ClasifCuotaPOS> =
+    Object.fromEntries(asigRows.map(a => [a.id, propClasif[a.id_propiedad_fk] ?? { idConcepto: null, idProducto: null }]))
 
   // Producto POS compartido de mantenimiento — se resuelve una sola vez si hay alguna cuota de ese tipo.
   // Si el producto todavía no existe en el catálogo (migración pendiente de correr), se usa como
@@ -119,7 +124,7 @@ export async function resolveConceptosPorCuota(idsCuota: number[]): Promise<Reco
         : { idConcepto: idConceptoManttoFallback, idProducto: null }
       continue
     }
-    resultado[c.id] = { idConcepto: c.id_asignacion_fk != null ? (asigConcepto[c.id_asignacion_fk] ?? null) : null, idProducto: null }
+    resultado[c.id] = c.id_asignacion_fk != null ? (asigClasif[c.id_asignacion_fk] ?? { idConcepto: null, idProducto: null }) : { idConcepto: null, idProducto: null }
   }
   return resultado
 }

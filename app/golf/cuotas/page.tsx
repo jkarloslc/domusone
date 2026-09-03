@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
+import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
 
 // ── Tipos ────────────────────────────────────────────────────
 type Cuota = {
@@ -36,6 +37,7 @@ type CuotaConfig = {
   meses_aplicar: number
   dia_vencimiento: number
   id_concepto_ingreso_fk: number | null
+  id_producto_pos_fk: number | null
   cat_categorias_socios?: { nombre: string } | null
 }
 
@@ -817,6 +819,7 @@ function EditarMontoModal({ cuota, onClose, onSaved }: { cuota: Cuota; onClose: 
 function ConfigConceptosModal({ onClose }: { onClose: () => void }) {
   const [configs, setConfigs]     = useState<CuotaConfig[]>([])
   const [conceptos, setConceptos] = useState<ConceptoIngreso[]>([])
+  const [idCentroMembresias, setIdCentroMembresias] = useState<number | null>(null)
   const [loading, setLoading]     = useState(true)
   const [saving, setSaving]       = useState<number | null>(null)
   const [error, setError]         = useState('')
@@ -825,7 +828,8 @@ function ConfigConceptosModal({ onClose }: { onClose: () => void }) {
     Promise.all([
       dbGolf.from('cat_cuotas_config').select('*').order('tipo').order('nombre'),
       dbCfg.from('conceptos_ingreso').select('id, nombre, id_centro_ingreso_fk').eq('activo', true).order('orden'),
-    ]).then(([{ data: cfgs }, { data: cons }]) => {
+      dbGolf.from('cat_centros_venta').select('id, nombre').eq('nombre', 'Membresias').maybeSingle(),
+    ]).then(([{ data: cfgs }, { data: cons }, { data: centro }]) => {
       // Colapsa filas duplicadas por tipo+nombre (p.ej. PENSION_CARRITO por categoría)
       const vistos = new Set<string>()
       const unicos = ((cfgs as CuotaConfig[]) ?? []).filter(c => {
@@ -835,6 +839,7 @@ function ConfigConceptosModal({ onClose }: { onClose: () => void }) {
       })
       setConfigs(unicos)
       setConceptos((cons as ConceptoIngreso[]) ?? [])
+      setIdCentroMembresias((centro as { id: number } | null)?.id ?? null)
       setLoading(false)
     })
   }, [])
@@ -850,6 +855,16 @@ function ConfigConceptosModal({ onClose }: { onClose: () => void }) {
     setSaving(null)
   }
 
+  const guardarProducto = async (row: CuotaConfig, idProducto: number | null) => {
+    setSaving(row.id); setError('')
+    const { error: err } = await dbGolf.from('cat_cuotas_config')
+      .update({ id_producto_pos_fk: idProducto })
+      .eq('tipo', row.tipo).eq('nombre', row.nombre)
+    if (err) { setError(err.message); setSaving(null); return }
+    setConfigs(prev => prev.map(c => (c.tipo === row.tipo && c.nombre === row.nombre) ? { ...c, id_producto_pos_fk: idProducto } : c))
+    setSaving(null)
+  }
+
   return (
     <ModalShell modulo="golf-carritos" titulo="Concepto de Ingreso por Cuota" subtitulo="Para distribuir el corte POS a su partida de presupuesto" onClose={onClose} maxWidth={560}>
       {loading ? (
@@ -862,18 +877,30 @@ function ConfigConceptosModal({ onClose }: { onClose: () => void }) {
             <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>
           )}
           {configs.map(c => (
-            <div key={`${c.tipo}-${c.nombre}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-              <div style={{ flex: '1 1 auto', minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c.nombre}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8' }}>{TIPOS_LABEL[c.tipo] ?? c.tipo}</div>
+            <div key={`${c.tipo}-${c.nombre}`} style={{ padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{c.nombre}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8' }}>{TIPOS_LABEL[c.tipo] ?? c.tipo}</div>
+                </div>
+                {saving === c.id && <Loader size={13} className="animate-spin" style={{ color: '#94a3b8' }} />}
               </div>
-              <select value={c.id_concepto_ingreso_fk ?? ''} disabled={saving === c.id}
-                onChange={e => guardarConcepto(c, e.target.value ? Number(e.target.value) : null)}
-                style={{ width: 220, padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
-                <option value="">— Sin asignar (cae en "Otros") —</option>
-                {conceptos.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
-              </select>
-              {saving === c.id && <Loader size={13} className="animate-spin" style={{ color: '#94a3b8' }} />}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2 }}>Producto POS (fuente real de facturación)</div>
+                  <ProductoPosSelect idCentroFk={idCentroMembresias} value={c.id_producto_pos_fk} onChange={id => guardarProducto(c, id)}
+                    style={{ width: '100%', padding: '6px 8px', fontSize: 12, borderRadius: 6 }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2 }}>Concepto de ingreso (respaldo si no hay producto)</div>
+                  <select value={c.id_concepto_ingreso_fk ?? ''} disabled={saving === c.id}
+                    onChange={e => guardarConcepto(c, e.target.value ? Number(e.target.value) : null)}
+                    style={{ width: '100%', padding: '6px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, fontFamily: 'inherit', outline: 'none' }}>
+                    <option value="">— Sin asignar (cae en "Otros") —</option>
+                    {conceptos.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
+                  </select>
+                </div>
+              </div>
             </div>
           ))}
         </div>

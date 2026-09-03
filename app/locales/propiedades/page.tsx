@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbCtrl, dbCfg } from '@/lib/supabase'
+import { dbCtrl, dbCfg, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, Search, RefreshCw, Edit2, Trash2, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
+import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
 
 const PAGE_SIZE = 25
 
@@ -19,12 +20,13 @@ type Propiedad = {
   activo: boolean
   notas: string | null
   id_concepto_ingreso_fk: number | null
+  id_producto_pos_fk: number | null
   created_at: string
 }
 
 const EMPTY: Omit<Propiedad, 'id' | 'created_at'> = {
   clave: '', nombre: '', ubicacion: '', tipo: 'Local Comercial', metros2: null, status: 'Libre', activo: true, notas: '',
-  id_concepto_ingreso_fk: null,
+  id_concepto_ingreso_fk: null, id_producto_pos_fk: null,
 }
 
 const TIPOS = ['Local Comercial', 'Oficina', 'Bodega', 'Terreno', 'Otro']
@@ -58,6 +60,7 @@ export default function PropiedadesPage() {
   const [err, setErr]           = useState('')
   const [kpis, setKpis] = useState({ libres: 0, rentadas: 0, ocupadas: 0, mantenimiento: 0 })
   const [conceptosIngreso, setConceptosIngreso] = useState<{ id: number; nombre: string }[]>([])
+  const [idCentroVentaLocales, setIdCentroVentaLocales] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchConceptos = async () => {
@@ -67,6 +70,11 @@ export default function PropiedadesPage() {
       const q = dbCfg.from('conceptos_ingreso').select('id, nombre').eq('activo', true).order('nombre')
       const { data: cons } = centroLoc ? await q.eq('id_centro_ingreso_fk', centroLoc.id) : await q
       setConceptosIngreso((cons as { id: number; nombre: string }[]) ?? [])
+
+      const { data: centrosVenta } = await dbGolf.from('cat_centros_venta').select('id, nombre').eq('activo', true)
+      const centroVentaLoc = ((centrosVenta ?? []) as { id: number; nombre: string }[])
+        .find(c => c.nombre.toLowerCase().includes('local'))
+      setIdCentroVentaLocales(centroVentaLoc?.id ?? null)
     }
     fetchConceptos()
   }, [])
@@ -114,6 +122,7 @@ export default function PropiedadesPage() {
       activo: form.activo,
       notas: form.notas || null,
       id_concepto_ingreso_fk: form.id_concepto_ingreso_fk || null,
+      id_producto_pos_fk: form.id_producto_pos_fk || null,
     }
     let error
     if (editItem) {
@@ -277,7 +286,16 @@ export default function PropiedadesPage() {
             {F('Metros²', 'metros2', { half: true, type: 'number' })}
 
             <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Concepto de Ingreso</label>
+              <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Producto POS (renta de esta propiedad)</label>
+              <ProductoPosSelect idCentroFk={idCentroVentaLocales} value={form.id_producto_pos_fk}
+                onChange={id => setForm(f => ({ ...f, id_producto_pos_fk: id }))} style={{ width: '100%' }} />
+              <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>
+                Fuente real de clasificación del ticket (concepto de ingreso + clave SAT). Si no se asigna, se usa el concepto de ingreso de abajo como respaldo.
+              </div>
+            </div>
+
+            <div style={{ gridColumn: 'span 2' }}>
+              <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Concepto de Ingreso (respaldo)</label>
               <select className="input" value={form.id_concepto_ingreso_fk ?? ''}
                 onChange={e => setForm(f => ({ ...f, id_concepto_ingreso_fk: e.target.value ? Number(e.target.value) : null }))}
                 style={{ width: '100%' }}>
@@ -285,7 +303,7 @@ export default function PropiedadesPage() {
                 {conceptosIngreso.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
               </select>
               <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>
-                Para que los tickets POS de esta renta se distribuyan a su propia partida de presupuesto en vez de caer en el concepto general
+                Solo aplica si la propiedad no tiene producto POS asignado arriba.
               </div>
             </div>
 

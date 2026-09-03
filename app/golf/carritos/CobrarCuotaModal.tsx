@@ -418,23 +418,31 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         dbGolf.from('recibos_golf_det').select('concepto, periodo, monto_final, tipo').eq('id_recibo_fk', recibo.id).order('id'),
         dbGolf.from('cat_centros_venta').select('id, nombre, activo').eq('activo', true).order('orden'),
         dbGolf.from('cfg_pos').select('razon_social, rfc, direccion, telefono, municipio, leyenda_ticket').single(),
-        dbGolf.from('cfg_carritos').select('id_centro_membresias_fk, id_centro_pension_fk, id_concepto_ingreso_fk').single(),
-        dbGolf.from('cat_cuotas_config').select('tipo, id_concepto_ingreso_fk'),
+        dbGolf.from('cfg_carritos').select('id_centro_membresias_fk, id_centro_pension_fk, id_concepto_ingreso_fk, id_producto_pos_fk').single(),
+        dbGolf.from('cat_cuotas_config').select('tipo, id_concepto_ingreso_fk, id_producto_pos_fk'),
       ])
       if (errRec || !reciboDB) throw new Error(errRec?.message ?? 'No se pudo leer el recibo para generar ticket')
       // Montos realmente aplicados a cada concepto en este pago (ya prorateados si fue pago parcial) —
       // no usar el saldo/monto_final de la cuota, que refleja lo adeudado, no lo cobrado hoy.
       const detFiscal = (detFiscalDB as { concepto: string; periodo: string | null; monto_final: number; tipo: string | null }[]) ?? []
-      // Concepto de ingreso por tipo de cuota, para que el corte POS distribuya estas
-      // líneas a su propia partida de presupuesto en vez de "Otros" (no traen
-      // id_producto_fk — ver distribucionIngreso.ts). Membresía/Inscripción sí tienen
-      // fila en cat_cuotas_config; Pensión Carrito no (el monto se captura manual en
-      // PensionModal), así que su concepto vive en cfg_carritos.id_concepto_ingreso_fk.
-      const conceptoPorTipo: Record<string, number | null> = {}
-      for (const c of (cuotasConfig as { tipo: string; id_concepto_ingreso_fk: number | null }[]) ?? []) {
-        if (conceptoPorTipo[c.tipo] == null && c.id_concepto_ingreso_fk != null) conceptoPorTipo[c.tipo] = c.id_concepto_ingreso_fk
+      // Clasificación fiscal por tipo de cuota, para que el corte POS distribuya estas
+      // líneas a su propia partida de presupuesto en vez de "Otros". Prioridad: producto
+      // POS (cat_cuotas_config.id_producto_pos_fk / cfg_carritos.id_producto_pos_fk) —
+      // ya carga el concepto y la clave SAT; si a una config le falta el producto, cae
+      // de respaldo al concepto de ingreso directo (nunca ambos, nunca ninguno).
+      // Membresía/Inscripción sí tienen fila en cat_cuotas_config; Pensión Carrito no
+      // (el monto se captura manual en PensionModal), vive en cfg_carritos.
+      const clasifPorTipo: Record<string, { idConcepto: number | null; idProducto: number | null }> = {}
+      for (const c of (cuotasConfig as { tipo: string; id_concepto_ingreso_fk: number | null; id_producto_pos_fk: number | null }[]) ?? []) {
+        if (clasifPorTipo[c.tipo]) continue
+        clasifPorTipo[c.tipo] = c.id_producto_pos_fk != null
+          ? { idProducto: c.id_producto_pos_fk, idConcepto: null }
+          : { idProducto: null, idConcepto: c.id_concepto_ingreso_fk }
       }
-      conceptoPorTipo['PENSION_CARRITO'] = (cfgCarritos as { id_concepto_ingreso_fk: number | null } | null)?.id_concepto_ingreso_fk ?? null
+      const cfgCarritosRow = cfgCarritos as { id_concepto_ingreso_fk: number | null; id_producto_pos_fk: number | null } | null
+      clasifPorTipo['PENSION_CARRITO'] = cfgCarritosRow?.id_producto_pos_fk != null
+        ? { idProducto: cfgCarritosRow.id_producto_pos_fk, idConcepto: null }
+        : { idProducto: null, idConcepto: cfgCarritosRow?.id_concepto_ingreso_fk ?? null }
       // Cuotas de membresía/inscripción/pensión causan IVA (16%, ya incluido en el monto).
       const detCalc = detFiscal.map(d => ({ ...d, ...desglosarIva(d.monto_final) }))
       const totalIvaCuotas = detCalc.reduce((a, d) => a + d.iva, 0)
@@ -492,8 +500,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         // no desde cuotasSelec (que trae el saldo/monto total adeudado por cuota).
         const detInsert = detCalc.map(d => ({
           id_venta_fk: ventaId!,
-          id_producto_fk: null,
-          id_concepto_ingreso_fk: d.tipo ? (conceptoPorTipo[d.tipo] ?? null) : null,
+          id_producto_fk: d.tipo ? (clasifPorTipo[d.tipo]?.idProducto ?? null) : null,
+          id_concepto_ingreso_fk: d.tipo ? (clasifPorTipo[d.tipo]?.idConcepto ?? null) : null,
           concepto: d.concepto,
           cantidad: 1,
           precio_unitario: d.monto_final,

@@ -14,6 +14,7 @@ import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import ModalShell from '@/components/ui/ModalShell'
 import CuotasConfigPanel from '@/components/golf/CuotasConfigPanel'
 import ClaveProdServPicker from '@/components/ui/ClaveProdServPicker'
+import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type CatConfig = {
@@ -373,6 +374,7 @@ type CuotaHeader = {
   descripcion: string | null
   activo: boolean
   id_concepto_ingreso_fk: number | null
+  id_producto_pos_fk: number | null
   _lineCount?: number
 }
 
@@ -396,20 +398,23 @@ function CuotasEstandarPanel() {
   const [editing, setEditing]       = useState<CuotaHeader | null>(null)
   const [saving, setSaving]         = useState(false)
   const [preciosFor, setPreciosFor] = useState<CuotaHeader | null>(null)
-  const [form, setForm] = useState({ nombre: '', periodicidad: 'Mensual', descripcion: '', id_concepto_ingreso_fk: null as number | null })
+  const [form, setForm] = useState({ nombre: '', periodicidad: 'Mensual', descripcion: '', id_concepto_ingreso_fk: null as number | null, id_producto_pos_fk: null as number | null })
   const [conceptosIngreso, setConceptosIngreso] = useState<{ id: number; nombre: string }[]>([])
+  const [idCentroVentaMantto, setIdCentroVentaMantto] = useState<number | null>(null)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [{ data: rows }, { data: dets }, { data: conceptos }] = await Promise.all([
-      dbCfg.from('cuotas_estandar').select('id, nombre, periodicidad, descripcion, activo, id_concepto_ingreso_fk').order('nombre'),
+    const [{ data: rows }, { data: dets }, { data: conceptos }, { data: centroVenta }] = await Promise.all([
+      dbCfg.from('cuotas_estandar').select('id, nombre, periodicidad, descripcion, activo, id_concepto_ingreso_fk, id_producto_pos_fk').order('nombre'),
       dbCfg.from('cuotas_estandar_det').select('id_cuota_fk').eq('activo', true),
       dbCfg.from('conceptos_ingreso').select('id, nombre').order('nombre'),
+      dbGolf.from('cat_centros_venta').select('id, nombre').eq('nombre', 'Cuotas Mantto.').maybeSingle(),
     ])
     const countMap = new Map<number, number>()
     ;(dets ?? []).forEach((d: any) => countMap.set(d.id_cuota_fk, (countMap.get(d.id_cuota_fk) ?? 0) + 1))
     setCuotas((rows ?? []).map((c: any) => ({ ...c, _lineCount: countMap.get(c.id) ?? 0 })))
     setConceptosIngreso((conceptos ?? []) as { id: number; nombre: string }[])
+    setIdCentroVentaMantto((centroVenta as { id: number } | null)?.id ?? null)
     setLoading(false)
   }, [])
 
@@ -417,13 +422,13 @@ function CuotasEstandarPanel() {
 
   const openNew = () => {
     setEditing(null)
-    setForm({ nombre: '', periodicidad: 'Mensual', descripcion: '', id_concepto_ingreso_fk: null })
+    setForm({ nombre: '', periodicidad: 'Mensual', descripcion: '', id_concepto_ingreso_fk: null, id_producto_pos_fk: null })
     setFormOpen(true)
   }
 
   const openEdit = (c: CuotaHeader) => {
     setEditing(c)
-    setForm({ nombre: c.nombre, periodicidad: c.periodicidad ?? 'Mensual', descripcion: c.descripcion ?? '', id_concepto_ingreso_fk: c.id_concepto_ingreso_fk })
+    setForm({ nombre: c.nombre, periodicidad: c.periodicidad ?? 'Mensual', descripcion: c.descripcion ?? '', id_concepto_ingreso_fk: c.id_concepto_ingreso_fk, id_producto_pos_fk: c.id_producto_pos_fk })
     setFormOpen(true)
   }
 
@@ -435,6 +440,7 @@ function CuotasEstandarPanel() {
       periodicidad: form.periodicidad || null,
       descripcion:  form.descripcion.trim() || null,
       id_concepto_ingreso_fk: form.id_concepto_ingreso_fk,
+      id_producto_pos_fk: form.id_producto_pos_fk,
     }
     if (editing) await dbCfg.from('cuotas_estandar').update(payload).eq('id', editing.id)
     else          await dbCfg.from('cuotas_estandar').insert({ ...payload, activo: true })
@@ -520,15 +526,23 @@ function CuotasEstandarPanel() {
                 placeholder="Descripción opcional" />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelSt}>Concepto de Ingreso</label>
+              <label style={labelSt}>Producto POS</label>
+              <ProductoPosSelect idCentroFk={idCentroVentaMantto} value={form.id_producto_pos_fk}
+                onChange={id => setForm(f => ({ ...f, id_producto_pos_fk: id }))} />
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                Fuente real de clasificación del ticket POS que se genera al cobrar esta cuota
+                (corte, distribución de ingreso y clave SAT de facturación).
+              </span>
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelSt}>Concepto de Ingreso (respaldo)</label>
               <select className="select" value={form.id_concepto_ingreso_fk ?? ''}
                 onChange={e => setForm(f => ({ ...f, id_concepto_ingreso_fk: e.target.value ? Number(e.target.value) : null }))}>
                 <option value="">— Sin asignar —</option>
                 {conceptosIngreso.map(co => <option key={co.id} value={co.id}>{co.nombre}</option>)}
               </select>
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                Clasifica el ticket POS que se genera al cobrar esta cuota (corte, distribución
-                de ingreso y clave SAT de facturación).
+                Solo aplica si no hay producto POS asignado arriba.
               </span>
             </div>
           </div>
