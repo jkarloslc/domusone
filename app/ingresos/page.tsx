@@ -571,7 +571,7 @@ function ReciboModal({
           <table>
             <thead><tr><th>Forma</th><th style="text-align:right">Subtotal</th><th style="text-align:right">IVA</th><th style="text-align:right">Monto</th></tr></thead>
             <tbody>${formasRows}</tbody>
-            ${!esSecciones ? `<tfoot><tr><th class="total" colspan="3">Total</th><th class="total" style="text-align:right">${fmt(recibo.monto_total ?? 0)}</th></tr></tfoot>` : ''}
+            ${!esSecciones ? `<tfoot><tr><th class="total">Total</th><th class="total" style="text-align:right">${fmt(calcFiscal(recibo.monto_total ?? 0).subtotal)}</th><th class="total" style="text-align:right">${fmt(calcFiscal(recibo.monto_total ?? 0).iva)}</th><th class="total" style="text-align:right">${fmt(recibo.monto_total ?? 0)}</th></tr></tfoot>` : ''}
           </table>
         </div>` : ''}
 
@@ -581,7 +581,7 @@ function ReciboModal({
             <table>
               <thead><tr><th>${esSecciones ? 'Sección' : 'Frente'}</th><th style="text-align:right">Subtotal</th><th style="text-align:right">IVA</th><th style="text-align:right">Monto</th></tr></thead>
               <tbody>${desgloseRows}</tbody>
-              ${esSecciones && conceptosRows ? `<tfoot><tr><th colspan="3">Subtotal secciones</th><th style="text-align:right">${fmt(totalSecsImp)}</th></tr></tfoot>` : ''}
+              ${esSecciones && conceptosRows ? `<tfoot><tr><th>Subtotal secciones</th><th style="text-align:right">${fmt(calcFiscal(totalSecsImp).subtotal)}</th><th style="text-align:right">${fmt(calcFiscal(totalSecsImp).iva)}</th><th style="text-align:right">${fmt(totalSecsImp)}</th></tr></tfoot>` : ''}
             </table>
           </div>
         ` : ''}
@@ -592,12 +592,12 @@ function ReciboModal({
             <table>
               <thead><tr><th>Concepto</th><th style="text-align:right">Subtotal</th><th style="text-align:right">IVA</th><th style="text-align:right">Monto</th></tr></thead>
               <tbody>${conceptosRows}</tbody>
-              <tfoot><tr><th colspan="3">Subtotal conceptos</th><th style="text-align:right">${fmt(totalConceptosImp)}</th></tr></tfoot>
+              <tfoot><tr><th>Subtotal conceptos</th><th style="text-align:right">${fmt(calcFiscal(totalConceptosImp).subtotal)}</th><th style="text-align:right">${fmt(calcFiscal(totalConceptosImp).iva)}</th><th style="text-align:right">${fmt(totalConceptosImp)}</th></tr></tfoot>
             </table>
           </div>
           <div class="section">
             <table>
-              <tfoot><tr><th class="total" colspan="3">TOTAL GENERAL</th><th class="total" style="text-align:right">${fmt(totalSecsImp + totalConceptosImp)}</th></tr></tfoot>
+              <tfoot><tr><th class="total">TOTAL GENERAL</th><th class="total" style="text-align:right">${fmt(calcFiscal(totalSecsImp + totalConceptosImp).subtotal)}</th><th class="total" style="text-align:right">${fmt(calcFiscal(totalSecsImp + totalConceptosImp).iva)}</th><th class="total" style="text-align:right">${fmt(totalSecsImp + totalConceptosImp)}</th></tr></tfoot>
             </table>
           </div>
         ` : ''}
