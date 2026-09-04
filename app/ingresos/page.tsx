@@ -503,14 +503,23 @@ function ReciboModal({
 
       const centroNombre = centroSel?.nombre ?? 'Sin centro'
       const desgloseRows = esSecciones
-        ? secs.map(s => `<tr><td>${escapeHtml(s.nombre_seccion)}</td><td style="text-align:right">${fmt(s.monto)}</td></tr>`).join('')
+        ? secs.map(s => {
+            const f = calcFiscal(s.monto)
+            return `<tr><td>${escapeHtml(s.nombre_seccion)}</td><td style="text-align:right">${fmt(f.subtotal)}</td><td style="text-align:right">${fmt(f.iva)}</td><td style="text-align:right">${fmt(s.monto)}</td></tr>`
+          }).join('')
         : ''
       const desgloseLabel = esSecciones ? 'Desglose por Sección'
         : centroSel?.tipo_desglose === 'conceptos' ? 'Desglose por Concepto' : ''
-      const conceptosRows = conceptosPrint.map(c => `<tr><td>${escapeHtml(c.nombre_concepto)}</td><td style="text-align:right">${fmt(c.monto)}</td></tr>`).join('')
+      const conceptosRows = conceptosPrint.map(c => {
+        const f = calcFiscal(c.monto)
+        return `<tr><td>${escapeHtml(c.nombre_concepto)}</td><td style="text-align:right">${fmt(f.subtotal)}</td><td style="text-align:right">${fmt(f.iva)}</td><td style="text-align:right">${fmt(c.monto)}</td></tr>`
+      }).join('')
       const totalSecsImp = secs.reduce((a, s) => a + s.monto, 0)
       const totalConceptosImp = conceptosPrint.reduce((a, c) => a + c.monto, 0)
-      const formasRows = formas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
+      const formasRows = formas.map(f => {
+        const fis = calcFiscal(f.monto)
+        return `<tr><td>${escapeHtml(f.nombre)}</td><td style="text-align:right">${fmt(fis.subtotal)}</td><td style="text-align:right">${fmt(fis.iva)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`
+      }).join('')
       const fiscalImp = calcFiscal(recibo.monto_total ?? 0)
       const logoHtml = orgLogo
         ? `<img src="${escapeHtml(orgLogo)}" style="height:52px;max-width:160px;object-fit:contain;" />`
@@ -560,9 +569,9 @@ function ReciboModal({
         <div class="section">
           <div class="section-title">Formas de Cobro</div>
           <table>
-            <thead><tr><th>Forma</th><th style="text-align:right">Monto</th></tr></thead>
+            <thead><tr><th>Forma</th><th style="text-align:right">Subtotal</th><th style="text-align:right">IVA</th><th style="text-align:right">Monto</th></tr></thead>
             <tbody>${formasRows}</tbody>
-            ${!esSecciones ? `<tfoot><tr><th class="total">Total</th><th class="total" style="text-align:right">${fmt(recibo.monto_total ?? 0)}</th></tr></tfoot>` : ''}
+            ${!esSecciones ? `<tfoot><tr><th class="total" colspan="3">Total</th><th class="total" style="text-align:right">${fmt(recibo.monto_total ?? 0)}</th></tr></tfoot>` : ''}
           </table>
         </div>` : ''}
 
@@ -570,9 +579,9 @@ function ReciboModal({
           <div class="section">
             <div class="section-title">${desgloseLabel}</div>
             <table>
-              <thead><tr><th>${esSecciones ? 'Sección' : 'Frente'}</th><th style="text-align:right">Monto</th></tr></thead>
+              <thead><tr><th>${esSecciones ? 'Sección' : 'Frente'}</th><th style="text-align:right">Subtotal</th><th style="text-align:right">IVA</th><th style="text-align:right">Monto</th></tr></thead>
               <tbody>${desgloseRows}</tbody>
-              ${esSecciones && conceptosRows ? `<tfoot><tr><th>Subtotal secciones</th><th style="text-align:right">${fmt(totalSecsImp)}</th></tr></tfoot>` : ''}
+              ${esSecciones && conceptosRows ? `<tfoot><tr><th colspan="3">Subtotal secciones</th><th style="text-align:right">${fmt(totalSecsImp)}</th></tr></tfoot>` : ''}
             </table>
           </div>
         ` : ''}
@@ -581,14 +590,14 @@ function ReciboModal({
           <div class="section">
             <div class="section-title">Otros Conceptos de Cobro</div>
             <table>
-              <thead><tr><th>Concepto</th><th style="text-align:right">Monto</th></tr></thead>
+              <thead><tr><th>Concepto</th><th style="text-align:right">Subtotal</th><th style="text-align:right">IVA</th><th style="text-align:right">Monto</th></tr></thead>
               <tbody>${conceptosRows}</tbody>
-              <tfoot><tr><th>Subtotal conceptos</th><th style="text-align:right">${fmt(totalConceptosImp)}</th></tr></tfoot>
+              <tfoot><tr><th colspan="3">Subtotal conceptos</th><th style="text-align:right">${fmt(totalConceptosImp)}</th></tr></tfoot>
             </table>
           </div>
           <div class="section">
             <table>
-              <tfoot><tr><th class="total">TOTAL GENERAL</th><th class="total" style="text-align:right">${fmt(totalSecsImp + totalConceptosImp)}</th></tr></tfoot>
+              <tfoot><tr><th class="total" colspan="3">TOTAL GENERAL</th><th class="total" style="text-align:right">${fmt(totalSecsImp + totalConceptosImp)}</th></tr></tfoot>
             </table>
           </div>
         ` : ''}
@@ -761,17 +770,23 @@ function ReciboModal({
                 <div style={{ textAlign: 'center', padding: 20 }}><Loader size={16} className="animate-spin" /></div>
               ) : (
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '7px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '7px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>SECCIÓN</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>SUBTOTAL</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>IVA</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>MONTO</span>
                   </div>
-                  {secRows.map((row, i) => (
+                  {secRows.map((row, i) => {
+                    const rowFiscal = calcFiscal(row.monto || 0)
+                    return (
                     <div key={row.id_seccion_fk} style={{
-                      display: 'grid', gridTemplateColumns: '1fr 140px', padding: '8px 12px', alignItems: 'center',
+                      display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '8px 12px', alignItems: 'center',
                       borderBottom: i < secRows.length - 1 ? '1px solid #f1f5f9' : 'none',
                       background: row.monto > 0 ? '#f0fdf4' : '#fff',
                     }}>
                       <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_seccion}</span>
+                      <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
+                      <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
                       <div>
                         <input
                           className="input" type="number" min="0" step="0.01"
@@ -782,9 +797,12 @@ function ReciboModal({
                         />
                       </div>
                     </div>
-                  ))}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '9px 12px', background: '#f0fdf4', borderTop: '2px solid #bbf7d0' }}>
+                    )
+                  })}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '9px 12px', background: '#f0fdf4', borderTop: '2px solid #bbf7d0' }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>Subtotal secciones</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).subtotal)}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).iva)}</span>
                     <span style={{ fontSize: 14, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecs)}</span>
                   </div>
                 </div>
@@ -797,17 +815,23 @@ function ReciboModal({
                     <DollarSign size={13} style={{ color: '#7c3aed' }} /> Otros conceptos de cobro
                   </div>
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '7px 12px', background: '#faf5ff', borderBottom: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '7px 12px', background: '#faf5ff', borderBottom: '1px solid #e2e8f0' }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed' }}>CONCEPTO</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', textAlign: 'right' }}>SUBTOTAL</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', textAlign: 'right' }}>IVA</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', textAlign: 'right' }}>MONTO</span>
                     </div>
-                    {conceptoRows.map((row, i) => (
+                    {conceptoRows.map((row, i) => {
+                      const rowFiscal = calcFiscal(row.monto || 0)
+                      return (
                       <div key={row.id_concepto_fk} style={{
-                        display: 'grid', gridTemplateColumns: '1fr 140px', padding: '8px 12px', alignItems: 'center',
+                        display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '8px 12px', alignItems: 'center',
                         borderBottom: i < conceptoRows.length - 1 ? '1px solid #f1f5f9' : 'none',
                         background: row.monto > 0 ? '#faf5ff' : '#fff',
                       }}>
                         <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_concepto}</span>
+                        <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
+                        <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
                         <div>
                           <input
                             className="input" type="number" min="0" step="0.01"
@@ -818,9 +842,12 @@ function ReciboModal({
                           />
                         </div>
                       </div>
-                    ))}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '9px 12px', background: '#faf5ff', borderTop: '2px solid #e9d5ff' }}>
+                      )
+                    })}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '9px 12px', background: '#faf5ff', borderTop: '2px solid #e9d5ff' }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>Subtotal conceptos</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).subtotal)}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#7c3aed', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).iva)}</span>
                       <span style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalConceptos)}</span>
                     </div>
                   </div>
@@ -850,17 +877,23 @@ function ReciboModal({
                 <Layers size={13} style={{ color: '#d97706' }} /> Monto por concepto de cobro
               </div>
               <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '7px 12px', background: '#fffbeb', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '7px 12px', background: '#fffbeb', borderBottom: '1px solid #e2e8f0' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#92400e' }}>CONCEPTO</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#92400e', textAlign: 'right' }}>SUBTOTAL</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#92400e', textAlign: 'right' }}>IVA</span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textAlign: 'right' }}>MONTO</span>
                 </div>
-                {conceptoRows.map((row, i) => (
+                {conceptoRows.map((row, i) => {
+                  const rowFiscal = calcFiscal(row.monto || 0)
+                  return (
                   <div key={row.id_concepto_fk} style={{
-                    display: 'grid', gridTemplateColumns: '1fr 140px', padding: '8px 12px', alignItems: 'center',
+                    display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '8px 12px', alignItems: 'center',
                     borderBottom: i < conceptoRows.length - 1 ? '1px solid #f1f5f9' : 'none',
                     background: row.monto > 0 ? '#fffbeb' : '#fff',
                   }}>
                     <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_concepto}</span>
+                    <span style={{ fontSize: 12, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
+                    <span style={{ fontSize: 12, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
                     <input
                       className="input" type="number" min="0" step="0.01"
                       value={row.monto || ''}
@@ -869,9 +902,12 @@ function ReciboModal({
                       style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 8px', fontSize: 13 }}
                     />
                   </div>
-                ))}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', padding: '9px 12px', background: '#fffbeb', borderTop: '2px solid #fde68a' }}>
+                  )
+                })}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '9px 12px', background: '#fffbeb', borderTop: '2px solid #fde68a' }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>Total conceptos</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).subtotal)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalConceptos).iva)}</span>
                   <span style={{ fontSize: 14, fontWeight: 700, color: '#92400e', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalConceptos)}</span>
                 </div>
               </div>
@@ -885,7 +921,9 @@ function ReciboModal({
                 <DollarSign size={13} style={{ color: '#059669' }} /> Formas de cobro
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {formaPagoRows.map((row, i) => (
+                {formaPagoRows.map((row, i) => {
+                  const rowFiscal = calcFiscal(row.monto || 0)
+                  return (
                   <div key={row.id_forma_pago_fk}>
                     <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>
                       {row.nombre_forma_pago}
@@ -897,8 +935,15 @@ function ReciboModal({
                       disabled={isView && !isEditMode}
                       style={{ fontVariantNumeric: 'tabular-nums' }}
                     />
+                    {row.monto > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+                        <span>Subtotal {fmt(rowFiscal.subtotal)}</span>
+                        <span>IVA {fmt(rowFiscal.iva)}</span>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
               {/* Sumatoria de formas de cobro — siempre visible */}
               <div style={{ marginTop: 10, padding: '10px 14px', background: '#f0fdf4', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
