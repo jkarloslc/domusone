@@ -7,6 +7,12 @@ import { RefreshCw } from 'lucide-react'
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
 const fmtF = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 const pct  = (part: number, total: number) => total > 0 ? Math.round((part / total) * 100) + '%' : '—'
+// Monto es captura manual; Subtotal e IVA se derivan para desglose fiscal (Subtotal = Monto/1.16, IVA = Subtotal*0.16)
+const calcFiscal = (monto: number) => {
+  const subtotal = monto / 1.16
+  const iva = subtotal * 0.16
+  return { subtotal, iva }
+}
 
 type Centro = { id: number; nombre: string; tipo: string | null; tipo_desglose: string }
 
@@ -177,20 +183,29 @@ export default function ReporteIngresosCuotas() {
                 <thead>
                   <tr>
                     <TH>Sección</TH>
+                    <TH right>Subtotal</TH>
+                    <TH right>IVA</TH>
                     <TH right>Monto</TH>
                     <TH right>%</TH>
                   </tr>
                 </thead>
                 <tbody>
-                  {seccionesOrdenadas.map(([nombre, total]) => (
+                  {seccionesOrdenadas.map(([nombre, total]) => {
+                    const f = calcFiscal(total)
+                    return (
                     <tr key={nombre} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '9px 14px', fontWeight: 500 }}>{nombre}</td>
+                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{fmt(f.subtotal)}</td>
+                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{fmt(f.iva)}</td>
                       <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 600 }}>{fmt(total)}</td>
                       <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{pct(total, totalGeneral)}</td>
                     </tr>
-                  ))}
+                    )
+                  })}
                   <tr style={{ background: '#eff6ff', borderTop: '2px solid #bfdbfe' }}>
                     <td style={{ padding: '9px 14px', fontWeight: 700, color: '#1d4ed8' }}>Total</td>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(calcFiscal(totalGeneral).subtotal)}</td>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(calcFiscal(totalGeneral).iva)}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(totalGeneral)}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>100%</td>
                   </tr>
@@ -208,20 +223,29 @@ export default function ReporteIngresosCuotas() {
                   <thead>
                     <tr>
                       <TH>Concepto</TH>
+                      <TH right>Subtotal</TH>
+                      <TH right>IVA</TH>
                       <TH right>Monto</TH>
                       <TH right>%</TH>
                     </tr>
                   </thead>
                   <tbody>
-                    {conceptosOrdenados.map(([nombre, total]) => (
+                    {conceptosOrdenados.map(([nombre, total]) => {
+                      const f = calcFiscal(total)
+                      return (
                       <tr key={nombre} style={{ borderBottom: '1px solid #f1f5f9' }}>
                         <td style={{ padding: '9px 14px', fontWeight: 500 }}>{nombre}</td>
+                        <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{fmt(f.subtotal)}</td>
+                        <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{fmt(f.iva)}</td>
                         <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 600 }}>{fmt(total)}</td>
                         <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{pct(total, totalConceptos)}</td>
                       </tr>
-                    ))}
+                      )
+                    })}
                     <tr style={{ background: '#f0fdf4', borderTop: '2px solid #86efac' }}>
                       <td style={{ padding: '9px 14px', fontWeight: 700, color: '#059669' }}>Total</td>
+                      <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>{fmt(calcFiscal(totalConceptos).subtotal)}</td>
+                      <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>{fmt(calcFiscal(totalConceptos).iva)}</td>
                       <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>{fmt(totalConceptos)}</td>
                       <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>100%</td>
                     </tr>
@@ -247,6 +271,8 @@ export default function ReporteIngresosCuotas() {
                   {!filtroCentro && <TH>Centro</TH>}
                   <TH>Secciones</TH>
                   {hayConceptos && <TH>Conceptos</TH>}
+                  <TH right>Subtotal</TH>
+                  <TH right>IVA</TH>
                   <TH right>Total</TH>
                 </tr>
               </thead>
@@ -255,6 +281,7 @@ export default function ReporteIngresosCuotas() {
                   const centroNombre = r.id_centro_ingreso_fk ? (centroMap[r.id_centro_ingreso_fk]?.nombre ?? '—') : '—'
                   const secsText = r.secciones.map(s => `${s.nombre}: ${fmt(s.monto)}`).join(' · ') || '—'
                   const cptText  = r.conceptos.map(c => `${c.nombre}: ${fmt(c.monto)}`).join(' · ') || '—'
+                  const fr = calcFiscal(r.monto_total)
                   return (
                     <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '9px 14px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)' }}>
@@ -276,6 +303,12 @@ export default function ReporteIngresosCuotas() {
                           {cptText}
                         </td>
                       )}
+                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                        {fmt(fr.subtotal)}
+                      </td>
+                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                        {fmt(fr.iva)}
+                      </td>
                       <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 600, whiteSpace: 'nowrap' }}>
                         {fmt(r.monto_total)}
                       </td>
@@ -286,6 +319,12 @@ export default function ReporteIngresosCuotas() {
                   <td colSpan={!filtroCentro ? (hayConceptos ? 5 : 4) : (hayConceptos ? 4 : 3)}
                     style={{ padding: '10px 14px', fontSize: 13, fontWeight: 700, color: '#f8fafc' }}>
                     Total General · {recibos.length} recibo{recibos.length !== 1 ? 's' : ''}
+                  </td>
+                  <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 12, color: '#cbd5e1' }}>
+                    {fmt(calcFiscal(totalGeneral).subtotal)}
+                  </td>
+                  <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 12, color: '#cbd5e1' }}>
+                    {fmt(calcFiscal(totalGeneral).iva)}
                   </td>
                   <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#93c5fd' }}>
                     {fmt(totalGeneral)}
