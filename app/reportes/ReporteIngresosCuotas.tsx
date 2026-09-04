@@ -114,6 +114,7 @@ export default function ReporteIngresosCuotas() {
     seccionTotales[s.nombre] = (seccionTotales[s.nombre] ?? 0) + s.monto
   }))
   const seccionesOrdenadas = Object.entries(seccionTotales).sort((a, b) => b[1] - a[1])
+  const totalSecciones      = seccionesOrdenadas.reduce((s, [, v]) => s + v, 0)
 
   // Por concepto: sumar montos de concepto a través de todos los recibos
   const conceptoTotales: Record<string, number> = {}
@@ -198,15 +199,15 @@ export default function ReporteIngresosCuotas() {
                       <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{fmt(f.subtotal)}</td>
                       <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{fmt(f.iva)}</td>
                       <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 600 }}>{fmt(total)}</td>
-                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{pct(total, totalGeneral)}</td>
+                      <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{pct(total, totalSecciones)}</td>
                     </tr>
                     )
                   })}
                   <tr style={{ background: '#eff6ff', borderTop: '2px solid #bfdbfe' }}>
                     <td style={{ padding: '9px 14px', fontWeight: 700, color: '#1d4ed8' }}>Total</td>
-                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(calcFiscal(totalGeneral).subtotal)}</td>
-                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(calcFiscal(totalGeneral).iva)}</td>
-                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(totalGeneral)}</td>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(calcFiscal(totalSecciones).subtotal)}</td>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(calcFiscal(totalSecciones).iva)}</td>
+                    <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>{fmt(totalSecciones)}</td>
                     <td style={{ padding: '9px 14px', textAlign: 'right', fontWeight: 700, color: '#1d4ed8' }}>100%</td>
                   </tr>
                 </tbody>
