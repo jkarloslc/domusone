@@ -46,6 +46,12 @@ const toLocalYmd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const fmtFechaLarga = (d: string) =>
   new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
+// Monto es manual (captura del usuario); Subtotal e IVA se derivan para desglose fiscal en pantalla e impresión.
+const calcFiscal = (monto: number) => {
+  const subtotal = monto / 1.16
+  const iva = subtotal * 0.16
+  return { subtotal, iva }
+}
 const escapeHtml = (v: string | number | null | undefined) =>
   String(v ?? '')
     .replaceAll('&', '&amp;')
@@ -304,6 +310,7 @@ function ReciboModal({
   const totalFinal      = esSecciones ? (totalSecs + totalConceptos)
                         : centroSel?.tipo_desglose === 'conceptos' ? totalConceptos
                         : totalFormasPago
+  const fiscalFinal     = calcFiscal(totalFinal)
 
   const handleSave = async () => {
     if (!form.id_centro_ingreso_fk) { setError('Selecciona un centro de ingreso'); return }
@@ -504,6 +511,7 @@ function ReciboModal({
       const totalSecsImp = secs.reduce((a, s) => a + s.monto, 0)
       const totalConceptosImp = conceptosPrint.reduce((a, c) => a + c.monto, 0)
       const formasRows = formas.map(f => `<tr><td>${escapeHtml(f.nombre)}</td><td style="text-align:right">${fmt(f.monto)}</td></tr>`).join('')
+      const fiscalImp = calcFiscal(recibo.monto_total ?? 0)
       const logoHtml = orgLogo
         ? `<img src="${escapeHtml(orgLogo)}" style="height:52px;max-width:160px;object-fit:contain;" />`
         : '<div style="width:52px;height:52px;border-radius:8px;background:#e2e8f0;color:#64748b;display:flex;align-items:center;justify-content:center;font-weight:700">ORG</div>'
@@ -584,6 +592,17 @@ function ReciboModal({
             </table>
           </div>
         ` : ''}
+
+        <div class="section">
+          <div class="section-title">Desglose Fiscal</div>
+          <table>
+            <tbody>
+              <tr><td>Subtotal</td><td style="text-align:right">${fmt(fiscalImp.subtotal)}</td></tr>
+              <tr><td>IVA (16%)</td><td style="text-align:right">${fmt(fiscalImp.iva)}</td></tr>
+            </tbody>
+            <tfoot><tr><th class="total">Monto</th><th class="total" style="text-align:right">${fmt(recibo.monto_total ?? 0)}</th></tr></tfoot>
+          </table>
+        </div>
 
         <div class="firmas">
           <div class="firma">Elaboró</div>
@@ -915,6 +934,25 @@ function ReciboModal({
               )}
             </div>
           )}
+
+          {/* Desglose fiscal: Subtotal + IVA se derivan del Monto (captura manual) */}
+          <div style={{ padding: '10px 14px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+              Desglose fiscal
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#374151', marginBottom: 3 }}>
+              <span>Subtotal</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(fiscalFinal.subtotal)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#374151', marginBottom: 3 }}>
+              <span>IVA (16%)</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(fiscalFinal.iva)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, color: '#0D4F80', paddingTop: 6, borderTop: '1px solid #e2e8f0' }}>
+              <span>Monto</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(totalFinal)}</span>
+            </div>
+          </div>
 
           {/* Notas */}
           <div>
