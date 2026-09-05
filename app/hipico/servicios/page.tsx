@@ -264,8 +264,8 @@ export default function ServiciosPage() {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', width: 220, flex: '0 0 auto' }}>
           <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             className="input"
@@ -273,20 +273,20 @@ export default function ServiciosPage() {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(0) } }}
-            style={{ paddingLeft: 30, width: 240, fontSize: 12 }}
+            style={{ paddingLeft: 30, width: '100%', fontSize: 12 }}
           />
         </div>
-        <select className="input" value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setPage(0) }} style={{ fontSize: 12 }}>
+        <select className="input" value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setPage(0) }} style={{ width: 160, flex: '0 0 auto', fontSize: 12 }}>
           <option value="">Todos los tipos</option>
           {['veterinario', 'herraje', 'alimento', 'otro'].map(t => (
             <option key={t} value={t}>{TIPO_ICON[t]} {t.charAt(0).toUpperCase() + t.slice(1)}</option>
           ))}
         </select>
-        <select className="input" value={filtroCaballo} onChange={e => { setFiltroCaballo(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ minWidth: 190, fontSize: 12 }}>
+        <select className="input" value={filtroCaballo} onChange={e => { setFiltroCaballo(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ width: 190, flex: '0 0 auto', fontSize: 12 }}>
           <option value="">Todos los caballos</option>
           {caballos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="input" value={filtroArr} onChange={e => { setFiltroArr(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ minWidth: 220, fontSize: 12 }}>
+        <select className="input" value={filtroArr} onChange={e => { setFiltroArr(e.target.value ? Number(e.target.value) : ''); setPage(0) }} style={{ width: 220, flex: '0 0 auto', fontSize: 12 }}>
           <option value="">Todos los arrendatarios</option>
           {arrendatarios.map(a => <option key={a.id} value={a.id}>{fmtNombreArr(a)}</option>)}
         </select>
