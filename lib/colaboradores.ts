@@ -1,8 +1,11 @@
+export type TipoColaborador = 'Interno' | 'Externo'
+
 export type Colaborador = {
   id: number
   nombre: string
   apellido_paterno: string | null
   apellido_materno: string | null
+  tipo: TipoColaborador
   fecha_ingreso: string | null
   puesto: string | null
   sueldo_bruto_mensual: number | null

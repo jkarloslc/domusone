@@ -7,7 +7,9 @@ import {
 import { dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { antiguedad } from '@/lib/dateUtils'
-import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
+import { Colaborador, TipoColaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
+
+const TIPOS_COLABORADOR: TipoColaborador[] = ['Interno', 'Externo']
 
 // ══════════════════════════════════════════════════════════════
 // Colaboradores — personal operativo (Asignado a / Supervisor de OT)
@@ -21,7 +23,7 @@ const PUESTOS_COLABORADOR = [
   'Starter', 'Superintendente', 'Supervisor', 'Vigilancia',
 ]
 const emptyColabForm = () => ({
-  nombre: '', apellido_paterno: '', apellido_materno: '', fecha_ingreso: '', puesto: '',
+  nombre: '', apellido_paterno: '', apellido_materno: '', tipo: 'Interno' as TipoColaborador, fecha_ingreso: '', puesto: '',
   sueldo_bruto_mensual: '', sueldo_neto_mensual: '', sueldo_diario: '',
   id_centro_costo_fk: '',
   es_asignado: false, es_supervisor: false,
@@ -41,6 +43,7 @@ export default function ColaboradoresPanel() {
   const [form, setForm]         = useState(emptyColabForm())
 
   const [busqueda, setBusqueda]     = useState('')
+  const [filtroTipo, setFTipo]      = useState('all')
   const [filtroAsignado, setFA]     = useState('all')
   const [filtroSupervisor, setFS]   = useState('all')
   const [filtroStatus, setFStatus]  = useState('activos')
@@ -62,6 +65,7 @@ export default function ColaboradoresPanel() {
     setEditing(c)
     setForm({
       nombre: c.nombre, apellido_paterno: c.apellido_paterno ?? '', apellido_materno: c.apellido_materno ?? '',
+      tipo: c.tipo ?? 'Interno',
       fecha_ingreso: c.fecha_ingreso ?? '', puesto: c.puesto ?? '',
       sueldo_bruto_mensual: c.sueldo_bruto_mensual?.toString() ?? '', sueldo_neto_mensual: c.sueldo_neto_mensual?.toString() ?? '',
       sueldo_diario: c.sueldo_diario?.toString() ?? '',
@@ -78,6 +82,7 @@ export default function ColaboradoresPanel() {
       nombre: form.nombre.trim(),
       apellido_paterno: form.apellido_paterno.trim() || null,
       apellido_materno: form.apellido_materno.trim() || null,
+      tipo: form.tipo,
       fecha_ingreso: form.fecha_ingreso || null,
       puesto: form.puesto.trim() || null,
       sueldo_bruto_mensual: form.sueldo_bruto_mensual ? Number(form.sueldo_bruto_mensual) : null,
@@ -107,6 +112,7 @@ export default function ColaboradoresPanel() {
 
   const filtered = items.filter(c => {
     if (busqueda.trim() && !nombreCompletoColaborador(c).toLowerCase().includes(busqueda.trim().toLowerCase())) return false
+    if (filtroTipo !== 'all' && c.tipo !== filtroTipo) return false
     if (filtroAsignado   !== 'all' && c.es_asignado   !== (filtroAsignado === 'true'))   return false
     if (filtroSupervisor !== 'all' && c.es_supervisor !== (filtroSupervisor === 'true')) return false
     if (filtroStatus === 'activos'   && !c.activo) return false
@@ -176,6 +182,11 @@ export default function ColaboradoresPanel() {
           <input className="input" style={{ paddingLeft: 28 }} placeholder="Buscar nombre…"
             value={busqueda} onChange={e => setBusqueda(e.target.value)} />
         </div>
+        <select className="select" style={{ flex: '1 1 110px', maxWidth: 150 }} value={filtroTipo} onChange={e => setFTipo(e.target.value)}>
+          <option value="all">Tipo: todos</option>
+          <option value="Interno">Interno</option>
+          <option value="Externo">Externo</option>
+        </select>
         <select className="select" style={{ flex: '1 1 130px', maxWidth: 170 }} value={filtroAsignado} onChange={e => setFA(e.target.value)}>
           <option value="all">Asignado: todos</option>
           <option value="true">Solo asignables</option>
@@ -216,6 +227,20 @@ export default function ColaboradoresPanel() {
               <div>
                 <label className="label">Apellido Materno</label>
                 <input className="input" value={form.apellido_materno} onChange={e => setForm(f => ({ ...f, apellido_materno: e.target.value }))} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="label">Tipo *</label>
+                <div style={{ display: 'flex', gap: 16 }}>
+                  {TIPOS_COLABORADOR.map(t => (
+                    <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', fontWeight: form.tipo === t ? 600 : 400 }}>
+                      <input type="radio" name="tipo-colaborador" checked={form.tipo === t} onChange={() => setForm(f => ({ ...f, tipo: t }))} style={{ width: 15, height: 15 }} />
+                      {t}
+                    </label>
+                  ))}
+                </div>
+                <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3 }}>
+                  {form.tipo === 'Interno' ? 'Empleado en nómina de la organización.' : 'Personal externo (empresa/tercero) contratado por servicio.'}
+                </div>
               </div>
               <div>
                 <label className="label">Fecha de Ingreso</label>
@@ -296,6 +321,10 @@ export default function ColaboradoresPanel() {
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
+                background: viewing.tipo === 'Externo' ? '#fff7ed' : '#eff6ff', color: viewing.tipo === 'Externo' ? '#c2410c' : '#0369a1' }}>
+                {viewing.tipo ?? 'Interno'}
+              </span>
               {viewing.es_asignado && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#eff6ff', color: '#0369a1' }}>
                   <CheckCircle size={11} /> Asignado a OT
@@ -351,6 +380,7 @@ export default function ColaboradoresPanel() {
           <thead>
             <tr>
               <th>Nombre</th>
+              <th>Tipo</th>
               <th>Puesto</th>
               <th>Fecha Ingreso</th>
               <th>Antigüedad</th>
@@ -364,16 +394,22 @@ export default function ColaboradoresPanel() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 {items.length === 0 ? 'Sin colaboradores. Crea el primero.' : 'Sin resultados con los filtros aplicados.'}
               </td></tr>
             ) : filtered.map(c => (
               <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45, cursor: 'pointer' }} onClick={() => setViewing(c)}>
                 <td style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>{nombreCompletoColaborador(c)}</td>
+                <td>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                    background: c.tipo === 'Externo' ? '#fff7ed' : '#eff6ff', color: c.tipo === 'Externo' ? '#c2410c' : '#0369a1' }}>
+                    {c.tipo ?? 'Interno'}
+                  </span>
+                </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.puesto ?? '—'}</td>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{c.fecha_ingreso ? new Date(c.fecha_ingreso + 'T00:00:00').toLocaleDateString('es-MX') : '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{antiguedad(c.fecha_ingreso)}</td>
