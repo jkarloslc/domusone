@@ -7,6 +7,7 @@ export type ModalModulo =
   | 'residencial' | 'lotes' | 'propietarios' | 'contratos' | 'escrituras'
   | 'cobranza' | 'facturas' | 'facturacion' | 'accesos' | 'incidencias' | 'comunicados'
   | 'mantenimiento' | 'afectaciones' | 'construcciones' | 'capex'
+  | 'hr'
   | 'compras' | 'proveedores' | 'articulos' | 'almacenes'
   | 'tesoreria' | 'ingresos' | 'presupuestos'
   | 'golf' | 'golf-miembros' | 'golf-accesos' | 'golf-pos' | 'golf-carritos'
@@ -40,6 +41,9 @@ export const MODAL_PALETTES: Record<ModalModulo, Palette> = {
   afectaciones:  { from: '#0c4a6e', to: '#0284c7', accent: '#0284c7' },
   construcciones:{ from: '#78350f', to: '#d97706', accent: '#d97706' },
   capex:         { from: '#1e3a5f', to: '#1d4ed8', accent: '#3b82f6' },
+
+  // HR — ámbar/café (mano de obra)
+  hr:            { from: '#78350f', to: '#b45309', accent: '#b45309' },
 
   // Compras — verde esmeralda
   compras:      { from: '#064e3b', to: '#059669', accent: '#059669' },

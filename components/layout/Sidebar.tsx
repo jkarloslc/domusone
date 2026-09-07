@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark,
-  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf,
+  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf, Briefcase,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useConfig } from '@/lib/ConfigContext'
@@ -108,6 +108,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
+    { section: 'HR', items: [
+      { label: 'HR',             href: '/hr',              icon: Briefcase     },
+    ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
       { label: 'Golf',            href: '/golf',                icon: Flag      },
@@ -147,6 +150,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Operaciones', items: [
       { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
+    ]},
+    { section: 'HR', items: [
+      { label: 'HR',             href: '/hr',              icon: Briefcase     },
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },

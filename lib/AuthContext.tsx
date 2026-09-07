@@ -183,7 +183,7 @@ const ADMIN_ORGANISMO_MODULOS = [
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
 const LEER: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
-  admin:               ADMIN_MODULOS,
+  admin:               [...ADMIN_MODULOS, 'hr'],
   admin_lector:        ADMIN_MODULOS,   // igual que admin, solo lectura
   admin_finanzas:      ADMIN_MODULOS,   // igual que admin + 2da autorización de OP
   usuarioadmin:        USUARIOADMIN_MODULOS,
@@ -217,7 +217,7 @@ const LEER: Record<Rol, string[] | '*'> = {
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
 const ESCRIBIR: Record<Rol, string[] | '*'> = {
   superadmin:          '*',
-  admin:               ADMIN_MODULOS,
+  admin:               [...ADMIN_MODULOS, 'hr'],
   admin_lector:        [],              // sin escritura
   admin_finanzas:      ADMIN_MODULOS,   // igual que admin + 2da autorización de OP
   usuarioadmin:        USUARIOADMIN_MODULOS,
