@@ -195,11 +195,17 @@ export default function POSPage() {
   const fetchStats = useCallback(async () => {
     const hoy = fechaLocal()
     const iniMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-CA')
-    const [{ data, error }, { data: cortesMes }] = await Promise.all([
+    const [{ data, error }, { count: pendCorteCount }, { data: cortesMes }] = await Promise.all([
       dbGolf.from('ctrl_ventas')
         .select('id, total, status, id_corte_fk')
         .eq('status', 'PAGADA')
-        .gte('fecha', inicioDelDia(hoy)),
+        .gte('fecha', inicioDelDia(hoy))
+        .lte('fecha', finDelDia(hoy)),
+      // Backlog completo de ventas sin cortar, sin importar la fecha en que ocurrieron
+      dbGolf.from('ctrl_ventas')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'PAGADA')
+        .is('id_corte_fk', null),
       dbGolf.from('ctrl_cortes_caja')
         .select('total_ventas')
         .gte('fecha_corte', inicioDelDia(iniMes))
@@ -210,7 +216,7 @@ export default function POSPage() {
     setStatsHoy({
       ventas:    rows.length,
       total:     rows.reduce((a: number, r: any) => a + (r.total ?? 0), 0),
-      pendCorte: rows.filter((r: any) => !r.id_corte_fk).length,
+      pendCorte: pendCorteCount ?? 0,
     })
     setIngresosMes((cortesMes ?? []).reduce((a: number, c: any) => a + (c.total_ventas ?? 0), 0))
   }, [])
