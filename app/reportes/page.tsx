@@ -56,6 +56,7 @@ import ReporteSeccionesLotes from './ReporteSeccionesLotes'
 import ReporteCobranzaCorrienteVencida from './ReporteCobranzaCorrienteVencida'
 import ReporteLotesAsociacion from './ReporteLotesAsociacion'
 import ReporteManoDeObra from './ReporteManoDeObra'
+import ReporteRolPagos from './ReporteRolPagos'
 import ReporteOPsPorTipoGasto from './ReporteOPsPorTipoGasto'
 import ReporteOPsPorClasificacionArticulos from './ReporteOPsPorClasificacionArticulos'
 
@@ -95,6 +96,15 @@ const GRUPOS = [
       { id: 'programas-mantenimiento', label: 'Programas de Mantenimiento', icon: ClipboardList, desc: 'Costo y cumplimiento por cuadrante, con desglose por programa y criticidad' },
       { id: 'colaboradores',          label: 'Colaboradores',               icon: Users,         desc: 'Personal operativo filtrable por cuadrante, centro de costo y rol (asignado/supervisor)' },
       { id: 'mano-obra-real',         label: 'Mano de Obra Real',           icon: Wrench,        desc: 'Jornales y costo por trabajador real, agrupado por OT/Cuadrante/Área o por Trabajador, con detalle drill-down' },
+    ],
+  },
+  {
+    slug:   'hr',
+    modulo: 'hr',
+    label: 'HR',
+    color: '#b45309',
+    reportes: [
+      { id: 'rol-pagos', label: 'Rol de Pagos', icon: Wallet, desc: 'Roles de pago agrupados por periodo, con detalle de colaboradores — filtrable por centro de costo (incluye Todos los Centros)' },
     ],
   },
   {
@@ -296,6 +306,9 @@ function ReportesContent() {
       {active === 'programas-mantenimiento' && <ReporteProgramasMantenimiento />}
       {active === 'colaboradores'           && <ReporteColaboradores />}
       {active === 'mano-obra-real'          && <ReporteManoDeObra />}
+
+      {/* Reportes HR */}
+      {active === 'rol-pagos' && <ReporteRolPagos />}
 
       {/* Reportes tesorería */}
       {active === 'estado-cuenta'    && <ReporteEstadoCuenta />}

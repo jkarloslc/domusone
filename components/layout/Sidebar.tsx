@@ -110,6 +110,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
+      RPT('hr'),
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
@@ -153,6 +154,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
+      RPT('hr'),
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
