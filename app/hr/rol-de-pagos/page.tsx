@@ -9,6 +9,7 @@ import {
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
+import { montoALetras } from '@/lib/numeroALetras'
 
 const STATUS_COLOR: Record<string, { bg: string; color: string; border: string }> = {
   'Capturado':  { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
@@ -437,6 +438,109 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
     }, 300)
   }
 
+  // ── Recibo de dinero individual por colaborador ─────────────────────────
+  const imprimirRecibo = async (t: Trabajador) => {
+    if (!lote?.id) return
+    const ccNombre = ccId ? (centrosCosto.find(c => c.id === Number(ccId))?.nombre ?? '—') : '—'
+    const monto     = costoTrabajador(t)
+    const diasCount = diasTrabajador(t)
+
+    let orgNombre = 'Organización'
+    let orgSubtitulo = ''
+    let orgLogo = ''
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const sb = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data: cfgRows } = await sb.schema('cfg' as any).from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+
+    const html = `<!DOCTYPE html><html><head><title>Recibo ${lote.folio} - ${t.nombre}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 13px; color: #1e293b; }
+        .org-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #0D4F80; margin-bottom: 18px; }
+        .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+        .org-sub { font-size: 11px; color: #64748b; }
+        .doc-title { font-size: 16px; font-weight: 700; color: #0D4F80; margin-bottom: 2px; letter-spacing: .04em; }
+        .sub { color: #64748b; font-size: 12px; margin: 0; }
+        .monto-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px 20px; margin: 20px 0; text-align: center; }
+        .monto-num { font-size: 30px; font-weight: 700; color: #15803d; }
+        .monto-letra { font-size: 12px; color: #166534; margin-top: 4px; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        td, th { border: 1px solid #e2e8f0; padding: 8px 10px; font-size: 12px; }
+        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; text-align: left; width: 160px; }
+        .declaracion { font-size: 12px; line-height: 1.6; margin: 20px 0; text-align: justify; }
+        .firmas { display: flex; justify-content: space-around; gap: 40px; margin-top: 70px; }
+        .firma { text-align: center; border-top: 1px solid #000; padding-top: 8px; width: 220px; font-size: 11px; color: #64748b; }
+        .leyenda { font-size: 10px; color: #94a3b8; margin-top: 30px; text-align: center; }
+        @page { margin: 1.5cm; }
+      </style></head><body>
+      <div class="org-header">
+        ${logoHtml}
+        <div>
+          <div class="org-nombre">${orgNombre}</div>
+          ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="doc-title">RECIBO DE PAGO</div>
+          <div class="sub">Folio: <strong>${lote.folio}</strong></div>
+          <div class="sub">Fecha: ${new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+        </div>
+      </div>
+
+      <div class="monto-box">
+        <div class="monto-num">${fmt(monto)}</div>
+        <div class="monto-letra">${montoALetras(monto)}</div>
+      </div>
+
+      <table>
+        <tr><th>Recibí de</th><td>${orgNombre}</td></tr>
+        <tr><th>Nombre</th><td>${t.nombre || '—'}</td></tr>
+        <tr><th>Puesto</th><td>${t.puesto || '—'}</td></tr>
+        <tr><th>Centro de Costo</th><td>${ccNombre}</td></tr>
+        <tr><th>Periodo</th><td>${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}</td></tr>
+        <tr><th>Días Trabajados</th><td>${diasCount}</td></tr>
+        <tr><th>Pago por Día</th><td>${fmt(Number(t.costo_dia))}</td></tr>
+      </table>
+
+      <p class="declaracion">
+        Recibí de <strong>${orgNombre}</strong> la cantidad de <strong>${fmt(monto)}</strong> (${montoALetras(monto)})
+        por concepto de pago de mano de obra correspondiente al periodo del <strong>${fmtFecha(fechaDesde)}</strong>
+        al <strong>${fmtFecha(fechaHasta)}</strong>, quedando a mi entera satisfacción y sin nada más que reclamar
+        por este concepto.
+      </p>
+
+      <div class="firmas">
+        <div class="firma">${t.nombre || '—'}<br/>Recibí conforme</div>
+        <div class="firma">${lote.authorized_by ?? lote.captured_by ?? 'Sin registro'}<br/>Entregó</div>
+      </div>
+      <div class="leyenda">Comprobante interno de pago de mano de obra — Rol de Pagos ${lote.folio}</div>
+      </body></html>`
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
+  }
+
   return (
     <ModalShell
       modulo="hr"
@@ -551,12 +655,13 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
                   })}
                   <th style={{ padding: '6px 8px', textAlign: 'center', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Días</th>
                   <th style={{ padding: '6px 8px', textAlign: 'right', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Monto a Pagar</th>
+                  {isEdit && <th style={{ width: 32 }}></th>}
                   {editable && <th style={{ width: 28 }}></th>}
                 </tr>
               </thead>
               <tbody>
                 {trabajadores.length === 0 ? (
-                  <tr><td colSpan={dias.length + 5} style={{ padding: 14, textAlign: 'center', color: 'var(--text-muted)' }}>Sin colaboradores capturados</td></tr>
+                  <tr><td colSpan={dias.length + 5 + (isEdit ? 1 : 0)} style={{ padding: 14, textAlign: 'center', color: 'var(--text-muted)' }}>Sin colaboradores capturados</td></tr>
                 ) : trabajadores.map(t => (
                   <tr key={t.tempId} style={{ borderTop: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '4px 6px' }}>
@@ -595,6 +700,14 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
                     ))}
                     <td style={{ padding: '4px 6px', textAlign: 'center', fontWeight: 600 }}>{diasTrabajador(t)}</td>
                     <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 600, color: '#059669' }}>{fmt(costoTrabajador(t))}</td>
+                    {isEdit && (
+                      <td style={{ padding: '4px 6px', textAlign: 'center' }}>
+                        <button type="button" onClick={() => imprimirRecibo(t)} title="Imprimir recibo de dinero"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0369a1' }}>
+                          <Printer size={13} />
+                        </button>
+                      </td>
+                    )}
                     {editable && (
                       <td style={{ padding: '4px 6px', textAlign: 'center' }}>
                         <button type="button" onClick={() => removeTrabajador(t.tempId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}>
@@ -610,6 +723,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
                   <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
                     <td colSpan={dias.length + 4} style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: 12 }}>Total del rol de pagos</td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#059669', fontSize: 13 }}>{fmt(totalLote)}</td>
+                    {isEdit && <td></td>}
                     {editable && <td></td>}
                   </tr>
                 </tfoot>
