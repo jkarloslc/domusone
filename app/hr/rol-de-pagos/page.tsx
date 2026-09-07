@@ -96,20 +96,29 @@ export default function RolDePagosPage() {
   const openEdit = (l: any) => { setEditLote(l); setModal(true) }
 
   return (
-    <div style={{ padding: '32px 36px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => router.push('/hr')}><ArrowLeft size={15} /></button>
+    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <button className="btn-back" onClick={() => router.push('/hr')} title="Regresar" style={{ marginTop: 1 }}><ArrowLeft size={15} /></button>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Rol de Pagos</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Asistencia semanal de colaboradores y monto a pagar · {rows.length} lotes</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#b4530918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Wallet size={15} style={{ color: '#b45309' }} />
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Rol de Pagos</h2>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 40 }}>
+              Asistencia semanal de colaboradores y monto a pagar · {rows.length} lotes
+            </p>
           </div>
         </div>
-        {puedeCapturar && (
-          <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Plus size={15} /> Nuevo Rol de Pagos
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {puedeCapturar && (
+            <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={15} /> Nuevo Rol de Pagos
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -432,7 +441,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
     <ModalShell
       modulo="hr"
       titulo={isEdit ? `Rol de Pagos ${lote.folio}` : 'Nuevo Rol de Pagos'}
-      subtitulo="HR · asistencia semanal"
+      subtitulo="HR · Rol de Pagos"
       icono={Wallet}
       maxWidth={880}
       onClose={onClose}

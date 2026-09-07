@@ -1,13 +1,14 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Plus, Edit2, X, Save, Loader, RefreshCw, ToggleLeft, ToggleRight,
-  CheckCircle, Search, Users,
+  Plus, Edit2, Save, Loader, RefreshCw, ToggleLeft, ToggleRight,
+  CheckCircle, Search, Users, ArrowLeft,
 } from 'lucide-react'
 import { dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { antiguedad } from '@/lib/dateUtils'
 import { Colaborador, TipoColaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
+import ModalShell from '@/components/ui/ModalShell'
 
 const TIPOS_COLABORADOR: TipoColaborador[] = ['Interno', 'Externo']
 
@@ -29,7 +30,7 @@ const emptyColabForm = () => ({
   es_asignado: false, es_supervisor: false,
 })
 
-export default function ColaboradoresPanel() {
+export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) {
   const { authUser } = useAuth()
   const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<Colaborador[]>([])
@@ -125,29 +126,25 @@ export default function ColaboradoresPanel() {
   const asignados    = items.filter(i => i.activo && i.es_asignado).length
   const supervisores = items.filter(i => i.activo && i.es_supervisor).length
 
-  const overlayStyle: React.CSSProperties = {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-  }
-  const modalStyle: React.CSSProperties = {
-    background: '#fff', borderRadius: 12, padding: '24px 28px', width: '100%', maxWidth: 560,
-    boxShadow: '0 20px 60px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto',
-  }
-
   return (
     <div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#b4530918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users size={15} style={{ color: '#b45309' }} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          {onBack && (
+            <button className="btn-back" onClick={onBack} title="Regresar" style={{ marginTop: 1 }}><ArrowLeft size={15} /></button>
+          )}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#b4530918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Users size={15} style={{ color: '#b45309' }} />
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Colaboradores</h2>
             </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Colaboradores</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 40 }}>
+              Personal operativo — usado para asignar OT (Asignado a / Supervisor) y Rol de Pagos
+            </p>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 40 }}>
-            Personal operativo — usado para asignar OT (Asignado a / Supervisor) y Rol de Pagos
-          </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-ghost" onClick={fetchAll} style={{ padding: '7px 10px' }}>
@@ -207,14 +204,23 @@ export default function ColaboradoresPanel() {
 
       {/* Modal de captura / edición */}
       {showForm && (
-        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) setShowForm(false) }}>
-          <div style={modalStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#1e293b' }}>
-                {editing ? 'Editar colaborador' : 'Nuevo colaborador'}
-              </span>
-              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
-            </div>
+        <ModalShell
+          modulo="hr"
+          titulo={editing ? 'Editar colaborador' : 'Nuevo colaborador'}
+          subtitulo="HR · Colaboradores"
+          icono={Users}
+          maxWidth={640}
+          onClose={() => setShowForm(false)}
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+                {editing ? 'Guardar cambios' : 'Crear colaborador'}
+              </button>
+            </>
+          }
+        >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="label">Nombre(s) *</label>
@@ -297,29 +303,35 @@ export default function ColaboradoresPanel() {
               </div>
             </div>
             {error && <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
-              <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
-              <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-                {editing ? 'Guardar cambios' : 'Crear colaborador'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       {/* Modal de consulta */}
       {viewing && (
-        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) setViewing(null) }}>
-          <div style={modalStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b' }}>{nombreCompletoColaborador(viewing)}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{viewing.puesto ?? 'Sin puesto asignado'}</div>
-              </div>
-              <button onClick={() => setViewing(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
-            </div>
-
+        <ModalShell
+          modulo="hr"
+          titulo={nombreCompletoColaborador(viewing)}
+          subtitulo={viewing.puesto ?? 'Sin puesto asignado'}
+          icono={Users}
+          maxWidth={560}
+          onClose={() => setViewing(null)}
+          footer={
+            <>
+              {puedeEscribir && (
+                <button className="btn-ghost" style={{ fontSize: 12, color: viewing.activo ? '#dc2626' : '#15803d', marginRight: 'auto' }}
+                  onClick={() => toggleActivo(viewing)}>
+                  {viewing.activo ? 'Dar de baja' : 'Reactivar'}
+                </button>
+              )}
+              {puedeEscribir && (
+                <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                  onClick={() => openEdit(viewing)}>
+                  <Edit2 size={13} /> Editar
+                </button>
+              )}
+            </>
+          }
+        >
             <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20,
                 background: viewing.tipo === 'Externo' ? '#fff7ed' : '#eff6ff', color: viewing.tipo === 'Externo' ? '#c2410c' : '#0369a1' }}>
@@ -355,23 +367,7 @@ export default function ColaboradoresPanel() {
                 </div>
               ))}
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
-              {puedeEscribir ? (
-                <button className="btn-ghost" style={{ fontSize: 12, color: viewing.activo ? '#dc2626' : '#15803d' }}
-                  onClick={() => toggleActivo(viewing)}>
-                  {viewing.activo ? 'Dar de baja' : 'Reactivar'}
-                </button>
-              ) : <div />}
-              {puedeEscribir && (
-                <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                  onClick={() => openEdit(viewing)}>
-                  <Edit2 size={13} /> Editar
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       {/* Tabla */}

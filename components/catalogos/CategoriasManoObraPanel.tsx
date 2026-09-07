@@ -1,15 +1,17 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Plus, Edit2, X, Save, Loader, RefreshCw, ToggleLeft, ToggleRight,
-  CheckCircle, HardHat,
+  Plus, Edit2, Save, Loader, RefreshCw, ToggleLeft, ToggleRight,
+  CheckCircle, HardHat, ArrowLeft,
 } from 'lucide-react'
 import { dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import ModalShell from '@/components/ui/ModalShell'
 
 // ══════════════════════════════════════════════════════════════
 // Categorías de Mano de Obra — cfg.cat_categorias_mano_obra
 // Sueldo diario de referencia (usado en Rol de Pagos y costeo de OT)
+// Compartido entre /catalogos y /hr/categorias-mano-obra
 // ══════════════════════════════════════════════════════════════
 type CategoriaManoObra = {
   id: number
@@ -20,7 +22,7 @@ type CategoriaManoObra = {
 
 const emptyForm = () => ({ categoria: '', sueldo_diario: '' })
 
-export default function CategoriasManoObraPanel() {
+export default function CategoriasManoObraPanel({ onBack }: { onBack?: () => void }) {
   const { authUser } = useAuth()
   const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<CategoriaManoObra[]>([])
@@ -73,29 +75,25 @@ export default function CategoriasManoObraPanel() {
   const fmt$ = (v: number | null) => v == null ? '—' : '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const activos = items.filter(i => i.activo).length
 
-  const overlayStyle: React.CSSProperties = {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000,
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-  }
-  const modalStyle: React.CSSProperties = {
-    background: '#fff', borderRadius: 12, padding: '24px 28px', width: '100%', maxWidth: 420,
-    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-  }
-
   return (
     <div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#b4530918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <HardHat size={15} style={{ color: '#b45309' }} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          {onBack && (
+            <button className="btn-back" onClick={onBack} title="Regresar" style={{ marginTop: 1 }}><ArrowLeft size={15} /></button>
+          )}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#b4530918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <HardHat size={15} style={{ color: '#b45309' }} />
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Categorías Mano de Obra</h2>
             </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Categorías Mano de Obra</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 40 }}>
+              Sueldo diario y costo por hora de referencia (sueldo/8)
+            </p>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 40 }}>
-            Sueldo diario y costo por hora de referencia (sueldo/8)
-          </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-ghost" onClick={fetchAll} style={{ padding: '7px 10px' }}>
@@ -119,39 +117,40 @@ export default function CategoriasManoObraPanel() {
 
       {/* Modal captura / edición */}
       {showForm && (
-        <div style={overlayStyle} onClick={e => { if (e.target === e.currentTarget) setShowForm(false) }}>
-          <div style={modalStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#1e293b' }}>
-                {editing ? 'Editar categoría' : 'Nueva categoría'}
-              </span>
-              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={18} /></button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <label className="label">Categoría *</label>
-                <input className="input" value={form.categoria} autoFocus onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))} placeholder="ej. Albañil, Electricista, Jardinero" />
-              </div>
-              <div>
-                <label className="label">Sueldo Diario *</label>
-                <input className="input" type="number" min="0" step="0.01" value={form.sueldo_diario} onChange={e => setForm(f => ({ ...f, sueldo_diario: e.target.value }))} placeholder="0.00" />
-                {form.sueldo_diario && (
-                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3 }}>
-                    Costo por hora de referencia: {fmt$(Number(form.sueldo_diario) / 8)}
-                  </div>
-                )}
-              </div>
-            </div>
-            {error && <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+        <ModalShell
+          modulo="hr"
+          titulo={editing ? 'Editar categoría' : 'Nueva categoría'}
+          subtitulo="HR · Categorías Mano de Obra"
+          icono={HardHat}
+          maxWidth={420}
+          onClose={() => setShowForm(false)}
+          footer={
+            <>
               <button className="btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
               <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
                 {editing ? 'Guardar cambios' : 'Crear categoría'}
               </button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <label className="label">Categoría *</label>
+              <input className="input" value={form.categoria} autoFocus onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))} placeholder="ej. Albañil, Electricista, Jardinero" />
+            </div>
+            <div>
+              <label className="label">Sueldo Diario *</label>
+              <input className="input" type="number" min="0" step="0.01" value={form.sueldo_diario} onChange={e => setForm(f => ({ ...f, sueldo_diario: e.target.value }))} placeholder="0.00" />
+              {form.sueldo_diario && (
+                <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3 }}>
+                  Costo por hora de referencia: {fmt$(Number(form.sueldo_diario) / 8)}
+                </div>
+              )}
             </div>
           </div>
-        </div>
+          {error && <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 13, color: '#dc2626' }}>{error}</div>}
+        </ModalShell>
       )}
 
       {/* Tabla */}
