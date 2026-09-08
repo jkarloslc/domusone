@@ -381,7 +381,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
       const { data: op, error: opErr } = await dbComp.from('ordenes_pago').insert({
         folio,
         concepto: `Rol de Pagos ${lote.folio} · ${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}`,
-        tipo_gasto: 'Pagos a Personal',
+        tipo_gasto: 'Pagos a Personal Externo',
         forma_pago: 'Transferencia',
         urgencia: 'Media',
         fecha_vencimiento: fechaHasta || null,

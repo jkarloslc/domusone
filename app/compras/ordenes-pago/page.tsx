@@ -744,11 +744,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // de factura — ahí se sigue capturando un Monto único.
   const isVale = ['Combustible', 'Perimetrales', 'Mantenimiento de Vehículos'].includes(form.tipo_gasto)
   const servicioObligatorio = Number(form.id_proveedor_fk) === 75 && form.tipo_gasto === 'Electricidad'
-  // Pagos a Personal (rol de pagos): la distribución por Área/Frente es solo
-  // informativa (de dónde salió cada colaborador) — el total de la OP se
-  // captura/edita aparte y no tiene que cuadrar con la suma del detalle
+  // Pagos a Personal Externo (rol de pagos): la distribución por Área/Frente
+  // es solo informativa (de dónde salió cada colaborador) — el total de la OP
+  // se captura/edita aparte y no tiene que cuadrar con la suma del detalle
   // (ajustes de nómina, retenciones, anticipos, etc. no siempre son 1:1).
-  const esPagosPersonal = form.tipo_gasto === 'Pagos a Personal'
+  const esPagosPersonal = form.tipo_gasto === 'Pagos a Personal Externo'
   const subtotalNum = Number(form.subtotal) || 0
   const ivaNum      = Number(form.iva) || 0
   const montoManual = (!conOC && !isVale) ? subtotalNum + ivaNum : (Number(form.monto_manual) || 0)
@@ -1352,7 +1352,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 )}
                 {esPagosPersonal && (
                   <div style={{ fontSize: 11, color: '#b45309', marginTop: 6 }}>
-                    Pagos a Personal: esta distribución es informativa (de qué CC/Área salió cada colaborador) —
+                    Pagos a Personal Externo: esta distribución es informativa (de qué CC/Área salió cada colaborador) —
                     el Monto de la OP se captura por separado y no tiene que cuadrar con el total de distribución.
                   </div>
                 )}
