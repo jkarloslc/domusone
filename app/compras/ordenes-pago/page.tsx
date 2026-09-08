@@ -1246,6 +1246,108 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               </div>
             )}
 
+            {/* ── Distribución por Área ──
+                Con OC, el CC siempre viene de la OC (headerCCId = ocCCId) y las
+                líneas se quedan dentro de ese mismo CC, como siempre (sin toggle
+                — ese flujo no cambió). Sin OC, el bloque solo aplica en los modos
+                "mismo_cc"/"multi_cc" elegidos arriba — se muestra justo debajo del
+                selector de CC para que no quede perdido más abajo en el formulario. */}
+            {(conOC ? !!headerCCId : ((modoDist === 'mismo_cc' && !!headerCCId) || modoDist === 'multi_cc')) && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    Distribución por Área {detLines.length > 0 && <span style={{ color: 'var(--blue)', marginLeft: 4 }}>{detLines.length} línea{detLines.length > 1 ? 's' : ''}</span>}
+                  </span>
+                  <button type="button" className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }} onClick={addDetLine}>
+                    + Agregar línea
+                  </button>
+                </div>
+                {detLines.length > 0 && (
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc' }}>
+                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Descripción</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Área</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Frente</th>
+                          <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Monto</th>
+                          <th style={{ width: 28 }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detLines.map((line, idx) => (
+                          <tr key={line.tempId} style={{ borderTop: idx > 0 ? '1px solid #f1f5f9' : undefined }}>
+                            <td style={{ padding: '4px 6px' }}>
+                              <input className="input" style={{ padding: '4px 6px', fontSize: 12 }}
+                                placeholder="Descripción" value={line.descripcion}
+                                onChange={e => updateDetLine(line.tempId, 'descripcion', e.target.value)} />
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}
+                                value={line.id_area_fk}
+                                onChange={e => updateDetLine(line.tempId, 'id_area_fk', e.target.value)}>
+                                <option value="">— Área —</option>
+                                {/* Modo "CC distintos" (sin OC): cada línea puede tomar
+                                    su propio CC — se agrupan las opciones por CC. Modo
+                                    "mismo CC" (o con OC): solo áreas de ese único CC,
+                                    como siempre. */}
+                                {(!conOC && modoDist === 'multi_cc')
+                                  ? centrosCosto.map(cc => {
+                                      const opts = ccAreas.filter(a => a.id_centro_costo_fk === cc.id)
+                                      return opts.length > 0 ? (
+                                        <optgroup key={cc.id} label={cc.nombre}>
+                                          {opts.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                                        </optgroup>
+                                      ) : null
+                                    })
+                                  : ccAreas.filter(a => a.id_centro_costo_fk === headerCCId)
+                                      .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                              </select>
+                              {!conOC && modoDist === 'multi_cc' && line.id_area_fk && (
+                                <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>
+                                  CC: {centrosCosto.find(c => c.id === ccAreas.find(a => a.id === Number(line.id_area_fk))?.id_centro_costo_fk)?.nombre ?? '—'}
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}
+                                value={line.id_frente_fk} disabled={!line.id_area_fk}
+                                onChange={e => updateDetLine(line.tempId, 'id_frente_fk', e.target.value)}>
+                                <option value="">— Frente —</option>
+                                {frentes.filter(f => !line.id_area_fk || relAF.some(r => r.id_area === Number(line.id_area_fk) && r.id_frente === f.id))
+                                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                              </select>
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <input className="input" type="number" step="0.01" style={{ padding: '4px 6px', fontSize: 12, textAlign: 'right' }}
+                                placeholder="0.00" value={line.monto}
+                                onChange={e => updateDetLine(line.tempId, 'monto', e.target.value)} />
+                            </td>
+                            <td style={{ padding: '4px 6px' }}>
+                              <button type="button" className="btn-ghost" style={{ padding: '3px', color: '#dc2626' }}
+                                onClick={() => removeDetLine(line.tempId)}><Trash2 size={11} /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
+                          <td colSpan={3} style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)' }}>Total distribución</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>{fmt(detTotal)}</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+                {detLines.length === 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px', background: '#f8fafc', borderRadius: 6, border: '1px dashed #e2e8f0' }}>
+                    Agrega al menos una línea para completar la distribución.
+                  </div>
+                )}
+              </div>
+            )}
+
             {!conOC && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
@@ -1404,107 +1506,6 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 <input className="input" type="date" value={form.fecha_factura} onChange={setF('fecha_factura')} />
               </div>
             </div>
-
-            {/* ── Distribución por Área ──
-                Con OC, el CC siempre viene de la OC (headerCCId = ocCCId) y las
-                líneas se quedan dentro de ese mismo CC, como siempre (sin toggle
-                — ese flujo no cambió). Sin OC, el bloque solo aplica en los modos
-                "mismo_cc"/"multi_cc" elegidos arriba. */}
-            {(conOC ? !!headerCCId : ((modoDist === 'mismo_cc' && !!headerCCId) || modoDist === 'multi_cc')) && (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    Distribución por Área {detLines.length > 0 && <span style={{ color: 'var(--blue)', marginLeft: 4 }}>{detLines.length} línea{detLines.length > 1 ? 's' : ''}</span>}
-                  </span>
-                  <button type="button" className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }} onClick={addDetLine}>
-                    + Agregar línea
-                  </button>
-                </div>
-                {detLines.length > 0 && (
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                      <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Descripción</th>
-                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Área</th>
-                          <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Frente</th>
-                          <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '.04em' }}>Monto</th>
-                          <th style={{ width: 28 }}></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {detLines.map((line, idx) => (
-                          <tr key={line.tempId} style={{ borderTop: idx > 0 ? '1px solid #f1f5f9' : undefined }}>
-                            <td style={{ padding: '4px 6px' }}>
-                              <input className="input" style={{ padding: '4px 6px', fontSize: 12 }}
-                                placeholder="Descripción" value={line.descripcion}
-                                onChange={e => updateDetLine(line.tempId, 'descripcion', e.target.value)} />
-                            </td>
-                            <td style={{ padding: '4px 6px' }}>
-                              <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}
-                                value={line.id_area_fk}
-                                onChange={e => updateDetLine(line.tempId, 'id_area_fk', e.target.value)}>
-                                <option value="">— Área —</option>
-                                {/* Modo "CC distintos" (sin OC): cada línea puede tomar
-                                    su propio CC — se agrupan las opciones por CC. Modo
-                                    "mismo CC" (o con OC): solo áreas de ese único CC,
-                                    como siempre. */}
-                                {(!conOC && modoDist === 'multi_cc')
-                                  ? centrosCosto.map(cc => {
-                                      const opts = ccAreas.filter(a => a.id_centro_costo_fk === cc.id)
-                                      return opts.length > 0 ? (
-                                        <optgroup key={cc.id} label={cc.nombre}>
-                                          {opts.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-                                        </optgroup>
-                                      ) : null
-                                    })
-                                  : ccAreas.filter(a => a.id_centro_costo_fk === headerCCId)
-                                      .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-                              </select>
-                              {!conOC && modoDist === 'multi_cc' && line.id_area_fk && (
-                                <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>
-                                  CC: {centrosCosto.find(c => c.id === ccAreas.find(a => a.id === Number(line.id_area_fk))?.id_centro_costo_fk)?.nombre ?? '—'}
-                                </div>
-                              )}
-                            </td>
-                            <td style={{ padding: '4px 6px' }}>
-                              <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}
-                                value={line.id_frente_fk} disabled={!line.id_area_fk}
-                                onChange={e => updateDetLine(line.tempId, 'id_frente_fk', e.target.value)}>
-                                <option value="">— Frente —</option>
-                                {frentes.filter(f => !line.id_area_fk || relAF.some(r => r.id_area === Number(line.id_area_fk) && r.id_frente === f.id))
-                                  .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-                              </select>
-                            </td>
-                            <td style={{ padding: '4px 6px' }}>
-                              <input className="input" type="number" step="0.01" style={{ padding: '4px 6px', fontSize: 12, textAlign: 'right' }}
-                                placeholder="0.00" value={line.monto}
-                                onChange={e => updateDetLine(line.tempId, 'monto', e.target.value)} />
-                            </td>
-                            <td style={{ padding: '4px 6px' }}>
-                              <button type="button" className="btn-ghost" style={{ padding: '3px', color: '#dc2626' }}
-                                onClick={() => removeDetLine(line.tempId)}><Trash2 size={11} /></button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                          <td colSpan={3} style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-muted)' }}>Total distribución</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--blue)' }}>{fmt(detTotal)}</td>
-                          <td></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                )}
-                {detLines.length === 0 && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px', background: '#f8fafc', borderRadius: 6, border: '1px dashed #e2e8f0' }}>
-                    Agrega al menos una línea para completar la distribución.
-                  </div>
-                )}
-              </div>
-            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
