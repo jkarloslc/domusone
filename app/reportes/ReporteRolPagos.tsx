@@ -32,6 +32,8 @@ type ColabDet = {
   nombre: string
   puesto: string | null
   costo_dia: number
+  id_area_fk: number | null
+  id_frente_fk: number | null
   dias: number
   costo: number
 }
@@ -42,6 +44,8 @@ export default function ReporteRolPagos() {
   const [lotes, setLotes]           = useState<Lote[]>([])
   const [colabs, setColabs]         = useState<ColabDet[]>([])
   const [centrosCosto, setCentros]  = useState<{ id: number; nombre: string }[]>([])
+  const [areas, setAreas]           = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
+  const [frentes, setFrentes]       = useState<{ id: number; nombre: string }[]>([])
   const [colabTipo, setColabTipo]   = useState<Record<number, string>>({})
   const [loading, setLoading]       = useState(true)
 
@@ -55,13 +59,17 @@ export default function ReporteRolPagos() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: ccs }, { data: lotesData }, { data: colabsData }, { data: colaboradores }] = await Promise.all([
+    const [{ data: ccs }, { data: areasData }, { data: frentesData }, { data: lotesData }, { data: colabsData }, { data: colaboradores }] = await Promise.all([
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk'),
+      dbCfg.from('frentes').select('id, nombre'),
       dbCtrl.from('rol_pagos_lotes').select('*').order('fecha_desde', { ascending: false }),
       dbCtrl.from('rol_pagos_colaboradores').select('*'),
       dbCfg.from('colaboradores').select('id, tipo'),
     ])
     setCentros((ccs ?? []) as any)
+    setAreas((areasData ?? []) as any)
+    setFrentes((frentesData ?? []) as any)
     setLotes((lotesData ?? []) as Lote[])
     setColabs((colabsData ?? []) as ColabDet[])
     const tm: Record<number, string> = {}
@@ -78,6 +86,25 @@ export default function ReporteRolPagos() {
     return m
   }, [centrosCosto])
 
+  const areaMap = useMemo(() => {
+    const m: Record<number, { nombre: string; id_centro_costo_fk: number }> = {}
+    areas.forEach(a => { m[a.id] = a })
+    return m
+  }, [areas])
+
+  const frenteMap = useMemo(() => {
+    const m: Record<number, string> = {}
+    frentes.forEach(f => { m[f.id] = f.nombre })
+    return m
+  }, [frentes])
+
+  // CC efectivo de un colaborador: el de su propia Área si la tiene
+  // (rol de pagos "reconstruido"); si no (renglones capturados antes del
+  // cambio), cae al CC del encabezado del lote.
+  const ccColab = useCallback((c: ColabDet, ccLote: number | null) =>
+    c.id_area_fk != null ? (areaMap[c.id_area_fk]?.id_centro_costo_fk ?? ccLote) : ccLote,
+    [areaMap])
+
   const colabsByLote = useMemo(() => {
     const m: Record<number, ColabDet[]> = {}
     colabs.forEach(c => {
@@ -87,18 +114,23 @@ export default function ReporteRolPagos() {
     return m
   }, [colabs])
 
-  // Aplicar filtros sobre los lotes (periodos)
+  // Aplicar filtros sobre los lotes (periodos) — el filtro de CC considera
+  // tanto el CC del encabezado como el CC de cada línea (área propia).
   const periodos = useMemo((): Periodo[] => {
     return lotes
       .filter(l => {
-        if (filtroCC     && l.id_centro_costo_fk !== Number(filtroCC)) return false
+        if (filtroCC) {
+          const ccsDelLote = (colabsByLote[l.id] ?? []).map(c => ccColab(c, l.id_centro_costo_fk))
+          const coincide = l.id_centro_costo_fk === Number(filtroCC) || ccsDelLote.includes(Number(filtroCC))
+          if (!coincide) return false
+        }
         if (filtroStatus && l.status !== filtroStatus) return false
         if (filtroDe     && l.fecha_desde < filtroDe) return false
         if (filtroA      && l.fecha_desde > filtroA)  return false
         return true
       })
       .map(l => ({ ...l, colaboradores: colabsByLote[l.id] ?? [] }))
-  }, [lotes, colabsByLote, filtroCC, filtroStatus, filtroDe, filtroA])
+  }, [lotes, colabsByLote, ccColab, filtroCC, filtroStatus, filtroDe, filtroA])
 
   const fmt  = (n: number) => '$' + Number(n ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })
   const fmtF = (s: string | null) => s ? new Date(s + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -147,13 +179,15 @@ export default function ReporteRolPagos() {
     // Hoja 2: Detalle de colaboradores
     const detalleRows: any[] = []
     periodos.forEach(p => {
-      const ccNom = p.id_centro_costo_fk != null ? (ccMap[p.id_centro_costo_fk] ?? `Centro #${p.id_centro_costo_fk}`) : 'Sin centro de costo'
       p.colaboradores.forEach(c => {
+        const ccId = ccColab(c, p.id_centro_costo_fk)
         detalleRows.push({
           'Folio':           p.folio,
           'Periodo Desde':   p.fecha_desde,
           'Periodo Hasta':   p.fecha_hasta,
-          'Centro de Costo': ccNom,
+          'Centro de Costo': ccId != null ? (ccMap[ccId] ?? `Centro #${ccId}`) : 'Sin centro de costo',
+          'Área':            c.id_area_fk != null ? (areaMap[c.id_area_fk]?.nombre ?? `Área #${c.id_area_fk}`) : '—',
+          'Frente':          c.id_frente_fk != null ? (frenteMap[c.id_frente_fk] ?? `Frente #${c.id_frente_fk}`) : '—',
           'Colaborador':     c.nombre,
           'Tipo':            c.id_colaborador_fk ? (colabTipo[c.id_colaborador_fk] ?? 'Interno') : '—',
           'Puesto':          c.puesto ?? '',
@@ -165,7 +199,7 @@ export default function ReporteRolPagos() {
     })
     const ws2 = XLSX.utils.json_to_sheet(detalleRows)
     ws2['!cols'] = [
-      { wch: 16 }, { wch: 13 }, { wch: 13 }, { wch: 24 }, { wch: 26 },
+      { wch: 16 }, { wch: 13 }, { wch: 13 }, { wch: 24 }, { wch: 20 }, { wch: 16 }, { wch: 26 },
       { wch: 10 }, { wch: 20 }, { wch: 8 }, { wch: 12 }, { wch: 14 },
     ]
     XLSX.utils.book_append_sheet(wb, ws2, 'Detalle')
@@ -250,7 +284,7 @@ export default function ReporteRolPagos() {
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>Folio / Colaborador</th>
-                <th>Centro de Costo</th>
+                <th>CC / Área / Frente</th>
                 <th>Tipo / Puesto</th>
                 <th style={{ textAlign: 'center' }}>Días</th>
                 <th style={{ textAlign: 'right' }}>$/Día</th>
@@ -261,7 +295,12 @@ export default function ReporteRolPagos() {
             <tbody>
               {periodos.map(p => {
                 const open = expandedPeriodo.has(p.id)
-                const ccNom = p.id_centro_costo_fk != null ? (ccMap[p.id_centro_costo_fk] ?? `Centro #${p.id_centro_costo_fk}`) : 'Sin centro de costo'
+                const ccsDelLote = Array.from(new Set(p.colaboradores.map(c => ccColab(c, p.id_centro_costo_fk)).filter((v): v is number => v != null)))
+                const ccNom = ccsDelLote.length === 1
+                  ? (ccMap[ccsDelLote[0]] ?? `Centro #${ccsDelLote[0]}`)
+                  : ccsDelLote.length > 1
+                    ? `Múltiple (${ccsDelLote.length} CC)`
+                    : 'Sin centro de costo'
                 return (
                   <Fragment key={`periodo-frag-${p.id}`}>
                     <tr style={{ background: '#fff7ed', cursor: 'pointer' }} onClick={() => togglePeriodo(p.id)}>
@@ -297,10 +336,16 @@ export default function ReporteRolPagos() {
 
                     {open && p.colaboradores.map(c => {
                       const tipo = c.id_colaborador_fk ? (colabTipo[c.id_colaborador_fk] ?? 'Interno') : null
+                      const ccIdColab = ccColab(c, p.id_centro_costo_fk)
+                      const ccNomColab = ccIdColab != null ? (ccMap[ccIdColab] ?? `Centro #${ccIdColab}`) : 'Sin centro de costo'
+                      const areaNomColab = c.id_area_fk != null ? (areaMap[c.id_area_fk]?.nombre ?? `Área #${c.id_area_fk}`) : null
+                      const frenteNomColab = c.id_frente_fk != null ? (frenteMap[c.id_frente_fk] ?? `Frente #${c.id_frente_fk}`) : null
                       return (
                         <tr key={`colab-${c.id}`}>
                           <td style={{ fontSize: 12, paddingLeft: 40 }}>{c.nombre}</td>
-                          <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{ccNom}</td>
+                          <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                            {ccNomColab}{areaNomColab ? ` / ${areaNomColab}` : ''}{frenteNomColab ? ` / ${frenteNomColab}` : ''}
+                          </td>
                           <td style={{ fontSize: 12 }}>
                             {tipo && (
                               <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 20, marginRight: 6,

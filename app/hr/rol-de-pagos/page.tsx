@@ -1,15 +1,17 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { dbCtrl, dbCfg } from '@/lib/supabase'
+import { dbCtrl, dbCfg, dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Wallet, Plus, ArrowLeft, Save, Loader, Eye, Printer,
   CheckCircle, XCircle, Trash2, AlertTriangle, User, ChevronDown, Search,
+  Receipt, ExternalLink,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import { montoALetras } from '@/lib/numeroALetras'
+import { nextFolio } from '@/app/compras/types'
 
 const STATUS_COLOR: Record<string, { bg: string; color: string; border: string }> = {
   'Capturado':  { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
@@ -59,6 +61,8 @@ type Trabajador = {
   nombre: string
   puesto: string
   costo_dia: string
+  id_area_fk: string
+  id_frente_fk: string
   asistencias: Record<string, boolean>   // fecha -> asistió
 }
 
@@ -150,7 +154,14 @@ export default function RolDePagosPage() {
               <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Sin rol de pagos capturado</td></tr>
             ) : rows.map(l => (
               <tr key={l.id} style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }} onClick={() => openEdit(l)}>
-                <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)' }}>{l.folio}</td>
+                <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)' }}>
+                  {l.folio}
+                  {l.id_op_fk && (
+                    <span title="Ya tiene Orden de Pago generada" style={{ fontFamily: 'inherit', fontSize: 9, fontWeight: 600, marginLeft: 6, padding: '1px 6px', borderRadius: 20, background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe' }}>
+                    OP
+                    </span>
+                  )}
+                </td>
                 <td style={{ padding: '10px 14px' }}>{fmtFecha(l.fecha_desde)} – {fmtFecha(l.fecha_hasta)}</td>
                 <td style={{ padding: '10px 14px' }}>{l.id_centro_costo_fk ? (ccMap[l.id_centro_costo_fk] ?? '—') : '—'}</td>
                 <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600 }}>{fmt(l.total)}</td>
@@ -192,16 +203,32 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   const [ccId, setCcId]             = useState(lote?.id_centro_costo_fk?.toString() ?? '')
   const [notas, setNotas]           = useState(lote?.notas ?? '')
   const [centrosCosto, setCentrosCosto] = useState<any[]>([])
+  const [ccAreas, setCcAreas]       = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
+  const [frentes, setFrentes]       = useState<any[]>([])
+  const [relAF, setRelAF]           = useState<{ id_area: number; id_frente: number }[]>([])
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([])
   const [nextTempId, setNextTempId] = useState(0)
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
   const [rechazando, setRechazando] = useState(false)
   const [motivoRechazo, setMotivoRechazo] = useState('')
+  const [idOpFk, setIdOpFk]         = useState<number | null>(lote?.id_op_fk ?? null)
+  const [opGenerada, setOpGenerada] = useState<{ folio: string; status: string } | null>(null)
+  const [generandoOp, setGenerandoOp] = useState(false)
 
   useEffect(() => {
     dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre').then(({ data }) => setCentrosCosto(data ?? []))
+    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setCcAreas((data ?? []) as any[]))
+    dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre').then(({ data }) => setFrentes(data ?? []))
+    dbCfg.from('rel_area_frente').select('id_area, id_frente').then(({ data }) => setRelAF(data ?? []))
   }, [])
+
+  useEffect(() => {
+    if (!idOpFk) { setOpGenerada(null); return }
+    dbComp.from('ordenes_pago').select('folio, status').eq('id', idOpFk).single()
+      .then(({ data }) => setOpGenerada(data ? { folio: data.folio, status: data.status } : null))
+  }, [idOpFk])
 
   useEffect(() => {
     if (!isEdit) return
@@ -218,6 +245,8 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
         nombre: c.nombre,
         puesto: c.puesto ?? '',
         costo_dia: c.costo_dia?.toString() ?? '0',
+        id_area_fk:   c.id_area_fk?.toString()   ?? '',
+        id_frente_fk: c.id_frente_fk?.toString() ?? '',
         asistencias: Object.fromEntries((asis ?? []).filter((a: any) => a.id_colaborador_lote_fk === c.id).map((a: any) => [a.fecha, true])),
       })))
       setNextTempId(colabsData.length)
@@ -227,12 +256,14 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   const dias = diasEnRango(fechaDesde, fechaHasta)
 
   const addTrabajador = () => {
-    setTrabajadores(t => [...t, { tempId: nextTempId, id_colaborador_fk: null, nombre: '', puesto: '', costo_dia: '0', asistencias: {} }])
+    setTrabajadores(t => [...t, { tempId: nextTempId, id_colaborador_fk: null, nombre: '', puesto: '', costo_dia: '0', id_area_fk: '', id_frente_fk: '', asistencias: {} }])
     setNextTempId(n => n + 1)
   }
   const removeTrabajador = (tempId: number) => setTrabajadores(t => t.filter(x => x.tempId !== tempId))
   const updateTrabajador = (tempId: number, patch: Partial<Trabajador>) =>
-    setTrabajadores(t => t.map(x => x.tempId === tempId ? { ...x, ...patch } : x))
+    setTrabajadores(t => t.map(x => x.tempId === tempId
+      ? { ...x, ...patch, ...(patch.id_area_fk !== undefined && patch.id_frente_fk === undefined ? { id_frente_fk: '' } : {}) }
+      : x))
   const toggleAsistencia = (tempId: number, fecha: string) =>
     setTrabajadores(t => t.map(x => x.tempId === tempId
       ? { ...x, asistencias: { ...x.asistencias, [fecha]: !x.asistencias[fecha] } }
@@ -241,11 +272,13 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   const costoTrabajador = (t: Trabajador) => Object.values(t.asistencias).filter(Boolean).length * (Number(t.costo_dia) || 0)
   const diasTrabajador  = (t: Trabajador) => Object.values(t.asistencias).filter(Boolean).length
   const totalLote = trabajadores.reduce((a, t) => a + costoTrabajador(t), 0)
+  const ccDeArea = (idArea: string) => ccAreas.find(a => a.id === Number(idArea))?.id_centro_costo_fk ?? null
 
   const handleSave = async () => {
     if (!fechaDesde || !fechaHasta) { setError('Captura el periodo (fecha desde / hasta)'); return }
     if (trabajadores.length === 0) { setError('Agrega al menos un colaborador'); return }
     if (trabajadores.some(t => !t.id_colaborador_fk)) { setError('Selecciona el colaborador para todos los renglones'); return }
+    if (trabajadores.some(t => !t.id_area_fk)) { setError('Selecciona el Área (CC/Frente) para todos los colaboradores'); return }
     if (trabajadores.every(t => diasTrabajador(t) === 0)) { setError('Marca al menos un día trabajado'); return }
     setSaving(true); setError('')
 
@@ -288,6 +321,8 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
         nombre: t.nombre.trim(),
         puesto: t.puesto.trim() || null,
         costo_dia: Number(t.costo_dia) || 0,
+        id_area_fk:   t.id_area_fk   ? Number(t.id_area_fk)   : null,
+        id_frente_fk: t.id_frente_fk ? Number(t.id_frente_fk) : null,
         dias: diasTrabajador(t),
         costo: costoTrabajador(t),
       }).select('id').single()
@@ -331,11 +366,66 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
     onSaved()
   }
 
+  // ── Generar Orden de Pago automática a partir del detalle del lote ────────
+  // Jala cada colaborador como línea de distribución (CC se deriva de su
+  // Área, mismo patrón que comp.ordenes_pago_det). El total de la OP se
+  // precarga con el total del rol de pagos, pero queda editable aparte —
+  // no se fuerza a coincidir con la suma del detalle (ver esPagosPersonal
+  // en app/compras/ordenes-pago/page.tsx).
+  const generarOP = async () => {
+    if (!lote?.id || idOpFk) return
+    if (trabajadores.length === 0 || totalLote <= 0) { setError('No hay colaboradores con monto a pagar para generar la OP'); return }
+    setGenerandoOp(true); setError('')
+    try {
+      const folio = await nextFolio(dbComp, 'OP')
+      const { data: op, error: opErr } = await dbComp.from('ordenes_pago').insert({
+        folio,
+        concepto: `Rol de Pagos ${lote.folio} · ${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}`,
+        tipo_gasto: 'Pagos a Personal',
+        forma_pago: 'Transferencia',
+        urgencia: 'Media',
+        fecha_vencimiento: fechaHasta || null,
+        subtotal: totalLote,
+        iva: 0,
+        monto: totalLote,
+        status: 'Pendiente Auth',
+        notas: `Generada automáticamente desde HR · Rol de Pagos ${lote.folio}`,
+        created_by: authUser?.nombre ?? null,
+        created_by_id: authUser?.user.id ?? null,
+      }).select('id, folio, status').single()
+      if (opErr) { setError(opErr.message); setGenerandoOp(false); return }
+
+      const detRows = trabajadores.filter(t => costoTrabajador(t) > 0).map(t => ({
+        id_op_fk:     op.id,
+        descripcion:  `${t.nombre}${t.puesto ? ' · ' + t.puesto : ''}`,
+        id_area_fk:   t.id_area_fk   ? Number(t.id_area_fk)   : null,
+        id_frente_fk: t.id_frente_fk ? Number(t.id_frente_fk) : null,
+        monto:        costoTrabajador(t),
+      }))
+      if (detRows.length > 0) {
+        const { error: detErr } = await dbComp.from('ordenes_pago_det').insert(detRows)
+        if (detErr) { setError(detErr.message); setGenerandoOp(false); return }
+      }
+
+      await dbCtrl.from('rol_pagos_lotes').update({ id_op_fk: op.id }).eq('id', lote.id)
+      setIdOpFk(op.id)
+      setOpGenerada({ folio: op.folio, status: op.status })
+    } finally {
+      setGenerandoOp(false)
+    }
+  }
+
   const mostrarAutorizacion = isEdit && puedeAutorizar && lote.status === 'Capturado'
+  const puedeGenerarOp = isEdit && puedeAutorizar && lote.status === 'Autorizado' && !idOpFk
 
   const imprimir = async () => {
     if (!lote?.id) return
-    const ccNombre = ccId ? (centrosCosto.find(c => c.id === Number(ccId))?.nombre ?? '—') : '—'
+    const ccsDeLineas = Array.from(new Set(trabajadores.map(t => ccDeArea(t.id_area_fk)).filter((v): v is number => v != null)))
+    const ccNombre = ccsDeLineas.length === 1
+      ? (centrosCosto.find(c => c.id === ccsDeLineas[0])?.nombre ?? '—')
+      : ccsDeLineas.length > 1
+        ? `Múltiple (${ccsDeLineas.length} CC — ver detalle)`
+        : (ccId ? (centrosCosto.find(c => c.id === Number(ccId))?.nombre ?? '—') : '—')
 
     let orgNombre = 'Organización'
     let orgSubtitulo = ''
@@ -393,23 +483,29 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
       <table>
         <thead>
           <tr>
-            <th>Nombre</th><th>Puesto</th><th style="text-align:right">$/día</th>
+            <th>Nombre</th><th>Puesto</th><th>CC / Área / Frente</th><th style="text-align:right">$/día</th>
             ${dias.map(f => { const { letra, num } = diaLabel(f); return `<th style="text-align:center">${letra} ${num}</th>` }).join('')}
             <th style="text-align:center">Días</th><th style="text-align:right">Monto a Pagar</th>
           </tr>
         </thead>
         <tbody>
-          ${trabajadores.map(t => `<tr>
+          ${trabajadores.map(t => {
+            const ccNom2  = ccDeArea(t.id_area_fk) ? (centrosCosto.find(c => c.id === ccDeArea(t.id_area_fk))?.nombre ?? '—') : '—'
+            const areaNom = ccAreas.find(a => a.id === Number(t.id_area_fk))?.nombre ?? '—'
+            const frenteNom = frentes.find(f => f.id === Number(t.id_frente_fk))?.nombre ?? null
+            return `<tr>
             <td>${t.nombre || '—'}</td>
             <td>${t.puesto || '—'}</td>
+            <td style="font-size:10px">${ccNom2} / ${areaNom}${frenteNom ? ' / ' + frenteNom : ''}</td>
             <td style="text-align:right">${fmt(Number(t.costo_dia))}</td>
             ${dias.map(f => `<td style="text-align:center;font-weight:${t.asistencias[f] ? 700 : 400}">${t.asistencias[f] ? '✓' : '—'}</td>`).join('')}
             <td style="text-align:center;font-weight:700">${diasTrabajador(t)}</td>
             <td style="text-align:right;font-weight:700">${fmt(costoTrabajador(t))}</td>
-          </tr>`).join('')}
+          </tr>`
+          }).join('')}
         </tbody>
         <tfoot>
-          <tr><th colspan="${3 + dias.length + 1}" style="text-align:right" class="total">TOTAL DEL ROL DE PAGOS</th><td class="total" style="text-align:right">${fmt(totalLote)}</td></tr>
+          <tr><th colspan="${4 + dias.length + 1}" style="text-align:right" class="total">TOTAL DEL ROL DE PAGOS</th><td class="total" style="text-align:right">${fmt(totalLote)}</td></tr>
         </tfoot>
       </table>
       <div class="firmas">
@@ -441,7 +537,9 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   // ── Recibo de dinero individual por colaborador ─────────────────────────
   const imprimirRecibo = async (t: Trabajador) => {
     if (!lote?.id) return
-    const ccNombre = ccId ? (centrosCosto.find(c => c.id === Number(ccId))?.nombre ?? '—') : '—'
+    const ccNombre  = ccDeArea(t.id_area_fk) ? (centrosCosto.find(c => c.id === ccDeArea(t.id_area_fk))?.nombre ?? '—') : '—'
+    const areaNombre = ccAreas.find(a => a.id === Number(t.id_area_fk))?.nombre ?? '—'
+    const frenteNombre = frentes.find(f => f.id === Number(t.id_frente_fk))?.nombre ?? null
     const monto     = costoTrabajador(t)
     const diasCount = diasTrabajador(t)
 
@@ -509,6 +607,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
         <tr><th>Nombre</th><td>${t.nombre || '—'}</td></tr>
         <tr><th>Puesto</th><td>${t.puesto || '—'}</td></tr>
         <tr><th>Centro de Costo</th><td>${ccNombre}</td></tr>
+        <tr><th>Área / Frente</th><td>${areaNombre}${frenteNombre ? ' / ' + frenteNombre : ''}</td></tr>
         <tr><th>Periodo</th><td>${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}</td></tr>
         <tr><th>Días Trabajados</th><td>${diasCount}</td></tr>
         <tr><th>Pago por Día</th><td>${fmt(Number(t.costo_dia))}</td></tr>
@@ -567,6 +666,12 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
               </button>
             </>
           )}
+          {puedeGenerarOp && (
+            <button className="btn-primary" style={{ background: '#b45309' }} onClick={generarOP} disabled={generandoOp}>
+              {generandoOp ? <Loader size={14} className="animate-spin" style={{ marginRight: 4 }} /> : <Receipt size={14} style={{ marginRight: 4 }} />}
+              Generar Orden de Pago
+            </button>
+          )}
           {rechazando && (
             <button className="btn-primary" style={{ background: '#dc2626' }} onClick={confirmarRechazo} disabled={saving}>
               Confirmar Rechazo
@@ -587,10 +692,17 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
       )}
 
       {isEdit && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
           <StatusBadge status={lote.status} />
           {lote.status === 'Autorizado' && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Autorizó {lote.authorized_by} · {fmtFecha(lote.fecha_autorizacion?.slice(0, 10))}</span>}
           {lote.status === 'Rechazado' && <span style={{ fontSize: 12, color: '#dc2626' }}>Motivo: {lote.motivo_rechazo}</span>}
+          {opGenerada && (
+            <a href="/compras/ordenes-pago" target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe', textDecoration: 'none' }}>
+              <Receipt size={11} /> OP {opGenerada.folio} · {opGenerada.status} <ExternalLink size={10} />
+            </a>
+          )}
         </div>
       )}
 
@@ -612,13 +724,16 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
           <input className="input" type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} disabled={!editable} />
         </div>
         <div>
-          <label className="label">Centro de Costo</label>
+          <label className="label">Centro de Costo (referencia)</label>
           <select className="select" value={ccId} onChange={e => setCcId(e.target.value)} disabled={!editable}>
             <option value="">— Sin especificar —</option>
             {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
         </div>
       </div>
+      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: -8, marginBottom: 14 }}>
+        Cada colaborador captura su propio CC/Área/Frente abajo — este campo es solo para filtrar el listado.
+      </p>
 
       <div style={{ marginBottom: 14 }}>
         <label className="label">Notas</label>
@@ -648,6 +763,8 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
                 <tr style={{ background: '#f8fafc' }}>
                   <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 180 }}>Nombre</th>
                   <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 120 }}>Puesto</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 150 }}>Área (CC)</th>
+                  <th style={{ padding: '6px 8px', textAlign: 'left', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 120 }}>Frente</th>
                   <th style={{ padding: '6px 8px', textAlign: 'right', fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', minWidth: 80 }}>$/día</th>
                   {dias.map(f => {
                     const { letra, num } = diaLabel(f)
@@ -661,7 +778,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
               </thead>
               <tbody>
                 {trabajadores.length === 0 ? (
-                  <tr><td colSpan={dias.length + 5 + (isEdit ? 1 : 0)} style={{ padding: 14, textAlign: 'center', color: 'var(--text-muted)' }}>Sin colaboradores capturados</td></tr>
+                  <tr><td colSpan={dias.length + 7 + (isEdit ? 1 : 0)} style={{ padding: 14, textAlign: 'center', color: 'var(--text-muted)' }}>Sin colaboradores capturados</td></tr>
                 ) : trabajadores.map(t => (
                   <tr key={t.tempId} style={{ borderTop: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '4px 6px' }}>
@@ -682,6 +799,42 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
                     <td style={{ padding: '4px 6px' }}>
                       <input className="input" style={{ padding: '4px 6px', fontSize: 12 }}
                         value={t.puesto} disabled={!editable} onChange={e => updateTrabajador(t.tempId, { puesto: e.target.value })} />
+                    </td>
+                    <td style={{ padding: '4px 6px' }}>
+                      {editable ? (
+                        <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}
+                          value={t.id_area_fk} onChange={e => updateTrabajador(t.tempId, { id_area_fk: e.target.value })}>
+                          <option value="">— Área —</option>
+                          {centrosCosto.map(cc => {
+                            const opts = ccAreas.filter(a => a.id_centro_costo_fk === cc.id)
+                            return opts.length > 0 ? (
+                              <optgroup key={cc.id} label={cc.nombre}>
+                                {opts.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                              </optgroup>
+                            ) : null
+                          })}
+                        </select>
+                      ) : (
+                        <span style={{ fontSize: 12 }}>{ccAreas.find(a => a.id === Number(t.id_area_fk))?.nombre ?? '—'}</span>
+                      )}
+                      {t.id_area_fk && (
+                        <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>
+                          CC: {centrosCosto.find(c => c.id === ccDeArea(t.id_area_fk))?.nombre ?? '—'}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '4px 6px' }}>
+                      {editable ? (
+                        <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}
+                          value={t.id_frente_fk} disabled={!t.id_area_fk}
+                          onChange={e => updateTrabajador(t.tempId, { id_frente_fk: e.target.value })}>
+                          <option value="">— Frente —</option>
+                          {frentes.filter(f => !t.id_area_fk || relAF.some(r => r.id_area === Number(t.id_area_fk) && r.id_frente === f.id))
+                            .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                        </select>
+                      ) : (
+                        <span style={{ fontSize: 12 }}>{frentes.find(f => f.id === Number(t.id_frente_fk))?.nombre ?? '—'}</span>
+                      )}
                     </td>
                     <td style={{ padding: '4px 6px' }}>
                       <input className="input" type="number" step="0.01" style={{ padding: '4px 6px', fontSize: 12, textAlign: 'right' }}
@@ -721,7 +874,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
               {trabajadores.length > 0 && (
                 <tfoot>
                   <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                    <td colSpan={dias.length + 4} style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: 12 }}>Total del rol de pagos</td>
+                    <td colSpan={dias.length + 6} style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, fontSize: 12 }}>Total del rol de pagos</td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: '#059669', fontSize: 13 }}>{fmt(totalLote)}</td>
                     {isEdit && <td></td>}
                     {editable && <td></td>}
