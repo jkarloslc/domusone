@@ -401,6 +401,13 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   type DetLine = { tempId: number; descripcion: string; id_area_fk: string; id_frente_fk: string; monto: string }
   const [detLines, setDetLines]       = useState<DetLine[]>([])
   const [nextTempId, setNextTempId]   = useState(0)
+  // Modo de asignación de CC/Área/Frente (solo aplica sin OC — con OC siempre
+  // viene de la OC seleccionada):
+  //  - normal:    un solo CC/Área/Frente para toda la OP (comportamiento de siempre)
+  //  - mismo_cc:  varias líneas de distribución, todas dentro de un mismo CC fijo
+  //  - multi_cc:  varias líneas de distribución, cada una con su propio CC (vía su Área)
+  type ModoDist = 'normal' | 'mismo_cc' | 'multi_cc'
+  const [modoDist, setModoDist] = useState<ModoDist>('normal')
 
   const [serviciosCatalogo, setServiciosCatalogo] = useState<any[]>([])
   const [savedOpForConsumo, setSavedOpForConsumo] = useState<{ opId: number; servicioId: number; monto: number } | null>(null)
@@ -477,6 +484,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               monto:        d.monto?.toString()         ?? '0',
             })))
             setNextTempId(data.length)
+            // El header trae CC ⇒ distribución dentro de un mismo CC (legacy);
+            // header sin CC ⇒ cada línea trae el suyo propio.
+            setModoDist(opEdit.id_centro_costo_fk != null ? 'mismo_cc' : 'multi_cc')
           }
         })
       // Cargar la(s) OC vinculada(s) al editar — la OC ya no está en status
@@ -707,6 +717,18 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
   // ── Distribución por área ──────────────────────────────────
   const headerCCId = conOC ? ocCCId : (form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null)
+  // Cambiar de modo limpia las líneas capturadas (la Área válida depende del
+  // modo: en "mismo_cc" solo áreas del CC elegido, en "multi_cc" cualquiera) —
+  // evita dejar líneas con una Área que ya no aplica al nuevo modo. En
+  // "multi_cc" también se limpia el CC/Área/Frente único del header, que ese
+  // modo no usa.
+  const cambiarModoDist = (m: ModoDist) => {
+    if (m !== modoDist) {
+      setDetLines([]); setNextTempId(0)
+      if (m === 'multi_cc') setForm(f => ({ ...f, id_centro_costo_fk: '', id_area_fk: '', id_frente_fk: '' }))
+    }
+    setModoDist(m)
+  }
   const addDetLine = () => {
     setDetLines(l => [...l, { tempId: nextTempId, descripcion: '', id_area_fk: '', id_frente_fk: '', monto: '' }])
     setNextTempId(n => n + 1)
@@ -787,11 +809,19 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
     if (montoTotal <= 0) { setError('El monto debe ser mayor a cero'); return }
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
-    // El CC del header solo es obligatorio cuando no hay líneas de distribución —
-    // con líneas, cada una trae su propio CC implícito en su Área (ver headerCCId
-    // y el selector de Área de cada línea, más abajo).
-    if (!conOC && detLines.length === 0 && !form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
-    if (!conOC && detLines.length === 0 && !form.id_area_fk) { setError('Área es obligatoria (o agrega líneas de distribución)'); return }
+    // Validación según el modo de asignación elegido (toggle "Único" /
+    // "Distribuir — mismo CC" / "Distribuir — CC distintos").
+    if (!conOC) {
+      if (modoDist === 'normal') {
+        if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
+        if (!form.id_area_fk) { setError('Área es obligatoria'); return }
+      } else if (modoDist === 'mismo_cc') {
+        if (!form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio para distribuir dentro del mismo CC'); return }
+        if (detLines.length === 0) { setError('Agrega al menos una línea de distribución'); return }
+      } else if (modoDist === 'multi_cc' && detLines.length === 0) {
+        setError('Agrega al menos una línea de distribución'); return
+      }
+    }
     if (detLines.length > 0 && detLines.some(l => !l.id_area_fk)) { setError('Todas las líneas de distribución deben tener Área asignada'); return }
     if (detLines.length > 0 && detTotal <= 0) { setError('El total de distribución debe ser mayor a cero'); return }
     if (form.tipo_gasto === 'Combustible' && valesCombSel.length === 0) {
@@ -848,7 +878,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     const payload: any = {
       id_proveedor_fk:    form.id_proveedor_fk ? Number(form.id_proveedor_fk) : null,
       id_almacen_fk:      conOC && form.id_almacen_fk ? Number(form.id_almacen_fk) : null,
-      id_centro_costo_fk: conOC ? ocCampos.id_centro_costo_fk : (form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null),
+      id_centro_costo_fk: conOC
+        ? ocCampos.id_centro_costo_fk
+        : (modoDist === 'multi_cc' ? null : (form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null)),
       id_area_fk:         detLines.length > 0 ? null : (conOC ? ocCampos.id_area_fk   : (form.id_area_fk   ? Number(form.id_area_fk)   : null)),
       id_frente_fk:       detLines.length > 0 ? null : (conOC ? ocCampos.id_frente_fk : (form.id_frente_fk ? Number(form.id_frente_fk) : null)),
       id_oc_fk:           (!conOC || ocsSelected.length === 0) ? null : ocsSelected[0].id,
@@ -1138,43 +1170,79 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               </div>
             )}
 
-            {/* Sin OC → Centro de Costo (obligatorio solo sin líneas de distribución) + Área/Frente solo cuando sin detalle */}
+            {/* Sin OC → elegir cómo se asigna CC/Área/Frente */}
             {!conOC && (
-              <div style={{ display: 'grid', gridTemplateColumns: detLines.length > 0 ? '1fr' : '1fr 1fr 1fr', gap: 10 }}>
+              <div>
+                <label className="label">Asignación de CC / Área / Frente</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {([
+                    { m: 'normal' as const,   label: 'Único' },
+                    { m: 'mismo_cc' as const, label: 'Distribuir — mismo CC' },
+                    { m: 'multi_cc' as const, label: 'Distribuir — CC distintos' },
+                  ]).map(({ m, label }) => (
+                    <button key={m} type="button" onClick={() => cambiarModoDist(m)}
+                      style={{
+                        flex: 1, padding: '8px 6px', borderRadius: 8, fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
+                        border: modoDist === m ? '1px solid var(--blue)' : '1px solid #e2e8f0',
+                        background: modoDist === m ? '#eff6ff' : '#fff',
+                        color: modoDist === m ? 'var(--blue)' : '#64748b',
+                      }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+                  {modoDist === 'normal'
+                    ? 'Un solo Centro de Costo / Área / Frente para toda la orden de pago.'
+                    : modoDist === 'mismo_cc'
+                      ? 'Varias líneas (Área/Frente/Monto), todas dentro de un mismo Centro de Costo.'
+                      : 'Varias líneas, cada una con su propio Centro de Costo — ej. Nómina repartida entre varios CC.'}
+                </div>
+              </div>
+            )}
+
+            {/* Único CC/Área/Frente (modo "normal") */}
+            {!conOC && modoDist === 'normal' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                 <div>
-                  <label className="label">Centro de Costo {detLines.length === 0 ? '*' : ''}</label>
+                  <label className="label">Centro de Costo *</label>
                   <select className="select" value={form.id_centro_costo_fk}
                     onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
                     <option value="">— Seleccionar —</option>
                     {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
-                  {detLines.length > 0 && !form.id_centro_costo_fk && (
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
-                      Opcional: cada línea de distribución define su propio Centro de Costo según su Área.
-                    </div>
-                  )}
                 </div>
-                {detLines.length === 0 && (<>
-                  <div>
-                    <label className="label">Área *</label>
-                    <select className="select" value={areaId}
-                      onChange={e => { setAreaId(e.target.value); setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' })) }}
-                      disabled={!form.id_centro_costo_fk}>
-                      <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
-                      {ccAreas
-                        .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
-                        .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label">Frente</label>
-                    <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!areaId}>
-                      <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
-                      {frentes.filter(f => !areaId || relAF.some(r => r.id_area === Number(areaId) && r.id_frente === f.id))
-                        .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-                    </select>
-                  </div>
-                </>)}
+                <div>
+                  <label className="label">Área *</label>
+                  <select className="select" value={areaId}
+                    onChange={e => { setAreaId(e.target.value); setForm(f => ({ ...f, id_area_fk: e.target.value, id_frente_fk: '' })) }}
+                    disabled={!form.id_centro_costo_fk}>
+                    <option value="">— {form.id_centro_costo_fk ? 'Seleccionar' : 'Elige CC primero'} —</option>
+                    {ccAreas
+                      .filter(s => !form.id_centro_costo_fk || s.id_centro_costo_fk === Number(form.id_centro_costo_fk))
+                      .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Frente</label>
+                  <select className="select" value={form.id_frente_fk} onChange={setF('id_frente_fk')} disabled={!areaId}>
+                    <option value="">— {areaId ? 'Seleccionar' : 'Elige área primero'} —</option>
+                    {frentes.filter(f => !areaId || relAF.some(r => r.id_area === Number(areaId) && r.id_frente === f.id))
+                      .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* CC único para toda la distribución (modo "mismo_cc") */}
+            {!conOC && modoDist === 'mismo_cc' && (
+              <div>
+                <label className="label">Centro de Costo *</label>
+                <select className="select" value={form.id_centro_costo_fk}
+                  onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
+                  <option value="">— Seleccionar —</option>
+                  {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
               </div>
             )}
 
@@ -1339,11 +1407,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
             {/* ── Distribución por Área ──
                 Con OC, el CC siempre viene de la OC (headerCCId = ocCCId) y las
-                líneas se quedan dentro de ese mismo CC, como siempre. Sin OC, el
-                bloque se muestra aunque no haya CC en el header — así se puede
-                construir la distribución completa por líneas, cada una con su
-                propio CC (implícito en su Área). */}
-            {(conOC ? !!headerCCId : true) && (
+                líneas se quedan dentro de ese mismo CC, como siempre (sin toggle
+                — ese flujo no cambió). Sin OC, el bloque solo aplica en los modos
+                "mismo_cc"/"multi_cc" elegidos arriba. */}
+            {(conOC ? !!headerCCId : ((modoDist === 'mismo_cc' && !!headerCCId) || modoDist === 'multi_cc')) && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -1378,11 +1445,11 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                                 value={line.id_area_fk}
                                 onChange={e => updateDetLine(line.tempId, 'id_area_fk', e.target.value)}>
                                 <option value="">— Área —</option>
-                                {/* Sin CC en el header (sin OC): cada línea puede tomar
-                                    su propio CC — se agrupan las opciones por CC. Con CC
-                                    en el header (o con OC), se mantiene el comportamiento
-                                    de siempre: solo áreas de ese mismo CC. */}
-                                {(!conOC && !headerCCId)
+                                {/* Modo "CC distintos" (sin OC): cada línea puede tomar
+                                    su propio CC — se agrupan las opciones por CC. Modo
+                                    "mismo CC" (o con OC): solo áreas de ese único CC,
+                                    como siempre. */}
+                                {(!conOC && modoDist === 'multi_cc')
                                   ? centrosCosto.map(cc => {
                                       const opts = ccAreas.filter(a => a.id_centro_costo_fk === cc.id)
                                       return opts.length > 0 ? (
@@ -1394,7 +1461,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                                   : ccAreas.filter(a => a.id_centro_costo_fk === headerCCId)
                                       .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                               </select>
-                              {!conOC && !headerCCId && line.id_area_fk && (
+                              {!conOC && modoDist === 'multi_cc' && line.id_area_fk && (
                                 <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>
                                   CC: {centrosCosto.find(c => c.id === ccAreas.find(a => a.id === Number(line.id_area_fk))?.id_centro_costo_fk)?.nombre ?? '—'}
                                 </div>
@@ -1433,7 +1500,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 )}
                 {detLines.length === 0 && (
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 10px', background: '#f8fafc', borderRadius: 6, border: '1px dashed #e2e8f0' }}>
-                    Sin distribución por área. El pago se imputará al CC completo.
+                    Agrega al menos una línea para completar la distribución.
                   </div>
                 )}
               </div>
