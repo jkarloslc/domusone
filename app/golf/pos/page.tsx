@@ -195,7 +195,7 @@ export default function POSPage() {
   const fetchStats = useCallback(async () => {
     const hoy = fechaLocal()
     const iniMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-CA')
-    const [{ data, error }, { count: pendCorteCount }, { data: cortesMes }] = await Promise.all([
+    const [{ data, error }, { count: pendCorteCount }, { data: ventasMes }] = await Promise.all([
       dbGolf.from('ctrl_ventas')
         .select('id, total, status, id_corte_fk')
         .eq('status', 'PAGADA')
@@ -206,10 +206,12 @@ export default function POSPage() {
         .select('id', { count: 'exact', head: true })
         .eq('status', 'PAGADA')
         .is('id_corte_fk', null),
-      dbGolf.from('ctrl_cortes_caja')
-        .select('total_ventas')
-        .gte('fecha_corte', inicioDelDia(iniMes))
-        .lte('fecha_corte', finDelDia(hoy)),
+      // Por fecha real de venta (no fecha de corte) — cortada o no
+      dbGolf.from('ctrl_ventas')
+        .select('total')
+        .eq('status', 'PAGADA')
+        .gte('fecha', inicioDelDia(iniMes))
+        .lte('fecha', finDelDia(hoy)),
     ])
     if (error) { console.error('[POS] fetchStats:', error); return }
     const rows = data ?? []
@@ -218,7 +220,7 @@ export default function POSPage() {
       total:     rows.reduce((a: number, r: any) => a + (r.total ?? 0), 0),
       pendCorte: pendCorteCount ?? 0,
     })
-    setIngresosMes((cortesMes ?? []).reduce((a: number, c: any) => a + (c.total_ventas ?? 0), 0))
+    setIngresosMes((ventasMes ?? []).reduce((a: number, v: any) => a + (v.total ?? 0), 0))
   }, [])
 
   // ── Fetch ventas ─────────────────────────────────────────
