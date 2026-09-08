@@ -75,12 +75,29 @@ export default function OrdenesPagoPage() {
         .select('id_op_fk').eq('id_area_fk', Number(filterArea))
       idsDistribuidos = Array.from(new Set((detRows ?? []).map((d: any) => d.id_op_fk)))
     }
+    // OP con líneas de distribución que traen su propio Centro de Costo (vía su
+    // propia Área) también quedan con id_centro_costo_fk null en el encabezado —
+    // mismo problema y mismo fix que arriba, pero resolviendo el CC de cada línea
+    // a través de la Área a la que pertenece.
+    let idsDistribuidosCC: number[] = []
+    if (filterCC) {
+      const areasDelCC = areaFiltros.filter(a => a.id_centro_costo_fk === Number(filterCC)).map(a => a.id)
+      if (areasDelCC.length > 0) {
+        const { data: detRowsCC } = await dbComp.from('ordenes_pago_det')
+          .select('id_op_fk').in('id_area_fk', areasDelCC)
+        idsDistribuidosCC = Array.from(new Set((detRowsCC ?? []).map((d: any) => d.id_op_fk)))
+      }
+    }
 
     let q = dbComp.from('ordenes_pago').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(page * pageSize, page * pageSize + pageSize - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
-    if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
+    if (filterCC) {
+      q = idsDistribuidosCC.length > 0
+        ? q.or(`id_centro_costo_fk.eq.${Number(filterCC)},id.in.(${idsDistribuidosCC.join(',')})`)
+        : q.eq('id_centro_costo_fk', Number(filterCC))
+    }
     if (filterArea) {
       q = idsDistribuidos.length > 0
         ? q.or(`id_area_fk.eq.${Number(filterArea)},id.in.(${idsDistribuidos.join(',')})`)
@@ -120,7 +137,7 @@ export default function OrdenesPagoPage() {
     setProvMap(pm)
     setAlmMap(am)
     setLoading(false)
-  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterTipoGasto, filterFechaDesde, filterFechaHasta, rolRestricciones, authUser?.user.id])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterTipoGasto, filterFechaDesde, filterFechaHasta, rolRestricciones, authUser?.user.id, areaFiltros])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -263,7 +280,11 @@ export default function OrdenesPagoPage() {
                 <td style={{ fontSize: 12, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {r.concepto ?? '—'}
                   {r.tipo_gasto && <span style={{ fontSize: 10, marginLeft: 6, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span>}
-                  {r.id_centro_costo_fk && !r.id_area_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#7c3aed', background: '#f5f3ff', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
+                  {/* Sin OC y sin Área en el header ⇒ tiene líneas de distribución
+                      (la validación al guardar exige Área cuando no hay líneas) —
+                      cubre tanto el caso legacy (mismo CC) como líneas con CC propio
+                      (header también queda sin CC). */}
+                  {!r.id_area_fk && !r.id_oc_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#7c3aed', background: '#f5f3ff', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
                 </td>
                 <td style={{ whiteSpace: 'nowrap' }}>
                   {r.urgencia ? (
@@ -766,7 +787,10 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
     if (montoTotal <= 0) { setError('El monto debe ser mayor a cero'); return }
     if (conOC && ocsSelected.length === 0) { setError('Selecciona al menos una OC'); return }
-    if (!conOC && !form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
+    // El CC del header solo es obligatorio cuando no hay líneas de distribución —
+    // con líneas, cada una trae su propio CC implícito en su Área (ver headerCCId
+    // y el selector de Área de cada línea, más abajo).
+    if (!conOC && detLines.length === 0 && !form.id_centro_costo_fk) { setError('Centro de Costo es obligatorio'); return }
     if (!conOC && detLines.length === 0 && !form.id_area_fk) { setError('Área es obligatoria (o agrega líneas de distribución)'); return }
     if (detLines.length > 0 && detLines.some(l => !l.id_area_fk)) { setError('Todas las líneas de distribución deben tener Área asignada'); return }
     if (detLines.length > 0 && detTotal <= 0) { setError('El total de distribución debe ser mayor a cero'); return }
@@ -1114,16 +1138,21 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               </div>
             )}
 
-            {/* Sin OC → Centro de Costo (siempre) + Área/Frente solo cuando sin detalle */}
+            {/* Sin OC → Centro de Costo (obligatorio solo sin líneas de distribución) + Área/Frente solo cuando sin detalle */}
             {!conOC && (
               <div style={{ display: 'grid', gridTemplateColumns: detLines.length > 0 ? '1fr' : '1fr 1fr 1fr', gap: 10 }}>
                 <div>
-                  <label className="label">Centro de Costo *</label>
+                  <label className="label">Centro de Costo {detLines.length === 0 ? '*' : ''}</label>
                   <select className="select" value={form.id_centro_costo_fk}
-                    onChange={e => { setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' })); setDetLines([]); }}>
+                    onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '', id_frente_fk: '' }))}>
                     <option value="">— Seleccionar —</option>
                     {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
+                  {detLines.length > 0 && !form.id_centro_costo_fk && (
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>
+                      Opcional: cada línea de distribución define su propio Centro de Costo según su Área.
+                    </div>
+                  )}
                 </div>
                 {detLines.length === 0 && (<>
                   <div>
@@ -1308,8 +1337,13 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               </div>
             </div>
 
-            {/* ── Distribución por Área ── */}
-            {headerCCId && (
+            {/* ── Distribución por Área ──
+                Con OC, el CC siempre viene de la OC (headerCCId = ocCCId) y las
+                líneas se quedan dentro de ese mismo CC, como siempre. Sin OC, el
+                bloque se muestra aunque no haya CC en el header — así se puede
+                construir la distribución completa por líneas, cada una con su
+                propio CC (implícito en su Área). */}
+            {(conOC ? !!headerCCId : true) && (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -1344,9 +1378,27 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                                 value={line.id_area_fk}
                                 onChange={e => updateDetLine(line.tempId, 'id_area_fk', e.target.value)}>
                                 <option value="">— Área —</option>
-                                {ccAreas.filter(a => a.id_centro_costo_fk === headerCCId)
-                                  .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                                {/* Sin CC en el header (sin OC): cada línea puede tomar
+                                    su propio CC — se agrupan las opciones por CC. Con CC
+                                    en el header (o con OC), se mantiene el comportamiento
+                                    de siempre: solo áreas de ese mismo CC. */}
+                                {(!conOC && !headerCCId)
+                                  ? centrosCosto.map(cc => {
+                                      const opts = ccAreas.filter(a => a.id_centro_costo_fk === cc.id)
+                                      return opts.length > 0 ? (
+                                        <optgroup key={cc.id} label={cc.nombre}>
+                                          {opts.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                                        </optgroup>
+                                      ) : null
+                                    })
+                                  : ccAreas.filter(a => a.id_centro_costo_fk === headerCCId)
+                                      .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                               </select>
+                              {!conOC && !headerCCId && line.id_area_fk && (
+                                <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>
+                                  CC: {centrosCosto.find(c => c.id === ccAreas.find(a => a.id === Number(line.id_area_fk))?.id_centro_costo_fk)?.nombre ?? '—'}
+                                </div>
+                              )}
                             </td>
                             <td style={{ padding: '4px 6px' }}>
                               <select className="select" style={{ padding: '4px 6px', fontSize: 12 }}

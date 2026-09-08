@@ -36,7 +36,16 @@ type OP = {
 // sintéticas (una por línea), prorrateando el saldo según la proporción de
 // cada línea sobre el total de la OP, para que cada una caiga en su área real
 // en vez de agruparse todas bajo "Sin área".
-function explotarPorArea(ops: OP[], detByOp: Record<number, { id_area_fk: number | null; monto: number }[]>): OP[] {
+// Cada línea puede además pertenecer a un Centro de Costo distinto al del
+// header (el header queda con id_centro_costo_fk = null cuando todas sus
+// líneas traen CC propio) — el CC de cada línea no se guarda directo en
+// ordenes_pago_det, se deriva de su Área vía areaCCMap (igual que hace
+// Presupuestos con estas mismas OP distribuidas).
+function explotarPorArea(
+  ops: OP[],
+  detByOp: Record<number, { id_area_fk: number | null; monto: number }[]>,
+  areaCCMap: Record<number, number>
+): OP[] {
   const res: OP[] = []
   for (const op of ops) {
     const lineas = detByOp[op.id]
@@ -45,7 +54,8 @@ function explotarPorArea(ops: OP[], detByOp: Record<number, { id_area_fk: number
     const saldoOP = Number(op.saldo ?? op.monto ?? 0)
     lineas.forEach((l, idx) => {
       const share = l.monto / totalLineas
-      res.push({ ...op, id_area_fk: l.id_area_fk, monto: l.monto, saldo: saldoOP * share, _detIdx: idx })
+      const ccLinea = l.id_area_fk != null ? (areaCCMap[l.id_area_fk] ?? op.id_centro_costo_fk) : op.id_centro_costo_fk
+      res.push({ ...op, id_centro_costo_fk: ccLinea, id_area_fk: l.id_area_fk, monto: l.monto, saldo: saldoOP * share, _detIdx: idx })
     })
   }
   return res
@@ -126,7 +136,9 @@ export default function ReporteAntiguedadOPporCC() {
       if (!detByOp[d.id_op_fk]) detByOp[d.id_op_fk] = []
       detByOp[d.id_op_fk].push({ id_area_fk: d.id_area_fk, monto: Number(d.monto) || 0 })
     })
-    setOps(explotarPorArea((opsData ?? []) as OP[], detByOp))
+    const areaCCMap: Record<number, number> = {}
+    ;(ars ?? []).forEach((a: any) => { areaCCMap[a.id] = a.id_centro_costo_fk })
+    setOps(explotarPorArea((opsData ?? []) as OP[], detByOp, areaCCMap))
     setLoading(false)
   }, [])
 

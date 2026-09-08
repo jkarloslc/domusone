@@ -439,7 +439,14 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     const areaIdDet = detLinesView.find((l: any) => !!l.id_area_fk)?.id_area_fk ?? null
     const areaForCC = areaIdCabecera ?? areaIdDet
     const centroCostoId = opData.id_centro_costo_fk ?? (areaForCC ? areaCcMap[areaForCC] : null)
-    const centroCostoNombre = centroCostoId ? (ccMap[centroCostoId] ?? `#${centroCostoId}`) : 'Sin asignar'
+    // Con líneas de distribución de CC propio (header sin CC y más de un CC entre
+    // ellas) no hay un único CC que mostrar aquí — se indica y el desglose real
+    // queda en la tabla de Distribución por Área, con su propia columna CC.
+    const centroCostoNombre = opData.id_centro_costo_fk
+      ? (ccMap[opData.id_centro_costo_fk] ?? `#${opData.id_centro_costo_fk}`)
+      : detCCsDistintos.length > 1
+        ? `Múltiple (${detCCsDistintos.length} CC — ver distribución)`
+        : centroCostoId ? (ccMap[centroCostoId] ?? `#${centroCostoId}`) : 'Sin asignar'
     const areaNombre = opData.id_area_fk ? (areaMap[opData.id_area_fk] ?? `#${opData.id_area_fk}`) : '—'
     const frenteNombre = opData.id_frente_fk ? (frMap[opData.id_frente_fk] ?? `#${opData.id_frente_fk}`) : '—'
     const estadoAut = opData.status === 'Pendiente Auth'
@@ -527,16 +534,17 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
       ${detLinesView.length > 0 ? `
       <h3 style="font-size:13px;font-weight:700;color:#0D4F80;margin:18px 0 8px">Distribución por Área</h3>
       <table>
-        <thead><tr><th>Descripción</th><th>Área</th><th>Frente</th><th style="text-align:right">Monto</th></tr></thead>
+        <thead><tr>${detCCsDistintos.length > 1 ? '<th>CC</th>' : ''}<th>Descripción</th><th>Área</th><th>Frente</th><th style="text-align:right">Monto</th></tr></thead>
         <tbody>
           ${detLinesView.map((l: any) => `<tr>
+            ${detCCsDistintos.length > 1 ? `<td>${(() => { const cc = ccDeLinea(l); return cc ? (ccMap[cc] ?? `#${cc}`) : '—' })()}</td>` : ''}
             <td>${l.descripcion ?? '—'}</td>
             <td>${l.id_area_fk   ? (areaMap[l.id_area_fk]  ?? `#${l.id_area_fk}`)  : '—'}</td>
             <td>${l.id_frente_fk ? (frMap[l.id_frente_fk]  ?? `#${l.id_frente_fk}`) : '—'}</td>
             <td style="text-align:right;font-weight:600">${fmt(l.monto)}</td>
           </tr>`).join('')}
         </tbody>
-        <tfoot><tr><th colspan="3">Total distribución</th><th style="text-align:right">${fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}</th></tr></tfoot>
+        <tfoot><tr><th colspan="${detCCsDistintos.length > 1 ? 4 : 3}">Total distribución</th><th style="text-align:right">${fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}</th></tr></tfoot>
       </table>` : ''}
       ${valesComb.length > 0 ? `
       <h3 style="font-size:13px;font-weight:700;color:#0D4F80;margin:18px 0 8px">Vales de Combustible Asociados</h3>
@@ -604,6 +612,12 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     }, 300)
   }
 
+  // CC por línea de distribución, derivado de su Área (areaCcMap) — una OP
+  // distribuida puede traer líneas de distintos CC cuando el header se queda
+  // sin CC propio (ver headerCCId/áreas por CC en el modal de captura).
+  const ccDeLinea = (l: any) => l.id_area_fk ? (areaCcMap[l.id_area_fk] ?? null) : null
+  const detCCsDistintos = Array.from(new Set(detLinesView.map(ccDeLinea).filter((id): id is number => id != null)))
+
   return (
     <>
     <ModalShell
@@ -668,7 +682,13 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                   <div style={{ fontSize: 13, fontWeight: 700, color: URGENCIA_COLOR[op.urgencia] ?? 'var(--text-primary)' }}>{op.urgencia}</div>
                 </div>
               )}
-              {op.id_centro_costo_fk && <DI label="Centro de Costo" value={ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`} />}
+              {op.id_centro_costo_fk
+                ? <DI label="Centro de Costo" value={ccMap[op.id_centro_costo_fk] ?? `#${op.id_centro_costo_fk}`} />
+                : detCCsDistintos.length === 1
+                  ? <DI label="Centro de Costo" value={ccMap[detCCsDistintos[0]] ?? `#${detCCsDistintos[0]}`} />
+                  : detCCsDistintos.length > 1
+                    ? <DI label="Centro de Costo" value={`Múltiple (${detCCsDistintos.length} CC — ver distribución)`} />
+                    : null}
               {op.id_area_fk && detLinesView.length === 0 && <DI label="Área"   value={areaMap[op.id_area_fk] ?? `#${op.id_area_fk}`} />}
               {op.id_frente_fk && detLinesView.length === 0 && <DI label="Frente" value={frMap[op.id_frente_fk] ?? `#${op.id_frente_fk}`} />}
               {op.referencia_pago && <DI label="Ref. Pago"  value={op.referencia_pago} mono />}
@@ -685,6 +705,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                   <table>
                     <thead>
                       <tr>
+                        {detCCsDistintos.length > 1 && <th>CC</th>}
                         <th>Descripción</th>
                         <th>Área</th>
                         <th>Frente</th>
@@ -694,6 +715,9 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                     <tbody>
                       {detLinesView.map((l: any) => (
                         <tr key={l.id}>
+                          {detCCsDistintos.length > 1 && (
+                            <td style={{ fontSize: 12 }}>{(() => { const cc = ccDeLinea(l); return cc ? (ccMap[cc] ?? `#${cc}`) : '—' })()}</td>
+                          )}
                           <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.descripcion ?? '—'}</td>
                           <td style={{ fontSize: 12 }}>{l.id_area_fk   ? (areaMap[l.id_area_fk] ?? `#${l.id_area_fk}`)   : '—'}</td>
                           <td style={{ fontSize: 12 }}>{l.id_frente_fk ? (frMap[l.id_frente_fk]  ?? `#${l.id_frente_fk}`) : '—'}</td>
@@ -703,7 +727,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                     </tbody>
                     <tfoot>
                       <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                        <td colSpan={3} style={{ fontSize: 11, color: 'var(--text-muted)', padding: '6px 12px' }}>Total distribución</td>
+                        <td colSpan={detCCsDistintos.length > 1 ? 4 : 3} style={{ fontSize: 11, color: 'var(--text-muted)', padding: '6px 12px' }}>Total distribución</td>
                         <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--blue)', fontVariantNumeric: 'tabular-nums', padding: '6px 12px' }}>
                           {fmt(detLinesView.reduce((a: number, l: any) => a + (l.monto ?? 0), 0))}
                         </td>
