@@ -28,7 +28,7 @@ const CC_MANTENIMIENTO_RESIDENCIAL = 'Mantenimiento Residencial'
 const emptyColabForm = () => ({
   nombre: '', apellido_paterno: '', apellido_materno: '', tipo: 'Interno' as TipoColaborador, fecha_ingreso: '', puesto: '',
   sueldo_bruto_mensual: '', sueldo_neto_mensual: '', sueldo_diario: '',
-  id_centro_costo_fk: '', id_area_fk: '',
+  id_centro_costo_fk: '', id_cuadrante_fk: '', id_area_fk: '',
   es_asignado: false, es_supervisor: false,
 })
 
@@ -37,7 +37,8 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
   const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<Colaborador[]>([])
   const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string }[]>([])
-  const [areas, setAreas] = useState<{ id: number; nombre: string; id_centro_costo_fk: number | null }[]>([])
+  const [areas, setAreas] = useState<{ id: number; nombre: string; id_centro_costo_fk: number | null; id_cuadrante_fk: number | null }[]>([])
+  const [cuadrantes, setCuadrantes] = useState<{ id: number; nombre: string }[]>([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [viewing, setViewing]   = useState<Colaborador | null>(null)
@@ -55,14 +56,16 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [{ data: colabs }, { data: ccs }, { data: areasData }] = await Promise.all([
+    const [{ data: colabs }, { data: ccs }, { data: areasData }, { data: cuadrantesData }] = await Promise.all([
       dbCfg.from('colaboradores').select('*').order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
     ])
     setItems((colabs as Colaborador[]) ?? [])
     setCentrosCosto(ccs ?? [])
     setAreas(areasData ?? [])
+    setCuadrantes(cuadrantesData ?? [])
     setLoading(false)
   }, [])
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -77,6 +80,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
       sueldo_bruto_mensual: c.sueldo_bruto_mensual?.toString() ?? '', sueldo_neto_mensual: c.sueldo_neto_mensual?.toString() ?? '',
       sueldo_diario: c.sueldo_diario?.toString() ?? '',
       id_centro_costo_fk: c.id_centro_costo_fk?.toString() ?? '',
+      id_cuadrante_fk: c.id_cuadrante_fk?.toString() ?? '',
       id_area_fk: c.id_area_fk?.toString() ?? '',
       es_asignado: c.es_asignado, es_supervisor: c.es_supervisor,
     })
@@ -85,7 +89,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
 
   const ccSeleccionado = centrosCosto.find(c => c.id === Number(form.id_centro_costo_fk))
   const esManttoResidencial = ccSeleccionado?.nombre === CC_MANTENIMIENTO_RESIDENCIAL
-  const areasDelCC = areas.filter(a => a.id_centro_costo_fk === ccSeleccionado?.id)
+  const areasDelCuadrante = areas.filter(a => a.id_cuadrante_fk === Number(form.id_cuadrante_fk))
 
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
@@ -101,6 +105,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
       sueldo_neto_mensual: form.sueldo_neto_mensual ? Number(form.sueldo_neto_mensual) : null,
       sueldo_diario: form.sueldo_diario ? Number(form.sueldo_diario) : null,
       id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+      id_cuadrante_fk: esManttoResidencial && form.id_cuadrante_fk ? Number(form.id_cuadrante_fk) : null,
       id_area_fk: esManttoResidencial && form.id_area_fk ? Number(form.id_area_fk) : null,
       es_asignado: form.es_asignado,
       es_supervisor: form.es_supervisor,
@@ -282,17 +287,26 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="label">Centro de Costo</label>
-                <select className="select" value={form.id_centro_costo_fk} onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_area_fk: '' }))}>
+                <select className="select" value={form.id_centro_costo_fk} onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_cuadrante_fk: '', id_area_fk: '' }))}>
                   <option value="">— Sin asignar —</option>
                   {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
               </div>
               {esManttoResidencial && (
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label className="label">Área asignada</label>
-                  <select className="select" value={form.id_area_fk} onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value }))}>
+                <div>
+                  <label className="label">Cuadrante</label>
+                  <select className="select" value={form.id_cuadrante_fk} onChange={e => setForm(f => ({ ...f, id_cuadrante_fk: e.target.value, id_area_fk: '' }))}>
                     <option value="">— Sin asignar —</option>
-                    {areasDelCC.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                    {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </div>
+              )}
+              {esManttoResidencial && (
+                <div>
+                  <label className="label">Área asignada</label>
+                  <select className="select" value={form.id_area_fk} disabled={!form.id_cuadrante_fk} onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value }))}>
+                    <option value="">{form.id_cuadrante_fk ? '— Sin asignar —' : 'Elige Cuadrante primero'}</option>
+                    {areasDelCuadrante.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                   </select>
                 </div>
               )}
@@ -386,6 +400,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 { label: 'Sueldo Neto', value: fmt$(viewing.sueldo_neto_mensual) },
                 { label: 'Sueldo Diario (jornal)', value: fmt$(viewing.sueldo_diario) },
                 { label: 'Centro de Costo', value: viewing.id_centro_costo_fk ? (centrosCosto.find(c => c.id === viewing.id_centro_costo_fk)?.nombre ?? '—') : '—' },
+                ...(viewing.id_cuadrante_fk ? [{ label: 'Cuadrante', value: cuadrantes.find(c => c.id === viewing.id_cuadrante_fk)?.nombre ?? '—' }] : []),
                 ...(viewing.id_area_fk ? [{ label: 'Área Asignada', value: areas.find(a => a.id === viewing.id_area_fk)?.nombre ?? '—' }] : []),
               ].map(({ label, value }) => (
                 <div key={label} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 8 }}>
