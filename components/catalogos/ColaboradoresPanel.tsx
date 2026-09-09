@@ -47,6 +47,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
   const [filtroTipo, setFTipo]      = useState('all')
   const [filtroAsignado, setFA]     = useState('all')
   const [filtroSupervisor, setFS]   = useState('all')
+  const [filtroCC, setFCC]          = useState('all')
   const [filtroStatus, setFStatus]  = useState('activos')
 
   const fetchAll = useCallback(async () => {
@@ -116,6 +117,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
     if (filtroTipo !== 'all' && c.tipo !== filtroTipo) return false
     if (filtroAsignado   !== 'all' && c.es_asignado   !== (filtroAsignado === 'true'))   return false
     if (filtroSupervisor !== 'all' && c.es_supervisor !== (filtroSupervisor === 'true')) return false
+    if (filtroCC !== 'all' && (c.id_centro_costo_fk?.toString() ?? '') !== filtroCC) return false
     if (filtroStatus === 'activos'   && !c.activo) return false
     if (filtroStatus === 'inactivos' && c.activo)  return false
     return true
@@ -193,6 +195,10 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
           <option value="all">Supervisor: todos</option>
           <option value="true">Solo supervisores</option>
           <option value="false">No supervisores</option>
+        </select>
+        <select className="select" style={{ flex: '1 1 150px', maxWidth: 200 }} value={filtroCC} onChange={e => setFCC(e.target.value)}>
+          <option value="all">Centro de Costo: todos</option>
+          {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
         <select className="select" style={{ flex: '1 1 110px', maxWidth: 150 }} value={filtroStatus} onChange={e => setFStatus(e.target.value)}>
           <option value="activos">Solo activos</option>
