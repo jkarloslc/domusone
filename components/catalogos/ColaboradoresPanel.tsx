@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Edit2, Save, Loader, RefreshCw, ToggleLeft, ToggleRight,
-  CheckCircle, Search, Users, ArrowLeft,
+  CheckCircle, Search, Users, ArrowLeft, Eye,
 } from 'lucide-react'
 import { dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
@@ -429,19 +429,20 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
               <th style={{ textAlign: 'center' }}>Asignado</th>
               <th style={{ textAlign: 'center' }}>Supervisor</th>
               <th style={{ textAlign: 'center', width: 80 }}>Status</th>
+              <th style={{ textAlign: 'right', width: 90 }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={13} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={13} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 {items.length === 0 ? 'Sin colaboradores. Crea el primero.' : 'Sin resultados con los filtros aplicados.'}
               </td></tr>
             ) : filtered.map(c => (
-              <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45, cursor: 'pointer' }} onClick={() => setViewing(c)}>
+              <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45 }}>
                 <td style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>{nombreCompletoColaborador(c)}</td>
                 <td>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
@@ -460,6 +461,18 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 <td style={{ textAlign: 'center' }}>{c.es_supervisor ? <CheckCircle size={15} style={{ color: '#7c3aed' }} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                 <td style={{ textAlign: 'center' }}>
                   {c.activo ? <ToggleRight size={20} style={{ color: '#15803d' }} /> : <ToggleLeft size={20} style={{ color: '#cbd5e1' }} />}
+                </td>
+                <td>
+                  <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                    <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Ver detalle" onClick={() => setViewing(c)}>
+                      <Eye size={13} />
+                    </button>
+                    {puedeEscribir && (
+                      <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Editar" onClick={() => openEdit(c)}>
+                        <Edit2 size={13} />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
