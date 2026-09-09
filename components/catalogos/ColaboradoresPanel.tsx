@@ -378,6 +378,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
               <th>Nombre</th>
               <th>Tipo</th>
               <th>Puesto</th>
+              <th>Centro de Costo</th>
               <th>Fecha Ingreso</th>
               <th>Antigüedad</th>
               <th style={{ textAlign: 'right' }}>Sueldo Bruto</th>
@@ -390,11 +391,11 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={11} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 {items.length === 0 ? 'Sin colaboradores. Crea el primero.' : 'Sin resultados con los filtros aplicados.'}
               </td></tr>
             ) : filtered.map(c => (
@@ -407,6 +408,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                   </span>
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.puesto ?? '—'}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.id_centro_costo_fk ? (centrosCosto.find(cc => cc.id === c.id_centro_costo_fk)?.nombre ?? '—') : '—'}</td>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{c.fecha_ingreso ? new Date(c.fecha_ingreso + 'T00:00:00').toLocaleDateString('es-MX') : '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{antiguedad(c.fecha_ingreso)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_bruto_mensual)}</td>
