@@ -15,6 +15,7 @@ export type Colaborador = {
   es_supervisor: boolean
   id_cuadrante_fk: number | null
   id_centro_costo_fk: number | null
+  id_area_fk: number | null
   activo: boolean
 }
 
