@@ -35,3 +35,12 @@ export async function emitirValesPorPagoOP(idOp: number, emitidoPor: string | nu
     .update({ status: 'Emitido', emitido_por: emitidoPor, updated_at: new Date().toISOString() })
     .eq('id_op_fk', idOp).eq('status', 'Solicitado')
 }
+
+// Contraparte de emitirValesPorPagoOP: si se reversa el pago de la OP, los
+// vales que siguen en Emitido (sin litros cargados encima) regresan a
+// Solicitado. Los que ya tienen consumo (Parcial/Completado) no se tocan.
+export async function revertirValesPorPagoOP(idOp: number) {
+  await dbCtrl.from('vales_combustible')
+    .update({ status: 'Solicitado', emitido_por: null, updated_at: new Date().toISOString() })
+    .eq('id_op_fk', idOp).eq('status', 'Emitido')
+}

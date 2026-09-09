@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, FORMAS_PAGO_COMP, StatusBadge } from '../../compras/types'
 import ModalShell from '@/components/ui/ModalShell'
+import { cerrarOCsDeOP } from '@/lib/cxpCascade'
 
 // ── Antigüedad de saldo ────────────────────────────────────
 const diasVencido = (fecha: string | null) => {
@@ -57,26 +58,6 @@ function PagoBadge({ fechaPago }: { fechaPago: Date }) {
     <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 999,
       background: bg, color, border: `1px solid ${border}`, whiteSpace: 'nowrap' }}>{label}</span>
   )
-}
-
-// Al pagar por completo una OP, cierra la(s) OC vinculada(s) (vía ordenes_pago_oc
-// y/o el FK directo legado en la propia OP) y, en cascada, su requisición origen —
-// mismo criterio de cierre que usa recepciones/page.tsx al recibir mercancía completa.
-async function cerrarOCsDeOP(idOp: number, idOcDirecta: number | null) {
-  const { data: link } = await dbComp.from('ordenes_pago_oc').select('id_oc_fk').eq('id_op_fk', idOp)
-  const ocIds = Array.from(new Set([...(link ?? []).map((r: any) => r.id_oc_fk), ...(idOcDirecta ? [idOcDirecta] : [])]))
-  if (ocIds.length === 0) return
-
-  const { data: ocsRows } = await dbComp.from('ordenes_compra').select('id, status, id_requisicion_fk').in('id', ocIds)
-  const aCerrar = (ocsRows ?? []).filter((o: any) => o.status !== 'Cerrada' && o.status !== 'Cancelada')
-  if (aCerrar.length === 0) return
-
-  await dbComp.from('ordenes_compra').update({ status: 'Cerrada' }).in('id', aCerrar.map((o: any) => o.id))
-
-  const reqIds = Array.from(new Set(aCerrar.map((o: any) => o.id_requisicion_fk).filter(Boolean)))
-  if (reqIds.length > 0) {
-    await dbComp.from('requisiciones').update({ status: 'Completada' }).in('id', reqIds)
-  }
 }
 
 // ════════════════════════════════════════════════════════════
