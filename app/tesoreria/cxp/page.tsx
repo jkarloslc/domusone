@@ -6,12 +6,13 @@ import { emitirValesPorPagoOP } from '@/lib/combustible'
 import {
   ArrowLeft, RefreshCw, Search, Eye, X, Loader,
   Plus, Printer, FileText, Upload, Trash2, ExternalLink,
-  AlertTriangle, CheckCircle, Clock, Calendar
+  AlertTriangle, CheckCircle, Clock, Calendar, Layers, RotateCcw
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, FORMAS_PAGO_COMP, StatusBadge } from '../../compras/types'
 import ModalShell from '@/components/ui/ModalShell'
 import { cerrarOCsDeOP } from '@/lib/cxpCascade'
+import { aplicarPagoRemesa, reversarPagoRemesa } from '@/lib/pagoRemesa'
 
 // ── Antigüedad de saldo ────────────────────────────────────
 const diasVencido = (fecha: string | null) => {
@@ -65,7 +66,7 @@ function PagoBadge({ fechaPago }: { fechaPago: Date }) {
 // ════════════════════════════════════════════════════════════
 export default function CXPPage() {
   const router = useRouter()
-  const [tab, setTab]               = useState<'programacion'|'resumen'|'antigüedad'>('programacion')
+  const [tab, setTab]               = useState<'programacion'|'resumen'|'antigüedad'|'remesas'>('programacion')
   const [proveedores, setProvs]     = useState<any[]>([])
   const [almMap, setAlmMap]         = useState<Record<number,string>>({})
   const [ops, setOps]               = useState<any[]>([])
@@ -74,6 +75,9 @@ export default function CXPPage() {
   const [detailProv, setDetailProv] = useState<any | null>(null)
   const [detailOP, setDetailOP]     = useState<any | null>(null)
   const [provRefresh, setProvRefresh] = useState(0)
+  const [remesas, setRemesas]           = useState<any[]>([])
+  const [loadingRemesas, setLoadingRemesas] = useState(false)
+  const [detailRemesa, setDetailRemesa] = useState<any | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -97,6 +101,24 @@ export default function CXPPage() {
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  const fetchRemesas = useCallback(async () => {
+    setLoadingRemesas(true)
+    const { data: remRows } = await dbComp.from('cxp_pagos_remesa')
+      .select('*, proveedores(nombre)')
+      .order('created_at', { ascending: false })
+    const ids = (remRows ?? []).map((r: any) => r.id)
+    const countMap: Record<number, number> = {}
+    if (ids.length > 0) {
+      const { data: abonoRows } = await dbComp.from('cxp_abonos')
+        .select('id_remesa_fk').in('id_remesa_fk', ids).eq('status', 'Aplicado')
+      ;(abonoRows ?? []).forEach((a: any) => { countMap[a.id_remesa_fk] = (countMap[a.id_remesa_fk] ?? 0) + 1 })
+    }
+    setRemesas((remRows ?? []).map((r: any) => ({ ...r, _numOps: countMap[r.id] ?? 0 })))
+    setLoadingRemesas(false)
+  }, [])
+
+  useEffect(() => { if (tab === 'remesas') fetchRemesas() }, [tab, fetchRemesas])
 
   const opsPendientes  = ops.filter(o => o.status !== 'Pagada' && o.status !== 'Pendiente Auth' && o.status !== 'Pendiente Auth Finanzas' && o.status !== 'Rechazada' && o.status !== 'Sustituida')
   const totalPorPagar  = opsPendientes.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
@@ -158,6 +180,7 @@ export default function CXPPage() {
     { key: 'programacion', label: 'Programación de Pago' },
     { key: 'resumen',      label: 'Por Proveedor' },
     { key: 'antigüedad',   label: 'Antigüedad de Saldos' },
+    { key: 'remesas',      label: 'Remesas de Pago' },
   ]
 
   return (
@@ -408,6 +431,45 @@ export default function CXPPage() {
         </div>
       )}
 
+      {/* ── TAB: Remesas de Pago (pagos agrupados por proveedor) ── */}
+      {tab === 'remesas' && (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          {loadingRemesas ? (
+            <div style={{ textAlign: 'center', padding: 48 }}><RefreshCw size={20} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></div>
+          ) : remesas.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+              Sin remesas de pago registradas. Se crean desde "Por Proveedor" al seleccionar varias OPs y pagarlas juntas.
+            </div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Folio</th><th>Proveedor</th><th># OPs</th><th>Fecha de Pago</th>
+                  <th style={{ textAlign: 'right' }}>Monto Total</th><th>Status</th><th style={{ width: 50 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {remesas.map(r => (
+                  <tr key={r.id}>
+                    <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
+                    <td style={{ fontSize: 13 }}>{r.proveedores?.nombre ?? '—'}</td>
+                    <td style={{ fontSize: 13, textAlign: 'center' }}>{r._numOps}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{fmtFecha(r.fecha_pago)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: r.status === 'Cancelada' ? 'var(--text-muted)' : 'var(--blue)' }}>{fmt(r.monto_total)}</td>
+                    <td><RemesaStatusBadge status={r.status} /></td>
+                    <td>
+                      <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => setDetailRemesa(r)}>
+                        <Eye size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
       {/* Modales */}
       {detailProv && (
         <ProveedorCXP
@@ -424,7 +486,27 @@ export default function CXPPage() {
           onClose={() => { setDetailOP(null); fetchData(); setProvRefresh(v => v + 1) }}
         />
       )}
+      {detailRemesa && (
+        <RemesaDetail
+          remesa={detailRemesa}
+          onClose={() => { setDetailRemesa(null); fetchData(); fetchRemesas(); setProvRefresh(v => v + 1) }}
+        />
+      )}
     </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// Badge de status para remesas de pago (Aplicado / Cancelada)
+// ════════════════════════════════════════════════════════════
+function RemesaStatusBadge({ status }: { status: string }) {
+  const ok = status === 'Aplicado'
+  return (
+    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+      background: ok ? '#f0fdf4' : '#f1f5f9', color: ok ? '#15803d' : '#64748b',
+      border: `1px solid ${ok ? '#bbf7d0' : '#e2e8f0'}` }}>
+      {status}
+    </span>
   )
 }
 
@@ -432,9 +514,13 @@ export default function CXPPage() {
 // Vista de OPs por proveedor + estado de cuenta imprimible
 // ════════════════════════════════════════════════════════════
 function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: any; almMap: Record<number,string>; refreshKey: number; onClose: () => void; onOpenOP: (op: any) => void }) {
+  const { canWrite } = useAuth()
   const [ops, setOps]         = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('')
+  const [selected, setSelected]     = useState<Set<number>>(new Set())
+  const [localRefresh, setLocalRefresh] = useState(0)
+  const [showPagoRemesa, setShowPagoRemesa] = useState(false)
 
   useEffect(() => {
     dbComp.from('ordenes_pago').select('*')
@@ -442,13 +528,27 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
       .neq('status', 'Cancelada')
       .order('folio', { ascending: true })
       .then(({ data }) => { setOps(data ?? []); setLoading(false) })
-  }, [prov.id, refreshKey])
+  }, [prov.id, refreshKey, localRefresh])
+
+  useEffect(() => { setSelected(new Set()) }, [prov.id, filterStatus])
 
   const statusDisponibles = Array.from(new Set(ops.map(o => o.status).filter(Boolean))) as string[]
   const opsFiltradas = filterStatus ? ops.filter(o => o.status === filterStatus) : ops
+  const elegibles = opsFiltradas.filter(o => o.status === 'Pendiente' || o.status === 'Abonada')
 
   const saldoTotal  = opsFiltradas.filter(o => o.status !== 'Pagada').reduce((a,o) => a + (o.saldo ?? o.monto ?? 0), 0)
   const pagadoTotal = opsFiltradas.filter(o => o.status === 'Pagada').reduce((a,o) => a + (o.monto ?? 0), 0)
+
+  const toggleOne = (id: number) => setSelected(s => {
+    const next = new Set(s)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
+  const allSelected = elegibles.length > 0 && elegibles.every(o => selected.has(o.id))
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(elegibles.map(o => o.id)))
+
+  const opsSeleccionadas = ops.filter(o => selected.has(o.id))
+  const totalSeleccionado = opsSeleccionadas.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
 
   const imprimirEC = async () => {
     let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
@@ -524,6 +624,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
   }
 
   return (
+    <>
     <ModalShell modulo="tesoreria" titulo={prov.nombre} onClose={onClose} maxWidth={1100}
     >
 
@@ -548,10 +649,30 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
           </select>
         </div>
 
+        {canWrite('tesoreria') && selected.size > 0 && (
+          <div style={{ padding: '10px 24px', borderBottom: '1px solid #bbf7d0', background: '#f0fdf4',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ fontSize: 12.5, color: '#15803d' }}>
+              <strong>{selected.size}</strong> OP{selected.size === 1 ? '' : "'s"} seleccionada{selected.size === 1 ? '' : 's'} · Total <strong>{fmt(totalSeleccionado)}</strong>
+              {selected.size === 1 && <span style={{ color: '#78350f', marginLeft: 8 }}>— selecciona 2 o más para pagarlas juntas en una remesa</span>}
+            </div>
+            <button className="btn-primary" style={{ fontSize: 12 }} disabled={selected.size < 2}
+              onClick={() => setShowPagoRemesa(true)}>
+              <Layers size={13} /> Pagar seleccionadas ({selected.size})
+            </button>
+          </div>
+        )}
+
         <div style={{ overflowY: 'auto', maxHeight: 'calc(88vh - 200px)' }}>
           <table>
             <thead>
               <tr>
+                {canWrite('tesoreria') && (
+                  <th style={{ width: 30 }}>
+                    <input type="checkbox" checked={allSelected} disabled={elegibles.length === 0}
+                      onChange={toggleAll} title="Seleccionar todas las elegibles" />
+                  </th>
+                )}
                 <th>Folio</th><th>Folio Factura</th><th>Concepto</th>
                 <th>Vencimiento</th><th style={{ textAlign: 'right' }}>Monto</th>
                 <th style={{ textAlign: 'right' }}>Pagado</th>
@@ -561,14 +682,22 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
               ) : opsFiltradas.length === 0 ? (
-                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Sin OPs con este status</td></tr>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Sin OPs con este status</td></tr>
               ) : opsFiltradas.map(op => {
                 const dias = diasVencido(op.fecha_vencimiento)
                 const vencido = dias > 0 && op.status !== 'Pagada'
+                const esElegible = op.status === 'Pendiente' || op.status === 'Abonada'
                 return (
                   <tr key={op.id}>
+                    {canWrite('tesoreria') && (
+                      <td>
+                        {esElegible && (
+                          <input type="checkbox" checked={selected.has(op.id)} onChange={() => toggleOne(op.id)} />
+                        )}
+                      </td>
+                    )}
                     <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>{op.folio_factura ?? '—'}</td>
                     <td style={{ fontSize: 12, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
@@ -609,6 +738,371 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
             </tbody>
           </table>
         </div>
+    </ModalShell>
+    {showPagoRemesa && (
+      <PagoRemesaModal
+        prov={prov}
+        ops={opsSeleccionadas}
+        onClose={() => setShowPagoRemesa(false)}
+        onSuccess={() => { setShowPagoRemesa(false); setSelected(new Set()); setLocalRefresh(v => v + 1) }}
+      />
+    )}
+    </>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// Pago agrupado (remesa): salda al 100% varias OPs del mismo
+// proveedor en un solo movimiento bancario
+// ════════════════════════════════════════════════════════════
+function PagoRemesaModal({ prov, ops, onClose, onSuccess }: { prov: any; ops: any[]; onClose: () => void; onSuccess: () => void }) {
+  const { authUser } = useAuth()
+  const [saving, setSaving]           = useState(false)
+  const [error, setError]             = useState('')
+  const [uploading, setUploading]     = useState<string | null>(null)
+  const [formasPago, setFormasPago]   = useState<any[]>([])
+  const [cuentasBanc, setCuentasBanc] = useState<any[]>([])
+
+  const [form, setForm] = useState({
+    fecha_pago:            new Date().toISOString().slice(0, 10),
+    forma_pago:             'Transferencia',
+    id_cuenta_bancaria_fk:  '',
+    referencia:              '',
+    notas:                   '',
+    comprobante:             '',
+    complemento_pago:        '',
+  })
+
+  const comprobanteRef     = useRef<HTMLInputElement>(null)
+  const complementoPagoRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    Promise.all([
+      dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('cuentas_bancarias').select('id, banco, numero_cuenta, clabe, saldo').eq('activo', true).order('banco'),
+    ]).then(([{ data: fps }, { data: cbs }]) => {
+      setFormasPago(fps ?? [])
+      setCuentasBanc(cbs ?? [])
+      if (fps && fps.length > 0) setForm(f => ({ ...f, forma_pago: f.forma_pago || fps[0].nombre }))
+    })
+  }, [])
+
+  const montoTotal = ops.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
+  const setF = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const uploadFile = async (file: File, campo: 'comprobante' | 'complemento_pago') => {
+    setUploading(campo)
+    const ext  = file.name.split('.').pop()
+    const path = `remesa-prov${prov.id}/${campo}-${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('cxp-docs').upload(path, file, { upsert: true })
+    if (upErr) { alert('Error al subir archivo: ' + upErr.message); setUploading(null); return }
+    const { data: { publicUrl } } = supabase.storage.from('cxp-docs').getPublicUrl(path)
+    setForm(f => ({ ...f, [campo]: publicUrl }))
+    setUploading(null)
+  }
+
+  const handleSave = async () => {
+    setSaving(true); setError('')
+    try {
+      await aplicarPagoRemesa({
+        opIds:             ops.map(o => o.id),
+        idCuentaBancaria:  form.id_cuenta_bancaria_fk ? Number(form.id_cuenta_bancaria_fk) : null,
+        formaPago:         form.forma_pago,
+        referencia:        form.referencia,
+        comprobante:       form.comprobante || null,
+        complementoPago:   form.complemento_pago || null,
+        notas:             form.notas,
+        fechaPago:         form.fecha_pago,
+        createdBy:         authUser?.nombre ?? null,
+      })
+      onSuccess()
+    } catch (e: any) {
+      setError(e.message ?? 'No se pudo aplicar el pago')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const FileBtn = ({ campo, label, accept, refEl }: {
+    campo: 'comprobante' | 'complemento_pago'
+    label: string
+    accept: string
+    refEl: React.RefObject<HTMLInputElement>
+  }) => (
+    <div>
+      <label className="label">{label}</label>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input ref={refEl} type="file" accept={accept} style={{ display: 'none' }}
+          onChange={e => { if (e.target.files?.[0]) uploadFile(e.target.files[0], campo) }} />
+        {form[campo] ? (
+          <div style={{ display: 'flex', gap: 6, flex: 1, alignItems: 'center' }}>
+            <a href={form[campo]} target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 12, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <ExternalLink size={11} /> Ver archivo
+            </a>
+            <button className="btn-ghost" style={{ padding: '2px 6px', fontSize: 11, color: '#dc2626' }}
+              onClick={() => setForm(f => ({ ...f, [campo]: '' }))}>
+              <Trash2 size={11} />
+            </button>
+          </div>
+        ) : (
+          <button className="btn-secondary" style={{ fontSize: 11, flex: 1 }}
+            onClick={() => refEl.current?.click()}
+            disabled={uploading === campo}>
+            {uploading === campo ? <Loader size={11} className="animate-spin" /> : <Upload size={11} />}
+            {uploading === campo ? 'Subiendo…' : 'Adjuntar'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <ModalShell modulo="tesoreria" titulo="Pago Agrupado (Remesa)" subtitulo={`${prov.nombre} · ${ops.length} OPs`}
+      onClose={onClose} maxWidth={640}>
+      <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>
+        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table>
+            <thead><tr><th>Folio</th><th>Concepto</th><th style={{ textAlign: 'right' }}>Saldo</th></tr></thead>
+            <tbody>
+              {ops.map(o => (
+                <tr key={o.id}>
+                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{o.folio}</td>
+                  <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.concepto ?? '—'}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(o.saldo ?? o.monto)}</td>
+                </tr>
+              ))}
+              <tr style={{ background: 'var(--blue-pale)', fontWeight: 700 }}>
+                <td colSpan={2} style={{ color: 'var(--blue)' }}>TOTAL A PAGAR</td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 15, color: 'var(--blue)' }}>{fmt(montoTotal)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div><label className="label">Fecha de Pago *</label>
+            <input className="input" type="date" value={form.fecha_pago} onChange={setF('fecha_pago')} />
+          </div>
+          <div><label className="label">Forma de Pago</label>
+            <select className="select" value={form.forma_pago} onChange={setF('forma_pago')}>
+              <option value="">— Seleccionar —</option>
+              {formasPago.length > 0
+                ? formasPago.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)
+                : FORMAS_PAGO_COMP.map(p => <option key={p}>{p}</option>)
+              }
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+          <div>
+            <label className="label">Cuenta Bancaria Origen</label>
+            <select className="select" value={form.id_cuenta_bancaria_fk} onChange={setF('id_cuenta_bancaria_fk')}>
+              <option value="">— Sin especificar —</option>
+              {cuentasBanc.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.banco}{c.numero_cuenta ? ` · ${c.numero_cuenta}` : ''}{c.clabe ? ` · CLABE: ${c.clabe.slice(-4)}` : ''} · Saldo: {fmt(c.saldo ?? 0)}
+                </option>
+              ))}
+            </select>
+            {form.id_cuenta_bancaria_fk && (() => {
+              const cb = cuentasBanc.find(c => c.id === Number(form.id_cuenta_bancaria_fk))
+              return cb ? (
+                <div style={{ marginTop: 6, padding: '6px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#15803d' }}>Saldo disponible: <strong>{fmt(cb.saldo ?? 0)}</strong></span>
+                  {montoTotal > (cb.saldo ?? 0) && <span style={{ color: '#dc2626', fontWeight: 600 }}>⚠ Saldo insuficiente</span>}
+                </div>
+              ) : null
+            })()}
+          </div>
+        </div>
+
+        <div><label className="label">No. Referencia / Transferencia</label>
+          <input className="input" value={form.referencia} onChange={setF('referencia')}
+            style={{ fontFamily: 'monospace' }} placeholder="ej. 202503240001" />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <FileBtn campo="comprobante" label="Comprobante de Pago" accept=".pdf,.jpg,.jpeg,.png" refEl={comprobanteRef} />
+          <FileBtn campo="complemento_pago" label="Complemento de Pago (SAT — REP)" accept=".xml,.pdf" refEl={complementoPagoRef} />
+        </div>
+
+        <div><label className="label">Notas</label>
+          <textarea className="input" rows={2} value={form.notas} onChange={setF('notas')} style={{ resize: 'vertical' }} />
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || !!uploading}>
+            {saving ? <Loader size={13} className="animate-spin" /> : <Layers size={13} />}
+            Aplicar Pago ({fmt(montoTotal)})
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// Detalle de remesa — OPs incluidas, comprobantes y reversión
+// ════════════════════════════════════════════════════════════
+function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void }) {
+  const { authUser, canDelete } = useAuth()
+  const [abonos, setAbonos]       = useState<any[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [showReversar, setShowReversar] = useState(false)
+  const [motivo, setMotivo]       = useState('')
+  const [reversando, setReversando] = useState(false)
+  const [error, setError]         = useState('')
+
+  useEffect(() => {
+    dbComp.from('cxp_abonos')
+      .select('id, monto, status, ordenes_pago(id, folio, concepto, monto)')
+      .eq('id_remesa_fk', remesa.id)
+      .order('id', { ascending: true })
+      .then(({ data }) => { setAbonos(data ?? []); setLoading(false) })
+  }, [remesa.id])
+
+  const totalActivo = abonos.filter(a => a.status === 'Aplicado').reduce((a, x) => a + (x.monto ?? 0), 0)
+
+  const handleReversar = async () => {
+    if (!motivo.trim()) { setError('Indica el motivo de la reversión'); return }
+    if (!confirm(`¿Reversar la remesa ${remesa.folio}? Las OPs incluidas regresan a su status anterior y se devuelve ${fmt(remesa.monto_total)} a la cuenta bancaria. Esta acción queda registrada y no se puede deshacer.`)) return
+    setReversando(true); setError('')
+    try {
+      await reversarPagoRemesa({ idRemesa: remesa.id, motivo, createdBy: authUser?.nombre ?? null })
+      onClose()
+    } catch (e: any) {
+      setError(e.message ?? 'No se pudo reversar la remesa')
+      setReversando(false)
+    }
+  }
+
+  const imprimir = () => {
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(`<!DOCTYPE html><html><head><title>Comprobante ${remesa.folio}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; color: #1e293b; }
+        .doc-title { font-size: 16px; font-weight: 700; color: #0D4F80; margin-bottom: 2px; }
+        .sub { color: #64748b; font-size: 11px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        td, th { border: 1px solid #e2e8f0; padding: 7px 10px; }
+        th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+        .total { background: #eff6ff; font-weight: 700; color: #0D4F80; }
+        @page { margin: 1.2cm; }
+      </style></head><body>
+      <div class="doc-title">Comprobante de Pago Agrupado — ${remesa.folio}</div>
+      <div class="sub">Proveedor: <strong>${remesa.proveedores?.nombre ?? '—'}</strong> &nbsp;·&nbsp; Fecha de pago: ${fmtFecha(remesa.fecha_pago)} &nbsp;·&nbsp; Forma de pago: ${remesa.forma_pago}${remesa.referencia ? ` &nbsp;·&nbsp; Ref: ${remesa.referencia}` : ''}</div>
+      <table>
+        <thead><tr><th>Folio OP</th><th>Concepto</th><th>Monto</th></tr></thead>
+        <tbody>
+          ${abonos.map(a => `<tr>
+            <td style="font-family:monospace">${a.ordenes_pago?.folio ?? '—'}</td>
+            <td>${a.ordenes_pago?.concepto ?? '—'}</td>
+            <td style="text-align:right">${fmt(a.monto)}</td>
+          </tr>`).join('')}
+          <tr class="total"><td colspan="2">TOTAL PAGADO</td><td style="text-align:right">${fmt(remesa.monto_total)}</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:11px;color:#64748b;margin-top:24px">Documento generado por DomusOne · ${new Date().toLocaleString('es-MX')}</p>
+      </body></html>`)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => document.body.removeChild(iframe), 2000)
+    }, 300)
+  }
+
+  return (
+    <ModalShell modulo="tesoreria" titulo={remesa.folio} subtitulo={remesa.proveedores?.nombre ?? '—'} onClose={onClose} maxWidth={640}>
+      <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 20px', alignItems: 'center' }}>
+          <RemesaStatusBadge status={remesa.status} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Fecha de pago: {fmtFecha(remesa.fecha_pago)}</span>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Forma: {remesa.forma_pago}</span>
+          {remesa.referencia && <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>Ref: {remesa.referencia}</span>}
+        </div>
+
+        {remesa.status === 'Cancelada' && (
+          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#991b1b' }}>
+            Reversada por <strong>{remesa.cancelado_by ?? '—'}</strong> el {fmtFecha(remesa.cancelado_at)}.
+            {remesa.cancelado_motivo && <div style={{ marginTop: 4 }}>Motivo: {remesa.cancelado_motivo}</div>}
+          </div>
+        )}
+
+        {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
+
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <table>
+            <thead><tr><th>Folio OP</th><th>Concepto</th><th style={{ textAlign: 'right' }}>Monto</th><th>Status</th></tr></thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={4} style={{ textAlign: 'center', padding: 24 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
+              ) : abonos.map(a => (
+                <tr key={a.id}>
+                  <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{a.ordenes_pago?.folio ?? '—'}</td>
+                  <td style={{ fontSize: 12 }}>{a.ordenes_pago?.concepto ?? '—'}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', textDecoration: a.status === 'Cancelada' ? 'line-through' : 'none', color: a.status === 'Cancelada' ? 'var(--text-muted)' : 'inherit' }}>{fmt(a.monto)}</td>
+                  <td><RemesaStatusBadge status={a.status} /></td>
+                </tr>
+              ))}
+              <tr style={{ background: 'var(--blue-pale)', fontWeight: 700 }}>
+                <td colSpan={2} style={{ color: 'var(--blue)' }}>TOTAL {remesa.status === 'Cancelada' ? 'REVERSADO' : 'PAGADO'}</td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 15, color: 'var(--blue)' }}>{fmt(remesa.status === 'Cancelada' ? remesa.monto_total : totalActivo)}</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(remesa.comprobante) && (
+            <a href={remesa.comprobante} target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#eff6ff', color: 'var(--blue)', border: '1px solid #bfdbfe', borderRadius: 6, textDecoration: 'none' }}>
+              <CheckCircle size={11} /> Comprobante
+            </a>
+          )}
+          {(remesa.complemento_pago) && (
+            <a href={remesa.complemento_pago} target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#fdf4ff', color: '#7c3aed', border: '1px solid #e9d5ff', borderRadius: 6, textDecoration: 'none' }}>
+              <FileText size={11} /> Complemento SAT
+            </a>
+          )}
+        </div>
+
+        {showReversar && remesa.status === 'Aplicado' && (
+          <div style={{ padding: 14, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>Motivo de la reversión *</div>
+            <textarea className="input" rows={2} value={motivo} onChange={e => setMotivo(e.target.value)}
+              style={{ resize: 'vertical', marginBottom: 10 }} placeholder="ej. Referencia bancaria equivocada, transferencia rechazada, etc." />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => { setShowReversar(false); setMotivo(''); setError('') }}>Cancelar</button>
+              <button className="btn-primary" style={{ background: '#dc2626' }} onClick={handleReversar} disabled={reversando}>
+                {reversando ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />}
+                Confirmar Reversión
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button className="btn-secondary" onClick={imprimir}><Printer size={13} /> Imprimir Comprobante</button>
+          {remesa.status === 'Aplicado' && canDelete() && !showReversar && (
+            <button className="btn-secondary" style={{ color: '#dc2626', borderColor: '#fecaca' }} onClick={() => setShowReversar(true)}>
+              <RotateCcw size={13} /> Reversar Remesa
+            </button>
+          )}
+        </div>
+      </div>
     </ModalShell>
   )
 }
