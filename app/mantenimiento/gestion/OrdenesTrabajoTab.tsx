@@ -119,6 +119,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
   const [centrosCosto, setCentrosCosto]   = useState<any[]>([])
   const [frentes,      setFrentes]        = useState<any[]>([])
   const [areaToFrentes, setAreaToFrentes] = useState<Record<number, number[]>>({})
+  const [areaToCuadrantes, setAreaToCuadrantes] = useState<Record<number, number[]>>({})
   const [filterCC,      setFilterCC]      = useState('')
   const [filterFrente,  setFilterFrente]  = useState('')
   // Mantto. Res usa Cuadrante/Área Común; Generales y Golf usan CC/Área/Frente
@@ -163,14 +164,15 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
 
   useEffect(() => {
     Promise.all([
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('frentes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas_comunes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_area_comun').select('id_area, id_area_comun'),
       dbCfg.from('rel_area_frente').select('id_area, id_frente'),
-    ]).then(([{ data: secs }, { data: cuads }, { data: ccs }, { data: frs }, { data: acs }, { data: rels }, { data: relsFr }]) => {
+      dbCfg.from('rel_area_cuadrante').select('id_area, id_cuadrante'),
+    ]).then(([{ data: secs }, { data: cuads }, { data: ccs }, { data: frs }, { data: acs }, { data: rels }, { data: relsFr }, { data: relsCuad }]) => {
       setAreas(secs ?? [])
       setCuadrantes(cuads ?? [])
       setAreasComunesOT(acs ?? [])
@@ -193,7 +195,13 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
         if (!atf[aid]) atf[aid] = []
         atf[aid].push(Number(r.id_frente))
       })
-      setAreaMap(sm); setCcMap(cm); setFrMap(fm); setCuadMap(cuadm); setAcMap(acm); setAreaToAcs(ata); setAreaToFrentes(atf)
+      const atc: Record<number, number[]> = {};
+      (relsCuad ?? []).forEach((r: any) => {
+        const aid = Number(r.id_area)
+        if (!atc[aid]) atc[aid] = []
+        atc[aid].push(Number(r.id_cuadrante))
+      })
+      setAreaMap(sm); setCcMap(cm); setFrMap(fm); setCuadMap(cuadm); setAcMap(acm); setAreaToAcs(ata); setAreaToFrentes(atf); setAreaToCuadrantes(atc)
     })
   }, [])
 
@@ -266,7 +274,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
             <select className="select" style={{ flex: '1 1 100px', maxWidth: 170, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterArea} onChange={e => { setFilterArea(e.target.value); setFilterAC(''); setPage(1) }}>
               <option value="">Área</option>
               {areas
-                .filter((s: any) => !filterCuad || s.id_cuadrante_fk === Number(filterCuad))
+                .filter((s: any) => !filterCuad || (areaToCuadrantes[s.id] ?? []).includes(Number(filterCuad)))
                 .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
             <select className="select" style={{ flex: '1 1 90px', maxWidth: 150, fontSize: 12, padding: '3px 8px', height: 28 }} value={filterAC} onChange={e => { setFilterAC(e.target.value); setPage(1) }}>
@@ -368,7 +376,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
       )}
 
       {modal  && <OTModal areas={areas} cuadrantes={cuadrantes} areasComunes={areasComunes} areaToAcs={areaToAcs}
-        centrosCosto={centrosCosto} frentes={frentes} areaToFrentes={areaToFrentes} usaCcFrente={usaCcFrente}
+        centrosCosto={centrosCosto} frentes={frentes} areaToFrentes={areaToFrentes} areaToCuadrantes={areaToCuadrantes} usaCcFrente={usaCcFrente}
         ot={editingOT} empresa={empresa} modulo={modulo}
         onClose={() => { setModal(false); setEditingOT(null) }}
         onSaved={() => { setModal(false); setEditingOT(null); fetchData() }} />}
@@ -380,9 +388,9 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
 }
 
 // ── OTModal ────────────────────────────────────────────────────
-function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, frentes, areaToFrentes, usaCcFrente, ot, empresa = 'Balvanera', modulo, onClose, onSaved }: {
+function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, frentes, areaToFrentes, areaToCuadrantes, usaCcFrente, ot, empresa = 'Balvanera', modulo, onClose, onSaved }: {
   areas: any[]; cuadrantes: any[]; areasComunes: any[]; areaToAcs: Record<number, number[]>
-  centrosCosto: any[]; frentes: any[]; areaToFrentes: Record<number, number[]>; usaCcFrente: boolean
+  centrosCosto: any[]; frentes: any[]; areaToFrentes: Record<number, number[]>; areaToCuadrantes: Record<number, number[]>; usaCcFrente: boolean
   ot?: any; empresa?: 'Balvanera' | 'Cuadrilla'; modulo: Modulo; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
@@ -697,7 +705,7 @@ function OTModal({ areas, cuadrantes, areasComunes, areaToAcs, centrosCosto, fre
                   onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, id_area_comun_fk: '' }))}>
                   <option value="">—</option>
                   {(areas as any[])
-                    .filter(s => !form.id_cuadrante_fk || s.id_cuadrante_fk === Number(form.id_cuadrante_fk))
+                    .filter(s => !form.id_cuadrante_fk || (areaToCuadrantes[s.id] ?? []).includes(Number(form.id_cuadrante_fk)))
                     .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                 </select></div>
               <div><label className="label" style={{ fontSize: 11 }}>Área Común</label>

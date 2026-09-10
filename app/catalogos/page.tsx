@@ -1757,15 +1757,15 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
 
   useEffect(() => {
     setLoadingAreas(true)
-    dbCfg.from('areas').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre')
-      .then(({ data }) => {
-        setTodasAreas(data ?? [])
-        const asignadas = new Set<number>(
-          (data ?? []).filter((a: any) => a.id_cuadrante_fk === cuadrante.id).map((a: any) => Number(a.id))
-        )
-        setSelAreas(new Set(asignadas)); setInicialAreas(new Set(asignadas))
-        setLoadingAreas(false)
-      })
+    Promise.all([
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_cuadrante').select('id_area').eq('id_cuadrante', cuadrante.id),
+    ]).then(([{ data: areasData }, { data: rels }]) => {
+      setTodasAreas(areasData ?? [])
+      const asignadas = new Set<number>((rels ?? []).map((r: any) => Number(r.id_area)))
+      setSelAreas(new Set(asignadas)); setInicialAreas(new Set(asignadas))
+      setLoadingAreas(false)
+    })
   }, [cuadrante.id])
 
   useEffect(() => {
@@ -1790,11 +1790,13 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
     const removed = Array.from(inicialAreas).filter(id => !selAreas.has(id))
     if (added.length === 0 && removed.length === 0) { setSavingAreas(false); return }
     if (added.length > 0) {
-      const { error: e } = await dbCfg.from('areas').update({ id_cuadrante_fk: cuadrante.id }).in('id', added)
+      const { error: e } = await dbCfg.from('rel_area_cuadrante')
+        .insert(added.map(id => ({ id_area: id, id_cuadrante: cuadrante.id })))
       if (e) { setErrorAreas(e.message); setSavingAreas(false); return }
     }
     if (removed.length > 0) {
-      const { error: e } = await dbCfg.from('areas').update({ id_cuadrante_fk: null }).in('id', removed)
+      const { error: e } = await dbCfg.from('rel_area_cuadrante')
+        .delete().eq('id_cuadrante', cuadrante.id).in('id_area', removed)
       if (e) { setErrorAreas(e.message); setSavingAreas(false); return }
     }
     setInicialAreas(new Set(selAreas)); setSavingAreas(false)

@@ -61,6 +61,7 @@ export default function MantenimientoPage() {
   const [acMap,        setAcMap]        = useState<Record<number, string>>({})
   const [acCritMap,    setAcCritMap]    = useState<Record<number, string>>({})
   const [areaToAcs,    setAreaToAcs]    = useState<Record<number, number[]>>({})
+  const [areaToCuadrantes, setAreaToCuadrantes] = useState<Record<number, number[]>>({})
   const [loading,      setLoading]    = useState(true)
   const [filterAnio,   setFilterAnio] = useState(new Date().getFullYear())
   const [filterCuad,   setFilterCuad] = useState('')
@@ -74,10 +75,11 @@ export default function MantenimientoPage() {
   useEffect(() => {
     Promise.all([
       dbCfg.from('cuadrantes').select('id, nombre, color').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas_comunes').select('id, nombre, descripcion, criticidad').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_area_comun').select('id_area, id_area_comun'),
-    ]).then(([{ data: cuads }, { data: areasData }, { data: acs }, { data: rels }]) => {
+      dbCfg.from('rel_area_cuadrante').select('id_area, id_cuadrante'),
+    ]).then(([{ data: cuads }, { data: areasData }, { data: acs }, { data: rels }, { data: relsCuad }]) => {
       setCuadrantes(cuads ?? [])
       setAreas(areasData ?? [])
       setAreasComunes(acs ?? [])
@@ -92,7 +94,13 @@ export default function MantenimientoPage() {
         if (!ata[aid]) ata[aid] = []
         ata[aid].push(Number(r.id_area_comun))
       })
-      setCuadMap(cm); setCuadColorMap(cc); setAreaMap(am2); setAcMap(acm); setAcCritMap(acCrit); setAreaToAcs(ata)
+      const atc: Record<number, number[]> = {};
+      (relsCuad ?? []).forEach((r: any) => {
+        const aid = Number(r.id_area)
+        if (!atc[aid]) atc[aid] = []
+        atc[aid].push(Number(r.id_cuadrante))
+      })
+      setCuadMap(cm); setCuadColorMap(cc); setAreaMap(am2); setAcMap(acm); setAcCritMap(acCrit); setAreaToAcs(ata); setAreaToCuadrantes(atc)
     })
   }, [])
 
@@ -327,7 +335,7 @@ export default function MantenimientoPage() {
               onChange={e => { setFilterArea(e.target.value); setFilterAC('') }}>
               <option value="">Área</option>
               {areas
-                .filter(a => !filterCuad || a.id_cuadrante_fk === Number(filterCuad))
+                .filter(a => !filterCuad || (areaToCuadrantes[a.id] ?? []).includes(Number(filterCuad)))
                 .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
             <select className="select" style={{ width: 190 }} value={filterAC}
@@ -488,7 +496,7 @@ export default function MantenimientoPage() {
           )}
         </div>
 
-      {modal  && <ProgramaModal cuadrantes={cuadrantes} areas={areas} areasComunes={areasComunes} areaToAcs={areaToAcs} prog={editing}
+      {modal  && <ProgramaModal cuadrantes={cuadrantes} areas={areas} areasComunes={areasComunes} areaToAcs={areaToAcs} areaToCuadrantes={areaToCuadrantes} prog={editing}
         onClose={() => setModal(false)}
         onSaved={() => { setModal(false); fetchData() }} />}
       {detail && <ProgramaDetail prog={detail} cuadMap={cuadMap} areaMap={areaMap} acMap={acMap} acCritMap={acCritMap}
@@ -904,8 +912,8 @@ function ExcepcionModal({ prog, fecha, onClose, onGuardar }: {
 // ═══════════════════════════════════════════════════════════════
 // Modal Nuevo/Editar Programa (plantilla — sin pre-generar ocurrencias)
 // ═══════════════════════════════════════════════════════════════
-function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClose, onSaved }: {
-  cuadrantes: any[]; areas: any[]; areasComunes: any[]; areaToAcs: Record<number, number[]>
+function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, areaToCuadrantes, prog, onClose, onSaved }: {
+  cuadrantes: any[]; areas: any[]; areasComunes: any[]; areaToAcs: Record<number, number[]>; areaToCuadrantes: Record<number, number[]>
   prog: any; onClose: () => void; onSaved: () => void
 }) {
   const { authUser } = useAuth()
@@ -1053,7 +1061,7 @@ function ProgramaModal({ cuadrantes, areas, areasComunes, areaToAcs, prog, onClo
                 onChange={e => setForm(f => ({ ...f, id_area_fk: e.target.value, areasComunes: [] }))}>
                 <option value="">—</option>
                 {areas
-                  .filter(a => !form.id_cuadrante_fk || a.id_cuadrante_fk === Number(form.id_cuadrante_fk))
+                  .filter(a => !form.id_cuadrante_fk || (areaToCuadrantes[a.id] ?? []).includes(Number(form.id_cuadrante_fk)))
                   .map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>

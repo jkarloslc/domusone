@@ -37,8 +37,9 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
   const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<Colaborador[]>([])
   const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string }[]>([])
-  const [areas, setAreas] = useState<{ id: number; nombre: string; id_centro_costo_fk: number | null; id_cuadrante_fk: number | null }[]>([])
+  const [areas, setAreas] = useState<{ id: number; nombre: string; id_centro_costo_fk: number | null }[]>([])
   const [cuadrantes, setCuadrantes] = useState<{ id: number; nombre: string }[]>([])
+  const [relAreaCuad, setRelAreaCuad] = useState<{ id_area: number; id_cuadrante: number }[]>([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [viewing, setViewing]   = useState<Colaborador | null>(null)
@@ -56,16 +57,18 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [{ data: colabs }, { data: ccs }, { data: areasData }, { data: cuadrantesData }] = await Promise.all([
+    const [{ data: colabs }, { data: ccs }, { data: areasData }, { data: cuadrantesData }, { data: rels }] = await Promise.all([
       dbCfg.from('colaboradores').select('*').order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_cuadrante').select('id_area, id_cuadrante'),
     ])
     setItems((colabs as Colaborador[]) ?? [])
     setCentrosCosto(ccs ?? [])
     setAreas(areasData ?? [])
     setCuadrantes(cuadrantesData ?? [])
+    setRelAreaCuad(rels ?? [])
     setLoading(false)
   }, [])
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -89,7 +92,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
 
   const ccSeleccionado = centrosCosto.find(c => c.id === Number(form.id_centro_costo_fk))
   const esManttoResidencial = ccSeleccionado?.nombre === CC_MANTENIMIENTO_RESIDENCIAL
-  const areasDelCuadrante = areas.filter(a => a.id_cuadrante_fk === Number(form.id_cuadrante_fk))
+  const areasDelCuadrante = areas.filter(a => relAreaCuad.some(r => r.id_area === a.id && r.id_cuadrante === Number(form.id_cuadrante_fk)))
 
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }

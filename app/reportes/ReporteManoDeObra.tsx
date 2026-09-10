@@ -48,6 +48,7 @@ export default function ReporteManoDeObra() {
   const [ots, setOts]               = useState<Record<number, OT>>({})
   const [cuadrantes, setCuadrantes] = useState<any[]>([])
   const [areas, setAreas]           = useState<any[]>([])
+  const [relAreaCuad, setRelAreaCuad] = useState<{ id_area: number; id_cuadrante: number }[]>([])
   const [loading, setLoading]       = useState(true)
 
   const [fModulo, setFModulo]         = useState('')
@@ -65,17 +66,19 @@ export default function ReporteManoDeObra() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: mo }, { data: otsData }, { data: cuads }, { data: areasData }] = await Promise.all([
+    const [{ data: mo }, { data: otsData }, { data: cuads }, { data: areasData }, { data: rels }] = await Promise.all([
       dbCtrl.from('ot_mano_obra').select('*'),
       dbCtrl.from('ordenes_trabajo').select('id, folio, titulo, status, empresa, modulo, id_cuadrante_fk, id_area_fk, created_at, fecha_inicio'),
       dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_cuadrante').select('id_area, id_cuadrante'),
     ])
     const otMap: Record<number, OT> = {}
     ;(otsData ?? []).forEach((o: any) => { otMap[o.id] = o })
     setOts(otMap)
     setCuadrantes(cuads ?? [])
     setAreas(areasData ?? [])
+    setRelAreaCuad(rels ?? [])
     setMoRows((mo ?? []) as MORow[])
     setLoading(false)
   }, [])
@@ -84,7 +87,9 @@ export default function ReporteManoDeObra() {
 
   const cuadranteMap = Object.fromEntries(cuadrantes.map((c: any) => [c.id, c.nombre]))
   const areaMap       = Object.fromEntries(areas.map((a: any) => [a.id, a.nombre]))
-  const filteredAreas = fCuadrante ? areas.filter((a: any) => String(a.id_cuadrante_fk) === fCuadrante) : areas
+  const filteredAreas = fCuadrante
+    ? areas.filter((a: any) => relAreaCuad.some(r => r.id_area === a.id && String(r.id_cuadrante) === fCuadrante))
+    : areas
 
   const trabajadoresDisponibles = Array.from(
     new Map(moRows.filter(r => r.id_colaborador_fk).map(r => [r.id_colaborador_fk as number, r.nombre ?? `#${r.id_colaborador_fk}`])).entries()

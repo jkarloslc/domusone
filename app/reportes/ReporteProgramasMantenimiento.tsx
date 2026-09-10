@@ -25,6 +25,7 @@ export default function ReporteProgramasMantenimiento() {
   const [ejecuciones,  setEjecuciones]  = useState<any[]>([])
   const [cuadrantes,   setCuadrantes]   = useState<any[]>([])
   const [areas,        setAreas]        = useState<any[]>([])
+  const [relAreaCuad,  setRelAreaCuad]  = useState<{ id_area: number; id_cuadrante: number }[]>([])
   const [areasComunes, setAreasComunes] = useState<any[]>([])
   const [loading,      setLoading]      = useState(true)
   const [expanded,     setExpanded]     = useState<Record<number, boolean>>({})
@@ -38,13 +39,15 @@ export default function ReporteProgramasMantenimiento() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: cuads }, { data: areasData }, { data: acs }] = await Promise.all([
+    const [{ data: cuads }, { data: areasData }, { data: rels }, { data: acs }] = await Promise.all([
       dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
-      dbCfg.from('areas').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
+      dbCfg.from('rel_area_cuadrante').select('id_area, id_cuadrante'),
       dbCfg.from('areas_comunes').select('id, nombre, criticidad').eq('activo', true).order('nombre'),
     ])
     setCuadrantes(cuads ?? [])
     setAreas(areasData ?? [])
+    setRelAreaCuad(rels ?? [])
     setAreasComunes(acs ?? [])
 
     let q = dbCtrl.from('mant_programas').select('*').eq('activo', true).order('nombre')
@@ -149,7 +152,7 @@ export default function ReporteProgramasMantenimiento() {
         <select className="select" style={{ minWidth: 160 }} value={filtroArea}
           onChange={e => { setFiltroArea(e.target.value); setFiltroAC('') }}>
           <option value="">Todas las áreas</option>
-          {areas.filter(a => !filtroCuad || a.id_cuadrante_fk === Number(filtroCuad)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+          {areas.filter(a => !filtroCuad || relAreaCuad.some(r => r.id_area === a.id && r.id_cuadrante === Number(filtroCuad))).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
         <select className="select" style={{ minWidth: 170 }} value={filtroAC} onChange={e => setFiltroAC(e.target.value)}>
           <option value="">Todas las áreas comunes</option>
