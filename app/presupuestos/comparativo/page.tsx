@@ -232,7 +232,7 @@ export default function ComparativoPage() {
         : Promise.resolve({ data: [] }),
       concIds.length > 0
         ? (dbCtrl.from('recibos_ingreso_conceptos') as any)
-            .select('id_concepto_fk, monto, recibos_ingreso!inner(status, fecha, folio, descripcion)')
+            .select('id_concepto_fk, monto, subtotal, recibos_ingreso!inner(status, fecha, folio, descripcion)')
             .in('id_concepto_fk', concIds)
             .eq('recibos_ingreso.status', 'Confirmado')
             .gte('recibos_ingreso.fecha', `${anio}-01-01`)
@@ -240,7 +240,7 @@ export default function ComparativoPage() {
         : Promise.resolve({ data: [] }),
       areaIds.length > 0
         ? dbComp.from('ordenes_pago')
-            .select('id, id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_op, monto, status, id_oc_fk, folio, concepto, id_proveedor_fk')
+            .select('id, id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_op, monto, subtotal, status, id_oc_fk, folio, concepto, id_proveedor_fk')
             .in('id_area_fk', areaIds)
             .gte('fecha_op', `${anio}-01-01`)
             .lte('fecha_op', `${anio}-12-31`)
@@ -251,7 +251,7 @@ export default function ComparativoPage() {
       // arriba — hay que sumar cada línea por su propia área.
       areaIds.length > 0
         ? (dbComp.from('ordenes_pago_det') as any)
-            .select('id_area_fk, monto, ordenes_pago!inner(id, tipo_gasto, fecha_op, status, id_area_fk, folio, concepto, id_proveedor_fk)')
+            .select('id_area_fk, monto, ordenes_pago!inner(id, tipo_gasto, fecha_op, status, id_area_fk, folio, concepto, id_proveedor_fk, monto, subtotal)')
             .in('id_area_fk', areaIds)
             .is('ordenes_pago.id_area_fk', null)
             .gte('ordenes_pago.fecha_op', `${anio}-01-01`)
@@ -259,6 +259,15 @@ export default function ComparativoPage() {
             .not('ordenes_pago.status', 'in', '("Cancelada","Rechazada","Sustituida")')
         : Promise.resolve({ data: [] }),
     ])
+    // Fracción sin-IVA de una OP: subtotal/monto cuando el encabezado trae el
+    // desglose capturado (ver ordenes_pago.subtotal, migración cb7fc54); si no
+    // lo tiene (mayoría del histórico), factor=1 y el monto con IVA se usa tal
+    // cual — no se aproxima con /1.16 para no distorsionar partidas exentas
+    // (ej. Nómina). Al ser un factor, es válido aplicarlo tanto al monto pleno
+    // de la OP como a cualquier fracción suya (reparto por área o por categoría).
+    const factorSinIva = (subtotal: number | null | undefined, monto: number) =>
+      (subtotal != null && monto !== 0) ? Number(subtotal) / Number(monto) : 1
+
     const opsDistribuidas = (opsDetData ?? []).map((r: any) => ({
       id:         r.ordenes_pago.id,
       id_area_fk: r.id_area_fk,
@@ -266,6 +275,7 @@ export default function ComparativoPage() {
       fecha_op:   r.ordenes_pago.fecha_op,
       status:     r.ordenes_pago.status,
       monto:      r.monto,
+      subtotal:   r.monto * factorSinIva(r.ordenes_pago.subtotal, Number(r.ordenes_pago.monto)),
       folio:      r.ordenes_pago.folio,
       concepto:   r.ordenes_pago.concepto,
       id_proveedor_fk: r.ordenes_pago.id_proveedor_fk,
@@ -284,17 +294,19 @@ export default function ComparativoPage() {
     ;(opsData ?? []).forEach((op: any) => {
       const shares = categoriasPorOp.get(op.id)
       if (!shares) return
+      const factor = factorSinIva(op.subtotal, Number(op.monto))
       prorratearDescuento(shares, s => s.fraction, 1, Number(op.monto)).forEach(({ item, montoNeto }) => {
         opsCategoria.push({
           id: op.id, id_area_fk: op.id_area_fk, tipo_gasto: item.categoria,
-          fecha_op: op.fecha_op, status: op.status, monto: montoNeto,
+          fecha_op: op.fecha_op, status: op.status, monto: montoNeto, subtotal: montoNeto * factor,
           folio: op.folio, concepto: op.concepto, id_proveedor_fk: op.id_proveedor_fk,
         })
       })
     })
 
     const opsTodas = [
-      ...(opsData ?? []).filter((o: any) => !categoriasPorOp.has(o.id)),
+      ...(opsData ?? []).filter((o: any) => !categoriasPorOp.has(o.id))
+        .map((o: any) => ({ ...o, subtotal: Number(o.monto) * factorSinIva(o.subtotal, Number(o.monto)) })),
       ...opsDistribuidas,
       ...opsCategoria,
     ]
@@ -315,15 +327,18 @@ export default function ComparativoPage() {
         })
     })
 
-    // Por concepto
+    // Por concepto — sin IVA: usa el subtotal capturado (POS real o 16% de
+    // captura manual, ver distribucionIngreso.ts / ingresos/page.tsx); los
+    // recibos anteriores a ese cambio no lo tienen y caen al monto tal cual.
     concParts.forEach(p => {
       rm[p.id] = {}
       rd[p.id] = []
       ;(concData ?? []).filter((r: any) => r.id_concepto_fk === p.id_concepto_fk)
         .forEach((r: any) => {
+          const monto = Number(r.subtotal ?? r.monto)
           const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
-          rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(r.monto)
-          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto: Number(r.monto), folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
+          rm[p.id][mes] = (rm[p.id][mes] ?? 0) + monto
+          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto, folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
         })
     })
 
@@ -350,10 +365,13 @@ export default function ComparativoPage() {
         })
         .forEach((op: any) => {
           if (!op.fecha_op) return
+          // Sin IVA: op.subtotal ya viene resuelto con fallback al monto pleno
+          // cuando la OP no tiene el desglose capturado (ver factorSinIva arriba).
+          const monto = Number(op.subtotal)
           const mes = new Date(op.fecha_op + 'T12:00:00').getMonth() + 1
-          rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(op.monto)
+          rm[p.id][mes] = (rm[p.id][mes] ?? 0) + monto
           rd[p.id].push({
-            fecha: op.fecha_op, monto: Number(op.monto), folio: op.folio,
+            fecha: op.fecha_op, monto, folio: op.folio,
             id_proveedor_fk: op.id_proveedor_fk, tipo_gasto: op.tipo_gasto, descripcion: op.concepto,
             id_op_fk: op.id,
           })
@@ -785,7 +803,7 @@ export default function ComparativoPage() {
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <th style={th}>Partida</th>
                 <th style={{ ...th, textAlign: 'right' }}>Presupuesto</th>
-                <th style={{ ...th, textAlign: 'right' }}>Real</th>
+                <th style={{ ...th, textAlign: 'right' }}>Real (sin IVA)</th>
                 <th style={{ ...th, textAlign: 'right' }}>Variación</th>
                 <th style={{ ...th, textAlign: 'center', minWidth: 110 }}>% Ejercido</th>
                 <th style={th}></th>
@@ -957,7 +975,7 @@ export default function ComparativoPage() {
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                   <th style={th}>Partida</th>
                   <th style={{ ...th, textAlign: 'right' }}>Presupuesto</th>
-                  <th style={{ ...th, textAlign: 'right' }}>Real</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Real (sin IVA)</th>
                   <th style={{ ...th, textAlign: 'right' }}>Variación</th>
                 </tr>
               </thead>

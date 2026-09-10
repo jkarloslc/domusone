@@ -362,7 +362,10 @@ function ReciboModal({
     if (esConceptos && conceptoRows.some(r => r.monto > 0)) {
       const conceptosPayload = conceptoRows
         .filter(r => r.monto > 0)
-        .map(r => ({ id_recibo_fk: newRec.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, notas: r.notas || null }))
+        .map(r => {
+          const { subtotal, iva } = calcFiscal(r.monto)
+          return { id_recibo_fk: newRec.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, subtotal, iva, notas: r.notas || null }
+        })
       await dbCtrl.from('recibos_ingreso_conceptos').insert(conceptosPayload)
     }
 
@@ -431,7 +434,10 @@ function ReciboModal({
     if (esConceptos && conceptoRows.some(r => r.monto > 0)) {
       await dbCtrl.from('recibos_ingreso_conceptos').insert(
         conceptoRows.filter(r => r.monto > 0)
-          .map(r => ({ id_recibo_fk: recibo.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, notas: r.notas || null }))
+          .map(r => {
+            const { subtotal, iva } = calcFiscal(r.monto)
+            return { id_recibo_fk: recibo.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, subtotal, iva, notas: r.notas || null }
+          })
       )
     }
     if (formaPagoRows.some(r => r.monto > 0 && r.id_forma_pago_fk > 0)) {

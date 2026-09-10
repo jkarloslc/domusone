@@ -18,10 +18,10 @@ export async function distribuirConceptosRecibo(idRecibo: number, idCentroIngres
   // cancelada nunca debe sumar a recibos_ingreso_conceptos (bug real detectado
   // 2026-08-26: dos recibos con conceptos inflados por ventas ya canceladas).
   const { data: det } = await dbGolf.from('ctrl_ventas_det')
-    .select('id_producto_fk, id_concepto_ingreso_fk, total, ctrl_ventas!inner(status)')
+    .select('id_producto_fk, id_concepto_ingreso_fk, total, subtotal, iva, ctrl_ventas!inner(status)')
     .in('id_venta_fk', ventaIds)
     .eq('ctrl_ventas.status', 'PAGADA')
-  const detRows = (det ?? []) as { id_producto_fk: number | null; id_concepto_ingreso_fk: number | null; total: number }[]
+  const detRows = (det ?? []) as { id_producto_fk: number | null; id_concepto_ingreso_fk: number | null; total: number; subtotal: number | null; iva: number | null }[]
   if (detRows.length === 0) return
 
   const productoIds = Array.from(new Set(detRows.map(d => d.id_producto_fk).filter((v): v is number => v != null)))
@@ -38,7 +38,7 @@ export async function distribuirConceptosRecibo(idRecibo: number, idCentroIngres
   const idConceptoOtros: number | null =
     (conceptos ?? []).find((c: any) => c.nombre.trim().toLowerCase() === 'otros')?.id ?? null
 
-  const sumas: Record<number, number> = {}
+  const sumas: Record<number, { monto: number; subtotal: number; iva: number }> = {}
   for (const d of detRows) {
     // Prioridad: concepto capturado directo en la línea (cuotas/rentas sin producto POS,
     // ver cat_cuotas_config / cfg_hip) > mapeo por producto > "Otros".
@@ -48,16 +48,21 @@ export async function distribuirConceptosRecibo(idRecibo: number, idCentroIngres
     // Sin concepto mapeado y sin "Otros" configurado para este centro: se omite
     // (el faltante queda visible como diferencia entre monto_total y la suma de conceptos).
     if (idConcepto == null) continue
-    sumas[idConcepto] = (sumas[idConcepto] ?? 0) + (d.total ?? 0)
+    if (!sumas[idConcepto]) sumas[idConcepto] = { monto: 0, subtotal: 0, iva: 0 }
+    sumas[idConcepto].monto    += d.total ?? 0
+    sumas[idConcepto].subtotal += d.subtotal ?? (d.total ?? 0)
+    sumas[idConcepto].iva      += d.iva ?? 0
   }
 
   const rows = Object.entries(sumas)
-    .filter(([, monto]) => monto !== 0)
-    .map(([idConcepto, monto]) => ({
+    .filter(([, s]) => s.monto !== 0)
+    .map(([idConcepto, s]) => ({
       id_recibo_fk:    idRecibo,
       id_concepto_fk:  Number(idConcepto),
       nombre_concepto: conceptoNombre[Number(idConcepto)] ?? 'Otros',
-      monto:           Math.round(monto * 100) / 100,
+      monto:           Math.round(s.monto * 100) / 100,
+      subtotal:        Math.round(s.subtotal * 100) / 100,
+      iva:             Math.round(s.iva * 100) / 100,
     }))
 
   if (rows.length > 0) {
