@@ -1859,7 +1859,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
             ) : filtAreas.map(a => {
               const checked = selAreas.has(a.id)
               return (
-                <label key={a.id} onClick={() => toggleArea(a.id)}
+                <label key={a.id}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
                     cursor: 'pointer', background: checked ? '#eff6ff' : 'transparent',
                     borderLeft: `3px solid ${checked ? '#2563eb' : 'transparent'}`, transition: 'background 0.15s' }}>
@@ -1909,7 +1909,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
             ) : filtColabs.map(c => {
               const checked = selColabs.has(c.id)
               return (
-                <label key={c.id} onClick={() => toggleColab(c.id)}
+                <label key={c.id}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
                     cursor: 'pointer', background: checked ? '#f5f3ff' : 'transparent',
                     borderLeft: `3px solid ${checked ? '#7c3aed' : 'transparent'}`, transition: 'background 0.15s' }}>
@@ -2044,7 +2044,7 @@ function AreaAreasComunes({ area, onClose }: { area: any; onClose: () => void })
         ) : filtradas.map(a => {
           const checked = seleccion.has(a.id)
           return (
-            <label key={a.id} onClick={() => toggle(a.id)}
+            <label key={a.id}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
                 cursor: 'pointer', background: checked ? '#f0fdf4' : 'transparent',
                 borderLeft: `3px solid ${checked ? '#16a34a' : 'transparent'}`,
