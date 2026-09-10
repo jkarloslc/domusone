@@ -78,7 +78,6 @@ const CATALOGOS: CatConfig[] = [
       { key: 'clave_alfa',          label: 'Abreviatura',          type: 'text' },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
-      { key: 'id_cuadrante_fk',     label: 'Cuadrante',            type: 'select', selectTabla: 'cuadrantes' },
       { key: 'cantidad_lotes',      label: 'Cantidad de Lotes',    type: 'number' },
       { key: 'fecha_autorizacion',  label: 'Fecha de Autorización',type: 'date',   hideInTable: true },
       { key: 'expediente_url',      label: 'Expediente Digital',   type: 'file',   bucket: 'expedientes', hideInTable: true },
