@@ -66,6 +66,7 @@ export async function distribuirConceptosRecibo(idRecibo: number, idCentroIngres
     }))
 
   if (rows.length > 0) {
-    await dbCtrl.from('recibos_ingreso_conceptos').insert(rows)
+    const { error } = await dbCtrl.from('recibos_ingreso_conceptos').insert(rows)
+    if (error) console.error('distribuirConceptosRecibo insert:', error.message)
   }
 }

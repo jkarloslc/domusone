@@ -354,8 +354,12 @@ function ReciboModal({
     if (esSecciones && secRows.some(r => r.monto > 0)) {
       const secsPayload = secRows
         .filter(r => r.monto > 0)
-        .map(r => ({ id_recibo_fk: newRec.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, notas: r.notas || null }))
-      await dbCtrl.from('recibos_ingreso_secciones').insert(secsPayload)
+        .map(r => {
+          const { subtotal, iva } = calcFiscal(r.monto)
+          return { id_recibo_fk: newRec.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, subtotal, iva, notas: r.notas || null }
+        })
+      const { error: errSecs } = await dbCtrl.from('recibos_ingreso_secciones').insert(secsPayload)
+      if (errSecs) console.error('insert recibos_ingreso_secciones:', errSecs.message)
     }
 
     // Conceptos (complementario a secciones)
@@ -366,7 +370,8 @@ function ReciboModal({
           const { subtotal, iva } = calcFiscal(r.monto)
           return { id_recibo_fk: newRec.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, subtotal, iva, notas: r.notas || null }
         })
-      await dbCtrl.from('recibos_ingreso_conceptos').insert(conceptosPayload)
+      const { error: errConc } = await dbCtrl.from('recibos_ingreso_conceptos').insert(conceptosPayload)
+      if (errConc) console.error('insert recibos_ingreso_conceptos:', errConc.message)
     }
 
     // Formas de pago
@@ -426,19 +431,24 @@ function ReciboModal({
     ])
 
     if (esSecciones && secRows.some(r => r.monto > 0)) {
-      await dbCtrl.from('recibos_ingreso_secciones').insert(
+      const { error: errSecs } = await dbCtrl.from('recibos_ingreso_secciones').insert(
         secRows.filter(r => r.monto > 0)
-          .map(r => ({ id_recibo_fk: recibo.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, notas: r.notas || null }))
+          .map(r => {
+            const { subtotal, iva } = calcFiscal(r.monto)
+            return { id_recibo_fk: recibo.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, subtotal, iva, notas: r.notas || null }
+          })
       )
+      if (errSecs) console.error('insert recibos_ingreso_secciones:', errSecs.message)
     }
     if (esConceptos && conceptoRows.some(r => r.monto > 0)) {
-      await dbCtrl.from('recibos_ingreso_conceptos').insert(
+      const { error: errConc } = await dbCtrl.from('recibos_ingreso_conceptos').insert(
         conceptoRows.filter(r => r.monto > 0)
           .map(r => {
             const { subtotal, iva } = calcFiscal(r.monto)
             return { id_recibo_fk: recibo.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, subtotal, iva, notas: r.notas || null }
           })
       )
+      if (errConc) console.error('insert recibos_ingreso_conceptos:', errConc.message)
     }
     if (formaPagoRows.some(r => r.monto > 0 && r.id_forma_pago_fk > 0)) {
       await dbCtrl.from('recibos_ingreso_formas_pago').insert(

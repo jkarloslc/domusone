@@ -224,7 +224,7 @@ export default function ComparativoPage() {
     const [{ data: secData }, { data: concData }, { data: opsData }, { data: opsDetData }] = await Promise.all([
       secIds.length > 0
         ? (dbCtrl.from('recibos_ingreso_secciones') as any)
-            .select('id_seccion_fk, monto, recibos_ingreso!inner(status, fecha, folio, descripcion)')
+            .select('id_seccion_fk, monto, subtotal, recibos_ingreso!inner(status, fecha, folio, descripcion)')
             .in('id_seccion_fk', secIds)
             .eq('recibos_ingreso.status', 'Confirmado')
             .gte('recibos_ingreso.fecha', `${anio}-01-01`)
@@ -315,15 +315,17 @@ export default function ComparativoPage() {
     const rm: DetMap = {}
     const rd: DetMapTx = {}
 
-    // Por sección
+    // Por sección — sin IVA: usa el subtotal capturado en /ingresos (calcFiscal,
+    // 16%); recibos anteriores a ese cambio no lo tienen y caen al monto tal cual.
     secParts.forEach(p => {
       rm[p.id] = {}
       rd[p.id] = []
       ;(secData ?? []).filter((r: any) => r.id_seccion_fk === p.id_seccion_fk)
         .forEach((r: any) => {
+          const monto = Number(r.subtotal ?? r.monto)
           const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
-          rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(r.monto)
-          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto: Number(r.monto), folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
+          rm[p.id][mes] = (rm[p.id][mes] ?? 0) + monto
+          rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto, folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
         })
     })
 
