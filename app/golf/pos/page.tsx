@@ -452,9 +452,10 @@ export default function POSPage() {
   // se pueda volver a cobrar — antes solo se cancelaba el ticket y la cuota quedaba
   // marcada como pagada sin recibo vigente.
   const revertirCuotasCobertura = async (
-    dbClient: typeof dbHip,
-    tabla: 'cxc_hip' | 'loc_cxc',
+    dbClient: any,
+    tabla: 'cxc_hip' | 'loc_cxc' | 'cxc_golf',
     detRows: { id_cuota_fk: number | null; monto_final: number }[],
+    extraFields: Record<string, any> = {},
   ) => {
     const detCuotas = detRows.filter(d => d.id_cuota_fk != null)
     if (!detCuotas.length) return
@@ -478,6 +479,7 @@ export default function POSPage() {
         status:     nuevoSaldo >= c.monto_final - 0.005 ? 'PENDIENTE' : 'PAGO_PARCIAL',
         fecha_pago: null,
         forma_pago: null,
+        ...extraFields,
       }).eq('id', idC)
     }).filter(Boolean) as PromiseLike<any>[]
     const results = await Promise.all(updates)
@@ -489,7 +491,7 @@ export default function POSPage() {
     if (!confirm('¿Cancelar esta venta?')) return
     try {
       const [{ data: recGolf }, { data: recHip }, { data: recLoc }] = await Promise.all([
-        dbGolf.from('recibos_golf').select('id, observaciones').eq('id_venta_pos_fk', id).maybeSingle(),
+        dbGolf.from('recibos_golf').select('id, observaciones, recibos_golf_det(id_cuota_fk, monto_final)').eq('id_venta_pos_fk', id).maybeSingle(),
         dbHip.from('recibos_hip').select('id, observaciones, recibos_hip_det(id_cuota_fk, monto_final)').eq('id_venta_pos_fk', id).maybeSingle(),
         dbCtrl.from('loc_recibos').select('id, observaciones, loc_recibos_det(id_cuota_fk, monto_final)').eq('id_venta_pos_fk', id).maybeSingle(),
       ])
@@ -497,11 +499,9 @@ export default function POSPage() {
       const notaCancel = (obs: string | null) => obs ? `${obs} | Cancelado desde POS` : 'Cancelado desde POS'
 
       if (recGolf) {
-        const { error } = await dbGolf.from('cxc_golf').update({
-          status: 'PENDIENTE', fecha_pago: null, forma_pago: null,
+        await revertirCuotasCobertura(dbGolf, 'cxc_golf', (recGolf as any).recibos_golf_det ?? [], {
           referencia_pago: null, usuario_cobra: null, id_recibo_fk: null,
-        }).eq('id_recibo_fk', (recGolf as any).id)
-        if (error) throw error
+        })
         const { error: erRec } = await dbGolf.from('recibos_golf').update({
           status: 'CANCELADO', observaciones: notaCancel((recGolf as any).observaciones),
         }).eq('id', (recGolf as any).id)

@@ -39,6 +39,7 @@ type Recibo = {
 
 type DetRecibo = {
   id: number
+  id_cuota_fk: number | null
   concepto: string
   tipo: string
   periodo: string | null
@@ -118,7 +119,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         id_venta_pos_fk, id_forma_pago_fk,
         cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio, email,
           cat_categorias_socios(nombre)),
-        recibos_golf_det(id, concepto, tipo, periodo, monto_original, descuento, monto_final)
+        recibos_golf_det(id, id_cuota_fk, concepto, tipo, periodo, monto_original, descuento, monto_final)
       `)
       .order('created_at', { ascending: false })
       .limit(500)
@@ -165,18 +166,39 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       }).eq('id', cancelando.id)
       if (erRec) throw erRec
 
-      // 2. Revertir cuotas a PENDIENTE
-      const ids = cancelando.recibos_golf_det.map(d => d.id)
-      if (ids.length) {
-        const { error: erCuotas } = await dbGolf.from('cxc_golf').update({
-          status: 'PENDIENTE',
-          fecha_pago: null,
-          forma_pago: null,
-          referencia_pago: null,
-          usuario_cobra: null,
-          id_recibo_fk: null,
-        }).eq('id_recibo_fk', cancelando.id)
-        if (erCuotas) throw erCuotas
+      // 2. Revertir cuotas: sumar de vuelta a su saldo lo que este recibo abonó
+      // (no solo el status — cxc_golf.saldo se pone en 0 al cobrar y quedaba así
+      // aunque el status volviera a PENDIENTE, mostrando la cuota con adeudo $0).
+      const detCuotas = cancelando.recibos_golf_det.filter(d => d.id_cuota_fk != null)
+      if (detCuotas.length > 0) {
+        const ids = Array.from(new Set(detCuotas.map(d => d.id_cuota_fk as number)))
+        const { data: cuotasActuales, error: eq } = await dbGolf.from('cxc_golf')
+          .select('id, saldo, monto_final, status').in('id', ids)
+        if (eq) throw eq
+        const porId = new Map(((cuotasActuales ?? []) as { id: number; saldo: number | null; monto_final: number; status: string }[]).map(c => [c.id, c]))
+        const abonadoPorCuota = new Map<number, number>()
+        for (const d of detCuotas) {
+          const idC = d.id_cuota_fk as number
+          abonadoPorCuota.set(idC, (abonadoPorCuota.get(idC) ?? 0) + d.monto_final)
+        }
+        const updates = Array.from(abonadoPorCuota.entries()).map(([idC, abonado]) => {
+          const c = porId.get(idC)
+          if (!c) return null
+          const saldoActual = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
+          const nuevoSaldo = Math.min(c.monto_final, parseFloat((saldoActual + abonado).toFixed(2)))
+          return dbGolf.from('cxc_golf').update({
+            saldo:           nuevoSaldo,
+            status:          nuevoSaldo >= c.monto_final - 0.005 ? 'PENDIENTE' : 'PAGO_PARCIAL',
+            fecha_pago:      null,
+            forma_pago:      null,
+            referencia_pago: null,
+            usuario_cobra:   null,
+            id_recibo_fk:    null,
+          }).eq('id', idC)
+        }).filter(Boolean) as PromiseLike<any>[]
+        const results = await Promise.all(updates)
+        const updErr = (results as any[]).find(res => res.error)?.error
+        if (updErr) throw updErr
       }
 
       // 3. Cancelar el ticket POS vinculado, si existe
