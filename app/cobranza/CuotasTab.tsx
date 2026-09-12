@@ -9,6 +9,8 @@ import ModalShell from '@/components/ui/ModalShell'
 export default function CuotasTab() {
   const { canWrite, canDelete } = useAuth()
   const [cuotas, setCuotas]       = useState<CuotaLote[]>([])
+  const [loteMap, setLoteMap]     = useState<Record<number, string>>({})
+  const [cuotaEstMap, setCuotaEstMap] = useState<Record<number, string>>({})
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -17,12 +19,30 @@ export default function CuotasTab() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     const { data } = await dbCtrl.from('cuotas_lotes')
-      .select('*, cuotas_estandar(nombre), lotes(cve_lote, lote)')
+      .select('*')
       .order('id', { ascending: false })
-    let rows = (data as any[]) ?? []
+    const rawRows = (data as any[]) ?? []
+
+    const loteIds = Array.from(new Set(rawRows.map(r => r.id_lote_fk).filter(Boolean)))
+    const nuevoLoteMap: Record<number, string> = {}
+    if (loteIds.length) {
+      const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+      for (const l of (lotesData ?? []) as any[]) nuevoLoteMap[l.id] = l.cve_lote
+    }
+    setLoteMap(nuevoLoteMap)
+
+    const cuotaIds = Array.from(new Set(rawRows.map(r => r.id_cuota_estandar_fk).filter(Boolean)))
+    const nuevoCuotaMap: Record<number, string> = {}
+    if (cuotaIds.length) {
+      const { data: cuotasData } = await dbCfg.from('cuotas_estandar').select('id, nombre').in('id', cuotaIds)
+      for (const c of (cuotasData ?? []) as any[]) nuevoCuotaMap[c.id] = c.nombre
+    }
+    setCuotaEstMap(nuevoCuotaMap)
+
+    let rows = rawRows
     if (search) rows = rows.filter((r: any) =>
-      (r.lotes?.cve_lote ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (r.cuotas_estandar?.nombre ?? '').toLowerCase().includes(search.toLowerCase())
+      (nuevoLoteMap[r.id_lote_fk] ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (nuevoCuotaMap[r.id_cuota_estandar_fk] ?? '').toLowerCase().includes(search.toLowerCase())
     )
     setCuotas(rows as CuotaLote[])
     setLoading(false)
@@ -104,10 +124,10 @@ export default function CuotasTab() {
             ) : cuotas.map(c => (
               <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.5 }}>
                 <td style={{ fontWeight: 600, color: 'var(--blue)' }}>
-                  {(c as any).lotes?.cve_lote ?? `#${(c as any).lotes?.lote ?? c.id_lote_fk}`}
+                  {loteMap[c.id_lote_fk as any] ?? `#${c.id_lote_fk}`}
                 </td>
                 <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                  {(c as any).cuotas_estandar?.nombre ?? <span style={{ color: '#dc2626', fontSize: 12 }}>Sin cuota asignada</span>}
+                  {cuotaEstMap[c.id_cuota_estandar_fk as any] ?? <span style={{ color: '#dc2626', fontSize: 12 }}>Sin cuota asignada</span>}
                 </td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#d97706' }}>
                   {fmt(c.monto)}
@@ -155,7 +175,7 @@ function ExcepcionModal({ cuota, onClose, onSaved }: { cuota: CuotaLote | null; 
   const isNew = !cuota
   const [saving, setSaving]         = useState(false)
   const [lotes, setLotes]           = useState<any[]>([])
-  const [loteSearch, setLoteSearch] = useState((cuota as any)?.lotes?.cve_lote ?? '')
+  const [loteSearch, setLoteSearch] = useState('')
   const [cuotasEstandar, setCuotasEstandar] = useState<any[]>([])
   const [form, setForm] = useState({
     id_lote_fk:          cuota?.id_lote_fk?.toString() ?? '',
@@ -173,6 +193,12 @@ function ExcepcionModal({ cuota, onClose, onSaved }: { cuota: CuotaLote | null; 
       .order('nombre')
       .then(({ data }) => setCuotasEstandar(data ?? []))
   }, [])
+
+  useEffect(() => {
+    if (!cuota?.id_lote_fk) return
+    dbCat.from('lotes').select('cve_lote, lote').eq('id', cuota.id_lote_fk).single()
+      .then(({ data }) => setLoteSearch(data?.cve_lote ?? `#${data?.lote ?? cuota.id_lote_fk}`))
+  }, [cuota])
 
   useEffect(() => {
     if (loteSearch.length < 2) { setLotes([]); return }

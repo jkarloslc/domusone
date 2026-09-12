@@ -36,6 +36,7 @@ const STATUS_COLOR: Record<string, string> = {
 export default function EscriturasPage() {
   const { canWrite, canDelete } = useAuth()
   const [escrituras, setEscrituras] = useState<Escritura[]>([])
+  const [loteMap, setLoteMap]       = useState<Record<number, string>>({})
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
   const [search, setSearch]         = useState('')
@@ -49,7 +50,7 @@ export default function EscriturasPage() {
     setLoading(true)
     let q = dbCtrl
       .from('escrituras')
-      .select('*, lotes(cve_lote, lote)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .order('fecha', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
@@ -57,7 +58,20 @@ export default function EscriturasPage() {
     if (filterStatus) q = q.eq('status', filterStatus)
 
     const { data, count, error } = await q
-    if (!error) { setEscrituras(data as Escritura[]); setTotal(count ?? 0) }
+    if (!error) {
+      const rows = (data ?? []) as Escritura[]
+      setEscrituras(rows)
+      setTotal(count ?? 0)
+      const loteIds = Array.from(new Set(rows.map(r => r.id_lote_fk).filter(Boolean)))
+      if (loteIds.length) {
+        const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+        const map: Record<number, string> = {}
+        for (const l of (lotesData ?? []) as any[]) map[l.id] = l.cve_lote
+        setLoteMap(map)
+      } else setLoteMap({})
+    } else {
+      console.error(error)
+    }
     setLoading(false)
   }, [page, debouncedSearch, filterStatus])
 
@@ -144,7 +158,7 @@ export default function EscriturasPage() {
               ) : escrituras.map(e => (
                 <tr key={e.id}>
                   <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--gold-light)' }}>{e.no_escritura ?? `#${e.id}`}</td>
-                  <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--text-secondary)' }}>{(e as any).lotes?.cve_lote ?? `#${e.id_lote_fk}`}</td>
+                  <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--text-secondary)' }}>{loteMap[e.id_lote_fk] ?? `#${e.id_lote_fk}`}</td>
                   <td style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.propietario ?? '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{e.notaria ? `No. ${e.notaria}` : '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.notario ?? '—'}</td>
@@ -185,7 +199,7 @@ function EscrituraModal({ escritura, onClose, onSaved }: { escritura: Escritura 
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState('')
   const [lotes, setLotes]       = useState<any[]>([])
-  const [loteSearch, setLoteSearch] = useState(escritura ? ((escritura as any).lotes?.cve_lote ?? '') : '')
+  const [loteSearch, setLoteSearch] = useState('')
   const [secciones, setSecciones]   = useState<any[]>([])
   const [filterSeccion, setFilterSeccion] = useState('')
 
@@ -204,6 +218,12 @@ function EscrituraModal({ escritura, onClose, onSaved }: { escritura: Escritura 
     dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setSecciones(data ?? []))
   }, [])
+
+  useEffect(() => {
+    if (!escritura?.id_lote_fk) return
+    dbCat.from('lotes').select('cve_lote, lote').eq('id', escritura.id_lote_fk).single()
+      .then(({ data }) => setLoteSearch(data?.cve_lote ?? `#${data?.lote ?? escritura.id_lote_fk}`))
+  }, [escritura])
 
   useEffect(() => {
     if (loteSearch.length < 2 && !filterSeccion) { setLotes([]); return }

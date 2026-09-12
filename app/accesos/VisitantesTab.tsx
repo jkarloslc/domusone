@@ -206,11 +206,20 @@ function AutorizarModal({ visitante, onClose }: { visitante: Visitante; onClose:
   const [vigDesde, setVigDesde] = useState('')
   const [vigHasta, setVigHasta] = useState('')
 
-  useEffect(() => {
-    dbCtrl.from('visitantes_autorizados_lotes').select('*, lotes(cve_lote, lote)')
+  const cargarAutorizados = useCallback(async () => {
+    const { data } = await dbCtrl.from('visitantes_autorizados_lotes').select('*')
       .eq('id_visitante_fk', visitante.id).eq('activo', true)
-      .then(({ data }) => setAutorizados(data as VisitanteAutorizado[] ?? []))
+    const rows = (data ?? []) as VisitanteAutorizado[]
+    const loteIds = Array.from(new Set(rows.map((r: any) => r.id_lote_fk).filter(Boolean)))
+    let loteMap: Record<number, string> = {}
+    if (loteIds.length) {
+      const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+      for (const l of (lotesData ?? []) as any[]) loteMap[l.id] = l.cve_lote
+    }
+    setAutorizados(rows.map((r: any) => ({ ...r, loteLabel: loteMap[r.id_lote_fk] })))
   }, [visitante.id])
+
+  useEffect(() => { cargarAutorizados() }, [cargarAutorizados])
 
   useEffect(() => {
     dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
@@ -232,9 +241,7 @@ function AutorizarModal({ visitante, onClose }: { visitante: Visitante; onClose:
       id_lote_fk: selectedLote.id, id_visitante_fk: visitante.id,
       tipo_pase: tipoPase, vigencia_desde: vigDesde || null, vigencia_hasta: vigHasta || null, activo: true,
     })
-    const { data } = await dbCtrl.from('visitantes_autorizados_lotes').select('*, lotes(cve_lote, lote)')
-      .eq('id_visitante_fk', visitante.id).eq('activo', true)
-    setAutorizados(data as VisitanteAutorizado[] ?? [])
+    await cargarAutorizados()
     setSelectedLote(null); setLoteSearch(''); setSaving(false)
   }
 
@@ -254,7 +261,7 @@ function AutorizarModal({ visitante, onClose }: { visitante: Visitante; onClose:
               {autorizados.map(a => (
                 <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--surface-700)', borderRadius: 6, marginBottom: 6 }}>
                   <div>
-                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>{(a as any).lotes?.cve_lote ?? `#${a.id_lote_fk}`}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>{(a as any).loteLabel ?? `#${a.id_lote_fk}`}</span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>{a.tipo_pase}</span>
                   </div>
                   <button className="btn-ghost" style={{ padding: '3px 8px', fontSize: 11, color: '#f87171' }} onClick={() => handleRevocar(a.id)}>Revocar</button>

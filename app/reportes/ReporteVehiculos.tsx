@@ -1,11 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { dbCat, dbCtrl } from '@/lib/supabase'
+import { dbCat, dbCfg, dbCtrl } from '@/lib/supabase'
 import { Search, RefreshCw } from 'lucide-react'
 import { PrintBar } from './utils'
 
 export default function ReporteVehiculos() {
   const [rows, setRows]             = useState<any[]>([])
+  const [loteMap, setLoteMap]       = useState<Record<number, any>>({})
+  const [vehiculoMap, setVehiculoMap] = useState<Record<number, any>>({})
   const [lotes, setLotes]           = useState<any[]>([])
   const [loteSearch, setLoteSearch] = useState('')
   const [loteId, setLoteId]         = useState<number | null>(null)
@@ -14,14 +16,42 @@ export default function ReporteVehiculos() {
 
   useEffect(() => { fetchData(null) }, [])
 
-  const fetchData = (id: number | null) => {
+  const fetchData = async (id: number | null) => {
     setLoading(true)
     let q = dbCtrl.from('vehiculos_autorizados_lotes')
-      .select('vigencia_desde, vigencia_hasta, activo, lotes(cve_lote, lote), vehiculos(placas, tag, tipo_vehiculo, modelo, color, num_serie, marcas_vehiculos(nombre))')
+      .select('vigencia_desde, vigencia_hasta, activo, id_lote_fk, id_vehiculo_fk')
       .eq('activo', true)
       .order('id')
     if (id) q = q.eq('id_lote_fk', id)
-    q.then(({ data }) => { setRows(data ?? []); setLoading(false) })
+    const { data } = await q
+    const rowsData = data ?? []
+    setRows(rowsData)
+
+    const loteIds = Array.from(new Set(rowsData.map((r: any) => r.id_lote_fk).filter(Boolean)))
+    if (loteIds.length) {
+      const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+      const map: Record<number, any> = {}
+      for (const l of (lotesData ?? []) as any[]) map[l.id] = l
+      setLoteMap(map)
+    } else setLoteMap({})
+
+    const vehiculoIds = Array.from(new Set(rowsData.map((r: any) => r.id_vehiculo_fk).filter(Boolean)))
+    if (vehiculoIds.length) {
+      const { data: vehiculosData } = await dbCat.from('vehiculos')
+        .select('id, placas, tag, tipo_vehiculo, modelo, color, num_serie, id_marca_fk')
+        .in('id', vehiculoIds)
+      const marcaIds = Array.from(new Set((vehiculosData ?? []).map((v: any) => v.id_marca_fk).filter(Boolean)))
+      let marcaMap: Record<number, string> = {}
+      if (marcaIds.length) {
+        const { data: marcasData } = await dbCfg.from('marcas_vehiculos').select('id, nombre').in('id', marcaIds)
+        for (const m of (marcasData ?? []) as any[]) marcaMap[m.id] = m.nombre
+      }
+      const map: Record<number, any> = {}
+      for (const v of (vehiculosData ?? []) as any[]) map[v.id] = { ...v, marca: marcaMap[v.id_marca_fk] }
+      setVehiculoMap(map)
+    } else setVehiculoMap({})
+
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -93,26 +123,28 @@ export default function ReporteVehiculos() {
           <tbody>
             {rows.length === 0 ? (
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin vehículos autorizados</td></tr>
-            ) : rows.map((r, i) => (
+            ) : rows.map((r, i) => {
+              const v = vehiculoMap[r.id_vehiculo_fk]
+              return (
               <tr key={i}>
-                <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{r.lotes?.cve_lote ?? '—'}</td>
-                <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{r.vehiculos?.placas ?? '—'}</td>
+                <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[r.id_lote_fk]?.cve_lote ?? '—'}</td>
+                <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{v?.placas ?? '—'}</td>
                 <td style={{ fontFamily: 'monospace', fontSize: 12 }}>
-                  {r.vehiculos?.tag
-                    ? <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '1px 7px', borderRadius: 4, fontWeight: 600 }}>{r.vehiculos.tag}</span>
+                  {v?.tag
+                    ? <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '1px 7px', borderRadius: 4, fontWeight: 600 }}>{v.tag}</span>
                     : '—'
                   }
                 </td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.vehiculos?.tipo_vehiculo ?? '—'}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v?.tipo_vehiculo ?? '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  {[r.vehiculos?.marcas_vehiculos?.nombre, r.vehiculos?.modelo].filter(Boolean).join(' ') || '—'}
+                  {[v?.marca, v?.modelo].filter(Boolean).join(' ') || '—'}
                 </td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.vehiculos?.color ?? '—'}</td>
-                <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{r.vehiculos?.num_serie ?? '—'}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v?.color ?? '—'}</td>
+                <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{v?.num_serie ?? '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtFecha(r.vigencia_desde)}</td>
                 <td style={{ fontSize: 12, color: r.vigencia_hasta ? '#15803d' : 'var(--text-muted)' }}>{fmtFecha(r.vigencia_hasta)}</td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>

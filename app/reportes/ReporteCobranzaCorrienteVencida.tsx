@@ -1,6 +1,6 @@
 'use client'
 import { useState, useCallback } from 'react'
-import { dbCtrl, dbGolf, dbHip } from '@/lib/supabase'
+import { dbCtrl, dbCat, dbGolf, dbHip } from '@/lib/supabase'
 import { PrintBar } from './utils'
 
 // ── Reporte de Cobranza Corriente vs Vencida ─────────────────
@@ -100,13 +100,21 @@ export default function ReporteCobranzaCorrienteVencida({ fuente }: { fuente: Fu
       if (fuente === 'residencial') {
         // Fecha de pago del recibo; recibos viejos sin fecha_pago usan fecha_recibo
         const { data: recs, error: e1 } = await dbCtrl.from('recibos')
-          .select('id, folio, fecha_recibo, fecha_pago, propietario, lotes(cve_lote)')
+          .select('id, folio, fecha_recibo, fecha_pago, propietario, id_lote_fk')
           .eq('activo', true)
           .or(`and(fecha_pago.gte.${fechaDesde},fecha_pago.lte.${fechaHasta}),and(fecha_pago.is.null,fecha_recibo.gte.${fechaDesde},fecha_recibo.lte.${fechaHasta})`)
         if (e1) throw e1
         const recList = (recs ?? []) as any[]
         const porId: Record<number, any> = {}
         recList.forEach(r => { porId[r.id] = r })
+
+        const loteIds = Array.from(new Set(recList.map(r => r.id_lote_fk).filter(Boolean)))
+        const loteMap: Record<number, string> = {}
+        if (loteIds.length) {
+          const { data: lotesData, error: e0 } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+          if (e0) throw e0
+          for (const l of (lotesData ?? []) as any[]) loteMap[l.id] = l.cve_lote
+        }
 
         const dets: any[] = []
         for (const ids of chunk(recList.map(r => r.id), 400)) {
@@ -125,7 +133,7 @@ export default function ReporteCobranzaCorrienteVencida({ fuente }: { fuente: Fu
             key: `res-${d.id}`,
             fechaPago,
             folio: r.folio ?? `#${r.id}`,
-            cliente: r.propietario || r.lotes?.cve_lote || '—',
+            cliente: r.propietario || loteMap[r.id_lote_fk] || '—',
             concepto: d.concepto,
             periodo,
             monto: Number(d.total) || 0,

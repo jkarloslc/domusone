@@ -15,7 +15,7 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState('')
   const [lotes, setLotes]     = useState<any[]>([])
-  const [loteSearch, setLoteSearch] = useState(contrato ? ((contrato as any).lotes?.cve_lote ?? '') : '')
+  const [loteSearch, setLoteSearch] = useState('')
   const [secciones, setSecciones]   = useState<any[]>([])
   const [filterSeccion, setFilterSeccion] = useState('')
 
@@ -45,6 +45,12 @@ export default function ContratoModal({ contrato, onClose, onSaved }: { contrato
     dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setSecciones(data ?? []))
   }, [])
+
+  useEffect(() => {
+    if (!contrato?.id_lote_fk) return
+    dbCat.from('lotes').select('cve_lote, lote').eq('id', contrato.id_lote_fk).single()
+      .then(({ data }) => setLoteSearch(data?.cve_lote ?? `#${data?.lote ?? contrato.id_lote_fk}`))
+  }, [contrato])
 
   useEffect(() => {
     if (loteSearch.length < 2 && !filterSeccion) { setLotes([]); return }

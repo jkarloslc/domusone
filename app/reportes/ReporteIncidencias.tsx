@@ -8,6 +8,7 @@ const fmtFecha = (d: string | null) => d ? new Date(d.includes('T') ? d : d + 'T
 
 export default function ReporteIncidencias() {
   const [incidencias, setIncidencias] = useState<any[]>([])
+  const [loteMap, setLoteMap]         = useState<Record<number, string>>({})
   const [lotes, setLotes]             = useState<any[]>([])
   const [loteSearch, setLoteSearch]   = useState('')
   const [loteId, setLoteId]           = useState<number | null>(null)
@@ -21,11 +22,21 @@ export default function ReporteIncidencias() {
     fetchIncidencias(null)
   }, [])
 
-  const fetchIncidencias = (id: number | null) => {
+  const fetchIncidencias = async (id: number | null) => {
     setLoading(true)
-    let q = dbCtrl.from('incidencias').select('*, lotes(cve_lote, lote)').order('fecha', { ascending: false })
+    let q = dbCtrl.from('incidencias').select('*').order('fecha', { ascending: false })
     if (id) q = q.eq('id_lote_fk', id)
-    q.then(({ data }) => { setIncidencias(data ?? []); setLoading(false) })
+    const { data } = await q
+    const rows = data ?? []
+    setIncidencias(rows)
+    const loteIds = Array.from(new Set(rows.map((r: any) => r.id_lote_fk).filter(Boolean)))
+    if (loteIds.length) {
+      const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+      const map: Record<number, string> = {}
+      for (const l of (lotesData ?? []) as any[]) map[l.id] = l.cve_lote
+      setLoteMap(map)
+    } else setLoteMap({})
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -123,7 +134,7 @@ export default function ReporteIncidencias() {
             ) : filtered.map(i => (
               <tr key={i.id}>
                 <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>#{i.id}</td>
-                <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{i.lotes?.cve_lote ?? (i.id_lote_fk ? `#${i.id_lote_fk}` : '—')}</td>
+                <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[i.id_lote_fk] ?? (i.id_lote_fk ? `#${i.id_lote_fk}` : '—')}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{i.tipo ?? '—'}</td>
                 <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.descripcion ?? '—'}</td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{i.area_responsable ?? '—'}</td>

@@ -2,7 +2,7 @@
 import { useDebounce } from '@/lib/useDebounce'
 import { useAuth } from '@/lib/AuthContext'
 import { useEffect, useState, useCallback } from 'react'
-import { dbCtrl } from '@/lib/supabase'
+import { dbCtrl, dbCat } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Eye, X, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
 import { fmt } from './types'
 import ReciboModal from './ReciboModal'
@@ -14,6 +14,7 @@ const PAGE_SIZE = 25
 export default function RecibosTab() {
   const { canWrite, canDelete } = useAuth()
   const [recibos, setRecibos]       = useState<any[]>([])
+  const [loteMap, setLoteMap]       = useState<Record<number, string>>({})
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
   const [search, setSearch]         = useState('')
@@ -26,13 +27,28 @@ export default function RecibosTab() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    let q = dbCtrl.from('recibos').select('*, lotes(cve_lote, lote)', { count: 'exact' })
+    let q = dbCtrl.from('recibos').select('*', { count: 'exact' })
       .order('fecha_recibo', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterActivo !== '') q = q.eq('activo', filterActivo === 'true')
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,propietario.ilike.%${debouncedSearch}%`)
     const { data, count, error } = await q
-    if (!error) { setRecibos(data ?? []); setTotal(count ?? 0) }
+    if (!error) {
+      const recList = data ?? []
+      setRecibos(recList)
+      setTotal(count ?? 0)
+      const loteIds = Array.from(new Set(recList.map((r: any) => r.id_lote_fk).filter(Boolean)))
+      if (loteIds.length) {
+        const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+        const map: Record<number, string> = {}
+        for (const l of (lotesData ?? []) as any[]) map[l.id] = l.cve_lote
+        setLoteMap(map)
+      } else {
+        setLoteMap({})
+      }
+    } else {
+      console.error(error)
+    }
     setLoading(false)
   }, [page, debouncedSearch, filterActivo])
 
@@ -98,7 +114,7 @@ export default function RecibosTab() {
             : recibos.map((r: any) => (
               <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.5 }}>
                 <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</td>
-                <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--text-secondary)' }}>{r.lotes?.cve_lote ?? `#${r.id_lote_fk}`}</td>
+                <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--text-secondary)' }}>{loteMap[r.id_lote_fk] ?? `#${r.id_lote_fk}`}</td>
                 <td style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.propietario ?? '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{r.fecha_recibo ? new Date(r.fecha_recibo + 'T12:00:00').toLocaleDateString('es-MX') : '—'}</td>
                 <td style={{ fontSize: 12, color: r.fecha_pago ? '#15803d' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>{r.fecha_pago ? new Date(r.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX') : 'Pendiente'}</td>

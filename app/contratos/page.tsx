@@ -42,6 +42,7 @@ const fmt = (v: number | null) =>
 export default function ContratosPage() {
   const { canWrite, canDelete } = useAuth()
   const [contratos, setContratos] = useState<Contrato[]>([])
+  const [loteMap, setLoteMap]     = useState<Record<number, string>>({})
   const [total, setTotal]         = useState(0)
   const [page, setPage]           = useState(0)
   const [search, setSearch]       = useState('')
@@ -55,14 +56,27 @@ export default function ContratosPage() {
     setLoading(true)
     let q = dbCtrl
       .from('contratos')
-      .select('*, lotes(cve_lote, lote)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .order('fecha', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
     if (debouncedSearch) q = q.or(`propietario_contrato.ilike.%${debouncedSearch}%,tipo_contrato.ilike.%${debouncedSearch}%,sucesivo.ilike.%${debouncedSearch}%`)
 
     const { data, count, error } = await q
-    if (!error) { setContratos(data as Contrato[]); setTotal(count ?? 0) }
+    if (!error) {
+      const rows = (data ?? []) as Contrato[]
+      setContratos(rows)
+      setTotal(count ?? 0)
+      const loteIds = Array.from(new Set(rows.map(r => r.id_lote_fk).filter(Boolean)))
+      if (loteIds.length) {
+        const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+        const map: Record<number, string> = {}
+        for (const l of (lotesData ?? []) as any[]) map[l.id] = l.cve_lote
+        setLoteMap(map)
+      } else setLoteMap({})
+    } else {
+      console.error(error)
+    }
     setLoading(false)
   }, [page, debouncedSearch])
 
@@ -132,7 +146,7 @@ export default function ContratosPage() {
                 <tr key={c.id}>
                   <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--gold-light)' }}>{c.sucesivo ?? `#${c.id}`}</td>
                   <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--text-secondary)' }}>
-                    {(c as any).lotes?.cve_lote ?? `#${c.id_lote_fk}`}
+                    {loteMap[c.id_lote_fk] ?? `#${c.id_lote_fk}`}
                   </td>
                   <td><span className="badge badge-default">{c.tipo_contrato ?? '—'}</span></td>
                   <td style={{ fontSize: 13, color: 'var(--text-secondary)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.propietario_contrato ?? '—'}</td>
@@ -165,7 +179,7 @@ export default function ContratosPage() {
       </div>
 
       {modalOpen && <ContratoModal contrato={editing} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); fetchData() }} />}
-      {detail    && <ContratoDetail contrato={detail} onClose={() => setDetail(null)} onEdit={() => { setEditing(detail); setDetail(null); setModalOpen(true) }} />}
+      {detail    && <ContratoDetail contrato={detail} loteLabel={loteMap[detail.id_lote_fk] ?? `#${detail.id_lote_fk}`} onClose={() => setDetail(null)} onEdit={() => { setEditing(detail); setDetail(null); setModalOpen(true) }} />}
     </div>
   )
 }

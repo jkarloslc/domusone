@@ -11,6 +11,7 @@ export default function VehiculosTab() {
   const { canWrite, canDelete } = useAuth()
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [marcas, setMarcas]       = useState<any[]>([])
+  const [marcaMap, setMarcaMap]   = useState<Record<number, string>>({})
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -19,13 +20,19 @@ export default function VehiculosTab() {
   const [autModal, setAutModal]   = useState<Vehiculo | null>(null)
 
   useEffect(() => {
-    dbCfg.from('marcas_vehiculos').select('*').eq('activo', true).order('nombre')
-      .then(({ data }) => setMarcas(data ?? []))
+    dbCfg.from('marcas_vehiculos').select('*').order('nombre')
+      .then(({ data }) => {
+        const all = data ?? []
+        setMarcas(all.filter((m: any) => m.activo))
+        const map: Record<number, string> = {}
+        for (const m of all as any[]) map[m.id] = m.nombre
+        setMarcaMap(map)
+      })
   }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    let q = dbCat.from('vehiculos').select('*, marcas_vehiculos(nombre)').order('placas')
+    let q = dbCat.from('vehiculos').select('*').order('placas')
     if (debouncedSearch) q = q.or(`placas.ilike.%${debouncedSearch}%,modelo.ilike.%${debouncedSearch}%,color.ilike.%${debouncedSearch}%`)
     const { data } = await q
     setVehiculos(data as Vehiculo[] ?? [])
@@ -86,7 +93,7 @@ export default function VehiculosTab() {
                   </td>
                   <td><span className="badge badge-default">{v.tipo_vehiculo ?? '—'}</span></td>
                   <td style={{ color: 'var(--text-secondary)' }}>
-                    {[(v as any).marcas_vehiculos?.nombre, v.modelo].filter(Boolean).join(' ') || '—'}
+                    {[marcaMap[(v as any).id_marca_fk], v.modelo].filter(Boolean).join(' ') || '—'}
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v.color ?? '—'}</td>
                   <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>{v.num_serie ?? '—'}</td>
@@ -182,11 +189,20 @@ function AutorizarVehiculoModal({ vehiculo, onClose }: { vehiculo: Vehiculo; onC
   const [vigDesde, setVigDesde]   = useState('')
   const [vigHasta, setVigHasta]   = useState('')
 
-  useEffect(() => {
-    dbCtrl.from('vehiculos_autorizados_lotes').select('*, lotes(cve_lote, lote)')
+  const cargarAutorizados = useCallback(async () => {
+    const { data } = await dbCtrl.from('vehiculos_autorizados_lotes').select('*')
       .eq('id_vehiculo_fk', vehiculo.id).eq('activo', true)
-      .then(({ data }) => setAutorizados(data ?? []))
+    const rows = data ?? []
+    const loteIds = Array.from(new Set(rows.map((r: any) => r.id_lote_fk).filter(Boolean)))
+    let loteMap: Record<number, string> = {}
+    if (loteIds.length) {
+      const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+      for (const l of (lotesData ?? []) as any[]) loteMap[l.id] = l.cve_lote
+    }
+    setAutorizados(rows.map((r: any) => ({ ...r, loteLabel: loteMap[r.id_lote_fk] })))
   }, [vehiculo.id])
+
+  useEffect(() => { cargarAutorizados() }, [cargarAutorizados])
 
   useEffect(() => {
     if (loteSearch.length < 2) { setLotes([]); return }
@@ -198,8 +214,7 @@ function AutorizarVehiculoModal({ vehiculo, onClose }: { vehiculo: Vehiculo; onC
     if (!selectedLote) return
     setSaving(true)
     await dbCtrl.from('vehiculos_autorizados_lotes').insert({ id_lote_fk: selectedLote.id, id_vehiculo_fk: vehiculo.id, vigencia_desde: vigDesde || null, vigencia_hasta: vigHasta || null, activo: true })
-    const { data } = await dbCtrl.from('vehiculos_autorizados_lotes').select('*, lotes(cve_lote, lote)').eq('id_vehiculo_fk', vehiculo.id).eq('activo', true)
-    setAutorizados(data ?? [])
+    await cargarAutorizados()
     setSelectedLote(null); setLoteSearch(''); setSaving(false)
   }
 
@@ -217,7 +232,7 @@ function AutorizarVehiculoModal({ vehiculo, onClose }: { vehiculo: Vehiculo; onC
               <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--gold)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Lotes Autorizados</div>
               {autorizados.map((a: any) => (
                 <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--surface-700)', borderRadius: 6, marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>{a.lotes?.cve_lote ?? `#${a.id_lote_fk}`}</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, color: 'var(--gold-light)' }}>{a.loteLabel ?? `#${a.id_lote_fk}`}</span>
                   <button className="btn-ghost" style={{ padding: '3px 8px', fontSize: 11, color: '#f87171' }} onClick={() => handleRevocar(a.id)}>Revocar</button>
                 </div>
               ))}

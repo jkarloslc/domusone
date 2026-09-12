@@ -59,6 +59,7 @@ const fmt = (v: number | null) =>
 export default function AfectacionesPage() {
   const { canWrite } = useAuth()
   const [afectaciones, setAfectaciones] = useState<Afectacion[]>([])
+  const [loteMap, setLoteMap]           = useState<Record<number, string>>({})
   const [total, setTotal]               = useState(0)
   const [search, setSearch]             = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -71,12 +72,25 @@ export default function AfectacionesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('afectaciones_proyectos')
-      .select('*, lotes(cve_lote, lote)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
     if (filterStatus) q = q.eq('status', filterStatus)
     if (debouncedSearch) q = q.or(`descripcion.ilike.%${debouncedSearch}%,beneficiario.ilike.%${debouncedSearch}%`)
     const { data, count, error } = await q
-    if (!error) { setAfectaciones(data as Afectacion[]); setTotal(count ?? 0) }
+    if (!error) {
+      const rows = (data ?? []) as Afectacion[]
+      setAfectaciones(rows)
+      setTotal(count ?? 0)
+      const loteIds = Array.from(new Set(rows.map(r => r.id_lote_fk).filter(Boolean)))
+      if (loteIds.length) {
+        const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+        const map: Record<number, string> = {}
+        for (const l of (lotesData ?? []) as any[]) map[l.id] = l.cve_lote
+        setLoteMap(map)
+      } else setLoteMap({})
+    } else {
+      console.error(error)
+    }
     setLoading(false)
   }, [debouncedSearch, filterStatus])
 
@@ -164,7 +178,7 @@ export default function AfectacionesPage() {
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin afectaciones registradas</td></tr>
             ) : afectaciones.map(a => (
               <tr key={a.id}>
-                <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{(a as any).lotes?.cve_lote ?? `#${a.id_lote_fk}`}</td>
+                <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[a.id_lote_fk] ?? `#${a.id_lote_fk}`}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{a.tipo ?? '—'}</td>
                 <td style={{ fontSize: 13 }}>{a.beneficiario ?? '—'}</td>
                 <td>
@@ -228,7 +242,7 @@ function AfectacionModal({ afectacion, onClose, onSaved }: { afectacion: Afectac
   const [saving, setSaving]         = useState(false)
   const [error, setError]           = useState('')
   const [lotes, setLotes]           = useState<any[]>([])
-  const [loteSearch, setLoteSearch] = useState(afectacion ? ((afectacion as any).lotes?.cve_lote ?? '') : '')
+  const [loteSearch, setLoteSearch] = useState('')
 
   const [form, setForm] = useState({
     id_lote_fk:    afectacion?.id_lote_fk?.toString() ?? '',
@@ -244,6 +258,12 @@ function AfectacionModal({ afectacion, onClose, onSaved }: { afectacion: Afectac
     status:        afectacion?.status ?? 'Activa',
     notas:         afectacion?.notas ?? '',
   })
+
+  useEffect(() => {
+    if (!afectacion?.id_lote_fk) return
+    dbCat.from('lotes').select('cve_lote, lote').eq('id', afectacion.id_lote_fk).single()
+      .then(({ data }) => setLoteSearch(data?.cve_lote ?? `#${data?.lote ?? afectacion.id_lote_fk}`))
+  }, [afectacion])
 
   useEffect(() => {
     if (loteSearch.length < 2) { setLotes([]); return }

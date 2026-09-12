@@ -6,7 +6,7 @@ import ModalShell from '@/components/ui/ModalShell'
 const fmt = (v: number | null) => v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'
 const fmtFecha = (d: string | null) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
 
-export default function ContratoDetail({ contrato: c, onClose, onEdit }: { contrato: Contrato; onClose: () => void; onEdit: () => void }) {
+export default function ContratoDetail({ contrato: c, loteLabel, onClose, onEdit }: { contrato: Contrato; loteLabel: string; onClose: () => void; onEdit: () => void }) {
   const subtitulo = `${c.tipo_contrato ?? '—'} · ${fmtFecha(c.fecha)}`
 
   return (
@@ -17,7 +17,7 @@ export default function ContratoDetail({ contrato: c, onClose, onEdit }: { contr
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <Group icon={<FileText size={14} />} label="Identificación">
-            <Row label="Lote"        value={(c as any).lotes?.cve_lote ?? `#${c.id_lote_fk}`} gold />
+            <Row label="Lote"        value={loteLabel} gold />
             <Row label="Sucesivo"    value={c.sucesivo} mono />
             <Row label="Tipo"        value={c.tipo_contrato} />
             <Row label="Propietario" value={c.propietario_contrato} />

@@ -11,6 +11,8 @@ const PAGE_SIZE = 30
 export default function BitacoraTab() {
   const { canWrite, canDelete } = useAuth()
   const [accesos, setAccesos]   = useState<Acceso[]>([])
+  const [loteMap, setLoteMap]         = useState<Record<number, string>>({})
+  const [visitanteMap, setVisitanteMap] = useState<Record<number, any>>({})
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
   const [search, setSearch]     = useState('')
@@ -21,12 +23,34 @@ export default function BitacoraTab() {
     setLoading(true)
     let q = dbCtrl
       .from('accesos')
-      .select('*, visitantes(nombre, apellido_paterno), lotes(cve_lote, lote)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .order('fecha_hora', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
     const { data, count, error } = await q
-    if (!error) { setAccesos(data as Acceso[]); setTotal(count ?? 0) }
+    if (!error) {
+      const rows = (data ?? []) as Acceso[]
+      setAccesos(rows)
+      setTotal(count ?? 0)
+
+      const loteIds = Array.from(new Set(rows.map((r: any) => r.id_lote_fk).filter(Boolean)))
+      if (loteIds.length) {
+        const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+        const map: Record<number, string> = {}
+        for (const l of (lotesData ?? []) as any[]) map[l.id] = l.cve_lote
+        setLoteMap(map)
+      } else setLoteMap({})
+
+      const visitanteIds = Array.from(new Set(rows.map((r: any) => r.id_visitante_fk).filter(Boolean)))
+      if (visitanteIds.length) {
+        const { data: visitantesData } = await dbCat.from('visitantes').select('id, nombre, apellido_paterno').in('id', visitanteIds)
+        const map: Record<number, any> = {}
+        for (const v of (visitantesData ?? []) as any[]) map[v.id] = v
+        setVisitanteMap(map)
+      } else setVisitanteMap({})
+    } else {
+      console.error(error)
+    }
     setLoading(false)
   }, [page, search])
 
@@ -107,13 +131,13 @@ export default function BitacoraTab() {
                     </span>
                   </td>
                   <td>
-                    {a.visitantes
-                      ? <span>{a.visitantes.nombre} {a.visitantes.apellido_paterno ?? ''}</span>
+                    {visitanteMap[(a as any).id_visitante_fk]
+                      ? <span>{visitanteMap[(a as any).id_visitante_fk].nombre} {visitanteMap[(a as any).id_visitante_fk].apellido_paterno ?? ''}</span>
                       : <span style={{ color: 'var(--text-muted)' }}>—</span>
                     }
                   </td>
                   <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--gold-light)' }}>
-                    {(a as any).lotes?.cve_lote ?? (a.id_lote_fk ? `#${a.id_lote_fk}` : '—')}
+                    {(a.id_lote_fk ? loteMap[a.id_lote_fk] : undefined) ?? (a.id_lote_fk ? `#${a.id_lote_fk}` : '—')}
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{a.turno ?? '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{a.guardia ?? '—'}</td>

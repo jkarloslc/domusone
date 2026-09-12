@@ -68,7 +68,7 @@ export default function ConstruccionModal({ construccion, onClose, onSaved }: {
 
   // Lote lookup (solo editable al crear)
   const [lotes, setLotes]           = useState<{ id: number; cve_lote: string | null; lote: number | null }[]>([])
-  const [loteSearch, setLoteSearch] = useState(construccion?.lotes?.cve_lote ?? '')
+  const [loteSearch, setLoteSearch] = useState('')
 
   const [form, setForm] = useState({
     id_lote_fk:           construccion?.id_lote_fk?.toString() ?? '',
@@ -86,6 +86,12 @@ export default function ConstruccionModal({ construccion, onClose, onSaved }: {
     dbCat.from('lotes').select('id, cve_lote, lote').ilike('cve_lote', `%${loteSearch}%`).limit(8)
       .then(({ data }) => setLotes(data ?? []))
   }, [loteSearch, isNew])
+
+  useEffect(() => {
+    if (!construccion?.id_lote_fk) return
+    dbCat.from('lotes').select('cve_lote, lote').eq('id', construccion.id_lote_fk).single()
+      .then(({ data }) => setLoteSearch(data?.cve_lote ?? `#${data?.lote ?? construccion.id_lote_fk}`))
+  }, [construccion])
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -118,7 +124,7 @@ export default function ConstruccionModal({ construccion, onClose, onSaved }: {
         created_by_id:        authUser?.user.id ?? null,
       }
       const { data, error: err } = await dbCtrl.from('construcciones').insert(payload)
-        .select('*, lotes(cve_lote, lote)').single()
+        .select('*').single()
       if (err || !data) { setSaving(false); setError(err?.message ?? 'Error al guardar'); return }
 
       const checklistRows = ETAPAS.map(e => ({ id_construccion_fk: data.id, etapa: e.key, orden: e.orden }))
@@ -157,7 +163,7 @@ export default function ConstruccionModal({ construccion, onClose, onSaved }: {
     { key: 'documentos',  label: 'Documentos',  icon: FolderOpen,      disabled: isNew, disabledHint: 'Guarda el expediente primero' },
   ]
 
-  const loteLabel = current?.lotes?.cve_lote ?? (current ? `#${current.id_lote_fk}` : '')
+  const loteLabel = current ? (loteSearch || `#${current.id_lote_fk}`) : ''
 
   return (
     <ModalShell modulo="construcciones" maxWidth={760}

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { dbCtrl } from '@/lib/supabase'
+import { dbCat, dbCtrl } from '@/lib/supabase'
 import { RefreshCw } from 'lucide-react'
 import { PrintBar } from './utils'
 
@@ -12,6 +12,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function ReporteIncidenciasAsignado() {
   const [incidencias, setIncidencias] = useState<any[]>([])
+  const [loteMap, setLoteMap]         = useState<Record<number, string>>({})
   const [loading, setLoading]         = useState(true)
   const [filterAsignado, setFilter]   = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -21,12 +22,22 @@ export default function ReporteIncidenciasAsignado() {
 
   useEffect(() => {
     setLoading(true)
-    dbCtrl.from('incidencias').select('*, lotes(cve_lote, lote)').order('responsable').order('fecha', { ascending: false })
-      .then(({ data }) => {
-        setIncidencias(data ?? [])
+    dbCtrl.from('incidencias').select('*').order('responsable').order('fecha', { ascending: false })
+      .then(async ({ data }) => {
+        const rows = data ?? []
+        setIncidencias(rows)
         // Extraer asignados únicos
-        const uniq = Array.from(new Set((data ?? []).map((i: any) => i.responsable).filter(Boolean))) as string[]
+        const uniq = Array.from(new Set(rows.map((i: any) => i.responsable).filter(Boolean))) as string[]
         setAsignados(uniq.sort())
+
+        const loteIds = Array.from(new Set(rows.map((i: any) => i.id_lote_fk).filter(Boolean)))
+        if (loteIds.length) {
+          const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+          const map: Record<number, string> = {}
+          for (const l of (lotesData ?? []) as any[]) map[l.id] = l.cve_lote
+          setLoteMap(map)
+        } else setLoteMap({})
+
         setLoading(false)
       })
   }, [])
@@ -98,7 +109,7 @@ export default function ReporteIncidenciasAsignado() {
                 {items.map(i => (
                   <tr key={i.id}>
                     <td style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-muted)' }}>#{i.id}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{i.lotes?.cve_lote ?? (i.id_lote_fk ? `#${i.id_lote_fk}` : '—')}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[i.id_lote_fk] ?? (i.id_lote_fk ? `#${i.id_lote_fk}` : '—')}</td>
                     <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{i.tipo ?? '—'}</td>
                     <td style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.descripcion ?? '—'}</td>
                     <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtFecha(i.fecha)}</td>

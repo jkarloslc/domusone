@@ -6,6 +6,8 @@ import { PrintBar } from './utils'
 
 export default function ReporteVisitantes() {
   const [rows, setRows]             = useState<any[]>([])
+  const [loteMap, setLoteMap]       = useState<Record<number, any>>({})
+  const [visitanteMap, setVisitanteMap] = useState<Record<number, any>>({})
   const [lotes, setLotes]           = useState<any[]>([])
   const [loteSearch, setLoteSearch] = useState('')
   const [loteId, setLoteId]         = useState<number | null>(null)
@@ -14,14 +16,36 @@ export default function ReporteVisitantes() {
 
   useEffect(() => { fetchData(null) }, [])
 
-  const fetchData = (id: number | null) => {
+  const fetchData = async (id: number | null) => {
     setLoading(true)
     let q = dbCtrl.from('visitantes_autorizados_lotes')
-      .select('tipo_pase, vigencia_desde, vigencia_hasta, activo, lotes(cve_lote, lote), visitantes(nombre, apellido_paterno, apellido_materno, tipo_visitante, parentesco, identificacion_tipo, identificacion_num)')
+      .select('tipo_pase, vigencia_desde, vigencia_hasta, activo, id_lote_fk, id_visitante_fk')
       .eq('activo', true)
       .order('id')
     if (id) q = q.eq('id_lote_fk', id)
-    q.then(({ data }) => { setRows(data ?? []); setLoading(false) })
+    const { data } = await q
+    const rowsData = data ?? []
+    setRows(rowsData)
+
+    const loteIds = Array.from(new Set(rowsData.map((r: any) => r.id_lote_fk).filter(Boolean)))
+    if (loteIds.length) {
+      const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+      const map: Record<number, any> = {}
+      for (const l of (lotesData ?? []) as any[]) map[l.id] = l
+      setLoteMap(map)
+    } else setLoteMap({})
+
+    const visitanteIds = Array.from(new Set(rowsData.map((r: any) => r.id_visitante_fk).filter(Boolean)))
+    if (visitanteIds.length) {
+      const { data: visitantesData } = await dbCat.from('visitantes')
+        .select('id, nombre, apellido_paterno, apellido_materno, tipo_visitante, parentesco, identificacion_tipo, identificacion_num')
+        .in('id', visitanteIds)
+      const map: Record<number, any> = {}
+      for (const v of (visitantesData ?? []) as any[]) map[v.id] = v
+      setVisitanteMap(map)
+    } else setVisitanteMap({})
+
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -92,22 +116,24 @@ export default function ReporteVisitantes() {
           <tbody>
             {rows.length === 0 ? (
               <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin visitantes autorizados</td></tr>
-            ) : rows.map((r, i) => (
+            ) : rows.map((r, i) => {
+              const v = visitanteMap[r.id_visitante_fk]
+              return (
               <tr key={i}>
-                <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{r.lotes?.cve_lote ?? '—'}</td>
+                <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[r.id_lote_fk]?.cve_lote ?? '—'}</td>
                 <td style={{ fontWeight: 500 }}>
-                  {[r.visitantes?.nombre, r.visitantes?.apellido_paterno, r.visitantes?.apellido_materno].filter(Boolean).join(' ') || '—'}
+                  {[v?.nombre, v?.apellido_paterno, v?.apellido_materno].filter(Boolean).join(' ') || '—'}
                 </td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.visitantes?.tipo_visitante ?? '—'}</td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.visitantes?.parentesco ?? '—'}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v?.tipo_visitante ?? '—'}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v?.parentesco ?? '—'}</td>
                 <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                  {r.visitantes?.identificacion_tipo ? `${r.visitantes.identificacion_tipo}: ${r.visitantes.identificacion_num ?? ''}` : '—'}
+                  {v?.identificacion_tipo ? `${v.identificacion_tipo}: ${v.identificacion_num ?? ''}` : '—'}
                 </td>
                 <td style={{ fontSize: 12 }}>{r.tipo_pase ?? '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtFecha(r.vigencia_desde)}</td>
                 <td style={{ fontSize: 12, color: r.vigencia_hasta ? '#15803d' : 'var(--text-muted)' }}>{fmtFecha(r.vigencia_hasta)}</td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>

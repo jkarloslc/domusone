@@ -17,6 +17,7 @@ const PAGE_SIZE = 30
 export default function CargosTab() {
   const { canWrite } = useAuth()
   const [cargos, setCargos]         = useState<Cargo[]>([])
+  const [loteMap, setLoteMap]       = useState<Record<number, string>>({})
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
   const [search, setSearch]         = useState('')
@@ -29,13 +30,28 @@ export default function CargosTab() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('cargos')
-      .select('*, lotes(cve_lote, lote)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .order('fecha_cargo', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (debouncedSearch) q = q.ilike('concepto', `%${debouncedSearch}%`)
     const { data, count, error } = await q
-    if (!error) { setCargos(data as Cargo[]); setTotal(count ?? 0) }
+    if (!error) {
+      const cargosList = (data ?? []) as Cargo[]
+      setCargos(cargosList)
+      setTotal(count ?? 0)
+      const loteIds = Array.from(new Set(cargosList.map((c: any) => c.id_lote_fk).filter(Boolean)))
+      if (loteIds.length) {
+        const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+        const map: Record<number, string> = {}
+        for (const l of (lotesData ?? []) as any[]) map[l.id] = l.cve_lote
+        setLoteMap(map)
+      } else {
+        setLoteMap({})
+      }
+    } else {
+      console.error(error)
+    }
     setLoading(false)
   }, [page, debouncedSearch, filterStatus])
 
@@ -115,7 +131,7 @@ export default function CargosTab() {
               const sc = STATUS_CARGO_COLOR[c.status] ?? STATUS_CARGO_COLOR['Pendiente']
               return (
                 <tr key={c.id}>
-                  <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{(c as any).lotes?.cve_lote ?? `#${c.id_lote_fk}`}</td>
+                  <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[c.id_lote_fk as any] ?? `#${c.id_lote_fk}`}</td>
                   <td style={{ fontSize: 13 }}>{c.concepto}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                     {c.periodo_mes && c.periodo_anio ? `${c.periodo_mes} ${c.periodo_anio}` : '—'}

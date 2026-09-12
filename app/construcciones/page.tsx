@@ -2,7 +2,7 @@
 import { useDebounce } from '@/lib/useDebounce'
 import { useAuth } from '@/lib/AuthContext'
 import { useEffect, useState, useCallback } from 'react'
-import { dbCtrl } from '@/lib/supabase'
+import { dbCat, dbCtrl } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, Edit2, Trash2, HardHat,
   ChevronLeft, ChevronRight, ClipboardCheck,
@@ -31,6 +31,7 @@ type Construccion = {
 export default function ConstruccionesPage() {
   const { can, canWrite, canDelete } = useAuth()
   const [items, setItems]           = useState<Construccion[]>([])
+  const [loteMap, setLoteMap]       = useState<Record<number, string>>({})
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
   const [search, setSearch]         = useState('')
@@ -44,14 +45,27 @@ export default function ConstruccionesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('construcciones')
-      .select('*, lotes(cve_lote, lote), construcciones_checklist(completado)', { count: 'exact' })
+      .select('*, construcciones_checklist(completado)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (debouncedSearch) q = q.or(`responsable_obra.ilike.%${debouncedSearch}%,descripcion.ilike.%${debouncedSearch}%`)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterMotivo) q = q.eq('motivo', filterMotivo)
     const { data, count, error } = await q
-    if (!error) { setItems(data as unknown as Construccion[]); setTotal(count ?? 0) }
+    if (!error) {
+      const rows = (data ?? []) as unknown as Construccion[]
+      setItems(rows)
+      setTotal(count ?? 0)
+      const loteIds = Array.from(new Set(rows.map(r => r.id_lote_fk).filter(Boolean)))
+      if (loteIds.length) {
+        const { data: lotesData } = await dbCat.from('lotes').select('id, cve_lote').in('id', loteIds)
+        const map: Record<number, string> = {}
+        for (const l of (lotesData ?? []) as any[]) map[l.id] = l.cve_lote
+        setLoteMap(map)
+      } else setLoteMap({})
+    } else {
+      console.error(error)
+    }
     setLoading(false)
   }, [page, debouncedSearch, filterStatus, filterMotivo])
 
@@ -137,7 +151,7 @@ export default function ConstruccionesPage() {
               const done = c.construcciones_checklist?.filter(e => e.completado).length ?? 0
               return (
                 <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => { setEditing(c); setModalOpen(true) }}>
-                  <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: '#d97706', fontWeight: 600 }}>{c.lotes?.cve_lote ?? `#${c.id_lote_fk}`}</td>
+                  <td style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: '#d97706', fontWeight: 600 }}>{loteMap[c.id_lote_fk] ?? `#${c.id_lote_fk}`}</td>
                   <td>{c.motivo ?? '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.responsable_obra ?? '—'}</td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{fmtFecha(c.fecha_apertura)}</td>
