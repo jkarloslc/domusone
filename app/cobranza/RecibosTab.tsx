@@ -4,8 +4,9 @@ import { useAuth } from '@/lib/AuthContext'
 import { useEffect, useState, useCallback } from 'react'
 import { dbCtrl, dbCat } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Eye, X, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
-import { fmt } from './types'
+import { type Recibo, fmt } from './types'
 import ReciboModal from './ReciboModal'
+import ReciboDetail from './ReciboDetail'
 import EstadoCuenta from './EstadoCuenta'
 import FacturaModal from '../facturas/FacturaModal'
 
@@ -24,6 +25,7 @@ export default function RecibosTab() {
   const [modalOpen, setModalOpen]   = useState(false)
   const [edoCuenta, setEdoCuenta]   = useState(false)
   const [facturarRecibo, setFacturarRecibo] = useState<any>(null)
+  const [detalleRecibo, setDetalleRecibo] = useState<Recibo | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -106,11 +108,12 @@ export default function RecibosTab() {
               <th style={{ textAlign: 'right' }}>Monto</th>
               <th>Status</th>
               <th style={{ width: 90 }}>Factura</th>
+              <th style={{ width: 60 }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
-            : recibos.length === 0 ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin recibos</td></tr>
+            {loading ? <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+            : recibos.length === 0 ? <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin recibos</td></tr>
             : recibos.map((r: any) => (
               <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.5 }}>
                 <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio ?? `#${r.id}`}</td>
@@ -133,6 +136,12 @@ export default function RecibosTab() {
                     </span>
                   )}
                 </td>
+                <td>
+                  <button className="btn-ghost" style={{ padding: '3px 6px' }}
+                    onClick={() => setDetalleRecibo(r as Recibo)} title="Ver detalle">
+                    <Eye size={14} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -151,6 +160,8 @@ export default function RecibosTab() {
       {modalOpen  && <ReciboModal onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); fetchData() }} />}
       {edoCuenta  && <EstadoCuenta onClose={() => setEdoCuenta(false)} />}
       {facturarRecibo && <FacturaModal reciboInicial={facturarRecibo} onClose={() => setFacturarRecibo(null)} onSaved={() => { setFacturarRecibo(null); fetchData() }} />}
+      {detalleRecibo && <ReciboDetail recibo={detalleRecibo} onClose={() => setDetalleRecibo(null)}
+        onCanceled={() => { setDetalleRecibo(null); fetchData() }} />}
     </div>
   )
 }
