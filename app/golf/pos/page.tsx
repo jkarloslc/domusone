@@ -447,79 +447,35 @@ export default function POSPage() {
   }
 
   // ── Cancelar venta ────────────────────────────────────────
-  // Si la venta vino de cobrar una cuota (Golf: cobranza/pensiones de carrito, o Hípico)
-  // o una renta (Locales), libera esa cuota (vuelve a PENDIENTE/PAGO_PARCIAL) para que
-  // se pueda volver a cobrar — antes solo se cancelaba el ticket y la cuota quedaba
-  // marcada como pagada sin recibo vigente.
-  const revertirCuotasCobertura = async (
-    dbClient: any,
-    tabla: 'cxc_hip' | 'loc_cxc' | 'cxc_golf',
-    detRows: { id_cuota_fk: number | null; monto_final: number }[],
-    extraFields: Record<string, any> = {},
-  ) => {
-    const detCuotas = detRows.filter(d => d.id_cuota_fk != null)
-    if (!detCuotas.length) return
-    const ids = Array.from(new Set(detCuotas.map(d => d.id_cuota_fk as number)))
-    const { data: cuotasActuales, error: eq } = await dbClient.from(tabla)
-      .select('id, saldo, monto_final, status').in('id', ids)
-    if (eq) throw eq
-    const porId = new Map(((cuotasActuales ?? []) as { id: number; saldo: number | null; monto_final: number; status: string }[]).map(c => [c.id, c]))
-    const abonadoPorCuota = new Map<number, number>()
-    for (const d of detCuotas) {
-      const idC = d.id_cuota_fk as number
-      abonadoPorCuota.set(idC, (abonadoPorCuota.get(idC) ?? 0) + d.monto_final)
-    }
-    const updates = Array.from(abonadoPorCuota.entries()).map(([idC, abonado]) => {
-      const c = porId.get(idC)
-      if (!c) return null
-      const saldoActual = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
-      const nuevoSaldo = Math.min(c.monto_final, parseFloat((saldoActual + abonado).toFixed(2)))
-      return dbClient.from(tabla).update({
-        saldo:      nuevoSaldo,
-        status:     nuevoSaldo >= c.monto_final - 0.005 ? 'PENDIENTE' : 'PAGO_PARCIAL',
-        fecha_pago: null,
-        forma_pago: null,
-        ...extraFields,
-      }).eq('id', idC)
-    }).filter(Boolean) as PromiseLike<any>[]
-    const results = await Promise.all(updates)
-    const updErr = (results as any[]).find(r => r.error)?.error
-    if (updErr) throw updErr
-  }
-
+  // Único método soportado para revertir cuotas es el de "Cancelar" en la
+  // pantalla de Recibos de cada módulo (Golf/Hípico/Locales/Residencial) —
+  // ahí sí se puede cancelar aunque el recibo nunca haya generado ticket POS
+  // (generar el ticket es un paso opcional y posterior al recibo). Si esta
+  // venta viene de uno de esos recibos, se bloquea aquí y se manda al origen
+  // en vez de reimplementar la cascada; si es una venta directa de POS
+  // (Green Fee, Pro Shop, Torneos, etc.) no hay cuota que revertir y se
+  // cancela igual que siempre.
   const cancelarVenta = async (id: number) => {
-    if (!confirm('¿Cancelar esta venta?')) return
     try {
-      const [{ data: recGolf }, { data: recHip }, { data: recLoc }] = await Promise.all([
-        dbGolf.from('recibos_golf').select('id, observaciones, recibos_golf_det(id_cuota_fk, monto_final)').eq('id_venta_pos_fk', id).maybeSingle(),
-        dbHip.from('recibos_hip').select('id, observaciones, recibos_hip_det(id_cuota_fk, monto_final)').eq('id_venta_pos_fk', id).maybeSingle(),
-        dbCtrl.from('loc_recibos').select('id, observaciones, loc_recibos_det(id_cuota_fk, monto_final)').eq('id_venta_pos_fk', id).maybeSingle(),
+      const [{ data: recGolf }, { data: recHip }, { data: recLoc }, { data: recResi }] = await Promise.all([
+        dbGolf.from('recibos_golf').select('folio').eq('id_venta_pos_fk', id).maybeSingle(),
+        dbHip.from('recibos_hip').select('folio').eq('id_venta_pos_fk', id).maybeSingle(),
+        dbCtrl.from('loc_recibos').select('folio').eq('id_venta_pos_fk', id).maybeSingle(),
+        dbCtrl.from('recibos').select('folio').eq('id_venta_pos_fk', id).maybeSingle(),
       ])
 
-      const notaCancel = (obs: string | null) => obs ? `${obs} | Cancelado desde POS` : 'Cancelado desde POS'
+      const origen = recGolf ? { folio: (recGolf as any).folio, ruta: 'Golf › Recibos' }
+        : recHip ? { folio: (recHip as any).folio, ruta: 'Hípico › Cobranza › Recibos' }
+        : recLoc ? { folio: (recLoc as any).folio, ruta: 'Locales › Cobranza › Recibos' }
+        : recResi ? { folio: (recResi as any).folio, ruta: 'Residencial › Cobranza › Recibos' }
+        : null
 
-      if (recGolf) {
-        await revertirCuotasCobertura(dbGolf, 'cxc_golf', (recGolf as any).recibos_golf_det ?? [], {
-          referencia_pago: null, usuario_cobra: null, id_recibo_fk: null,
-        })
-        const { error: erRec } = await dbGolf.from('recibos_golf').update({
-          status: 'CANCELADO', observaciones: notaCancel((recGolf as any).observaciones),
-        }).eq('id', (recGolf as any).id)
-        if (erRec) throw erRec
-      } else if (recHip) {
-        await revertirCuotasCobertura(dbHip, 'cxc_hip', (recHip as any).recibos_hip_det ?? [])
-        const { error: erRec } = await dbHip.from('recibos_hip').update({
-          status: 'CANCELADO', observaciones: notaCancel((recHip as any).observaciones),
-        }).eq('id', (recHip as any).id)
-        if (erRec) throw erRec
-      } else if (recLoc) {
-        await revertirCuotasCobertura(dbCtrl, 'loc_cxc', (recLoc as any).loc_recibos_det ?? [])
-        const { error: erRec } = await dbCtrl.from('loc_recibos').update({
-          status: 'CANCELADO', observaciones: notaCancel((recLoc as any).observaciones),
-        }).eq('id', (recLoc as any).id)
-        if (erRec) throw erRec
+      if (origen) {
+        alert(`Esta venta proviene del recibo ${origen.folio ?? '—'}.\n\nCancélala desde ${origen.ruta} para que la cuota también se libere correctamente.`)
+        return
       }
 
+      if (!confirm('¿Cancelar esta venta?')) return
       const { error } = await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', id)
       if (error) throw error
       fetchVentas(); fetchStats()
