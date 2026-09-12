@@ -152,30 +152,47 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
   const countVigente   = recibos.filter(r => r.status === 'VIGENTE').length
 
   // ── Cancelar recibo ────────────────────────────────────────
+  // Revierte las cuotas cubiertas a PENDIENTE y cancela el ticket POS vinculado,
+  // si existe (mismo patrón que Hípico/Locales).
   const handleCancelar = async () => {
     if (!cancelando) return
     setSavingCancel(true)
-    // 1. Cancelar recibo
-    await dbGolf.from('recibos_golf').update({
-      status: 'CANCELADO',
-      observaciones: motivoCancel || 'Cancelado por usuario',
-    }).eq('id', cancelando.id)
-    // 2. Revertir cuotas a PENDIENTE
-    const ids = cancelando.recibos_golf_det.map(d => d.id)
-    if (ids.length) {
-      await dbGolf.from('cxc_golf').update({
-        status: 'PENDIENTE',
-        fecha_pago: null,
-        forma_pago: null,
-        referencia_pago: null,
-        usuario_cobra: null,
-        id_recibo_fk: null,
-      }).eq('id_recibo_fk', cancelando.id)
+    try {
+      // 1. Cancelar recibo
+      const { error: erRec } = await dbGolf.from('recibos_golf').update({
+        status: 'CANCELADO',
+        observaciones: motivoCancel || 'Cancelado por usuario',
+      }).eq('id', cancelando.id)
+      if (erRec) throw erRec
+
+      // 2. Revertir cuotas a PENDIENTE
+      const ids = cancelando.recibos_golf_det.map(d => d.id)
+      if (ids.length) {
+        const { error: erCuotas } = await dbGolf.from('cxc_golf').update({
+          status: 'PENDIENTE',
+          fecha_pago: null,
+          forma_pago: null,
+          referencia_pago: null,
+          usuario_cobra: null,
+          id_recibo_fk: null,
+        }).eq('id_recibo_fk', cancelando.id)
+        if (erCuotas) throw erCuotas
+      }
+
+      // 3. Cancelar el ticket POS vinculado, si existe
+      if (cancelando.id_venta_pos_fk) {
+        const { error: erVenta } = await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', cancelando.id_venta_pos_fk)
+        if (erVenta) throw erVenta
+      }
+
+      setCancelando(null)
+      setMotivoCancel('')
+      cargar()
+    } catch (e: any) {
+      alert(`Error al cancelar: ${e?.message ?? e}`)
+    } finally {
+      setSavingCancel(false)
     }
-    setSavingCancel(false)
-    setCancelando(null)
-    setMotivoCancel('')
-    cargar()
   }
 
   // ── Imprimir recibo ────────────────────────────────────────
