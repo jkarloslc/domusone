@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { dbCtrl } from '@/lib/supabase'
+import { dbCtrl, dbGolf } from '@/lib/supabase'
 import { X, Ban, Printer, CheckCircle } from 'lucide-react'
 import { type Recibo, type ReciboDetalle, type ReciboPago, fmt } from './types'
 import ModalShell from '@/components/ui/ModalShell'
@@ -21,17 +21,60 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
       .then(({ data }) => setPagos((data ?? []).map((p: any) => ({ ...p, forma_nombre: p.formas_pago?.nombre }))))
   }, [r.id])
 
+  // Revierte el saldo de cada cargo cubierto por este recibo (para poder volver a
+  // cobrarlos) y cancela el ticket POS vinculado, si existe — mismo patrón que
+  // Hípico/Locales/Golf.
   const handleCancel = async () => {
     if (!motivo.trim()) return
     setCanceling(true)
-    await dbCtrl.from('recibos').update({
-      activo: false,
-      usuario_cancela: 'sistema',
-      fecha_cancela: new Date().toISOString(),
-      motivo_cancelacion: motivo.trim(),
-    }).eq('id', r.id)
-    setCanceling(false)
-    onCanceled()
+    try {
+      const detCargos = detalle.filter(d => d.id_cargo_fk != null)
+      if (detCargos.length > 0) {
+        const ids = Array.from(new Set(detCargos.map(d => d.id_cargo_fk as number)))
+        const { data: cargosActuales, error: eq } = await dbCtrl.from('cargos')
+          .select('id, monto, monto_pagado').in('id', ids)
+        if (eq) throw eq
+        const porId = new Map(((cargosActuales ?? []) as { id: number; monto: number; monto_pagado: number | null }[]).map(c => [c.id, c]))
+        const abonadoPorCargo = new Map<number, number>()
+        for (const d of detCargos) {
+          const idC = d.id_cargo_fk as number
+          abonadoPorCargo.set(idC, (abonadoPorCargo.get(idC) ?? 0) + d.total)
+        }
+        const updates = Array.from(abonadoPorCargo.entries()).map(([idC, abonado]) => {
+          const c = porId.get(idC)
+          if (!c) return null
+          const nuevoPagado = Math.max(0, parseFloat(((c.monto_pagado ?? 0) - abonado).toFixed(2)))
+          const nuevoSaldo  = Math.max(0, parseFloat((c.monto - nuevoPagado).toFixed(2)))
+          return dbCtrl.from('cargos').update({
+            monto_pagado: nuevoPagado,
+            saldo:        nuevoSaldo,
+            status:       nuevoPagado <= 0.005 ? 'Pendiente' : 'Parcial',
+          }).eq('id', idC)
+        }).filter(Boolean) as PromiseLike<any>[]
+        const results = await Promise.all(updates)
+        const updErr = (results as any[]).find(res => res.error)?.error
+        if (updErr) throw updErr
+      }
+
+      if (r.id_venta_pos_fk) {
+        const { error: erVenta } = await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', r.id_venta_pos_fk)
+        if (erVenta) throw erVenta
+      }
+
+      const { error: erRec } = await dbCtrl.from('recibos').update({
+        activo: false,
+        usuario_cancela: 'sistema',
+        fecha_cancela: new Date().toISOString(),
+        motivo_cancelacion: motivo.trim(),
+      }).eq('id', r.id)
+      if (erRec) throw erRec
+
+      onCanceled()
+    } catch (e: any) {
+      alert(`Error al cancelar: ${e?.message ?? e}`)
+    } finally {
+      setCanceling(false)
+    }
   }
 
   const fmtFecha = (d: string | null) =>

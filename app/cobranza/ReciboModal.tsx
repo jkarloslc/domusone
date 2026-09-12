@@ -244,11 +244,16 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
     for (const { item: linea, montoNeto } of detalleNeto) {
       const cargoId = (linea as any).id_cargo_fk
       if (!cargoId) continue
-      const { data: cargoDB, error: errC } = await dbCtrl.from('cargos').select('monto_pagado').eq('id', cargoId).single()
+      const { data: cargoDB, error: errC } = await dbCtrl.from('cargos').select('monto, monto_pagado').eq('id', cargoId).single()
       if (errC) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errC.message}`); break }
       if (cargoDB) {
-        const nuevoPagado = (cargoDB.monto_pagado ?? 0) + montoNeto
-        const { error: errU } = await dbCtrl.from('cargos').update({ monto_pagado: nuevoPagado }).eq('id', cargoId)
+        const nuevoPagado = parseFloat(((cargoDB.monto_pagado ?? 0) + montoNeto).toFixed(2))
+        const nuevoSaldo  = Math.max(0, parseFloat((cargoDB.monto - nuevoPagado).toFixed(2)))
+        const { error: errU } = await dbCtrl.from('cargos').update({
+          monto_pagado: nuevoPagado,
+          saldo:        nuevoSaldo,
+          status:       nuevoSaldo <= 0.005 ? 'Pagado' : 'Parcial',
+        }).eq('id', cargoId)
         if (errU) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errU.message}`); break }
       }
     }

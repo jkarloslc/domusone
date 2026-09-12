@@ -24,6 +24,7 @@ export type Recibo = {
   fecha_de?: string | null
   fecha_a?: string | null
   created_at: string
+  id_venta_pos_fk?: number | null
   lotes?: { cve_lote: string | null; lote: number | null }
 }
 
