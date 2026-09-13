@@ -1,9 +1,20 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { dbGolf, dbCfg } from '@/lib/supabase'
+import { dbGolf, dbCfg, dbHip, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Search, Plus, Minus, Trash2, ShoppingCart, Loader, CheckCircle, Printer, ShieldCheck, Lock } from 'lucide-react'
+
+// El proceso de cobro de estos productos vive en el módulo de origen (cuota
+// con recibo propio) — venderlos directo desde POS crearía un ticket sin
+// recibo ni cuota que lo respalde. "Bloqueados" = todo id_producto_pos_fk
+// configurado en cualquier módulo de cobranza (Golf/Hípico/Locales/Residencial),
+// más un nombre exacto de respaldo para Hípico por si ese producto en
+// particular no está (o deja de estar) enlazado en cfg_hip.
+const MENSAJE_BLOQUEO_VENTA_DIRECTA = 'El proceso de cobro se debe hacer desde la emisión del respectivo módulo.'
+const NOMBRES_BLOQUEADOS_POR_CENTRO: Record<string, string[]> = {
+  'Hípico': ['Renta Caballeriza / Tack Room'],
+}
 import { fechaLocal, inicioDelDia } from '@/lib/dateUtils'
 
 // ── Tipos ──────────────────────────────────────────────────────
@@ -51,6 +62,7 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
   const [productos,   setProductos]   = useState<Producto[]>([])
   const [formasPago,  setFormasPago]  = useState<FormaPago[]>([])
   const [loading,     setLoading]     = useState(true)
+  const [idsBloqueados, setIdsBloqueados] = useState<Set<number>>(new Set())
 
   // Líneas del carrito
   const [lineas, setLineas] = useState<LineaVenta[]>([])
@@ -93,13 +105,30 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
     Promise.all([
       dbGolf.from('cat_productos_pos').select('*').eq('activo', true).eq('id_centro_fk', idCentro).order('nombre'),
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
-    ]).then(([{ data: prods }, { data: fps }]) => {
+      // Productos "placeholder" que usan los módulos de cobranza para generar
+      // su ticket POS al emitir un recibo — vendibles solo desde ahí.
+      dbGolf.from('cfg_carritos').select('id_producto_pos_fk'),
+      dbGolf.from('cat_cuotas_config').select('id_producto_pos_fk'),
+      dbHip.from('cfg_hip').select('id_producto_pos_fk'),
+      dbCtrl.from('loc_propiedades').select('id_producto_pos_fk'),
+      dbCfg.from('cuotas_estandar').select('id_producto_pos_fk'),
+    ]).then(([{ data: prods }, { data: fps }, ...cfgResults]) => {
       setProductos((prods as Producto[]) ?? [])
       const fps2 = (fps as FormaPago[]) ?? []
       setFormasPago(fps2)
+      const ids = new Set<number>()
+      for (const { data } of cfgResults) {
+        for (const row of (data ?? []) as { id_producto_pos_fk: number | null }[]) {
+          if (row.id_producto_pos_fk != null) ids.add(row.id_producto_pos_fk)
+        }
+      }
+      setIdsBloqueados(ids)
       setLoading(false)
     })
   }, [idCentro])
+
+  const estaBloqueado = (p: Producto) =>
+    idsBloqueados.has(p.id) || (NOMBRES_BLOQUEADOS_POR_CENTRO[nombreCentro] ?? []).includes(p.nombre)
 
   // ── Búsqueda de socios ────────────────────────────────────
   useEffect(() => {
@@ -136,6 +165,7 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
 
   // ── Agregar producto al carrito ───────────────────────────
   const agregarProducto = (p: Producto) => {
+    if (estaBloqueado(p)) { alert(MENSAJE_BLOQUEO_VENTA_DIRECTA); return }
     if (p.precio_variable) {
       // Abrir mini-diálogo para capturar el precio
       setPrecioVarProducto(p)
@@ -525,11 +555,14 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
                     Sin productos configurados para este centro.<br />
                     <span style={{ fontSize: 11 }}>Agrégalos en Configuración.</span>
                   </div>
-                ) : prodsFiltrados.map(p => (
+                ) : prodsFiltrados.map(p => {
+                  const bloqueado = estaBloqueado(p)
+                  return (
                   <button key={p.id} onClick={() => agregarProducto(p)}
-                    style={{ padding: '10px 8px', border: '1px solid #e2e8f0', borderRadius: 10, background: '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.1s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f0fdf4'; (e.currentTarget as HTMLElement).style.borderColor = '#a7f3d0' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0' }}>
+                    title={bloqueado ? MENSAJE_BLOQUEO_VENTA_DIRECTA : undefined}
+                    style={{ padding: '10px 8px', border: '1px solid #e2e8f0', borderRadius: 10, background: bloqueado ? '#f8fafc' : '#fff', cursor: 'pointer', textAlign: 'left', transition: 'all 0.1s', opacity: bloqueado ? 0.6 : 1 }}
+                    onMouseEnter={e => { if (bloqueado) return; (e.currentTarget as HTMLElement).style.background = '#f0fdf4'; (e.currentTarget as HTMLElement).style.borderColor = '#a7f3d0' }}
+                    onMouseLeave={e => { if (bloqueado) return; (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0' }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#1e293b', marginBottom: 4, lineHeight: 1.3 }}>{p.nombre}</div>
                     {p.sku && <div style={{ fontSize: 9, color: '#94a3b8', marginBottom: 4 }}>{p.sku}</div>}
                     <div style={{ fontSize: 13, fontWeight: 800, color: '#059669' }}>{fmt$(p.precio)}</div>
@@ -540,8 +573,14 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
                     {p.precio_variable && (
                       <div style={{ fontSize: 9, fontWeight: 700, color: '#d97706', marginTop: 2 }}>✏ Precio variable</div>
                     )}
+                    {bloqueado && (
+                      <div style={{ fontSize: 9, fontWeight: 700, color: '#dc2626', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Lock size={9} /> Solo desde su módulo
+                      </div>
+                    )}
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </div>
 

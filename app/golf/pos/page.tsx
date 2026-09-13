@@ -67,6 +67,12 @@ type LineaPago = { id_forma_fk: number | null; forma_nombre: string; monto: stri
 
 const CORTES_PAGE_SIZE = 20
 
+// Centros cuyo cobro completo vive en el módulo de origen (cuota con recibo
+// propio) — venderlos directo desde POS crearía un ticket sin recibo ni
+// cuota que lo respalde. Nombres exactos de golf.cat_centros_venta.
+const CENTROS_BLOQUEADOS_VENTA_DIRECTA = new Set(['Membresias', 'Pensiones', 'Cuotas Mantto.'])
+const MENSAJE_BLOQUEO_VENTA_DIRECTA = 'El proceso de cobro se debe hacer desde la emisión del respectivo módulo.'
+
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 const fmtDT = (d: string) => new Date(d).toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 const fmtD  = (d: string) => new Date(d.includes('T') ? d : d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -1248,7 +1254,10 @@ ${facturasCorte.length > 0 ? `
           {/* Acciones del centro */}
           {centroActivo && puedeEscribir && (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button onClick={() => setShowVenta(true)} className="btn-primary"
+              <button onClick={() => {
+                if (CENTROS_BLOQUEADOS_VENTA_DIRECTA.has(centroActivo.nombre)) { alert(MENSAJE_BLOQUEO_VENTA_DIRECTA); return }
+                setShowVenta(true)
+              }} className="btn-primary"
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', fontSize: 14, fontWeight: 700, background: '#059669' }}>
                 <Plus size={16} /> Nueva Venta — {centroActivo.nombre}
               </button>
