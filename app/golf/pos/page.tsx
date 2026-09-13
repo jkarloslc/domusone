@@ -83,9 +83,10 @@ const fmtD  = (d: string) => new Date(d.includes('T') ? d : d + 'T12:00:00').toL
 export default function POSPage() {
   const { canWrite, authUser } = useAuth()
   const puedeEscribir = canWrite('golf-pos')
-  // Solo superadmin puede crear/editar el Catálogo de Productos POS —
-  // define qué se puede vender, qué queda bloqueado y su clasificación fiscal.
-  const puedeEditarCatalogo = authUser?.rol === 'superadmin'
+  // admin_low_level es la única excepción sin acceso al Catálogo de
+  // Productos POS — el resto de roles con escritura en golf-pos (admin,
+  // superadmin, usuariogolf, etc.) lo editan igual que antes.
+  const puedeEditarCatalogo = puedeEscribir && authUser?.rol !== 'admin_low_level'
 
   const [tab, setTab] = useState<Tab>('pos')
 
