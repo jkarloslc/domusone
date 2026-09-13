@@ -127,6 +127,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
   const [modal,    setModal]    = useState(false)
   const [editingOT, setEditingOT] = useState<any | null>(null)
   const [detail,   setDetail]   = useState<any | null>(null)
+  const [reportModal, setReportModal] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -294,6 +295,11 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
         <button className="btn-ghost" style={{ padding: '3px 8px', height: 28 }} onClick={fetchData}>
           <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
         </button>
+        {modulo === 'mantenimiento' && (
+          <button className="btn-secondary" style={{ fontSize: 12, padding: '3px 12px', height: 28 }} onClick={() => setReportModal(true)}>
+            <ClipboardList size={12} /> Reporte Semanal
+          </button>
+        )}
         {canWrite('mantenimiento') && (
           <button className="btn-primary" style={{ fontSize: 12, padding: '3px 12px', height: 28 }} onClick={() => { setEditingOT(null); setModal(true) }}>
             <Plus size={12} /> Nueva OT
@@ -383,6 +389,7 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
       {detail && <OTDetail ot={detail} areaMap={areaMap} ccMap={ccMap} frMap={frMap} cuadMap={cuadMap} acMap={acMap}
         onClose={() => { setDetail(null); fetchData() }}
         onEdit={ot => { setDetail(null); setEditingOT(ot); setModal(true) }} />}
+      {reportModal && <ReporteSemanal empresa={empresa} modulo={modulo} areas={areas} areaMap={areaMap} onClose={() => setReportModal(false)} />}
     </div>
   )
 }
@@ -1711,6 +1718,310 @@ function FotosSection({ titulo, fotos, loading, uploading, fileRef, onPick, onDe
         </div>
       )}
     </div>
+  )
+}
+
+// ── ReporteSemanal — PDF de mantenimiento semanal con evidencias ──
+// Portado desde app/servicios/page.tsx (página huérfana, sin acceso desde ningún
+// rol) al quedar OrdenesTrabajoTab como único componente que sirve estas
+// órdenes de trabajo. Solo se ofrece para modulo === 'mantenimiento' porque
+// agrupa por Área simple, igual que el reporte original.
+function ReporteSemanal({ empresa, modulo, areas, areaMap, onClose }: {
+  empresa: 'Balvanera' | 'Cuadrilla'; modulo: Modulo; areas: any[]; areaMap: Record<number, string>; onClose: () => void
+}) {
+  const [semana,      setSemana]      = useState(semanaActual())
+  const [anio,        setAnio]        = useState(new Date().getFullYear())
+  const [filterArea,  setFilterArea]  = useState('')
+  const [encargados,  setEncargados]  = useState('')
+  const [generating,  setGenerating]  = useState(false)
+  const [ots,         setOts]         = useState<any[]>([])
+  const [loaded,      setLoaded]      = useState(false)
+
+  const cargarOTs = useCallback(async () => {
+    setLoaded(false)
+    let q = dbCtrl.from('ordenes_trabajo').select('*')
+      .eq('empresa', empresa).eq('modulo', modulo)
+      .eq('semana_no', semana).eq('anio', anio).order('id_area_fk')
+    if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
+    const { data } = await q
+    const ids = (data ?? []).map((o: any) => o.id)
+
+    const [{ data: recursos }, { data: evidencias }, { data: conceptos }] = ids.length
+      ? await Promise.all([
+          dbCtrl.from('ot_recursos').select('*').in('id_ot_fk', ids),
+          dbCtrl.from('ot_evidencias').select('*').in('id_ot_fk', ids).order('created_at'),
+          dbCtrl.from('ot_conceptos').select('*').in('id_ot_fk', ids),
+        ])
+      : [{ data: [] }, { data: [] }, { data: [] }]
+
+    const recMap: Record<number, any[]> = {}
+    ;(recursos ?? []).forEach((r: any) => {
+      if (!recMap[r.id_ot_fk]) recMap[r.id_ot_fk] = []
+      recMap[r.id_ot_fk].push(r)
+    })
+    const concMap: Record<number, any[]> = {}
+    ;(conceptos ?? []).forEach((c: any) => {
+      if (!concMap[c.id_ot_fk]) concMap[c.id_ot_fk] = []
+      concMap[c.id_ot_fk].push(c)
+    })
+    const evMap: Record<number, any[]> = {}
+    ;(evidencias ?? []).forEach((e: any) => {
+      if (!evMap[e.id_ot_fk]) evMap[e.id_ot_fk] = []
+      evMap[e.id_ot_fk].push(e)
+    })
+
+    // Las OTs "por conceptos" no tienen ot_recursos: se traducen sus
+    // conceptos (cantidad × costo_unitario) al mismo formato de fila que
+    // usa la tabla de recursos consolidados del reporte.
+    setOts((data ?? []).map((o: any) => ({
+      ...o,
+      recursos: o.por_conceptos
+        ? (concMap[o.id] ?? []).map((c: any) => ({ id_ot_fk: o.id, cantidad: c.cantidad, descripcion: c.descripcion, costo: Number(c.cantidad) * Number(c.costo_unitario) }))
+        : (recMap[o.id] ?? []),
+      evidencias: evMap[o.id] ?? [],
+    })))
+    setLoaded(true)
+  }, [empresa, modulo, semana, anio, filterArea])
+
+  useEffect(() => { cargarOTs() }, [cargarOTs])
+
+  const generarPDF = async () => {
+    setGenerating(true)
+
+    let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+    try {
+      const { data: cfgRows } = await dbCfg.from('configuracion')
+        .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      ;(cfgRows ?? []).forEach((r: any) => {
+        if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+        if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+        if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      })
+    } catch {}
+    const logoHtml = orgLogo
+      ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
+      : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
+
+    const fechaReporte = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
+    const seccionNombre = filterArea ? (areaMap[Number(filterArea)] ?? 'Todas') : 'Mantenimiento Residencial'
+
+    // Agrupar OTs por área
+    const porSeccion: Record<string, any[]> = {}
+    ots.forEach(o => {
+      const key = o.id_area_fk ? (areaMap[o.id_area_fk] ?? 'Sin área') : 'Sin área'
+      if (!porSeccion[key]) porSeccion[key] = []
+      porSeccion[key].push(o)
+    })
+
+    // Todos los recursos de todas las OTs
+    const todosRecursos = ots.flatMap(o => o.recursos ?? [])
+    const costoTotal = todosRecursos.reduce((a, r) => a + Number(r.costo || 0), 0)
+
+    const STATUS_COLOR: Record<string, string> = {
+      'Pendiente':  '#d97706', 'En Proceso': '#2563eb',
+      'En Pausa':   '#7c3aed', 'Completada': '#15803d', 'Cancelada': '#94a3b8',
+    }
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Reporte de Mantenimiento — Semana ${semana}/${anio}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #1e293b; padding: 32px; }
+  .org-header { display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #0D4F80; padding-bottom: 14px; margin-bottom: 20px; }
+  .org-nombre { font-size: 18px; font-weight: 700; color: #0D4F80; margin: 0 0 2px; }
+  .org-sub  { font-size: 11px; color: #64748b; }
+  .doc-title { font-size: 14px; font-weight: 600; color: #0D4F80; margin-bottom: 2px; }
+  .meta { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .meta-row { display: flex; gap: 8px; }
+  .meta-label { font-weight: 700; color: #475569; min-width: 140px; }
+  .meta-value { color: #1e293b; }
+  .section-title { font-size: 14px; font-weight: 700; color: #0D4F80; margin: 20px 0 10px;
+    padding-bottom: 6px; border-bottom: 2px solid #bfdbfe; }
+  .ot-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .ot-header { background: #f1f5f9; padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .ot-folio { font-family: monospace; font-size: 12px; font-weight: 700; color: #0D4F80; }
+  .ot-titulo { font-size: 13px; font-weight: 600; flex: 1; margin: 0 12px; }
+  .ot-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .ot-body { padding: 10px 14px; }
+  .ot-desc { color: #475569; line-height: 1.6; margin-bottom: 8px; }
+  .ot-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 11px; color: #64748b; }
+  .ot-notas { margin-top: 8px; padding: 8px; background: #fffbeb; border-left: 3px solid #fbbf24; font-size: 11px; color: #92400e; }
+  .evidencias { margin-top: 10px; }
+  .evidencias-title { font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .evidencias-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .evidencia-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; display: block; }
+  .evidencia-cap { font-size: 9px; color: #64748b; text-align: center; margin-top: 2px; }
+  .recursos-title { font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f1f5f9; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 10px; text-align: left; border: 1px solid #e2e8f0; }
+  td { padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 11px; }
+  .total-row { background: #eff6ff; font-weight: 700; color: #0D4F80; }
+  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; }
+  @page { margin: 1.5cm; size: letter; }
+  @media print { .no-print { display: none; } }
+</style></head><body>
+
+<!-- Encabezado -->
+<div class="org-header">
+  ${logoHtml}
+  <div>
+    <div class="org-nombre">${orgNombre}</div>
+    ${orgSubtitulo ? `<div class="org-sub">${orgSubtitulo}</div>` : ''}
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div class="doc-title">Reporte de Mantenimiento</div>
+    <div style="font-size:13px;color:#64748b">Semana No. ${semana} — ${anio}</div>
+  </div>
+</div>
+
+<!-- Datos generales -->
+<div class="meta">
+  <div class="meta-row"><span class="meta-label">Área:</span><span class="meta-value">Mantenimiento Residencial</span></div>
+  <div class="meta-row"><span class="meta-label">Fecha de reporte:</span><span class="meta-value">${fechaReporte}</span></div>
+  <div class="meta-row"><span class="meta-label">Secciones supervisadas:</span><span class="meta-value">${seccionNombre}</span></div>
+  <div class="meta-row"><span class="meta-label">Encargados de área:</span><span class="meta-value">${encargados || '—'}</span></div>
+  <div class="meta-row"><span class="meta-label">Total OTs semana:</span><span class="meta-value">${ots.length}</span></div>
+  <div class="meta-row"><span class="meta-label">Completadas:</span><span class="meta-value">${ots.filter(o => o.status === 'Completada').length} de ${ots.length}</span></div>
+</div>
+
+<!-- OTs por sección -->
+${Object.entries(porSeccion).map(([secNombre, otsSeccion]) => `
+  <div class="section-title">${secNombre} (${otsSeccion.length} OTs)</div>
+  ${otsSeccion.map(o => {
+    const statusColor = STATUS_COLOR[o.status] ?? '#64748b'
+    return `
+    <div class="ot-card">
+      <div class="ot-header">
+        <span class="ot-folio">${o.folio}</span>
+        <span class="ot-titulo">${o.titulo}</span>
+        <span class="ot-badge" style="background:${statusColor}20;color:${statusColor};border:1px solid ${statusColor}40">${o.status}</span>
+        ${o.prioridad === 'Urgente' || o.prioridad === 'Alta'
+          ? `<span class="ot-badge" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;margin-left:6px">${o.prioridad}</span>`
+          : ''}
+      </div>
+      <div class="ot-body">
+        ${o.descripcion ? `<p class="ot-desc">${o.descripcion}</p>` : ''}
+        <div class="ot-meta">
+          ${o.tipo_trabajo ? `<span>📋 ${o.tipo_trabajo}</span>` : ''}
+          ${o.asignado_a   ? `<span>👤 ${o.asignado_a}</span>` : ''}
+          ${o.ubicacion_detalle ? `<span>📍 ${o.ubicacion_detalle}</span>` : ''}
+        </div>
+        ${o.notas ? `<div class="ot-notas"><strong>Nota:</strong> ${o.notas}</div>` : ''}
+        ${(o.evidencias ?? []).length > 0 ? `
+          <div class="evidencias">
+            <div class="evidencias-title">Evidencias fotográficas (${o.evidencias.length})</div>
+            <div class="evidencias-grid">
+              ${o.evidencias.map((ev: any) => `
+                <div>
+                  <img src="${ev.url}" class="evidencia-img" alt="${ev.nombre ?? 'Evidencia'}" />
+                  ${ev.descripcion ? `<div class="evidencia-cap">${ev.descripcion}</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>` : ''}
+      </div>
+    </div>`
+  }).join('')}
+`).join('')}
+
+<!-- Recursos consolidados -->
+${todosRecursos.length > 0 ? `
+<div class="recursos-title">Recursos para la ejecución de los trabajos</div>
+<table>
+  <thead>
+    <tr><th>OT</th><th>Cantidad</th><th>Personal, herramientas y materiales</th><th style="text-align:right">Costo</th></tr>
+  </thead>
+  <tbody>
+    ${todosRecursos.map(r => {
+      const ot = ots.find(o => o.id === r.id_ot_fk)
+      return `<tr>
+        <td style="font-family:monospace;font-size:10px;color:#0D4F80">${ot?.folio ?? '—'}</td>
+        <td>${r.cantidad ?? '—'}</td>
+        <td>${r.descripcion}</td>
+        <td style="text-align:right">${Number(r.costo) > 0 ? '$' + Number(r.costo).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'}</td>
+      </tr>`
+    }).join('')}
+    <tr class="total-row">
+      <td colspan="3">Costo total del mantenimiento realizado:</td>
+      <td style="text-align:right">${costoTotal > 0 ? '$' + costoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '$0.00'}</td>
+    </tr>
+  </tbody>
+</table>` : ''}
+
+<!-- Pie de página -->
+<div class="footer">
+  <span>DomusOne — Sistema de Administración Residencial · ${orgNombre}</span>
+  <span>Generado: ${new Date().toLocaleString('es-MX')}</span>
+</div>
+
+</body></html>`
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument!.open()
+    iframe.contentDocument!.write(html)
+    iframe.contentDocument!.close()
+    setTimeout(() => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => { document.body.removeChild(iframe); setGenerating(false) }, 2000)
+    }, 400)
+  }
+
+  return (
+    <ModalShell modulo="mantenimiento" titulo="Reporte Semanal" onClose={onClose} maxWidth={500}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={generarPDF} disabled={generating || !loaded || ots.length === 0}>
+        {generating ? <><Loader size={13} className="animate-spin" /> Generando…</> : <><ClipboardList size={13} /> Generar PDF</>}
+        </button>
+      </>}
+    >
+
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Semana y año */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><label className="label">Semana No.</label>
+              <input className="input" type="number" min="1" max="53" value={semana}
+                onChange={e => setSemana(Number(e.target.value))} />
+            </div>
+            <div><label className="label">Año</label>
+              <input className="input" type="number" value={anio}
+                onChange={e => setAnio(Number(e.target.value))} />
+            </div>
+          </div>
+
+          {/* Área (opcional) */}
+          <div>
+            <label className="label">Área (opcional — todas si vacío)</label>
+            <select className="select" value={filterArea} onChange={e => setFilterArea(e.target.value)}>
+              <option value="">Todas las áreas</option>
+              {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+            </select>
+          </div>
+
+          {/* Encargados */}
+          <div>
+            <label className="label">Encargados de área</label>
+            <input className="input" value={encargados} onChange={e => setEncargados(e.target.value)}
+              placeholder="ej. Cutberto Garita y Armando Morán" />
+          </div>
+
+          {/* Preview count */}
+          {loaded && (
+            <div style={{ padding: '10px 14px', background: ots.length > 0 ? '#eff6ff' : '#f8fafc',
+              border: `1px solid ${ots.length > 0 ? '#bfdbfe' : '#e2e8f0'}`, borderRadius: 8,
+              fontSize: 13, color: ots.length > 0 ? 'var(--blue)' : 'var(--text-muted)' }}>
+              {ots.length > 0
+                ? `✓ ${ots.length} OT${ots.length > 1 ? 's' : ''} encontrada${ots.length > 1 ? 's' : ''} — ${ots.filter(o => o.status === 'Completada').length} completadas`
+                : '⚠ Sin órdenes de trabajo para esta semana / sección'}
+            </div>
+          )}
+        </div>
+
+    </ModalShell>
   )
 }
 
