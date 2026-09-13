@@ -561,6 +561,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
 
       {/* Tabla */}
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f8fafc' }}>
@@ -639,6 +640,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Paginación */}
