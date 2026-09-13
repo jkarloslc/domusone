@@ -1,20 +1,16 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { dbGolf, dbCfg, dbHip, dbCtrl } from '@/lib/supabase'
+import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { X, Search, Plus, Minus, Trash2, ShoppingCart, Loader, CheckCircle, Printer, ShieldCheck, Lock } from 'lucide-react'
 
 // El proceso de cobro de estos productos vive en el módulo de origen (cuota
 // con recibo propio) — venderlos directo desde POS crearía un ticket sin
-// recibo ni cuota que lo respalde. "Bloqueados" = todo id_producto_pos_fk
-// configurado en cualquier módulo de cobranza (Golf/Hípico/Locales/Residencial),
-// más un nombre exacto de respaldo para Hípico por si ese producto en
-// particular no está (o deja de estar) enlazado en cfg_hip.
+// recibo ni cuota que lo respalde. Es una propiedad explícita del producto
+// (cat_productos_pos.solo_venta_por_recibo), no inferida por búsqueda
+// inversa en config de otros módulos: se corrige en Golf > POS > Catálogo.
 const MENSAJE_BLOQUEO_VENTA_DIRECTA = 'El proceso de cobro se debe hacer desde la emisión del respectivo módulo.'
-const NOMBRES_BLOQUEADOS_POR_CENTRO: Record<string, string[]> = {
-  'Hípico': ['Renta Caballeriza / Tack Room'],
-}
 import { fechaLocal, inicioDelDia } from '@/lib/dateUtils'
 
 // ── Tipos ──────────────────────────────────────────────────────
@@ -22,6 +18,7 @@ type Producto = {
   id: number; nombre: string; descripcion: string | null; sku: string | null
   precio: number; iva_pct: number; aplica_iva: boolean; tipo: string
   id_centro_fk: number | null; precio_variable: boolean
+  solo_venta_por_recibo: boolean
 }
 type FormaPago = { id: number; nombre: string }
 type Socio = { id: number; numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null }
@@ -62,7 +59,6 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
   const [productos,   setProductos]   = useState<Producto[]>([])
   const [formasPago,  setFormasPago]  = useState<FormaPago[]>([])
   const [loading,     setLoading]     = useState(true)
-  const [idsBloqueados, setIdsBloqueados] = useState<Set<number>>(new Set())
 
   // Líneas del carrito
   const [lineas, setLineas] = useState<LineaVenta[]>([])
@@ -105,30 +101,14 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
     Promise.all([
       dbGolf.from('cat_productos_pos').select('*').eq('activo', true).eq('id_centro_fk', idCentro).order('nombre'),
       dbCfg.from('formas_pago').select('id, nombre').eq('activo', true).order('nombre'),
-      // Productos "placeholder" que usan los módulos de cobranza para generar
-      // su ticket POS al emitir un recibo — vendibles solo desde ahí.
-      dbGolf.from('cfg_carritos').select('id_producto_pos_fk'),
-      dbGolf.from('cat_cuotas_config').select('id_producto_pos_fk'),
-      dbHip.from('cfg_hip').select('id_producto_pos_fk'),
-      dbCtrl.from('loc_propiedades').select('id_producto_pos_fk'),
-      dbCfg.from('cuotas_estandar').select('id_producto_pos_fk'),
-    ]).then(([{ data: prods }, { data: fps }, ...cfgResults]) => {
+    ]).then(([{ data: prods }, { data: fps }]) => {
       setProductos((prods as Producto[]) ?? [])
-      const fps2 = (fps as FormaPago[]) ?? []
-      setFormasPago(fps2)
-      const ids = new Set<number>()
-      for (const { data } of cfgResults) {
-        for (const row of (data ?? []) as { id_producto_pos_fk: number | null }[]) {
-          if (row.id_producto_pos_fk != null) ids.add(row.id_producto_pos_fk)
-        }
-      }
-      setIdsBloqueados(ids)
+      setFormasPago((fps as FormaPago[]) ?? [])
       setLoading(false)
     })
   }, [idCentro])
 
-  const estaBloqueado = (p: Producto) =>
-    idsBloqueados.has(p.id) || (NOMBRES_BLOQUEADOS_POR_CENTRO[nombreCentro] ?? []).includes(p.nombre)
+  const estaBloqueado = (p: Producto) => p.solo_venta_por_recibo
 
   // ── Búsqueda de socios ────────────────────────────────────
   useEffect(() => {

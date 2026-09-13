@@ -58,6 +58,7 @@ type Producto = {
   precio_variable: boolean
   id_concepto_ingreso_fk: number | null
   clave_prod_serv: string | null
+  solo_venta_por_recibo: boolean
 }
 type ConceptoIngreso = { id: number; nombre: string; id_centro_ingreso_fk: number | null; activo: boolean }
 type FormaPago = { id: number; nombre: string; activo: boolean }
@@ -68,10 +69,11 @@ type LineaPago = { id_forma_fk: number | null; forma_nombre: string; monto: stri
 
 const CORTES_PAGE_SIZE = 20
 
-// Centros cuyo cobro completo vive en el módulo de origen (cuota con recibo
-// propio) — venderlos directo desde POS crearía un ticket sin recibo ni
-// cuota que lo respalde. Nombres exactos de golf.cat_centros_venta.
-const CENTROS_BLOQUEADOS_VENTA_DIRECTA = new Set(['Membresias', 'Pensiones', 'Cuotas Mantto.'])
+// El bloqueo de venta directa ya no depende de nombres de centro/producto
+// hardcodeados: cada producto declara explícitamente en su catálogo
+// (columna cat_productos_pos.solo_venta_por_recibo) si su cobro vive en el
+// módulo de origen. Un centro se bloquea por completo cuando TODOS sus
+// productos activos están marcados así.
 const MENSAJE_BLOQUEO_VENTA_DIRECTA = 'El proceso de cobro se debe hacer desde la emisión del respectivo módulo.'
 
 const fmt$ = (v: number) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
@@ -1123,6 +1125,7 @@ ${facturasCorte.length > 0 ? `
       id_centro_fk:    editingProd.id_centro_fk ?? null,
       id_concepto_ingreso_fk: editingProd.id_concepto_ingreso_fk ?? null,
       clave_prod_serv: editingProd.clave_prod_serv || null,
+      solo_venta_por_recibo: editingProd.solo_venta_por_recibo ?? false,
     }
     if (editingProd.id) {
       await dbGolf.from('cat_productos_pos').update(payload).eq('id', editingProd.id)
@@ -1179,6 +1182,14 @@ ${facturasCorte.length > 0 ? `
   })
 
   const esAdminMesa = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+
+  // Un centro se bloquea para venta directa cuando TODOS sus productos
+  // activos están marcados como "solo venta por recibo" — se calcula al
+  // vuelo a partir del catálogo, sin nombres de centro hardcodeados.
+  const centroVentaDirectaBloqueada = (centroId: number) => {
+    const prodsCentro = productos.filter(p => p.id_centro_fk === centroId && p.activo)
+    return prodsCentro.length > 0 && prodsCentro.every(p => p.solo_venta_por_recibo)
+  }
 
   const TABS: { key: Tab; label: string; icon: any }[] = [
     { key: 'pos',       label: 'Punto de Venta',   icon: ShoppingCart },
@@ -1281,7 +1292,7 @@ ${facturasCorte.length > 0 ? `
           {centroActivo && puedeEscribir && (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button onClick={() => {
-                if (CENTROS_BLOQUEADOS_VENTA_DIRECTA.has(centroActivo.nombre)) { alert(MENSAJE_BLOQUEO_VENTA_DIRECTA); return }
+                if (centroVentaDirectaBloqueada(centroActivo.id)) { alert(MENSAJE_BLOQUEO_VENTA_DIRECTA); return }
                 setShowVenta(true)
               }} className="btn-primary"
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', fontSize: 14, fontWeight: 700, background: '#059669' }}>
@@ -2073,6 +2084,15 @@ ${facturasCorte.length > 0 ? `
                       Activo
                     </label>
                   </div>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, cursor: 'pointer', marginTop: 8, padding: '8px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8 }}>
+                    <input type="checkbox" style={{ marginTop: 2 }} checked={editingProd.solo_venta_por_recibo ?? false}
+                      onChange={e => setEditingProd(p => ({ ...p, solo_venta_por_recibo: e.target.checked }))} />
+                    <span>
+                      <span style={{ fontWeight: 700, color: '#b91c1c' }}>🔒 Solo venta desde su módulo (Recibos)</span>
+                      <br />
+                      <span style={{ color: '#7f1d1d' }}>El cobro de este producto vive en otro módulo (cuotas, membresías, rentas, etc.); bloquea su venta directa en POS.</span>
+                    </span>
+                  </label>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                     <button onClick={guardarProducto} disabled={savingProd}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
@@ -2110,6 +2130,11 @@ ${facturasCorte.length > 0 ? `
                           {p.precio_variable && (
                             <span style={{ padding: '1px 7px', borderRadius: 10, background: '#fffbeb', color: '#d97706', fontWeight: 600 }}>
                               Precio variable
+                            </span>
+                          )}
+                          {p.solo_venta_por_recibo && (
+                            <span style={{ padding: '1px 7px', borderRadius: 10, background: '#fef2f2', color: '#b91c1c', fontWeight: 600 }}>
+                              🔒 Solo desde su módulo
                             </span>
                           )}
                           {!p.activo && <span style={{ color: '#dc2626', fontWeight: 600 }}>Inactivo</span>}
