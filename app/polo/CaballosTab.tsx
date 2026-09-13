@@ -2,8 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Search, RefreshCw, Edit2, Trash2, Eye, ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, Search, RefreshCw, Edit2, Trash2, Eye } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZE = 25
@@ -58,7 +57,7 @@ const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
 
 const fmtFecha = (d: string | null) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-export default function CaballosPage() {
+export default function CaballosTab() {
   const { canWrite, canDelete } = useAuth()
   const puedeEscribir = canWrite('hipico-caballos')
   const puedeEliminar = canDelete()
@@ -219,21 +218,10 @@ export default function CaballosPage() {
   )
 
   return (
-    <div style={{ padding: '24px 28px' }}>
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-              <ChevronLeft size={14} /> Hípico
-            </Link>
-          </div>
-          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Caballos</h1>
-          <p className="page-subtitle">Expediente operativo de caballos, asignaciones y estatus</p>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
-          {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nuevo</button>}
-        </div>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14 }}>
+        <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
+        {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nuevo</button>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>

@@ -90,7 +90,7 @@ Reglas de derivación actuales:
 - `/golf/{sub}` → `golf-{sub}` (excepción: `/golf/salidas-carritos` → `golf-carritos`)
 - `/compras/**`, `/ingresos/**`, `/tesoreria/**`, `/lotes/**` → primer segmento
 - `/residencial` → `lotes`, `/usuarios` → `admin`
-- Rutas sin control: `inicio`, `tablero`, `vehiculos`, `equipo-flota`, `mantenimiento`, `hipico`, `hospitality`
+- Rutas sin control: `inicio`, `tablero`, `vehiculos`, `equipo-flota`, `mantenimiento`, `hipico`, `hospitality`, `polo`
 - Default: primer segmento de la URL
 
 **Checklist al crear una página nueva** (bug vivido con `/golf/salidas-carritos`, 2026-06-10):

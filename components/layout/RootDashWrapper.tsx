@@ -27,7 +27,7 @@ function getModulo(pathname: string): string | undefined {
   if (SPECIAL[first]) return SPECIAL[first]
 
   // Sin control de módulo (acceso libre para cualquier usuario autenticado)
-  const NO_CHECK = ['inicio', 'tablero', 'vehiculos', 'equipo-flota', 'mantenimiento', 'hipico', 'hospitality']
+  const NO_CHECK = ['inicio', 'tablero', 'vehiculos', 'equipo-flota', 'mantenimiento', 'hipico', 'hospitality', 'polo']
   if (NO_CHECK.includes(first)) return undefined
 
   // Golf: sub-rutas usan 'golf-{sub}'

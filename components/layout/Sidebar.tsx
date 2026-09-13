@@ -25,6 +25,16 @@ const HorseIcon = ({ size = 15 }: { size?: number }) => (
   </svg>
 )
 
+// Ícono taco de polo inline (no disponible en lucide)
+const PoloIcon = ({ size = 15 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="3"/>
+    <path d="M3 21c0-4 3-7 7-7h4c4 0 7 3 7 7"/>
+    <path d="M17 12l3-3"/>
+    <path d="M19 9l-1-1 1-1"/>
+  </svg>
+)
+
 type Rol =
   | 'superadmin'
   | 'admin'
@@ -120,6 +130,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
+      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -163,6 +174,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
+      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -206,6 +218,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
+      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -244,6 +257,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
+      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -282,6 +296,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
+      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -313,6 +328,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
       { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
+      { label: 'Polo',             href: '/polo',                icon: PoloIcon  },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -496,6 +512,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Hípico y Eventos', items: [
       { label: 'Hípico y Eventos',  href: '/hipico',                   icon: HorseIcon },
+      { label: 'Polo',              href: '/polo',                     icon: PoloIcon  },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
       RPT('hipico'),
     ]},
@@ -510,6 +527,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuariohipico: [
     { section: 'Hípico y Eventos', items: [
       { label: 'Hípico y Eventos',  href: '/hipico',                   icon: HorseIcon },
+      { label: 'Polo',              href: '/polo',                     icon: PoloIcon  },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
       RPT('hipico'),
     ]},
@@ -575,6 +593,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Hípico y Eventos', items: [
       { label: 'Hípico y Eventos',  href: '/hipico',                   icon: HorseIcon },
+      { label: 'Polo',              href: '/polo',                     icon: PoloIcon  },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
       { label: 'Reportes Hípico',   href: '/reportes?grupo=hipico',       icon: BarChart3 },
       { label: 'Reportes Eventos',  href: '/reportes?grupo=hospitality',  icon: BarChart3 },

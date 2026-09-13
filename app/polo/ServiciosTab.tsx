@@ -2,8 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, Edit2, Trash2, ChevronLeft, Eye, Search } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, RefreshCw, Edit2, Trash2, Eye, Search } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 const PAGE_SIZE = 30
@@ -75,7 +74,7 @@ const toFormFromServicio = (s: Servicio) => ({
   notas: s.notas ?? '',
 })
 
-export default function ServiciosPage() {
+export default function ServiciosTab() {
   const { canWrite, canDelete } = useAuth()
   const puedeEscribir = canWrite('hipico-servicios')
   const puedeEliminar = canDelete()
@@ -233,21 +232,10 @@ export default function ServiciosPage() {
   const readOnly = modalMode === 'view'
 
   return (
-    <div style={{ padding: '24px 28px' }}>
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-              <ChevronLeft size={14} /> Hípico
-            </Link>
-          </div>
-          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Bitácora de Servicios</h1>
-          <p className="page-subtitle">Control de servicios por caballo con seguimiento de costo y facturación</p>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
-          {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Registrar</button>}
-        </div>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14 }}>
+        <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
+        {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Registrar</button>}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(130px, 1fr))', gap: 10, marginBottom: 18 }}>
