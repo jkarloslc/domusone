@@ -83,10 +83,11 @@ const fmtD  = (d: string) => new Date(d.includes('T') ? d : d + 'T12:00:00').toL
 export default function POSPage() {
   const { canWrite, authUser } = useAuth()
   const puedeEscribir = canWrite('golf-pos')
-  // admin_low_level es la única excepción sin acceso al Catálogo de
-  // Productos POS — el resto de roles con escritura en golf-pos (admin,
-  // superadmin, usuariogolf, etc.) lo editan igual que antes.
-  const puedeEditarCatalogo = puedeEscribir && authUser?.rol !== 'admin_low_level'
+  // admin_low_level y usuariogolf son las excepciones sin acceso al
+  // Catálogo de Productos POS — el resto de roles con escritura en
+  // golf-pos (admin, superadmin, etc.) lo editan igual que antes.
+  const ROLES_SIN_CATALOGO_POS = new Set(['admin_low_level', 'usuariogolf'])
+  const puedeEditarCatalogo = puedeEscribir && !ROLES_SIN_CATALOGO_POS.has(authUser?.rol ?? '')
 
   const [tab, setTab] = useState<Tab>('pos')
 
