@@ -1119,6 +1119,7 @@ export default function CuotasGolfPage() {
 
                 {/* Tabla de cuotas del socio */}
                 {exp && (
+                  <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: '#fafafa' }}>
@@ -1190,6 +1191,7 @@ export default function CuotasGolfPage() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 )}
               </div>
             )

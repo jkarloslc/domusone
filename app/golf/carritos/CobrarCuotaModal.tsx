@@ -728,6 +728,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
 
               <div className="section">
                 <div className="section-title">Detalle de Cuotas</div>
+                <div style={{ overflowX: 'auto' }}>
                 <table>
                   <thead>
                     <tr>
@@ -756,6 +757,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                     )}
                   </tbody>
                 </table>
+                </div>
 
                 <div className="totales">
                   {esParcial && (

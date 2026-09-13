@@ -358,6 +358,7 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
                     Detalle de productos / servicios ({detalleProd.length})
                   </div>
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: '#f1f5f9' }}>
@@ -387,6 +388,7 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
                         </tr>
                       </tfoot>
                     </table>
+                    </div>
                   </div>
                 </>
               )}
@@ -397,6 +399,7 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
                     Detalle de operaciones del día ({operacionesDia.length})
                   </div>
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: '#f1f5f9' }}>
@@ -432,6 +435,7 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </>
               )}

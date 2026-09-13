@@ -107,6 +107,7 @@ function CatalogoTab({ tabla, campos, puedeEscribir }: {
         ) : items.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Sin registros. Crea el primero.</div>
         ) : (
+          <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
@@ -146,6 +147,7 @@ function CatalogoTab({ tabla, campos, puedeEscribir }: {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
@@ -315,6 +317,7 @@ function CentrosVentaPOSTab({ puedeEscribir }: { puedeEscribir: boolean }) {
         ) : items.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Sin centros. Crea el primero.</div>
         ) : (
+          <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
@@ -374,6 +377,7 @@ function CentrosVentaPOSTab({ puedeEscribir }: { puedeEscribir: boolean }) {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

@@ -113,6 +113,7 @@ export default function EstatusCampoPage() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -153,6 +154,7 @@ export default function EstatusCampoPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal !== null && (

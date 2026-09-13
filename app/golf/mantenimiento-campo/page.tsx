@@ -475,6 +475,7 @@ export default function MantenimientoCampoPage() {
                 </div>
 
                 <div className="card" style={{ overflow: 'hidden' }}>
+                  <div style={{ overflowX: 'auto' }}>
                   <table>
                     <thead>
                       <tr>
@@ -558,6 +559,7 @@ export default function MantenimientoCampoPage() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             ))
