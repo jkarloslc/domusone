@@ -1,11 +1,11 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
-import { verificarNoFacturada, logCancelacion } from '@/lib/cancelacionCobranza'
+import { verificarNoFacturada, logCancelacion, reabrirCuotasCobertura, marcarCancelacionRevertida } from '@/lib/cancelacionCobranza'
 import { useAuth } from '@/lib/AuthContext'
 import {
   RefreshCw, Search, Receipt, Printer,
-  XCircle, ChevronLeft, FileText, AlertTriangle, Loader,
+  XCircle, ChevronLeft, FileText, AlertTriangle, Loader, RotateCcw,
 } from 'lucide-react'
 import Link from 'next/link'
 import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
@@ -103,6 +103,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
   const [cancelando, setCancelando]   = useState<Recibo | null>(null)
   const [motivoCancel, setMotivoCancel] = useState('')
   const [savingCancel, setSavingCancel] = useState(false)
+  const [reabriendoId, setReabriendoId] = useState<number | null>(null)
 
   const printRef = useRef<HTMLDivElement>(null)
 
@@ -231,6 +232,38 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       alert(`Error al cancelar: ${e?.message ?? e}`)
     } finally {
       setSavingCancel(false)
+    }
+  }
+
+  // ── Reabrir recibo cancelado (solo superadmin) ──────────────
+  // Vuelve a aplicar a cada cuota lo que este recibo había abonado (según su
+  // propio detalle) y reactiva el ticket POS ligado, si existe.
+  const handleReabrir = async (r: Recibo) => {
+    if (authUser?.rol !== 'superadmin') return
+    if (!confirm(`¿Reabrir el recibo ${r.folio}? Las cuotas cubiertas volverán a marcarse como pagadas.`)) return
+    setReabriendoId(r.id)
+    try {
+      await reabrirCuotasCobertura(
+        dbGolf, 'cxc_golf', r.recibos_golf_det,
+        r.fecha_recibo, r.forma_pago_nombre,
+        { referencia_pago: r.referencia_pago, usuario_cobra: r.usuario_cobra, id_recibo_fk: r.id },
+      )
+
+      if (r.id_venta_pos_fk) {
+        const { error: erVenta } = await dbGolf.from('ctrl_ventas').update({ status: 'PAGADA' }).eq('id', r.id_venta_pos_fk)
+        if (erVenta) throw erVenta
+      }
+
+      const { error: erRec } = await dbGolf.from('recibos_golf').update({ status: 'VIGENTE' }).eq('id', r.id)
+      if (erRec) throw erRec
+
+      await marcarCancelacionRevertida('golf', r.id, authUser?.nombre ?? null)
+
+      cargar()
+    } catch (e: any) {
+      alert(`Error al reabrir: ${e?.message ?? e}`)
+    } finally {
+      setReabriendoId(null)
     }
   }
 
@@ -591,6 +624,12 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
                         <button onClick={() => { setCancelando(r); setMotivoCancel('') }} title="Cancelar recibo"
                           style={{ padding: '5px 8px', border: '1px solid #fecaca', borderRadius: 6, background: '#fef2f2', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center' }}>
                           <XCircle size={13} />
+                        </button>
+                      )}
+                      {cancelado && authUser?.rol === 'superadmin' && (
+                        <button onClick={() => handleReabrir(r)} disabled={reabriendoId === r.id} title="Reabrir recibo (solo superadmin)"
+                          style={{ padding: '5px 8px', border: '1px solid #bbf7d0', borderRadius: 6, background: '#f0fdf4', cursor: 'pointer', color: '#15803d', display: 'flex', alignItems: 'center', opacity: reabriendoId === r.id ? 0.6 : 1 }}>
+                          {reabriendoId === r.id ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                         </button>
                       )}
                     </div>

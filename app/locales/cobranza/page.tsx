@@ -1,12 +1,12 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbGolf } from '@/lib/supabase'
-import { verificarNoFacturada, logCancelacion } from '@/lib/cancelacionCobranza'
+import { verificarNoFacturada, logCancelacion, reabrirCuotasCobertura, marcarCancelacionRevertida } from '@/lib/cancelacionCobranza'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight,
   CreditCard, Receipt, AlertCircle, Loader, Printer, DollarSign, Zap, FileText, Trash2, List,
-  XCircle, AlertTriangle,
+  XCircle, AlertTriangle, RotateCcw,
 } from 'lucide-react'
 import Link from 'next/link'
 import AsignacionModal, { type AsignacionData } from './AsignacionModal'
@@ -170,6 +170,7 @@ export default function CobranzaLocalesPage() {
   const [genTicketR, setGenTicketR]         = useState(false)
   const [ticketErrR, setTicketErrR]         = useState('')
   const [cancelando, setCancelando]         = useState<ReciboRow | null>(null)
+  const [reabriendoId, setReabriendoId]     = useState<number | null>(null)
   const [motivoCancel, setMotivoCancel]     = useState('')
   const [savingCancel, setSavingCancel]     = useState(false)
 
@@ -628,6 +629,35 @@ export default function CobranzaLocalesPage() {
       alert(`Error al cancelar: ${e?.message ?? e}`)
     } finally {
       setSavingCancel(false)
+    }
+  }
+
+  // ── Reabrir recibo cancelado (solo superadmin) ──────────────
+  const handleReabrir = async (r: ReciboRow) => {
+    if (authUser?.rol !== 'superadmin') return
+    if (!confirm(`¿Reabrir el recibo ${r.folio}? Las cuotas cubiertas volverán a marcarse como pagadas.`)) return
+    setReabriendoId(r.id)
+    try {
+      await reabrirCuotasCobertura(dbCtrl, 'loc_cxc', r.recibos_loc_det, r.fecha_recibo, r.forma_pago_nombre)
+
+      if (r.id_venta_pos_fk) {
+        const { error: erVenta } = await dbGolf.from('ctrl_ventas').update({ status: 'PAGADA' }).eq('id', r.id_venta_pos_fk)
+        if (erVenta) throw erVenta
+      }
+
+      const { error: erRec } = await dbCtrl.from('loc_recibos').update({ status: 'VIGENTE' }).eq('id', r.id)
+      if (erRec) throw erRec
+
+      await marcarCancelacionRevertida('locales', r.id, authUser?.nombre ?? null)
+
+      fetchRecibos()
+      fetchAsignaciones()
+      if (tab === 'cobranza') fetchCobranza()
+      if (tab === 'cuotas')   fetchCuotasAll()
+    } catch (e: any) {
+      alert(`Error al reabrir: ${e?.message ?? e}`)
+    } finally {
+      setReabriendoId(null)
     }
   }
 
@@ -1262,6 +1292,15 @@ export default function CobranzaLocalesPage() {
                                 title="Cancelar recibo"
                                 style={{ display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer' }}>
                                 <XCircle size={13} />
+                              </button>
+                            )}
+                            {r.status === 'CANCELADO' && authUser?.rol === 'superadmin' && (
+                              <button
+                                onClick={e => { e.stopPropagation(); handleReabrir(r) }}
+                                disabled={reabriendoId === r.id}
+                                title="Reabrir recibo (solo superadmin)"
+                                style={{ display: 'flex', alignItems: 'center', padding: '4px 6px', borderRadius: 6, border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', cursor: 'pointer', opacity: reabriendoId === r.id ? 0.6 : 1 }}>
+                                {reabriendoId === r.id ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />}
                               </button>
                             )}
                           </div>

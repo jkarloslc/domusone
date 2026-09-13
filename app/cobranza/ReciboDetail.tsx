@@ -2,10 +2,10 @@
 import { useEffect, useState } from 'react'
 import { dbCtrl, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Ban, Printer, CheckCircle } from 'lucide-react'
+import { X, Ban, Printer, CheckCircle, RotateCcw, Loader } from 'lucide-react'
 import { type Recibo, type ReciboDetalle, type ReciboPago, fmt } from './types'
 import ModalShell from '@/components/ui/ModalShell'
-import { verificarNoFacturada, logCancelacion } from '@/lib/cancelacionCobranza'
+import { verificarNoFacturada, logCancelacion, marcarCancelacionRevertida } from '@/lib/cancelacionCobranza'
 
 type Props = { recibo: Recibo; onClose: () => void; onCanceled: () => void }
 
@@ -16,6 +16,7 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
   const [canceling, setCanceling] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
   const [motivo, setMotivo]     = useState('')
+  const [reabriendo, setReabriendo] = useState(false)
 
   useEffect(() => {
     dbCtrl.from('recibos_detalle').select('*').eq('id_recibo_fk', r.id).order('id')
@@ -96,6 +97,60 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
     }
   }
 
+  // ── Reabrir recibo cancelado (solo superadmin) ──────────────
+  // Vuelve a aplicar a cada cargo lo que este recibo había abonado (según su
+  // propio detalle) y reactiva el ticket POS ligado, si existe.
+  const handleReabrir = async () => {
+    if (authUser?.rol !== 'superadmin') return
+    if (!confirm(`¿Reabrir el recibo ${r.folio ?? `#${r.id}`}? Los cargos cubiertos volverán a marcarse como pagados.`)) return
+    setReabriendo(true)
+    try {
+      const detCargos = detalle.filter(d => d.id_cargo_fk != null)
+      if (detCargos.length > 0) {
+        const ids = Array.from(new Set(detCargos.map(d => d.id_cargo_fk as number)))
+        const { data: cargosActuales, error: eq } = await dbCtrl.from('cargos')
+          .select('id, monto, monto_pagado').in('id', ids)
+        if (eq) throw eq
+        const porId = new Map(((cargosActuales ?? []) as { id: number; monto: number; monto_pagado: number | null }[]).map(c => [c.id, c]))
+        const abonadoPorCargo = new Map<number, number>()
+        for (const d of detCargos) {
+          const idC = d.id_cargo_fk as number
+          abonadoPorCargo.set(idC, (abonadoPorCargo.get(idC) ?? 0) + d.total)
+        }
+        const updates = Array.from(abonadoPorCargo.entries()).map(([idC, abonado]) => {
+          const c = porId.get(idC)
+          if (!c) return null
+          const nuevoPagado = Math.min(c.monto, parseFloat(((c.monto_pagado ?? 0) + abonado).toFixed(2)))
+          const nuevoSaldo  = Math.max(0, parseFloat((c.monto - nuevoPagado).toFixed(2)))
+          return dbCtrl.from('cargos').update({
+            monto_pagado: nuevoPagado,
+            saldo:        nuevoSaldo,
+            status:       nuevoSaldo <= 0.005 ? 'Pagado' : 'Parcial',
+          }).eq('id', idC)
+        }).filter(Boolean) as PromiseLike<any>[]
+        const results = await Promise.all(updates)
+        const updErr = (results as any[]).find(res => res.error)?.error
+        if (updErr) throw updErr
+      }
+
+      if (r.id_venta_pos_fk) {
+        const { error: erVenta } = await dbGolf.from('ctrl_ventas').update({ status: 'PAGADA' }).eq('id', r.id_venta_pos_fk)
+        if (erVenta) throw erVenta
+      }
+
+      const { error: erRec } = await dbCtrl.from('recibos').update({ activo: true }).eq('id', r.id)
+      if (erRec) throw erRec
+
+      await marcarCancelacionRevertida('residencial', r.id, authUser?.nombre ?? null)
+
+      onCanceled()
+    } catch (e: any) {
+      alert(`Error al reabrir: ${e?.message ?? e}`)
+    } finally {
+      setReabriendo(false)
+    }
+  }
+
   const fmtFecha = (d: string | null) =>
     d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
 
@@ -121,6 +176,11 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
             {r.activo && (
               <button className="btn-ghost" style={{ color: '#f87171' }} onClick={() => setShowCancel(true)}>
                 <Ban size={13} /> Cancelar
+              </button>
+            )}
+            {!r.activo && authUser?.rol === 'superadmin' && (
+              <button className="btn-ghost" style={{ color: '#15803d' }} onClick={handleReabrir} disabled={reabriendo}>
+                {reabriendo ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />} Reabrir
               </button>
             )}
             <button className="btn-ghost" onClick={onClose}><X size={16} /></button>

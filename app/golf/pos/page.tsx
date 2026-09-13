@@ -17,6 +17,7 @@ import ModalShell from '@/components/ui/ModalShell'
 import ClaveProdServPicker from '@/components/ui/ClaveProdServPicker'
 import { cancelarCFDI } from '@/lib/pacService'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
+import { verificarNoFacturada } from '@/lib/cancelacionCobranza'
 
 const MOTIVOS_CANCELACION_CFDI = [
   { clave: '01', desc: 'Comprobante emitido con errores con relación' },
@@ -480,6 +481,11 @@ export default function POSPage() {
         alert(`Esta venta proviene del recibo ${origen.folio ?? '—'}.\n\nCancélala desde ${origen.ruta} para que la cuota también se libere correctamente.`)
         return
       }
+
+      // Venta directa (sin recibo de origen) — si ya fue facturada, primero
+      // hay que cancelar el CFDI (botón "Cancelar Factura" de esta pantalla).
+      const bloqueoFactura = await verificarNoFacturada(id)
+      if (bloqueoFactura) { alert(bloqueoFactura); return }
 
       if (!confirm('¿Cancelar esta venta?')) return
       const { error } = await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', id)

@@ -22,6 +22,7 @@ type Cancelacion = {
   id: number; modulo: string; folio: string | null; id_origen: number
   id_venta_pos_fk: number | null; monto: number | null; cuotas_afectadas: number
   motivo: string | null; usuario: string | null; fecha_cancelacion: string
+  revertida: boolean; revertida_fecha: string | null; revertida_por: string | null
 }
 
 export default function ReporteCancelaciones() {
@@ -64,14 +65,16 @@ export default function ReporteCancelaciones() {
       Fecha:              fmtF(r.fecha_cancelacion),
       Módulo:             MODULO_LABEL[r.modulo] ?? r.modulo,
       Folio:              r.folio ?? '—',
+      Status:             r.revertida ? 'Revertida' : 'Cancelada',
       Monto:              r.monto ?? 0,
       'Cuotas Afectadas': r.cuotas_afectadas,
       'Ticket POS':       r.id_venta_pos_fk ?? '—',
       Motivo:             r.motivo ?? '',
       'Cancelado por':    r.usuario ?? '',
+      'Reabierto por':    r.revertida_por ?? '',
     }))
     const ws = XLSX.utils.json_to_sheet(data)
-    ws['!cols'] = [{ wch: 18 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 36 }, { wch: 18 }]
+    ws['!cols'] = [{ wch: 18 }, { wch: 12 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 36 }, { wch: 18 }, { wch: 18 }]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Cancelaciones')
     XLSX.writeFile(wb, `Cancelaciones_${new Date().toISOString().slice(0, 10)}.xlsx`)
@@ -157,7 +160,7 @@ export default function ReporteCancelaciones() {
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                  {['Fecha', 'Módulo', 'Folio', 'Cuotas', 'Ticket POS', 'Motivo', 'Cancelado por', 'Monto'].map(h => (
+                  {['Fecha', 'Módulo', 'Folio', 'Status', 'Cuotas', 'Ticket POS', 'Motivo', 'Cancelado por', 'Monto'].map(h => (
                     <th key={h} style={{ padding: '9px 12px', textAlign: h === 'Monto' || h === 'Cuotas' ? 'right' : 'left',
                       fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)',
                       textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
@@ -176,6 +179,17 @@ export default function ReporteCancelaciones() {
                       </span>
                     </td>
                     <td style={{ padding: '8px 12px', fontWeight: 600, whiteSpace: 'nowrap' }}>{r.folio ?? `#${r.id_origen}`}</td>
+                    <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
+                      {r.revertida ? (
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#15803d' }} title={r.revertida_por ? `Reabierto por ${r.revertida_por}` : undefined}>
+                          Revertida
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#fef2f2', color: '#dc2626' }}>
+                          Cancelada
+                        </span>
+                      )}
+                    </td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text-secondary)' }}>{r.cuotas_afectadas}</td>
                     <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-secondary)', fontSize: 12 }}>{r.id_venta_pos_fk ? `#${String(r.id_venta_pos_fk).padStart(6, '0')}` : '—'}</td>
                     <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.motivo ?? ''}>{r.motivo ?? '—'}</td>
@@ -188,7 +202,7 @@ export default function ReporteCancelaciones() {
               </tbody>
               <tfoot>
                 <tr style={{ background: '#fef2f2', borderTop: '2px solid #fecaca' }}>
-                  <td colSpan={7} style={{ padding: '9px 12px', fontWeight: 700, fontSize: 13, color: '#dc2626' }}>Total</td>
+                  <td colSpan={8} style={{ padding: '9px 12px', fontWeight: 700, fontSize: 13, color: '#dc2626' }}>Total</td>
                   <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, fontSize: 14, color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
                     {fmt(totalMonto)}
                   </td>
