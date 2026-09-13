@@ -817,6 +817,7 @@ export default function FlujoEfectivoPage() {
             }
           `}</style>
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -871,6 +872,7 @@ export default function FlujoEfectivoPage() {
               })()}
             </tbody>
           </table>
+          </div>
           </div>
         </>
       )}
@@ -990,6 +992,7 @@ export default function FlujoEfectivoPage() {
           footer={<button className="btn-secondary" onClick={() => setDrillGrupo(null)}>Cerrar</button>}
         >
           <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
@@ -1034,6 +1037,7 @@ export default function FlujoEfectivoPage() {
                 </tr>
               </tfoot>
             </table>
+            </div>
           </div>
         </ModalShell>
       )}

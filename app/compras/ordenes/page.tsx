@@ -138,6 +138,7 @@ export default function OrdenesPage() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -169,6 +170,7 @@ export default function OrdenesPage() {
             ))}
           </tbody>
         </table>
+        </div>
         {totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pág. {page + 1} de {totalPages}</span>

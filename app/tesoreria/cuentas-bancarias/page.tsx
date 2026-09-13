@@ -89,6 +89,7 @@ export default function CuentasBancariasPage() {
 
       {/* Tabla */}
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -156,6 +157,7 @@ export default function CuentasBancariasPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Modales */}
@@ -477,6 +479,7 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
               Sin movimientos{(filtroDe || filtroA) ? ' en el período seleccionado' : ''}
             </div>
           ) : (
+            <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
                 <tr>
@@ -519,6 +522,7 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 

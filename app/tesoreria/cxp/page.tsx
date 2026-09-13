@@ -266,6 +266,7 @@ export default function CXPPage() {
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{g.ops.length} OP{g.ops.length === 1 ? '' : "'s"}</div>
                   </div>
                 </div>
+                <div style={{ overflowX: 'auto' }}>
                 <table>
                   <thead>
                     <tr>
@@ -295,6 +296,7 @@ export default function CXPPage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
             )
           })}
@@ -316,6 +318,7 @@ export default function CXPPage() {
             <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin saldos pendientes por proveedor</div>
           ) : (
             <div className="card" style={{ overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
               <table>
                 <thead>
                   <tr>
@@ -354,6 +357,7 @@ export default function CXPPage() {
                   </tr>
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </>
@@ -394,6 +398,7 @@ export default function CXPPage() {
                   <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>· {b.count} documentos · {fmt(b.total)}</span>
                 </div>
                 <div className="card" style={{ overflow: 'hidden', marginBottom: 4 }}>
+                  <div style={{ overflowX: 'auto' }}>
                   <table>
                     <thead>
                       <tr>
@@ -424,6 +429,7 @@ export default function CXPPage() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             )
@@ -441,6 +447,7 @@ export default function CXPPage() {
               Sin remesas de pago registradas. Se crean desde "Por Proveedor" al seleccionar varias OPs y pagarlas juntas.
             </div>
           ) : (
+            <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
                 <tr>
@@ -466,6 +473,7 @@ export default function CXPPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
@@ -664,6 +672,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
         )}
 
         <div style={{ overflowY: 'auto', maxHeight: 'calc(88vh - 200px)' }}>
+          <div style={{ overflowX: 'auto' }}>
           <table>
             <thead>
               <tr>
@@ -737,6 +746,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
               })}
             </tbody>
           </table>
+          </div>
         </div>
     </ModalShell>
     {showPagoRemesa && (
@@ -865,6 +875,7 @@ function PagoRemesaModal({ prov, ops, onClose, onSuccess }: { prov: any; ops: an
         {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
 
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
           <table>
             <thead><tr><th>Folio</th><th>Concepto</th><th style={{ textAlign: 'right' }}>Saldo</th></tr></thead>
             <tbody>
@@ -881,6 +892,7 @@ function PagoRemesaModal({ prov, ops, onClose, onSuccess }: { prov: any; ops: an
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -1042,6 +1054,7 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
         {error && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12 }}>{error}</div>}
 
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
           <table>
             <thead><tr><th>Folio OP</th><th>Concepto</th><th style={{ textAlign: 'right' }}>Monto</th><th>Status</th></tr></thead>
             <tbody>
@@ -1062,6 +1075,7 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>

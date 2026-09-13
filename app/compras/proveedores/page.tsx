@@ -75,6 +75,7 @@ export default function ProveedoresPage() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -135,6 +136,7 @@ export default function ProveedoresPage() {
             })}
           </tbody>
         </table>
+        </div>
 
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderTop: '1px solid #e2e8f0', background: '#fafafa' }}>

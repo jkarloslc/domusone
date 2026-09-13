@@ -89,6 +89,7 @@ export default function CotizacionesPage() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -125,6 +126,7 @@ export default function CotizacionesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal !== null && <RFQModal row={modal === 'new' ? null : modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}

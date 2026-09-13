@@ -73,6 +73,7 @@ export default function RecepcionesPage() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr><th>Folio</th><th>OC Referencia</th><th>Almacén</th><th>Fecha</th><th>Remisión</th><th>Recibió</th><th>Condición</th><th style={{ width: 60 }}></th></tr>
@@ -104,6 +105,7 @@ export default function RecepcionesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && <RecepcionModal onClose={() => setModal(false)} onSaved={() => { setModal(false); fetchData() }} />}
@@ -351,6 +353,7 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                 </button>
               </div>
               <div className="card" style={{ overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
                 <table>
                   <thead>
                     <tr>
@@ -380,6 +383,7 @@ function RecepcionModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
@@ -431,6 +435,7 @@ function RecepcionDetail({ rec, onClose }: { rec: any; onClose: () => void }) {
     >
         <div style={{ padding: '18px 24px' }}>
           <div className="card" style={{ overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
             <table>
               <thead><tr><th>Descripción</th><th style={{ textAlign: 'right' }}>Pedido</th><th style={{ textAlign: 'right' }}>Recibido</th><th>Unidad</th></tr></thead>
               <tbody>
@@ -444,6 +449,7 @@ function RecepcionDetail({ rec, onClose }: { rec: any; onClose: () => void }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
           {rec.notas && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 12 }}>Notas: {rec.notas}</p>}
         </div>

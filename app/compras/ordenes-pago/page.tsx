@@ -1269,6 +1269,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 </div>
                 {detLines.length > 0 && (
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: '#f8fafc' }}>
@@ -1343,6 +1344,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                         </tr>
                       </tfoot>
                     </table>
+                    </div>
                   </div>
                 )}
                 {detLines.length === 0 && (

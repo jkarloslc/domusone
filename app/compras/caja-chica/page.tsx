@@ -130,6 +130,7 @@ export default function CajaChicaPage() {
       {/* Tab: Fondos (admin) */}
       {tab === 'fondos' && isAdmin && (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
           <table className="table">
             <thead>
               <tr>
@@ -157,6 +158,7 @@ export default function CajaChicaPage() {
                 ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -175,6 +177,7 @@ export default function CajaChicaPage() {
           </div>
 
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
             <table className="table">
               <thead>
                 <tr>
@@ -217,6 +220,7 @@ export default function CajaChicaPage() {
                   ))}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       )}

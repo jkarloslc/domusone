@@ -206,6 +206,7 @@ export default function TransferenciasPage() {
 
       {/* Tabla */}
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -257,6 +258,7 @@ export default function TransferenciasPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (
@@ -722,6 +724,7 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
 
           {/* Tabla artículos */}
           <div className="card" style={{ overflow: 'hidden', marginBottom: 16 }}>
+            <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
                 <tr>
@@ -760,6 +763,7 @@ function TransferenciaDetail({ trans, almMap, puedeAutorizar, isAlmacenista, sol
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* ── PASO 2: Botones de autorización ── */}

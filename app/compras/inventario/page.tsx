@@ -124,6 +124,7 @@ export default function InventarioPage() {
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{g.almacen.tipo} · {g.almacen.area}</span>
             </div>
             <div className="card" style={{ overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
               <table>
                 <thead>
                   <tr>
@@ -167,6 +168,7 @@ export default function InventarioPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         ))
@@ -177,6 +179,7 @@ export default function InventarioPage() {
         <ModalShell modulo="almacenes" titulo="Modal" onClose={() => setKardex(null)} maxWidth={720}
         >
             <div style={{ overflowY: 'auto', maxHeight: 'calc(88vh - 80px)' }}>
+              <div style={{ overflowX: 'auto' }}>
               <table>
                 <thead>
                   <tr>
@@ -213,6 +216,7 @@ export default function InventarioPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
         </ModalShell>
       )}

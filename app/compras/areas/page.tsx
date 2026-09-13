@@ -55,6 +55,7 @@ export default function AreasPage() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -97,6 +98,7 @@ export default function AreasPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal !== null && (

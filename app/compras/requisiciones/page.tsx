@@ -176,6 +176,7 @@ export default function RequisicionesPage() {
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -219,6 +220,7 @@ export default function RequisicionesPage() {
             ))}
           </tbody>
         </table>
+        </div>
         {totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pág. {page+1} de {totalPages}</span>
@@ -772,6 +774,7 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth, puedeCancelar, onCan
           {/* Detalle */}
           <Sec label={`Productos (${det.length})`}>
             <div className="card" style={{ overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
               <table>
                 <thead><tr><th>Descripción</th><th style={{ textAlign: 'right' }}>Cantidad</th><th>Unidad</th><th>Notas</th></tr></thead>
                 <tbody>
@@ -785,6 +788,7 @@ function RequisicionDetail({ req, canAuth, onClose, onAuth, puedeCancelar, onCan
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </Sec>
 

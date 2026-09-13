@@ -110,6 +110,7 @@ function AlmacenTable({ rows, onEdit, onToggle, onDelete }: {
 }) {
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
+      <div style={{ overflowX: 'auto' }}>
       <table>
         <thead>
           <tr>
@@ -152,6 +153,7 @@ function AlmacenTable({ rows, onEdit, onToggle, onDelete }: {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

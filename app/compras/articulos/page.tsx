@@ -123,6 +123,7 @@ export default function ArticulosPage() {
 
       {/* Tabla */}
       <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -208,6 +209,7 @@ export default function ArticulosPage() {
             })}
           </tbody>
         </table>
+        </div>
         {/* Paginación */}
         {total > PAGE_SIZE && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
@@ -439,6 +441,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
                 </div>
               ) : (
                 <div className="card" style={{ overflow: 'hidden' }}>
+                  <div style={{ overflowX: 'auto' }}>
                   <table>
                     <thead>
                       <tr>
@@ -465,6 +468,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10 }}>
