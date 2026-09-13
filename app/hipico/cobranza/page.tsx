@@ -120,7 +120,7 @@ const STATUS_COLOR: Record<string, { bg: string; color: string; label: string }>
 export default function CobranzaHipicoPage() {
   const { canWrite, authUser } = useAuth()
   const puedeEscribir = canWrite('hipico')
-  const esAdmin       = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const esAdmin       = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level'
 
   const [tab, setTab] = useState<Tab>('asignaciones')
 

@@ -28,7 +28,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 export default function CajaChicaPage() {
   const { authUser, canAuth } = useAuth()
   const router = useRouter()
-  const isAdmin = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'compras_supervisor'
+  const isAdmin = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'compras_supervisor'
 
   const [fondos,      setFondos]      = useState<any[]>([])
   const [reembolsos,  setReembolsos]  = useState<any[]>([])

@@ -213,7 +213,7 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
       .from('usuarios')
       .select('rol, nombre')
       .eq('email', email.trim().toLowerCase())
-      .in('rol', ['superadmin', 'admin'])
+      .in('rol', ['superadmin', 'admin', 'admin_low_level'])
       .maybeSingle()
 
     if (!uData) return { ok: false, errorMsg: 'El usuario no tiene permisos de administrador.' }

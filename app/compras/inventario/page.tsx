@@ -15,7 +15,7 @@ const TIPO_MOV_COLOR: Record<string, string> = {
   'AJUSTE':           '#7c3aed',
 }
 
-const ROLES_ADMIN = ['superadmin', 'admin']
+const ROLES_ADMIN = ['superadmin', 'admin', 'admin_low_level']
 
 export default function InventarioPage() {
   const router = useRouter()

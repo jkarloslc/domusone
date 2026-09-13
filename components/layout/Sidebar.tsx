@@ -30,6 +30,7 @@ type Rol =
   | 'admin'
   | 'admin_lector'
   | 'admin_finanzas'
+  | 'admin_low_level'
   | 'usuarioadmin'
   | 'usuariomantto'
   | 'atencion_residentes'
@@ -61,6 +62,7 @@ const ROL_LABEL: Record<Rol, string> = {
   admin:               'Administrador',
   admin_lector:        'Admin Solo Lectura',
   admin_finanzas:      'Administrador de Finanzas',
+  admin_low_level:     'Administrador (Bajo Nivel)',
   usuarioadmin:        'Administrador (Op.)',
   usuariomantto:       'Administrador (Mant.)',
   atencion_residentes: 'Atención a Residentes',
@@ -139,6 +141,50 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   admin: [
+    { section: 'Dashboards', items: [
+      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',    icon: LayoutDashboard },
+      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
+      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
+    ]},
+    { section: 'Residencial', items: [
+      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+      RPT('residencial'),
+    ]},
+    { section: 'Operaciones', items: [
+      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+      RPT('mantenimiento'),
+    ]},
+    { section: 'HR', items: [
+      { label: 'HR',             href: '/hr',              icon: Briefcase     },
+      RPT('hr'),
+    ]},
+    { section: 'Club', items: [
+      { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
+      { label: 'Golf',            href: '/golf',                icon: Flag      },
+      { label: 'Administración',  href: '/golf/administracion', icon: Users     },
+      { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
+      { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
+      { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      RPT('golf'),
+    ]},
+    { section: 'Compras', items: [
+      { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
+      RPT('compras'),
+    ]},
+    { section: 'Finanzas', items: [
+      { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
+      { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
+      { label: 'Presupuestos',   href: '/presupuestos',   icon: BookOpen      },
+      { label: 'Reportes', href: '/reportes', icon: BarChart3 },
+    ]},
+    { section: 'Sistema', items: [
+      { label: 'Catálogos',      href: '/catalogos',      icon: Settings      },
+    ]},
+  ],
+
+  // ── Admin (Bajo Nivel): mismo menú que admin, se le irán quitando
+  // permisos puntuales (p.ej. no puede editar el Catálogo de Productos POS) ──
+  admin_low_level: [
     { section: 'Dashboards', items: [
       { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',    icon: LayoutDashboard },
       { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },

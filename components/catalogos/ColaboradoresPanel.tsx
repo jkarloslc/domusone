@@ -34,7 +34,7 @@ const emptyColabForm = () => ({
 
 export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) {
   const { authUser } = useAuth()
-  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<Colaborador[]>([])
   const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string }[]>([])
   const [areas, setAreas] = useState<{ id: number; nombre: string; id_centro_costo_fk: number | null }[]>([])

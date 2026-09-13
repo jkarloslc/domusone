@@ -156,7 +156,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
   const canAuthorize = canAuth && r.status === 'Pendiente Auth'
 
   // Solo admin/superadmin pueden cancelar un reembolso ya autorizado
-  const canCancelarAutorizado = (authUser?.rol === 'admin' || authUser?.rol === 'superadmin') && r.status === 'Autorizado'
+  const canCancelarAutorizado = (authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'superadmin') && r.status === 'Autorizado'
 
   const handleCancelar = async () => {
     if (!confirm('¿Cancelar este reembolso ya autorizado? Esta acción no se puede deshacer.')) return

@@ -74,7 +74,7 @@ export default function VigilanciaExtrasPage() {
   const { canWrite, authUser } = useAuth()
   const router = useRouter()
   const puedeCapturar = canWrite('vigilancia-extras')
-  const puedeAutorizar = !!authUser && ['superadmin', 'admin'].includes(authUser.rol)
+  const puedeAutorizar = !!authUser && ['superadmin', 'admin', 'admin_low_level'].includes(authUser.rol)
 
   const [rows, setRows]         = useState<any[]>([])
   const [areasMap, setAreasMap] = useState<Record<number, string>>({})

@@ -24,7 +24,7 @@ const emptyForm = () => ({ categoria: '', sueldo_diario: '' })
 
 export default function CategoriasManoObraPanel({ onBack }: { onBack?: () => void }) {
   const { authUser } = useAuth()
-  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<CategoriaManoObra[]>([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)

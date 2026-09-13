@@ -159,7 +159,7 @@ export default function CarritosPage() {
   const { canWrite, authUser } = useAuth()
   const puedeEscribir = canWrite('golf-carritos')
   // Administración: cambio/liberación de cajón y tab Mesa de Control
-  const esAdmin = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const esAdmin = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level'
 
   const [tab, setTab] = useState<Tab>('pensiones')
 

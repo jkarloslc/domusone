@@ -70,7 +70,7 @@ export default function RolDePagosPage() {
   const { canWrite, authUser } = useAuth()
   const router = useRouter()
   const puedeCapturar = canWrite('hr')
-  const puedeAutorizar = !!authUser && ['superadmin', 'admin'].includes(authUser.rol)
+  const puedeAutorizar = !!authUser && ['superadmin', 'admin', 'admin_low_level'].includes(authUser.rol)
 
   const [rows, setRows]         = useState<any[]>([])
   const [ccMap, setCcMap]       = useState<Record<number, string>>({})

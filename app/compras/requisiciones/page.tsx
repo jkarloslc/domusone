@@ -19,7 +19,7 @@ const ESTADOS_NO_CANCELABLES = ['Cancelada', 'Rechazada', 'Cerrada']
 
 export default function RequisicionesPage() {
   const { authUser, canWrite, canDelete, canAuth: canAuthFn } = useAuth()
-  const esAdminPleno = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const esAdminPleno = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level'
   const router  = useRouter()
   const [rows, setRows]       = useState<any[]>([])
   const [total, setTotal]     = useState(0)

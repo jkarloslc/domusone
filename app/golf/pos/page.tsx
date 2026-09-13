@@ -83,6 +83,9 @@ const fmtD  = (d: string) => new Date(d.includes('T') ? d : d + 'T12:00:00').toL
 export default function POSPage() {
   const { canWrite, authUser } = useAuth()
   const puedeEscribir = canWrite('golf-pos')
+  // Solo superadmin puede crear/editar el Catálogo de Productos POS —
+  // define qué se puede vender, qué queda bloqueado y su clasificación fiscal.
+  const puedeEditarCatalogo = authUser?.rol === 'superadmin'
 
   const [tab, setTab] = useState<Tab>('pos')
 
@@ -1109,6 +1112,7 @@ ${facturasCorte.length > 0 ? `
 
   // ── Guardar producto ──────────────────────────────────────
   const guardarProducto = async () => {
+    if (!puedeEditarCatalogo) return
     if (!editingProd?.nombre) return
     setSavingProd(true)
     const payload = {
@@ -1181,7 +1185,7 @@ ${facturasCorte.length > 0 ? `
     return (v.nombre_cliente ?? '').toLowerCase().includes(q)
   })
 
-  const esAdminMesa = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const esAdminMesa = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level'
 
   // Un centro se bloquea para venta directa cuando TODOS sus productos
   // activos están marcados como "solo venta por recibo" — se calcula al
@@ -1423,7 +1427,7 @@ ${facturasCorte.length > 0 ? `
                               {viendoPdf === `${v.id}-view` ? <Loader size={11} className="animate-spin" /> : <FileCheck size={11} />} PDF
                             </button>
                           )}
-                          {!cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin') && (
+                          {!cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level') && (
                             origenPorVenta.has(v.id) ? (
                               <span title={`Folio ${origenPorVenta.get(v.id)!.folio ?? '—'} — cancélalo desde ${origenPorVenta.get(v.id)!.ruta}`}
                                 style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px' }}>
@@ -1799,7 +1803,7 @@ ${facturasCorte.length > 0 ? `
                                     <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin ID PAC</span>
                                   )}
                                   {/* Cancelar CFDI */}
-                                  {tienePAC && !cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin') && (
+                                  {tienePAC && !cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level') && (
                                     <button onClick={() => { setCancelarFacturaV(v); setMotivoCancel('02'); setErrCancelFactura('') }}
                                       style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                       <XCircle size={11} /> Cancelar
@@ -2000,7 +2004,7 @@ ${facturasCorte.length > 0 ? `
                     <option value="">Todos los centros</option>
                     {centros.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
                   </select>
-                  {puedeEscribir && (
+                  {puedeEditarCatalogo && (
                     <button onClick={() => setEditingProd({ tipo: 'SERVICIO', aplica_iva: true, iva_pct: 16, activo: true, precio: 0, costo: 0, precio_variable: false, id_centro_fk: centros[0]?.id ?? null })}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
                       <Plus size={13} /> Nuevo producto / servicio
@@ -2144,7 +2148,7 @@ ${facturasCorte.length > 0 ? `
                         <div style={{ fontSize: 15, fontWeight: 700, color: '#059669' }}>{fmt$(p.precio)}</div>
                         {p.costo > 0 && <div style={{ fontSize: 10, color: '#94a3b8' }}>Costo {fmt$(p.costo)}</div>}
                       </div>
-                      {puedeEscribir && (
+                      {puedeEditarCatalogo && (
                         <button onClick={() => { setEditingProd(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                           style={{ fontSize: 11, color: '#475569', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>
                           Editar

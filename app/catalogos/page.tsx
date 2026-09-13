@@ -391,7 +391,7 @@ type CuotaDetLine = {
 
 function CuotasEstandarPanel() {
   const { authUser } = useAuth()
-  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'admin_organismo'
   const [cuotas, setCuotas]         = useState<CuotaHeader[]>([])
   const [loading, setLoading]       = useState(true)
   const [formOpen, setFormOpen]     = useState(false)
@@ -853,7 +853,7 @@ type IngresoMapRow   = { id: number; id_centro_venta_fk: number; id_centro_ingre
 // ══════════════════════════════════════════════════════════════
 function CuotasGolfPanel() {
   const { authUser } = useAuth()
-  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'admin_organismo'
   return <CuotasConfigPanel puedeEscribir={puedeEscribir} />
 }
 
@@ -865,7 +865,7 @@ const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#4
 
 function CentrosVentaPOSPanel() {
   const { authUser } = useAuth()
-  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_organismo'
+  const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'admin_organismo'
   const [items, setItems]           = useState<CentroVentaPos[]>([])
   const [centrosIng, setCentrosIng] = useState<CentroIngresoOpt[]>([])
   const [maps, setMaps]             = useState<IngresoMapRow[]>([])
