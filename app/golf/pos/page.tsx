@@ -6,7 +6,7 @@ import {
   ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
   ChevronDown, ChevronRight, Scissors, Settings, History,
   Printer, Ban, AlertCircle, AlertTriangle, Store, Save, Loader, FileText, Receipt, FileCheck, Package,
-  CreditCard, Pencil, Trash2, CheckCircle, Send, XCircle,
+  CreditCard, Pencil, Trash2, CheckCircle, Send, XCircle, Lock,
 } from 'lucide-react'
 import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
@@ -95,6 +95,10 @@ export default function POSPage() {
   // Ventas
   const [ventas,         setVentas]         = useState<Venta[]>([])
   const [loadingV,       setLoadingV]       = useState(false)
+  // Ventas que vienen de un recibo (Golf/Hípico/Locales/Residencial) — se
+  // oculta "Cancelar" para esas en vez de dejar un botón que solo bloquea,
+  // y se indica dónde cancelarlas de verdad.
+  const [origenPorVenta, setOrigenPorVenta] = useState<Map<number, { folio: string | null; ruta: string }>>(new Map())
   const [busquedaV,      setBusquedaV]      = useState('')
   const [filtroStatus,   setFiltroStatus]   = useState('')
   const [filtroCentro,   setFiltroCentro]   = useState('')
@@ -243,8 +247,24 @@ export default function POSPage() {
     if (filtroFechaHasta) q = q.lte('fecha', finDelDia(filtroFechaHasta))
     const { data, error } = await q
     if (error) { console.error('[POS] fetchVentas:', error) }
-    setVentas((data ?? []) as Venta[])
+    const rows = (data ?? []) as Venta[]
+    setVentas(rows)
     setLoadingV(false)
+
+    const ids = rows.map(r => r.id)
+    if (!ids.length) { setOrigenPorVenta(new Map()); return }
+    const [{ data: rg }, { data: rh }, { data: rl }, { data: rr }] = await Promise.all([
+      dbGolf.from('recibos_golf').select('folio, id_venta_pos_fk').in('id_venta_pos_fk', ids),
+      dbHip.from('recibos_hip').select('folio, id_venta_pos_fk').in('id_venta_pos_fk', ids),
+      dbCtrl.from('loc_recibos').select('folio, id_venta_pos_fk').in('id_venta_pos_fk', ids),
+      dbCtrl.from('recibos').select('folio, id_venta_pos_fk').in('id_venta_pos_fk', ids),
+    ])
+    const map = new Map<number, { folio: string | null; ruta: string }>()
+    for (const r of (rg ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Golf › Recibos' })
+    for (const r of (rh ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Hípico › Cobranza › Recibos' })
+    for (const r of (rl ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Locales › Cobranza › Recibos' })
+    for (const r of (rr ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Residencial › Cobranza › Recibos' })
+    setOrigenPorVenta(map)
   }, [filtroStatus, filtroCentro, filtroFechaDesde, filtroFechaHasta])
 
   // ── Fetch ventas Mesa de Control ─────────────────────────
@@ -1393,10 +1413,17 @@ ${facturasCorte.length > 0 ? `
                             </button>
                           )}
                           {!cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin') && (
-                            <button onClick={() => cancelarVenta(v.id)}
-                              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
-                              <Ban size={11} /> Cancelar
-                            </button>
+                            origenPorVenta.has(v.id) ? (
+                              <span title={`Folio ${origenPorVenta.get(v.id)!.folio ?? '—'} — cancélalo desde ${origenPorVenta.get(v.id)!.ruta}`}
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px' }}>
+                                <Lock size={11} /> Cancelar desde {origenPorVenta.get(v.id)!.ruta}
+                              </span>
+                            ) : (
+                              <button onClick={() => cancelarVenta(v.id)}
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                                <Ban size={11} /> Cancelar
+                              </button>
+                            )
                           )}
                         </div>
                       </div>
