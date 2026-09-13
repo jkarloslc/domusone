@@ -1183,6 +1183,7 @@ export default function CobranzaLocalesPage() {
                           <tr key={`${g.idArr}-det`}>
                             <td colSpan={8} style={{ padding: 0, borderBottom: '1px solid var(--border)' }}>
                               <div style={{ background: '#f0fdfa', padding: '4px 20px 14px 48px' }}>
+                                <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                                   <thead>
                                     <tr>
@@ -1221,6 +1222,7 @@ export default function CobranzaLocalesPage() {
                                     })}
                                   </tbody>
                                 </table>
+                                </div>
                               </div>
                             </td>
                           </tr>

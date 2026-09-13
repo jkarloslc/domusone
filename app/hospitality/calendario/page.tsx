@@ -422,6 +422,7 @@ export default function CalendarioPage() {
               ) : (
                 <>
                   <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                    <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -446,6 +447,7 @@ export default function CalendarioPage() {
                         </tr>
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </>
               )}
@@ -459,6 +461,7 @@ export default function CalendarioPage() {
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 32, fontSize: 13 }}>Sin OPs vinculadas</div>
               ) : (
                 <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                  <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -488,6 +491,7 @@ export default function CalendarioPage() {
                       </tr>
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>

@@ -1441,6 +1441,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
         </div>
       ) : (
         <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+          <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -1495,6 +1496,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -1994,6 +1996,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                 <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>Sin ingresos registrados</div>
               ) : (
                 <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                  <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                     <thead>
                       <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -2035,6 +2038,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                       </tr>
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -2137,6 +2141,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '16px 0' }}>Sin gastos manuales registrados</div>
                 ) : (
                   <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                    <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -2251,6 +2256,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         </tr>
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2306,6 +2312,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '16px 0' }}>Sin OPs vinculadas</div>
                 ) : (
                   <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                    <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -2345,6 +2352,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         </tr>
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2442,6 +2450,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>Sin personal registrado</div>
                 ) : (
                   <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                    <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -2471,6 +2480,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         </tr>
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2596,6 +2606,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         Detalle de Ingresos
                       </div>
                       <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                        <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                           <thead>
                             <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -2616,6 +2627,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2627,6 +2639,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         Detalle de Gastos / OPs
                       </div>
                       <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                        <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                           <thead>
                             <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -2650,6 +2663,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2661,6 +2675,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                         Detalle de Gastos Manuales
                       </div>
                       <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                        <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                           <thead>
                             <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -2681,6 +2696,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </div>
                     </div>
                   )}

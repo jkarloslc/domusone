@@ -222,6 +222,7 @@ export default function ArrendatariosPage() {
 
       {/* Tabla */}
       <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+        <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: 'var(--surface-700)', borderBottom: '1px solid var(--border)' }}>
@@ -260,6 +261,7 @@ export default function ArrendatariosPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Paginación */}
