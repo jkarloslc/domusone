@@ -300,7 +300,7 @@ export default function MiembrosPage() {
             style={{
               width: '100%', padding: '8px 12px 8px 32px', fontSize: 13,
               border: '1px solid var(--border)', borderRadius: 8,
-              background: 'var(--surface)', color: 'var(--text-primary)',
+              background: 'var(--surface-800)', color: 'var(--text-primary)',
               fontFamily: 'var(--font-body)', outline: 'none',
             }}
             placeholder="Buscar por nombre, número de socio, email…"
