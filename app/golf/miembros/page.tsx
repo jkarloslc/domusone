@@ -314,7 +314,7 @@ export default function MiembrosPage() {
           onChange={e => setFiltroCat(e.target.value ? Number(e.target.value) : '')}
           style={{
             padding: '8px 12px', fontSize: 13, border: '1px solid var(--border)',
-            borderRadius: 8, background: 'var(--surface)', color: 'var(--text-primary)',
+            borderRadius: 8, background: 'var(--surface-800)', color: 'var(--text-primary)',
             fontFamily: 'var(--font-body)', outline: 'none', cursor: 'pointer',
             minWidth: 160,
             borderColor: filtroCat !== '' ? 'var(--blue)' : 'var(--border)',
