@@ -355,7 +355,7 @@ export default function VistaEjecutivaPage() {
           </Link>
 
           {/* Hospitality */}
-          <Link href="/hospitality" style={{ textDecoration: 'none' }}>
+          <Link href="/hipico" style={{ textDecoration: 'none' }}>
             <div className="card" style={{ padding: '16px 18px', cursor: 'pointer', transition: 'transform 0.1s' }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>

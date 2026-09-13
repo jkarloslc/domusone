@@ -1,7 +1,8 @@
 import React from 'react'
 import Link from 'next/link'
 import {
-  Users, Home, DollarSign, Stethoscope, ChevronRight, Flag, BarChart3,
+  Users, Home, DollarSign, ChevronRight, Flag, BarChart3,
+  Star, CalendarDays, BookOpen,
 } from 'lucide-react'
 
 const HorseIcon = ({ size = 18 }: { size?: number }) => (
@@ -64,22 +65,41 @@ const CABALLERIZAS_MODULOS = [
   },
 ]
 
-const POLO_MODULOS = [
+const EVENTOS_MODULOS = [
   {
-    key: 'caballos',
-    label: 'Caballos',
-    desc: 'Registro de caballos, raza, propietario y caballeriza asignada',
-    icon: HorseIcon,
-    color: '#065f46',
-    href: '/hipico/caballos',
+    key: 'eventos',
+    label: 'Eventos',
+    desc: 'Gestión de eventos: bodas, sociales, corporativos y torneos',
+    icon: Star,
+    color: '#9333ea',
+    href: '/hospitality/eventos',
   },
   {
-    key: 'servicios',
-    label: 'Servicios',
-    desc: 'Bitácora veterinaria, herrajes y alimentación por caballo',
-    icon: Stethoscope,
-    color: '#0891b2',
-    href: '/hipico/servicios',
+    key: 'calendario',
+    label: 'Calendario',
+    desc: 'Vista mensual de eventos programados con acceso rápido al detalle',
+    icon: CalendarDays,
+    color: '#0369a1',
+    href: '/hospitality/calendario',
+  },
+  {
+    key: 'catalogos',
+    label: 'Catálogos',
+    desc: 'Lugares / salones y tipos de evento',
+    icon: BookOpen,
+    color: '#64748b',
+    href: '/hospitality/catalogos',
+  },
+]
+
+const POLO_MODULOS = [
+  {
+    key: 'polo',
+    label: 'Polo',
+    desc: 'Caballos, bitácora veterinaria y herrajes de polo',
+    icon: PoloIcon,
+    color: '#065f46',
+    href: '/hipico/polo',
   },
 ]
 
@@ -120,6 +140,20 @@ function ModuloCard({ m }: { m: Modulo }) {
   )
 }
 
+function SectionSeparator({ label, color, icon: Icon }: { label: string; color: string; icon: (p: { size?: number }) => React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 8, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
+          <Icon size={15} />
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 700, color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</span>
+      </div>
+      <div style={{ flex: 1, height: 1, background: color + '22' }} />
+    </div>
+  )
+}
+
 export default function HipicoPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -131,8 +165,8 @@ export default function HipicoPage() {
             <HorseIcon size={16} />
             <span className="page-eyebrow-label" style={{ color: 'var(--blue)' }}>Módulo</span>
           </div>
-          <h1 className="page-title-xl">Hípico</h1>
-          <p className="page-subtitle">Administración de caballerizas, socios y cobranza</p>
+          <h1 className="page-title-xl">Hípico y Eventos</h1>
+          <p className="page-subtitle">Caballerizas, cobranza, torneos ecuestres y gestión de eventos</p>
         </div>
       </div>
 
@@ -141,18 +175,14 @@ export default function HipicoPage() {
         {CABALLERIZAS_MODULOS.map(m => <ModuloCard key={m.key} m={m} />)}
       </div>
 
-      {/* Separador Polo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: '#065f46' + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#065f46' }}>
-            <HorseIcon size={15} />
-          </div>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#065f46', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Polo</span>
-        </div>
-        <div style={{ flex: 1, height: 1, background: '#065f4622' }} />
+      {/* Sección Eventos */}
+      <SectionSeparator label="Eventos" color="#b45309" icon={Star} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginBottom: 32 }}>
+        {EVENTOS_MODULOS.map(m => <ModuloCard key={m.key} m={m} />)}
       </div>
 
-      {/* Grid Polo */}
+      {/* Sección Polo */}
+      <SectionSeparator label="Polo" color="#065f46" icon={HorseIcon} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
         {POLO_MODULOS.map(m => <ModuloCard key={m.key} m={m} />)}
       </div>

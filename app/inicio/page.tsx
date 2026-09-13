@@ -6,7 +6,7 @@ import { useConfig } from '@/lib/ConfigContext'
 import { dbComp, dbCtrl, dbGolf } from '@/lib/supabase'
 import {
   Home, Wrench, ShoppingCart, Landmark, DollarSign,
-  BarChart3, Flag, Star, Users, Settings, MessageSquare,
+  BarChart3, Flag, Users, Settings, MessageSquare,
   Truck, AlertTriangle, CheckCircle, RefreshCw, ChevronRight,
   LayoutDashboard, FileText, Package, ArrowLeftRight,
 } from 'lucide-react'
@@ -59,8 +59,7 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Vista Ejecutiva',  href: '/dashboards/ejecutivo', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
     { label: 'Residencial',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
-    { label: 'Hípico',           href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'Hospitality',      href: '/hospitality',         icon: Star,            color: '#d97706', bg: '#fffbeb' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
     { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
@@ -70,8 +69,7 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Vista Ejecutiva',  href: '/dashboards/ejecutivo', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
     { label: 'Residencial',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
-    { label: 'Hípico',           href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'Hospitality',      href: '/hospitality',         icon: Star,            color: '#d97706', bg: '#fffbeb' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
     { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
@@ -87,7 +85,7 @@ const ACCESOS: Record<Rol, Acceso[]> = {
   usuarioadmin: [
     { label: 'Residencial',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
-    { label: 'Hospitality',      href: '/hospitality',         icon: Star,            color: '#d97706', bg: '#fffbeb' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
     { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Dashboard Fin.',   href: '/dashboards/financiero', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
@@ -162,11 +160,11 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
   ],
   usuariohipico: [
-    { label: 'Hípico',           href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
   ],
   usuariohospitality: [
-    { label: 'Hospitality',      href: '/hospitality',         icon: Star,            color: '#d97706', bg: '#fffbeb' },
+    { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
   ],
   usuario_nomina: [

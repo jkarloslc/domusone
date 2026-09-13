@@ -76,7 +76,7 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'usuariohipico':
       return '/hipico'
     case 'usuariohospitality':
-      return '/hospitality'
+      return '/hipico'
     default:
       return '/residencial'
   }

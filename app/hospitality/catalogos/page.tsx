@@ -79,8 +79,8 @@ export default function CatalogosPage() {
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 20px' }}>
       {/* Back */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
-        <a href="/hospitality" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
-          <ChevronLeft size={15} /> Hospitality
+        <a href="/hipico" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
+          <ChevronLeft size={15} /> Hípico y Eventos
         </a>
         <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>/</span>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Catálogos</span>

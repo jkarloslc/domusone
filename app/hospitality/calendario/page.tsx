@@ -154,8 +154,8 @@ export default function CalendarioPage() {
       {/* Back + nav */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/hospitality" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
-            <ChevronLeft size={15} /> Hospitality
+          <a href="/hipico" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
+            <ChevronLeft size={15} /> Hípico y Eventos
           </a>
           <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>/</span>
           <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>Calendario</span>

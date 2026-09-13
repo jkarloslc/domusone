@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, Wrench, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark,
-  Flag, Star, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf, Briefcase,
+  Flag, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf, Briefcase,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useConfig } from '@/lib/ConfigContext'
@@ -119,8 +119,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',            href: '/golf',                icon: Flag      },
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
-      { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
-      { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -163,8 +162,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',            href: '/golf',                icon: Flag      },
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
-      { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
-      { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -207,8 +205,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',            href: '/golf',                icon: Flag      },
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
-      { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
-      { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -246,8 +243,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',            href: '/golf',                icon: Flag      },
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
-      { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
-      { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -285,8 +281,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',            href: '/golf',                icon: Flag      },
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
-      { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
-      { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -317,8 +312,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Golf',            href: '/golf',                icon: Flag      },
       { label: 'Administración',  href: '/golf/administracion', icon: Users     },
       { label: 'Mantto. Campo',   href: '/golf/mantto-campo',   icon: Leaf      },
-      { label: 'Hípico',          href: '/hipico',              icon: HorseIcon },
-      { label: 'Hospitality',     href: '/hospitality',         icon: Star      },
+      { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon },
       RPT('golf'),
     ]},
     { section: 'Compras', items: [
@@ -500,8 +494,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Mantto. Campo',  href: '/golf/mantto-campo',   icon: Leaf  },
       RPT('golf'),
     ]},
-    { section: 'Hípico', items: [
-      { label: 'Hípico',            href: '/hipico',                   icon: HorseIcon },
+    { section: 'Hípico y Eventos', items: [
+      { label: 'Hípico y Eventos',  href: '/hipico',                   icon: HorseIcon },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
       RPT('hipico'),
     ]},
@@ -514,8 +508,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   usuariohipico: [
-    { section: 'Hípico', items: [
-      { label: 'Hípico',            href: '/hipico',                   icon: HorseIcon },
+    { section: 'Hípico y Eventos', items: [
+      { label: 'Hípico y Eventos',  href: '/hipico',                   icon: HorseIcon },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
       RPT('hipico'),
     ]},
@@ -576,17 +570,14 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   usuariohospitality: [
-    { section: 'Hospitality', items: [
-      { label: 'Hospitality',       href: '/hospitality',             icon: Star      },
-      RPT('hospitality'),
-    ]},
     { section: 'Club', items: [
       { label: 'Torneos Golf',      href: '/golf/torneos',            icon: Flag      },
     ]},
-    { section: 'Hípico', items: [
-      { label: 'Hípico',            href: '/hipico',                   icon: HorseIcon },
+    { section: 'Hípico y Eventos', items: [
+      { label: 'Hípico y Eventos',  href: '/hipico',                   icon: HorseIcon },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
-      RPT('hipico'),
+      { label: 'Reportes Hípico',   href: '/reportes?grupo=hipico',       icon: BarChart3 },
+      { label: 'Reportes Eventos',  href: '/reportes?grupo=hospitality',  icon: BarChart3 },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',           href: '/compras',                 icon: ShoppingCart },
