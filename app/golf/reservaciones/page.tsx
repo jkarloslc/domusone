@@ -147,7 +147,7 @@ export default function ReservacionesPage() {
 
       {/* Navegación de fecha */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '4px 6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface-800)', border: '1px solid var(--border)', borderRadius: 10, padding: '4px 6px' }}>
           <button className="btn-ghost" style={{ padding: '4px 8px' }} onClick={() => setFecha(f => addDays(f, -1))}>
             <ChevronLeft size={15} />
           </button>
@@ -184,7 +184,7 @@ export default function ReservacionesPage() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <select value={filtroEspacio} onChange={e => setFiltroEspacio(e.target.value ? Number(e.target.value) : '')}
-          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }}>
+          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-800)', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los espacios</option>
           {espacios.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
         </select>

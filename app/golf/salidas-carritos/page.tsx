@@ -321,14 +321,14 @@ export default function SalidasCarritosPage() {
                 type="date"
                 value={fecha}
                 onChange={e => setFecha(e.target.value)}
-                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }}
+                style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-800)', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }}
               />
             </div>
             <div style={{ display: 'flex', gap: 0, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               {(['todos', 'en_ronda', 'regresados'] as const).map(s => (
                 <button key={s} onClick={() => setFiltroStatus(s)} style={{
                   padding: '7px 14px', fontSize: 12, fontWeight: filtroStatus === s ? 600 : 400,
-                  background: filtroStatus === s ? '#059669' : 'var(--surface)',
+                  background: filtroStatus === s ? '#059669' : 'var(--surface-800)',
                   color: filtroStatus === s ? '#fff' : 'var(--text-muted)',
                   border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
                 }}>

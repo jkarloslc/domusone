@@ -221,13 +221,13 @@ export default function AccesosPage() {
             type="date"
             value={fecha}
             onChange={e => setFecha(e.target.value)}
-            style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }}
+            style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-800)', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }}
           />
         </div>
         <select
           value={filtroEspacio}
           onChange={e => setFiltroEspacio(e.target.value ? Number(e.target.value) : '')}
-          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }}>
+          style={{ padding: '7px 10px', fontSize: 13, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-800)', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }}>
           <option value="">Todos los espacios</option>
           {espacios.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
         </select>
@@ -235,7 +235,7 @@ export default function AccesosPage() {
           {(['todos', 'activos', 'completados'] as const).map(s => (
             <button key={s} onClick={() => setFiltroStatus(s)} style={{
               padding: '7px 14px', fontSize: 12, fontWeight: filtroStatus === s ? 600 : 400,
-              background: filtroStatus === s ? '#2563eb' : 'var(--surface)',
+              background: filtroStatus === s ? '#2563eb' : 'var(--surface-800)',
               color: filtroStatus === s ? '#fff' : 'var(--text-muted)',
               border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
             }}>
