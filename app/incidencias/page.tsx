@@ -622,7 +622,7 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <a href="/servicios" target="_blank" rel="noopener noreferrer"
+                  <a href="/mantenimiento/ot-generales" target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4,
                       padding: '5px 10px', background: 'var(--blue)', color: '#fff',
                       borderRadius: 6, textDecoration: 'none', fontFamily: 'var(--font-body)' }}>
