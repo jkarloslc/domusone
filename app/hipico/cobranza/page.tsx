@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbHip, dbGolf, dbCfg } from '@/lib/supabase'
+import { verificarNoFacturada, logCancelacion } from '@/lib/cancelacionCobranza'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight,
@@ -515,6 +516,9 @@ export default function CobranzaHipicoPage() {
     if (!cancelando) return
     setSavingCancel(true)
     try {
+      const bloqueoFactura = await verificarNoFacturada(cancelando.id_venta_pos_fk)
+      if (bloqueoFactura) { alert(bloqueoFactura); return }
+
       const detCuotas = cancelando.recibos_hip_det.filter(d => d.id_cuota_fk != null)
       if (detCuotas.length > 0) {
         const ids = Array.from(new Set(detCuotas.map(d => d.id_cuota_fk as number)))
@@ -555,6 +559,13 @@ export default function CobranzaHipicoPage() {
           : cancelando.observaciones,
       }).eq('id', cancelando.id)
       if (erRec) throw erRec
+
+      await logCancelacion({
+        modulo: 'hipico', folio: cancelando.folio, idOrigen: cancelando.id,
+        idVentaPosFk: cancelando.id_venta_pos_fk, monto: cancelando.total,
+        cuotasAfectadas: detCuotas.length, motivo: motivoCancel || null,
+        usuario: authUser?.nombre ?? null,
+      })
 
       setCancelando(null)
       setMotivoCancel('')

@@ -1,13 +1,16 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { dbCtrl, dbGolf } from '@/lib/supabase'
+import { useAuth } from '@/lib/AuthContext'
 import { X, Ban, Printer, CheckCircle } from 'lucide-react'
 import { type Recibo, type ReciboDetalle, type ReciboPago, fmt } from './types'
 import ModalShell from '@/components/ui/ModalShell'
+import { verificarNoFacturada, logCancelacion } from '@/lib/cancelacionCobranza'
 
 type Props = { recibo: Recibo; onClose: () => void; onCanceled: () => void }
 
 export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) {
+  const { authUser } = useAuth()
   const [detalle, setDetalle]   = useState<ReciboDetalle[]>([])
   const [pagos, setPagos]       = useState<ReciboPago[]>([])
   const [canceling, setCanceling] = useState(false)
@@ -28,6 +31,15 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
     if (!motivo.trim()) return
     setCanceling(true)
     try {
+      // Residencial puede facturarse directo desde el recibo (folio_fiscal
+      // propio) además del camino vía ticket POS — hay que checar ambos.
+      if (r.folio_fiscal) {
+        alert(`Este recibo ya fue facturado (folio fiscal ${r.folio_fiscal}). Cancela la factura primero y luego cancela este recibo.`)
+        return
+      }
+      const bloqueoFactura = await verificarNoFacturada(r.id_venta_pos_fk ?? null)
+      if (bloqueoFactura) { alert(bloqueoFactura); return }
+
       const detCargos = detalle.filter(d => d.id_cargo_fk != null)
       if (detCargos.length > 0) {
         const ids = Array.from(new Set(detCargos.map(d => d.id_cargo_fk as number)))
@@ -63,11 +75,18 @@ export default function ReciboDetail({ recibo: r, onClose, onCanceled }: Props) 
 
       const { error: erRec } = await dbCtrl.from('recibos').update({
         activo: false,
-        usuario_cancela: 'sistema',
+        usuario_cancela: authUser?.nombre ?? 'sistema',
         fecha_cancela: new Date().toISOString(),
         motivo_cancelacion: motivo.trim(),
       }).eq('id', r.id)
       if (erRec) throw erRec
+
+      await logCancelacion({
+        modulo: 'residencial', folio: r.folio, idOrigen: r.id,
+        idVentaPosFk: r.id_venta_pos_fk ?? null, monto: r.monto,
+        cuotasAfectadas: detCargos.length, motivo: motivo.trim(),
+        usuario: authUser?.nombre ?? null,
+      })
 
       onCanceled()
     } catch (e: any) {

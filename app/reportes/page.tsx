@@ -59,6 +59,7 @@ import ReporteManoDeObra from './ReporteManoDeObra'
 import ReporteRolPagos from './ReporteRolPagos'
 import ReporteOPsPorTipoGasto from './ReporteOPsPorTipoGasto'
 import ReporteOPsPorClasificacionArticulos from './ReporteOPsPorClasificacionArticulos'
+import ReporteCancelaciones from './ReporteCancelaciones'
 
 const GRUPOS = [
   {
@@ -75,6 +76,7 @@ const GRUPOS = [
       { id: 'propietarios-desglose',  label: 'Propietarios — Desglose de Lotes',   icon: Users, desc: 'Informe jerárquico: Propietario → Sección → Clasificación → Lote, con superficie, status y valor' },
       { id: 'lotes-por-status',       label: 'Lotes por Status',                   icon: MapPin, desc: 'Lotes agrupados por status (Vendido / Libre / Bloqueado) con conteo, % y totales de superficie y valor' },
       { id: 'lotes-asociacion',       label: 'Lotes por Asociación de Condóminos', icon: MapPin, desc: 'Catálogo de lotes filtrable por si pertenecen o no a la Asociación de Condóminos (AC)' },
+      { id: 'cancelaciones',          label: 'Bitácora de Cancelaciones',  icon: AlertTriangle, desc: 'Recibos cancelados (Golf, Hípico, Locales, Residencial): folio, cuotas liberadas, monto, motivo y usuario' },
       { id: 'lotes-propietarios',   label: 'Lotes y Propietarios',       icon: Users,         desc: 'Relación de lotes con su propietario asignado' },
       { id: 'propietarios',         label: 'Directorio de Propietarios', icon: Users,         desc: 'Datos completos de todos los propietarios' },
       { id: 'incidencias',          label: 'Incidencias por Lote',       icon: AlertTriangle, desc: 'Historial de incidencias filtrado por lote' },
@@ -174,6 +176,7 @@ const GRUPOS = [
       { id: 'golf-slots-ocupacion',     label: 'Ocupación de Slots / Cajones', icon: BarChart3, desc: 'Porcentaje de ocupación y disponibilidad de cajones por categoría y período' },
       { id: 'golf-riego-consumo',       label: 'Consumo de Agua — Riego',     icon: Droplets,  desc: 'Consumo real vs. programado por origen de agua, semana y período con análisis de gap' },
       { id: 'golf-estatus-campo',       label: 'Estatus del Campo',           icon: CloudRain, desc: 'Días de apertura, cierre y cierre parcial del campo y de los caminos en el período' },
+      { id: 'cancelaciones',            label: 'Bitácora de Cancelaciones',   icon: AlertTriangle, desc: 'Recibos cancelados (Golf, Hípico, Locales, Residencial): folio, cuotas liberadas, monto, motivo y usuario' },
     ],
   },
   {
@@ -185,6 +188,7 @@ const GRUPOS = [
       { id: 'hipico-estado-cuenta', label: 'Estado de Cuenta', icon: FileText,  desc: 'Cargos y pagos por arrendatario en un período' },
       { id: 'hipico-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Rentas de caballerizas cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
       { id: 'hipico-servicios',     label: 'Servicios por Caballo', icon: BarChart3, desc: 'Desglose jerárquico por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
+      { id: 'cancelaciones',        label: 'Bitácora de Cancelaciones', icon: AlertTriangle, desc: 'Recibos cancelados (Golf, Hípico, Locales, Residencial): folio, cuotas liberadas, monto, motivo y usuario' },
     ],
   },
   {
@@ -194,6 +198,7 @@ const GRUPOS = [
     color: '#0f766e',
     reportes: [
       { id: 'locales-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Rentas de locales y propiedades cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
+      { id: 'cancelaciones',        label: 'Bitácora de Cancelaciones', icon: AlertTriangle, desc: 'Recibos cancelados (Golf, Hípico, Locales, Residencial): folio, cuotas liberadas, monto, motivo y usuario' },
     ],
   },
   {
@@ -364,6 +369,7 @@ function ReportesContent() {
 
       {/* Reportes hospitality */}
       {active === 'hospitality-eventos' && <ReporteHospitalityEventos />}
+      {active === 'cancelaciones' && <ReporteCancelaciones />}
     </div>
   )
 }

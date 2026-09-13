@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
+import { verificarNoFacturada, logCancelacion } from '@/lib/cancelacionCobranza'
 import { useAuth } from '@/lib/AuthContext'
 import {
   RefreshCw, Search, Receipt, Printer,
@@ -159,6 +160,12 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
     if (!cancelando) return
     setSavingCancel(true)
     try {
+      // 0. Si el ticket POS ligado ya fue facturado, hay que cancelar la
+      // factura primero (desde POS) — evita dejar un CFDI timbrado sin venta
+      // ni cuota que lo respalde.
+      const bloqueoFactura = await verificarNoFacturada(cancelando.id_venta_pos_fk)
+      if (bloqueoFactura) { alert(bloqueoFactura); return }
+
       // 1. Cancelar recibo
       const { error: erRec } = await dbGolf.from('recibos_golf').update({
         status: 'CANCELADO',
@@ -173,9 +180,9 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
       if (detCuotas.length > 0) {
         const ids = Array.from(new Set(detCuotas.map(d => d.id_cuota_fk as number)))
         const { data: cuotasActuales, error: eq } = await dbGolf.from('cxc_golf')
-          .select('id, saldo, monto_final, status').in('id', ids)
+          .select('id, saldo, monto_final, status, id_recibo_fk').in('id', ids)
         if (eq) throw eq
-        const porId = new Map(((cuotasActuales ?? []) as { id: number; saldo: number | null; monto_final: number; status: string }[]).map(c => [c.id, c]))
+        const porId = new Map(((cuotasActuales ?? []) as { id: number; saldo: number | null; monto_final: number; status: string; id_recibo_fk: number | null }[]).map(c => [c.id, c]))
         const abonadoPorCuota = new Map<number, number>()
         for (const d of detCuotas) {
           const idC = d.id_cuota_fk as number
@@ -186,6 +193,8 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
           if (!c) return null
           const saldoActual = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
           const nuevoSaldo = Math.min(c.monto_final, parseFloat((saldoActual + abonado).toFixed(2)))
+          // Si otro recibo distinto sigue vigente y también abonó a esta cuota,
+          // id_recibo_fk ya apunta a ese otro — no lo pisamos al cancelar este.
           return dbGolf.from('cxc_golf').update({
             saldo:           nuevoSaldo,
             status:          nuevoSaldo >= c.monto_final - 0.005 ? 'PENDIENTE' : 'PAGO_PARCIAL',
@@ -193,7 +202,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
             forma_pago:      null,
             referencia_pago: null,
             usuario_cobra:   null,
-            id_recibo_fk:    null,
+            ...(c.id_recibo_fk === cancelando.id ? { id_recibo_fk: null } : {}),
           }).eq('id', idC)
         }).filter(Boolean) as PromiseLike<any>[]
         const results = await Promise.all(updates)
@@ -206,6 +215,14 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         const { error: erVenta } = await dbGolf.from('ctrl_ventas').update({ status: 'CANCELADA' }).eq('id', cancelando.id_venta_pos_fk)
         if (erVenta) throw erVenta
       }
+
+      // 4. Bitácora de auditoría
+      await logCancelacion({
+        modulo: 'golf', folio: cancelando.folio, idOrigen: cancelando.id,
+        idVentaPosFk: cancelando.id_venta_pos_fk, monto: cancelando.total,
+        cuotasAfectadas: detCuotas.length, motivo: motivoCancel || null,
+        usuario: authUser?.nombre ?? null,
+      })
 
       setCancelando(null)
       setMotivoCancel('')

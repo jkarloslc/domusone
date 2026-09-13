@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import {
-  Users, Tag, Car, Receipt, CreditCard, ChevronRight, Building2, UserPlus,
+  Users, Tag, Car, Receipt, CreditCard, ChevronRight, Building2, UserPlus, FileText,
 } from 'lucide-react'
 
 const MODULOS = [
@@ -51,6 +51,14 @@ const MODULOS = [
     icon: CreditCard,
     color: '#0891b2',
     href: '/golf/cxc',
+  },
+  {
+    key: 'recibos',
+    label: 'Recibos',
+    desc: 'Consulta, reimpresión y cancelación de recibos de cobro',
+    icon: FileText,
+    color: '#0d9488',
+    href: '/golf/recibos',
   },
   {
     key: 'locales',
