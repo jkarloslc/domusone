@@ -1,3 +1,4 @@
+'use client'
 import Link from 'next/link'
 import { Leaf, Droplets, CloudRain, ChevronRight } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'

@@ -1,3 +1,4 @@
+'use client'
 import Link from 'next/link'
 import {
   Users, Tag, Car, Receipt, CreditCard, ChevronRight, Building2, UserPlus, FileText,
