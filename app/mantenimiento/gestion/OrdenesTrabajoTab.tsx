@@ -1803,7 +1803,7 @@ function ReporteSemanal({ empresa, modulo, areas, areaMap, onClose }: {
       : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
 
     const fechaReporte = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
-    const seccionNombre = filterArea ? (areaMap[Number(filterArea)] ?? 'Todas') : 'Mantenimiento Residencial'
+    const seccionNombre = filterArea ? (areaMap[Number(filterArea)] ?? 'Todas') : 'Mantenimiento Fraccionamiento'
 
     // Agrupar OTs por área
     const porSeccion: Record<string, any[]> = {}
@@ -1877,7 +1877,7 @@ function ReporteSemanal({ empresa, modulo, areas, areaMap, onClose }: {
 
 <!-- Datos generales -->
 <div class="meta">
-  <div class="meta-row"><span class="meta-label">Área:</span><span class="meta-value">Mantenimiento Residencial</span></div>
+  <div class="meta-row"><span class="meta-label">Área:</span><span class="meta-value">Mantenimiento Fraccionamiento</span></div>
   <div class="meta-row"><span class="meta-label">Fecha de reporte:</span><span class="meta-value">${fechaReporte}</span></div>
   <div class="meta-row"><span class="meta-label">Secciones supervisadas:</span><span class="meta-value">${seccionNombre}</span></div>
   <div class="meta-row"><span class="meta-label">Encargados de área:</span><span class="meta-value">${encargados || '—'}</span></div>
@@ -1951,7 +1951,7 @@ ${todosRecursos.length > 0 ? `
 
 <!-- Pie de página -->
 <div class="footer">
-  <span>DomusOne — Sistema de Administración Residencial · ${orgNombre}</span>
+  <span>DomusOne — Sistema de Administración de Fraccionamiento · ${orgNombre}</span>
   <span>Generado: ${new Date().toLocaleString('es-MX')}</span>
 </div>
 

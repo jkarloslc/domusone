@@ -18,7 +18,7 @@ const fmtJor = (n: number) => (n || 0).toLocaleString('es-MX', { minimumFraction
 
 const STATUSES = ['Pendiente', 'En Proceso', 'En Pausa', 'Completada', 'Cancelada']
 const TIPOS_OT: { value: string; label: string }[] = [
-  { value: 'mantenimiento', label: 'OT Mantto. Residencial' },
+  { value: 'mantenimiento', label: 'OT Mantto. Fraccionamiento' },
   { value: 'generales',     label: "OT's Generales" },
 ]
 const statusColor = (s: string) =>

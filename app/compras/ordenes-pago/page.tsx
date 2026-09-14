@@ -1441,7 +1441,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
                   {vigLotesDisp.length === 0 ? (
                     <div style={{ padding: '12px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
-                      Sin perimetrales en status Autorizado disponibles — captúralos y autorízalos en Residencial › Vigilancia
+                      Sin perimetrales en status Autorizado disponibles — captúralos y autorízalos en Fraccionamiento › Vigilancia
                     </div>
                   ) : (
                     <div style={{ maxHeight: 180, overflowY: 'auto' }}>

@@ -12,7 +12,7 @@ const fmtF = (s: string | null) => {
 }
 
 const MODULO_LABEL: Record<string, string> = {
-  golf: 'Golf', hipico: 'Hípico', locales: 'Locales', residencial: 'Residencial',
+  golf: 'Golf', hipico: 'Hípico', locales: 'Locales', residencial: 'Fraccionamiento',
 }
 const MODULO_COLOR: Record<string, string> = {
   golf: '#b8952a', hipico: '#7c3aed', locales: '#0f766e', residencial: 'var(--blue)',
@@ -106,7 +106,7 @@ export default function ReporteCancelaciones() {
             <option value="golf">Golf</option>
             <option value="hipico">Hípico</option>
             <option value="locales">Locales</option>
-            <option value="residencial">Residencial</option>
+            <option value="residencial">Fraccionamiento</option>
           </select>
         </div>
         <div>

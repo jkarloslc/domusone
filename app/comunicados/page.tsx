@@ -96,7 +96,7 @@ export default function ComunicadosPage() {
       <PageHeader
         variant="xl"
         icon={MessageSquare}
-        eyebrowLabel="Residencial"
+        eyebrowLabel="Fraccionamiento"
         title="Comunicados y Avisos"
         subtitle="Crea y envía comunicados por correo a propietarios individualmente o de forma masiva"
         actions={<>

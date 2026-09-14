@@ -10,7 +10,7 @@ export default function OTResidencialPage() {
         variant="xl"
         icon={ClipboardList}
         eyebrowLabel="Mantenimiento"
-        title="OT Mantto. Residencial"
+        title="OT Mantto. Fraccionamiento"
         subtitle="Órdenes de trabajo del mantenimiento residencial por cuadrante y área"
       />
 

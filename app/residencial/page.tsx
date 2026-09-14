@@ -31,7 +31,7 @@ export default function ResidencialPage() {
   if (visibles.length === 0) {
     return (
       <div style={{ padding: '48px 36px', textAlign: 'center', color: 'var(--text-muted)' }}>
-        Sin acceso a módulos residenciales.
+        Sin acceso a módulos del fraccionamiento.
       </div>
     )
   }
@@ -43,7 +43,7 @@ export default function ResidencialPage() {
         variant="xl"
         icon={Home}
         eyebrowLabel="Módulo"
-        title="Residencial"
+        title="Fraccionamiento"
         subtitle="Gestión de lotes, propietarios y servicios del fraccionamiento"
       />
 

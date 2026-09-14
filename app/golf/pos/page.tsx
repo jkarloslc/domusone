@@ -270,7 +270,7 @@ export default function POSPage() {
     for (const r of (rg ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Golf › Recibos' })
     for (const r of (rh ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Hípico › Cobranza › Recibos' })
     for (const r of (rl ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Locales › Cobranza › Recibos' })
-    for (const r of (rr ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Residencial › Cobranza › Recibos' })
+    for (const r of (rr ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Fraccionamiento › Cobranza › Recibos' })
     setOrigenPorVenta(map)
   }, [filtroStatus, filtroCentro, filtroFechaDesde, filtroFechaHasta])
 
@@ -501,7 +501,7 @@ export default function POSPage() {
       const origen = recGolf ? { folio: (recGolf as any).folio, ruta: 'Golf › Recibos' }
         : recHip ? { folio: (recHip as any).folio, ruta: 'Hípico › Cobranza › Recibos' }
         : recLoc ? { folio: (recLoc as any).folio, ruta: 'Locales › Cobranza › Recibos' }
-        : recResi ? { folio: (recResi as any).folio, ruta: 'Residencial › Cobranza › Recibos' }
+        : recResi ? { folio: (recResi as any).folio, ruta: 'Fraccionamiento › Cobranza › Recibos' }
         : null
 
       if (origen) {

@@ -23,6 +23,10 @@ const CLASIFICACION_COLOR: Record<Clasificacion, { bg: string; color: string }> 
 
 const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's", 'Locales']
 
+// Datos legacy: partidas ya guardadas con modulo='Residencial' — el valor se conserva
+// para no tocar datos, solo se traduce la etiqueta visible.
+const moduloLabel = (m: string) => m === 'Residencial' ? 'Fraccionamiento' : m
+
 const MODULO_COLOR: Record<string, { bg: string; color: string }> = {
   General:       { bg: '#f1f5f9', color: '#475569' },
   Residencial:   { bg: '#eff6ff', color: '#1d4ed8' },
@@ -435,7 +439,7 @@ export default function PartidasPage() {
                                 const mc = MODULO_COLOR[p.modulo ?? 'General'] ?? MODULO_COLOR.General
                                 return (
                                   <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: mc.bg, color: mc.color }}>
-                                    {p.modulo ?? 'General'}
+                                    {moduloLabel(p.modulo ?? 'General')}
                                   </span>
                                 )
                               })()}

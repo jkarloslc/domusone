@@ -260,7 +260,7 @@ export default function ReporteIngresosCuotas() {
           <PrintBar
             title="Ingresos-Cuotas-Seccion-Concepto"
             count={recibos.length}
-            reportTitle="Cuotas Residenciales — por Sección y Concepto"
+            reportTitle="Cuotas Fraccionamiento — por Sección y Concepto"
           />
 
           <div className="card" style={{ overflow: 'auto' }}>

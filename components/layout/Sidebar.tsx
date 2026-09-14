@@ -112,8 +112,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Dashboard Financiero',   href: '/dashboards/financiero',  icon: LayoutDashboard },
       { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento',icon: LayoutDashboard },
     ]},
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -156,8 +156,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
       { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
     ]},
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -200,8 +200,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
       { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
     ]},
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -243,8 +243,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
       { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
     ]},
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -282,8 +282,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
       { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
     ]},
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -318,8 +318,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Dashboards', items: [
       { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
     ]},
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Club', items: [
@@ -351,8 +351,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
       { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
     ]},
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -374,8 +374,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   atencion_residentes: [
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -385,8 +385,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   cobranza: [
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Finanzas', items: [
@@ -395,8 +395,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   vigilancia: [
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
     ]},
   ],
 
@@ -428,8 +428,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Dashboards', items: [
       { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
     ]},
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -442,8 +442,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Dashboards', items: [
       { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
     ]},
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
     { section: 'Operaciones', items: [
@@ -475,8 +475,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   seguridad: [
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -546,8 +546,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   usuario_organismo: [
-    { section: 'Residencial', items: [
-      { label: 'Residencial',    href: '/residencial',    icon: Home          },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
     ]},
   ],

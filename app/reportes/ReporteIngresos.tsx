@@ -31,7 +31,7 @@ const TIPO_COLOR: Record<string, string> = {
 }
 const TIPO_LABEL: Record<string, string> = {
   golf:            'Golf',
-  cuotas:          'Cuotas Residenciales',
+  cuotas:          'Cuotas Fraccionamiento',
   rentas_espacios: 'Rentas / Espacios',
   caballerizas:    'Caballerizas',
   otro:            'Otro',

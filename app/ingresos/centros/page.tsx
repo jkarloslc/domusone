@@ -19,7 +19,7 @@ type Centro = {
 
 const TIPOS = ['golf', 'cuotas', 'rentas_espacios', 'caballerizas', 'otro']
 const TIPO_LABEL: Record<string, string> = {
-  golf: 'Golf', cuotas: 'Cuotas Residencial',
+  golf: 'Golf', cuotas: 'Cuotas Fraccionamiento',
   rentas_espacios: 'Renta de Espacios', caballerizas: 'Caballerizas', otro: 'Otro',
 }
 const TIPO_COLOR: Record<string, string> = {

@@ -163,7 +163,7 @@ const CATALOGOS: CatConfig[] = [
     label:        'Tipos de Lote',
     icon:         Tag,
     color:        '#7c3aed',
-    sectionLabel: 'Residencial',
+    sectionLabel: 'Fraccionamiento',
     desc:         'Clasificación del tipo de lote (Fairway, Casa, Villa, etc.)',
     campos: [
       { key: 'nombre', label: 'Nombre *', type: 'text', required: true },

@@ -13,7 +13,7 @@ const GRUPOS = [
     color: '#b45309',
     items: [
       { key: 'mantenimiento',  permKey: 'mantenimiento', label: 'Mantenimiento',           icon: Wrench,        desc: 'Programa anual de mantenimiento preventivo',          href: '/mantenimiento/gestion' },
-      { key: 'ot-residencial', permKey: 'mantenimiento', label: 'OT Mantto. Residencial',  icon: ClipboardList, desc: 'Órdenes de trabajo del mantenimiento residencial',    href: '/mantenimiento/ot-residencial' },
+      { key: 'ot-residencial', permKey: 'mantenimiento', label: 'OT Mantto. Fraccionamiento',  icon: ClipboardList, desc: 'Órdenes de trabajo del mantenimiento del fraccionamiento',    href: '/mantenimiento/ot-residencial' },
       { key: 'ot-generales',   permKey: 'mantenimiento', label: "OT's Generales",          icon: ClipboardCheck, desc: 'Órdenes de trabajo de la cuadrilla general',          href: '/mantenimiento/ot-generales' },
       { key: 'equipo-flota',   permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria',  icon: Truck,         desc: 'Flotilla, mantenimientos y bitácora de uso',           href: '/equipo-flota' },
       { key: 'herramientas',   permKey: 'herramientas',  label: 'Equipo y Herramienta',    icon: Hammer,        desc: 'Catálogo, préstamos y mantenimiento de herramienta',   href: '/herramientas' },

@@ -10,7 +10,7 @@ import { PrintBar } from './utils'
 //   · Vencida:    periodo <  mes de la fecha de pago (se cobró con atraso)
 //   · Anticipada: periodo >  mes de la fecha de pago (se cobró por adelantado)
 //   · Otros:      líneas sin periodo (cargos/descuentos adicionales, conceptos sueltos)
-// El mismo componente sirve a Residencial, Golf, Pensiones de Carritos,
+// El mismo componente sirve a Fraccionamiento, Golf, Pensiones de Carritos,
 // Hípico y Locales — cambia solo la fuente de datos.
 
 export type FuenteCobranza = 'residencial' | 'golf' | 'pensiones' | 'hipico' | 'locales'
@@ -29,7 +29,7 @@ type Row = {
 }
 
 const FUENTE_CFG: Record<FuenteCobranza, { titulo: string; clienteLabel: string; printTitle: string }> = {
-  residencial: { titulo: 'Cobranza Corriente vs Vencida — Residencial',           clienteLabel: 'Propietario / Lote', printTitle: 'Cobranza-Corriente-Vencida-Residencial' },
+  residencial: { titulo: 'Cobranza Corriente vs Vencida — Fraccionamiento',       clienteLabel: 'Propietario / Lote', printTitle: 'Cobranza-Corriente-Vencida-Fraccionamiento' },
   golf:        { titulo: 'Cobranza Corriente vs Vencida — Club Golf (Cuotas)',    clienteLabel: 'Socio',              printTitle: 'Cobranza-Corriente-Vencida-Golf' },
   pensiones:   { titulo: 'Cobranza Corriente vs Vencida — Pensiones de Carritos', clienteLabel: 'Socio',              printTitle: 'Cobranza-Corriente-Vencida-Pensiones' },
   hipico:      { titulo: 'Cobranza Corriente vs Vencida — Hípico (Caballerizas)', clienteLabel: 'Arrendatario',       printTitle: 'Cobranza-Corriente-Vencida-Hipico' },
