@@ -6,7 +6,7 @@ import { emitirValesPorPagoOP } from '@/lib/combustible'
 import {
   RefreshCw, Search, Eye, Loader,
   Plus, Printer, FileText, Upload, Trash2, ExternalLink,
-  AlertTriangle, CheckCircle, Clock, Calendar, Layers, RotateCcw
+  AlertTriangle, CheckCircle, Clock, Calendar, Layers, RotateCcw, Pencil, Save
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, FORMAS_PAGO_COMP, StatusBadge } from '../../compras/types'
@@ -15,6 +15,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import KpiCard from '@/components/ui/KpiCard'
 import { cerrarOCsDeOP } from '@/lib/cxpCascade'
 import { aplicarPagoRemesa, reversarPagoRemesa } from '@/lib/pagoRemesa'
+import { editarPagoCxp } from '@/lib/editarPagoCxp'
 
 // ── Antigüedad de saldo ────────────────────────────────────
 const diasVencido = (fecha: string | null) => {
@@ -1109,6 +1110,7 @@ function RemesaDetail({ remesa, onClose }: { remesa: any; onClose: () => void })
 // ════════════════════════════════════════════════════════════
 function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   const { authUser, canWrite } = useAuth()
+  const puedeEditarPago = authUser?.rol === 'superadmin' || authUser?.rol === 'admin_tesoreria'
   const [abonos, setAbonos]             = useState<any[]>([])
   const [loading, setLoading]           = useState(true)
   const [showForm, setShowForm]         = useState(false)
@@ -1118,6 +1120,10 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   const [pagoTotal, setPagoTotal]       = useState(true)
   const [formasPago, setFormasPago]     = useState<any[]>([])
   const [cuentasBanc, setCuentasBanc]   = useState<any[]>([])
+  const [editando, setEditando]         = useState<any | null>(null)
+  const [formEdit, setFormEdit]         = useState<any>({})
+  const [savingEdit, setSavingEdit]     = useState(false)
+  const [errorEdit, setErrorEdit]       = useState('')
 
   const [form, setForm] = useState({
     fecha_abono:          new Date().toISOString().slice(0, 10),
@@ -1257,6 +1263,50 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
     setForm(f => ({ ...f, monto: '', referencia: '', notas: '', comprobante: '', complemento_pago: '', id_cuenta_bancaria_fk: '' }))
     fetchAbonos()
     onClose()
+  }
+
+  const abrirEdicion = (a: any) => {
+    setErrorEdit('')
+    setEditando(a)
+    setFormEdit({
+      fecha_abono:           a.fecha_abono,
+      monto:                 (a.monto ?? '').toString(),
+      forma_pago:            a.forma_pago ?? '',
+      id_cuenta_bancaria_fk: a.id_cuenta_bancaria_fk?.toString() ?? '',
+      referencia:            a.referencia ?? '',
+      notas:                 a.notas ?? '',
+      motivo:                '',
+    })
+  }
+
+  const setFE = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setFormEdit((f: any) => ({ ...f, [k]: e.target.value }))
+
+  const handleGuardarEdicion = async () => {
+    if (!editando) return
+    if (!formEdit.monto || Number(formEdit.monto) <= 0) { setErrorEdit('El monto del pago es obligatorio'); return }
+    if (!formEdit.motivo?.trim()) { setErrorEdit('Indica el motivo de la edición'); return }
+    setSavingEdit(true); setErrorEdit('')
+    try {
+      await editarPagoCxp({
+        idAbono:          editando.id,
+        fechaAbono:       formEdit.fecha_abono,
+        monto:            Number(formEdit.monto),
+        formaPago:        formEdit.forma_pago,
+        idCuentaBancaria: formEdit.id_cuenta_bancaria_fk ? Number(formEdit.id_cuenta_bancaria_fk) : null,
+        referencia:       formEdit.referencia,
+        notas:            formEdit.notas,
+        motivoEdicion:    formEdit.motivo,
+        editadoPor:       authUser?.nombre ?? null,
+      })
+      setSavingEdit(false)
+      setEditando(null)
+      fetchAbonos()
+      onClose()
+    } catch (e: any) {
+      setErrorEdit(e.message ?? 'No se pudo guardar la edición')
+      setSavingEdit(false)
+    }
   }
 
   // Botón de adjunto genérico
@@ -1410,6 +1460,11 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                   </div>
                   {/* Archivos del abono */}
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    {puedeEditarPago && a.status !== 'Cancelada' && editando?.id !== a.id && (
+                      <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }} onClick={() => abrirEdicion(a)} title="Editar pago aplicado">
+                        <Pencil size={11} /> Editar
+                      </button>
+                    )}
                     {/* Compat. con registros anteriores que tenían pdf/xml en el abono */}
                     {a.pdf_factura && (
                       <a href={a.pdf_factura} target="_blank" rel="noopener noreferrer"
@@ -1439,6 +1494,65 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
                 </div>
                 {a.notas && <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>{a.notas}</div>}
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>Registrado por: {a.created_by ?? '—'}</div>
+                {a.editado_by && (
+                  <div style={{ fontSize: 10, color: '#d97706', marginTop: 2 }}>
+                    Editado por {a.editado_by} el {fmtFecha(a.editado_at)} — {a.motivo_edicion}
+                  </div>
+                )}
+
+                {editando?.id === a.id && (
+                  <div style={{ marginTop: 10, padding: 12, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#b45309', marginBottom: 10 }}>Editar pago ya aplicado</div>
+                    {errorEdit && <div style={{ padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 12, marginBottom: 10 }}>{errorEdit}</div>}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                      <div><label className="label">Fecha *</label>
+                        <input className="input" type="date" value={formEdit.fecha_abono ?? ''} onChange={setFE('fecha_abono')} />
+                      </div>
+                      <div><label className="label">Monto *</label>
+                        <input className="input" type="number" step="0.01" value={formEdit.monto ?? ''} onChange={setFE('monto')} style={{ textAlign: 'right' }} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                      <div><label className="label">Forma de Pago</label>
+                        <select className="select" value={formEdit.forma_pago ?? ''} onChange={setFE('forma_pago')}>
+                          <option value="">— Seleccionar —</option>
+                          {formasPago.length > 0
+                            ? formasPago.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)
+                            : FORMAS_PAGO_COMP.map(p => <option key={p}>{p}</option>)
+                          }
+                        </select>
+                      </div>
+                      <div><label className="label">No. Referencia / Transferencia</label>
+                        <input className="input" value={formEdit.referencia ?? ''} onChange={setFE('referencia')} style={{ fontFamily: 'monospace' }} />
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <label className="label">Cuenta Bancaria Origen</label>
+                      <select className="select" value={formEdit.id_cuenta_bancaria_fk ?? ''} onChange={setFE('id_cuenta_bancaria_fk')}>
+                        <option value="">— Sin especificar —</option>
+                        {cuentasBanc.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.banco}{c.numero_cuenta ? ` · ${c.numero_cuenta}` : ''}{c.clabe ? ` · CLABE: ${c.clabe.slice(-4)}` : ''} · Saldo: {fmt(c.saldo ?? 0)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <label className="label">Notas</label>
+                      <textarea className="input" rows={2} value={formEdit.notas ?? ''} onChange={setFE('notas')} />
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <label className="label">Motivo de la edición *</label>
+                      <input className="input" value={formEdit.motivo ?? ''} onChange={setFE('motivo')} placeholder="Ej. Se capturó mal la cuenta bancaria" />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button className="btn-secondary" onClick={() => setEditando(null)} disabled={savingEdit}>Cancelar</button>
+                      <button className="btn-primary" onClick={handleGuardarEdicion} disabled={savingEdit}>
+                        {savingEdit ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar cambios
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

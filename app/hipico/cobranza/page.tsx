@@ -186,7 +186,7 @@ export default function CobranzaHipicoPage() {
   const [editCuota, setEditCuota]           = useState<CuotaEditData | null>(null)
   const [paginaQ, setPaginaQ]               = useState(1)
   const PAGE_SIZE_Q = 50
-  const esSuperadmin = authUser?.rol === 'superadmin'
+  const esSuperadmin = authUser?.rol === 'superadmin' || authUser?.rol === 'admin_tesoreria'
 
   // ── Config ────────────────────────────────────────────────
   const [tarifa, setTarifa]       = useState(0)

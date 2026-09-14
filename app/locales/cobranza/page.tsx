@@ -184,6 +184,7 @@ export default function CobranzaLocalesPage() {
   const [paginaQ, setPaginaQ]               = useState(1)
   const PAGE_SIZE_Q = 50
   const esSuperadmin = authUser?.rol === 'superadmin'
+  const puedeEliminarCuota = esSuperadmin || authUser?.rol === 'admin_tesoreria'
 
   // ── Liberar contratos vencidos ─────────────────────────────
   // Asignaciones activas cuyo fecha_fin ya pasó: se desactivan y, si la
@@ -1347,16 +1348,16 @@ export default function CobranzaLocalesPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-alt)' }}>
-                    {['Arrendatario', 'Propiedad', 'Concepto', 'Periodo', 'Monto', 'Saldo', 'Status', 'Vencimiento', ...(esSuperadmin ? [''] : [])].map(h => (
+                    {['Arrendatario', 'Propiedad', 'Concepto', 'Periodo', 'Monto', 'Saldo', 'Status', 'Vencimiento', ...(puedeEliminarCuota ? [''] : [])].map(h => (
                       <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loadingQ ? (
-                    <tr><td colSpan={esSuperadmin ? 9 : 8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={16} /></td></tr>
+                    <tr><td colSpan={puedeEliminarCuota ? 9 : 8} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={16} /></td></tr>
                   ) : cuotasAllFiltradas.length === 0 ? (
-                    <tr><td colSpan={esSuperadmin ? 9 : 8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>Sin cuotas registradas</td></tr>
+                    <tr><td colSpan={puedeEliminarCuota ? 9 : 8} style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>Sin cuotas registradas</td></tr>
                   ) : cuotasPagina.map(c => {
                     const saldo = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
                     const vencida = c.fecha_vencimiento && c.fecha_vencimiento < hoy && saldo > 0
@@ -1386,7 +1387,7 @@ export default function CobranzaLocalesPage() {
                         <td style={{ padding: '10px 14px', fontSize: 12, whiteSpace: 'nowrap', color: vencida ? '#dc2626' : 'var(--text-muted)' }}>
                           {fmtFecha(c.fecha_vencimiento)}
                         </td>
-                        {esSuperadmin && (
+                        {puedeEliminarCuota && (
                           <td style={{ padding: '10px 14px' }}>
                             <button
                               onClick={() => handleEliminarCuota(c.id)}

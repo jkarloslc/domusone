@@ -14,6 +14,7 @@ const ROLES = [
   { value: 'admin_lector',        label: 'Admin Solo Lectura',      desc: 'Igual que Administrador pero solo puede consultar. Sin crear, editar, eliminar ni autorizar.' },
   { value: 'admin_finanzas',      label: 'Administrador de Finanzas', desc: 'Igual que Administrador + segunda autorización de Órdenes de Pago (envío a CXP)' },
   { value: 'admin_low_level',     label: 'Administrador (Bajo Nivel)', desc: 'Igual que Administrador, sin poder editar el Catálogo de Productos POS (solo superadmin puede). Se le irán restringiendo más acciones.' },
+  { value: 'admin_tesoreria',     label: 'Administrador de Tesorería', desc: 'Igual que Administrador + editar recibos de ingreso, editar pagos de CXP ya aplicados (monto/cuenta origen), cancelar recibos de cuotas (Golf/Hípico/Locales/Fraccionamiento), cancelar ventas directas y Mesa de Control del POS de Golf, y editar/eliminar cuotas asignadas.' },
   { value: 'usuarioadmin',        label: 'Administrador (Op.)',     desc: 'Igual que Admin sin acceso a Mantenimiento' },
   { value: 'usuariomantto',       label: 'Administrador (Mant.)',   desc: 'Igual que Admin sin acceso a Tesorería' },
   { value: 'fraccionamiento',     label: 'Fraccionamiento',         desc: 'Acceso amplio operativo: residencial, compras, tesorería, reportes' },

@@ -914,7 +914,7 @@ function ConfigConceptosModal({ onClose }: { onClose: () => void }) {
 export default function CuotasGolfPage() {
   const { canWrite, authUser } = useAuth()
   const puedeEscribir  = canWrite('golf-cxc')
-  const esSuperAdmin   = authUser?.rol === 'superadmin'
+  const esSuperAdmin   = authUser?.rol === 'superadmin' || authUser?.rol === 'admin_tesoreria'
 
   const [cuotas, setCuotas]             = useState<Cuota[]>([])
   const [categorias, setCategorias]     = useState<Categoria[]>([])

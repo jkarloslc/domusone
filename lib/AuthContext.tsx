@@ -9,6 +9,7 @@ type Rol =
   | 'admin_lector'
   | 'admin_finanzas'
   | 'admin_low_level'
+  | 'admin_tesoreria'
   | 'usuarioadmin'
   | 'usuariomantto'
   | 'atencion_residentes'
@@ -45,6 +46,7 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'admin_lector':
     case 'admin_finanzas':
     case 'admin_low_level':
+    case 'admin_tesoreria':
     case 'usuarioadmin':
     case 'usuariomantto':
     case 'fraccionamiento':
@@ -189,6 +191,7 @@ const LEER: Record<Rol, string[] | '*'> = {
   admin_lector:        ADMIN_MODULOS,   // igual que admin, solo lectura
   admin_finanzas:      ADMIN_MODULOS,   // igual que admin + 2da autorización de OP
   admin_low_level:     [...ADMIN_MODULOS, 'hr'],  // igual que admin, se le irán quitando permisos puntuales
+  admin_tesoreria:     [...ADMIN_MODULOS, 'hr'],  // igual que admin + permisos financieros ampliados (ver puntos hardcoded de rol)
   usuarioadmin:        USUARIOADMIN_MODULOS,
   usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -224,6 +227,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
   admin_lector:        [],              // sin escritura
   admin_finanzas:      ADMIN_MODULOS,   // igual que admin + 2da autorización de OP
   admin_low_level:     [...ADMIN_MODULOS, 'hr'],  // igual que admin, se le irán quitando permisos puntuales
+  admin_tesoreria:     [...ADMIN_MODULOS, 'hr'],  // igual que admin + permisos financieros ampliados (ver puntos hardcoded de rol)
   usuarioadmin:        USUARIOADMIN_MODULOS,
   usuariomantto:       USUARIOMANTTO_MODULOS,
   atencion_residentes: ['lotes', 'propietarios', 'contratos', 'escrituras',
@@ -267,10 +271,10 @@ const REPORTES_PERMITIDOS: Partial<Record<Rol, string[]>> = {
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
-const ROLES_DELETE: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_low_level', 'admin_organismo']
+const ROLES_DELETE: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_low_level', 'admin_tesoreria', 'admin_organismo']
 
 // ── Roles que pueden autorizar documentos (1ra autorización) ──────────────────
-const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_low_level', 'usuarioadmin', 'usuariomantto', 'compras_supervisor', 'fraccionamiento', 'tesoreria', 'admin_organismo']
+const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_low_level', 'admin_tesoreria', 'usuarioadmin', 'usuariomantto', 'compras_supervisor', 'fraccionamiento', 'tesoreria', 'admin_organismo']
 
 // ── Roles que pueden dar la 2da autorización de Órdenes de Pago (envío a CXP) ─
 const ROLES_AUTH_FINANZAS: Rol[] = ['superadmin', 'admin_finanzas']
@@ -369,7 +373,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // usuariomantto no tiene acceso a Tesorería, por lo que tampoco ve CXP
     if (r === 'usuariomantto' && key === 'cxp') return false
     // superadmin / admin / fraccionamiento: acceso total
-    if (r === 'superadmin' || r === 'admin' || r === 'admin_lector' || r === 'admin_finanzas' || r === 'admin_low_level' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento' || r === 'admin_organismo') return 'all'
+    if (r === 'superadmin' || r === 'admin' || r === 'admin_lector' || r === 'admin_finanzas' || r === 'admin_low_level' || r === 'admin_tesoreria' || r === 'usuarioadmin' || r === 'usuariomantto' || r === 'fraccionamiento' || r === 'admin_organismo') return 'all'
     if (r === 'compras' || r === 'compras_supervisor') return 'compras'
     if (r === 'almacen') {
       // almacen ve sus módulos + caja chica

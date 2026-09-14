@@ -84,7 +84,7 @@ function ReciboModal({
   canWrite: (modulo: string) => boolean
 }) {
   const isView        = !!recibo
-  const isSuperAdmin  = authUser?.rol === 'superadmin'
+  const isSuperAdmin  = authUser?.rol === 'superadmin' || authUser?.rol === 'admin_tesoreria'
   const [isEditMode, setIsEditMode] = useState(false)
   const today    = toLocalYmd(new Date())
 

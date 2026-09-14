@@ -1187,7 +1187,7 @@ ${facturasCorte.length > 0 ? `
     return (v.nombre_cliente ?? '').toLowerCase().includes(q)
   })
 
-  const esAdminMesa = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level'
+  const esAdminMesa = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'admin_tesoreria'
 
   // Un centro se bloquea para venta directa cuando TODOS sus productos
   // activos están marcados como "solo venta por recibo" — se calcula al
@@ -1418,7 +1418,7 @@ ${facturasCorte.length > 0 ? `
                               {viendoPdf === `${v.id}-view` ? <Loader size={11} className="animate-spin" /> : <FileCheck size={11} />} PDF
                             </button>
                           )}
-                          {!cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level') && (
+                          {!cancelada && esAdminMesa && (
                             origenPorVenta.has(v.id) ? (
                               <span title={`Folio ${origenPorVenta.get(v.id)!.folio ?? '—'} — cancélalo desde ${origenPorVenta.get(v.id)!.ruta}`}
                                 style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 10px' }}>
@@ -1794,7 +1794,7 @@ ${facturasCorte.length > 0 ? `
                                     <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Sin ID PAC</span>
                                   )}
                                   {/* Cancelar CFDI */}
-                                  {tienePAC && !cancelada && (authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level') && (
+                                  {tienePAC && !cancelada && esAdminMesa && (
                                     <button onClick={() => { setCancelarFacturaV(v); setMotivoCancel('02'); setErrCancelFactura('') }}
                                       style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                       <XCircle size={11} /> Cancelar
