@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react'
 import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag, ClipboardList, ExternalLink } from 'lucide-react'
+import { Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag, ClipboardList, ExternalLink } from 'lucide-react'
 import TabCobranzaSocio from './TabCobranzaSocio'
 import TabRecibosSocio from './TabRecibosSocio'
 import type { Socio } from './SocioModal'
 import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
+import ModalShell from '@/components/ui/ModalShell'
 
 type Props = { socio: Socio; onClose: () => void; onEdit: () => void }
 
@@ -631,78 +632,44 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
   const vencido = socio.fecha_vencimiento && new Date(socio.fecha_vencimiento) < new Date()
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 960, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.22)' }}>
-
-        {/* Header con gradiente sutil */}
-        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', borderRadius: '20px 20px 0 0', padding: '20px 24px 0' }}>
-          {/* Fila superior: avatar + info + acciones */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
-            <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-              <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <User size={24} style={{ color: '#fff' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 19, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>{nombre}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
-                  {socio.numero_socio && (
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)' }}>
-                      #{socio.numero_socio}
-                    </span>
-                  )}
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
-                    background: socio.activo && !vencido ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)',
-                    color: socio.activo && !vencido ? '#86efac' : '#fca5a5',
-                    border: `1px solid ${socio.activo && !vencido ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
-                  }}>
-                    {!socio.activo ? 'Inactivo' : vencido ? 'Vencido' : 'Activo'}
-                  </span>
-                  {socio.cat_categorias_socios?.nombre && (
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: 'rgba(167,139,250,0.25)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.35)' }}>
-                      {socio.cat_categorias_socios.nombre}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              {canWrite('golf-miembros') && (
-                <button onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 12, fontWeight: 600 }}>
-                  <Edit2 size={13} /> Editar
-                </button>
-              )}
-              <button onClick={onClose} style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={15} />
-              </button>
-            </div>
-          </div>
-
-          {/* Tabs pill style sobre fondo azul */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {TABS.map(t => {
-              const Icon = t.icon
-              const active = tab === t.key
-              return (
-                <button key={t.key} onClick={() => setTab(t.key)} style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '8px 16px', fontSize: 12, fontWeight: active ? 700 : 500,
-                  border: 'none', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
-                  borderRadius: '8px 8px 0 0',
-                  background: active ? '#fff' : 'transparent',
-                  color: active ? '#2563eb' : 'rgba(255,255,255,0.7)',
-                  transition: 'all 0.15s',
-                  marginBottom: 0,
-                }}>
-                  <Icon size={13} style={{ opacity: active ? 1 : 0.8 }} />
-                  {t.label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px 24px' }}>
+    <ModalShell
+      modulo="default"
+      titulo={nombre}
+      subtitulo={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {socio.numero_socio && (
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)' }}>
+            #{socio.numero_socio}
+          </span>
+        )}
+        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20,
+          background: socio.activo && !vencido ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)',
+          color: socio.activo && !vencido ? '#86efac' : '#fca5a5',
+          border: `1px solid ${socio.activo && !vencido ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
+        }}>
+          {!socio.activo ? 'Inactivo' : vencido ? 'Vencido' : 'Activo'}
+        </span>
+        {socio.cat_categorias_socios?.nombre && (
+          <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 20, background: 'rgba(167,139,250,0.25)', color: '#c4b5fd', border: '1px solid rgba(167,139,250,0.35)' }}>
+            {socio.cat_categorias_socios.nombre}
+          </span>
+        )}
+      </div>}
+      icono={User}
+      maxWidth={960}
+      onClose={onClose}
+      tabs={TABS}
+      activeTab={tab}
+      onTabChange={setTab}
+      footer={<>
+        <span style={{ fontSize: 11, color: '#94a3b8', marginRight: 'auto' }}>Solo lectura · para editar usa el botón Editar</span>
+        {canWrite('golf-miembros') && (
+          <button className="btn-secondary" onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Edit2 size={13} /> Editar
+          </button>
+        )}
+        <button className="btn-primary" onClick={onClose}>Cerrar</button>
+      </>}
+    >
 
           {/* ── Información ── */}
           {tab === 'info' && (
@@ -782,13 +749,6 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
               nombreSocio={nombre}
             />
           )}
-        </div>
-
-        <div style={{ padding: '12px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>
-          <span style={{ fontSize: 11, color: '#94a3b8' }}>Solo lectura · para editar usa el botón Editar</span>
-          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

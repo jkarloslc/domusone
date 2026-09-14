@@ -94,7 +94,7 @@ export type ModalSize = keyof typeof MODAL_SIZES
 type Props = {
   modulo: ModalModulo
   titulo: string
-  subtitulo?: string
+  subtitulo?: React.ReactNode
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icono?: React.ComponentType<any>
   /** Escala estándar (sm=440 · md=560 · lg=680 · xl=820 · xxl=1000). Preferir sobre `maxWidth`. */

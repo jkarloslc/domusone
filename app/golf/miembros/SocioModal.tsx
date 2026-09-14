@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase, dbGolf } from '@/lib/supabase'
 import TabCobranzaSocio from './TabCobranzaSocio'
 import TabRecibosSocio from './TabRecibosSocio'
-import { X, Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt, Edit2, Printer } from 'lucide-react'
+import { Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt, Edit2, Printer } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 export type Socio = {
   id: number
@@ -717,107 +718,45 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   // Footer: ocultar guardar en tabs Familiares (2), Identificación (3), Contratos (4), Datos Fiscales (6), Federación (7), Facturas (8), Cobranza (9), Recibos (10)
   const showSaveBtn = tab !== 2 && tab !== 3 && tab !== 4 && tab !== 6 && tab !== 7 && tab !== 8 && tab !== 9 && tab !== 10
 
+  const tabsForShell = TABS.map((t, i) => ({
+    key: String(i),
+    label: t,
+    disabled: isTabDisabled(i),
+    disabledHint: isTabDisabled(i) ? 'Guarda el socio primero' : undefined,
+    badge: (
+      i === 2 && !isNew && familiares.length > 0 ? familiares.length
+      : i === 3 && !isNew && idUrl ? '✓'
+      : i === 4 && !isNew && contratos.some(c => c.vigente) ? contratos.length
+      : i === 6 && !isNew && fiscales.length > 0 ? fiscales.length
+      : i === 7 && !isNew && federaciones.length > 0 ? federaciones.length
+      : i === 8 && !isNew && facturasSocio.length > 0 ? facturasSocio.length
+      : undefined
+    ),
+  }))
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 1000, padding: 20,
-    }}>
-      <div style={{
-        background: '#fff', borderRadius: 20, width: '100%', maxWidth: 1100,
-        maxHeight: '92vh', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.22)',
-      }}>
-        {/* Header con gradiente */}
-        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%)', borderRadius: '20px 20px 0 0', padding: '20px 24px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '2px solid rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Users size={18} style={{ color: '#fff' }} />
-              </div>
-              <div>
-                <h2 style={{ fontFamily: 'inherit', fontSize: 19, fontWeight: 700, color: '#fff', margin: 0 }}>
-                  {isNew ? 'Nuevo Socio' : `Editar Socio`}
-                </h2>
-                {!isNew && (
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>
-                    {[form.nombre, form.apellido_paterno, form.apellido_materno].filter(Boolean).join(' ')}
-                  </div>
-                )}
-              </div>
-            </div>
-            <button onClick={onClose} style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <X size={15} />
-            </button>
-          </div>
-
-          {/* Tabs pill style */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {TABS.map((t, i) => {
-              const disabled = isTabDisabled(i)
-              const active   = tab === i
-              return (
-                <button key={t} onClick={() => !disabled && setTab(i)} style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '8px 11px', fontSize: 11.5, fontWeight: active ? 700 : 500,
-                  border: 'none', fontFamily: 'inherit', whiteSpace: 'nowrap',
-                  borderRadius: '8px 8px 0 0',
-                  cursor: disabled ? 'not-allowed' : 'pointer',
-                  background: active ? '#fff' : 'transparent',
-                  color: disabled ? 'rgba(255,255,255,0.25)' : active ? '#2563eb' : 'rgba(255,255,255,0.7)',
-                  transition: 'all 0.15s',
-                }}>
-                  {t}
-                  {i === 2 && !isNew && familiares.length > 0 && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
-                      background: active ? '#dbeafe' : 'rgba(255,255,255,0.2)',
-                      color: active ? '#1d4ed8' : '#fff' }}>
-                      {familiares.length}
-                    </span>
-                  )}
-                  {i === 3 && !isNew && idUrl && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
-                      background: active ? '#dcfce7' : 'rgba(34,197,94,0.3)', color: active ? '#16a34a' : '#86efac' }}>✓</span>
-                  )}
-                  {i === 4 && !isNew && contratos.some(c => c.vigente) && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
-                      background: active ? '#dbeafe' : 'rgba(255,255,255,0.2)',
-                      color: active ? '#1d4ed8' : '#fff' }}>
-                      {contratos.length}
-                    </span>
-                  )}
-                  {i === 6 && !isNew && fiscales.length > 0 && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
-                      background: active ? '#faf5ff' : 'rgba(255,255,255,0.2)',
-                      color: active ? '#7c3aed' : '#fff' }}>
-                      {fiscales.length}
-                    </span>
-                  )}
-                  {i === 7 && !isNew && federaciones.length > 0 && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
-                      background: active ? '#fef3c7' : 'rgba(245,158,11,0.3)',
-                      color: active ? '#92400e' : '#fde68a' }}>
-                      {federaciones.length}
-                    </span>
-                  )}
-                  {i === 8 && !isNew && facturasSocio.length > 0 && (
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20,
-                      background: active ? '#dcfce7' : 'rgba(34,197,94,0.25)',
-                      color: active ? '#15803d' : '#86efac' }}>
-                      {facturasSocio.length}
-                    </span>
-                  )}
-                  {isTabDisabled(i) && (
-                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>🔒</span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
+    <ModalShell
+      modulo="default"
+      titulo={isNew ? 'Nuevo Socio' : 'Editar Socio'}
+      subtitulo={!isNew ? [form.nombre, form.apellido_paterno, form.apellido_materno].filter(Boolean).join(' ') : undefined}
+      icono={Users}
+      maxWidth={1100}
+      onClose={onClose}
+      tabs={tabsForShell}
+      activeTab={String(tab)}
+      onTabChange={key => setTab(Number(key))}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>
+          {(tab === 2 || tab === 3 || tab === 4 || tab === 7 || tab === 8 || tab === 9 || tab === 10) ? 'Cerrar' : 'Cancelar'}
+        </button>
+        {showSaveBtn && (
+          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+            {isNew ? 'Crear Socio' : 'Guardar Cambios'}
+          </button>
+        )}
+      </>}
+    >
 
           {/* ── Tab 0: Datos Personales ── */}
           {tab === 0 && (
@@ -1671,22 +1610,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
               {error}
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: '14px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10, background: '#f8fafc', borderRadius: '0 0 20px 20px' }}>
-          <button className="btn-secondary" onClick={onClose}>
-            {(tab === 2 || tab === 3 || tab === 4 || tab === 7 || tab === 8 || tab === 9 || tab === 10) ? 'Cerrar' : 'Cancelar'}
-          </button>
-          {showSaveBtn && (
-            <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-              {isNew ? 'Crear Socio' : 'Guardar Cambios'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
