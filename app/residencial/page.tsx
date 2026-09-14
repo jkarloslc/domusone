@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
+import PageHeader from '@/components/layout/PageHeader'
 
 const MODULOS = [
   { key: 'lotes',        permKey: 'lotes',        label: 'Lotes',        icon: MapPin,        color: '#3F4A75', desc: 'Padrón de lotes y estatus de venta',          href: '/lotes'        },
@@ -38,17 +39,13 @@ export default function ResidencialPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Home size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Residencial</h1>
-          <p className="page-subtitle">Gestión de lotes, propietarios y servicios del fraccionamiento</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={Home}
+        eyebrowLabel="Módulo"
+        title="Residencial"
+        subtitle="Gestión de lotes, propietarios y servicios del fraccionamiento"
+      />
 
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginBottom: 24 }}>

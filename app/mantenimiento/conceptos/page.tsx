@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { dbCtrl, dbComp } from '@/lib/supabase'
 import { useDebounce } from '@/lib/useDebounce'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import {
   Plus, Search, RefreshCw, Edit2, Trash2, Loader, Save, X,
   ClipboardList, Boxes,
@@ -108,17 +109,13 @@ export default function ConceptosPage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <ClipboardList size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Mantenimiento</span>
-          </div>
-          <h1 className="page-title-xl">Catálogo de Conceptos</h1>
-          <p className="page-subtitle">Conceptos de obra/mantenimiento con su matriz de precios unitarios y explosión de insumos</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={ClipboardList}
+        eyebrowLabel="Mantenimiento"
+        title="Catálogo de Conceptos"
+        subtitle="Conceptos de obra/mantenimiento con su matriz de precios unitarios y explosión de insumos"
+      />
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>

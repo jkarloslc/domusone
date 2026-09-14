@@ -10,6 +10,7 @@ import {
   User, Calendar, DollarSign, Loader, MessageSquare, MapPinned, List
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Tabs compartidos ─────────────────────────────────────────
 function LotesTabs() {
@@ -240,17 +241,13 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
       {/* Tabs (solo en ruta directa /lotes/expediente, no cuando está embebido) */}
       {!embedded && <LotesTabs />}
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <MapPinned size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Consulta</span>
-          </div>
-          <h1 className="page-title-xl" style={{ fontSize: 30 }}>Expediente de Lote</h1>
-          <p className="page-subtitle">Busca un lote para ver su expediente completo</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={MapPinned}
+        eyebrowLabel="Consulta"
+        title="Expediente de Lote"
+        subtitle="Busca un lote para ver su expediente completo"
+      />
 
       {/* Buscador */}
       <div style={{ position: 'relative', maxWidth: 460, marginBottom: 28 }}>

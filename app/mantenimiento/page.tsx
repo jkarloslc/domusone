@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
+import PageHeader from '@/components/layout/PageHeader'
 
 const GRUPOS = [
   {
@@ -54,17 +55,13 @@ export default function OperacionesPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Wrench size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Mantenimiento</h1>
-          <p className="page-subtitle">Mantenimiento, vehículos, herramienta y proyectos de inversión</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={Wrench}
+        eyebrowLabel="Módulo"
+        title="Mantenimiento"
+        subtitle="Mantenimiento, vehículos, herramienta y proyectos de inversión"
+      />
 
       {/* Grupos */}
       {gruposVisibles.map(grupo => (

@@ -8,6 +8,7 @@ import {
   Wrench, User, Search, ChevronDown
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import { FRECUENCIAS, startOfDay, addDays, toISODate, getSemana, estaActivoEnFecha, proximasFechas } from '@/lib/mantProgramas'
 
@@ -286,20 +287,15 @@ export default function MantenimientoPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Mantenimiento</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-            Programa anual de mantenimiento · {filterAnio}
-          </p>
-        </div>
-        {innerTab === 'programas' && canWrite('mantenimiento') && (
+      <PageHeader
+        title="Mantenimiento"
+        subtitle={`Programa anual de mantenimiento · ${filterAnio}`}
+        actions={innerTab === 'programas' && canWrite('mantenimiento') ? (
           <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
             <Plus size={14} /> Nuevo Programa
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       <div>
           {/* Sub-tabs: Ejecución Semanal / Programas */}

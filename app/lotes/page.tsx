@@ -11,6 +11,7 @@ import LoteModal from './LoteModal'
 import LoteDetail from './LoteDetail'
 import HistorialPropietarios from './HistorialPropietarios'
 import { useAuth } from '@/lib/AuthContext'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Tabs compartidos ─────────────────────────────────────────
 function LotesTabs() {
@@ -126,28 +127,19 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
       {/* Tabs (solo en ruta directa /lotes, no cuando está embebido en /residencial) */}
       {!embedded && <LotesTabs />}
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <MapPin size={16} style={{ color: 'var(--gold)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl" style={{ fontWeight: 400 }}>
-            Catálogo de Lotes
-          </h1>
-          <p className="page-subtitle">
-            {total} lotes registrados
-          </p>
-        </div>
-        {canWrite('lotes') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-              <Plus size={14} /> Nuevo Lote
-            </button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={MapPin}
+        color="var(--gold)"
+        eyebrowLabel="Módulo"
+        title="Catálogo de Lotes"
+        subtitle={`${total} lotes registrados`}
+        actions={canWrite('lotes') ? (
+          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+            <Plus size={14} /> Nuevo Lote
+          </button>
+        ) : undefined}
+      />
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
