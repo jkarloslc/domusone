@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { Users, Plus, Edit2, Save, Loader, X, CheckCircle, XCircle } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Usuario = { id: string; nombre: string; rol: string; activo: boolean; created_at: string; email?: string }
 
@@ -65,21 +66,16 @@ export default function UsuariosPage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Users size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Sistema</span>
-          </div>
-          <h1 className="page-title-xl">Usuarios</h1>
-          <p className="page-subtitle">Gestión de accesos y roles</p>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-            <Plus size={14} /> Nuevo Usuario
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={Users}
+        eyebrowLabel="Sistema"
+        title="Usuarios"
+        subtitle="Gestión de accesos y roles"
+        actions={<button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+          <Plus size={14} /> Nuevo Usuario
+        </button>}
+      />
 
       <div className="card" style={{ overflow: 'hidden', marginTop: 24 }}>
         <table>

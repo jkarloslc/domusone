@@ -13,6 +13,7 @@ import { antiguedad } from '@/lib/dateUtils'
 import { nombreCompletoColaborador } from '@/lib/colaboradores'
 import ColaboradoresPanel from '@/components/catalogos/ColaboradoresPanel'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import CuotasConfigPanel from '@/components/golf/CuotasConfigPanel'
 import ClaveProdServPicker from '@/components/ui/ClaveProdServPicker'
 import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
@@ -1141,16 +1142,13 @@ export default function CatalogosPage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <BookOpen size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Sistema</span>
-          </div>
-          <h1 className="page-title-xl">Catálogos</h1>
-          <p className="page-subtitle">Administra los valores de los catálogos del sistema</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={BookOpen}
+        eyebrowLabel="Sistema"
+        title="Catálogos"
+        subtitle="Administra los valores de los catálogos del sistema"
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 16, alignItems: 'start' }}>
         {/* Menú lateral */}

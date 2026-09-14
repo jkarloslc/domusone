@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { dbCfg, supabase } from '@/lib/supabase'
 import { useConfig } from '@/lib/ConfigContext'
 import { Settings, Save, Loader, CheckCircle, Upload, Image } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Row = { id: number; clave: string; valor: string | null; tipo: string; grupo: string; etiqueta: string | null; descripcion: string | null }
 
@@ -77,23 +78,18 @@ export default function ConfiguracionPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out', maxWidth: 700 }}>
 
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Settings size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Sistema</span>
-          </div>
-          <h1 className="page-title-xl">Configuración</h1>
-          <p className="page-subtitle">Parámetros generales de la aplicación</p>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn-primary" onClick={handleSave} disabled={saving || loading}>
-            {saving ? <><Loader size={13} className="animate-spin" /> Guardando…</>
-              : saved ? <><CheckCircle size={13} /> Guardado</>
-              : <><Save size={13} /> Guardar Cambios</>}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={Settings}
+        eyebrowLabel="Sistema"
+        title="Configuración"
+        subtitle="Parámetros generales de la aplicación"
+        actions={<button className="btn-primary" onClick={handleSave} disabled={saving || loading}>
+          {saving ? <><Loader size={13} className="animate-spin" /> Guardando…</>
+            : saved ? <><CheckCircle size={13} /> Guardado</>
+            : <><Save size={13} /> Guardar Cambios</>}
+        </button>}
+      />
 
       {debugMsg && (
         <div style={{ padding: '10px 14px', marginBottom: 20, borderRadius: 6, fontSize: 12, fontFamily: 'monospace',

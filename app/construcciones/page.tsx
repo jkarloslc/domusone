@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { ETAPAS, MOTIVOS, STATUS_CONSTRUCCION, STATUS_COLOR, fmtFecha } from './constants'
 import ConstruccionModal from './ConstruccionModal'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 20
 
@@ -85,22 +86,17 @@ export default function ConstruccionesPage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <HardHat size={16} style={{ color: '#d97706' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Construcciones</h1>
-          <p className="page-subtitle">{total} expedientes de obra registrados</p>
-        </div>
-        {canWrite('construcciones') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={14} /> Nuevo Expediente</button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={HardHat}
+        color="#d97706"
+        eyebrowLabel="Módulo"
+        title="Construcciones"
+        subtitle={`${total} expedientes de obra registrados`}
+        actions={canWrite('construcciones') ? (
+          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={14} /> Nuevo Expediente</button>
+        ) : undefined}
+      />
 
       {/* Stats por status */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>

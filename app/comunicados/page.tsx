@@ -7,6 +7,7 @@ import {
   Search, CheckCircle, AlertTriangle, Mail, Users,
   FileText, Clock, Trash2, ChevronDown
 } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Helpers ────────────────────────────────────────────────────
 const fmtFecha = (d: string | null | undefined) =>
@@ -92,27 +93,21 @@ export default function ComunicadosPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <MessageSquare size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Residencial</span>
-          </div>
-          <h1 className="page-title-xl">Comunicados y Avisos</h1>
-          <p className="page-subtitle">
-            Crea y envía comunicados por correo a propietarios individualmente o de forma masiva
-          </p>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        variant="xl"
+        icon={MessageSquare}
+        eyebrowLabel="Residencial"
+        title="Comunicados y Avisos"
+        subtitle="Crea y envía comunicados por correo a propietarios individualmente o de forma masiva"
+        actions={<>
           <button className="btn-ghost" onClick={fetchData} style={{ padding: '8px 10px' }}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
           <button className="btn-primary" onClick={() => setModalNew(true)}>
             <Plus size={14} /> Nuevo Comunicado
           </button>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>

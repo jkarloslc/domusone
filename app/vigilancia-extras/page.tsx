@@ -3,11 +3,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  ShieldCheck, Plus, ArrowLeft, Save, Loader, Eye, Printer,
+  ShieldCheck, Plus, Save, Loader, Eye, Printer,
   CheckCircle, XCircle, Trash2, AlertTriangle, User, ChevronDown, Search,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 
 const TURNOS = ['A-D', 'A-M', 'A-N'] as const
@@ -106,20 +107,16 @@ export default function VigilanciaExtrasPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => router.push('/residencial')}><ArrowLeft size={15} /></button>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Vigilancia — Extras</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Nómina semanal de guardias extra · {rows.length} perimetrales</p>
-          </div>
-        </div>
-        {puedeCapturar && (
+      <PageHeader
+        backHref="/residencial"
+        title="Vigilancia — Extras"
+        subtitle={`Nómina semanal de guardias extra · ${rows.length} perimetrales`}
+        actions={puedeCapturar ? (
           <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Plus size={15} /> Nuevo Perimetral
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         <select className="select" style={{ maxWidth: 220 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>

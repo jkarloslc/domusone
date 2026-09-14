@@ -3,12 +3,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCtrl, dbCfg, dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  Wallet, Plus, ArrowLeft, Save, Loader, Eye, Printer,
+  Wallet, Plus, Save, Loader, Eye, Printer,
   CheckCircle, XCircle, Trash2, AlertTriangle, User, ChevronDown, Search,
   Receipt, ExternalLink,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import { montoALetras } from '@/lib/numeroALetras'
 import { nextFolio } from '@/app/compras/types'
@@ -102,29 +103,19 @@ export default function RolDePagosPage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-          <button className="btn-back" onClick={() => router.push('/hr')} title="Regresar" style={{ marginTop: 1 }}><ArrowLeft size={15} /></button>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#b4530918', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Wallet size={15} style={{ color: '#b45309' }} />
-              </div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>Rol de Pagos</h2>
-            </div>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 40 }}>
-              Asistencia semanal de colaboradores y monto a pagar · {rows.length} lotes
-            </p>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {puedeCapturar && (
-            <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Plus size={15} /> Nuevo Rol de Pagos
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        backHref="/hr"
+        icon={Wallet}
+        color="#b45309"
+        eyebrowLabel="HR"
+        title="Rol de Pagos"
+        subtitle={`Asistencia semanal de colaboradores y monto a pagar · ${rows.length} lotes`}
+        actions={puedeCapturar ? (
+          <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Plus size={15} /> Nuevo Rol de Pagos
+          </button>
+        ) : undefined}
+      />
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         <select className="select" style={{ maxWidth: 220 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
