@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
-import { Search, X, RefreshCw, Trash2, Plus, Save, Loader, AlertTriangle, Receipt, XCircle } from 'lucide-react'
+import { Search, X, RefreshCw, Trash2, Plus, Save, Loader, AlertTriangle, Receipt } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 // Mesa de Control — solo superadmin/admin (el tab se oculta para los demás).
 // Corrige errores de captura en pagos de recibos y elimina cuotas de pensión.
@@ -358,23 +359,18 @@ export default function MesaControl() {
 
       {/* ── Modal edición de pagos ───────────────────────── */}
       {editRecibo && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 640, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.25)' }}>
-            {/* Header */}
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 16, color: '#1e293b' }}>Corregir pagos — {editRecibo.folio}</div>
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                  {nc(editRecibo.cat_socios)} · {fechaFmt(editRecibo.fecha_recibo)} · Total del recibo: <strong>{fmt$(editRecibo.total)}</strong>
-                </div>
-              </div>
-              <button onClick={() => setEditRecibo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
-                <XCircle size={18} />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+        <ModalShell modulo="golf-carritos" titulo={`Corregir pagos — ${editRecibo.folio}`}
+          subtitulo={<>{nc(editRecibo.cat_socios)} · {fechaFmt(editRecibo.fecha_recibo)} · Total del recibo: <strong>{fmt$(editRecibo.total)}</strong></>}
+          size="md"
+          onClose={() => setEditRecibo(null)}
+          footer={<>
+            <button className="btn-secondary" onClick={() => setEditRecibo(null)}>Cancelar</button>
+            <button className="btn-primary" onClick={guardarPagos} disabled={savingPagos || loadingPagos || !pagosValidos}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {savingPagos ? <Loader size={14} className="animate-spin" /> : <Save size={14} />} Guardar correcciones
+            </button>
+          </>}
+        >
               {loadingPagos ? (
                 <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8' }}>Cargando pagos…</div>
               ) : (
@@ -429,21 +425,7 @@ export default function MesaControl() {
                   )}
                 </>
               )}
-            </div>
-
-            {/* Footer */}
-            <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setEditRecibo(null)}
-                style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                Cancelar
-              </button>
-              <button onClick={guardarPagos} disabled={savingPagos || loadingPagos || !pagosValidos}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#2563eb', color: '#fff', cursor: 'pointer', opacity: (savingPagos || loadingPagos || !pagosValidos) ? 0.6 : 1 }}>
-                {savingPagos ? <Loader size={14} className="animate-spin" /> : <Save size={14} />} Guardar correcciones
-              </button>
-            </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
     </div>
   )

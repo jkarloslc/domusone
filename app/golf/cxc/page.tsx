@@ -12,6 +12,7 @@ import RecibosGolf from '../recibos/RecibosGolf'
 import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 import AgendaCobranza from '@/components/cobranza/AgendaCobranza'
 import PageHeader from '@/components/layout/PageHeader'
+import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ────────────────────────────────────────────────────
 type Cuota = {
@@ -364,28 +365,15 @@ export default function CXCGolfPage() {
 
       {/* Modal Bitácora de Seguimiento */}
       {showBitacora && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}
-          onClick={e => e.target === e.currentTarget && setShowBitacora(null)}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 600, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.22)', overflow: 'hidden' }}>
-            <div style={{ background: 'linear-gradient(135deg, #14532d 0%, #16a34a 100%)', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Seguimiento de Cobranza</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{showBitacora.nombre}</div>
-              </div>
-              <button onClick={() => setShowBitacora(null)} style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 7, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>×</span>
-              </button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-              <BitacoraCobranzaTab
-                entidad="socio"
-                idEntidad={showBitacora.idSocio}
-                nombreEntidad={showBitacora.nombre}
-                puedeEscribir={puedeEscribir}
-              />
-            </div>
-          </div>
-        </div>
+        <ModalShell modulo="golf-accesos" titulo="Seguimiento de Cobranza" subtitulo={showBitacora.nombre} size="md"
+          onClose={() => setShowBitacora(null)}>
+          <BitacoraCobranzaTab
+            entidad="socio"
+            idEntidad={showBitacora.idSocio}
+            nombreEntidad={showBitacora.nombre}
+            puedeEscribir={puedeEscribir}
+          />
+        </ModalShell>
       )}
     </div>
   )

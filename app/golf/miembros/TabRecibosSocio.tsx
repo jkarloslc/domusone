@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
-import { Receipt, Printer, RefreshCw, FileText, XCircle } from 'lucide-react'
+import { Receipt, Printer, RefreshCw, FileText } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 type DetRecibo = {
   id: number
@@ -266,24 +267,24 @@ export default function TabRecibosSocio({ socioId, nombreSocio }: Props) {
         )}
       </div>
 
-      {/* Modal detalle — z-index mayor al modal padre (1000) */}
+      {/* Modal detalle */}
       {detalle && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 560, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.25)' }}>
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <FileText size={16} color="#0891b2" />
-                  <span style={{ fontWeight: 700, fontSize: 16, color: '#1e293b' }}>{detalle.folio}</span>
-                  <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: STATUS_COLOR[detalle.status]?.bg, color: STATUS_COLOR[detalle.status]?.color }}>
-                    {STATUS_COLOR[detalle.status]?.label}
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{fechaFmt(detalle.fecha_recibo)}</div>
+        <ModalShell modulo="default" titulo={detalle.folio}
+          subtitulo={<>{fechaFmt(detalle.fecha_recibo)}</>}
+          icono={FileText} size="md"
+          onClose={() => setDetalle(null)}
+          footer={<>
+            <button className="btn-secondary" onClick={() => setDetalle(null)}>Cerrar</button>
+            <button className="btn-primary" onClick={() => handlePrint(detalle)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Printer size={14} /> Imprimir
+            </button>
+          </>}
+        >
+              <div style={{ marginBottom: 12 }}>
+                <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: STATUS_COLOR[detalle.status]?.bg, color: STATUS_COLOR[detalle.status]?.color }}>
+                  {STATUS_COLOR[detalle.status]?.label}
+                </span>
               </div>
-              <button onClick={() => setDetalle(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><XCircle size={18} /></button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cuotas cobradas</div>
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
@@ -317,19 +318,7 @@ export default function TabRecibosSocio({ socioId, nombreSocio }: Props) {
                   <strong>Observaciones:</strong> {detalle.observaciones}
                 </div>
               )}
-            </div>
-            <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setDetalle(null)}
-                style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                Cerrar
-              </button>
-              <button onClick={() => handlePrint(detalle)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
-                <Printer size={14} /> Imprimir
-              </button>
-            </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
     </>
   )

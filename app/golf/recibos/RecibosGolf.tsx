@@ -5,10 +5,11 @@ import { verificarNoFacturada, logCancelacion, reabrirCuotasCobertura, marcarCan
 import { useAuth } from '@/lib/AuthContext'
 import {
   RefreshCw, Search, Receipt, Printer,
-  XCircle, ChevronLeft, FileText, AlertTriangle, Loader, RotateCcw,
+  XCircle, FileText, AlertTriangle, Loader, RotateCcw,
 } from 'lucide-react'
-import Link from 'next/link'
 import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
+import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Recibo = {
@@ -494,31 +495,17 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
     <div style={embedded ? undefined : { padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {!embedded && (
-        <>
-          {/* Breadcrumb */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/golf" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ChevronLeft size={14} /> Club
-            </Link>
-            <span>/</span>
-            <span style={{ color: '#475569', fontWeight: 500 }}>Recibos de Cobro</span>
-          </div>
-
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <Receipt size={20} color="#0891b2" />
-                <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1e293b' }}>Recibos de Cobro</h1>
-              </div>
-              <p style={{ fontSize: 13, color: '#64748b' }}>Consulta y reimpresión de cobros de cuotas</p>
-            </div>
-            <button onClick={cargar}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
-              <RefreshCw size={14} /> Actualizar
-            </button>
-          </div>
-        </>
+        <PageHeader
+          backHref="/golf"
+          icon={Receipt}
+          color="#0891b2"
+          eyebrowLabel="Club"
+          title="Recibos de Cobro"
+          subtitle="Consulta y reimpresión de cobros de cuotas"
+          actions={<button className="btn-ghost" onClick={cargar} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <RefreshCw size={14} /> Actualizar
+          </button>}
+        />
       )}
 
       {/* KPIs */}
@@ -661,22 +648,37 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
 
       {/* ── Modal Detalle ──────────────────────────────────────── */}
       {detalle && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 620, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.25)' }}>
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <FileText size={16} color="#0891b2" />
-                  <span style={{ fontWeight: 700, fontSize: 16, color: '#1e293b' }}>{detalle.folio}</span>
-                  <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: STATUS_COLOR[detalle.status]?.bg, color: STATUS_COLOR[detalle.status]?.color }}>
-                    {STATUS_COLOR[detalle.status]?.label}
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{fechaFmt(detalle.fecha_recibo)} · {nc(detalle.cat_socios)}</div>
+        <ModalShell modulo="default" titulo={detalle.folio}
+          subtitulo={<>{fechaFmt(detalle.fecha_recibo)} · {nc(detalle.cat_socios)}</>}
+          icono={FileText} size="md"
+          onClose={() => { setDetalle(null); setTicketErrDetalle('') }}
+          footer={<>
+            <button className="btn-secondary" onClick={() => { setDetalle(null); setTicketErrDetalle('') }}>Cerrar</button>
+            {detalle.status === 'VIGENTE' && (
+              <button onClick={() => generarTicketDesdeRecibo(detalle)} disabled={generandoTicketDetalle}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicketDetalle ? 0.6 : 1 }}>
+                {generandoTicketDetalle ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
+                {detalle.id_venta_pos_fk ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
+              </button>
+            )}
+            <button className="btn-primary" onClick={() => handlePrint(detalle)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Printer size={14} /> Imprimir
+            </button>
+          </>}
+        >
+              {/* Badge de status */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: STATUS_COLOR[detalle.status]?.bg, color: STATUS_COLOR[detalle.status]?.color }}>
+                  {STATUS_COLOR[detalle.status]?.label}
+                </span>
               </div>
-              <button onClick={() => setDetalle(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><XCircle size={18} /></button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+
+              {ticketErrDetalle && (
+                <div style={{ marginBottom: 16, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                  {ticketErrDetalle}
+                </div>
+              )}
+
               {/* Socio */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px', marginBottom: 20, padding: '12px 16px', background: '#f8fafc', borderRadius: 10 }}>
                 <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>{nc(detalle.cat_socios)}</div></div>
@@ -720,62 +722,30 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
                   <strong>Observaciones:</strong> {detalle.observaciones}
                 </div>
               )}
-            </div>
-            <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-              {ticketErrDetalle && (
-                <div style={{ marginBottom: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
-                  {ticketErrDetalle}
-                </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button onClick={() => { setDetalle(null); setTicketErrDetalle('') }}
-                  style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                  Cerrar
-                </button>
-                {detalle.status === 'VIGENTE' && (
-                  <button onClick={() => generarTicketDesdeRecibo(detalle)} disabled={generandoTicketDetalle}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicketDetalle ? 0.6 : 1 }}>
-                    {generandoTicketDetalle ? <Loader size={14} /> : <Receipt size={14} />}
-                    {detalle.id_venta_pos_fk ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
-                  </button>
-                )}
-                <button onClick={() => handlePrint(detalle)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#1e3a5f', color: '#fff', cursor: 'pointer' }}>
-                  <Printer size={14} /> Imprimir
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       {/* ── Modal Cancelar ─────────────────────────────────────── */}
       {cancelando && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1010, padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 440, boxShadow: '0 20px 50px rgba(0,0,0,0.25)', padding: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <div style={{ background: '#fee2e2', borderRadius: 8, padding: 8 }}><AlertTriangle size={20} color="#dc2626" /></div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>Cancelar recibo</div>
-                <div style={{ fontSize: 12, color: '#64748b' }}>{cancelando.folio} · {nc(cancelando.cat_socios)}</div>
-              </div>
-            </div>
+        <ModalShell modulo="default" titulo="Cancelar recibo" subtitulo={`${cancelando.folio} · ${nc(cancelando.cat_socios)}`}
+          icono={AlertTriangle} size="sm"
+          onClose={() => setCancelando(null)}
+          footer={<>
+            <button className="btn-secondary" onClick={() => setCancelando(null)}>Cancelar</button>
+            <button onClick={handleCancelar} disabled={savingCancel}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 7, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
+              <XCircle size={14} /> {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
+            </button>
+          </>}
+        >
             <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
               Las cuotas incluidas volverán a status <strong>PENDIENTE</strong>. Esta acción no se puede deshacer.
             </p>
             <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
             <textarea
-              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', marginBottom: 20 }}
+              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', boxSizing: 'border-box' }}
               value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)} placeholder="Opcional…" />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setCancelando(null)} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={handleCancelar} disabled={savingCancel}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
-                <XCircle size={14} /> {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
     </div>
