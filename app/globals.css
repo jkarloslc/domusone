@@ -36,6 +36,20 @@
   --border:       rgba(37,99,235,0.12);
   --border-hover: rgba(37,99,235,0.30);
 
+  /* Colores semánticos — usar en vez de retipear hex sueltos por página */
+  --success:       #15803d;
+  --success-bg:     #dcfce7;
+  --success-border: #bbf7d0;
+  --danger:        #dc2626;
+  --danger-bg:      #fee2e2;
+  --danger-border:  #fecaca;
+  --warning:       #d97706;
+  --warning-bg:     #fef3c7;
+  --warning-border: #fde68a;
+  --info:          #0f766e;
+  --info-bg:        #dbeafe;
+  --info-border:    #bfdbfe;
+
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

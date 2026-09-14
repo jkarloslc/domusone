@@ -4,7 +4,7 @@ import { dbComp, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { emitirValesPorPagoOP } from '@/lib/combustible'
 import {
-  ArrowLeft, RefreshCw, Search, Eye, X, Loader,
+  ArrowLeft, RefreshCw, Search, Eye, Loader,
   Plus, Printer, FileText, Upload, Trash2, ExternalLink,
   AlertTriangle, CheckCircle, Clock, Calendar, Layers, RotateCcw
 } from 'lucide-react'
@@ -1312,22 +1312,14 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
   )
 
   return (
-    <ModalShell modulo="tesoreria" titulo="Modal" onClose={onClose} maxWidth={640}
-    >
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid #e2e8f0' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--blue)' }}>{op.folio}</span>
-              <StatusBadge status={op.status} />
-              {(op.status === 'Pendiente' || op.status === 'Abonada') && (() => {
-                const ciclo = cicloDePago(op.fecha_autorizacion || op.created_at)
-                return ciclo ? <PagoBadge fechaPago={ciclo.fechaPago} /> : null
-              })()}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{op._provNombre ?? '—'}</div>
-          </div>
-          <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+    <ModalShell modulo="tesoreria" titulo={op.folio} subtitulo={op._provNombre ?? '—'} onClose={onClose} size="md">
+        {/* Status / ciclo de pago */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <StatusBadge status={op.status} />
+          {(op.status === 'Pendiente' || op.status === 'Abonada') && (() => {
+            const ciclo = cicloDePago(op.fecha_autorizacion || op.created_at)
+            return ciclo ? <PagoBadge fechaPago={ciclo.fechaPago} /> : null
+          })()}
         </div>
 
         {/* Concepto / datos de factura */}

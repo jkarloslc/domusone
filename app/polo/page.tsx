@@ -1,11 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, type SVGProps } from 'react'
 import { Stethoscope } from 'lucide-react'
 import CaballosTab from './CaballosTab'
 import ServiciosTab from './ServiciosTab'
 
-const PoloIcon = ({ size = 18 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+const PoloIcon = ({ size = 18, ...props }: { size?: number } & SVGProps<SVGSVGElement>) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
     <circle cx="12" cy="8" r="3"/>
     <path d="M3 21c0-4 3-7 7-7h4c4 0 7 3 7 7"/>
     <path d="M17 12l3-3"/>
@@ -13,8 +13,8 @@ const PoloIcon = ({ size = 18 }: { size?: number }) => (
   </svg>
 )
 
-const HorseIcon = ({ size = 15 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+const HorseIcon = ({ size = 15, ...props }: { size?: number } & SVGProps<SVGSVGElement>) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M19 7c0-1.1-.9-2-2-2h-3L9 9H5a2 2 0 0 0-2 2v3h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5h-4z"/>
     <circle cx="7.5" cy="14.5" r="1.5"/>
     <circle cx="16.5" cy="14.5" r="1.5"/>
@@ -36,8 +36,8 @@ export default function PoloPage() {
       <div className="page-header">
         <div className="page-header-left" style={{ display: 'block' }}>
           <div className="page-eyebrow">
-            <PoloIcon size={16} />
-            <span className="page-eyebrow-label" style={{ color: 'var(--blue)' }}>Módulo</span>
+            <PoloIcon size={16} style={{ color: 'var(--blue)' }} />
+            <span className="page-eyebrow-label">Módulo</span>
           </div>
           <h1 className="page-title-xl">Polo</h1>
           <p className="page-subtitle">Caballos de polo y bitácora de servicios veterinarios</p>

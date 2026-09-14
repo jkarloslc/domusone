@@ -86,12 +86,19 @@ type Tab = {
   disabledHint?: string
 }
 
+// Escala estándar de tamaños — usar `size` en código nuevo en vez de `maxWidth` a mano.
+export const MODAL_SIZES = { sm: 440, md: 560, lg: 680, xl: 820, xxl: 1000 } as const
+export type ModalSize = keyof typeof MODAL_SIZES
+
 type Props = {
   modulo: ModalModulo
   titulo: string
   subtitulo?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icono?: React.ComponentType<any>
+  /** Escala estándar (sm=440 · md=560 · lg=680 · xl=820 · xxl=1000). Preferir sobre `maxWidth`. */
+  size?: ModalSize
+  /** Ancho exacto en px — escape hatch para casos ya afinados; tiene prioridad sobre `size`. */
   maxWidth?: number
   onClose: () => void
   children: React.ReactNode
@@ -105,10 +112,11 @@ type Props = {
 
 export default function ModalShell({
   modulo, titulo, subtitulo, icono: Icono,
-  maxWidth = 680, onClose,
+  size, maxWidth, onClose,
   children, tabs, activeTab, onTabChange, footer,
 }: Props) {
   const pal = MODAL_PALETTES[modulo] ?? MODAL_PALETTES.default
+  const resolvedMaxWidth = maxWidth ?? MODAL_SIZES[size ?? 'lg']
 
   return (
     <div style={{
@@ -119,7 +127,7 @@ export default function ModalShell({
       onClick={e => e.target === e.currentTarget && onClose()}
     >
       <div style={{
-        background: '#fff', borderRadius: 20, width: '100%', maxWidth,
+        background: '#fff', borderRadius: 20, width: '100%', maxWidth: resolvedMaxWidth,
         maxHeight: '92vh', display: 'flex', flexDirection: 'column',
         boxShadow: '0 24px 80px rgba(0,0,0,0.22)',
         animation: 'modalIn 0.18s ease-out',

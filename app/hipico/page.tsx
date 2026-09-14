@@ -1,12 +1,12 @@
-import React from 'react'
+import React, { type SVGProps } from 'react'
 import Link from 'next/link'
 import {
   Users, Home, DollarSign, ChevronRight, Flag, BarChart3,
   Star, CalendarDays, BookOpen,
 } from 'lucide-react'
 
-const HorseIcon = ({ size = 18 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+const HorseIcon = ({ size = 18, ...props }: { size?: number } & SVGProps<SVGSVGElement>) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M19 7c0-1.1-.9-2-2-2h-3L9 9H5a2 2 0 0 0-2 2v3h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5h-4z"/>
     <circle cx="7.5" cy="14.5" r="1.5"/>
     <circle cx="16.5" cy="14.5" r="1.5"/>
@@ -142,8 +142,8 @@ export default function HipicoPage() {
       <div className="page-header">
         <div className="page-header-left" style={{ display: 'block' }}>
           <div className="page-eyebrow">
-            <HorseIcon size={16} />
-            <span className="page-eyebrow-label" style={{ color: 'var(--blue)' }}>Módulo</span>
+            <HorseIcon size={16} style={{ color: 'var(--blue)' }} />
+            <span className="page-eyebrow-label">Módulo</span>
           </div>
           <h1 className="page-title-xl">Hípico y Eventos</h1>
           <p className="page-subtitle">Caballerizas, cobranza, torneos ecuestres y gestión de eventos</p>

@@ -144,7 +144,7 @@ export default function RolDePagosPage() {
               <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Centro de Costo</th>
               <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total</th>
               <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</th>
-              <th style={{ width: 40 }}></th>
+              <th style={{ width: 40, padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -153,7 +153,7 @@ export default function RolDePagosPage() {
             ) : rows.length === 0 ? (
               <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>Sin rol de pagos capturado</td></tr>
             ) : rows.map(l => (
-              <tr key={l.id} style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }} onClick={() => openEdit(l)}>
+              <tr key={l.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                 <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--blue)' }}>
                   {l.folio}
                   {l.id_op_fk && (
@@ -166,7 +166,11 @@ export default function RolDePagosPage() {
                 <td style={{ padding: '10px 14px' }}>{l.id_centro_costo_fk ? (ccMap[l.id_centro_costo_fk] ?? '—') : '—'}</td>
                 <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 600 }}>{fmt(l.total)}</td>
                 <td style={{ padding: '10px 14px' }}><StatusBadge status={l.status} /></td>
-                <td style={{ padding: '10px 14px' }}><Eye size={14} style={{ color: '#94a3b8' }} /></td>
+                <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                  <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Ver" onClick={() => openEdit(l)}>
+                    <Eye size={14} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
