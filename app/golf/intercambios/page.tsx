@@ -4,11 +4,12 @@ import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, Edit2, Trash2,
-  Printer, ArrowRightLeft, Building2, Users, X, Save,
-  Loader, ChevronLeft, AlertTriangle, Check
+  Printer, ArrowRightLeft, Building2, Users, Save,
+  Loader, AlertTriangle, Check
 } from 'lucide-react'
-import Link from 'next/link'
 import { fechaLocal } from '@/lib/dateUtils'
+import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Socio = {
@@ -179,33 +180,17 @@ function CartaModal({
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 680,
-        maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-
-        {/* Header */}
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #e2e8f0',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'linear-gradient(135deg,#0D4F80,#2563eb)', borderRadius: '14px 14px 0 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ArrowRightLeft size={18} style={{ color: '#93c5fd' }} />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>
-                {isNew ? 'Nueva Carta de Intercambio' : `Editar — ${carta?.folio ?? ''}`}
-              </div>
-              <div style={{ fontSize: 11, color: '#93c5fd' }}>Balvanera Golf, Polo & Country Club</div>
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none',
-            borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: '#fff' }}>
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div style={{ overflowY: 'auto', padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <ModalShell modulo="golf-pos" titulo={isNew ? 'Nueva Carta de Intercambio' : `Editar — ${carta?.folio ?? ''}`}
+      subtitulo="Balvanera Golf, Polo & Country Club" icono={ArrowRightLeft} size="lg" onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="btn-ghost" disabled={saving}>Cancelar</button>
+        <button onClick={handleSave} className="btn-primary" disabled={saving || (!!socioSel && !socioSel.derecho_intercambios)}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+          {isNew ? 'Guardar carta' : 'Guardar cambios'}
+        </button>
+      </>}
+    >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Socio */}
           <div>
@@ -327,19 +312,7 @@ function CartaModal({
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div style={{ padding: '14px 22px', borderTop: '1px solid #e2e8f0',
-          display: 'flex', justifyContent: 'flex-end', gap: 10, background: '#f8fafc',
-          borderRadius: '0 0 14px 14px' }}>
-          <button onClick={onClose} className="btn-ghost" disabled={saving}>Cancelar</button>
-          <button onClick={handleSave} className="btn-primary" disabled={saving || (!!socioSel && !socioSel.derecho_intercambios)}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            {isNew ? 'Guardar carta' : 'Guardar cambios'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -398,28 +371,16 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 560,
-        maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'linear-gradient(135deg,#0D4F80,#0891b2)', borderRadius: '14px 14px 0 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Building2 size={16} style={{ color: '#7dd3fc' }} />
-            <span style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>
-              {club ? 'Editar Club' : 'Nuevo Club de Intercambio'}
-            </span>
-          </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none',
-            borderRadius: 8, padding: '5px 7px', cursor: 'pointer', color: '#fff' }}>
-            <X size={15} />
-          </button>
-        </div>
-
-        <div style={{ overflowY: 'auto', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <ModalShell modulo="locales" titulo={club ? 'Editar Club' : 'Nuevo Club de Intercambio'} icono={Building2} size="md" onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="btn-ghost" disabled={saving}>Cancelar</button>
+        <button onClick={handleSave} className="btn-primary" disabled={saving}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+          Guardar
+        </button>
+      </>}
+    >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
             <label style={lbl}>Nombre del club *</label>
             <input style={inp} value={form.nombre} onChange={e => set('nombre', e.target.value)} placeholder="Club de Golf…" />
@@ -479,18 +440,7 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
               padding: '9px 12px', color: '#dc2626', fontSize: 13 }}>{error}</div>
           )}
         </div>
-
-        <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0',
-          display: 'flex', justifyContent: 'flex-end', gap: 10, background: '#f8fafc',
-          borderRadius: '0 0 14px 14px' }}>
-          <button onClick={onClose} className="btn-ghost" disabled={saving}>Cancelar</button>
-          <button onClick={handleSave} className="btn-primary" disabled={saving}>
-            {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
-            Guardar
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -743,21 +693,15 @@ export default function IntercambiosPage() {
   return (
     <div style={{ padding: '28px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-        {/* Header */}
-        <div className="page-header">
-          <div className="page-header-left" style={{ display: 'block' }}>
-            <Link href="/golf" style={{ display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textDecoration: 'none' }}>
-              <ChevronLeft size={13} /> Golf
-            </Link>
-            <div className="page-eyebrow">
-              <ArrowRightLeft size={16} style={{ color: '#2563eb' }} />
-              <span className="page-eyebrow-label">Golf</span>
-            </div>
-            <h1 className="page-title-xl">Cartas de Intercambio</h1>
-            <p className="page-subtitle">Emisión, historial y catálogo de clubes con convenio</p>
-          </div>
-          <div className="page-header-actions">
+        <PageHeader
+          variant="xl"
+          backHref="/golf"
+          icon={ArrowRightLeft}
+          color="#2563eb"
+          eyebrowLabel="Golf"
+          title="Cartas de Intercambio"
+          subtitle="Emisión, historial y catálogo de clubes con convenio"
+          actions={<>
             {tab === 'cartas' && puedeEscribir && (
               <button className="btn-primary" onClick={() => { setEditCarta(null); setShowCartaModal(true) }}>
                 <Plus size={14} /> Nueva Carta
@@ -768,8 +712,8 @@ export default function IntercambiosPage() {
                 <Plus size={14} /> Nuevo Club
               </button>
             )}
-          </div>
-        </div>
+          </>}
+        />
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 20,
