@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import PropietarioModal from './PropietarioModal'
 import PropietarioDetail from './PropietarioDetail'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 20
 
@@ -61,27 +62,19 @@ export default function PropietariosPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Users size={16} style={{ color: 'var(--gold)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl" style={{ fontWeight: 400 }}>
-            Propietarios
-          </h1>
-          <p className="page-subtitle">
-            {total} propietarios registrados
-          </p>
-        </div>
-        {canWrite('propietarios') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-              <Plus size={14} /> Nuevo Propietario
-            </button>
-          </div>
+      <PageHeader
+        variant="xl"
+        icon={Users}
+        color="var(--gold)"
+        eyebrowLabel="Módulo"
+        title="Propietarios"
+        subtitle={`${total} propietarios registrados`}
+        actions={canWrite('propietarios') && (
+          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+            <Plus size={14} /> Nuevo Propietario
+          </button>
         )}
-      </div>
+      />
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>

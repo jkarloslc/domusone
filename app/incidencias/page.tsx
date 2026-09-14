@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import MultiImageUpload from '@/components/MultiImageUpload'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Incidencia = {
@@ -123,27 +124,19 @@ export default function IncidenciasPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <AlertTriangle size={16} style={{ color: 'var(--gold)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl" style={{ fontWeight: 400 }}>
-            Incidencias
-          </h1>
-          <p className="page-subtitle">
-            {total} incidencias registradas
-          </p>
-        </div>
-        {canWrite('incidencias') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-              <Plus size={14} /> Nueva Incidencia
-            </button>
-          </div>
+      <PageHeader
+        variant="xl"
+        icon={AlertTriangle}
+        color="var(--gold)"
+        eyebrowLabel="Módulo"
+        title="Incidencias"
+        subtitle={`${total} incidencias registradas`}
+        actions={canWrite('incidencias') && (
+          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+            <Plus size={14} /> Nueva Incidencia
+          </button>
         )}
-      </div>
+      />
 
       {/* Stats clickeables */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -561,7 +554,7 @@ function IncidenciaDetail({ incidencia: inc, onClose, onEdit, onRefresh }: {
   }
 
   return (
-    <ModalShell modulo="incidencias" titulo="Modal" onClose={onClose} maxWidth={520}
+    <ModalShell modulo="incidencias" titulo={inc.tipo ?? 'Incidencia'} subtitulo={inc.lotes?.cve_lote ? `Lote ${inc.lotes.cve_lote}` : undefined} onClose={onClose} maxWidth={520}
     >
 
         <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>

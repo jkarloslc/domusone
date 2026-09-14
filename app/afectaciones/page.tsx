@@ -8,6 +8,7 @@ import {
   Loader, MessageSquare, Clock, DollarSign, Scale,
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Afectacion = {
   id: number
@@ -105,21 +106,17 @@ export default function AfectacionesPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Scale size={16} style={{ color: '#0284c7' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Servidumbres y Afectaciones</h1>
-          <p className="page-subtitle">{total} afectaciones registradas</p>
-        </div>
-        {canWrite('afectaciones') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={14} /> Nueva Afectación</button>
-          </div>
+      <PageHeader
+        variant="xl"
+        icon={Scale}
+        color="#0284c7"
+        eyebrowLabel="Módulo"
+        title="Servidumbres y Afectaciones"
+        subtitle={`${total} afectaciones registradas`}
+        actions={canWrite('afectaciones') && (
+          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={14} /> Nueva Afectación</button>
         )}
-      </div>
+      />
 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>

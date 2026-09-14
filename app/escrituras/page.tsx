@@ -6,6 +6,7 @@ import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import { Plus, Search, RefreshCw, Building2, Eye, Edit2, Trash2, X, Save, Loader, ChevronLeft, ChevronRight } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 20
 
@@ -91,23 +92,19 @@ export default function EscriturasPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Building2 size={16} style={{ color: 'var(--gold)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl" style={{ fontWeight: 400 }}>Escrituras</h1>
-          <p className="page-subtitle">{total} escrituras registradas</p>
-        </div>
-        {canWrite('escrituras') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-              <Plus size={14} /> Nueva Escritura
-            </button>
-          </div>
+      <PageHeader
+        variant="xl"
+        icon={Building2}
+        color="var(--gold)"
+        eyebrowLabel="Módulo"
+        title="Escrituras"
+        subtitle={`${total} escrituras registradas`}
+        actions={canWrite('escrituras') && (
+          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+            <Plus size={14} /> Nueva Escritura
+          </button>
         )}
-      </div>
+      />
 
       {/* Stats por status */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>

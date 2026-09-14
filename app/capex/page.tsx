@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { dbCtrl, dbCfg, dbComp } from '@/lib/supabase'
 import { useDebounce } from '@/lib/useDebounce'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import {
   Plus, Search, RefreshCw, Edit2, Trash2, Loader, Save, X,
   ChevronDown, ChevronRight, Building2,
@@ -163,15 +164,18 @@ export default function CapexPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Building2 size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Operaciones</span>
-          </div>
-          <h1 className="page-title-xl">Proyectos CAPEX</h1>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={Building2}
+        color="var(--blue)"
+        eyebrowLabel="Operaciones"
+        title="Proyectos CAPEX"
+        actions={canWrite('capex') && (
+          <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
+            <Plus size={14} /> Nuevo Proyecto
+          </button>
+        )}
+      />
 
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -221,11 +225,6 @@ export default function CapexPage() {
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
-        {canWrite('capex') && (
-          <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
-            <Plus size={14} /> Nuevo Proyecto
-          </button>
-        )}
       </div>
 
       {/* Tabla */}

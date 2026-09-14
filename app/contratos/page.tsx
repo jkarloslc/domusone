@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import ContratoModal from './ContratoModal'
 import ContratoDetail from './ContratoDetail'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 20
 
@@ -93,23 +94,19 @@ export default function ContratosPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <FileText size={16} style={{ color: 'var(--gold)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl" style={{ fontWeight: 400 }}>Contratos</h1>
-          <p className="page-subtitle">{total} contratos registrados</p>
-        </div>
-        {canWrite('contratos') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
-              <Plus size={14} /> Nuevo Contrato
-            </button>
-          </div>
+      <PageHeader
+        variant="xl"
+        icon={FileText}
+        color="var(--gold)"
+        eyebrowLabel="Módulo"
+        title="Contratos"
+        subtitle={`${total} contratos registrados`}
+        actions={canWrite('contratos') && (
+          <button className="btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+            <Plus size={14} /> Nuevo Contrato
+          </button>
         )}
-      </div>
+      />
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>

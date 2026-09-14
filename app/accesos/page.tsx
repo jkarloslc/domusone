@@ -4,6 +4,7 @@ import { Shield } from 'lucide-react'
 import BitacoraTab from './BitacoraTab'
 import VisitantesTab from './VisitantesTab'
 import VehiculosTab from './VehiculosTab'
+import PageHeader from '@/components/layout/PageHeader'
 
 const TABS = [
   { id: 'bitacora',    label: 'Bitácora de Accesos' },
@@ -19,17 +20,13 @@ function AccesosContent({ embedded }: { embedded?: boolean }) {
 
       {/* Header — oculto cuando está dentro de /residencial */}
       {!embedded && (
-        <div className="page-header">
-          <div className="page-header-left" style={{ display: 'block' }}>
-            <div className="page-eyebrow">
-              <Shield size={16} style={{ color: 'var(--gold)' }} />
-              <span className="page-eyebrow-label">Módulo</span>
-            </div>
-            <h1 className="page-title-xl" style={{ fontWeight: 400 }}>
-              Control de Accesos
-            </h1>
-          </div>
-        </div>
+        <PageHeader
+          variant="xl"
+          icon={Shield}
+          color="var(--gold)"
+          eyebrowLabel="Módulo"
+          title="Control de Accesos"
+        />
       )}
 
       {/* Tabs */}
