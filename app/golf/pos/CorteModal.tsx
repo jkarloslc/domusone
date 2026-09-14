@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react'
 import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Save, Loader, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Save, Loader, AlertTriangle, CheckCircle, Scissors } from 'lucide-react'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
+import ModalShell from '@/components/ui/ModalShell'
 
 type FormaPagoResumen = { id_forma_fk: number; forma_nombre: string; monto: number }
 type DetalleProd     = { concepto: string; cantidad: number; monto: number }
@@ -268,34 +269,31 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
   }
 
   if (success) return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, padding: '40px 32px', maxWidth: 380, width: '100%', textAlign: 'center' }}>
-        <CheckCircle size={52} color="#059669" style={{ margin: '0 auto 16px' }} />
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>Corte registrado</div>
+    <ModalShell modulo="golf-pos" titulo="Corte registrado" icono={CheckCircle} size="sm" onClose={onClose}
+      footer={<button className="btn-primary" onClick={onClose} style={{ background: '#059669', border: 'none', width: '100%', justifyContent: 'center' }}>Cerrar</button>}
+    >
+      <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>
           {numVentas} venta{numVentas !== 1 ? 's' : ''} cerradas · Total {fmt$(totalVentas)}
         </div>
-        <div style={{ fontSize: 12, color: '#059669', marginBottom: 24 }}>Recibo de ingreso generado automáticamente</div>
-        <button onClick={onClose} style={{ width: '100%', padding: '10px', background: '#059669', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-          Cerrar
-        </button>
+        <div style={{ fontSize: 12, color: '#059669' }}>Recibo de ingreso generado automáticamente</div>
       </div>
-    </div>
+    </ModalShell>
   )
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 500, maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h2 style={{ fontSize: 17, fontWeight: 600, color: '#1e293b' }}>Corte de Caja</h2>
-            <p style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{nombreCentro}</p>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4 }}><X size={18} /></button>
-        </div>
-
-        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <ModalShell modulo="golf-pos" titulo="Corte de Caja" subtitulo={nombreCentro} icono={Scissors} size="md" onClose={onClose}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={handleCorte}
+          disabled={saving || loading || numVentas === 0 || (exigirFacturacion && numSinFacturar > 0)}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
+          {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+          Confirmar Corte
+        </button>
+      </>}
+    >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Período */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -483,17 +481,6 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
 
           {error && <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 13, color: '#dc2626' }}>{error}</div>}
         </div>
-
-        <div style={{ padding: '14px 22px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button onClick={onClose} style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cancelar</button>
-          <button onClick={handleCorte}
-            disabled={saving || loading || numVentas === 0 || (exigirFacturacion && numSinFacturar > 0)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (saving || loading || numVentas === 0 || (exigirFacturacion && numSinFacturar > 0)) ? 0.5 : 1 }}>
-            {saving ? <Loader size={14} /> : <Save size={14} />}
-            Confirmar Corte
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

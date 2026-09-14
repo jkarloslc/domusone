@@ -162,30 +162,22 @@ export default function PaseModal({
   }
 
   if (success) return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, padding: '40px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-        <CheckCircle size={52} color="#d97706" style={{ margin: '0 auto 16px' }} />
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>¡Pases asignados!</div>
-        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>
-          {socioSelec && <span style={{ fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(socioSelec)}</span>}
-        </div>
-        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 24 }}>Folio #{String(success.id).padStart(6, '0')}</div>
-        <div style={{ display: 'flex', gap: 10, flexDirection: 'column' }}>
-          <button onClick={() => abrirTicket(true)}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', background: '#d97706', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-            <Printer size={15} /> Imprimir Comprobante
-          </button>
-          <button onClick={() => abrirTicket(false)}
-            style={{ padding: '8px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
-            Ver Comprobante
-          </button>
-          <button onClick={onSaved}
-            style={{ padding: '8px', background: '#fff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
-            Cerrar
-          </button>
-        </div>
+    <ModalShell modulo="golf" titulo="¡Pases asignados!" icono={CheckCircle} size="sm" onClose={onSaved}
+      footer={<>
+        <button className="btn-secondary" onClick={onSaved}>Cerrar</button>
+        <button className="btn-ghost" onClick={() => abrirTicket(false)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Printer size={14} /> Ver Comprobante
+        </button>
+        <button className="btn-primary" onClick={() => abrirTicket(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#d97706', border: 'none' }}>
+          <Printer size={14} /> Imprimir Comprobante
+        </button>
+      </>}
+    >
+      <div style={{ textAlign: 'center' }}>
+        {socioSelec && <div style={{ fontSize: 13, color: '#1e293b', fontWeight: 600, marginBottom: 6 }}>{nombreCompleto(socioSelec)}</div>}
+        <div style={{ fontSize: 12, color: '#94a3b8' }}>Folio #{String(success.id).padStart(6, '0')}</div>
       </div>
-    </div>
+    </ModalShell>
   )
 
   return (

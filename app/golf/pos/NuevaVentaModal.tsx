@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { X, Search, Plus, Minus, Trash2, ShoppingCart, Loader, CheckCircle, Printer, ShieldCheck, Lock } from 'lucide-react'
+import { X, Search, Plus, Minus, Trash2, ShoppingCart, Loader, CheckCircle, Printer, ShieldCheck, Lock, DollarSign } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 // El proceso de cobro de estos productos vive en el módulo de origen (cuota
 // con recibo propio) — venderlos directo desde POS crearía un ticket sin
@@ -362,82 +363,76 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
 
   // ── Pantalla de éxito ─────────────────────────────────────
   if (success) return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, padding: '40px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-        <CheckCircle size={52} color="#059669" style={{ margin: '0 auto 16px' }} />
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>¡Venta registrada!</div>
+    <ModalShell modulo="golf-pos" titulo="¡Venta registrada!" icono={CheckCircle} size="sm" onClose={onClose}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cerrar</button>
+        <button className="btn-ghost" onClick={() => abrirTicket(success.id, success.folio_dia, false)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Printer size={14} /> Ver Ticket
+        </button>
+        <button className="btn-primary" onClick={() => abrirTicket(success.id, success.folio_dia, true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
+          <Printer size={14} /> Imprimir Ticket
+        </button>
+      </>}
+    >
+      <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6 }}>Folio #{String(success.id).padStart(6, '0')} · Día {success.folio_dia}</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#059669', marginBottom: 24 }}>{fmt$(totales.total)}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#059669', marginBottom: cambio > 0.005 ? 12 : 0 }}>{fmt$(totales.total)}</div>
         {cambio > 0.005 && (
-          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 16px', marginBottom: 16, fontSize: 14, color: '#92400e', fontWeight: 600 }}>
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 16px', fontSize: 14, color: '#92400e', fontWeight: 600, display: 'inline-block' }}>
             Cambio: {fmt$(cambio)}
           </div>
         )}
-        <div style={{ display: 'flex', gap: 10, flexDirection: 'column' }}>
-          <button onClick={() => abrirTicket(success.id, success.folio_dia, true)}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', background: '#059669', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-            <Printer size={15} /> Imprimir Ticket
-          </button>
-          <button onClick={() => abrirTicket(success.id, success.folio_dia, false)}
-            style={{ padding: '8px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
-            Ver Ticket
-          </button>
-          <button onClick={onClose}
-            style={{ padding: '8px', background: '#fff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}>
-            Cerrar
-          </button>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   )
 
   // ── Mini-diálogo precio variable ─────────────────────────
   if (precioVarProducto) return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 14, padding: '28px 24px', maxWidth: 340, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>{precioVarProducto.nombre}</div>
-        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 18 }}>
-          Ingresa el precio a cobrar al cliente
-          {precioVarProducto.aplica_iva && <span style={{ marginLeft: 6, color: '#059669', fontWeight: 600 }}>(IVA {precioVarProducto.iva_pct}% incluido)</span>}
-        </div>
-        <div style={{ position: 'relative', marginBottom: 16 }}>
-          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14, fontWeight: 700 }}>$</span>
-          <input
-            autoFocus
-            type="number" min={0.01} step={0.01}
-            value={precioVarInput}
-            onChange={e => setPrecioVarInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') confirmarPrecioVariable(); if (e.key === 'Escape') { setPrecioVarProducto(null); setPrecioVarInput('') } }}
-            style={{ width: '100%', padding: '10px 12px 10px 24px', fontSize: 22, fontWeight: 700, border: '2px solid #fbbf24', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', color: '#1e293b', background: '#fffbeb', textAlign: 'right' }}
-            placeholder="0.00" />
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => { setPrecioVarProducto(null); setPrecioVarInput('') }}
-            style={{ flex: 1, padding: '10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer' }}>
-            Cancelar
-          </button>
-          <button onClick={confirmarPrecioVariable}
-            disabled={!precioVarInput || parseFloat(precioVarInput) <= 0}
-            style={{ flex: 2, padding: '10px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer', opacity: (!precioVarInput || parseFloat(precioVarInput) <= 0) ? 0.5 : 1 }}>
-            Agregar al carrito
-          </button>
-        </div>
+    <ModalShell modulo="golf-pos" titulo={precioVarProducto.nombre} subtitulo="Precio variable" icono={DollarSign} size="sm"
+      onClose={() => { setPrecioVarProducto(null); setPrecioVarInput('') }}
+      footer={<>
+        <button className="btn-secondary" onClick={() => { setPrecioVarProducto(null); setPrecioVarInput('') }}>Cancelar</button>
+        <button className="btn-primary" onClick={confirmarPrecioVariable}
+          disabled={!precioVarInput || parseFloat(precioVarInput) <= 0}
+          style={{ background: '#059669', border: 'none' }}>
+          Agregar al carrito
+        </button>
+      </>}
+    >
+      <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>
+        Ingresa el precio a cobrar al cliente
+        {precioVarProducto.aplica_iva && <span style={{ marginLeft: 6, color: '#059669', fontWeight: 600 }}>(IVA {precioVarProducto.iva_pct}% incluido)</span>}
       </div>
-    </div>
+      <div style={{ position: 'relative' }}>
+        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 14, fontWeight: 700 }}>$</span>
+        <input
+          autoFocus
+          type="number" min={0.01} step={0.01}
+          value={precioVarInput}
+          onChange={e => setPrecioVarInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') confirmarPrecioVariable(); if (e.key === 'Escape') { setPrecioVarProducto(null); setPrecioVarInput('') } }}
+          style={{ width: '100%', padding: '10px 12px 10px 24px', fontSize: 22, fontWeight: 700, border: '2px solid #fbbf24', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', color: '#1e293b', background: '#fffbeb', textAlign: 'right' }}
+          placeholder="0.00" />
+      </div>
+    </ModalShell>
   )
 
   // ── Diálogo de autorización de condonación ───────────────
   if (showCondonAuth) return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.35)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
-          <div style={{ background: '#fef3c7', borderRadius: '50%', width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-            <ShieldCheck size={26} color="#d97706" />
-          </div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 4, textAlign: 'center' }}>Autorización requerida</div>
-          <div style={{ fontSize: 12, color: '#64748b', textAlign: 'center' }}>
-            La forma de pago <strong>Condonación</strong> requiere<br />autorización de un administrador.
-          </div>
+    <ModalShell modulo="golf-pos" titulo="Autorización requerida" icono={ShieldCheck} size="sm"
+      onClose={() => setShowCondonAuth(false)}
+      footer={<>
+        <button className="btn-secondary" onClick={() => setShowCondonAuth(false)}>Cancelar</button>
+        <button className="btn-primary" onClick={handleCondonAuth}
+          disabled={condonLoading || !condonEmail || !condonPassword}
+          style={{ background: '#d97706', border: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+          {condonLoading ? <Loader size={15} className="animate-spin" /> : <ShieldCheck size={15} />}
+          {condonLoading ? 'Verificando…' : 'Autorizar y Cobrar'}
+        </button>
+      </>}
+    >
+        <div style={{ fontSize: 12, color: '#64748b', textAlign: 'center', marginBottom: 16 }}>
+          La forma de pago <strong>Condonación</strong> requiere autorización de un administrador.
         </div>
 
         <div style={{ marginBottom: 12 }}>
@@ -452,7 +447,7 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
             style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: '1px solid #cbd5e1', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
-        <div style={{ marginBottom: 16 }}>
+        <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Contraseña</label>
           <div style={{ position: 'relative' }}>
             <Lock size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
@@ -468,27 +463,11 @@ export default function NuevaVentaModal({ idCentro: idCentroProp, nombreCentro: 
         </div>
 
         {condonError && (
-          <div style={{ padding: '7px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 12, color: '#dc2626', marginBottom: 12 }}>
+          <div style={{ padding: '7px 10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 7, fontSize: 12, color: '#dc2626', marginTop: 12 }}>
             {condonError}
           </div>
         )}
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setShowCondonAuth(false)}
-            style={{ flex: 1, padding: '10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#64748b', cursor: 'pointer' }}>
-            Cancelar
-          </button>
-          <button
-            onClick={handleCondonAuth}
-            disabled={condonLoading || !condonEmail || !condonPassword}
-            style={{ flex: 2, padding: '10px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: (condonLoading || !condonEmail || !condonPassword) ? 0.6 : 1 }}>
-            {condonLoading ? <Loader size={15} /> : <ShieldCheck size={15} />}
-            {condonLoading ? 'Verificando…' : 'Autorizar y Cobrar'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 
   return (

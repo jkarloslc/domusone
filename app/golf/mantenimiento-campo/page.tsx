@@ -5,6 +5,7 @@ import OrdenesTrabajoTab from '@/app/mantenimiento/gestion/OrdenesTrabajoTab'
 import {
   Leaf, ChevronLeft, ChevronRight, RefreshCw, ChevronDown, Search,
 } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -312,32 +313,23 @@ export default function MantenimientoCampoPage() {
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1100, margin: '0 auto' }}>
 
-      {/* ── Header ────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
-        <div style={{
-          width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-          background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Leaf size={24} color="#16a34a" />
-        </div>
-        <div>
-          <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: '#0f172a' }}>
-            Mantenimiento — Campo de Golf
-          </h1>
-          <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>
-            Club de Golf · Campo de Golf · Áreas Verdes y Jardinería
-          </p>
-        </div>
-        {esLluvias && (
+      <PageHeader
+        backHref="/golf/mantto-campo"
+        icon={Leaf}
+        color="#16a34a"
+        eyebrowLabel="Mantto. Campo"
+        title="Mantenimiento — Campo de Golf"
+        subtitle="Club de Golf · Campo de Golf · Áreas Verdes y Jardinería"
+        actions={esLluvias ? (
           <div style={{
-            marginLeft: 'auto', background: '#dbeafe', color: '#1d4ed8',
+            background: '#dbeafe', color: '#1d4ed8',
             borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600,
             border: '1px solid #bfdbfe', whiteSpace: 'nowrap',
           }}>
             ⛈ Temporada lluvias — Protocolos intensificados
           </div>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* ── Tabs ──────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 2, borderBottom: '2px solid #e2e8f0', marginBottom: 24 }}>

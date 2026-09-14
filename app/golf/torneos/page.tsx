@@ -3,9 +3,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, dbCtrl, dbComp, dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import {
   Plus, Flag, MapPin, Calendar, Users, DollarSign,
-  FileText, Trash2, Edit2, ChevronLeft, Receipt, ShoppingBag,
+  FileText, Trash2, Edit2, Receipt, ShoppingBag,
   Printer, X, Check, Eye, TrendingUp, TrendingDown,
   Settings, ClipboardCheck, Upload, Loader, ExternalLink,
   UserPlus, CreditCard, Search,
@@ -1599,27 +1600,14 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
   // ── Render ─────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
-      {/* Back */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <a href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
-          <ChevronLeft size={15} /> Golf
-        </a>
-        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>/</span>
-        <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>Torneos</span>
-      </div>
-
-      {/* Título + botón nuevo */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>Torneos</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
-            {eventosFiltrados.length} evento{eventosFiltrados.length !== 1 ? 's' : ''} en los filtros actuales
-          </p>
-        </div>
-        <button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, flexShrink: 0 }}>
+      <PageHeader
+        backHref="/golf"
+        title="Torneos"
+        subtitle={`${eventosFiltrados.length} evento${eventosFiltrados.length !== 1 ? 's' : ''} en los filtros actuales`}
+        actions={<button className="btn-primary" onClick={openNew} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, flexShrink: 0 }}>
           <Plus size={14} /> Nuevo Evento
-        </button>
-      </div>
+        </button>}
+      />
 
       {/* KPIs */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>

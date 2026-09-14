@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, Receipt, FileText, Printer, Loader, XCircle, MapPin, ArrowRightLeft } from 'lucide-react'
+import { Plus, RefreshCw, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, Receipt, FileText, Printer, Loader, MapPin, ArrowRightLeft, CheckCircle } from 'lucide-react'
 import CarritoModal from './CarritoModal'
 import PensionModal from './PensionModal'
 import CambiarTitularModal from './CambiarTitularModal'
@@ -11,6 +11,7 @@ import MesaControl from './MesaControl'
 import { periodoCorte, cuotaExigible } from '../salidas-carritos/adeudos'
 import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
 import PageHeader from '@/components/layout/PageHeader'
+import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Pension = {
@@ -1245,34 +1246,44 @@ export default function CarritosPage() {
 
           {/* Modal detalle recibo pensión */}
           {detalleRecibo && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-              <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 620, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.25)' }}>
-                {/* Header */}
-                <div style={{ padding: '18px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <FileText size={16} color="#059669" />
-                      <span style={{ fontWeight: 700, fontSize: 16, color: '#1e293b' }}>{detalleRecibo.folio}</span>
-                      <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: STATUS_COLOR[detalleRecibo.status]?.bg, color: STATUS_COLOR[detalleRecibo.status]?.color }}>
-                        {STATUS_COLOR[detalleRecibo.status]?.label}
-                      </span>
-                      {detalleRecibo.id_venta_pos_fk && (
-                        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#ecfdf5', color: '#15803d', fontWeight: 600 }}>
-                          Ticket #{String(detalleRecibo.id_venta_pos_fk).padStart(6, '0')}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
-                      {fechaFmtR(detalleRecibo.fecha_recibo)} · {ncR(detalleRecibo.cat_socios)}
-                    </div>
-                  </div>
-                  <button onClick={() => { setDetalleRecibo(null); setTicketErrR('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
-                    <XCircle size={18} />
+            <ModalShell modulo="golf-carritos" titulo={detalleRecibo.folio}
+              subtitulo={`${fechaFmtR(detalleRecibo.fecha_recibo)} · ${ncR(detalleRecibo.cat_socios)}`}
+              icono={FileText} size="md"
+              onClose={() => { setDetalleRecibo(null); setTicketErrR('') }}
+              footer={<>
+                <button className="btn-secondary" onClick={() => { setDetalleRecibo(null); setTicketErrR('') }}>Cerrar</button>
+                {detalleRecibo.status === 'VIGENTE' && (
+                  <button onClick={() => generarTicketCarritoDesdeRecibo(detalleRecibo)} disabled={generandoTicketR}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicketR ? 0.6 : 1 }}>
+                    {generandoTicketR ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
+                    {detalleRecibo.id_venta_pos_fk ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
                   </button>
-                </div>
+                )}
+                <button className="btn-primary" onClick={() => handlePrintRecibo(detalleRecibo)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#065f46', border: 'none' }}>
+                  <Printer size={14} /> Imprimir Recibo
+                </button>
+              </>}
+            >
+                <div>
+                  {/* Badges de status */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                    <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: STATUS_COLOR[detalleRecibo.status]?.bg, color: STATUS_COLOR[detalleRecibo.status]?.color }}>
+                      {STATUS_COLOR[detalleRecibo.status]?.label}
+                    </span>
+                    {detalleRecibo.id_venta_pos_fk && (
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#ecfdf5', color: '#15803d', fontWeight: 600 }}>
+                        Ticket #{String(detalleRecibo.id_venta_pos_fk).padStart(6, '0')}
+                      </span>
+                    )}
+                  </div>
 
-                {/* Body */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+                  {ticketErrR && (
+                    <div style={{ marginBottom: 16, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                      {ticketErrR}
+                    </div>
+                  )}
+
                   {/* Socio */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px', marginBottom: 20, padding: '12px 16px', background: '#f8fafc', borderRadius: 10 }}>
                     <div><div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Socio</div><div style={{ fontSize: 13, fontWeight: 600 }}>{ncR(detalleRecibo.cat_socios)}</div></div>
@@ -1320,34 +1331,7 @@ export default function CarritosPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Footer */}
-                <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0' }}>
-                  {ticketErrR && (
-                    <div style={{ marginBottom: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
-                      {ticketErrR}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                    <button onClick={() => { setDetalleRecibo(null); setTicketErrR('') }}
-                      style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                      Cerrar
-                    </button>
-                    {detalleRecibo.status === 'VIGENTE' && (
-                      <button onClick={() => generarTicketCarritoDesdeRecibo(detalleRecibo)} disabled={generandoTicketR}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #a7f3d0', borderRadius: 8, background: '#ecfdf5', color: '#047857', cursor: 'pointer', opacity: generandoTicketR ? 0.6 : 1 }}>
-                        {generandoTicketR ? <Loader size={14} className="animate-spin" /> : <Receipt size={14} />}
-                        {detalleRecibo.id_venta_pos_fk ? 'Reimprimir Ticket POS' : 'Generar Ticket POS'}
-                      </button>
-                    )}
-                    <button onClick={() => handlePrintRecibo(detalleRecibo)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#065f46', color: '#fff', cursor: 'pointer' }}>
-                      <Printer size={14} /> Imprimir Recibo
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            </ModalShell>
           )}
         </>
       )}
@@ -1487,17 +1471,11 @@ export default function CarritosPage() {
       )}
 
       {carritoNuevo && !showPension && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 400, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', textAlign: 'center' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#1e293b', marginBottom: 6 }}>Carrito registrado</div>
-            <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>¿Deseas asignar un slot y generar cuotas de pensión ahora?</div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-              <button onClick={() => setCarritoNuevo(null)}
-                style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                Después
-              </button>
-              <button onClick={async () => {
+        <ModalShell modulo="golf-carritos" titulo="Carrito registrado" icono={CheckCircle} size="sm"
+          onClose={() => setCarritoNuevo(null)}
+          footer={<>
+            <button className="btn-secondary" onClick={() => setCarritoNuevo(null)}>Después</button>
+            <button className="btn-primary" onClick={async () => {
                 const [{ data: s }, { data: c }] = await Promise.all([
                   dbGolf.from('cat_socios').select('nombre, apellido_paterno, apellido_materno').eq('id', carritoNuevo.id_socio_fk).single(),
                   dbGolf.from('cat_carritos').select('marca, modelo').eq('id', carritoNuevo.id).single(),
@@ -1518,12 +1496,13 @@ export default function CarritosPage() {
                   nombreFamiliar: nombreF,
                 })
               }}
-                style={{ padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
-                Asignar Pensión
-              </button>
-            </div>
-          </div>
-        </div>
+              style={{ background: '#059669', border: 'none' }}>
+              Asignar Pensión
+            </button>
+          </>}
+        >
+          <div style={{ fontSize: 13, color: '#64748b', textAlign: 'center' }}>¿Deseas asignar un slot y generar cuotas de pensión ahora?</div>
+        </ModalShell>
       )}
 
       {showPension && (
@@ -1544,16 +1523,20 @@ export default function CarritosPage() {
 
       {/* Modal cambio / liberación de cajón */}
       {showSlot && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 440, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <div style={{ background: '#eff6ff', borderRadius: 8, padding: 8 }}><MapPin size={18} color="#2563eb" /></div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>{showSlot.idSlotActual ? 'Cambiar / liberar cajón' : 'Asignar cajón'}</div>
-                <div style={{ fontSize: 12, color: '#64748b' }}>{showSlot.descCarrito} · {showSlot.nombreSocio}</div>
-              </div>
-            </div>
-            <p style={{ fontSize: 12, color: '#64748b', margin: '12px 0 14px', lineHeight: 1.5 }}>
+        <ModalShell modulo="golf-carritos" titulo={showSlot.idSlotActual ? 'Cambiar / liberar cajón' : 'Asignar cajón'}
+          subtitulo={`${showSlot.descCarrito} · ${showSlot.nombreSocio}`}
+          icono={MapPin} size="sm"
+          onClose={() => setShowSlot(null)}
+          footer={<>
+            <button className="btn-secondary" onClick={() => setShowSlot(null)}>Cancelar</button>
+            <button className="btn-primary" onClick={guardarCambioSlot} disabled={savingSlotSel || slotSel === (showSlot.idSlotActual ?? '')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#2563eb', border: 'none' }}>
+              {savingSlotSel ? <Loader size={14} className="animate-spin" /> : <MapPin size={14} />}
+              {slotSel === '' ? 'Liberar cajón' : 'Guardar cambio'}
+            </button>
+          </>}
+        >
+            <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 14px', lineHeight: 1.5 }}>
               La pensión y sus cuotas no se modifican — solo la asignación del cajón.
               {showSlot.idSlotActual ? ' Si lo liberas, el cajón queda disponible para otro carrito.' : ''}
             </p>
@@ -1561,7 +1544,7 @@ export default function CarritosPage() {
             <select
               value={slotSel}
               onChange={e => setSlotSel(e.target.value ? Number(e.target.value) : '')}
-              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', marginBottom: 16, boxSizing: 'border-box' }}>
+              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
               <option value="">— Sin cajón (liberar) —</option>
               {slotsDisp.map(s => (
                 <option key={s.id} value={s.id}>
@@ -1570,23 +1553,11 @@ export default function CarritosPage() {
               ))}
             </select>
             {errorSlot && (
-              <div style={{ marginBottom: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+              <div style={{ marginTop: 12, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
                 {errorSlot}
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setShowSlot(null)}
-                style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                Cancelar
-              </button>
-              <button onClick={guardarCambioSlot} disabled={savingSlotSel || slotSel === (showSlot.idSlotActual ?? '')}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#2563eb', color: '#fff', cursor: 'pointer', opacity: (savingSlotSel || slotSel === (showSlot.idSlotActual ?? '')) ? 0.6 : 1 }}>
-                {savingSlotSel ? <Loader size={14} className="animate-spin" /> : <MapPin size={14} />}
-                {slotSel === '' ? 'Liberar cajón' : 'Guardar cambio'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       {showTitular && (
