@@ -3,6 +3,7 @@ import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
 import { BarChart3, MapPin, Users, AlertTriangle, Eye, Car, ChevronRight, ShoppingCart, Package, Warehouse, FileText, TrendingDown, Wrench, ClipboardList, Building2, Wallet, Clock, Star, Droplets, CloudRain, Tag } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 import ReporteColaboradores from './ReporteColaboradores'
 import ReporteLotes from './ReporteLotes'
 import ReporteLotesPropietarios from './ReporteLotesPropietarios'
@@ -234,27 +235,22 @@ function ReportesContent() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <BarChart3 size={16} style={{ color: grupoActivo?.color ?? 'var(--blue)' }} />
-            <span className="page-eyebrow-label">
-              {grupoParam ? grupoActivo?.label : 'Módulo'}
-            </span>
-          </div>
-          <h1 className="page-title-xl">Reportes</h1>
-        {/* Breadcrumb cuando hay reporte activo */}
-        {active && current && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 13, color: 'var(--text-secondary)' }}>
+      <PageHeader
+        variant="xl"
+        icon={BarChart3}
+        color={grupoActivo?.color ?? 'var(--blue)'}
+        eyebrowLabel={grupoParam ? (grupoActivo?.label ?? 'Módulo') : 'Módulo'}
+        title="Reportes"
+        subtitle={active && current ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={handleBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontSize: 13, padding: 0 }}>
               {grupoParam ? (grupoActivo?.label ?? 'Reportes') : 'Todos los reportes'}
             </button>
             <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />
             <span>{current.label}</span>
-          </div>
-        )}
-        </div>
-      </div>
+          </span>
+        ) : undefined}
+      />
 
       {/* Grid agrupado */}
       {!active && gruposVisibles.map(grupo => {

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/AuthContext'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { prorratearDescuento } from '@/lib/prorateoDescuento'
@@ -636,23 +637,17 @@ export default function ComparativoPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <BookOpen size={15} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Presupuestos</span>
-          </div>
-          <h1 className="page-title-xl">Comparativo Presupuesto vs Real</h1>
-          <p className="page-subtitle">{mesLabel} · {selPpto?.nombre}</p>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px' }}>
-            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={BookOpen}
+        eyebrowLabel="Presupuestos"
+        title="Comparativo Presupuesto vs Real"
+        subtitle={`${mesLabel} · ${selPpto?.nombre}`}
+        actions={<button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true)}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 10px' }}>
+          <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+        </button>}
+      />
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap', alignItems: 'flex-end' }}>

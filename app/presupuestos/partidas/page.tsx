@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { useTiposGasto } from '@/lib/useTiposGasto'
-import { Plus, Edit2, Loader, Save, ChevronRight, BookOpen, Copy, Tag, Trash2, ToggleLeft, ToggleRight, Search } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, Edit2, Loader, Save, BookOpen, Copy, Tag, Trash2, ToggleLeft, ToggleRight, Search } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 type FuenteReal = 'seccion' | 'concepto' | 'op_area' | 'manual'
 type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
@@ -305,22 +305,11 @@ export default function PartidasPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Breadcrumb */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, color: '#94a3b8', fontSize: 13 }}>
-        <Link href="/presupuestos/captura"
-          style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <BookOpen size={13} /> Presupuestos
-        </Link>
-        <ChevronRight size={13} />
-        <span style={{ color: '#475569' }}>Catálogo de Partidas</span>
-      </div>
-
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <h1 className="page-title">Catálogo de Partidas Presupuestales</h1>
-          <p className="page-subtitle">Define las partidas y su fuente de datos real automático</p>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        backHref="/presupuestos/captura"
+        title="Catálogo de Partidas Presupuestales"
+        subtitle="Define las partidas y su fuente de datos real automático"
+        actions={<>
           {/* Filtro nombre */}
           <div style={{ position: 'relative', flex: '0 0 auto' }}>
             <Search size={12} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
@@ -377,8 +366,8 @@ export default function PartidasPage() {
               <Plus size={15} /> Nueva Partida
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>

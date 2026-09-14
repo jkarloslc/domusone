@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { Plus, BookOpen, Loader, Save, Settings, BookMarked, Edit2 } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's", 'Locales']
 
@@ -211,13 +212,10 @@ export default function CapturaPpto() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Page header estándar */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <h1 className="page-title">Captura de Presupuesto</h1>
-          <p className="page-subtitle">Ingresa los montos mensuales por partida presupuestal</p>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        title="Captura de Presupuesto"
+        subtitle="Ingresa los montos mensuales por partida presupuestal"
+        actions={<>
           <Link href="/presupuestos/partidas"
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -233,8 +231,8 @@ export default function CapturaPpto() {
               <Plus size={15} /> Nuevo Presupuesto
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Estado vacío */}
       {presupuestos.length === 0 ? (

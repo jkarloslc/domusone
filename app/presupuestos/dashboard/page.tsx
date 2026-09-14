@@ -6,6 +6,7 @@ import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { prorratearDescuento } from '@/lib/prorateoDescuento'
 import { esComodin } from '@/lib/pptoComodin'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -525,17 +526,13 @@ export default function DashboardPpto() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <BookOpen size={15} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Presupuestos</span>
-          </div>
-          <h1 className="page-title-xl">Dashboard Presupuestal</h1>
-          <p className="page-subtitle">Seguimiento ejecutivo Presupuesto vs Real</p>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        variant="xl"
+        icon={BookOpen}
+        eyebrowLabel="Presupuestos"
+        title="Dashboard Presupuestal"
+        subtitle="Seguimiento ejecutivo Presupuesto vs Real"
+        actions={<>
           <select className="input" style={{ minWidth: 240 }}
             value={selId ?? ''} onChange={e => onChangePpto(Number(e.target.value))}>
             {presupuestos.map(p => (
@@ -546,8 +543,8 @@ export default function DashboardPpto() {
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
           </button>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* KPIs + Gráficas por clasificación */}
       <ResumenClasificacion titulo={CLASIFICACION_TITULOS.operativo}
