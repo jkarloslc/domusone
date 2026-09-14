@@ -2,8 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, Receipt, FileText, Printer, Loader, XCircle, MapPin, ArrowRightLeft } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, RefreshCw, Car, Settings, Search, X, ChevronDown, ChevronRight, AlertCircle, CreditCard, Receipt, FileText, Printer, Loader, XCircle, MapPin, ArrowRightLeft } from 'lucide-react'
 import CarritoModal from './CarritoModal'
 import PensionModal from './PensionModal'
 import CambiarTitularModal from './CambiarTitularModal'
@@ -11,6 +10,7 @@ import CobrarCuotaModal from './CobrarCuotaModal'
 import MesaControl from './MesaControl'
 import { periodoCorte, cuotaExigible } from '../salidas-carritos/adeudos'
 import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Pension = {
@@ -709,21 +709,10 @@ export default function CarritosPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/golf/administracion" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ChevronLeft size={13} /> Club
-            </Link>
-            <span>/</span>
-            <span style={{ color: '#475569', fontWeight: 500 }}>Carritos</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-            Carritos & Pensiones
-          </h1>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <PageHeader
+        backHref="/golf/administracion"
+        title="Carritos & Pensiones"
+        actions={<>
           <button className="btn-ghost" onClick={() => { fetchPensiones() }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
           </button>
@@ -732,8 +721,8 @@ export default function CarritosPage() {
               <Plus size={14} /> Nuevo Carrito
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>

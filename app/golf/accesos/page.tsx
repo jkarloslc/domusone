@@ -2,10 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Users, Clock, Filter, Eye, Printer } from 'lucide-react'
+import { Plus, RefreshCw, LogIn, LogOut, Users, Clock, Filter, Eye, Printer } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
-import Link from 'next/link'
 import AccesoModal from './AccesoModal'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Acceso = {
   id: number
@@ -167,21 +167,10 @@ export default function AccesosPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/golf" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ChevronLeft size={13} /> Club
-            </Link>
-            <span>/</span>
-            <span style={{ color: '#475569', fontWeight: 500 }}>Salidas al Campo</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-            Salidas al Campo
-          </h1>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <PageHeader
+        backHref="/golf"
+        title="Salidas al Campo"
+        actions={<>
           <button className="btn-ghost" onClick={fetchAccesos} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
           </button>
@@ -190,8 +179,8 @@ export default function AccesosPage() {
               <Plus size={14} /> Registrar Salida
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>

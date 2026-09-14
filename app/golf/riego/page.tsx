@@ -7,6 +7,7 @@ import {
 import Link from 'next/link'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Programa = {
@@ -577,22 +578,13 @@ export default function RiegoPage() {
   return (
     <div style={{ padding:'24px 28px', animation:'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:24, flexWrap:'wrap', gap:12 }}>
-        <div>
-          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4, fontSize:12, color:'#94a3b8' }}>
-            <Link href="/golf" style={{ color:'#94a3b8', textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
-              <ChevronLeft size={13} /> Club Golf
-            </Link>
-            <span>/</span>
-            <span style={{ color:'#475569', fontWeight:500 }}>Riego</span>
-          </div>
-          <h1 style={{ fontFamily:'var(--font-display)', fontSize:26, fontWeight:400, color:'var(--gold-light)', letterSpacing:'-0.01em', display:'flex', alignItems:'center', gap:10 }}>
-            <Droplets size={24} style={{ color:'#0ea5e9' }} /> Programa de Riego
-          </h1>
-        </div>
-        {/* Week nav — visible en programa y consumo */}
-        {tab !== 'catalogo' && (
+      <PageHeader
+        backHref="/golf"
+        icon={Droplets}
+        color="#0ea5e9"
+        eyebrowLabel="Riego"
+        title="Programa de Riego"
+        actions={tab !== 'catalogo' ? (
           <div style={{ display:'flex', alignItems:'center', gap:8, background:'#f8fafc', borderRadius:12, padding:'8px 14px', border:'1px solid #e2e8f0' }}>
             <button onClick={()=>navSemana(-1)} style={{ background:'none', border:'none', cursor:'pointer', color:'#64748b', display:'flex' }}><ChevronLeft size={18} /></button>
             <div style={{ textAlign:'center', minWidth:170 }}>
@@ -603,8 +595,8 @@ export default function RiegoPage() {
             </div>
             <button onClick={()=>navSemana(1)} style={{ background:'none', border:'none', cursor:'pointer', color:'#64748b', display:'flex' }}><ChevronRight size={18} /></button>
           </div>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* KPI Cards */}
       <div style={{ display:'flex', flexWrap:'wrap', gap:12, marginBottom:24 }}>

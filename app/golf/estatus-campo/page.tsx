@@ -4,10 +4,11 @@ import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { dbGolf } from '@/lib/supabase'
 import {
-  Plus, RefreshCw, Edit2, Trash2, Save, Loader, ArrowLeft,
+  Plus, RefreshCw, Edit2, Trash2, Save, Loader,
   CloudRain, CheckCircle2, XCircle, AlertCircle, Route,
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Status = 'abierto' | 'cerrado' | 'parcial'
 
@@ -86,19 +87,15 @@ export default function EstatusCampoPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/golf/mantto-campo')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Estatus del Campo</h1>
-            <p className="page-subtitle">Bitácora de apertura / cierre del campo y de los caminos · {rows.length} registros</p>
-          </div>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        onBack={() => router.push('/golf/mantto-campo')}
+        title="Estatus del Campo"
+        subtitle={`Bitácora de apertura / cierre del campo y de los caminos · ${rows.length} registros`}
+        actions={<>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
           {writer && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Registro</button>}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Filtros de periodo */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 18, alignItems: 'flex-end' }}>

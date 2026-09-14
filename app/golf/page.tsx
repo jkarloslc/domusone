@@ -9,6 +9,7 @@ import {
   ChevronRight, ArrowRightLeft, RefreshCw, AlertTriangle,
   Activity, Target,
 } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Formatters ────────────────────────────────────────────────
 const fmt$ = (n: number) =>
@@ -171,22 +172,16 @@ export default function GolfPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Flag size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Club Golf</h1>
-          <p className="page-subtitle">Administración del club — socios, operaciones de campo y servicios deportivos</p>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn-ghost" onClick={loadKpis} title="Actualizar">
-            <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={Flag}
+        eyebrowLabel="Módulo"
+        title="Club Golf"
+        subtitle="Administración del club — socios, operaciones de campo y servicios deportivos"
+        actions={<button className="btn-ghost" onClick={loadKpis} title="Actualizar">
+          <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+        </button>}
+      />
 
       {/* KPIs ─────────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>

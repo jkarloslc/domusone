@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight, Settings, Save, Loader } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, RefreshCw, Search, X, ChevronDown, ChevronRight, Settings, Save, Loader } from 'lucide-react'
 import PaseModal from './PaseModal'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Politica = {
   id?: number
@@ -191,21 +191,10 @@ export default function PasesPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/golf/administracion" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ChevronLeft size={13} /> Club
-            </Link>
-            <span>/</span>
-            <span style={{ color: '#475569', fontWeight: 500 }}>Pases de Invitación</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-            Pases de Invitación
-          </h1>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <PageHeader
+        backHref="/golf/administracion"
+        title="Pases de Invitación"
+        actions={<>
           <button className="btn-ghost" onClick={fetchPases} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
           </button>
@@ -219,8 +208,8 @@ export default function PasesPage() {
               <Plus size={14} /> Asignar Pases
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Política de pases (cuántos pases otorga cada año por 12 cuotas / pronto pago) */}
       {showPolitica && puedeEscribir && (

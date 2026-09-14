@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Leaf, Droplets, CloudRain, ChevronRight } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 
 const MODULOS = [
   {
@@ -32,17 +33,13 @@ export default function GolfManttoCampoPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Leaf size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Mantto. Campo</h1>
-          <p className="page-subtitle">Riego y mantenimiento del campo de golf</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={Leaf}
+        eyebrowLabel="Módulo"
+        title="Mantto. Campo"
+        subtitle="Riego y mantenimiento del campo de golf"
+      />
 
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>

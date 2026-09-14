@@ -3,12 +3,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  ChevronLeft, Plus, Zap, Search, X, RefreshCw,
+  Plus, Zap, Search, X, RefreshCw,
   Save, Loader, CreditCard, ChevronDown, ChevronRight, Trash2, Pencil, Settings,
 } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Tipos ────────────────────────────────────────────────────
 type Cuota = {
@@ -1008,25 +1009,14 @@ export default function CuotasGolfPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/golf/administracion" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12 }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#2563eb'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}>
-              <ChevronLeft size={13} /> Club
-            </Link>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>/</span>
-            <CreditCard size={13} style={{ color: '#7c3aed' }} />
-            <span style={{ fontSize: 11, color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Cuotas</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)' }}>
-            Asignación de Cuotas
-          </h1>
-          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Administra las cuotas asignadas — para cobrar ve a <Link href="/golf/cxc" style={{ color: '#2563eb', textDecoration: 'none' }}>CXC Golf</Link></p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <PageHeader
+        backHref="/golf/administracion"
+        icon={CreditCard}
+        color="#7c3aed"
+        eyebrowLabel="Cuotas"
+        title="Asignación de Cuotas"
+        subtitle={<>Administra las cuotas asignadas — para cobrar ve a <Link href="/golf/cxc" style={{ color: '#2563eb', textDecoration: 'none' }}>CXC Golf</Link></>}
+        actions={<>
           <button className="btn-ghost" onClick={fetchCuotas} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
           </button>
@@ -1045,8 +1035,8 @@ export default function CuotasGolfPage() {
               </button>
             </>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>

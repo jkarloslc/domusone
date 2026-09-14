@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { ChevronLeft, MapPin, CreditCard, FileText, BarChart2, Award, ClipboardCheck, Warehouse } from 'lucide-react'
-import Link from 'next/link'
+import { MapPin, CreditCard, FileText, BarChart2, Award, ClipboardCheck, Warehouse } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 import ReporteGolfAccesos         from '@/app/reportes/ReporteGolfAccesos'
 import ReporteGolfEstadoCuenta    from '@/app/reportes/ReporteGolfEstadoCuenta'
 import ReporteGolfCobranza        from '@/app/reportes/ReporteGolfCobranza'
@@ -77,41 +77,17 @@ export default function GolfReportesPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/golf" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ChevronLeft size={13} /> Club
-            </Link>
-            <span>/</span>
-            {activo ? (
-              <>
-                <button onClick={() => setActivo(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, fontSize: 12 }}>
-                  Reportes
-                </button>
-                <span>/</span>
-                <span style={{ color: '#475569', fontWeight: 500 }}>{reporte?.label}</span>
-              </>
-            ) : (
-              <span style={{ color: '#475569', fontWeight: 500 }}>Reportes</span>
-            )}
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-            {activo ? reporte?.label : 'Reportes Club Golf'}
-          </h1>
-          {!activo && (
-            <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-              Selecciona un reporte para consultar
-            </p>
-          )}
-        </div>
-        {activo && (
+      <PageHeader
+        onBack={activo ? () => setActivo(null) : undefined}
+        backHref={!activo ? '/golf' : undefined}
+        title={activo ? (reporte?.label ?? '') : 'Reportes Club Golf'}
+        subtitle={!activo ? 'Selecciona un reporte para consultar' : undefined}
+        actions={activo ? (
           <button className="btn-ghost" onClick={() => setActivo(null)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <BarChart2 size={13} /> Todos los reportes
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Índice de reportes */}
       {!activo && (

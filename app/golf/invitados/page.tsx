@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight, Settings, Save, Loader, AlertTriangle, Trash2 } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, RefreshCw, Search, X, ChevronDown, ChevronRight, Settings, Save, Loader, AlertTriangle, Trash2 } from 'lucide-react'
 import InvitadoModal from './InvitadoModal'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Invitado = {
   id: number
@@ -133,21 +133,10 @@ export default function InvitadosPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/golf/administracion" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ChevronLeft size={13} /> Club
-            </Link>
-            <span>/</span>
-            <span style={{ color: '#475569', fontWeight: 500 }}>Invitados</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-            Invitados
-          </h1>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <PageHeader
+        backHref="/golf/administracion"
+        title="Invitados"
+        actions={<>
           <button className="btn-ghost" onClick={fetchInvitados} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
           </button>
@@ -161,8 +150,8 @@ export default function InvitadosPage() {
               <Plus size={14} /> Nuevo Invitado
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Política de tope */}
       {showPolitica && puedeEscribir && (

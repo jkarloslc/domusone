@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { ChevronLeft, Plus, Edit2, ToggleLeft, ToggleRight, Save, X, Loader, BookOpen, MapPin, Flag, Tag, DollarSign, Store } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, Edit2, ToggleLeft, ToggleRight, Save, X, Loader, BookOpen, MapPin, Flag, Tag, DollarSign, Store } from 'lucide-react'
 import CuotasConfigPanel from '@/components/golf/CuotasConfigPanel'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Estilos comunes ──────────────────────────────────────────
 const inputStyle: React.CSSProperties = {
@@ -437,22 +437,12 @@ export default function CatalogosClubPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <Link href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12, transition: 'color 0.15s' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#2563eb'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}>
-            <ChevronLeft size={13} /> Club
-          </Link>
-          <span style={{ fontSize: 12, color: '#cbd5e1' }}>/</span>
-          <BookOpen size={13} style={{ color: 'var(--gold)' }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Catálogos</span>
-        </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-          Catálogos del Club
-        </h1>
-      </div>
+      <PageHeader
+        backHref="/golf"
+        icon={BookOpen}
+        eyebrowLabel="Catálogos"
+        title="Catálogos del Club"
+      />
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: 24, gap: 0, overflowX: 'auto' }}>

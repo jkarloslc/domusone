@@ -4,9 +4,10 @@ import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Target, Plus, RefreshCw, Search, X, Loader, CheckCircle,
-  Printer, ChevronLeft, AlertTriangle, Circle,
+  Printer, AlertTriangle, Circle,
 } from 'lucide-react'
-import Link from 'next/link'
+import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Tipos ────────────────────────────────────────────────────
 type Socio = {
@@ -155,34 +156,26 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
   // ── Vista de éxito ──
   if (success) {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-        <div style={{ background: '#fff', borderRadius: 16, padding: '36px 32px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-          <CheckCircle size={52} color="#059669" style={{ margin: '0 auto 16px' }} />
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>¡Entrada registrada!</div>
+      <ModalShell modulo="golf-tee-practica" titulo="¡Entrada registrada!" icono={CheckCircle} size="sm"
+        onClose={() => { onSaved(); onClose() }}
+        footer={<>
+          <button className="btn-secondary" onClick={() => { onSaved(); onClose() }}>Cerrar</button>
+          <button className="btn-ghost" onClick={() => abrirTicket(success, false)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Printer size={14} /> Ver Ticket
+          </button>
+          <button className="btn-primary" onClick={() => abrirTicket(success, true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Printer size={14} /> Imprimir Ticket
+          </button>
+        </>}
+      >
+        <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>
             <span style={{ fontWeight: 600, color: '#1e293b' }}>{nombreCompleto(success.cat_socios)}</span>
           </div>
           <div style={{ fontSize: 28, fontWeight: 800, color: '#059669', margin: '12px 0 4px' }}>{success.num_bolas}</div>
-          <div style={{ fontSize: 12, color: '#64748b', marginBottom: 20 }}>bolas asignadas</div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="btn-primary"
-              onClick={() => abrirTicket(success, true)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Printer size={14} /> Imprimir Ticket
-            </button>
-            <button className="btn-ghost"
-              onClick={() => abrirTicket(success, false)}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Printer size={14} /> Ver Ticket
-            </button>
-          </div>
-          <button className="btn-secondary"
-            onClick={() => { onSaved(); onClose() }}
-            style={{ marginTop: 12, width: '100%' }}>
-            Cerrar
-          </button>
+          <div style={{ fontSize: 12, color: '#64748b' }}>bolas asignadas</div>
         </div>
-      </div>
+      </ModalShell>
     )
   }
 
@@ -190,29 +183,21 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
   const tieneAdeudo = adeudos.length > 0
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 480, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.22)' }}>
-
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #065f46 0%, #059669 100%)', borderRadius: '16px 16px 0 0', padding: '18px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Target size={18} style={{ color: '#fff' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Nueva Entrada</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>Tee de Práctica</div>
-              </div>
-            </div>
-            <button onClick={onClose} style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <X size={14} />
-            </button>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <ModalShell modulo="golf-tee-practica" titulo="Nueva Entrada" subtitulo="Tee de Práctica" icono={Target} size="sm" onClose={onClose}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button
+          className="btn-primary"
+          onClick={handleGuardar}
+          disabled={saving || !tieneSocio || tieneAdeudo || verificandoAdeudo}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
+          {saving
+            ? <><Loader size={14} className="animate-spin" /> Guardando…</>
+            : <><Printer size={14} /> Registrar y Emitir Ticket</>}
+        </button>
+      </>}
+    >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Búsqueda de socio */}
           {!tieneSocio ? (
@@ -353,22 +338,7 @@ function ModalNuevaEntrada({ onClose, onSaved }: { onClose: () => void; onSaved:
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10, background: '#f8fafc', borderRadius: '0 0 16px 16px' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button
-            className="btn-primary"
-            onClick={handleGuardar}
-            disabled={saving || !tieneSocio || tieneAdeudo || verificandoAdeudo}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#059669', border: 'none' }}>
-            {saving
-              ? <><Loader size={14} className="animate-spin" /> Guardando…</>
-              : <><Printer size={14} /> Registrar y Emitir Ticket</>}
-          </button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -406,22 +376,15 @@ export default function TeePracticaPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            <Link href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', textDecoration: 'none' }}>
-              <ChevronLeft size={14} /> Golf
-            </Link>
-          </div>
-          <div className="page-eyebrow">
-            <Target size={16} style={{ color: '#059669' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Tee de Práctica</h1>
-          <p className="page-subtitle">Registro de entradas y emisión de tickets — concesionado</p>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        variant="xl"
+        backHref="/golf"
+        icon={Target}
+        color="#059669"
+        eyebrowLabel="Módulo"
+        title="Tee de Práctica"
+        subtitle="Registro de entradas y emisión de tickets — concesionado"
+        actions={<>
           <button className="btn-ghost" onClick={fetchEntradas} title="Actualizar">
             <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
           </button>
@@ -431,8 +394,8 @@ export default function TeePracticaPage() {
               <Plus size={14} /> Nueva Entrada
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Filtro de fecha + stats */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>

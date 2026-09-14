@@ -10,7 +10,7 @@ export type ModalModulo =
   | 'hr'
   | 'compras' | 'proveedores' | 'articulos' | 'almacenes'
   | 'tesoreria' | 'ingresos' | 'presupuestos'
-  | 'golf' | 'golf-miembros' | 'golf-accesos' | 'golf-pos' | 'golf-carritos'
+  | 'golf' | 'golf-miembros' | 'golf-accesos' | 'golf-pos' | 'golf-carritos' | 'golf-tee-practica'
   | 'hipico'
   | 'locales'
   | 'usuarios' | 'configuracion'
@@ -68,6 +68,7 @@ export const MODAL_PALETTES: Record<ModalModulo, Palette> = {
   'golf-accesos':  { from: '#14532d', to: '#16a34a', accent: '#16a34a' },
   'golf-pos':      { from: '#1e3a5f', to: '#2563eb', accent: '#2563eb' },
   'golf-carritos': { from: '#713f12', to: '#d97706', accent: '#d97706' },
+  'golf-tee-practica': { from: '#065f46', to: '#059669', accent: '#059669' },
 
   // Sistema
   usuarios:      { from: '#1e293b', to: '#475569', accent: '#475569' },

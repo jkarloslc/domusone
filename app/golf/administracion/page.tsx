@@ -2,6 +2,7 @@ import Link from 'next/link'
 import {
   Users, Tag, Car, Receipt, CreditCard, ChevronRight, Building2, UserPlus, FileText,
 } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 
 const MODULOS = [
   {
@@ -74,17 +75,13 @@ export default function GolfAdministracionPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Users size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Administración</h1>
-          <p className="page-subtitle">Socios, pases, pensiones, cuotas y cobranza del club</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={Users}
+        eyebrowLabel="Módulo"
+        title="Administración"
+        subtitle="Socios, pases, pensiones, cuotas y cobranza del club"
+      />
 
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>

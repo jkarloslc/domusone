@@ -3,17 +3,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbGolf, dbCtrl, dbCfg, dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  ShoppingCart, RefreshCw, Plus, Search, X, ChevronLeft,
+  ShoppingCart, RefreshCw, Plus, Search, X,
   ChevronDown, ChevronRight, Scissors, Settings, History,
   Printer, Ban, AlertCircle, AlertTriangle, Store, Save, Loader, FileText, Receipt, FileCheck, Package,
   CreditCard, Pencil, Trash2, CheckCircle, Send, XCircle, Lock,
 } from 'lucide-react'
-import Link from 'next/link'
 import NuevaVentaModal from './NuevaVentaModal'
 import CorteModal from './CorteModal'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import ClaveProdServPicker from '@/components/ui/ClaveProdServPicker'
 import { cancelarCFDI } from '@/lib/pacService'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
@@ -1210,27 +1210,16 @@ ${facturasCorte.length > 0 ? `
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/golf" style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#94a3b8', textDecoration: 'none', fontSize: 12 }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#2563eb'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#94a3b8'}>
-              <ChevronLeft size={13} /> Club
-            </Link>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>/</span>
-            <ShoppingCart size={13} style={{ color: '#059669' }} />
-            <span style={{ fontSize: 11, color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>POS Ventas</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-            Punto de Venta
-          </h1>
-        </div>
-        <button className="btn-ghost" onClick={() => { fetchStats(); if (tab === 'ventas') fetchVentas() }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <PageHeader
+        backHref="/golf"
+        icon={ShoppingCart}
+        color="#059669"
+        eyebrowLabel="POS Ventas"
+        title="Punto de Venta"
+        actions={<button className="btn-ghost" onClick={() => { fetchStats(); if (tab === 'ventas') fetchVentas() }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <RefreshCw size={13} /> Actualizar
-        </button>
-      </div>
+        </button>}
+      />
 
       {/* Error de DB visible */}
       {dbError && (

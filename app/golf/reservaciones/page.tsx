@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, RefreshCw, ChevronLeft, ChevronRight, X, Pencil } from 'lucide-react'
-import Link from 'next/link'
 import ReservacionModal from './ReservacionModal'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Reservacion = {
   id: number
@@ -119,21 +119,10 @@ export default function ReservacionesPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/golf" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ChevronLeft size={13} /> Club
-            </Link>
-            <span>/</span>
-            <span style={{ color: '#475569', fontWeight: 500 }}>Reservaciones</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-            Reservaciones
-          </h1>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <PageHeader
+        backHref="/golf"
+        title="Reservaciones"
+        actions={<>
           <button className="btn-ghost" onClick={fetchReservaciones} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
           </button>
@@ -142,8 +131,8 @@ export default function ReservacionesPage() {
               <Plus size={14} /> Nueva Reservación
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Navegación de fecha */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>

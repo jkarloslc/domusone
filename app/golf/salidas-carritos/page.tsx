@@ -2,11 +2,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, RefreshCw, LogIn, LogOut, ChevronLeft, Car, Clock, Filter, Eye, Printer, BookOpen, ArrowRightLeft, Search, X } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, RefreshCw, LogIn, LogOut, Car, Clock, Filter, Eye, Printer, BookOpen, ArrowRightLeft, Search, X } from 'lucide-react'
 import SalidaCarritoModal from './SalidaCarritoModal'
 import BitacoraModal from './BitacoraModal'
 import { abrirTicketSalidaCarrito } from './ticket'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Salida = {
   id: number
@@ -239,21 +239,10 @@ export default function SalidasCarritosPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/golf" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ChevronLeft size={13} /> Club
-            </Link>
-            <span>/</span>
-            <span style={{ color: '#475569', fontWeight: 500 }}>Entrada / Salida y Bitácora de Carritos</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: 'var(--gold-light)', letterSpacing: '-0.01em' }}>
-            Entrada / Salida y Bitácora de Carritos
-          </h1>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <PageHeader
+        backHref="/golf"
+        title="Entrada / Salida y Bitácora de Carritos"
+        actions={<>
           <button className="btn-ghost" onClick={() => tab === 'salidas' ? fetchSalidas() : fetchBitacora()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
           </button>
@@ -267,8 +256,8 @@ export default function SalidasCarritosPage() {
               <Plus size={14} /> Nuevo registro
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: 20 }}>
