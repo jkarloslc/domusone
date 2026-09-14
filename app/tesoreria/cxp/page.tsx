@@ -4,13 +4,15 @@ import { dbComp, dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { emitirValesPorPagoOP } from '@/lib/combustible'
 import {
-  ArrowLeft, RefreshCw, Search, Eye, Loader,
+  RefreshCw, Search, Eye, Loader,
   Plus, Printer, FileText, Upload, Trash2, ExternalLink,
   AlertTriangle, CheckCircle, Clock, Calendar, Layers, RotateCcw
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, FORMAS_PAGO_COMP, StatusBadge } from '../../compras/types'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
+import KpiCard from '@/components/ui/KpiCard'
 import { cerrarOCsDeOP } from '@/lib/cxpCascade'
 import { aplicarPagoRemesa, reversarPagoRemesa } from '@/lib/pagoRemesa'
 
@@ -143,8 +145,7 @@ export default function CXPPage() {
   }, [opsPendientes])
   const proximoPago = gruposPago[0] ?? null
   const proximoDiff  = proximoPago ? Math.round((proximoPago.fechaPago.getTime() - toDateOnly(new Date()).getTime()) / 86400000) : null
-  const proximoColor = proximoDiff === null ? 'var(--text-muted)' : proximoDiff < 0 ? '#dc2626' : proximoDiff === 0 ? '#15803d' : 'var(--blue)'
-  const proximoBg    = proximoDiff === null ? '#f8fafc'           : proximoDiff < 0 ? '#fef2f2' : proximoDiff === 0 ? '#f0fdf4' : 'var(--blue-pale)'
+  const proximoColor = proximoDiff === null ? '#94a3b8' : proximoDiff < 0 ? '#dc2626' : proximoDiff === 0 ? '#15803d' : '#3F4A75'
 
   const porProveedor = proveedores.map(prov => {
     const misOps = opsPendientes.filter(o => o.id_proveedor_fk === prov.id)
@@ -185,42 +186,24 @@ export default function CXPPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/tesoreria')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Cuentas por Pagar</h1>
-            <p className="page-subtitle">CXP — Saldos, antigüedad y registro de pagos</p>
-          </div>
-        </div>
-        <div className="page-header-actions">
-          <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => router.push('/tesoreria')}
+        title="Cuentas por Pagar"
+        subtitle="CXP — Saldos, antigüedad y registro de pagos"
+        actions={<button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>}
+      />
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Total por Pagar', value: fmt(totalPorPagar),  color: 'var(--blue)', bg: 'var(--blue-pale)', icon: FileText },
-          { label: 'Vencido',         value: fmt(totalVencido),   color: '#dc2626',     bg: '#fef2f2',          icon: AlertTriangle },
-          { label: 'Por Vencer',      value: fmt(totalPorVencer), color: '#d97706',     bg: '#fffbeb',          icon: Clock },
-          { label: proximoPago ? `Próx. Pago · Martes ${fmtCorta(proximoPago.fechaPago)}` : 'Próx. Pago',
-            value: proximoPago ? fmt(proximoPago.total) : '—', color: proximoColor, bg: proximoBg, icon: Calendar },
-        ].map(k => {
-          const Icon = k.icon
-          return (
-            <div key={k.label} className="card" style={{ padding: '16px 20px', background: k.bg, display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: k.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon size={18} style={{ color: k.color }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{k.label}</div>
-              </div>
-            </div>
-          )
-        })}
+        <KpiCard label="Total por Pagar" value={fmt(totalPorPagar)} color="#3F4A75" icon={FileText} />
+        <KpiCard label="Vencido" value={fmt(totalVencido)} color="#dc2626" icon={AlertTriangle} />
+        <KpiCard label="Por Vencer" value={fmt(totalPorVencer)} color="#d97706" icon={Clock} />
+        <KpiCard
+          label={proximoPago ? `Próx. Pago · Martes ${fmtCorta(proximoPago.fechaPago)}` : 'Próx. Pago'}
+          value={proximoPago ? fmt(proximoPago.total) : '—'}
+          color={proximoColor}
+          icon={Calendar}
+        />
       </div>
 
       {/* Tabs */}

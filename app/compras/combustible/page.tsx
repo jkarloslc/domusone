@@ -1,10 +1,11 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
-import { ArrowLeft, Plus, Fuel, TrendingUp, TrendingDown, SlidersHorizontal, RefreshCw } from 'lucide-react'
+import { Plus, Fuel, TrendingUp, TrendingDown, SlidersHorizontal, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 type TipoComb = 'magna' | 'premium' | 'diesel'
 type TipoMov  = 'ENTRADA' | 'SALIDA' | 'AJUSTE'
@@ -140,30 +141,19 @@ export default function CombustiblePage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
-        <button className="btn-ghost" onClick={() => router.push('/compras')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-          <ArrowLeft size={15} /> Compras
-        </button>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Fuel size={20} style={{ color: '#d97706' }} />
-            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Kardex de Combustible</h1>
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-            Control de resguardo — existencia física en tanque
-          </p>
-        </div>
-        <button className="btn-ghost" onClick={load}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-          <RefreshCw size={14} /> Actualizar
-        </button>
-        <button className="btn-primary" onClick={() => openForm()}
-          style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Plus size={15} /> Registrar movimiento
-        </button>
-      </div>
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Kardex de Combustible"
+        subtitle="Control de resguardo — existencia física en tanque"
+        actions={<>
+          <button className="btn-ghost" onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+            <RefreshCw size={14} /> Actualizar
+          </button>
+          <button className="btn-primary" onClick={() => openForm()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Plus size={15} /> Registrar movimiento
+          </button>
+        </>}
+      />
 
       {/* KPI cards — saldo por tipo */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>

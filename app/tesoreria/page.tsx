@@ -6,6 +6,8 @@ import {
   AlertTriangle, Clock, TrendingDown
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import PageHeader from '@/components/layout/PageHeader'
+import KpiCard from '@/components/ui/KpiCard'
 
 const fmt = (n: number) =>
   '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -69,47 +71,20 @@ export default function TesoreriaPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Landmark size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Tesorería</h1>
-          <p className="page-subtitle">Gestión de cuentas bancarias, cuentas por pagar y flujo de efectivo</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={Landmark}
+        eyebrowLabel="Módulo"
+        title="Tesorería"
+        subtitle="Gestión de cuentas bancarias, cuentas por pagar y flujo de efectivo"
+      />
 
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
-        {[
-          { label: 'CXP Total',           value: fmt(stats.totalCXP),     color: '#dc2626', bg: '#fef2f2',  icon: FileText     },
-          { label: 'CXP Vencido',         value: fmt(stats.totalVencido), color: '#d97706', bg: '#fffbeb',  icon: AlertTriangle },
-          { label: 'Saldo en Cuentas',    value: fmt(stats.totalSaldo),   color: '#0f766e', bg: '#f0fdf4',  icon: TrendingDown  },
-          { label: 'Cuentas Bancarias',   value: stats.cuentas,           color: '#0891b2', bg: '#f0f9ff',  icon: Building2    },
-        ].map(s => {
-          const Icon = s.icon
-          return (
-            <div key={s.label} className="card" style={{
-              padding: '14px 18px', minWidth: 175, background: s.bg,
-              display: 'flex', alignItems: 'center', gap: 12,
-            }}>
-              <div style={{ width: 36, height: 36, borderRadius: 9,
-                background: s.color + '20',
-                display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon size={16} style={{ color: s.color }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontWeight: 700,
-                  color: s.color, fontVariantNumeric: 'tabular-nums' }}>
-                  {s.value}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
-              </div>
-            </div>
-          )
-        })}
+        <KpiCard label="CXP Total" value={fmt(stats.totalCXP)} color="#dc2626" icon={FileText} />
+        <KpiCard label="CXP Vencido" value={fmt(stats.totalVencido)} color="#d97706" icon={AlertTriangle} />
+        <KpiCard label="Saldo en Cuentas" value={fmt(stats.totalSaldo)} color="#0f766e" icon={TrendingDown} />
+        <KpiCard label="Cuentas Bancarias" value={stats.cuentas} color="#0891b2" icon={Building2} />
       </div>
 
       {/* Grid de módulos */}

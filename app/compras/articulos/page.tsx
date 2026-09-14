@@ -5,12 +5,13 @@ import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, Edit2, X, Save, Loader,
-  Package, ArrowLeft, AlertTriangle, Filter
+  Package, AlertTriangle, Filter
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Articulo, fmt, UNIDADES, nextFolio } from '../types'
 import { useCategoriasArticulo } from '@/lib/useCategoriasArticulo'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 50
 
@@ -66,21 +67,14 @@ export default function ArticulosPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Artículos</h1>
-            <p className="page-subtitle">Catálogo maestro · {total} registros</p>
-          </div>
-        </div>
-        {canWrite('articulos') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Artículo</button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Artículos"
+        subtitle={`Catálogo maestro · ${total} registros`}
+        actions={canWrite('articulos') ? (
+          <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Artículo</button>
+        ) : undefined}
+      />
 
       {/* Stats rápidas */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>

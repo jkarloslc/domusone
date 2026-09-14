@@ -4,10 +4,11 @@ import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
 import {
   Plus, RefreshCw, Edit2, Trash2, X, Save, Loader,
-  ArrowLeft, ToggleLeft, ToggleRight, Layers
+  ToggleLeft, ToggleRight, Layers
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Area = { id: number; nombre: string; responsable: string | null; activo: boolean }
 
@@ -40,19 +41,15 @@ export default function AreasPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Áreas Solicitantes</h1>
-            <p className="page-subtitle">Áreas disponibles en requisiciones · {rows.length} registros</p>
-          </div>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Áreas Solicitantes"
+        subtitle={`Áreas disponibles en requisiciones · ${rows.length} registros`}
+        actions={<>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
           {canWrite('areas') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva Área</button>}
-        </div>
-      </div>
+        </>}
+      />
 
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>

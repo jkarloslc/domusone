@@ -5,12 +5,13 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { dbComp, supabase } from '@/lib/supabase'
 import {
   Plus, Search, RefreshCw, Edit2, X, Save, Loader,
-  ArrowLeft, Phone, Mail, Upload, ExternalLink, Trash2,
+  Phone, Mail, Upload, ExternalLink, Trash2,
   FileText, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Proveedor, CONDICIONES_PAGO_PROV, nextFolio } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Documentos requeridos ─────────────────────────────────
 const DOCS = [
@@ -52,15 +53,11 @@ export default function ProveedoresPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Proveedores</h1>
-            <p className="page-subtitle">Catálogo de proveedores, condiciones comerciales y documentos fiscales</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Proveedores"
+        subtitle="Catálogo de proveedores, condiciones comerciales y documentos fiscales"
+      />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'space-between' }}>
         <div style={{ position: 'relative', flex: '1 1 280px', maxWidth: 360 }}>

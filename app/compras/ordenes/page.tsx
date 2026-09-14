@@ -6,11 +6,12 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, Save, Loader, Pencil,
-  ArrowLeft, CheckCircle, Trash2, ChevronLeft, ChevronRight
+  CheckCircle, Trash2, ChevronLeft, ChevronRight
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, nextFolio, StatusBadge, type Proveedor, UNIDADES, FORMAS_PAGO_COMP } from '../types'
 import { OCDetail } from '@/components/compras/OCDetailModal'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 20
 
@@ -79,15 +80,16 @@ export default function OrdenesPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Órdenes de Compra</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>OC y órdenes de pago · {total} registros</p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Órdenes de Compra"
+        subtitle={`OC y órdenes de pago · ${total} registros`}
+        actions={canWrite('ordenes') ? (
+          <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva OC</button>
+        ) : undefined}
+      />
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 10, flex: 1 }}>
           <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -119,7 +121,6 @@ export default function OrdenesPage() {
           </select>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
-        {canWrite('ordenes') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva OC</button>}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>

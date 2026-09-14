@@ -5,11 +5,12 @@ import { dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, Pencil, X, Save, Loader,
-  ArrowLeft, ChevronRight, CheckCircle, Trash2
+  ChevronRight, CheckCircle, Trash2
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, FORMAS_PAGO_COMP, nextFolio } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 20
 
@@ -51,15 +52,11 @@ export default function CotizacionesPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Cotizaciones (RFQ)</h1>
-            <p className="page-subtitle">Solicitudes de cotización y cuadro comparativo · {total} registros</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Cotizaciones (RFQ)"
+        subtitle={`Solicitudes de cotización y cuadro comparativo · ${total} registros`}
+      />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'space-between' }}>
         <div style={{ position: 'relative', flex: '1 1 280px', maxWidth: 360 }}>

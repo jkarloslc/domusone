@@ -5,10 +5,11 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Edit2, Eye, Save, Loader,
-  ArrowLeft, CheckCircle, XCircle, Trash2, ChevronLeft, ChevronRight, Printer, AlertTriangle, Ban
+  CheckCircle, XCircle, Trash2, ChevronLeft, ChevronRight, Printer, AlertTriangle, Ban
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import { type Articulo, fmt, fmtFecha, folioGen, StatusBadge, UNIDADES } from '../types'
 
 const PAGE_SIZE = 20
@@ -124,15 +125,16 @@ export default function RequisicionesPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Requisiciones</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Solicitudes de compra · {total} registros</p>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Requisiciones"
+        subtitle={`Solicitudes de compra · ${total} registros`}
+        actions={canWrite('requisiciones') ? (
+          <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva Requisición</button>
+        ) : undefined}
+      />
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 10, flex: 1 }}>
           <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -157,7 +159,6 @@ export default function RequisicionesPage() {
           </select>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
-        {canWrite('requisiciones') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nueva Requisición</button>}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -241,36 +242,28 @@ export default function RequisicionesPage() {
 
       {/* Modal Cancelar Requisición */}
       {cancelando && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1010, padding: 20 }}
-          onClick={() => { if (!savingCancel) setCancelando(null) }}>
-          <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 440, boxShadow: '0 20px 50px rgba(0,0,0,0.25)', padding: 28 }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <div style={{ background: '#fee2e2', borderRadius: 8, padding: 8 }}><AlertTriangle size={20} color="#dc2626" /></div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>Cancelar requisición</div>
-                <div style={{ fontSize: 12, color: '#64748b' }}>{cancelando.folio} · {cancelando.area_solicitante}</div>
-              </div>
-            </div>
-            <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
-              Solo se puede cancelar si no existe una Orden de Compra generada a partir de esta requisición.
-              Si tiene una Cotización (RFQ) asociada sin OC, también se cancelará. Esta acción no se puede deshacer.
-            </p>
-            {cancelError && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13, marginBottom: 16 }}>{cancelError}</div>}
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
-            <textarea
-              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', marginBottom: 20, boxSizing: 'border-box' }}
-              value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)} placeholder="Opcional…" />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setCancelando(null)} disabled={savingCancel}
-                style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cerrar</button>
-              <button onClick={handleCancelar} disabled={savingCancel}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
-                {savingCancel ? <Loader size={13} className="animate-spin" /> : <Ban size={14} />} {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalShell modulo="compras" titulo="Cancelar requisición"
+          subtitulo={`${cancelando.folio} · ${cancelando.area_solicitante}`}
+          icono={AlertTriangle} size="sm"
+          onClose={() => { if (!savingCancel) setCancelando(null) }}
+          footer={<>
+            <button className="btn-secondary" onClick={() => setCancelando(null)} disabled={savingCancel}>Cerrar</button>
+            <button onClick={handleCancelar} disabled={savingCancel}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 7, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
+              {savingCancel ? <Loader size={13} className="animate-spin" /> : <Ban size={14} />} {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
+            </button>
+          </>}
+        >
+          <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
+            Solo se puede cancelar si no existe una Orden de Compra generada a partir de esta requisición.
+            Si tiene una Cotización (RFQ) asociada sin OC, también se cancelará. Esta acción no se puede deshacer.
+          </p>
+          {cancelError && <div style={{ padding: '10px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, color: '#dc2626', fontSize: 13, marginBottom: 16 }}>{cancelError}</div>}
+          <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
+          <textarea
+            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', boxSizing: 'border-box' }}
+            value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)} placeholder="Opcional…" />
+        </ModalShell>
       )}
     </div>
   )

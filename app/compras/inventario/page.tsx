@@ -1,11 +1,12 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
-import { Search, RefreshCw, Eye, X, ArrowLeft, Warehouse, Plus, Save, Loader } from 'lucide-react'
+import { Search, RefreshCw, Eye, X, Warehouse, Plus, Save, Loader } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
 import { fmt, fmtFecha } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 const TIPO_MOV_COLOR: Record<string, string> = {
   'ENTRADA':          '#15803d',
@@ -80,22 +81,16 @@ export default function InventarioPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Inventario</h1>
-            <p className="page-subtitle">Saldos por almacén y kardex de movimientos</p>
-          </div>
-        </div>
-        {puedeAgregarMov && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => setMovModal(true)}>
-              <Plus size={14} /> Agregar Movimiento
-            </button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Inventario"
+        subtitle="Saldos por almacén y kardex de movimientos"
+        actions={puedeAgregarMov ? (
+          <button className="btn-primary" onClick={() => setMovModal(true)}>
+            <Plus size={14} /> Agregar Movimiento
+          </button>
+        ) : undefined}
+      />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 320 }}>

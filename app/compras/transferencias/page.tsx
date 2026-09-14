@@ -5,12 +5,13 @@ import { dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
-  ArrowLeft, CheckCircle, XCircle, ArrowLeftRight,
+  CheckCircle, XCircle, ArrowLeftRight,
   Truck, PackageCheck, ClipboardList, Printer
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, nextFolio } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 // ── Stepper visual ────────────────────────────────────────────
 const PASOS = [
@@ -155,23 +156,14 @@ export default function TransferenciasPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Transferencias</h1>
-            <p className="page-subtitle">
-              Movimientos entre centros de costo · {total} registros
-            </p>
-          </div>
-        </div>
-        {canWrite('transferencias') && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Solicitud</button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Transferencias"
+        subtitle={`Movimientos entre centros de costo · ${total} registros`}
+        actions={canWrite('transferencias') ? (
+          <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Solicitud</button>
+        ) : undefined}
+      />
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>

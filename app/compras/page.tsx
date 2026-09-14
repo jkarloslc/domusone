@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
+import PageHeader from '@/components/layout/PageHeader'
+import KpiCard from '@/components/ui/KpiCard'
 
 type StatCard = { label: string; value: number | string; color: string; bg: string }
 
@@ -52,38 +54,19 @@ export default function ComprasPage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <ShoppingCart size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Compras e Inventarios</h1>
-          <p className="page-subtitle">Gestión P2P — Requisición hasta Inventario Lógico</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={ShoppingCart}
+        eyebrowLabel="Módulo"
+        title="Compras e Inventarios"
+        subtitle="Gestión P2P — Requisición hasta Inventario Lógico"
+      />
 
       {/* Stats rápidas */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
-        {[
-          { label: 'Requisiciones activas', value: stats.reqPendientes, color: '#2563eb', bg: '#eff6ff', icon: ClipboardList },
-          { label: 'OC abiertas',           value: stats.ocAbiertas,    color: '#059669', bg: '#f0fdf4', icon: ShoppingCart },
-          { label: 'Transferencias auth.',  value: stats.transAuth,     color: '#d97706', bg: '#fffbeb', icon: ArrowLeftRight },
-        ].map(s => {
-          const Icon = s.icon
-          return (
-            <div key={s.label} className="card" style={{ padding: '14px 18px', minWidth: 160, background: s.bg, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 9, background: s.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon size={16} style={{ color: s.color }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700, color: s.color }}>{s.value}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
-              </div>
-            </div>
-          )
-        })}
+        <KpiCard label="Requisiciones activas" value={stats.reqPendientes} color="#2563eb" icon={ClipboardList} />
+        <KpiCard label="OC abiertas" value={stats.ocAbiertas} color="#059669" icon={ShoppingCart} />
+        <KpiCard label="Transferencias auth." value={stats.transAuth} color="#d97706" icon={ArrowLeftRight} />
       </div>
 
       {/* Grid de módulos */}

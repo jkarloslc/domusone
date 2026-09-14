@@ -3,10 +3,11 @@ import { useDebounce } from '@/lib/useDebounce'
 import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Search, RefreshCw, Eye, X, Save, Loader, ArrowLeft, Truck } from 'lucide-react'
+import { Plus, Search, RefreshCw, Eye, X, Save, Loader, Truck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, folioGen, StatusBadge, nextFolio } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 export default function RecepcionesPage() {
   const router = useRouter()
@@ -35,15 +36,11 @@ export default function RecepcionesPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Recepción de Mercancías</h1>
-            <p className="page-subtitle">Entrada a almacén y actualización de inventario · {total} registros</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Recepción de Mercancías"
+        subtitle={`Entrada a almacén y actualización de inventario · ${total} registros`}
+      />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, justifyContent: 'space-between' }}>
         <div style={{ position: 'relative', flex: '1 1 280px', maxWidth: 360 }}>

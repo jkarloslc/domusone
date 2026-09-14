@@ -3,12 +3,14 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, dbComp } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  ArrowLeft, Building2, Plus, Edit2, Trash2, X, Save,
+  Building2, Plus, Edit2, Trash2, X, Save,
   Loader, RefreshCw, ToggleLeft, ToggleRight, Eye,
   ArrowUpCircle, ArrowDownCircle, TrendingUp, CheckCircle
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
+import KpiCard from '@/components/ui/KpiCard'
 
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtD = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -49,18 +51,11 @@ export default function CuentasBancariasPage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/tesoreria')} title="Regresar">
-            <ArrowLeft size={15} />
-          </button>
-          <div>
-            <h1 className="page-title">Cuentas Bancarias</h1>
-            <p className="page-subtitle">Administración de cuentas y registro de movimientos</p>
-          </div>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        onBack={() => router.push('/tesoreria')}
+        title="Cuentas Bancarias"
+        subtitle="Administración de cuentas y registro de movimientos"
+        actions={<>
           <button className="btn-ghost" onClick={fetchData} style={{ padding: '7px 10px' }}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -69,22 +64,13 @@ export default function CuentasBancariasPage() {
               <Plus size={14} /> Nueva Cuenta
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* KPIs */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div className="card" style={{ padding: '12px 20px', background: '#f0fdf4', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <TrendingUp size={16} style={{ color: '#0f766e' }} />
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#0f766e', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSaldo)}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Saldo total activo</div>
-          </div>
-        </div>
-        <div className="card" style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CheckCircle size={13} style={{ color: '#15803d' }} />
-          <span style={{ fontSize: 13 }}><strong style={{ color: '#15803d' }}>{activos}</strong> cuentas activas</span>
-        </div>
+        <KpiCard label="Saldo total activo" value={fmt(totalSaldo)} color="#0f766e" icon={TrendingUp} />
+        <KpiCard label="Cuentas activas" value={activos} color="#15803d" icon={CheckCircle} />
       </div>
 
       {/* Tabla */}

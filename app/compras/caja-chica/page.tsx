@@ -2,11 +2,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Wallet, Plus, Eye, Edit2, CheckCircle, Clock, AlertTriangle, Ban, DollarSign, Users, ArrowLeft } from 'lucide-react'
+import { Wallet, Plus, Eye, Edit2, CheckCircle, Clock, AlertTriangle, Ban, DollarSign, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import FondoModal from './FondoModal'
 import ReembolsoModal from './ReembolsoModal'
 import ReembolsoDetail from './ReembolsoDetail'
+import PageHeader from '@/components/layout/PageHeader'
+import KpiCard from '@/components/ui/KpiCard'
 
 const STATUS_COLORS: Record<string, string> = {
   'Borrador':       'badge-default',
@@ -67,20 +69,14 @@ export default function CajaChicaPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-          <div className="page-eyebrow">
-            <Wallet size={16} style={{ color: '#d97706' }} />
-            <span className="page-eyebrow-label">Compras</span>
-          </div>
-          <h1 className="page-title">Caja Chica</h1>
-          <p className="page-subtitle">Fondos y reembolsos de gastos menores</p>
-          </div>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        icon={Wallet}
+        color="#d97706"
+        eyebrowLabel="Compras"
+        title="Caja Chica"
+        subtitle="Fondos y reembolsos de gastos menores"
+        actions={<>
           {misFondos.length > 0 && (
             <button className="btn-primary" onClick={() => setRemModal({ open: true, fondo: misFondos[0] })}>
               <Plus size={13} /> Nuevo Reembolso
@@ -91,26 +87,17 @@ export default function CajaChicaPage() {
               <Plus size={13} /> Asignar Fondo
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Stats */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
-        {[
-          { label: 'Pendientes auth.',  value: pendAuth,     color: '#d97706', icon: <AlertTriangle size={15} /> },
-          { label: 'Autorizados',       value: autorizados,  color: '#059669', icon: <CheckCircle size={15} /> },
-          { label: 'Total por pagar',   value: `$${totalPendiente.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
-            color: '#0891b2', icon: <DollarSign size={15} /> },
-          ...(isAdmin ? [{ label: 'Fondos activos', value: fondos.filter(f => f.status === 'Activo').length, color: '#7c3aed', icon: <Users size={15} /> }] : []),
-        ].map((s, i) => (
-          <div key={i} className="card" style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10, minWidth: 160 }}>
-            <div style={{ color: s.color }}>{s.icon}</div>
-            <div>
-              <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontWeight: 700, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
-            </div>
-          </div>
-        ))}
+        <KpiCard label="Pendientes auth." value={pendAuth} color="#d97706" icon={AlertTriangle} />
+        <KpiCard label="Autorizados" value={autorizados} color="#059669" icon={CheckCircle} />
+        <KpiCard label="Total por pagar" value={`$${totalPendiente.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`} color="#0891b2" icon={DollarSign} />
+        {isAdmin && (
+          <KpiCard label="Fondos activos" value={fondos.filter(f => f.status === 'Activo').length} color="#7c3aed" icon={Users} />
+        )}
       </div>
 
       {/* Tabs (admin) */}

@@ -6,13 +6,14 @@ import { dbComp, dbCfg, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, X, Save, Loader,
-  ArrowLeft, Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight,
+  Printer, CheckCircle, Trash2, ChevronLeft, ChevronRight,
   Edit2, Upload, ExternalLink, FileText, AlertTriangle, MessageSquare, Send, Tag,
   RotateCcw, Copy, Unlock
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { fmt, fmtFecha, nextFolio, StatusBadge, FORMAS_PAGO_COMP } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 import { OPDetail, Sec, DI, URGENCIA_COLOR } from '@/components/compras/OPDetailModal'
 
 const PAGE_SIZES = [10, 25, 50, 100]
@@ -157,19 +158,14 @@ export default function OrdenesPagoPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button className="btn-ghost" onClick={() => router.push('/compras')}><ArrowLeft size={15} /></button>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600 }}>Órdenes de Pago</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Con o sin OC relacionada · {total} registros</p>
-          </div>
-        </div>
-        {canWrite('ordenes-pago') && (
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Órdenes de Pago"
+        subtitle={`Con o sin OC relacionada · ${total} registros`}
+        actions={canWrite('ordenes-pago') ? (
           <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>

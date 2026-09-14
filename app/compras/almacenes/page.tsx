@@ -4,10 +4,11 @@ import { useState, useCallback, useEffect } from 'react'
 import { dbComp } from '@/lib/supabase'
 import {
   Plus, RefreshCw, Edit2, Trash2, X, Save, Loader,
-  ArrowLeft, Warehouse, ToggleLeft, ToggleRight
+  Warehouse, ToggleLeft, ToggleRight
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 type Almacen = {
   id: number; clave: string; nombre: string
@@ -48,22 +49,15 @@ export default function AlmacenesPage() {
 
   return (
     <div style={{ padding: '32px 36px' }}>
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left">
-          <button className="btn-back" onClick={() => router.push('/compras')} title="Regresar"><ArrowLeft size={15} /></button>
-          <div>
-            <h1 className="page-title">Almacenes</h1>
-            <p className="page-subtitle">
-              {generales.length} general · {particular.length} particulares
-            </p>
-          </div>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        onBack={() => router.push('/compras')}
+        title="Almacenes"
+        subtitle={`${generales.length} general · ${particular.length} particulares`}
+        actions={<>
           <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
           {canWrite('almacenes') && <button className="btn-primary" onClick={() => setModal('new')}><Plus size={14} /> Nuevo Almacén</button>}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* General */}
       {generales.length > 0 && (
