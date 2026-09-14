@@ -4,13 +4,14 @@ import { dbCtrl, dbGolf } from '@/lib/supabase'
 import { verificarNoFacturada, logCancelacion, reabrirCuotasCobertura, marcarCancelacionRevertida } from '@/lib/cancelacionCobranza'
 import { useAuth } from '@/lib/AuthContext'
 import {
-  Plus, RefreshCw, ChevronLeft, Search, X, ChevronDown, ChevronRight,
+  Plus, RefreshCw, Search, X, ChevronDown, ChevronRight,
   CreditCard, Receipt, AlertCircle, Loader, Printer, DollarSign, Zap, FileText, Trash2, List,
   XCircle, AlertTriangle, RotateCcw,
 } from 'lucide-react'
-import Link from 'next/link'
 import AsignacionModal, { type AsignacionData } from './AsignacionModal'
 import CobrarModal, { type CuotaPendiente, printReciboLoc, resolveConceptosPorCuota } from './CobrarModal'
+import PageHeader from '@/components/layout/PageHeader'
+import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'cuotas'
@@ -824,21 +825,10 @@ export default function CobranzaLocalesPage() {
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: 12, color: '#94a3b8' }}>
-            <Link href="/locales" style={{ color: '#94a3b8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ChevronLeft size={13} /> Locales
-            </Link>
-            <span>/</span>
-            <span style={{ color: '#475569', fontWeight: 500 }}>Cobranza</span>
-          </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 400, color: '#0f766e', letterSpacing: '-0.01em' }}>
-            Locales & Rentas
-          </h1>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <PageHeader
+        backHref="/locales"
+        title="Locales & Rentas"
+        actions={<>
           <button className="btn-ghost" onClick={() => fetchAsignaciones()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <RefreshCw size={13} /> Actualizar
           </button>
@@ -854,8 +844,8 @@ export default function CobranzaLocalesPage() {
               <Zap size={14} /> Generar Cuotas del Mes
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* ── Stats ── */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -1476,11 +1466,17 @@ export default function CobranzaLocalesPage() {
 
       {/* Modal Generar Cuotas Masivas */}
       {showGenerar && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => { if (!generando) setShowGenerar(false) }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 440, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>Generar Cuotas del Mes</div>
+        <ModalShell modulo="locales" titulo="Generar Cuotas del Mes" icono={Zap} size="sm"
+          onClose={() => { if (!generando) setShowGenerar(false) }}
+          footer={<>
+            <button className="btn-ghost" onClick={() => setShowGenerar(false)} disabled={generando}>Cerrar</button>
+            <button className="btn-primary" onClick={handleGenerarMasivo} disabled={generando}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0f766e' }}>
+              {generando ? <Loader size={13} className="animate-spin" /> : <Zap size={13} />}
+              {generando ? 'Generando…' : 'Generar'}
+            </button>
+          </>}
+        >
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18 }}>
               Crea una cuota de renta para cada asignación activa que aún no tenga cuota en el periodo seleccionado.
             </div>
@@ -1503,40 +1499,42 @@ export default function CobranzaLocalesPage() {
               )
             })()}
             {generadosMsg && (
-              <div style={{ fontSize: 13, padding: '10px 14px', background: generadosMsg.startsWith('✓') ? '#f0fdf4' : '#fef9c3', border: '1px solid', borderColor: generadosMsg.startsWith('✓') ? '#bbf7d0' : '#fde047', borderRadius: 8, marginBottom: 16, color: generadosMsg.startsWith('✓') ? '#15803d' : '#92400e' }}>
+              <div style={{ fontSize: 13, padding: '10px 14px', background: generadosMsg.startsWith('✓') ? '#f0fdf4' : '#fef9c3', border: '1px solid', borderColor: generadosMsg.startsWith('✓') ? '#bbf7d0' : '#fde047', borderRadius: 8, color: generadosMsg.startsWith('✓') ? '#15803d' : '#92400e' }}>
                 {generadosMsg}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button className="btn-ghost" onClick={() => setShowGenerar(false)} disabled={generando}>Cerrar</button>
-              <button className="btn-primary" onClick={handleGenerarMasivo} disabled={generando}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0f766e' }}>
-                {generando ? <Loader size={13} /> : <Zap size={13} />}
-                {generando ? 'Generando…' : 'Generar'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       {/* Modal Detalle Recibo */}
       {detalleRecibo && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => { setDetalleRecibo(null); setTicketErrR('') }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: 24, maxWidth: 560, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: 18, fontWeight: 700, color: '#0f766e' }}>{detalleRecibo.folio}</span>
-                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: (STATUS_COLOR[detalleRecibo.status] ?? STATUS_COLOR.VIGENTE).bg, color: (STATUS_COLOR[detalleRecibo.status] ?? STATUS_COLOR.VIGENTE).color }}>
-                    {(STATUS_COLOR[detalleRecibo.status] ?? STATUS_COLOR.VIGENTE).label}
-                  </span>
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{fmtFecha(detalleRecibo.fecha_recibo)} · {fmtNombre(detalleRecibo.cat_arrendatarios)}</div>
-              </div>
-              <button onClick={() => { setDetalleRecibo(null); setTicketErrR('') }}
-                style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
+        <ModalShell modulo="locales" titulo={detalleRecibo.folio}
+          subtitulo={<>{fmtFecha(detalleRecibo.fecha_recibo)} · {fmtNombre(detalleRecibo.cat_arrendatarios)}</>}
+          size="md"
+          onClose={() => { setDetalleRecibo(null); setTicketErrR('') }}
+          footer={<>
+            {puedeEscribir && detalleRecibo.status === 'VIGENTE' && (
+              <button onClick={() => { setCancelando(detalleRecibo); setMotivoCancel('') }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #fecaca', borderRadius: 10, background: '#fef2f2', color: '#dc2626', cursor: 'pointer', marginRight: 'auto' }}>
+                <XCircle size={14} /> Cancelar recibo
+              </button>
+            )}
+            <button onClick={() => handleImprimirRecibo(detalleRecibo)} disabled={imprimiendo}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #99f6e4', borderRadius: 10, background: '#f0fdfa', color: '#0f766e', cursor: 'pointer', opacity: imprimiendo ? 0.6 : 1 }}>
+              <Printer size={14} /> {imprimiendo ? 'Imprimiendo…' : 'Imprimir'}
+            </button>
+            {detalleRecibo.status === 'VIGENTE' && (
+              <button onClick={() => handleTicketPOS(detalleRecibo)} disabled={genTicketR}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 10, background: '#0f766e', color: '#fff', cursor: 'pointer', opacity: genTicketR ? 0.6 : 1 }}>
+                <Receipt size={14} /> {genTicketR ? 'Generando…' : 'Ticket POS'}
+              </button>
+            )}
+          </>}
+        >
+            <div style={{ marginBottom: 16 }}>
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600, background: (STATUS_COLOR[detalleRecibo.status] ?? STATUS_COLOR.VIGENTE).bg, color: (STATUS_COLOR[detalleRecibo.status] ?? STATUS_COLOR.VIGENTE).color }}>
+                {(STATUS_COLOR[detalleRecibo.status] ?? STATUS_COLOR.VIGENTE).label}
+              </span>
             </div>
 
             {/* Detalle líneas */}
@@ -1564,61 +1562,32 @@ export default function CobranzaLocalesPage() {
               <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface-800)', borderRadius: 8, marginBottom: 14 }}>{detalleRecibo.observaciones}</div>
             )}
 
-            {ticketErrR && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6, marginBottom: 12 }}>{ticketErrR}</div>}
-
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              {puedeEscribir && detalleRecibo.status === 'VIGENTE' && (
-                <button onClick={() => { setCancelando(detalleRecibo); setMotivoCancel('') }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #fecaca', borderRadius: 10, background: '#fef2f2', color: '#dc2626', cursor: 'pointer', marginRight: 'auto' }}>
-                  <XCircle size={14} /> Cancelar recibo
-                </button>
-              )}
-              <button onClick={() => handleImprimirRecibo(detalleRecibo)} disabled={imprimiendo}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: '1px solid #99f6e4', borderRadius: 10, background: '#f0fdfa', color: '#0f766e', cursor: 'pointer', opacity: imprimiendo ? 0.6 : 1 }}>
-                <Printer size={14} /> {imprimiendo ? 'Imprimiendo…' : 'Imprimir'}
-              </button>
-              {detalleRecibo.status === 'VIGENTE' && (
-                <button onClick={() => handleTicketPOS(detalleRecibo)} disabled={genTicketR}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 10, background: '#0f766e', color: '#fff', cursor: 'pointer', opacity: genTicketR ? 0.6 : 1 }}>
-                  <Receipt size={14} /> {genTicketR ? 'Generando…' : 'Ticket POS'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+            {ticketErrR && <div style={{ fontSize: 12, color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 6 }}>{ticketErrR}</div>}
+        </ModalShell>
       )}
 
       {/* Modal Cancelar Recibo */}
       {cancelando && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1010, padding: 20 }}
-          onClick={() => { if (!savingCancel) setCancelando(null) }}>
-          <div style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 440, boxShadow: '0 20px 50px rgba(0,0,0,0.25)', padding: 28 }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <div style={{ background: '#fee2e2', borderRadius: 8, padding: 8 }}><AlertTriangle size={20} color="#dc2626" /></div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>Cancelar recibo</div>
-                <div style={{ fontSize: 12, color: '#64748b' }}>{cancelando.folio} · {fmtNombre(cancelando.cat_arrendatarios)}</div>
-              </div>
-            </div>
+        <ModalShell modulo="locales" titulo="Cancelar recibo" subtitulo={`${cancelando.folio} · ${fmtNombre(cancelando.cat_arrendatarios)}`}
+          icono={AlertTriangle} size="sm"
+          onClose={() => setCancelando(null)}
+          footer={<>
+            <button className="btn-secondary" onClick={() => setCancelando(null)} disabled={savingCancel}>Cerrar</button>
+            <button onClick={handleCancelarRecibo} disabled={savingCancel}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 7, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
+              {savingCancel ? <Loader size={13} className="animate-spin" /> : <XCircle size={14} />} {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
+            </button>
+          </>}
+        >
             <p style={{ fontSize: 13, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
               Las cuotas cubiertas por este recibo volverán a estar pendientes de cobro por el monto correspondiente
               {cancelando.id_venta_pos_fk ? <> y se cancelará el <strong>ticket POS</strong> generado</> : null}. Esta acción no se puede deshacer.
             </p>
             <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>Motivo de cancelación</label>
             <textarea
-              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', marginBottom: 20, boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', height: 72, resize: 'vertical', boxSizing: 'border-box' }}
               value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)} placeholder="Opcional…" />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setCancelando(null)} disabled={savingCancel}
-                style={{ padding: '8px 16px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>Cerrar</button>
-              <button onClick={handleCancelarRecibo} disabled={savingCancel}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#dc2626', color: '#fff', cursor: 'pointer', opacity: savingCancel ? 0.6 : 1 }}>
-                {savingCancel ? <Loader size={13} /> : <XCircle size={14} />} {savingCancel ? 'Cancelando…' : 'Confirmar cancelación'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
     </div>

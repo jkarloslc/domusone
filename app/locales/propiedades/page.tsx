@@ -2,10 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg, dbGolf } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Search, RefreshCw, Edit2, Trash2, ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, Search, RefreshCw, Edit2, Trash2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 25
 
@@ -158,21 +158,16 @@ export default function PropiedadesPage() {
 
   return (
     <div style={{ padding: '24px 28px' }}>
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/locales" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-              <ChevronLeft size={14} /> Locales
-            </Link>
-          </div>
-          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Locales / Propiedades</h1>
-          <p className="page-subtitle">Disponibilidad, ubicación y control de estatus</p>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        variant="xl"
+        backHref="/locales"
+        title="Locales / Propiedades"
+        subtitle="Disponibilidad, ubicación y control de estatus"
+        actions={<>
           <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
           {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nueva</button>}
-        </div>
-      </div>
+        </>}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
         {[

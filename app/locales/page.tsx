@@ -1,8 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
 import {
-  Users, Building2, DollarSign, ChevronRight, ChevronLeft,
+  Users, Building2, DollarSign, ChevronRight,
 } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 
 const MODULOS = [
   {
@@ -70,22 +71,15 @@ export default function LocalesPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/golf/administracion" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-              <ChevronLeft size={14} /> Administración
-            </Link>
-          </div>
-          <div className="page-eyebrow">
-            <Building2 size={16} style={{ color: '#0f766e' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Renta de Locales Comerciales y Propiedades</h1>
-          <p className="page-subtitle">Arrendatarios, catálogo de propiedades y cobranza de rentas</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        backHref="/golf/administracion"
+        icon={Building2}
+        color="#0f766e"
+        eyebrowLabel="Módulo"
+        title="Renta de Locales Comerciales y Propiedades"
+        subtitle="Arrendatarios, catálogo de propiedades y cobranza de rentas"
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
         {MODULOS.map(m => <ModuloCard key={m.key} m={m} />)}
