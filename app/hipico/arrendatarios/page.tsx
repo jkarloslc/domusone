@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Search, RefreshCw, Edit2, Trash2, Eye, ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, Search, RefreshCw, Edit2, Trash2, Eye } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 25
 
@@ -167,21 +167,16 @@ export default function ArrendatariosPage() {
 
   return (
     <div style={{ padding: '24px 28px' }}>
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-              <ChevronLeft size={14} /> Hípico
-            </Link>
-          </div>
-          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Arrendatarios</h1>
-          <p className="page-subtitle">Padrón de arrendatarios con información fiscal y contacto</p>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        variant="xl"
+        backHref="/hipico"
+        title="Arrendatarios"
+        subtitle="Padrón de arrendatarios con información fiscal y contacto"
+        actions={<>
           <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
           {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nuevo</button>}
-        </div>
-      </div>
+        </>}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
         {[

@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Plus, Search, RefreshCw, Edit2, Trash2, ChevronLeft } from 'lucide-react'
-import Link from 'next/link'
+import { Plus, Search, RefreshCw, Edit2, Trash2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
 
 const PAGE_SIZE = 25
 
@@ -132,21 +132,16 @@ export default function CaballerizasPage() {
 
   return (
     <div style={{ padding: '24px 28px' }}>
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <Link href="/hipico" className="btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }}>
-              <ChevronLeft size={14} /> Hípico
-            </Link>
-          </div>
-          <h1 className="page-title-xl" style={{ marginBottom: 4 }}>Caballerizas</h1>
-          <p className="page-subtitle">Disponibilidad, secciones y control de estatus de boxes</p>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader
+        variant="xl"
+        backHref="/hipico"
+        title="Caballerizas"
+        subtitle="Disponibilidad, secciones y control de estatus de boxes"
+        actions={<>
           <button className="btn-ghost" onClick={fetchItems}><RefreshCw size={13} /></button>
           {puedeEscribir && <button className="btn-primary" onClick={openNew}><Plus size={13} /> Nueva</button>}
-        </div>
-      </div>
+        </>}
+      />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: 10, marginBottom: 18 }}>
         {[

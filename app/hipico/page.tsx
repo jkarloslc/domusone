@@ -4,6 +4,7 @@ import {
   Users, Home, DollarSign, ChevronRight, Flag, BarChart3,
   Star, CalendarDays, BookOpen,
 } from 'lucide-react'
+import PageHeader from '@/components/layout/PageHeader'
 
 const HorseIcon = ({ size = 18, ...props }: { size?: number } & SVGProps<SVGSVGElement>) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -138,17 +139,13 @@ export default function HipicoPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <HorseIcon size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Hípico y Eventos</h1>
-          <p className="page-subtitle">Caballerizas, cobranza, torneos ecuestres y gestión de eventos</p>
-        </div>
-      </div>
+      <PageHeader
+        variant="xl"
+        icon={HorseIcon}
+        eyebrowLabel="Módulo"
+        title="Hípico y Eventos"
+        subtitle="Caballerizas, cobranza, torneos ecuestres y gestión de eventos"
+      />
 
       {/* Sección Caballerizas */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12, marginBottom: 32 }}>
