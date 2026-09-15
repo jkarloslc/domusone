@@ -1,5 +1,5 @@
 'use client'
-import { ShieldCheck, Users, HardHat, Wallet, ChevronRight, Briefcase } from 'lucide-react'
+import { ShieldCheck, Users, Wallet, ChevronRight, Briefcase } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
 
@@ -7,7 +7,6 @@ const MODULOS = [
   { key: 'vigilancia',   permKey: 'vigilancia-extras', label: 'Vigilancia',              icon: ShieldCheck, color: '#334155', desc: 'Extras de vigilancia: captura, autorización y OP', href: '/vigilancia-extras' },
   { key: 'rol-pagos',    permKey: 'hr',                label: 'Rol de Pagos',            icon: Wallet,      color: '#b45309', desc: 'Asistencia semanal de colaboradores y monto a pagar', href: '/hr/rol-de-pagos' },
   { key: 'colaboradores',permKey: 'hr',                label: 'Colaboradores',           icon: Users,       color: '#b45309', desc: 'Catálogo de personal operativo — sueldos y puesto',  href: '/hr/colaboradores' },
-  { key: 'cat_mano_obra',permKey: 'hr',                label: 'Categorías Mano de Obra', icon: HardHat,     color: '#b45309', desc: 'Sueldo diario de referencia por categoría',          href: '/hr/categorias-mano-obra' },
 ]
 
 export default function HRPage() {

@@ -2,12 +2,12 @@
 import { useRouter } from 'next/navigation'
 import CategoriasManoObraPanel from '@/components/catalogos/CategoriasManoObraPanel'
 
-export default function HRCategoriasManoObraPage() {
+export default function MantenimientoCategoriasManoObraPage() {
   const router = useRouter()
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      <CategoriasManoObraPanel onBack={() => router.push('/hr')} />
+      <CategoriasManoObraPanel onBack={() => router.push('/mantenimiento')} />
     </div>
   )
 }

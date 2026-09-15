@@ -8,6 +8,7 @@ export type Colaborador = {
   tipo: TipoColaborador
   fecha_ingreso: string | null
   puesto: string | null
+  id_puesto_fk: number | null
   sueldo_bruto_mensual: number | null
   sueldo_neto_mensual: number | null
   sueldo_diario: number | null

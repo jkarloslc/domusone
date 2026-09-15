@@ -15,18 +15,13 @@ const TIPOS_COLABORADOR: TipoColaborador[] = ['Interno', 'Externo']
 // ══════════════════════════════════════════════════════════════
 // Colaboradores — personal operativo (Asignado a / Supervisor de OT)
 // Compartido entre /catalogos y /hr/colaboradores
+// Puesto viene de cfg.cat_puestos_colaboradores (administrable en /catalogos)
 // ══════════════════════════════════════════════════════════════
-const PUESTOS_COLABORADOR = [
-  'Administrador de Fraccionamiento', 'Auxiliar de Motor Lobby', 'Auxiliar de Operaciones', 'Ayudante General',
-  'Caja de Mantto Residencial', 'Cajera Recepcionista', 'Coordinador de Servicios Generales',
-  'Electricista', 'Encargado', 'Encargado de Taller', 'Mantenimiento Tee De Practica',
-  'Operador', 'Operador Especializado', 'Profesional de Golf', 'Servicios Generales',
-  'Starter', 'Superintendente', 'Supervisor', 'Vigilancia',
-]
 const CC_MANTENIMIENTO_RESIDENCIAL = 'Mantenimiento Residencial'
 
 const emptyColabForm = () => ({
-  nombre: '', apellido_paterno: '', apellido_materno: '', tipo: 'Interno' as TipoColaborador, fecha_ingreso: '', puesto: '',
+  nombre: '', apellido_paterno: '', apellido_materno: '', tipo: 'Interno' as TipoColaborador, fecha_ingreso: '',
+  id_puesto_fk: '', puesto: '',
   sueldo_bruto_mensual: '', sueldo_neto_mensual: '', sueldo_diario: '',
   id_centro_costo_fk: '', id_cuadrante_fk: '', id_area_fk: '',
   es_asignado: false, es_supervisor: false,
@@ -36,6 +31,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
   const { authUser } = useAuth()
   const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<Colaborador[]>([])
+  const [puestos, setPuestos]   = useState<{ id: number; puesto: string }[]>([])
   const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string }[]>([])
   const [areas, setAreas] = useState<{ id: number; nombre: string; id_centro_costo_fk: number | null }[]>([])
   const [cuadrantes, setCuadrantes] = useState<{ id: number; nombre: string }[]>([])
@@ -58,14 +54,16 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [{ data: colabs }, { data: ccs }, { data: areasData }, { data: cuadrantesData }, { data: rels }] = await Promise.all([
+    const [{ data: colabs }, { data: puestosData }, { data: ccs }, { data: areasData }, { data: cuadrantesData }, { data: rels }] = await Promise.all([
       dbCfg.from('colaboradores').select('*').order('nombre'),
+      dbCfg.from('cat_puestos_colaboradores').select('id, puesto').eq('activo', true).order('orden'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbCfg.from('cuadrantes').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('rel_area_cuadrante').select('id_area, id_cuadrante'),
     ])
     setItems((colabs as Colaborador[]) ?? [])
+    setPuestos(puestosData ?? [])
     setCentrosCosto(ccs ?? [])
     setAreas(areasData ?? [])
     setCuadrantes(cuadrantesData ?? [])
@@ -80,7 +78,8 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
     setForm({
       nombre: c.nombre, apellido_paterno: c.apellido_paterno ?? '', apellido_materno: c.apellido_materno ?? '',
       tipo: c.tipo ?? 'Interno',
-      fecha_ingreso: c.fecha_ingreso ?? '', puesto: c.puesto ?? '',
+      fecha_ingreso: c.fecha_ingreso ?? '',
+      id_puesto_fk: c.id_puesto_fk?.toString() ?? '', puesto: c.puesto ?? '',
       sueldo_bruto_mensual: c.sueldo_bruto_mensual?.toString() ?? '', sueldo_neto_mensual: c.sueldo_neto_mensual?.toString() ?? '',
       sueldo_diario: c.sueldo_diario?.toString() ?? '',
       id_centro_costo_fk: c.id_centro_costo_fk?.toString() ?? '',
@@ -104,6 +103,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
       apellido_materno: form.apellido_materno.trim() || null,
       tipo: form.tipo,
       fecha_ingreso: form.fecha_ingreso || null,
+      id_puesto_fk: form.id_puesto_fk ? Number(form.id_puesto_fk) : null,
       puesto: form.puesto.trim() || null,
       sueldo_bruto_mensual: form.sueldo_bruto_mensual ? Number(form.sueldo_bruto_mensual) : null,
       sueldo_neto_mensual: form.sueldo_neto_mensual ? Number(form.sueldo_neto_mensual) : null,
@@ -209,7 +209,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
         </select>
         <select className="select" style={{ flex: '1 1 150px', maxWidth: 200 }} value={filtroPuesto} onChange={e => setFPuesto(e.target.value)}>
           <option value="all">Puesto: todos</option>
-          {PUESTOS_COLABORADOR.map(p => <option key={p} value={p}>{p}</option>)}
+          {puestos.map(p => <option key={p.id} value={p.puesto}>{p.puesto}</option>)}
         </select>
         <select className="select" style={{ flex: '1 1 130px', maxWidth: 170 }} value={filtroAsignado} onChange={e => setFA(e.target.value)}>
           <option value="all">Asignado: todos</option>
@@ -289,9 +289,13 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="label">Puesto / Cargo</label>
-                <select className="select" value={form.puesto} onChange={e => setForm(f => ({ ...f, puesto: e.target.value }))}>
+                <select className="select" value={form.id_puesto_fk} onChange={e => {
+                  const id = e.target.value
+                  const p = puestos.find(x => x.id === Number(id))
+                  setForm(f => ({ ...f, id_puesto_fk: id, puesto: p?.puesto ?? '' }))
+                }}>
                   <option value="">— Seleccionar —</option>
-                  {PUESTOS_COLABORADOR.map(p => <option key={p} value={p}>{p}</option>)}
+                  {puestos.map(p => <option key={p.id} value={p.id}>{p.puesto}</option>)}
                 </select>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>

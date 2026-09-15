@@ -11,7 +11,7 @@ import ModalShell from '@/components/ui/ModalShell'
 // ══════════════════════════════════════════════════════════════
 // Categorías de Mano de Obra — cfg.cat_categorias_mano_obra
 // Sueldo diario de referencia (usado en Rol de Pagos y costeo de OT)
-// Compartido entre /catalogos y /hr/categorias-mano-obra
+// Compartido entre /catalogos y /mantenimiento/categorias-mano-obra
 // ══════════════════════════════════════════════════════════════
 type CategoriaManoObra = {
   id: number
@@ -118,9 +118,9 @@ export default function CategoriasManoObraPanel({ onBack }: { onBack?: () => voi
       {/* Modal captura / edición */}
       {showForm && (
         <ModalShell
-          modulo="hr"
+          modulo="mantenimiento"
           titulo={editing ? 'Editar categoría' : 'Nueva categoría'}
-          subtitulo="HR · Categorías Mano de Obra"
+          subtitulo="Mantenimiento · Categorías Mano de Obra"
           icono={HardHat}
           maxWidth={420}
           onClose={() => setShowForm(false)}

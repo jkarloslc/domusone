@@ -6,7 +6,7 @@ import {
   Loader, RefreshCw, ToggleLeft, ToggleRight,
   MapPin, Tag, Grid3x3, DollarSign, CreditCard,
   Car, CheckCircle, Upload, ExternalLink, Layers, AlertTriangle, Building2,
-  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store, Flag, HardHat, Search, Users, Ticket,
+  Eye, ArrowUpCircle, ArrowDownCircle, TrendingUp, Store, Flag, HardHat, Search, Users, Ticket, Briefcase,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { antiguedad } from '@/lib/dateUtils'
@@ -279,6 +279,19 @@ const CATALOGOS: CatConfig[] = [
     campos: [
       { key: 'categoria',     label: 'Categoría *',      type: 'text',   required: true },
       { key: 'sueldo_diario', label: 'Sueldo Diario *',  type: 'number', required: true },
+    ],
+  },
+  {
+    key:    'cat_puestos_colaboradores',
+    tabla:  'cat_puestos_colaboradores',
+    label:  'Puestos de Colaboradores',
+    icon:   Briefcase,
+    color:  '#b45309',
+    desc:   'Puestos/cargos disponibles para el campo Puesto de Colaboradores',
+    sortBy: 'orden',
+    campos: [
+      { key: 'puesto', label: 'Puesto *', type: 'text',   required: true },
+      { key: 'orden',  label: 'Orden',    type: 'number' },
     ],
   },
   {

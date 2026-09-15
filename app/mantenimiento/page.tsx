@@ -1,7 +1,7 @@
 'use client'
 import {
   Wrench, Truck, Hammer, Building2, ChevronRight, ClipboardList,
-  ClipboardCheck, ListChecks, Zap,
+  ClipboardCheck, ListChecks, Zap, HardHat,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -17,6 +17,7 @@ const GRUPOS = [
       { key: 'ot-generales',   permKey: 'mantenimiento', label: "OT's Generales",          icon: ClipboardCheck, desc: 'Órdenes de trabajo de la cuadrilla general',          href: '/mantenimiento/ot-generales' },
       { key: 'equipo-flota',   permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria',  icon: Truck,         desc: 'Flotilla, mantenimientos y bitácora de uso',           href: '/equipo-flota' },
       { key: 'herramientas',   permKey: 'herramientas',  label: 'Equipo y Herramienta',    icon: Hammer,        desc: 'Catálogo, préstamos y mantenimiento de herramienta',   href: '/herramientas' },
+      { key: 'cat_mano_obra',  permKey: 'mantenimiento', label: 'Categorías Mano de Obra', icon: HardHat,       desc: 'Sueldo diario de referencia por categoría',            href: '/mantenimiento/categorias-mano-obra' },
     ],
   },
   {
