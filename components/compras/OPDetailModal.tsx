@@ -1072,7 +1072,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
           )}
 
           {(servicioCat || servicioRegistros.length > 0) && (
-            <Sec label="Servicio de Suministro (CFE / Agua) Relacionado">
+            <Sec label="Servicio de Suministro (CFE / Agua / Gas LP) Relacionado">
               {servicioCat && (
                 <div style={{ marginBottom: servicioRegistros.length > 0 ? 8 : 0, fontSize: 13 }}>
                   <strong>{servicioCat.no_servicio}</strong> — {servicioCat.tipo_servicio}{servicioCat.ubicacion ? ` · ${servicioCat.ubicacion}` : ''}

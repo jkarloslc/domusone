@@ -32,7 +32,7 @@ const GRUPOS = [
     label: 'Servicios',
     color: '#0891b2',
     items: [
-      { key: 'servicios', permKey: 'mantenimiento', label: 'Servicios', icon: Zap, desc: 'Medidores de CFE y Agua: consumo y facturación', href: '/mantenimiento/servicios' },
+      { key: 'servicios', permKey: 'mantenimiento', label: 'Servicios', icon: Zap, desc: 'Medidores de CFE, Agua y Gas LP: consumo y facturación', href: '/mantenimiento/servicios' },
     ],
   },
 ]

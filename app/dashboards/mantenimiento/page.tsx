@@ -183,11 +183,11 @@ export default function DashboardMantenimientoPage() {
   const [vehiculos, setVehiculos] = useState({ total: 0, bitacorasMes: 0 })
 
   // Servicios
-  type MesServicio = { mes: string; kwh: number; agua: number; monto: number; montoCfe: number; montoAgua: number }
+  type MesServicio = { mes: string; kwh: number; agua: number; litrosGas: number; monto: number; montoCfe: number; montoAgua: number; montoGas: number }
   const [serviciosMes,   setServiciosMes]   = useState<MesServicio[]>([])
   const [svcCatalogo,    setSvcCatalogo]    = useState<{ id: number; no_servicio: string; ubicacion: string | null; tipo_servicio: string }[]>([])
   const [svcAnio,        setSvcAnio]        = useState(new Date().getFullYear())
-  const [svcTipo,        setSvcTipo]        = useState<'CFE' | 'Agua' | ''>('')
+  const [svcTipo,        setSvcTipo]        = useState<'CFE' | 'Agua' | 'Gas LP' | ''>('')
   const [svcServicioId,  setSvcServicioId]  = useState<number | ''>('')
   const [svcLoading,     setSvcLoading]     = useState(false)
 
@@ -216,7 +216,7 @@ export default function DashboardMantenimientoPage() {
 
     const porMes: Record<number, MesServicio> = {}
     for (let m = 1; m <= 12; m++) {
-      porMes[m] = { mes: MESES_CORTO[m - 1], kwh: 0, agua: 0, monto: 0, montoCfe: 0, montoAgua: 0 }
+      porMes[m] = { mes: MESES_CORTO[m - 1], kwh: 0, agua: 0, litrosGas: 0, monto: 0, montoCfe: 0, montoAgua: 0, montoGas: 0 }
     }
     svcReg.forEach((r: any) => {
       const tipo = tipoMap[r.id_servicio_fk]
@@ -225,8 +225,9 @@ export default function DashboardMantenimientoPage() {
       const m = new Date(r.fecha_inicio + 'T12:00:00').getMonth() + 1
       if (!porMes[m]) return
       const monto = Number(r.monto_periodo ?? 0)
-      if (tipo === 'CFE')  { porMes[m].kwh   += Number(r.consumo_periodo ?? 0); porMes[m].montoCfe  += monto }
-      if (tipo === 'Agua') { porMes[m].agua  += Number(r.consumo_periodo ?? 0); porMes[m].montoAgua += monto }
+      if (tipo === 'CFE')    { porMes[m].kwh       += Number(r.consumo_periodo ?? 0); porMes[m].montoCfe  += monto }
+      if (tipo === 'Agua')   { porMes[m].agua      += Number(r.consumo_periodo ?? 0); porMes[m].montoAgua += monto }
+      if (tipo === 'Gas LP') { porMes[m].litrosGas += Number(r.consumo_periodo ?? 0); porMes[m].montoGas  += monto }
       porMes[m].monto += monto
     })
     setServiciosMes(Object.values(porMes))
@@ -418,7 +419,7 @@ export default function DashboardMantenimientoPage() {
         </div>
       </div>
 
-      {/* ─── Servicios CFE / Agua ────────────────────────────────── */}
+      {/* ─── Servicios CFE / Agua / Gas LP ──────────────────────── */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'nowrap', overflow: 'auto' }}>
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', whiteSpace: 'nowrap', marginRight: 4 }}>
@@ -431,9 +432,10 @@ export default function DashboardMantenimientoPage() {
           <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, width: 106, flexShrink: 0 }}
             value={svcTipo}
             onChange={e => { setSvcTipo(e.target.value as any); setSvcServicioId('') }}>
-            <option value="">CFE + Agua</option>
+            <option value="">CFE + Agua + Gas LP</option>
             <option value="CFE">Solo CFE</option>
             <option value="Agua">Solo Agua</option>
+            <option value="Gas LP">Solo Gas LP</option>
           </select>
           <select className="select" style={{ fontSize: 12, padding: '3px 8px', height: 28, flex: 1, minWidth: 0 }}
             value={svcServicioId}
@@ -459,16 +461,20 @@ export default function DashboardMantenimientoPage() {
 
         {/* KPIs resumen */}
         {!svcLoading && (() => {
-          const totalKwh      = serviciosMes.reduce((a, m) => a + m.kwh,       0)
-          const totalAgua     = serviciosMes.reduce((a, m) => a + m.agua,      0)
-          const totalMonto    = serviciosMes.reduce((a, m) => a + m.monto,     0)
+          const totalKwh       = serviciosMes.reduce((a, m) => a + m.kwh,       0)
+          const totalAgua      = serviciosMes.reduce((a, m) => a + m.agua,      0)
+          const totalLitrosGas = serviciosMes.reduce((a, m) => a + m.litrosGas, 0)
+          const totalMonto     = serviciosMes.reduce((a, m) => a + m.monto,     0)
           const totalMontoAgua = serviciosMes.reduce((a, m) => a + m.montoAgua, 0)
+          const totalMontoGas  = serviciosMes.reduce((a, m) => a + m.montoGas,  0)
           return (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
               {[
                 { label: 'Consumo KWH acum.',  value: totalKwh.toLocaleString('es-MX', { maximumFractionDigits: 0 }),       unit: 'kWh', color: '#d97706', bg: '#fffbeb', icon: '⚡' },
                 { label: 'Consumo Agua acum.', value: totalAgua.toLocaleString('es-MX', { maximumFractionDigits: 1 }),       unit: 'm³',  color: '#0891b2', bg: '#ecfeff', icon: '💧' },
                 { label: 'Monto Agua',          value: '$' + totalMontoAgua.toLocaleString('es-MX', { minimumFractionDigits: 2 }), unit: '', color: '#0369a1', bg: '#e0f2fe', icon: '💧' },
+                { label: 'Consumo Gas LP acum.', value: totalLitrosGas.toLocaleString('es-MX', { maximumFractionDigits: 1 }), unit: 'L', color: '#ea580c', bg: '#fff7ed', icon: '🔥' },
+                { label: 'Monto Gas LP',         value: '$' + totalMontoGas.toLocaleString('es-MX', { minimumFractionDigits: 2 }),  unit: '', color: '#c2410c', bg: '#fff7ed', icon: '🔥' },
                 { label: 'Monto total',         value: '$' + totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 }),     unit: '', color: '#059669', bg: '#f0fdf4', icon: '💰' },
               ].map(k => (
                 <div key={k.label} className="card" style={{ padding: '14px 18px', background: k.bg,
@@ -488,7 +494,7 @@ export default function DashboardMantenimientoPage() {
         })()}
 
         {/* Gráficas por mes */}
-        {!svcLoading && serviciosMes.some(m => m.kwh > 0 || m.agua > 0 || m.monto > 0) && (
+        {!svcLoading && serviciosMes.some(m => m.kwh > 0 || m.agua > 0 || m.litrosGas > 0 || m.monto > 0) && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {/* KWH */}
             <div className="card" style={{ padding: '14px 16px' }}>
@@ -533,6 +539,29 @@ export default function DashboardMantenimientoPage() {
               <BarChart
                 data={serviciosMes.map(m => ({ label: m.mes, value: m.montoAgua }))}
                 color="#0369a1" unit="$"
+                fmt={v => '$' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toLocaleString('es-MX', { maximumFractionDigits: 0 }))}
+              />
+            </div>
+            {/* Gas LP */}
+            <div className="card" style={{ padding: '14px 16px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#ea580c', marginBottom: 10,
+                display: 'flex', alignItems: 'center', gap: 6 }}>
+                🔥 Consumo Gas LP por mes
+              </div>
+              <BarChart
+                data={serviciosMes.map(m => ({ label: m.mes, value: m.litrosGas }))}
+                color="#ea580c" unit="L"
+              />
+            </div>
+            {/* Monto Gas LP */}
+            <div className="card" style={{ padding: '14px 16px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#ea580c', marginBottom: 10,
+                display: 'flex', alignItems: 'center', gap: 6 }}>
+                🔥 Monto Gas LP por mes
+              </div>
+              <BarChart
+                data={serviciosMes.map(m => ({ label: m.mes, value: m.montoGas }))}
+                color="#c2410c" unit="$"
                 fmt={v => '$' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toLocaleString('es-MX', { maximumFractionDigits: 0 }))}
               />
             </div>

@@ -4,28 +4,31 @@ import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, RefreshCw, Filter, X, Save, Loader,
-  Zap, Droplets, Edit2, Trash2, ChevronDown, ChevronRight,
+  Zap, Droplets, Flame, Edit2, Trash2, ChevronDown, ChevronRight,
   History, Network, BarChart2, List
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
 // ── Constantes ───────────────────────────────────────────────
-const TIPOS_SERVICIO  = ['CFE', 'Agua'] as const
+const TIPOS_SERVICIO  = ['CFE', 'Agua', 'Gas LP'] as const
 const MODALIDADES     = ['Mensual', 'Bimestral'] as const
 type TipoServicio     = typeof TIPOS_SERVICIO[number]
 const TIPOS_CONEXION  = ['Medidor', 'Toma', 'Circuito', 'Interruptor', 'Tablero', 'Válvula', 'Hidrante', 'Otro'] as const
 
 const TIPO_STYLE: Record<TipoServicio, { color: string; bg: string; border: string; Icon: React.FC<any> }> = {
-  CFE:  { color: '#d97706', bg: '#fffbeb', border: '#fde68a', Icon: Zap      },
-  Agua: { color: '#0369a1', bg: '#e0f2fe', border: '#bae6fd', Icon: Droplets },
+  CFE:    { color: '#d97706', bg: '#fffbeb', border: '#fde68a', Icon: Zap      },
+  Agua:   { color: '#0369a1', bg: '#e0f2fe', border: '#bae6fd', Icon: Droplets },
+  'Gas LP': { color: '#ea580c', bg: '#fff7ed', border: '#fed7aa', Icon: Flame  },
 }
+
+const UNIDAD_CONSUMO: Record<TipoServicio, string> = { CFE: 'kWh', Agua: 'm³', 'Gas LP': 'L' }
 
 const fmt = (n: number | null | undefined) =>
   (n ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
 
 const fmtConsumo = (n: number | null | undefined, tipo: string) => {
   if (n == null) return '—'
-  return `${n.toLocaleString('es-MX')} ${tipo === 'CFE' ? 'kWh' : 'm³'}`
+  return `${n.toLocaleString('es-MX')} ${UNIDAD_CONSUMO[tipo as TipoServicio] ?? ''}`
 }
 
 const fmtFecha = (f: string | null | undefined) => {
@@ -141,8 +144,14 @@ export default function ServiciosTab() {
     .map(c => (registros[c.id] ?? [])[0])
     .filter(Boolean)
     .reduce((a, r) => a + (r?.monto_periodo ?? 0), 0)
-  const cntCFE  = catalogo.filter(c => c.tipo_servicio === 'CFE').length
-  const cntAgua = catalogo.filter(c => c.tipo_servicio === 'Agua').length
+  const totalGasLP = catalogo
+    .filter(c => c.tipo_servicio === 'Gas LP')
+    .map(c => (registros[c.id] ?? [])[0])
+    .filter(Boolean)
+    .reduce((a, r) => a + (r?.monto_periodo ?? 0), 0)
+  const cntCFE   = catalogo.filter(c => c.tipo_servicio === 'CFE').length
+  const cntAgua  = catalogo.filter(c => c.tipo_servicio === 'Agua').length
+  const cntGasLP = catalogo.filter(c => c.tipo_servicio === 'Gas LP').length
 
   const toggleExpand = (id: number) =>
     setExpandidos(e => ({ ...e, [id]: !e[id] }))
@@ -186,7 +195,7 @@ export default function ServiciosTab() {
   return (
     <div>
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 }}>
         <div className="card" style={{ padding: '10px 14px' }}>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase',
             letterSpacing: '0.05em', marginBottom: 2 }}>Último periodo (total)</div>
@@ -213,6 +222,15 @@ export default function ServiciosTab() {
           <div style={{ fontSize: 20, fontWeight: 700, color: '#0369a1',
             fontVariantNumeric: 'tabular-nums' }}>{fmt(totalAgua)}</div>
           <div style={{ fontSize: 10, color: '#075985' }}>{cntAgua} servicios</div>
+        </div>
+        <div className="card" style={{ padding: '10px 14px', background: '#fff7ed', border: '1px solid #fed7aa' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
+            <Flame size={11} style={{ color: '#ea580c' }} />
+            <span style={{ fontSize: 10, color: '#9a3412', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gas LP — Último periodo</span>
+          </div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#ea580c',
+            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGasLP)}</div>
+          <div style={{ fontSize: 10, color: '#9a3412' }}>{cntGasLP} servicios</div>
         </div>
         <div className="card" style={{ padding: '10px 14px' }}>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase',
@@ -444,7 +462,7 @@ export default function ServiciosTab() {
                         </div>
                         <div>
                           <label style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                            Consumo {servicio.tipo_servicio === 'CFE' ? '(kWh)' : '(m³)'}
+                            Consumo ({UNIDAD_CONSUMO[servicio.tipo_servicio as TipoServicio] ?? '—'})
                           </label>
                           <input className="input" type="number" step="0.01"
                             style={{ fontSize: 12, height: 28, padding: '3px 6px', width: 100 }}
@@ -489,7 +507,7 @@ export default function ServiciosTab() {
                             <th>Inicio</th>
                             <th>Fin</th>
                             <th style={{ textAlign: 'right' }}>
-                              Consumo {servicio.tipo_servicio === 'CFE' ? '(kWh)' : '(m³)'}
+                              Consumo ({UNIDAD_CONSUMO[servicio.tipo_servicio as TipoServicio] ?? '—'})
                             </th>
                             <th style={{ textAlign: 'right' }}>Monto</th>
                             <th style={{ fontSize: 10, color: 'var(--text-muted)' }}>Notas</th>
@@ -602,24 +620,29 @@ function ReporteServicios({
   })
 
   // Group by YYYY-MM
-  type MesData = { CFE: number; Agua: number; consumoCFE: number; consumoAgua: number }
+  type MesData = { CFE: number; Agua: number; GasLP: number; consumoCFE: number; consumoAgua: number; consumoGasLP: number }
   const byMes: Record<string, MesData> = {}
   filtered.forEach(r => {
     const mes = r.fecha.slice(0, 7) || 'sin-mes'
-    if (!byMes[mes]) byMes[mes] = { CFE: 0, Agua: 0, consumoCFE: 0, consumoAgua: 0 }
-    if (r.tipo === 'CFE') { byMes[mes].CFE += r.monto; byMes[mes].consumoCFE += r.consumo ?? 0 }
-    else                  { byMes[mes].Agua += r.monto; byMes[mes].consumoAgua += r.consumo ?? 0 }
+    if (!byMes[mes]) byMes[mes] = { CFE: 0, Agua: 0, GasLP: 0, consumoCFE: 0, consumoAgua: 0, consumoGasLP: 0 }
+    if (r.tipo === 'CFE')       { byMes[mes].CFE   += r.monto; byMes[mes].consumoCFE   += r.consumo ?? 0 }
+    else if (r.tipo === 'Agua') { byMes[mes].Agua  += r.monto; byMes[mes].consumoAgua  += r.consumo ?? 0 }
+    else                        { byMes[mes].GasLP += r.monto; byMes[mes].consumoGasLP += r.consumo ?? 0 }
   })
   const meses = Object.keys(byMes).sort()
 
-  const totalCFE       = filtered.filter(r => r.tipo === 'CFE').reduce((a, r) => a + r.monto, 0)
-  const totalAgua      = filtered.filter(r => r.tipo === 'Agua').reduce((a, r) => a + r.monto, 0)
-  const totalConsuCFE  = filtered.filter(r => r.tipo === 'CFE' && r.consumo != null).reduce((a, r) => a + (r.consumo ?? 0), 0)
-  const totalConsuAgua = filtered.filter(r => r.tipo === 'Agua' && r.consumo != null).reduce((a, r) => a + (r.consumo ?? 0), 0)
+  const totalCFE        = filtered.filter(r => r.tipo === 'CFE').reduce((a, r) => a + r.monto, 0)
+  const totalAgua       = filtered.filter(r => r.tipo === 'Agua').reduce((a, r) => a + r.monto, 0)
+  const totalGasLP      = filtered.filter(r => r.tipo === 'Gas LP').reduce((a, r) => a + r.monto, 0)
+  const totalConsuCFE   = filtered.filter(r => r.tipo === 'CFE' && r.consumo != null).reduce((a, r) => a + (r.consumo ?? 0), 0)
+  const totalConsuAgua  = filtered.filter(r => r.tipo === 'Agua' && r.consumo != null).reduce((a, r) => a + (r.consumo ?? 0), 0)
+  const totalConsuGasLP = filtered.filter(r => r.tipo === 'Gas LP' && r.consumo != null).reduce((a, r) => a + (r.consumo ?? 0), 0)
+  const totalGeneral    = totalCFE + totalAgua + totalGasLP
 
-  const showCFE  = !filterTipoR || filterTipoR === 'CFE'
-  const showAgua = !filterTipoR || filterTipoR === 'Agua'
-  const nBars    = (showCFE ? 1 : 0) + (showAgua ? 1 : 0)
+  const showCFE   = !filterTipoR || filterTipoR === 'CFE'
+  const showAgua  = !filterTipoR || filterTipoR === 'Agua'
+  const showGasLP = !filterTipoR || filterTipoR === 'Gas LP'
+  const nBars     = (showCFE ? 1 : 0) + (showAgua ? 1 : 0) + (showGasLP ? 1 : 0)
 
   // SVG chart geometry
   const SVG_W = 760, SVG_H = 230
@@ -628,7 +651,7 @@ function ReporteServicios({
   const plotH = SVG_H - PAD.t - PAD.b
 
   const maxVal = meses.length === 0 ? 1 :
-    Math.max(...meses.flatMap(m => [showCFE ? byMes[m].CFE : 0, showAgua ? byMes[m].Agua : 0]), 1)
+    Math.max(...meses.flatMap(m => [showCFE ? byMes[m].CFE : 0, showAgua ? byMes[m].Agua : 0, showGasLP ? byMes[m].GasLP : 0]), 1)
 
   // Nice Y ceiling
   const yMax = (() => {
@@ -671,7 +694,7 @@ function ReporteServicios({
         <select className="select"
           style={{ width: 112, fontSize: 12, padding: '3px 8px', height: 28 }}
           value={filterTipoR} onChange={e => setFilterTipoR(e.target.value)}>
-          <option value="">CFE + Agua</option>
+          <option value="">CFE + Agua + Gas LP</option>
           {TIPOS_SERVICIO.map(t => <option key={t}>{t}</option>)}
         </select>
         <select className="select"
@@ -690,12 +713,12 @@ function ReporteServicios({
       </div>
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 }}>
         <div className="card" style={{ padding: '10px 14px' }}>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase',
             letterSpacing: '.05em', marginBottom: 2 }}>Total periodo</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--blue)',
-            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCFE + totalAgua)}</div>
+            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGeneral)}</div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{filtered.length} registros · {meses.length} meses</div>
         </div>
         <div className="card" style={{ padding: '10px 14px', background: '#fffbeb', border: '1px solid #fde68a' }}>
@@ -720,12 +743,23 @@ function ReporteServicios({
             {totalConsuAgua > 0 ? `${totalConsuAgua.toLocaleString('es-MX')} m³` : 'Sin consumo registrado'}
           </div>
         </div>
+        <div className="card" style={{ padding: '10px 14px', background: '#fff7ed', border: '1px solid #fed7aa' }}>
+          <div style={{ fontSize: 10, color: '#9a3412', textTransform: 'uppercase',
+            letterSpacing: '.05em', marginBottom: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Flame size={10} style={{ color: '#ea580c' }} /> Gas LP
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#ea580c',
+            fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGasLP)}</div>
+          <div style={{ fontSize: 10, color: '#9a3412' }}>
+            {totalConsuGasLP > 0 ? `${totalConsuGasLP.toLocaleString('es-MX')} L` : 'Sin consumo registrado'}
+          </div>
+        </div>
         <div className="card" style={{ padding: '10px 14px' }}>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase',
             letterSpacing: '.05em', marginBottom: 2 }}>Promedio mensual</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)',
             fontVariantNumeric: 'tabular-nums' }}>
-            {fmt(meses.length > 0 ? (totalCFE + totalAgua) / meses.length : 0)}
+            {fmt(meses.length > 0 ? totalGeneral / meses.length : 0)}
           </div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>por mes</div>
         </div>
@@ -757,6 +791,12 @@ function ReporteServicios({
                   Agua
                 </span>
               )}
+              {showGasLP && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: '#ea580c', display: 'inline-block' }} />
+                  Gas LP
+                </span>
+              )}
             </div>
           </div>
           <div style={{ width: '100%', overflowX: 'auto' }}>
@@ -786,8 +826,9 @@ function ReporteServicios({
                 const gx   = PAD.l + mi * groupW + groupOff
                 const data = byMes[mes]
                 const bars: { color: string; val: number }[] = []
-                if (showCFE)  bars.push({ color: '#d97706', val: data.CFE })
-                if (showAgua) bars.push({ color: '#0369a1', val: data.Agua })
+                if (showCFE)   bars.push({ color: '#d97706', val: data.CFE })
+                if (showAgua)  bars.push({ color: '#0369a1', val: data.Agua })
+                if (showGasLP) bars.push({ color: '#ea580c', val: data.GasLP })
                 return (
                   <g key={mes}>
                     {bars.map((b, bi) => {
@@ -847,13 +888,17 @@ function ReporteServicios({
                   <th style={{ textAlign: 'right' }}>Monto Agua</th>
                   <th style={{ textAlign: 'right' }}>Consumo (m³)</th>
                 </>}
+                {showGasLP && <>
+                  <th style={{ textAlign: 'right' }}>Monto Gas LP</th>
+                  <th style={{ textAlign: 'right' }}>Consumo (L)</th>
+                </>}
                 <th style={{ textAlign: 'right' }}>Total</th>
               </tr>
             </thead>
             <tbody>
               {[...meses].reverse().map(mes => {
                 const d     = byMes[mes]
-                const total = (showCFE ? d.CFE : 0) + (showAgua ? d.Agua : 0)
+                const total = (showCFE ? d.CFE : 0) + (showAgua ? d.Agua : 0) + (showGasLP ? d.GasLP : 0)
                 return (
                   <tr key={mes}>
                     <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{fmtMes(mes)}</td>
@@ -871,6 +916,14 @@ function ReporteServicios({
                       <td style={{ textAlign: 'right', color: 'var(--text-muted)',
                         fontVariantNumeric: 'tabular-nums' }}>
                         {d.consumoAgua > 0 ? d.consumoAgua.toLocaleString('es-MX') : '—'}
+                      </td>
+                    </>}
+                    {showGasLP && <>
+                      <td style={{ textAlign: 'right', color: '#ea580c',
+                        fontVariantNumeric: 'tabular-nums' }}>{fmt(d.GasLP)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--text-muted)',
+                        fontVariantNumeric: 'tabular-nums' }}>
+                        {d.consumoGasLP > 0 ? d.consumoGasLP.toLocaleString('es-MX') : '—'}
                       </td>
                     </>}
                     <td style={{ textAlign: 'right', fontWeight: 700,
@@ -896,8 +949,15 @@ function ReporteServicios({
                     {totalConsuAgua > 0 ? `${totalConsuAgua.toLocaleString('es-MX')} m³` : '—'}
                   </td>
                 </>}
+                {showGasLP && <>
+                  <td style={{ textAlign: 'right', color: '#ea580c',
+                    fontVariantNumeric: 'tabular-nums' }}>{fmt(totalGasLP)}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {totalConsuGasLP > 0 ? `${totalConsuGasLP.toLocaleString('es-MX')} L` : '—'}
+                  </td>
+                </>}
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {fmt(totalCFE + totalAgua)}
+                  {fmt(totalGeneral)}
                 </td>
               </tr>
             </tfoot>

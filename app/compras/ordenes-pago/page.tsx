@@ -462,7 +462,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       dbCfg.from('equipos').select('id, nombre, placa')
         .then(({ data }) => setEquiposMapModal(Object.fromEntries((data ?? []).map((e: any) => [e.id, e.placa ? `${e.nombre} (${e.placa})` : e.nombre]))))
     })
-    // Catálogo de servicios (CFE/Agua) para cuando proveedor es id=75
+    // Catálogo de servicios (CFE/Agua cuando proveedor es id=75, Gas LP por tipo de gasto)
     dbCtrl.from('servicios_catalogo').select('id, no_servicio, ubicacion, tipo_servicio')
       .eq('activo', true).order('tipo_servicio').order('ubicacion')
       .then(({ data }) => setServiciosCatalogo(data ?? []))
@@ -739,7 +739,14 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // automáticamente de las selecciones (vales/lotes/bitácoras), sin desglose
   // de factura — ahí se sigue capturando un Monto único.
   const isVale = ['Combustible', 'Perimetrales', 'Mantenimiento de Vehículos'].includes(form.tipo_gasto)
-  const servicioObligatorio = Number(form.id_proveedor_fk) === 75 && form.tipo_gasto === 'Electricidad'
+  // "Servicio de suministro asociado" aplica en dos contextos: proveedor CFE (id 75,
+  // cubre Electricidad y Agua) o cualquier proveedor con tipo de gasto Gas LP (hay
+  // varios proveedores de Gas LP, a diferencia de CFE que es único) — ver serviciosFiltrados.
+  const servicioAplica       = Number(form.id_proveedor_fk) === 75 || form.tipo_gasto === 'Gas LP'
+  const servicioObligatorio  = (Number(form.id_proveedor_fk) === 75 && form.tipo_gasto === 'Electricidad') || form.tipo_gasto === 'Gas LP'
+  const serviciosFiltrados   = form.tipo_gasto === 'Gas LP'
+    ? serviciosCatalogo.filter((s: any) => s.tipo_servicio === 'Gas LP')
+    : serviciosCatalogo.filter((s: any) => s.tipo_servicio !== 'Gas LP')
   // Pagos a Personal Externo (rol de pagos): la distribución por Área/Frente
   // es solo informativa (de dónde salió cada colaborador) — el total de la OP
   // se captura/edita aparte y no tiene que cuadrar con la suma del detalle
@@ -834,7 +841,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     if (form.tipo_gasto === 'Mantenimiento de Vehículos' && bitacorasSel.length === 0) {
       setError('Selecciona al menos una bitácora de servicio cerrada'); return
     }
-    if (Number(form.id_proveedor_fk) === 75 && form.tipo_gasto === 'Electricidad' && !form.id_servicio_fk) {
+    if (servicioObligatorio && !form.id_servicio_fk) {
       setError('Selecciona el servicio de suministro para registrar el detalle de consumo'); return
     }
     // La distribución por área (detLines) reemplaza al monto total con su propia
@@ -952,7 +959,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
           }))
         )
       }
-      if (Number(form.id_proveedor_fk) === 75 && form.id_servicio_fk) {
+      if (servicioAplica && form.id_servicio_fk) {
         setSavedOpForConsumo({ opId: opEdit.id, servicioId: Number(form.id_servicio_fk), monto: montoTotal })
         setSaving(false)
         return
@@ -1020,7 +1027,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       )
     }
 
-    if (Number(form.id_proveedor_fk) === 75 && form.id_servicio_fk) {
+    if (servicioAplica && form.id_servicio_fk) {
       setSavedOpForConsumo({ opId: op.id, servicioId: Number(form.id_servicio_fk), monto: montoTotal })
       setSaving(false)
       return
@@ -1144,32 +1151,40 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               )}
             </div>
 
-            {/* Servicio asociado — solo cuando proveedor = CFE/Agua (id 75) */}
-            {Number(form.id_proveedor_fk) === 75 && (
-              <div style={{ padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a',
-                borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#92400e', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  ⚡ Servicio de suministro asociado {servicioObligatorio && '*'}
+            {/* Servicio asociado — proveedor CFE/Agua (id 75) o tipo de gasto Gas LP */}
+            {servicioAplica && (() => {
+              const esGasLP = form.tipo_gasto === 'Gas LP'
+              const colores = esGasLP
+                ? { bg: '#fff7ed', border: '#fed7aa', text: '#9a3412', textAlt: '#c2410c' }
+                : { bg: '#fffbeb', border: '#fde68a', text: '#92400e', textAlt: '#b45309' }
+              return (
+                <div style={{ padding: '10px 12px', background: colores.bg, border: `1px solid ${colores.border}`,
+                  borderRadius: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: colores.text, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {esGasLP ? '🔥 Servicio de suministro de Gas LP asociado' : '⚡ Servicio de suministro asociado'} {servicioObligatorio && '*'}
+                  </div>
+                  <select className="select" value={form.id_servicio_fk} onChange={setF('id_servicio_fk')}>
+                    <option value="">— Seleccionar servicio —</option>
+                    {serviciosFiltrados.map((s: any) => (
+                      <option key={s.id} value={s.id}>
+                        {s.tipo_servicio} · {s.no_servicio}{s.ubicacion ? ` · ${s.ubicacion}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {form.id_servicio_fk ? (
+                    <div style={{ fontSize: 11, color: colores.text }}>
+                      Al guardar la OP se abrirá un modal para registrar el consumo del servicio.
+                    </div>
+                  ) : servicioObligatorio && (
+                    <div style={{ fontSize: 11, color: colores.textAlt }}>
+                      {esGasLP
+                        ? 'Obligatorio para OP con tipo de gasto Gas LP — se necesita para capturar el detalle de consumo.'
+                        : 'Obligatorio para OP de Electricidad con CFE — se necesita para capturar el detalle de consumo.'}
+                    </div>
+                  )}
                 </div>
-                <select className="select" value={form.id_servicio_fk} onChange={setF('id_servicio_fk')}>
-                  <option value="">— Seleccionar servicio —</option>
-                  {serviciosCatalogo.map((s: any) => (
-                    <option key={s.id} value={s.id}>
-                      {s.tipo_servicio} · {s.no_servicio}{s.ubicacion ? ` · ${s.ubicacion}` : ''}
-                    </option>
-                  ))}
-                </select>
-                {form.id_servicio_fk ? (
-                  <div style={{ fontSize: 11, color: '#92400e' }}>
-                    Al guardar la OP se abrirá un modal para registrar el consumo del servicio.
-                  </div>
-                ) : servicioObligatorio && (
-                  <div style={{ fontSize: 11, color: '#b45309' }}>
-                    Obligatorio para OP de Electricidad con CFE — se necesita para capturar el detalle de consumo.
-                  </div>
-                )}
-              </div>
-            )}
+              )
+            })()}
 
             {/* Sin OC → elegir cómo se asigna CC/Área/Frente */}
             {!conOC && (
@@ -1592,7 +1607,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 }
 
 // ════════════════════════════════════════════════════════════
-// Modal de consumo — se abre tras guardar OP con proveedor id=75
+// Modal de consumo — se abre tras guardar OP con proveedor CFE/Agua (id=75)
+// o tipo de gasto Gas LP
 // ════════════════════════════════════════════════════════════
 function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
   servicioId: number
@@ -1646,7 +1662,7 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
     onDone()
   }
 
-  const unidad    = servicio?.tipo_servicio === 'Agua' ? 'm³' : 'kWh'
+  const unidad    = servicio?.tipo_servicio === 'Agua' ? 'm³' : servicio?.tipo_servicio === 'Gas LP' ? 'L' : 'kWh'
   const servLabel = servicio
     ? `${servicio.tipo_servicio} · ${servicio.no_servicio}${servicio.ubicacion ? ` · ${servicio.ubicacion}` : ''}`
     : '…'
@@ -1654,7 +1670,7 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
   // Este modal no puede esquivarse: no hay botón "Omitir" y el cierre por X /
   // clic en el fondo (ModalShell.onClose) se intercepta para exigir primero
   // guardar el consumo — la OP ya se generó, pero el detalle de consumo es
-  // obligatorio para servicios CFE/Electricidad (ver id_servicio_fk arriba).
+  // obligatorio para servicios CFE/Electricidad y Gas LP (ver id_servicio_fk arriba).
   const bloquearCierre = () => setSaveError('Debes registrar el consumo antes de continuar')
 
   return (

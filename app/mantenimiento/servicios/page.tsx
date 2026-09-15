@@ -11,7 +11,7 @@ export default function ServiciosPage() {
         icon={Zap}
         eyebrowLabel="Mantenimiento"
         title="Servicios"
-        subtitle="Medidores de CFE y Agua: consumo y facturación por periodo"
+        subtitle="Medidores de CFE, Agua y Gas LP: consumo y facturación por periodo"
       />
 
       <ServiciosTab />
