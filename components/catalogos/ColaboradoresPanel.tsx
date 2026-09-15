@@ -50,6 +50,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
 
   const [busqueda, setBusqueda]     = useState('')
   const [filtroTipo, setFTipo]      = useState('all')
+  const [filtroPuesto, setFPuesto]  = useState('all')
   const [filtroAsignado, setFA]     = useState('all')
   const [filtroSupervisor, setFS]   = useState('all')
   const [filtroCC, setFCC]          = useState('all')
@@ -134,6 +135,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
   const filtered = items.filter(c => {
     if (busqueda.trim() && !nombreCompletoColaborador(c).toLowerCase().includes(busqueda.trim().toLowerCase())) return false
     if (filtroTipo !== 'all' && c.tipo !== filtroTipo) return false
+    if (filtroPuesto !== 'all' && (c.puesto ?? '') !== filtroPuesto) return false
     if (filtroAsignado   !== 'all' && c.es_asignado   !== (filtroAsignado === 'true'))   return false
     if (filtroSupervisor !== 'all' && c.es_supervisor !== (filtroSupervisor === 'true')) return false
     if (filtroCC !== 'all' && (c.id_centro_costo_fk?.toString() ?? '') !== filtroCC) return false
@@ -204,6 +206,10 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
           <option value="all">Tipo: todos</option>
           <option value="Interno">Interno</option>
           <option value="Externo">Externo</option>
+        </select>
+        <select className="select" style={{ flex: '1 1 150px', maxWidth: 200 }} value={filtroPuesto} onChange={e => setFPuesto(e.target.value)}>
+          <option value="all">Puesto: todos</option>
+          {PUESTOS_COLABORADOR.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
         <select className="select" style={{ flex: '1 1 130px', maxWidth: 170 }} value={filtroAsignado} onChange={e => setFA(e.target.value)}>
           <option value="all">Asignado: todos</option>
