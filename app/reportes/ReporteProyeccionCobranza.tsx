@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { PrintBar } from './utils'
-import { TrendingUp, CreditCard, CheckCircle, Clock } from 'lucide-react'
+import { TrendingUp, CreditCard, CheckCircle, Clock, CalendarClock, AlertTriangle } from 'lucide-react'
 
 type Cuota = {
   id: number
@@ -75,6 +75,41 @@ function labelMes(yyyyMM: string) {
     .toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
 }
 
+function rangoMes(yyyyMM: string) {
+  const [y, m] = yyyyMM.split('-').map(Number)
+  const inicio = `${yyyyMM}-01`
+  const fin = new Date(y, m, 0).toLocaleDateString('en-CA') // último día del mes
+  return { inicio, fin }
+}
+
+// ── Flujo de cobranza del mes ────────────────────────────────
+// Clasifica los pagos REGISTRADOS dentro del mes (por fecha_pago), sin importar
+// a qué período pertenece la cuota — mismo criterio que ReporteCobranzaCorrienteVencida:
+//   · Corriente/atrasado cobrado: periodo <= mes de la fecha de pago
+//   · Anticipado:                 periodo >  mes de la fecha de pago (se cobró por adelantado)
+// El "Vencido" es independiente del mes seleccionado: cuotas pendientes/parciales
+// cuya fecha de vencimiento ya pasó a hoy (mismo criterio que ReporteGolfCobranza).
+type PagoDia = { fecha: string; monto: number; count: number }
+
+type CobroRow = {
+  id: number
+  tipo: string
+  concepto: string
+  periodo: string | null
+  monto_final: number
+  saldo: number | null
+  status: string
+  fecha_pago: string | null
+  fecha_vencimiento: string | null
+  cat_socios: { numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null } | null
+}
+
+const montoPagado = (c: CobroRow) =>
+  c.status === 'PAGADO' ? c.monto_final : c.monto_final - (c.saldo ?? 0)
+
+const nombreSocioCorto = (s: CobroRow['cat_socios']) =>
+  s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—'
+
 export default function ReporteProyeccionCobranza() {
   const hoy = new Date()
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
@@ -85,6 +120,39 @@ export default function ReporteProyeccionCobranza() {
   const [busqueda, setBusqueda]     = useState('')
   const [filas, setFilas]           = useState<Fila[]>([])
   const [loading, setLoading]       = useState(false)
+
+  // Flujo de cobranza del mes (cobrado / anticipado / vencido)
+  const [cobrosMes, setCobrosMes]   = useState<CobroRow[]>([])
+  const [vencidos, setVencidos]     = useState<CobroRow[]>([])
+  const [loadingFlujo, setLoadingFlujo] = useState(false)
+
+  const fetchFlujo = useCallback(async () => {
+    setLoadingFlujo(true)
+    const { inicio, fin } = rangoMes(mes)
+    const hoyStr = new Date().toLocaleDateString('en-CA')
+    const selectCols = `id, tipo, concepto, periodo, monto_final, saldo, status, fecha_pago, fecha_vencimiento,
+      cat_socios(numero_socio, nombre, apellido_paterno, apellido_materno)`
+
+    const [{ data: dCobros }, { data: dVencidos }] = await Promise.all([
+      dbGolf.from('cxc_golf').select(selectCols)
+        .in('tipo', ['MENSUALIDAD', 'PENSION_CARRITO', 'INSCRIPCION'])
+        .neq('status', 'CANCELADO')
+        .gte('fecha_pago', inicio)
+        .lte('fecha_pago', fin)
+        .order('fecha_pago'),
+      dbGolf.from('cxc_golf').select(selectCols)
+        .in('tipo', ['MENSUALIDAD', 'PENSION_CARRITO', 'INSCRIPCION'])
+        .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
+        .lt('fecha_vencimiento', hoyStr)
+        .order('fecha_vencimiento'),
+    ])
+
+    setCobrosMes((dCobros as unknown as CobroRow[]) ?? [])
+    setVencidos((dVencidos as unknown as CobroRow[]) ?? [])
+    setLoadingFlujo(false)
+  }, [mes])
+
+  useEffect(() => { fetchFlujo() }, [fetchFlujo])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -161,6 +229,23 @@ export default function ReporteProyeccionCobranza() {
     total:     filas.filter(f => f.tipo === t).length,
     pagadas:   filas.filter(f => f.tipo === t && f.status === 'PAGADO').length,
   }))
+
+  // ── Flujo de cobranza: cobrado del mes / anticipado / vencido ──
+  const totalCobradoMesFlujo = cobrosMes.reduce((a, c) => a + montoPagado(c), 0)
+  const anticipadoRows   = cobrosMes.filter(c => c.periodo && c.periodo > mes)
+  const corrienteRows    = cobrosMes.filter(c => !c.periodo || c.periodo <= mes)
+  const totalAnticipado  = anticipadoRows.reduce((a, c) => a + montoPagado(c), 0)
+  const totalCorriente   = corrienteRows.reduce((a, c) => a + montoPagado(c), 0)
+  const totalVencidoFlujo = vencidos.reduce((a, c) => a + (c.saldo ?? c.monto_final), 0)
+
+  const porDia = cobrosMes.reduce((acc, c) => {
+    const f = c.fecha_pago ?? '—'
+    if (!acc[f]) acc[f] = { fecha: f, monto: 0, count: 0 }
+    acc[f].monto += montoPagado(c)
+    acc[f].count += 1
+    return acc
+  }, {} as Record<string, PagoDia>)
+  const desglosePorDia = Object.values(porDia).sort((a, b) => a.fecha.localeCompare(b.fecha))
 
   const meses = mesesDisponibles()
 
@@ -291,6 +376,116 @@ export default function ReporteProyeccionCobranza() {
           </div>
         </>
       )}
+
+      {/* ── Flujo de Cobranza: cobrado del mes / anticipado / vencido ── */}
+      <div>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: '#334155', margin: '4px 0 10px' }}>
+          Flujo de Cobranza — {labelMes(mes)}
+        </h3>
+
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Cobrado del mes', value: fmt$(totalCobradoMesFlujo), sub: `${cobrosMes.length} pago${cobrosMes.length !== 1 ? 's' : ''} registrado${cobrosMes.length !== 1 ? 's' : ''}`, color: '#15803d', bg: '#f0fdf4', icon: CheckCircle },
+            { label: 'Anticipado',      value: fmt$(totalAnticipado),      sub: `${anticipadoRows.length} de periodos futuros`,       color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
+            { label: 'Vencido',         value: fmt$(totalVencidoFlujo),    sub: `${vencidos.length} cuota${vencidos.length !== 1 ? 's' : ''} sin cobrar (a hoy)`, color: '#dc2626', bg: '#fef2f2', icon: AlertTriangle },
+          ].map(k => {
+            const Icon = k.icon
+            return (
+              <div key={k.label} style={{ flex: '1 1 180px', maxWidth: 260, padding: '14px 18px', background: k.bg, border: `1px solid ${k.color}22`, borderRadius: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+                  <Icon size={14} style={{ color: k.color }} />
+                  <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>{k.label}</span>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: k.color, lineHeight: 1 }}>{loadingFlujo ? '…' : k.value}</div>
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{k.sub}</div>
+              </div>
+            )
+          })}
+        </div>
+
+        {!loadingFlujo && cobrosMes.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>
+              De lo cobrado en el mes: <strong style={{ color: '#15803d' }}>{fmt$(totalCorriente)}</strong> corresponde a periodos ≤ {labelMes(mes)}
+              {' '}· <strong style={{ color: '#2563eb' }}>{fmt$(totalAnticipado)}</strong> corresponde a periodos futuros (adelantado)
+            </div>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '8px 14px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>Desglose por fecha de cobro</span>
+              </div>
+              <div style={{ overflowX: 'auto', maxHeight: 260, overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                      {['Fecha de cobro', 'Cuotas', 'Monto cobrado'].map(h => (
+                        <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Monto cobrado' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {desglosePorDia.map(d => (
+                      <tr key={d.fecha} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '8px 14px', color: '#1e293b' }}>
+                          {d.fecha !== '—' ? new Date(d.fecha + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short' }) : '—'}
+                        </td>
+                        <td style={{ padding: '8px 14px', color: '#64748b' }}>{d.count}</td>
+                        <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 600, color: '#15803d' }}>{fmt$(d.monto)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0', fontWeight: 700 }}>
+                      <td style={{ padding: '8px 14px', fontSize: 12, color: '#475569' }}>Total</td>
+                      <td style={{ padding: '8px 14px', color: '#475569' }}>{cobrosMes.length}</td>
+                      <td style={{ padding: '8px 14px', textAlign: 'right', color: '#15803d' }}>{fmt$(totalCobradoMesFlujo)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!loadingFlujo && vencidos.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '8px 14px', background: '#fef2f2', borderBottom: '1px solid #fee2e2' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#b91c1c' }}>Cuotas vencidas sin cobrar (a la fecha de hoy)</span>
+              </div>
+              <div style={{ overflowX: 'auto', maxHeight: 260, overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
+                      {['Socio', 'Concepto', 'Período', 'Vencimiento', 'Saldo'].map(h => (
+                        <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Saldo' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vencidos.map(c => (
+                      <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '8px 14px', color: '#1e293b' }}>{nombreSocioCorto(c.cat_socios)}</td>
+                        <td style={{ padding: '8px 14px', color: '#475569' }}>{c.concepto}</td>
+                        <td style={{ padding: '8px 14px', color: '#64748b', fontFamily: 'monospace' }}>{c.periodo ?? '—'}</td>
+                        <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>
+                          {c.fecha_vencimiento ? new Date(c.fecha_vencimiento + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        </td>
+                        <td style={{ padding: '8px 14px', textAlign: 'right', fontWeight: 600, color: '#dc2626' }}>{fmt$(c.saldo ?? c.monto_final)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: '#fef2f2', borderTop: '2px solid #fee2e2', fontWeight: 700 }}>
+                      <td colSpan={4} style={{ padding: '8px 14px', fontSize: 12, color: '#b91c1c' }}>Total vencido ({vencidos.length})</td>
+                      <td style={{ padding: '8px 14px', textAlign: 'right', color: '#b91c1c' }}>{fmt$(totalVencidoFlujo)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ── Tabla detalle ─────────────────────────────────── */}
       <div id="reporte-print-area">
