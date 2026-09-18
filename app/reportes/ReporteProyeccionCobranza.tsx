@@ -78,7 +78,7 @@ const FUENTE_CFG: Record<FuenteProyeccion, {
   },
   locales: {
     db: dbCtrl, tabla: 'loc_cxc',
-    selectJoin: 'cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), ctrl_asignaciones:loc_asignaciones(unidad:cat_propiedades:loc_propiedades(clave, nombre))',
+    selectJoin: 'cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), ctrl_asignaciones:loc_asignaciones(unidad:loc_propiedades(clave, nombre))',
     tipos: ['RENTA_LOCAL', 'SERVICIOS_MANTTO'],
     tiposResumen: ['RENTA_LOCAL', 'SERVICIOS_MANTTO'],
     tipoLabels: { RENTA_LOCAL: 'Renta Local', SERVICIOS_MANTTO: 'Mantenimiento' },
