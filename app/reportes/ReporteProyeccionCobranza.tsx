@@ -230,6 +230,16 @@ export default function ReporteProyeccionCobranza() {
     pagadas:   filas.filter(f => f.tipo === t && f.status === 'PAGADO').length,
   }))
 
+  // Del "Cobrado" del período, cuánto entró de banco EN este mes vs cuánto ya
+  // se había cobrado antes (pago anualizado/adelantado hecho en meses previos:
+  // ej. socio pagó en enero 1 inscripción + 12 mensualidades ene-dic — esas
+  // cuotas de meses futuros quedan PAGADAS pero el banco no recibe nada nuevo
+  // cuando llega ese mes).
+  const cobradoEnMesRows = filas.filter(f => f.cobrado > 0 && f.fecha_pago && f.fecha_pago.slice(0, 7) === mes)
+  const cobradoAntesRows = filas.filter(f => f.cobrado > 0 && f.fecha_pago && f.fecha_pago.slice(0, 7) < mes)
+  const totalCobradoEnMes = cobradoEnMesRows.reduce((a, f) => a + f.cobrado, 0)
+  const totalCobradoAntes = cobradoAntesRows.reduce((a, f) => a + f.cobrado, 0)
+
   // ── Flujo de cobranza: cobrado del mes / anticipado / vencido ──
   const totalCobradoMesFlujo = cobrosMes.reduce((a, c) => a + montoPagado(c), 0)
   const anticipadoRows   = cobrosMes.filter(c => c.periodo && c.periodo > mes)
@@ -347,6 +357,16 @@ export default function ReporteProyeccionCobranza() {
           <div style={{ background: '#f1f5f9', borderRadius: 8, height: 10, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${avancePct}%`, background: avancePct >= 80 ? '#15803d' : avancePct >= 50 ? '#d97706' : '#dc2626', borderRadius: 8, transition: 'width 0.4s' }} />
           </div>
+
+          {/* Aclaración: no todo lo "Cobrado" de este período entró de banco este mes —
+              pagos anualizados/adelantados hechos en meses anteriores ya dejan estas
+              cuotas en PAGADO sin que haya movimiento bancario nuevo en {mes}. */}
+          {totalCobradoAntes > 0 && (
+            <div style={{ fontSize: 11, color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px' }}>
+              De lo <strong style={{ color: '#15803d' }}>cobrado</strong> en {labelMes(mes)}: <strong style={{ color: '#15803d' }}>{fmt$(totalCobradoEnMes)}</strong> entró de banco durante {labelMes(mes)}
+              {' '}· <strong style={{ color: '#2563eb' }}>{fmt$(totalCobradoAntes)}</strong> ya se había cobrado antes ({cobradoAntesRows.length} cuota{cobradoAntesRows.length !== 1 ? 's' : ''} de pago anualizado/adelantado) — no representa entrada de banco en {labelMes(mes)}.
+            </div>
+          )}
 
           {/* KPIs por tipo */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
@@ -566,6 +586,11 @@ export default function ReporteProyeccionCobranza() {
                           {f.fecha_pago
                             ? new Date(f.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
                             : '—'}
+                          {f.fecha_pago && f.fecha_pago.slice(0, 7) < mes && (
+                            <span title="Cobrado antes de este período — no es entrada de banco nueva en este mes" style={{ marginLeft: 5, fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 20, background: '#dbeafe', color: '#2563eb' }}>
+                              anticipo
+                            </span>
+                          )}
                         </td>
                         <td style={{ padding: '9px 10px', color: '#64748b', fontSize: 11 }}>
                           {f.forma_pago ?? '—'}
