@@ -1,36 +1,98 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { dbGolf } from '@/lib/supabase'
+import { dbGolf, dbHip, dbCtrl } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { TrendingUp, CreditCard, CheckCircle, Clock, CalendarClock, AlertTriangle } from 'lucide-react'
 
-type Cuota = {
-  id: number
-  tipo: string
-  concepto: string
-  periodo: string | null
-  monto_original: number
-  descuento: number
-  monto_final: number
-  saldo: number | null
-  status: string
-  fecha_vencimiento: string | null
-  fecha_pago: string | null
-  forma_pago: string | null
-  cat_socios: {
-    numero_socio: string | null
-    nombre: string
-    apellido_paterno: string | null
-    apellido_materno: string | null
-    cat_categorias_socios: { nombre: string } | null
-  } | null
+// ── Proyección de Cobranza — Golf / Pensiones / Hípico / Locales ──────
+// Un mismo reporte sirve a los 4 módulos que llevan cuotas con periodo,
+// vencimiento y saldo (cxc_golf / cxc_hip / loc_cxc) — cambia solo la
+// fuente de datos y cómo se resuelve el nombre del cliente y su "unidad"
+// (categoría de socio / caballeriza / propiedad). Mismo patrón que
+// ReporteCobranzaCorrienteVencida.tsx.
+
+export type FuenteProyeccion = 'golf' | 'pensiones' | 'hipico' | 'locales'
+
+type Cliente = { nombre: string; numero: string | null; secundario: string | null }
+
+const resolveSocio = (row: any): Cliente => {
+  const s = row.cat_socios
+  return {
+    nombre:     s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—',
+    numero:     s?.numero_socio ?? null,
+    secundario: s?.cat_categorias_socios?.nombre ?? null,
+  }
+}
+
+const resolveArrendatario = (row: any): Cliente => {
+  const a = row.cat_arrendatarios
+  return {
+    nombre:     a ? (a.razon_social || [a.nombre, a.apellido_paterno].filter(Boolean).join(' ')) : '—',
+    numero:     null,
+    secundario: row.ctrl_asignaciones?.unidad?.clave ?? null,
+  }
+}
+
+const FUENTE_CFG: Record<FuenteProyeccion, {
+  db: typeof dbGolf
+  tabla: string
+  selectJoin: string
+  tipos: string[]           // tipos incluidos en el universo de datos de este reporte
+  tiposResumen: string[]    // tipos que aparecen en las tarjetas "KPIs por tipo" (subconjunto de tipos)
+  tipoLabels: Record<string, string>
+  clienteLabel: string
+  secundarioLabel: string
+  titulo: string
+  printSlug: string
+  resolveCliente: (row: any) => Cliente
+}> = {
+  golf: {
+    db: dbGolf, tabla: 'cxc_golf',
+    selectJoin: 'cat_socios(numero_socio, nombre, apellido_paterno, apellido_materno, cat_categorias_socios(nombre))',
+    tipos: ['MENSUALIDAD', 'PENSION_CARRITO', 'INSCRIPCION'],
+    tiposResumen: ['MENSUALIDAD', 'PENSION_CARRITO'],
+    tipoLabels: { MENSUALIDAD: 'Membresía', PENSION_CARRITO: 'Pensión Carrito', INSCRIPCION: 'Inscripción' },
+    clienteLabel: 'Socio', secundarioLabel: 'Categoría',
+    titulo: 'Proyección de Cobranza — Club Golf', printSlug: 'Proyeccion-Cobranza-Golf',
+    resolveCliente: resolveSocio,
+  },
+  pensiones: {
+    db: dbGolf, tabla: 'cxc_golf',
+    selectJoin: 'cat_socios(numero_socio, nombre, apellido_paterno, apellido_materno, cat_categorias_socios(nombre))',
+    tipos: ['PENSION_CARRITO'],
+    tiposResumen: ['PENSION_CARRITO'],
+    tipoLabels: { PENSION_CARRITO: 'Pensión Carrito' },
+    clienteLabel: 'Socio', secundarioLabel: 'Categoría',
+    titulo: 'Proyección de Cobranza — Pensiones de Carritos', printSlug: 'Proyeccion-Cobranza-Pensiones',
+    resolveCliente: resolveSocio,
+  },
+  hipico: {
+    db: dbHip, tabla: 'cxc_hip',
+    selectJoin: 'cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), ctrl_asignaciones(unidad:cat_caballerizas(clave, nombre))',
+    tipos: ['RENTA_CABALLERIZA'],
+    tiposResumen: ['RENTA_CABALLERIZA'],
+    tipoLabels: { RENTA_CABALLERIZA: 'Renta Caballeriza' },
+    clienteLabel: 'Arrendatario', secundarioLabel: 'Caballeriza',
+    titulo: 'Proyección de Cobranza — Hípico', printSlug: 'Proyeccion-Cobranza-Hipico',
+    resolveCliente: resolveArrendatario,
+  },
+  locales: {
+    db: dbCtrl, tabla: 'loc_cxc',
+    selectJoin: 'cat_arrendatarios:loc_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), ctrl_asignaciones:loc_asignaciones(unidad:cat_propiedades:loc_propiedades(clave, nombre))',
+    tipos: ['RENTA_LOCAL', 'SERVICIOS_MANTTO'],
+    tiposResumen: ['RENTA_LOCAL', 'SERVICIOS_MANTTO'],
+    tipoLabels: { RENTA_LOCAL: 'Renta Local', SERVICIOS_MANTTO: 'Mantenimiento' },
+    clienteLabel: 'Arrendatario', secundarioLabel: 'Propiedad',
+    titulo: 'Proyección de Cobranza — Locales Comerciales', printSlug: 'Proyeccion-Cobranza-Locales',
+    resolveCliente: resolveArrendatario,
+  },
 }
 
 type Fila = {
   id: number
-  socio: string
+  cliente: string
   numero: string | null
-  categoria: string | null
+  secundario: string | null
   tipo: string
   concepto: string
   monto_cargo: number   // monto_final (lo que se cargó)
@@ -44,12 +106,6 @@ type Fila = {
 
 const fmt$ = (v: number) => '$' + Number(v).toLocaleString('es-MX', { minimumFractionDigits: 2 })
 const pct  = (a: number, t: number) => t > 0 ? Math.round((a / t) * 100) : 0
-
-const TIPO_LABEL: Record<string, string> = {
-  MENSUALIDAD:     'Membresía',
-  PENSION_CARRITO: 'Pensión Carrito',
-  INSCRIPCION:     'Inscripción',
-}
 
 const STATUS_COLOR: Record<string, { bg: string; color: string; label: string }> = {
   PAGADO:       { bg: '#dcfce7', color: '#15803d', label: 'Pagado'       },
@@ -101,25 +157,27 @@ type CobroRow = {
   status: string
   fecha_pago: string | null
   fecha_vencimiento: string | null
-  cat_socios: { numero_socio: string | null; nombre: string; apellido_paterno: string | null; apellido_materno: string | null } | null
+  cliente: string
 }
 
 const montoPagado = (c: CobroRow) =>
   c.status === 'PAGADO' ? c.monto_final : c.monto_final - (c.saldo ?? 0)
 
-const nombreSocioCorto = (s: CobroRow['cat_socios']) =>
-  s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—'
-
-export default function ReporteProyeccionCobranza() {
+export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?: FuenteProyeccion }) {
+  const cfg = FUENTE_CFG[fuente]
   const hoy = new Date()
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
 
   const [mes, setMes]               = useState(mesActual)
-  const [filtroTipo, setFiltroTipo] = useState<'TODOS' | 'MENSUALIDAD' | 'PENSION_CARRITO'>('TODOS')
+  const [filtroTipo, setFiltroTipo] = useState<string>('TODOS')
   const [filtroStatus, setFiltroStatus] = useState<'TODOS' | 'PENDIENTE' | 'PAGADO'>('TODOS')
   const [busqueda, setBusqueda]     = useState('')
   const [filas, setFilas]           = useState<Fila[]>([])
   const [loading, setLoading]       = useState(false)
+
+  // Reset de filtros locales al cambiar de fuente (evita quedarse con un tipo
+  // seleccionado que no existe en el nuevo módulo)
+  useEffect(() => { setFiltroTipo('TODOS'); setFiltroStatus('TODOS'); setBusqueda('') }, [fuente])
 
   // Flujo de cobranza del mes (cobrado / anticipado / vencido)
   const [cobrosMes, setCobrosMes]   = useState<CobroRow[]>([])
@@ -130,45 +188,48 @@ export default function ReporteProyeccionCobranza() {
     setLoadingFlujo(true)
     const { inicio, fin } = rangoMes(mes)
     const hoyStr = new Date().toLocaleDateString('en-CA')
-    const selectCols = `id, tipo, concepto, periodo, monto_final, saldo, status, fecha_pago, fecha_vencimiento,
-      cat_socios(numero_socio, nombre, apellido_paterno, apellido_materno)`
+    const selectCols = `id, tipo, concepto, periodo, monto_final, saldo, status, fecha_pago, fecha_vencimiento, ${cfg.selectJoin}`
 
     const [{ data: dCobros }, { data: dVencidos }] = await Promise.all([
-      dbGolf.from('cxc_golf').select(selectCols)
-        .in('tipo', ['MENSUALIDAD', 'PENSION_CARRITO', 'INSCRIPCION'])
+      cfg.db.from(cfg.tabla).select(selectCols)
+        .in('tipo', cfg.tipos)
         .neq('status', 'CANCELADO')
         .gte('fecha_pago', inicio)
         .lte('fecha_pago', fin)
         .order('fecha_pago'),
-      dbGolf.from('cxc_golf').select(selectCols)
-        .in('tipo', ['MENSUALIDAD', 'PENSION_CARRITO', 'INSCRIPCION'])
+      cfg.db.from(cfg.tabla).select(selectCols)
+        .in('tipo', cfg.tipos)
         .in('status', ['PENDIENTE', 'PAGO_PARCIAL'])
         .lt('fecha_vencimiento', hoyStr)
         .order('fecha_vencimiento'),
     ])
 
-    setCobrosMes((dCobros as unknown as CobroRow[]) ?? [])
-    setVencidos((dVencidos as unknown as CobroRow[]) ?? [])
+    const normalizar = (rows: any[]): CobroRow[] => rows.map(r => ({
+      id: r.id, tipo: r.tipo, concepto: r.concepto, periodo: r.periodo,
+      monto_final: r.monto_final, saldo: r.saldo, status: r.status,
+      fecha_pago: r.fecha_pago, fecha_vencimiento: r.fecha_vencimiento,
+      cliente: cfg.resolveCliente(r).nombre,
+    }))
+
+    setCobrosMes(normalizar((dCobros as any[]) ?? []))
+    setVencidos(normalizar((dVencidos as any[]) ?? []))
     setLoadingFlujo(false)
-  }, [mes])
+  }, [mes, cfg])
 
   useEffect(() => { fetchFlujo() }, [fetchFlujo])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { data } = await dbGolf
-      .from('cxc_golf')
+    const { data } = await cfg.db
+      .from(cfg.tabla)
       .select(`id, tipo, concepto, periodo, monto_original, descuento, monto_final, saldo,
-        status, fecha_vencimiento, fecha_pago, forma_pago,
-        cat_socios(numero_socio, nombre, apellido_paterno, apellido_materno,
-          cat_categorias_socios(nombre))`)
+        status, fecha_vencimiento, fecha_pago, forma_pago, ${cfg.selectJoin}`)
       .eq('periodo', mes)
-      .in('tipo', ['MENSUALIDAD', 'PENSION_CARRITO', 'INSCRIPCION'])
+      .in('tipo', cfg.tipos)
       .neq('status', 'CANCELADO')
       .order('status')
-      .order('cat_socios(apellido_paterno)')
 
-    const rows = (data as unknown as Cuota[]) ?? []
+    const rows = (data as any[]) ?? []
 
     setFilas(rows.map(c => {
       const cobrado    = c.status === 'PAGADO' ? c.monto_final
@@ -177,12 +238,12 @@ export default function ReporteProyeccionCobranza() {
       const por_cobrar = c.status === 'PAGADO' ? 0
                        : c.status === 'PAGO_PARCIAL' ? (c.saldo ?? 0)
                        : c.monto_final
-      const s = c.cat_socios
+      const cli = cfg.resolveCliente(c)
       return {
         id:               c.id,
-        socio:            s ? [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' ') : '—',
-        numero:           s?.numero_socio ?? null,
-        categoria:        s?.cat_categorias_socios?.nombre ?? null,
+        cliente:          cli.nombre,
+        numero:           cli.numero,
+        secundario:       cli.secundario,
         tipo:             c.tipo,
         concepto:         c.concepto,
         monto_cargo:      c.monto_final,
@@ -195,7 +256,7 @@ export default function ReporteProyeccionCobranza() {
       }
     }))
     setLoading(false)
-  }, [mes])
+  }, [mes, cfg])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -206,7 +267,7 @@ export default function ReporteProyeccionCobranza() {
     if (filtroStatus === 'PAGADO'    && f.status !== 'PAGADO') return false
     if (busqueda.trim()) {
       const q = busqueda.toLowerCase()
-      if (!f.socio.toLowerCase().includes(q) && !(f.numero ?? '').includes(q) && !f.concepto.toLowerCase().includes(q)) return false
+      if (!f.cliente.toLowerCase().includes(q) && !(f.numero ?? '').includes(q) && !f.concepto.toLowerCase().includes(q)) return false
     }
     return true
   })
@@ -220,9 +281,9 @@ export default function ReporteProyeccionCobranza() {
   const avancePct     = pct(totalCobrado, totalCargo)
 
   // KPIs por tipo
-  const porTipo = ['MENSUALIDAD', 'PENSION_CARRITO'].map(t => ({
+  const porTipo = cfg.tiposResumen.map(t => ({
     tipo:      t,
-    label:     TIPO_LABEL[t],
+    label:     cfg.tipoLabels[t] ?? t,
     cargo:     filas.filter(f => f.tipo === t).reduce((a, f) => a + f.monto_cargo, 0),
     cobrado:   filas.filter(f => f.tipo === t).reduce((a, f) => a + f.cobrado,     0),
     pendiente: filas.filter(f => f.tipo === t).reduce((a, f) => a + f.por_cobrar,  0),
@@ -232,9 +293,9 @@ export default function ReporteProyeccionCobranza() {
 
   // Del "Cobrado" del período, cuánto entró de banco EN este mes vs cuánto ya
   // se había cobrado antes (pago anualizado/adelantado hecho en meses previos:
-  // ej. socio pagó en enero 1 inscripción + 12 mensualidades ene-dic — esas
-  // cuotas de meses futuros quedan PAGADAS pero el banco no recibe nada nuevo
-  // cuando llega ese mes).
+  // ej. un cliente paga en enero varios meses por adelantado — esas cuotas de
+  // meses futuros quedan PAGADAS pero el banco no recibe nada nuevo cuando
+  // llega ese mes).
   const cobradoEnMesRows = filas.filter(f => f.cobrado > 0 && f.fecha_pago && f.fecha_pago.slice(0, 7) === mes)
   const cobradoAntesRows = filas.filter(f => f.cobrado > 0 && f.fecha_pago && f.fecha_pago.slice(0, 7) < mes)
   const totalCobradoEnMes = cobradoEnMesRows.reduce((a, f) => a + f.cobrado, 0)
@@ -277,22 +338,20 @@ export default function ReporteProyeccionCobranza() {
           </select>
         </div>
 
-        {/* Tipo */}
-        <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Tipo de cuota</label>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {([
-              { key: 'TODOS',          label: 'Todos'            },
-              { key: 'MENSUALIDAD',    label: 'Membresía'        },
-              { key: 'PENSION_CARRITO',label: 'Pensión Carrito'  },
-            ] as const).map(o => (
-              <button key={o.key} onClick={() => setFiltroTipo(o.key)}
-                style={{ padding: '7px 12px', fontSize: 12, fontWeight: filtroTipo === o.key ? 700 : 500, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: filtroTipo === o.key ? '#2563eb' : '#e2e8f0', background: filtroTipo === o.key ? '#eff6ff' : '#fff', color: filtroTipo === o.key ? '#1d4ed8' : '#64748b' }}>
-                {o.label}
-              </button>
-            ))}
+        {/* Tipo (solo si el módulo tiene más de un tipo de cuota) */}
+        {cfg.tipos.length > 1 && (
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Tipo de cuota</label>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {[{ key: 'TODOS', label: 'Todos' }, ...cfg.tipos.map(t => ({ key: t, label: cfg.tipoLabels[t] ?? t }))].map(o => (
+                <button key={o.key} onClick={() => setFiltroTipo(o.key)}
+                  style={{ padding: '7px 12px', fontSize: 12, fontWeight: filtroTipo === o.key ? 700 : 500, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: filtroTipo === o.key ? '#2563eb' : '#e2e8f0', background: filtroTipo === o.key ? '#eff6ff' : '#fff', color: filtroTipo === o.key ? '#1d4ed8' : '#64748b' }}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Status */}
         <div>
@@ -313,19 +372,19 @@ export default function ReporteProyeccionCobranza() {
 
         {/* Búsqueda */}
         <div style={{ flex: 1, minWidth: 200 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Buscar socio</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Buscar {cfg.clienteLabel.toLowerCase()}</label>
           <input
             style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }}
-            placeholder="Nombre, No. socio…"
+            placeholder={`Nombre${cfg.clienteLabel === 'Socio' ? ', No. socio…' : '…'}`}
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
           />
         </div>
 
         <PrintBar
-          title={`Proyección Cobranza — ${labelMes(mes)}`}
+          title={`${cfg.printSlug} — ${labelMes(mes)}`}
           count={filtradas.length}
-          reportTitle={`Proyección de Cobranza — ${labelMes(mes)}`}
+          reportTitle={`${cfg.titulo} — ${labelMes(mes)}`}
         />
       </div>
 
@@ -369,31 +428,33 @@ export default function ReporteProyeccionCobranza() {
           )}
 
           {/* KPIs por tipo */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
-            {porTipo.filter(t => t.total > 0).map(t => (
-              <div key={t.tipo} style={{ padding: '14px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>{t.label}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
-                  {[
-                    { label: 'Cargo',    value: fmt$(t.cargo),    color: '#2563eb' },
-                    { label: 'Cobrado',  value: fmt$(t.cobrado),  color: '#15803d' },
-                    { label: 'Pendiente',value: fmt$(t.pendiente),color: '#d97706' },
-                  ].map(col => (
-                    <div key={col.label}>
-                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2 }}>{col.label}</div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: col.color }}>{col.value}</div>
-                    </div>
-                  ))}
+          {porTipo.filter(t => t.total > 0).length > 1 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
+              {porTipo.filter(t => t.total > 0).map(t => (
+                <div key={t.tipo} style={{ padding: '14px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>{t.label}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
+                    {[
+                      { label: 'Cargo',    value: fmt$(t.cargo),    color: '#2563eb' },
+                      { label: 'Cobrado',  value: fmt$(t.cobrado),  color: '#15803d' },
+                      { label: 'Pendiente',value: fmt$(t.pendiente),color: '#d97706' },
+                    ].map(col => (
+                      <div key={col.label}>
+                        <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2 }}>{col.label}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: col.color }}>{col.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 11, color: '#94a3b8' }}>
+                    {t.pagadas} de {t.total} pagadas · {pct(t.cobrado, t.cargo)}% cobrado
+                  </div>
+                  <div style={{ marginTop: 4, background: '#e2e8f0', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct(t.cobrado, t.cargo)}%`, background: '#15803d', borderRadius: 4 }} />
+                  </div>
                 </div>
-                <div style={{ marginTop: 8, fontSize: 11, color: '#94a3b8' }}>
-                  {t.pagadas} de {t.total} pagadas · {pct(t.cobrado, t.cargo)}% cobrado
-                </div>
-                <div style={{ marginTop: 4, background: '#e2e8f0', borderRadius: 4, height: 6, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct(t.cobrado, t.cargo)}%`, background: '#15803d', borderRadius: 4 }} />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -476,7 +537,7 @@ export default function ReporteProyeccionCobranza() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
                     <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
-                      {['Socio', 'Concepto', 'Período', 'Vencimiento', 'Saldo'].map(h => (
+                      {[cfg.clienteLabel, 'Concepto', 'Período', 'Vencimiento', 'Saldo'].map(h => (
                         <th key={h} style={{ padding: '8px 14px', textAlign: h === 'Saldo' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{h}</th>
                       ))}
                     </tr>
@@ -484,7 +545,7 @@ export default function ReporteProyeccionCobranza() {
                   <tbody>
                     {vencidos.map(c => (
                       <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '8px 14px', color: '#1e293b' }}>{nombreSocioCorto(c.cat_socios)}</td>
+                        <td style={{ padding: '8px 14px', color: '#1e293b' }}>{c.cliente}</td>
                         <td style={{ padding: '8px 14px', color: '#475569' }}>{c.concepto}</td>
                         <td style={{ padding: '8px 14px', color: '#64748b', fontFamily: 'monospace' }}>{c.periodo ?? '—'}</td>
                         <td style={{ padding: '8px 14px', color: '#dc2626', fontWeight: 600 }}>
@@ -513,7 +574,7 @@ export default function ReporteProyeccionCobranza() {
           <div style={{ padding: '10px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
               {loading ? 'Cargando…' : `${filtradas.length} cuota${filtradas.length !== 1 ? 's' : ''}`}
-              {filtroTipo !== 'TODOS' && <span style={{ fontWeight: 400, color: '#94a3b8', marginLeft: 6 }}>· {TIPO_LABEL[filtroTipo]}</span>}
+              {filtroTipo !== 'TODOS' && <span style={{ fontWeight: 400, color: '#94a3b8', marginLeft: 6 }}>· {cfg.tipoLabels[filtroTipo] ?? filtroTipo}</span>}
             </span>
             {!loading && filtradas.length > 0 && (
               <span style={{ fontSize: 12, color: '#64748b' }}>
@@ -527,7 +588,7 @@ export default function ReporteProyeccionCobranza() {
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0' }}>
-                  {['No.', 'Socio', 'Categoría', 'Tipo', 'Concepto', 'Cargo', 'Cobrado', 'Por cobrar', 'Status', 'Vencimiento', 'F. Pago', 'Forma Pago'].map(h => (
+                  {(cfg.clienteLabel === 'Socio' ? ['No.'] : []).concat([cfg.clienteLabel, cfg.secundarioLabel, 'Tipo', 'Concepto', 'Cargo', 'Cobrado', 'Por cobrar', 'Status', 'Vencimiento', 'F. Pago', 'Forma Pago']).map(h => (
                     <th key={h} style={{ padding: '9px 10px', textAlign: h === 'Cargo' || h === 'Cobrado' || h === 'Por cobrar' ? 'right' : 'left', fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -545,20 +606,20 @@ export default function ReporteProyeccionCobranza() {
                       <tr key={f.id} style={{ borderBottom: '1px solid #f1f5f9' }}
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#f8fafc'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
-                        <td style={{ padding: '9px 10px', color: '#94a3b8', fontFamily: 'monospace', fontSize: 11, whiteSpace: 'nowrap' }}>
-                          {f.numero ?? '—'}
-                        </td>
+                        {cfg.clienteLabel === 'Socio' && (
+                          <td style={{ padding: '9px 10px', color: '#94a3b8', fontFamily: 'monospace', fontSize: 11, whiteSpace: 'nowrap' }}>
+                            {f.numero ?? '—'}
+                          </td>
+                        )}
                         <td style={{ padding: '9px 10px', fontWeight: 500, color: '#1e293b', whiteSpace: 'nowrap' }}>
-                          {f.socio}
+                          {f.cliente}
                         </td>
                         <td style={{ padding: '9px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                          {f.categoria ?? '—'}
+                          {f.secundario ?? '—'}
                         </td>
                         <td style={{ padding: '9px 10px', whiteSpace: 'nowrap' }}>
-                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 20,
-                            background: f.tipo === 'PENSION_CARRITO' ? '#fff7ed' : '#eff6ff',
-                            color:      f.tipo === 'PENSION_CARRITO' ? '#ea580c'  : '#2563eb' }}>
-                            {TIPO_LABEL[f.tipo] ?? f.tipo}
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 20, background: '#eff6ff', color: '#2563eb' }}>
+                            {cfg.tipoLabels[f.tipo] ?? f.tipo}
                           </span>
                         </td>
                         <td style={{ padding: '9px 10px', color: '#475569' }}>{f.concepto}</td>
@@ -603,7 +664,7 @@ export default function ReporteProyeccionCobranza() {
               {!loading && filtradas.length > 0 && (
                 <tfoot>
                   <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0', fontWeight: 700 }}>
-                    <td colSpan={5} style={{ padding: '10px 10px', fontSize: 12, color: '#475569' }}>
+                    <td colSpan={cfg.clienteLabel === 'Socio' ? 5 : 4} style={{ padding: '10px 10px', fontSize: 12, color: '#475569' }}>
                       Total ({filtradas.length} cuotas)
                     </td>
                     <td style={{ padding: '10px 10px', textAlign: 'right', fontSize: 13, color: '#1e293b' }}>
