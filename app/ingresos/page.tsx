@@ -5,9 +5,8 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Receipt, ChevronLeft, ChevronRight,
   Save, Loader, Calendar, Eye, Ban, Layers, DollarSign, Printer, Pencil,
-  TrendingUp, CheckCircle, Tag,
+  TrendingUp,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
 
 // ── Tipos ──────────────────────────────────────────────────────
@@ -1057,7 +1056,6 @@ function ReciboModal({
 // PÁGINA PRINCIPAL — Lista de recibos
 // ════════════════════════════════════════════════════════════════
 export default function IngresosPage() {
-  const router = useRouter()
   const { authUser, canWrite } = useAuth()
   const esCobranza = authUser?.rol === 'cobranza'
   const [rows, setRows]         = useState<Recibo[]>([])
@@ -1074,30 +1072,10 @@ export default function IngresosPage() {
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState(false)
   const [detalle, setDetalle]   = useState<Recibo | null>(null)
-  const [stats, setStats]       = useState({ hoy: 0, mes: 0, confirmados: 0 })
 
   // cobranza: solo Cuotas Residencial (tipo 'cuotas' en cfg.centros_ingreso)
   const centrosPermitidos = esCobranza ? centros.filter(c => c.tipo === 'cuotas') : centros
   const cuotasCentroIds   = centros.filter(c => c.tipo === 'cuotas').map(c => c.id)
-
-  // Stats generales (independientes de los filtros de la tabla)
-  useEffect(() => {
-    const now = new Date()
-    const hoy = toLocalYmd(now)
-    const ini = toLocalYmd(new Date(now.getFullYear(), now.getMonth(), 1))
-
-    Promise.all([
-      dbCtrl.from('recibos_ingreso').select('monto_total').eq('status', 'Confirmado').eq('fecha', hoy),
-      dbCtrl.from('recibos_ingreso').select('monto_total').eq('status', 'Confirmado').gte('fecha', ini),
-      dbCtrl.from('recibos_ingreso').select('id', { count: 'exact', head: true }).eq('status', 'Confirmado'),
-    ]).then(([hoyR, mesR, cntR]) => {
-      setStats({
-        hoy:         (hoyR.data ?? []).reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0),
-        mes:         (mesR.data ?? []).reduce((a: number, r: any) => a + (r.monto_total ?? 0), 0),
-        confirmados: cntR.count ?? 0,
-      })
-    }).catch(() => {})
-  }, [])
 
   // Carga catálogos una sola vez
   useEffect(() => {
@@ -1162,39 +1140,12 @@ export default function IngresosPage() {
           </p>
         </div>
         <div className="page-header-actions" style={{ display: 'flex', gap: 8 }}>
-          {!esCobranza && (
-            <button className="btn-ghost" onClick={() => router.push('/ingresos/centros')}>
-              <Tag size={14} /> Centros de Ingreso
-            </button>
-          )}
           {canWrite('ingresos') && (
             <button className="btn-primary" onClick={() => setModal(true)}>
               <Plus size={14} /> Nuevo Recibo
             </button>
           )}
         </div>
-      </div>
-
-      {/* KPIs */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        {[
-          { label: 'Ingresos de Hoy',     value: fmt(stats.hoy),  color: '#059669', bg: '#f0fdf4', icon: Calendar },
-          { label: 'Ingresos del Mes',    value: fmt(stats.mes),  color: '#2563eb', bg: '#eff6ff', icon: DollarSign },
-          { label: 'Recibos Confirmados', value: stats.confirmados, color: '#7c3aed', bg: '#f5f3ff', icon: CheckCircle },
-        ].map(s => {
-          const Icon = s.icon
-          return (
-            <div key={s.label} className="card" style={{ padding: '14px 18px', minWidth: 180, background: s.bg, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 9, background: s.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon size={16} style={{ color: s.color }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 20, fontFamily: 'var(--font-display)', fontWeight: 700, color: s.color, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
-              </div>
-            </div>
-          )
-        })}
       </div>
 
       {/* Filtros */}
@@ -1226,32 +1177,6 @@ export default function IngresosPage() {
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
-
-      {/* Sumatoria de la página actual */}
-      {!loading && rows.length > 0 && (
-        <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, fontSize: 12 }}>
-            <span style={{ color: '#64748b', fontWeight: 500 }}>Confirmados</span>
-            <span style={{ fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalConfirmado)}</span>
-          </div>
-          {totalBorrador > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12 }}>
-              <span style={{ color: '#64748b', fontWeight: 500 }}>Borradores</span>
-              <span style={{ fontWeight: 700, color: '#d97706', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalBorrador)}</span>
-            </div>
-          )}
-          {totalCancelado > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}>
-              <span style={{ color: '#64748b', fontWeight: 500 }}>Cancelados</span>
-              <span style={{ fontWeight: 700, color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalCancelado)}</span>
-            </div>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, fontSize: 12, marginLeft: 'auto' }}>
-            <span style={{ color: '#0369a1', fontWeight: 600 }}>Total página ({rows.length} recibos)</span>
-            <span style={{ fontWeight: 800, color: '#0369a1', fontVariantNumeric: 'tabular-nums', fontSize: 13 }}>{fmt(totalPagina)}</span>
-          </div>
-        </div>
-      )}
 
       {/* Tabla */}
       <div className="card" style={{ overflow: 'hidden' }}>
