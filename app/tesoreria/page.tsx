@@ -1,16 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { dbComp, dbCfg } from '@/lib/supabase'
 import {
   Landmark, FileText, Building2, ChevronRight,
-  AlertTriangle, Clock, TrendingDown, Wallet
+  Clock, TrendingDown, Wallet
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
-import KpiCard from '@/components/ui/KpiCard'
-
-const fmt = (n: number) =>
-  '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const MODULOS = [
   {
@@ -46,34 +40,6 @@ const MODULOS = [
 
 export default function TesoreriaPage() {
   const router = useRouter()
-  const [stats, setStats] = useState({
-    totalCXP:     0,
-    totalVencido: 0,
-    totalSaldo:   0,
-    cuentas:      0,
-  })
-
-  useEffect(() => {
-    Promise.all([
-      dbComp.from('ordenes_pago').select('monto, saldo, fecha_vencimiento, status')
-        .in('status', ['Pendiente', 'Abonada']),
-      dbCfg.from('cuentas_bancarias').select('saldo').eq('activo', true),
-    ]).then(([{ data: ops }, { data: cbs }]) => {
-      const pendientes = ops ?? []
-      const now = Date.now()
-      const totalCXP     = pendientes.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
-      const totalVencido = pendientes
-        .filter(o => o.fecha_vencimiento && Math.floor((now - new Date(o.fecha_vencimiento).getTime()) / 86400000) > 0)
-        .reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
-      const totalSaldo = (cbs ?? []).reduce((a, c) => a + (c.saldo ?? 0), 0)
-      setStats({
-        totalCXP,
-        totalVencido,
-        totalSaldo,
-        cuentas: (cbs ?? []).length,
-      })
-    })
-  }, [])
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -85,14 +51,6 @@ export default function TesoreriaPage() {
         title="Tesorería"
         subtitle="Gestión de cuentas bancarias, cuentas por pagar y flujo de efectivo"
       />
-
-      {/* KPIs */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
-        <KpiCard label="CXP Total" value={fmt(stats.totalCXP)} color="#dc2626" icon={FileText} />
-        <KpiCard label="CXP Vencido" value={fmt(stats.totalVencido)} color="#d97706" icon={AlertTriangle} />
-        <KpiCard label="Saldo en Cuentas" value={fmt(stats.totalSaldo)} color="#0f766e" icon={TrendingDown} />
-        <KpiCard label="Cuentas Bancarias" value={stats.cuentas} color="#0891b2" icon={Building2} />
-      </div>
 
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
