@@ -1,33 +1,11 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { dbGolf } from '@/lib/supabase'
-import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import {
-  Users, Flag, MapPin, Calendar,
+  Flag, MapPin, Calendar,
   Car,
-  ChevronRight, ArrowRightLeft, RefreshCw, AlertTriangle,
-  Activity, Target,
+  ChevronRight, ArrowRightLeft, Target,
 } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
-
-// ── Formatters ────────────────────────────────────────────────
-const fmt$ = (n: number) =>
-  '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const fmtK = (n: number) => {
-  if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(1) + 'M'
-  if (n >= 1_000)     return '$' + (n / 1_000).toFixed(1) + 'K'
-  return fmt$(n)
-}
-
-// ── KPI state ─────────────────────────────────────────────────
-type KPIs = {
-  sociosActivos: number
-  salidasHoy:    number
-  salidasMes:    number
-  cuotasVencidas: number
-  montoCuotasVencidas: number
-}
 
 // ── Módulos del club ──────────────────────────────────────────
 const MODULOS = [
@@ -87,87 +65,8 @@ const MODULOS = [
   },
 ]
 
-// ── Helpers de fecha ──────────────────────────────────────────
-function getIniMes() {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString('en-CA')
-}
-
 export default function GolfPage() {
   const router  = useRouter()
-  const hoy     = fechaLocal()
-  const iniMes  = getIniMes()
-
-  const [kpis,     setKpis]     = useState<KPIs>({
-    sociosActivos: 0, salidasHoy: 0, salidasMes: 0,
-    cuotasVencidas: 0, montoCuotasVencidas: 0,
-  })
-  const [loading,    setLoading]    = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-
-  const loadKpis = useCallback(async () => {
-    setRefreshing(true)
-    try {
-      const [
-        sociosR, salidasHoyR, salidasHoyAcompR,
-        salidasMesR, salidasMesAcompR,
-        cuotasR,
-      ] = await Promise.allSettled([
-        // 1. Socios activos
-        dbGolf.from('cat_socios').select('id', { count: 'exact', head: true }).eq('activo', true),
-        // 2. Salidas hoy — socios principales
-        dbGolf.from('ctrl_accesos')
-          .select('id', { count: 'exact', head: true })
-          .gte('fecha_entrada', inicioDelDia(hoy))
-          .lte('fecha_entrada', finDelDia(hoy)),
-        // 3. Salidas hoy — acompañantes
-        (dbGolf.from('ctrl_acceso_acomp') as any)
-          .select('id, ctrl_accesos!inner(fecha_entrada)', { count: 'exact', head: true })
-          .gte('ctrl_accesos.fecha_entrada', inicioDelDia(hoy))
-          .lte('ctrl_accesos.fecha_entrada', finDelDia(hoy)),
-        // 4. Salidas este mes — socios principales
-        dbGolf.from('ctrl_accesos')
-          .select('id', { count: 'exact', head: true })
-          .gte('fecha_entrada', inicioDelDia(iniMes))
-          .lte('fecha_entrada', finDelDia(hoy)),
-        // 5. Salidas este mes — acompañantes
-        (dbGolf.from('ctrl_acceso_acomp') as any)
-          .select('id, ctrl_accesos!inner(fecha_entrada)', { count: 'exact', head: true })
-          .gte('ctrl_accesos.fecha_entrada', inicioDelDia(iniMes))
-          .lte('ctrl_accesos.fecha_entrada', finDelDia(hoy)),
-        // 4. Cuotas vencidas (PENDIENTE + fecha_vencimiento < hoy)
-        dbGolf.from('cat_cuotas')
-          .select('monto_final')
-          .eq('status', 'PENDIENTE')
-          .lt('fecha_vencimiento', hoy),
-      ])
-
-      // Socios activos
-      const sociosActivos = sociosR.status === 'fulfilled' ? (sociosR.value.count ?? 0) : 0
-
-      // Salidas (socios principales + acompañantes)
-      const salidasHoy = (salidasHoyR.status === 'fulfilled' ? (salidasHoyR.value.count ?? 0) : 0)
-                       + (salidasHoyAcompR.status === 'fulfilled' ? (salidasHoyAcompR.value.count ?? 0) : 0)
-      const salidasMes = (salidasMesR.status === 'fulfilled' ? (salidasMesR.value.count ?? 0) : 0)
-                       + (salidasMesAcompR.status === 'fulfilled' ? (salidasMesAcompR.value.count ?? 0) : 0)
-
-      // Cuotas vencidas
-      const cuotasData = cuotasR.status === 'fulfilled' ? (cuotasR.value.data ?? []) : []
-      const cuotasVencidas = cuotasData.length
-      const montoCuotasVencidas = cuotasData.reduce((a: number, c: any) => a + (c.monto_final ?? 0), 0)
-
-      setKpis({
-        sociosActivos, salidasHoy, salidasMes,
-        cuotasVencidas, montoCuotasVencidas,
-      })
-    } catch {
-      // silencioso — KPIs son opcionales
-    }
-    setLoading(false)
-    setRefreshing(false)
-  }, [hoy, iniMes])
-
-  useEffect(() => { loadKpis() }, [loadKpis])
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -178,88 +77,7 @@ export default function GolfPage() {
         eyebrowLabel="Módulo"
         title="Club Golf"
         subtitle="Administración del club — socios, operaciones de campo y servicios deportivos"
-        actions={<button className="btn-ghost" onClick={loadKpis} title="Actualizar">
-          <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
-        </button>}
       />
-
-      {/* KPIs ─────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-
-        {/* Socios activos */}
-        <div className="card" onClick={() => router.push('/golf/miembros')}
-          style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
-            flex: '1 1 160px', maxWidth: 220, cursor: 'pointer', background: '#f0f9ff',
-            transition: 'transform 0.1s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: '#3F4A7520',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Users size={16} style={{ color: '#3F4A75' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
-              color: '#3F4A75', fontVariantNumeric: 'tabular-nums' }}>
-              {loading ? '—' : kpis.sociosActivos}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Socios activos</div>
-          </div>
-        </div>
-
-        {/* Salidas hoy */}
-        <div className="card" onClick={() => router.push('/golf/accesos')}
-          style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
-            flex: '1 1 160px', maxWidth: 220, cursor: 'pointer', background: '#f0fdf4',
-            transition: 'transform 0.1s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: '#16a34a20',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Activity size={16} style={{ color: '#16a34a' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
-              color: '#16a34a', fontVariantNumeric: 'tabular-nums' }}>
-              {loading ? '—' : kpis.salidasHoy}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              Salidas hoy · <span style={{ fontWeight: 600 }}>{loading ? '—' : kpis.salidasMes}</span> en el mes
-            </div>
-          </div>
-        </div>
-
-        {/* Cuotas vencidas */}
-        <div className="card" onClick={() => router.push('/golf/cxc')}
-          style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12,
-            flex: '1 1 180px', maxWidth: 240, cursor: 'pointer',
-            background: kpis.cuotasVencidas > 0 ? '#fef2f2' : '#f8fafc',
-            transition: 'transform 0.1s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none' }}>
-          <div style={{ width: 36, height: 36, borderRadius: 9,
-            background: kpis.cuotasVencidas > 0 ? '#dc262620' : '#64748b20',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <AlertTriangle size={16} style={{ color: kpis.cuotasVencidas > 0 ? '#dc2626' : '#64748b' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontFamily: 'var(--font-display)', fontWeight: 700,
-              color: kpis.cuotasVencidas > 0 ? '#dc2626' : '#64748b',
-              fontVariantNumeric: 'tabular-nums' }}>
-              {loading ? '—' : kpis.cuotasVencidas}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              Cuotas vencidas
-              {!loading && kpis.montoCuotasVencidas > 0 && (
-                <span style={{ marginLeft: 4, fontWeight: 600,
-                  color: kpis.cuotasVencidas > 0 ? '#dc2626' : 'inherit' }}>
-                  · {fmtK(kpis.montoCuotasVencidas)}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-      </div>
 
       {/* Grid de módulos ─────────────────────────────────── */}
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',

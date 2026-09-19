@@ -1,17 +1,12 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { dbComp } from '@/lib/supabase'
 import {
   ShoppingCart, Package, Users, Warehouse, ClipboardList,
   FileText, Truck, ArrowLeftRight, ChevronRight,
-  AlertTriangle, CheckCircle, Clock, Layers, Wallet, Fuel
+  Layers, Wallet, Fuel
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
 import PageHeader from '@/components/layout/PageHeader'
-import KpiCard from '@/components/ui/KpiCard'
-
-type StatCard = { label: string; value: number | string; color: string; bg: string }
 
 const MODULOS = [
   { key: 'requisiciones', label: 'Requisiciones',     icon: ClipboardList, color: '#2563eb', desc: 'Solicitudes de compra por área' },
@@ -33,24 +28,6 @@ const MODULOS = [
 export default function ComprasPage() {
   const router = useRouter()
   const { canCompras } = useAuth()
-  const [stats, setStats] = useState({
-    reqPendientes: 0, ocAbiertas: 0, transAuth: 0, artsBajoMin: 0
-  })
-
-  useEffect(() => {
-    Promise.all([
-      dbComp.from('requisiciones').select('id', { count: 'exact', head: true }).in('status', ['Enviada', 'Aprobada']),
-      dbComp.from('ordenes_compra').select('id', { count: 'exact', head: true }).in('status', ['Autorizada', 'Recibida Parcial']),
-      dbComp.from('transferencias').select('id', { count: 'exact', head: true }).eq('status', 'Autorizada'),
-    ]).then(([req, oc, trans]) => {
-      setStats({
-        reqPendientes: req.count ?? 0,
-        ocAbiertas:    oc.count ?? 0,
-        transAuth:     trans.count ?? 0,
-        artsBajoMin:   0,
-      })
-    })
-  }, [])
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -61,13 +38,6 @@ export default function ComprasPage() {
         title="Compras e Inventarios"
         subtitle="Gestión P2P — Requisición hasta Inventario Lógico"
       />
-
-      {/* Stats rápidas */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 28, flexWrap: 'wrap' }}>
-        <KpiCard label="Requisiciones activas" value={stats.reqPendientes} color="#2563eb" icon={ClipboardList} />
-        <KpiCard label="OC abiertas" value={stats.ocAbiertas} color="#059669" icon={ShoppingCart} />
-        <KpiCard label="Transferencias auth." value={stats.transAuth} color="#d97706" icon={ArrowLeftRight} />
-      </div>
 
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
