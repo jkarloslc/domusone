@@ -32,8 +32,8 @@ export const CONCEPTOS: Concepto[] = [
   { id: 'CFE',   nombre: 'CFE',                      sigla: 'CFE',   calendarioDesc: 'día 22',                          grupo: 'ops' },
   { id: 'PROV',  nombre: 'Proveedores',              sigla: 'PROV',  calendarioDesc: 'según frecuencia elegida',        grupo: 'prov' },
   { id: 'I',     nombre: 'Impuestos',                sigla: 'I',     calendarioDesc: 'día de pago elegido (17 o 22)',   grupo: 'imp' },
-  { id: 'IMSSM', nombre: 'IMSS mensual',             sigla: 'IMSSM', calendarioDesc: 'día 17, meses sin pago bimestral', grupo: 'imss' },
-  { id: 'IMSSB', nombre: 'IMSS bimestral',           sigla: 'IMSSB', calendarioDesc: 'día 17, cada 2 meses desde el mes ancla', grupo: 'imss' },
+  { id: 'IMSSM', nombre: 'IMSS mensual',             sigla: 'IMSSM', calendarioDesc: 'día 17, feb/abr/jun/ago/oct/dic', grupo: 'imss' },
+  { id: 'IMSSB', nombre: 'IMSS bimestral',           sigla: 'IMSSB', calendarioDesc: 'día 17, ene/mar/may/jul/sep/nov', grupo: 'imss' },
   { id: 'AG',    nombre: 'Aguinaldo',                sigla: 'AG',    calendarioDesc: '15 de diciembre',                grupo: 'agu' },
   { id: 'AGQ',   nombre: 'Aguinaldo quincenal',      sigla: 'AGQ',   calendarioDesc: '15 de diciembre',                grupo: 'agu' },
 ]
@@ -52,7 +52,6 @@ export type ConfigPeriodo = {
   saldoInicial: number
   diaPagoImpuestos: 17 | 22
   frecuenciaProveedores: 'semanal' | 'mensual'
-  mesAnclaImssBimestral: string | null // YYYY-MM-01
 }
 
 const DAY_MS = 86400000
@@ -103,7 +102,7 @@ export function flong(ts: number): string {
   return `${DIAS_SEM[(d.getUTCDay() + 6) % 7]} ${d.getUTCDate()} ${MESES[d.getUTCMonth()]}`
 }
 
-/** Meses (1er día, ts) que caen dentro de [inicio,fin], para poblar selects de mes ancla / ingresos por mes. */
+/** Meses (1er día, ts) que caen dentro de [inicio,fin], para poblar columnas de ingresos por mes. */
 export function mesesDelPeriodo(cfg: ConfigPeriodo): number[] {
   const start = parseISODateUTC(cfg.fechaInicio)
   const end = parseISODateUTC(cfg.fechaFin)
@@ -117,18 +116,17 @@ export function mesesDelPeriodo(cfg: ConfigPeriodo): number[] {
   return out
 }
 
-/** Mes ancla por default: el segundo mes del periodo (o el único, si solo hay uno). */
-export function anclaImssPorDefecto(cfg: ConfigPeriodo): string {
-  const meses = mesesDelPeriodo(cfg)
-  const idx = meses.length > 1 ? 1 : 0
-  return isoOf(meses[idx] ?? parseISODateUTC(cfg.fechaInicio))
+// IMSS bimestral: confirmado con el equipo de nómina — se paga los días 17 de
+// enero, marzo, mayo, julio, septiembre y noviembre (meses calendario impares).
+// IMSS mensual cubre los meses restantes (feb/abr/jun/ago/oct/dic).
+function esMesImssBimestral(mesIdx0: number): boolean {
+  return mesIdx0 % 2 === 0 // 0=ene,2=mar,4=may,6=jul,8=sep,10=nov
 }
 
-function aplicaConcepto(concepto: ConceptoId, fecha: Date, cfg: ConfigPeriodo, anclaMesAbs: number): number {
+function aplicaConcepto(concepto: ConceptoId, fecha: Date, cfg: ConfigPeriodo): number {
   const dom = fecha.getUTCDate()
   const y = fecha.getUTCFullYear(), m = fecha.getUTCMonth()
   const dow = (fecha.getUTCDay() + 6) % 7
-  const mesAbs = y * 12 + m
   switch (concepto) {
     case 'NS': case 'PPE': case 'COMBS':
       return dow === 4 ? 1 : 0
@@ -138,14 +136,10 @@ function aplicaConcepto(concepto: ConceptoId, fecha: Date, cfg: ConfigPeriodo, a
       return dom === 22 ? 1 : 0
     case 'I':
       return dom === cfg.diaPagoImpuestos ? 1 : 0
-    case 'IMSSM': {
-      const dist = (((mesAbs - anclaMesAbs) % 2) + 2) % 2
-      return (dom === 17 && dist !== 0) ? 1 : 0
-    }
-    case 'IMSSB': {
-      const dist = (((mesAbs - anclaMesAbs) % 2) + 2) % 2
-      return (dom === 17 && dist === 0) ? 1 : 0
-    }
+    case 'IMSSM':
+      return (dom === 17 && !esMesImssBimestral(m)) ? 1 : 0
+    case 'IMSSB':
+      return (dom === 17 && esMesImssBimestral(m)) ? 1 : 0
     case 'AG': case 'AGQ':
       return (m === 11 && dom === 15) ? 1 : 0
     case 'PROV':
@@ -188,11 +182,6 @@ export function construirDias(
 ): DiaCalc[] {
   const start = parseISODateUTC(cfg.fechaInicio)
   const end = parseISODateUTC(cfg.fechaFin)
-  const anclaMesAbs = (() => {
-    const iso = cfg.mesAnclaImssBimestral ?? anclaImssPorDefecto(cfg)
-    const d = new Date(parseISODateUTC(iso))
-    return d.getUTCFullYear() * 12 + d.getUTCMonth()
-  })()
   const ccs = filtroCC === 'all' ? ccIds : [filtroCC]
   const dias: DiaCalc[] = []
 
@@ -206,7 +195,7 @@ export function construirDias(
     let egreso = 0
 
     for (const c of CONCEPTOS) {
-      const k = aplicaConcepto(c.id, fecha, cfg, anclaMesAbs)
+      const k = aplicaConcepto(c.id, fecha, cfg)
       if (!k) continue
       let montoDia = 0
       for (const cc of ccs) {

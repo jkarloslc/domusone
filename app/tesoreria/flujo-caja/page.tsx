@@ -11,7 +11,7 @@ import {
   CONCEPTOS, GRUPOS, GCOLOR, CPT, ConceptoId, GrupoId,
   CentroCosto, Matriz, Ingresos, ConfigPeriodo, DiaCalc, SemanaCalc,
   construirDias, agruparSemanas, calcularKpis, totalConcepto,
-  mesesDelPeriodo, anclaImssPorDefecto, isoOf, parseISODateUTC,
+  mesesDelPeriodo, isoOf, parseISODateUTC,
   mxn0, kFmt, NUM_FMT, fdate, flong, MESES, MESES_LARGO,
 } from '@/lib/flujoCaja'
 
@@ -24,7 +24,6 @@ type PeriodoRow = {
   saldo_inicial: number
   dia_pago_impuestos: 17 | 22
   frecuencia_proveedores: 'semanal' | 'mensual'
-  mes_ancla_imss_bimestral: string | null
 }
 type CapturaRow = { concepto: string; id_centro_costo_fk: number; monto_por_pago: number }
 type IngresoRow = { id_centro_costo_fk: number; mes: string; monto_mensual: number }
@@ -110,7 +109,6 @@ export default function FlujoCajaPage() {
       saldoInicial: Number(periodo.saldo_inicial) || 0,
       diaPagoImpuestos: periodo.dia_pago_impuestos,
       frecuenciaProveedores: periodo.frecuencia_proveedores,
-      mesAnclaImssBimestral: periodo.mes_ancla_imss_bimestral,
     }
   }, [periodo])
 
@@ -255,16 +253,6 @@ export default function FlujoCajaPage() {
                 value={periodo.frecuencia_proveedores} disabled={!puedeEditar}
                 onChange={v => actualizarConfig({ frecuencia_proveedores: v as 'semanal' | 'mensual' })} />
             </Control>
-            {meses.length > 1 && (
-              <Control label="Mes ancla IMSS bimestral">
-                <select disabled={!puedeEditar}
-                  value={periodo.mes_ancla_imss_bimestral ?? anclaImssPorDefecto(cfg!)}
-                  onChange={e => actualizarConfig({ mes_ancla_imss_bimestral: e.target.value })}
-                  style={inputStyle}>
-                  {meses.map(m => <option key={m} value={isoOf(m)}>{MESES_LARGO[new Date(m).getUTCMonth()]}</option>)}
-                </select>
-              </Control>
-            )}
             <Control label="Color de las barras semanales">
               <Seg options={[{ v: 'grupo', l: 'Por concepto' }, { v: 'cc', l: 'Por centro de costo' }]}
                 value={colorCriterio} onChange={v => setColorCriterio(v as 'grupo' | 'cc')} />
@@ -1003,7 +991,7 @@ function ModalPeriodo({ periodos, onClose, onCreado }: {
     const { data, error: errIns } = await dbComp.from('flujo_caja_periodos').insert({
       nombre: nombre.trim(), fecha_inicio: fechaInicio, fecha_fin: fechaFin,
       saldo_inicial: 0, dia_pago_impuestos: 17, frecuencia_proveedores: 'semanal',
-      mes_ancla_imss_bimestral: null, created_by: authUser?.nombre ?? null,
+      created_by: authUser?.nombre ?? null,
     }).select('*').single()
     if (errIns || !data) { setError(errIns?.message ?? 'No se pudo crear el periodo.'); setGuardando(false); return }
 
@@ -1020,7 +1008,7 @@ function ModalPeriodo({ periodos, onClose, onCreado }: {
       if (ing?.length) {
         // Mapea meses por posición relativa (1er mes origen → 1er mes destino, etc.)
         const origenMeses = Array.from(new Set(ing.map(r => r.mes))).sort()
-        const destMeses = mesesDelPeriodo({ fechaInicio, fechaFin, saldoInicial: 0, diaPagoImpuestos: 17, frecuenciaProveedores: 'semanal', mesAnclaImssBimestral: null }).map(isoOf)
+        const destMeses = mesesDelPeriodo({ fechaInicio, fechaFin, saldoInicial: 0, diaPagoImpuestos: 17, frecuenciaProveedores: 'semanal' }).map(isoOf)
         const map = new Map(origenMeses.map((m, i) => [m, destMeses[i]]))
         const filas = ing.map(r => ({ id_periodo_fk: data.id, id_centro_costo_fk: r.id_centro_costo_fk, mes: map.get(r.mes), monto_mensual: r.monto_mensual }))
           .filter(r => r.mes)
