@@ -56,7 +56,7 @@ const HorseIcon = ({ size = 15, ...props }: { size?: number } & SVGProps<SVGSVGE
 
 const ACCESOS: Record<Rol, Acceso[]> = {
   superadmin: [
-    { label: 'Vista Ejecutiva',  href: '/dashboards/ejecutivo', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
     { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
@@ -66,7 +66,7 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Usuarios',         href: '/usuarios',            icon: Users,           color: '#64748b', bg: '#f8fafc' },
   ],
   admin: [
-    { label: 'Vista Ejecutiva',  href: '/dashboards/ejecutivo', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
     { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
@@ -75,7 +75,7 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
   ],
   admin_lector: [
-    { label: 'Vista Ejecutiva',  href: '/dashboards/ejecutivo', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Dashboard',       href: '/dashboards',           icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Golf',             href: '/golf',                icon: Flag,            color: '#16a34a', bg: '#f0fdf4' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
@@ -88,14 +88,14 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Hípico y Eventos', href: '/hipico',              icon: HorseIcon,       color: '#7c3aed', bg: '#f5f3ff' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
     { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Dashboard Fin.',   href: '/dashboards/financiero', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
   ],
   usuariomantto: [
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Mantenimiento',    href: '/mantenimiento',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
     { label: 'Vehículos',        href: '/equipo-flota',        icon: Truck,           color: '#64748b', bg: '#f8fafc' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
-    { label: 'Dashboard Fin.',   href: '/dashboards/financiero', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
   ],
   atencion_residentes: [
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
@@ -132,13 +132,13 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
     { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Dashboard Fin.',   href: '/dashboards/financiero', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
   ],
   tesoreria: [
     { label: 'Tesorería',        href: '/tesoreria',           icon: Landmark,        color: '#0f766e', bg: '#f0fdfa' },
     { label: 'Ingresos',         href: '/ingresos',            icon: DollarSign,      color: '#059669', bg: '#f0fdf4' },
-    { label: 'Dashboard Fin.',   href: '/dashboards/financiero', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
   ],
   seguridad: [
@@ -152,7 +152,7 @@ const ACCESOS: Record<Rol, Acceso[]> = {
   ],
   ingresos: [
     { label: 'Ingresos',         href: '/ingresos',            icon: DollarSign,      color: '#059669', bg: '#f0fdf4' },
-    { label: 'Dashboard Fin.',   href: '/dashboards/financiero', icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
+    { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
   ],
   usuariogolf: [

@@ -110,9 +110,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   superadmin: [
     { section: 'Dashboards', items: [
-      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',   icon: LayoutDashboard },
-      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',  icon: LayoutDashboard },
-      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento',icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -154,9 +152,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   admin: [
     { section: 'Dashboards', items: [
-      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',    icon: LayoutDashboard },
-      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
-      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -198,9 +194,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   // permisos puntuales (p.ej. no puede editar el Catálogo de Productos POS) ──
   admin_low_level: [
     { section: 'Dashboards', items: [
-      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',    icon: LayoutDashboard },
-      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
-      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -241,9 +235,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   // ── Admin de Tesorería: mismo menú que admin ───────────────
   admin_tesoreria: [
     { section: 'Dashboards', items: [
-      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',    icon: LayoutDashboard },
-      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
-      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -284,9 +276,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   // ── Admin de Finanzas: mismo menú que admin ───────────────
   admin_finanzas: [
     { section: 'Dashboards', items: [
-      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',    icon: LayoutDashboard },
-      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
-      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -323,9 +313,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   // ── Admin Solo Lectura: mismo menú que admin ──────────────
   admin_lector: [
     { section: 'Dashboards', items: [
-      { label: 'Vista Ejecutiva',        href: '/dashboards/ejecutivo',    icon: LayoutDashboard },
-      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
-      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -361,7 +349,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   usuarioadmin: [
     { section: 'Dashboards', items: [
-      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -393,8 +381,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   usuariomantto: [
     { section: 'Dashboards', items: [
-      { label: 'Dashboard Financiero',   href: '/dashboards/financiero',   icon: LayoutDashboard },
-      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -471,7 +458,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   mantenimiento: [
     { section: 'Dashboards', items: [
-      { label: 'Dashboard Mantenimiento',href: '/dashboards/mantenimiento', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -485,7 +472,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   fraccionamiento: [
     { section: 'Dashboards', items: [
-      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
@@ -509,7 +496,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   tesoreria: [
     { section: 'Dashboards', items: [
-      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
@@ -539,7 +526,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   ingresos: [
     { section: 'Dashboards', items: [
-      { label: 'Dashboard Financiero', href: '/dashboards/financiero', icon: LayoutDashboard },
+      { label: 'Dashboard', href: '/dashboards', icon: LayoutDashboard },
     ]},
     { section: 'Finanzas', items: [
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
