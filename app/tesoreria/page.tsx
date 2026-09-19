@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import {
   Landmark, FileText, Building2, ChevronRight,
-  AlertTriangle, Clock, TrendingDown
+  AlertTriangle, Clock, TrendingDown, Wallet
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
@@ -26,6 +26,13 @@ const MODULOS = [
     icon:  Building2,
     color: '#0f766e',
     desc:  'Saldos, movimientos y administración de cuentas bancarias',
+  },
+  {
+    key:   'flujo-caja',
+    label: 'Flujo de Caja',
+    icon:  Wallet,
+    color: '#7c3aed',
+    desc:  'Proyección de posición de caja día a día por centro de costo y periodo',
   },
   {
     key:   'panorama',
