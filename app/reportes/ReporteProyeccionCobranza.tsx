@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbGolf, dbHip, dbCtrl } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { TrendingUp, CreditCard, CheckCircle, Clock, CalendarClock, AlertTriangle } from 'lucide-react'
+import { clasificarBanda } from '@/lib/clasificacionCobranza'
 
 // ── Proyección de Cobranza — Golf / Pensiones / Hípico / Locales ──────
 // Un mismo reporte sirve a los 4 módulos que llevan cuotas con periodo,
@@ -302,11 +303,22 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
   const totalCobradoAntes = cobradoAntesRows.reduce((a, f) => a + f.cobrado, 0)
 
   // ── Flujo de cobranza: cobrado del mes / anticipado / vencido ──
+  // Clasificación a 4 bandas desde lib/clasificacionCobranza (fuente única).
+  // Antes este bloque hacía `periodo <= mes` y metía la recuperación de vencido
+  // DENTRO de corriente, así que el panel no distinguía el desempeño del mes de
+  // la recuperación de cartera — justo la mezcla que este reporte debe separar.
   const totalCobradoMesFlujo = cobrosMes.reduce((a, c) => a + montoPagado(c), 0)
-  const anticipadoRows   = cobrosMes.filter(c => c.periodo && c.periodo > mes)
-  const corrienteRows    = cobrosMes.filter(c => !c.periodo || c.periodo <= mes)
-  const totalAnticipado  = anticipadoRows.reduce((a, c) => a + montoPagado(c), 0)
+  const bandaDe = (c: CobroRow) => clasificarBanda(c.periodo, c.fecha_pago ?? '')
+  const corrienteRows    = cobrosMes.filter(c => bandaDe(c) === 'CORRIENTE')
+  const vencidaRows      = cobrosMes.filter(c => bandaDe(c) === 'VENCIDA')
+  const anticipadoRows   = cobrosMes.filter(c => bandaDe(c) === 'ANTICIPADA')
+  const otrosRows        = cobrosMes.filter(c => bandaDe(c) === 'OTROS')
   const totalCorriente   = corrienteRows.reduce((a, c) => a + montoPagado(c), 0)
+  const totalVencidaRec  = vencidaRows.reduce((a, c) => a + montoPagado(c), 0)
+  const totalAnticipado  = anticipadoRows.reduce((a, c) => a + montoPagado(c), 0)
+  const totalOtros       = otrosRows.reduce((a, c) => a + montoPagado(c), 0)
+  // Ojo: este es un SALDO a hoy (stock de cartera), no un flujo del mes — no
+  // suma con los anteriores. Va rotulado como tal en la UI.
   const totalVencidoFlujo = vencidos.reduce((a, c) => a + (c.saldo ?? c.monto_final), 0)
 
   const porDia = cobrosMes.reduce((acc, c) => {
@@ -467,8 +479,10 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {[
             { label: 'Cobrado del mes', value: fmt$(totalCobradoMesFlujo), sub: `${cobrosMes.length} pago${cobrosMes.length !== 1 ? 's' : ''} registrado${cobrosMes.length !== 1 ? 's' : ''}`, color: '#15803d', bg: '#f0fdf4', icon: CheckCircle },
+            { label: 'Corriente del mes', value: fmt$(totalCorriente),    sub: `${corrienteRows.length} cuota${corrienteRows.length !== 1 ? 's' : ''} del propio ${labelMes(mes)}`, color: '#16a34a', bg: '#f0fdf4', icon: CheckCircle },
+            { label: 'Vencido recuperado', value: fmt$(totalVencidaRec),  sub: `${vencidaRows.length} de periodos anteriores`,        color: '#ea580c', bg: '#fff7ed', icon: Clock },
             { label: 'Anticipado',      value: fmt$(totalAnticipado),      sub: `${anticipadoRows.length} de periodos futuros`,       color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
-            { label: 'Vencido',         value: fmt$(totalVencidoFlujo),    sub: `${vencidos.length} cuota${vencidos.length !== 1 ? 's' : ''} sin cobrar (a hoy)`, color: '#dc2626', bg: '#fef2f2', icon: AlertTriangle },
+            { label: 'Cartera vencida (saldo a hoy)', value: fmt$(totalVencidoFlujo), sub: `${vencidos.length} cuota${vencidos.length !== 1 ? 's' : ''} sin cobrar — es un saldo, no flujo del mes`, color: '#dc2626', bg: '#fef2f2', icon: AlertTriangle },
           ].map(k => {
             const Icon = k.icon
             return (
@@ -487,8 +501,10 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
         {!loadingFlujo && cobrosMes.length > 0 && (
           <div style={{ marginTop: 14 }}>
             <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>
-              De lo cobrado en el mes: <strong style={{ color: '#15803d' }}>{fmt$(totalCorriente)}</strong> corresponde a periodos ≤ {labelMes(mes)}
-              {' '}· <strong style={{ color: '#2563eb' }}>{fmt$(totalAnticipado)}</strong> corresponde a periodos futuros (adelantado)
+              De lo cobrado en el mes: <strong style={{ color: '#16a34a' }}>{fmt$(totalCorriente)}</strong> del propio {labelMes(mes)} (desempeño del mes)
+              {' '}· <strong style={{ color: '#ea580c' }}>{fmt$(totalVencidaRec)}</strong> de periodos anteriores (recuperación de cartera)
+              {' '}· <strong style={{ color: '#2563eb' }}>{fmt$(totalAnticipado)}</strong> de periodos futuros (adelantado)
+              {totalOtros > 0 && <> · <strong style={{ color: '#64748b' }}>{fmt$(totalOtros)}</strong> sin periodo</>}
             </div>
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '8px 14px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
