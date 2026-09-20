@@ -536,7 +536,7 @@ export default function DashboardPpto() {
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        <select className="select" style={{ minWidth: 240 }}
+        <select className="select" style={{ width: 260 }}
           value={selId ?? ''} onChange={e => onChangePpto(Number(e.target.value))}>
           {presupuestos.map(p => (
             <option key={p.id} value={p.id}>{p.anio} — {p.nombre}</option>
