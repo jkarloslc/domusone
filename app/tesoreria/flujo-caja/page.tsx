@@ -234,31 +234,32 @@ export default function FlujoCajaPage() {
           />
 
           {/* Controles */}
-          <div className="card" style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '16px 22px',
-            padding: 16, marginBottom: 20,
-          }}>
-            <Control label="Saldo inicial de caja">
-              <input type="number" disabled={!puedeEditar} defaultValue={periodo.saldo_inicial}
-                key={`saldo-${dataVersion}`}
-                onBlur={e => actualizarConfig({ saldo_inicial: Number(e.target.value) || 0 })}
-                style={inputStyle} />
-            </Control>
-            <Control label="Pago de impuestos">
-              <Seg options={[{ v: 17, l: 'Día 17' }, { v: 22, l: 'Día 22' }]} value={periodo.dia_pago_impuestos}
-                disabled={!puedeEditar} onChange={v => actualizarConfig({ dia_pago_impuestos: v as 17 | 22 })} />
-            </Control>
-            <Control label="Pago a proveedores">
-              <Seg options={[{ v: 'semanal', l: 'Semanal · viernes' }, { v: 'mensual', l: 'Mensual · día 25' }]}
-                value={periodo.frecuencia_proveedores} disabled={!puedeEditar}
-                onChange={v => actualizarConfig({ frecuencia_proveedores: v as 'semanal' | 'mensual' })} />
-            </Control>
-            <Control label="Color de las barras semanales">
-              <Seg options={[{ v: 'grupo', l: 'Por concepto' }, { v: 'cc', l: 'Por centro de costo' }]}
-                value={colorCriterio} onChange={v => setColorCriterio(v as 'grupo' | 'cc')} />
-            </Control>
+          <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '16px 22px',
+            }}>
+              <Control label="Saldo inicial de caja">
+                <input type="number" disabled={!puedeEditar} defaultValue={periodo.saldo_inicial}
+                  key={`saldo-${dataVersion}`}
+                  onBlur={e => actualizarConfig({ saldo_inicial: Number(e.target.value) || 0 })}
+                  style={inputStyle} />
+              </Control>
+              <Control label="Pago de impuestos">
+                <Seg options={[{ v: 17, l: 'Día 17' }, { v: 22, l: 'Día 22' }]} value={periodo.dia_pago_impuestos}
+                  disabled={!puedeEditar} onChange={v => actualizarConfig({ dia_pago_impuestos: v as 17 | 22 })} />
+              </Control>
+              <Control label="Pago a proveedores">
+                <Seg options={[{ v: 'semanal', l: 'Semanal · viernes' }, { v: 'mensual', l: 'Mensual · día 25' }]}
+                  value={periodo.frecuencia_proveedores} disabled={!puedeEditar}
+                  onChange={v => actualizarConfig({ frecuencia_proveedores: v as 'semanal' | 'mensual' })} />
+              </Control>
+              <Control label="Color de las barras semanales">
+                <Seg options={[{ v: 'grupo', l: 'Por concepto' }, { v: 'cc', l: 'Por centro de costo' }]}
+                  value={colorCriterio} onChange={v => setColorCriterio(v as 'grupo' | 'cc')} />
+              </Control>
+            </div>
             {puedeEditar && (
-              <div style={{ gridColumn: '1/-1', display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 14, borderTop: '1px solid #eef1f6' }}>
                 <button className="btn-ghost" onClick={vaciarEgresos}>
                   <Eraser size={13} /> Vaciar egresos
                 </button>
@@ -354,7 +355,7 @@ function Seg<T extends string | number>({ options, value, onChange, disabled }: 
           onClick={() => onChange?.(o.v)}
           style={{
             flex: 1, appearance: 'none', border: 'none', font: 'inherit', fontSize: 12.5,
-            padding: '7px 4px', cursor: disabled ? 'default' : 'pointer',
+            padding: '7px 8px', cursor: disabled ? 'default' : 'pointer', whiteSpace: 'nowrap',
             borderLeft: i > 0 ? '1px solid #d3dce9' : 'none',
             background: value === o.v ? '#1F3864' : '#f0f4fa',
             color: value === o.v ? '#fff' : '#4a5b77',
