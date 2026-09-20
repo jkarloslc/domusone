@@ -192,6 +192,17 @@ export type CuotaDevengada = {
   mesesDevengo: number
   cargado: number
   cobrado: number
+  /**
+   * Parte del cargo liquidada vía descuento por pago anticipado. NO es efectivo:
+   * el puente devengado→caja la lleva en columna propia, porque si se mezclara
+   * con lo cobrado la cadena no cuadraría con el cargo.
+   *
+   * 0 en Golf/Hípico/Locales: ahí `monto_final` ya viene neto de descuento
+   * (monto_original − descuento), así que el devengado es neto de origen. En
+   * Fraccionamiento el cargo es BRUTO y el descuento se conoce al cobrar, así
+   * que se lleva aparte (ctrl.cargos.descuento_aplicado).
+   */
+  descuento: number
   saldo: number
   status: string
   fechaVencimiento: string | null

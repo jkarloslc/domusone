@@ -138,6 +138,8 @@ export default function ReporteComposicionIngresoCuotas() {
     return map
   }, [devengado, prorratear])
 
+  const hayDescuento = useMemo(() => devengado.some(d => d.descuento > 0), [devengado])
+
   const hayDiferido = useMemo(
     () => prorratear && devengado.some(d => d.mesesDevengo > 1),
     [devengado, prorratear])
@@ -161,6 +163,9 @@ export default function ReporteComposicionIngresoCuotas() {
       const cargado = dev.reduce((a, d) => a + d.cargado, 0)
       const cobradoTotal = dev.reduce((a, d) => a + d.cobrado, 0)
       const pendiente = cargado - cobradoTotal
+      // El descuento liquida cargo pero no es efectivo, así que va en columna
+      // propia: si se mezclara con lo cobrado, la cadena no cuadraría.
+      const descuento = dev.reduce((a, d) => a + d.descuento, 0)
 
       // Aquí SIEMPRE se mira el universo completo de cobros del periodo,
       // incluida la carga inicial: el puente explica de dónde salió el
@@ -171,7 +176,7 @@ export default function ReporteComposicionIngresoCuotas() {
       const despues   = cobPeriodo.filter(c => c.fechaPago.slice(0, 7) >  per).reduce((a, c) => a + c.monto, 0)
       const sinFecha  = sinFechaTodas.filter(c => c.periodo === per).reduce((a, c) => a + c.monto, 0)
 
-      const dif = cargado - (enSuMes + antes + despues + sinFecha + pendiente)
+      const dif = cargado - (enSuMes + antes + despues + sinFecha + descuento + pendiente)
 
       // Devengado reconocido + diferido = devengado por cargo (identidad exacta
       // por construcción). Y devengado por cargo = la cadena de cobro de la
@@ -182,7 +187,7 @@ export default function ReporteComposicionIngresoCuotas() {
       return {
         mes: m, label: MESES_CORTO[i], periodo: per,
         reconocido, diferido,
-        cargado, enSuMes, antes, despues, sinFecha, pendiente,
+        cargado, enSuMes, antes, despues, sinFecha, descuento, pendiente,
         dif, cuadra: Math.abs(dif) < 1, n: dev.length,
       }
     }).filter(f => f.cargado !== 0 || f.reconocido !== 0 || f.enSuMes !== 0 || f.antes !== 0 || f.despues !== 0)
@@ -191,8 +196,9 @@ export default function ReporteComposicionIngresoCuotas() {
       reconocido: a.reconocido + f.reconocido, diferido: a.diferido + f.diferido,
       cargado: a.cargado + f.cargado, enSuMes: a.enSuMes + f.enSuMes,
       antes: a.antes + f.antes, despues: a.despues + f.despues,
-      sinFecha: a.sinFecha + f.sinFecha, pendiente: a.pendiente + f.pendiente,
-    }), { reconocido: 0, diferido: 0, cargado: 0, enSuMes: 0, antes: 0, despues: 0, sinFecha: 0, pendiente: 0 })
+      sinFecha: a.sinFecha + f.sinFecha, descuento: a.descuento + f.descuento,
+      pendiente: a.pendiente + f.pendiente,
+    }), { reconocido: 0, diferido: 0, cargado: 0, enSuMes: 0, antes: 0, despues: 0, sinFecha: 0, descuento: 0, pendiente: 0 })
 
     return { filas, tot }
   }, [devengado, data, anio, lineaSel, reconocidoPorPeriodo])
@@ -265,13 +271,13 @@ export default function ReporteComposicionIngresoCuotas() {
 
     const hoja2: any[][] = [
       ['Periodo', 'Devengado reconocido', 'Diferido', 'Devengado por cargo', 'Cobrado en su mes',
-       'Cobrado antes (anticipo)', 'Cobrado después (vencido)', 'Cobrado sin fecha', 'Pendiente', 'Diferencia'],
+       'Cobrado antes (anticipo)', 'Cobrado después (vencido)', 'Cobrado sin fecha', 'Descuento', 'Pendiente', 'Diferencia'],
       ...puente.filas.map(f => [
         labelPeriodo(f.periodo), f.reconocido, f.diferido, f.cargado,
-        f.enSuMes, f.antes, f.despues, f.sinFecha, f.pendiente, f.dif,
+        f.enSuMes, f.antes, f.despues, f.sinFecha, f.descuento, f.pendiente, f.dif,
       ]),
       ['TOTAL', puente.tot.reconocido, puente.tot.diferido, puente.tot.cargado, puente.tot.enSuMes,
-       puente.tot.antes, puente.tot.despues, puente.tot.sinFecha, puente.tot.pendiente, ''],
+       puente.tot.antes, puente.tot.despues, puente.tot.sinFecha, puente.tot.descuento, puente.tot.pendiente, ''],
     ]
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja2), 'Puente devengado-caja')
 
@@ -527,7 +533,7 @@ export default function ReporteComposicionIngresoCuotas() {
                 <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 8px' }}>
                   Por cada periodo: cuánto se devengó y cómo se cobró.{' '}
                   {hayDiferido && <><strong>Reconocido + diferido = devengado por cargo</strong>, y{' '}</>}
-                  <strong>devengado por cargo = cobrado en su mes + antes + después + sin fecha + pendiente.</strong>{' '}
+                  <strong>devengado por cargo = cobrado en su mes + antes + después + sin fecha{hayDescuento ? ' + descuento' : ''} + pendiente.</strong>{' '}
                   Esta tabla siempre considera el universo completo de cobros, incluida la carga inicial: es lo
                   que explica de dónde salió el devengado.
                   {hayDiferido && ' El «diferido» es la parte del cargo que se reconoce en otros meses (cuotas anuales prorrateadas).'}
@@ -543,6 +549,7 @@ export default function ReporteComposicionIngresoCuotas() {
                       <th style={{ ...cellNum, color: '#2563eb' }}>Cobrado antes (anticipo)</th>
                       <th style={{ ...cellNum, color: '#dc2626' }}>Cobrado después (vencido)</th>
                       <th style={{ ...cellNum, color: '#b45309' }}>Sin fecha</th>
+                      {hayDescuento && <th style={{ ...cellNum, color: '#0891b2' }} title="Parte del cargo liquidada por descuento de pago anticipado — liquida cargo pero no es efectivo">Descuento</th>}
                       <th style={{ ...cellNum, color: '#d97706' }}>Pendiente</th>
                       <th style={{ textAlign: 'center' }}>Cuadra</th>
                     </tr>
@@ -558,6 +565,7 @@ export default function ReporteComposicionIngresoCuotas() {
                         <td style={{ ...cellNum, color: f.antes ? '#2563eb' : '#cbd5e1' }}>{f.antes ? fmt$(f.antes) : '—'}</td>
                         <td style={{ ...cellNum, color: f.despues ? '#dc2626' : '#cbd5e1' }}>{f.despues ? fmt$(f.despues) : '—'}</td>
                         <td style={{ ...cellNum, color: f.sinFecha ? '#b45309' : '#cbd5e1' }}>{f.sinFecha ? fmt$(f.sinFecha) : '—'}</td>
+                        {hayDescuento && <td style={{ ...cellNum, color: f.descuento ? '#0891b2' : '#cbd5e1' }}>{f.descuento ? fmt$(f.descuento) : '—'}</td>}
                         <td style={{ ...cellNum, color: f.pendiente ? '#d97706' : '#cbd5e1' }}>{f.pendiente ? fmt$(f.pendiente) : '—'}</td>
                         <td style={{ textAlign: 'center' }}>
                           {f.cuadra
@@ -567,7 +575,7 @@ export default function ReporteComposicionIngresoCuotas() {
                       </tr>
                     ))}
                     {!puente.filas.length && (
-                      <tr><td colSpan={hayDiferido ? 10 : 8} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                      <tr><td colSpan={(hayDiferido ? 10 : 8) + (hayDescuento ? 1 : 0)} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
                         Sin cuotas devengadas en {anio} para los módulos seleccionados.
                       </td></tr>
                     )}
@@ -582,6 +590,7 @@ export default function ReporteComposicionIngresoCuotas() {
                       <td style={{ ...cellNum, color: '#2563eb' }}>{fmt$(puente.tot.antes)}</td>
                       <td style={{ ...cellNum, color: '#dc2626' }}>{fmt$(puente.tot.despues)}</td>
                       <td style={{ ...cellNum, color: '#b45309' }}>{fmt$(puente.tot.sinFecha)}</td>
+                      {hayDescuento && <td style={{ ...cellNum, color: '#0891b2' }}>{fmt$(puente.tot.descuento)}</td>}
                       <td style={{ ...cellNum, color: '#d97706' }}>{fmt$(puente.tot.pendiente)}</td>
                       <td />
                     </tr>

@@ -194,7 +194,7 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
 
   useEffect(() => {
     dbCfg.from('cuotas_estandar')
-      .select('id, nombre, periodicidad')
+      .select('id, nombre, periodicidad, dia_vencimiento')
       .eq('activo', true)
       .order('nombre')
       .then(({ data }) => setCuotas(data ?? []))
@@ -276,21 +276,37 @@ function GenerarCargosModal({ onClose, onSaved }: { onClose: () => void; onSaved
     if (!preview.length || !cuotaSel) return
     setSaving(true)
     const hoy = new Date().toISOString().split('T')[0]
-    await dbCtrl.from('cargos').insert(
+
+    // Vencimiento: día `dia_vencimiento` de la cuota (default 10, la regla
+    // operativa de Fraccionamiento) dentro del mes del PERIODO — no del mes en
+    // que se genera el cargo. Se guarda como dato y no se deriva al vuelo, para
+    // que un cambio de política a futuro no reescriba la historia.
+    const mesIdx = MESES.findIndex(m => m.toLowerCase() === periodoMes.toLowerCase())
+    const diaVenc = Math.min(Math.max(Number((cuotaSel as any).dia_vencimiento) || 10, 1), 28)
+    const fechaVencimiento = mesIdx >= 0
+      ? `${periodoAnio}-${String(mesIdx + 1).padStart(2, '0')}-${String(diaVenc).padStart(2, '0')}`
+      : null
+
+    const { error } = await dbCtrl.from('cargos').insert(
       preview.map(l => ({
         id_lote_fk:          l.id,
         id_cuota_estandar_fk: cuotaSel.id,
         concepto:            cuotaSel.nombre,
         monto:               l.monto,
         monto_pagado:        0,
+        descuento_aplicado:  0,
         saldo:               l.monto,
         periodo_mes:         periodoMes,
         periodo_anio:        Number(periodoAnio),
         fecha_cargo:         hoy,
+        fecha_vencimiento:   fechaVencimiento,
         status:              'Pendiente',
       }))
     )
     setSaving(false)
+    // Antes este insert no revisaba el error: si fallaba, el modal se cerraba
+    // como si hubiera generado los cargos.
+    if (error) { alert(`No se pudieron generar los cargos: ${error.message}`); return }
     onSaved()
   }
 

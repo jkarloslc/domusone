@@ -239,20 +239,42 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
     )
     if (err3) { setError(err3.message); setSaving(false); return }
 
-    // Actualizar saldo de cada cargo vinculado — con el monto neto realmente aplicado
-    // (ya prorrateado por descuento/cobro parcial), no el bruto de la línea.
+    // ── Actualizar cada cargo vinculado ───────────────────────────────────
+    // `montoNeto` es lo realmente cobrado de esa línea (ya prorrateado por
+    // descuento y por cobro parcial). El bruto que la línea pretendía cubrir es
+    // `l.total`; la diferencia es DESCUENTO, no adeudo.
+    //
+    // Antes esto hacía monto_pagado += montoNeto y saldo = monto - monto_pagado,
+    // así que un cobro con descuento dejaba el cargo en 'Parcial' con saldo =
+    // descuento: un adeudo fantasma permanente. Con 12 cuotas anualizadas por
+    // lote eso serían 12 falsos morosos por cada propietario que pagó por
+    // adelantado — el mismo bug que ya se vivió en Golf.
+    //
+    // Ahora el descuento se guarda en `descuento_aplicado` (auditable por
+    // cargo, no escondido en el recibo) y el cargo se cierra cuando
+    // monto_pagado + descuento_aplicado cubre el monto.
     for (const { item: linea, montoNeto } of detalleNeto) {
       const cargoId = (linea as any).id_cargo_fk
       if (!cargoId) continue
-      const { data: cargoDB, error: errC } = await dbCtrl.from('cargos').select('monto, monto_pagado').eq('id', cargoId).single()
+      const { data: cargoDB, error: errC } = await dbCtrl.from('cargos')
+        .select('monto, monto_pagado, descuento_aplicado').eq('id', cargoId).single()
       if (errC) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errC.message}`); break }
       if (cargoDB) {
+        // Lo que esta línea cubría en bruto, acotado al saldo vivo del cargo:
+        // si se cobró de más (no debería), no se inventa descuento negativo.
+        const saldoVivo   = Math.max(0, parseFloat((cargoDB.monto - (cargoDB.monto_pagado ?? 0) - (cargoDB.descuento_aplicado ?? 0)).toFixed(2)))
+        const brutoLinea  = Math.min(Number((linea as any).total) || montoNeto, saldoVivo)
+        const descLinea   = Math.max(0, parseFloat((brutoLinea - montoNeto).toFixed(2)))
+
         const nuevoPagado = parseFloat(((cargoDB.monto_pagado ?? 0) + montoNeto).toFixed(2))
-        const nuevoSaldo  = Math.max(0, parseFloat((cargoDB.monto - nuevoPagado).toFixed(2)))
+        const nuevoDesc   = parseFloat(((cargoDB.descuento_aplicado ?? 0) + descLinea).toFixed(2))
+        const nuevoSaldo  = Math.max(0, parseFloat((cargoDB.monto - nuevoPagado - nuevoDesc).toFixed(2)))
+
         const { error: errU } = await dbCtrl.from('cargos').update({
-          monto_pagado: nuevoPagado,
-          saldo:        nuevoSaldo,
-          status:       nuevoSaldo <= 0.005 ? 'Pagado' : 'Parcial',
+          monto_pagado:       nuevoPagado,
+          descuento_aplicado: nuevoDesc,
+          saldo:              nuevoSaldo,
+          status:             nuevoSaldo <= 0.005 ? 'Pagado' : 'Parcial',
         }).eq('id', cargoId)
         if (errU) { setError(`Recibo ${folio} creado, pero no se pudo actualizar el cargo #${cargoId}: ${errU.message}`); break }
       }
@@ -427,20 +449,69 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
       const { data: cuotasEstandarDB } = idsCuotaEstandar.length
         ? await dbCfg.from('cuotas_estandar').select('id, id_concepto_ingreso_fk, id_producto_pos_fk').in('id', idsCuotaEstandar)
         : { data: [] as any[] }
+
+      // ── Tasa de IVA del ticket ────────────────────────────────────────
+      // Antes iba `iva_pct: 0` hardcodeado, y la migración 20260902230000
+      // documentó ese 0 como si fuera una regla fiscal. No lo era: las cuotas
+      // de Fraccionamiento SÍ causan IVA al 16% (confirmado por el usuario
+      // 2026-09-20, y es lo que /ingresos ya venía reconociendo — las filas de
+      // recibos_ingreso_secciones traen tasa implícita 16.0%). Timbrar al 0%
+      // sobre un ingreso gravado es un problema fiscal, no cosmético.
+      //
+      // La tasa se lee del producto POS ligado a la cuota, nunca hardcodeada,
+      // para que cambiarla sea cambiar el catálogo.
+      const idsProducto = Array.from(new Set((cuotasEstandarDB ?? [])
+        .map((c: any) => c.id_producto_pos_fk).filter((x: any): x is number => x != null)))
+      const { data: productosDB } = idsProducto.length
+        ? await dbGolf.from('cat_productos_pos').select('id, iva_pct, aplica_iva').in('id', idsProducto)
+        : { data: [] as any[] }
+      const ivaPctPorProducto = new Map<number, number>((productosDB ?? []).map((p: any) =>
+        [p.id, p.aplica_iva === false ? 0 : (Number(p.iva_pct) || 0)]))
+
       // Prioridad: producto POS (ya carga concepto + clave SAT); si a la cuota estándar
       // le falta el producto, cae de respaldo al concepto de ingreso directo.
       const mapaCuotaClasif = new Map((cuotasEstandarDB ?? []).map((c: any) => [c.id,
-        c.id_producto_pos_fk != null
-          ? { idConcepto: null as number | null, idProducto: c.id_producto_pos_fk as number | null }
-          : { idConcepto: c.id_concepto_ingreso_fk as number | null, idProducto: null as number | null }
+        {
+          ...(c.id_producto_pos_fk != null
+            ? { idConcepto: null as number | null, idProducto: c.id_producto_pos_fk as number | null }
+            : { idConcepto: c.id_concepto_ingreso_fk as number | null, idProducto: null as number | null }),
+          // Sin producto ligado no hay tasa que leer: se deja en 0 y el recibo
+          // sale sin desglose, igual que antes, en vez de inventar un 16%.
+          ivaPct: c.id_producto_pos_fk != null ? (ivaPctPorProducto.get(c.id_producto_pos_fk) ?? 0) : 0,
+        }
       ]))
 
-      const clasifPorLinea = (d: typeof detList[number]): { idConcepto: number | null; idProducto: number | null } => {
+      const clasifPorLinea = (d: typeof detList[number]): { idConcepto: number | null; idProducto: number | null; ivaPct: number } => {
         const idCuotaEstandar = (d.id_cargo_fk != null ? mapaCargoCuota.get(d.id_cargo_fk) : null)
           ?? (d.id_cuota_lote_fk != null ? mapaCuotaLoteCuota.get(d.id_cuota_lote_fk) : null)
           ?? null
-        return idCuotaEstandar != null ? (mapaCuotaClasif.get(idCuotaEstandar) ?? { idConcepto: null, idProducto: null }) : { idConcepto: null, idProducto: null }
+        const vacio = { idConcepto: null as number | null, idProducto: null as number | null, ivaPct: 0 }
+        return idCuotaEstandar != null ? (mapaCuotaClasif.get(idCuotaEstandar) ?? vacio) : vacio
       }
+
+      // Las líneas se arman ANTES del encabezado: el subtotal/IVA de ctrl_ventas
+      // tiene que ser la suma exacta de sus líneas, no un total con iva 0.
+      const lineasTicket = detList.map(d => {
+        const clasif = clasifPorLinea(d)
+        // El importe cobrado (d.total) viene con IVA incluido — igual que en
+        // Golf, donde una membresía de $4,900 se desglosa 4,224.14 + 675.86.
+        // Así que el IVA se EXTRAE, no se suma encima: de lo contrario el ticket
+        // no cuadraría con el recibo ni con el dinero recibido.
+        const ivaPct = clasif.ivaPct
+        const subtotalLinea = ivaPct > 0
+          ? parseFloat((d.total / (1 + ivaPct / 100)).toFixed(2))
+          : d.total
+        const ivaLinea = parseFloat((d.total - subtotalLinea).toFixed(2))
+        return {
+          id_producto_fk: clasif.idProducto, id_concepto_ingreso_fk: clasif.idConcepto,
+          concepto: d.concepto, cantidad: d.cantidad, precio_unitario: d.precio_unitario,
+          descuento: d.descuento ?? 0, iva_pct: ivaPct, iva: ivaLinea,
+          subtotal: subtotalLinea, total: d.total,
+          notas: d.periodo_mes ? `${d.periodo_mes} ${d.periodo_anio ?? ''}`.trim() : null,
+        }
+      })
+      const ticketSubtotal = parseFloat(lineasTicket.reduce((a, l) => a + l.subtotal, 0).toFixed(2))
+      const ticketIva      = parseFloat(lineasTicket.reduce((a, l) => a + l.iva, 0).toFixed(2))
 
       let ventaId = rf.id_venta_pos_fk
       let folioDia = 0
@@ -456,22 +527,15 @@ export default function ReciboModal({ cargoInicial, onClose, onSaved }: Props) {
         const { data: venta, error: ev } = await dbGolf.from('ctrl_ventas').insert({
           folio_dia: folioDia, id_centro_fk: centroRes.id, fecha: fechaIso,
           nombre_cliente: form.propietario.trim() || loteSearch || `Lote #${form.id_lote_fk}`, es_socio: false,
-          subtotal: rf.monto, descuento: 0, iva: 0, total: rf.monto,
+          subtotal: ticketSubtotal, descuento: 0, iva: ticketIva, total: rf.monto,
           status: 'PAGADA', usuario_crea: authUser?.nombre ?? 'residencial',
           notas: `Ticket POS desde recibo residencial ${exito.folio} (#${exito.id})`,
         }).select('id, folio_dia').single()
         if (ev || !venta) throw new Error(ev?.message ?? 'Error al crear venta POS')
         ventaId = (venta as any).id; folioDia = (venta as any).folio_dia
 
-        const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(detList.map(d => {
-          const clasif = clasifPorLinea(d)
-          return {
-            id_venta_fk: ventaId!, id_producto_fk: clasif.idProducto, id_concepto_ingreso_fk: clasif.idConcepto,
-            concepto: d.concepto, cantidad: d.cantidad, precio_unitario: d.precio_unitario,
-            descuento: d.descuento ?? 0, iva_pct: 0, iva: 0, subtotal: d.total, total: d.total,
-            notas: d.periodo_mes ? `${d.periodo_mes} ${d.periodo_anio ?? ''}`.trim() : null,
-          }
-        }))
+        const { error: errDet } = await dbGolf.from('ctrl_ventas_det').insert(
+          lineasTicket.map(l => ({ ...l, id_venta_fk: ventaId! })))
         if (errDet) throw new Error(errDet.message)
 
         const pagosValidos = pagos.filter(p => Number(p.monto) > 0)

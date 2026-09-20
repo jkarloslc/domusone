@@ -33,6 +33,13 @@ import {
   type ModuloCuotas,
 } from '@/lib/clasificacionCobranza'
 
+// Un error de columna faltante significa "migración pendiente" y permite
+// reintentar sin esas columnas. Cualquier otro error (permisos, red) es un error
+// de verdad: si se trataran igual, un GRANT faltante se anunciaría como
+// migración pendiente y se buscaría el problema en el lugar equivocado.
+const esColumnaFaltante = (e: { code?: string; message?: string }) =>
+  e.code === '42703' || /does not exist/i.test(e.message ?? '')
+
 // PostgREST corta en 1000 filas por respuesta; hay que paginar o se pierde
 // silenciosamente el resto (los reportes que no paginan quedan cortos sin avisar).
 async function traerTodo(build: (desde: number, hasta: number) => any): Promise<{ rows: any[]; error: string | null }> {
@@ -179,6 +186,8 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         mesesDevengo: c.id_cuota_config_fk != null ? devengoPorCuotaCfg.get(c.id_cuota_config_fk) ?? 1 : 1,
         cargado: Number(c.monto_final) || 0,
         cobrado: cobradoCxc(c),
+        // monto_final ya viene neto de descuento en las tablas cxc_*.
+        descuento: 0,
         saldo: Number(c.saldo) || 0,
         status: c.status, fechaVencimiento: c.fecha_vencimiento ?? null,
         cliente, concepto: c.concepto ?? linea,
@@ -223,7 +232,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         key: `hip-${c.id}`, modulo: 'hipico', linea,
         periodo: c.periodo ?? null,
         mesesDevengo: 1,
-        cargado: Number(c.monto_final) || 0, cobrado: cobradoCxc(c), saldo: Number(c.saldo) || 0,
+        cargado: Number(c.monto_final) || 0, cobrado: cobradoCxc(c), descuento: 0, saldo: Number(c.saldo) || 0,
         status: c.status, fechaVencimiento: c.fecha_vencimiento ?? null,
         cliente, concepto: c.concepto ?? linea, idConceptoFk: null, idSeccionFk: null,
       })
@@ -267,7 +276,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         key: `loc-${c.id}`, modulo: 'locales', linea,
         periodo: c.periodo ?? null,
         mesesDevengo: 1,
-        cargado: Number(c.monto_final) || 0, cobrado: cobradoCxc(c), saldo: Number(c.saldo) || 0,
+        cargado: Number(c.monto_final) || 0, cobrado: cobradoCxc(c), descuento: 0, saldo: Number(c.saldo) || 0,
         status: c.status, fechaVencimiento: c.fecha_vencimiento ?? null,
         cliente, concepto: c.concepto ?? linea, idConceptoFk, idSeccionFk: null,
       })
@@ -297,10 +306,24 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
   // resuelve en una consulta aparte (el embed cross-schema no se resuelve;
   // es el bug que ya se pagó varias veces en este proyecto).
   if (modulos.includes('residencial')) {
-    const { rows: cargos, error: eCargos } = await traerTodo((d, h) => dbCtrl.from('cargos')
-      .select('id, id_lote_fk, id_cuota_estandar_fk, concepto, monto, monto_pagado, saldo, periodo_mes, periodo_anio, fecha_cargo, status')
+    // `descuento_aplicado` y `fecha_vencimiento` son de la migración
+    // 20260920230000. Si todavía no existe, se reintenta sin ellas en vez de
+    // dejar la cartera de Fraccionamiento fuera del reporte: sin este respaldo,
+    // desplegar el código antes de correr la migración rompería el módulo.
+    const COLS_CARGO_BASE = 'id, id_lote_fk, id_cuota_estandar_fk, concepto, monto, monto_pagado, saldo, periodo_mes, periodo_anio, fecha_cargo, status'
+    let { rows: cargos, error: eCargos } = await traerTodo((d, h) => dbCtrl.from('cargos')
+      .select(`${COLS_CARGO_BASE}, descuento_aplicado, fecha_vencimiento`)
       .neq('status', 'Cancelado')
       .range(d, h))
+    if (eCargos && esColumnaFaltante({ message: eCargos })) {
+      avisos.push('ctrl.cargos aún no tiene `descuento_aplicado` / `fecha_vencimiento`: falta ejecutar la migración 20260920230000. Hasta entonces el descuento por pago anticipado deja saldo residual y no hay antigüedad de saldos en Fraccionamiento.')
+      const retry = await traerTodo((d, h) => dbCtrl.from('cargos')
+        .select(COLS_CARGO_BASE)
+        .neq('status', 'Cancelado')
+        .range(d, h))
+      cargos = retry.rows
+      eCargos = retry.error
+    }
     if (eCargos) errores.push(`Fraccionamiento (cargos): ${eCargos}`)
 
     const { rows: recibos, error: eRec } = await traerTodo((d, h) => dbCtrl.from('recibos')
@@ -366,13 +389,18 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         periodo: periodoDesdeNombre(c.periodo_mes, c.periodo_anio),
         mesesDevengo: c.id_cuota_estandar_fk != null ? devengoPorCuotaEstandar.get(c.id_cuota_estandar_fk) ?? 1 : 1,
         cargado: Number(c.monto) || 0,
-        cobrado: Number(c.monto_pagado) || 0,
+        // El descuento aplicado liquida cargo igual que el efectivo: si no se
+        // suma aquí, el puente lo deja como pendiente eterno y la cartera
+        // muestra morosidad que no existe (ver migración 20260920230000).
+        cobrado: (Number(c.monto_pagado) || 0) + (Number(c.descuento_aplicado) || 0),
+        descuento: Number(c.descuento_aplicado) || 0,
         saldo: Number(c.saldo) || 0,
         status: c.status,
-        // ctrl.cargos no lleva fecha_vencimiento: en Fraccionamiento el
-        // vencimiento se deriva del periodo (día 10 del mes siguiente al
-        // periodo, según la operación), no de una columna.
-        fechaVencimiento: null,
+        // Desde la migración 20260920230000 los cargos sí llevan vencimiento
+        // (día `dia_vencimiento` del mes del periodo, default 10). Los cargos
+        // anteriores al backfill quedan en null y simplemente no entran en la
+        // antigüedad de saldos.
+        fechaVencimiento: c.fecha_vencimiento ?? null,
         cliente: sec?.cve ?? `Lote ${c.id_lote_fk ?? '—'}`,
         concepto: c.concepto ?? 'Cuota',
         idConceptoFk: c.id_cuota_estandar_fk != null ? conceptoPorCuotaEstandar.get(c.id_cuota_estandar_fk) ?? null : null,
@@ -491,14 +519,6 @@ export async function fetchIngresoClasificado(anio: number): Promise<ResultadoIn
   // sin ellas y se avisa — en vez de dejar el tab en blanco sin explicación.
   let clasificacionDisponible = true
   const COLS_CLASIF = ', monto_vencido, monto_corriente, monto_anticipado'
-
-  // Un error de columna faltante significa "migración pendiente" y se reintenta
-  // sin las 3 columnas. Cualquier otro error (permisos, red) es un error de
-  // verdad y se reporta como tal — si se tratara todo igual, un GRANT faltante
-  // se anunciaría como migración pendiente y se buscaría el problema en el
-  // lugar equivocado.
-  const esColumnaFaltante = (e: { code?: string; message?: string }) =>
-    e.code === '42703' || /does not exist/i.test(e.message ?? '')
 
   const traerDesglose = async (tabla: string, cols: string) => {
     const out: any[] = []
