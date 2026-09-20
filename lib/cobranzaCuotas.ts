@@ -550,3 +550,121 @@ export async function fetchIngresoClasificado(anio: number): Promise<ResultadoIn
 
   return { filas, clasificacionDisponible, errores }
 }
+
+// ── Devengado sin IVA, por partida de presupuesto (F3) ────────────────────
+//
+// El Comparativo compara Presupuesto vs Real **sin IVA** (subtotales, ver
+// migración 20260910130000). El monto de una cuota en cartera, en cambio,
+// INCLUYE IVA — verificado con datos reales: una membresía de $4,900 genera
+// subtotal $4,224.14 + IVA $675.86 en golf.ctrl_ventas_det. Así que para
+// alimentar el Real del Comparativo con devengado hay que extraer el IVA.
+//
+// NO se divide todo entre 1.16. Esa aproximación ya se rechazó explícitamente
+// en este proyecto porque distorsiona lo exento, y aquí el riesgo es real: la
+// Cuota de Mantenimiento de Fraccionamiento tiene iva_pct = 0 / aplica_iva =
+// false, mientras las de Golf son 16%. Dividir todo entre 1.16 le quitaría
+// ~$2.4M inexistentes al 52% del ingreso.
+//
+// La tasa se resuelve desde el catálogo: los productos POS ligados al concepto
+// de ingreso de la cuota. Si todos coinciden se usa esa tasa; si discrepan o no
+// hay ninguno, la cuota se marca como SIN TASA RESUELTA y se excluye del Real
+// en vez de inventarle una tasa — un hueco visible es mejor que una cifra
+// equivocada.
+
+/** Tasa de IVA por concepto de ingreso. null = no resuelta (productos en desacuerdo o sin producto). */
+async function fetchTasaIvaPorConcepto(): Promise<{ tasas: Map<number, number | null>; error: string | null }> {
+  const { data, error } = await dbGolf.from('cat_productos_pos')
+    .select('id_concepto_ingreso_fk, iva_pct, aplica_iva')
+    .not('id_concepto_ingreso_fk', 'is', null)
+  if (error) return { tasas: new Map(), error: error.message }
+
+  const vistas = new Map<number, Set<number>>()
+  for (const p of (data ?? []) as any[]) {
+    const cid = p.id_concepto_ingreso_fk as number
+    const pct = p.aplica_iva === false ? 0 : (Number(p.iva_pct) || 0)
+    if (!vistas.has(cid)) vistas.set(cid, new Set())
+    vistas.get(cid)!.add(pct)
+  }
+  const tasas = new Map<number, number | null>()
+  vistas.forEach((set, cid) => { tasas.set(cid, set.size === 1 ? Array.from(set)[0] : null) })
+  return { tasas, error: null }
+}
+
+const quitarIva = (monto: number, ivaPct: number) =>
+  Math.round((monto / (1 + ivaPct / 100)) * 100) / 100
+
+export type DevengadoPorPartida = {
+  /** idConceptoFk → { mes: monto sin IVA } */
+  porConcepto: Map<number, Record<number, number>>
+  /** idSeccionFk → { mes: monto sin IVA } */
+  porSeccion: Map<number, Record<number, number>>
+  /** Devengado excluido por no poder resolver su tasa de IVA. */
+  montoSinTasa: number
+  /** Devengado excluido por no tener concepto ni sección con que ligarse a una partida. */
+  montoSinDimension: number
+  avisos: string[]
+  errores: string[]
+}
+
+/**
+ * Devengado del año por partida de presupuesto, prorrateado y sin IVA.
+ * Lo consume el Comparativo cuando se elige la base Devengado.
+ */
+export async function fetchDevengadoSinIvaPorPartida(
+  anio: number,
+  prorratear = true,
+): Promise<DevengadoPorPartida> {
+  const { repartirDevengo } = await import('@/lib/clasificacionCobranza')
+  const [cobranza, { tasas, error: eTasas }] = await Promise.all([
+    fetchCobranzaCuotas(),
+    fetchTasaIvaPorConcepto(),
+  ])
+
+  const porConcepto = new Map<number, Record<number, number>>()
+  const porSeccion = new Map<number, Record<number, number>>()
+  const avisos: string[] = [...cobranza.avisos]
+  const errores: string[] = [...cobranza.errores]
+  if (eTasas) errores.push(`Tasas de IVA (cat_productos_pos): ${eTasas}`)
+
+  let montoSinTasa = 0
+  let montoSinDimension = 0
+  const conceptosSinTasa = new Set<number>()
+
+  for (const d of cobranza.devengado) {
+    if (d.idConceptoFk == null && d.idSeccionFk == null) { montoSinDimension += d.cargado; continue }
+
+    // La tasa se busca por el concepto de la cuota. Una partida por sección
+    // (Fraccionamiento) también tiene concepto de cuota, así que la resolución
+    // es la misma para las dos dimensiones.
+    const ivaPct = d.idConceptoFk != null ? tasas.get(d.idConceptoFk) : undefined
+    if (ivaPct == null) {
+      montoSinTasa += d.cargado
+      if (d.idConceptoFk != null) conceptosSinTasa.add(d.idConceptoFk)
+      continue
+    }
+
+    const slices = prorratear
+      ? repartirDevengo(d.periodo, d.cargado, d.mesesDevengo)
+      : [{ periodo: d.periodo, monto: d.cargado }]
+
+    for (const sl of slices) {
+      if (!sl.periodo || !sl.periodo.startsWith(String(anio))) continue
+      const mes = Number(sl.periodo.slice(5, 7))
+      const neto = quitarIva(sl.monto, ivaPct)
+      const destino = d.idConceptoFk != null ? porConcepto : porSeccion
+      const clave = (d.idConceptoFk != null ? d.idConceptoFk : d.idSeccionFk) as number
+      const actual = destino.get(clave) ?? {}
+      actual[mes] = Math.round(((actual[mes] ?? 0) + neto) * 100) / 100
+      destino.set(clave, actual)
+    }
+  }
+
+  if (montoSinTasa > 0) {
+    avisos.push(`${montoSinTasa.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de devengado quedó fuera del Real: no se pudo resolver su tasa de IVA desde el catálogo de productos${conceptosSinTasa.size ? ` (conceptos ${Array.from(conceptosSinTasa).join(', ')})` : ''}. Se excluye en vez de asumirle una tasa.`)
+  }
+  if (montoSinDimension > 0) {
+    avisos.push(`${montoSinDimension.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de devengado no tiene concepto ni sección con que ligarse a una partida de presupuesto.`)
+  }
+
+  return { porConcepto, porSeccion, montoSinTasa, montoSinDimension, avisos, errores }
+}

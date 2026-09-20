@@ -37,6 +37,26 @@ const CLASIFICACION_LABELS: Record<Clasificacion, { ingresos: string; egresos: s
 
 type DetMap = Record<number, Record<number, number>>
 
+// Dos series capturables por partida/mes (migración 20260920200000):
+//   cobro     → ppto_presupuesto_det.monto            — lo consume /presupuestos/flujo
+//   devengado → ppto_presupuesto_det.monto_devengado  — lo consume /presupuestos/comparativo
+// Una sola cifra no puede ser las dos: con cobranza anualizada el cobro
+// esperado de enero lleva el pico de los pagos anuales y el devengado es plano.
+type Serie = 'cobro' | 'devengado'
+
+const SERIE_META: Record<Serie, { label: string; corto: string; columna: string; color: string; bg: string; ayuda: string }> = {
+  cobro: {
+    label: 'Cobro esperado', corto: 'Cobro', columna: 'monto',
+    color: '#15803d', bg: '#f0fdf4',
+    ayuda: 'Lo que se espera COBRAR cada mes (base caja, con el pico de los pagos anualizados). Es la serie que consume el Flujo de Efectivo.',
+  },
+  devengado: {
+    label: 'Devengado esperado', corto: 'Devengado', columna: 'monto_devengado',
+    color: '#7c3aed', bg: '#faf5ff',
+    ayuda: 'La cuota que corresponde a cada mes, se cobre cuando se cobre. Es la base para medir el área mes a mes y la que consume el Comparativo.',
+  },
+}
+
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
 const fmtNum = (n: number) =>
@@ -59,7 +79,13 @@ export default function CapturaPpto() {
   const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([])
   const [selId, setSelId]               = useState<number | null>(null)
   const [partidas, setPartidas]         = useState<Partida[]>([])
-  const [detMap, setDetMap]             = useState<DetMap>({})
+  const [detCobro, setDetCobro]         = useState<DetMap>({})
+  const [detDevengado, setDetDevengado] = useState<DetMap>({})
+  const [serie, setSerie]               = useState<Serie>('cobro')
+  // El grid siempre trabaja sobre la serie activa; así los componentes de fila
+  // y de totales no necesitan saber que existen dos.
+  const detMap = serie === 'cobro' ? detCobro : detDevengado
+  const setDetMap = serie === 'cobro' ? setDetCobro : setDetDevengado
   const [loading, setLoading]           = useState(true)
   const [loadingDet, setLoadingDet]     = useState(false)
 
@@ -93,14 +119,23 @@ export default function CapturaPpto() {
 
   const loadDet = useCallback(async (id: number) => {
     setLoadingDet(true)
-    const { data } = await dbCtrl.from('ppto_presupuesto_det')
-      .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', id)
-    const map: DetMap = {}
+    const { data, error } = await dbCtrl.from('ppto_presupuesto_det')
+      .select('id_partida_fk, mes, monto, monto_devengado').eq('id_presupuesto_fk', id)
+    if (error) { console.error('ppto_presupuesto_det:', error.message); setLoadingDet(false); return }
+    const mapC: DetMap = {}
+    const mapD: DetMap = {}
     ;(data ?? []).forEach((r: any) => {
-      if (!map[r.id_partida_fk]) map[r.id_partida_fk] = {}
-      map[r.id_partida_fk][r.mes] = Number(r.monto)
+      if (!mapC[r.id_partida_fk]) mapC[r.id_partida_fk] = {}
+      mapC[r.id_partida_fk][r.mes] = Number(r.monto) || 0
+      // NULL en monto_devengado = no capturado. No se siembra con `monto`: la
+      // celda queda vacía a propósito, para que se vea qué falta capturar.
+      if (r.monto_devengado != null) {
+        if (!mapD[r.id_partida_fk]) mapD[r.id_partida_fk] = {}
+        mapD[r.id_partida_fk][r.mes] = Number(r.monto_devengado)
+      }
     })
-    setDetMap(map)
+    setDetCobro(mapC)
+    setDetDevengado(mapD)
     setLoadingDet(false)
   }, [])
 
@@ -135,15 +170,54 @@ export default function CapturaPpto() {
   async function commitCell() {
     if (!editCell || !selId) { setEditCell(null); return }
     const monto = parseNum(editVal)
-    await dbCtrl.from('ppto_presupuesto_det').upsert(
-      { id_presupuesto_fk: selId, id_partida_fk: editCell.pid, mes: editCell.mes, monto },
-      { onConflict: 'id_presupuesto_fk,id_partida_fk,mes' }
+    // Se manda SOLO la columna de la serie activa: el upsert de PostgREST
+    // actualiza únicamente las columnas del payload, así que capturar devengado
+    // no pisa el cobro ya capturado (ni al revés).
+    const payload: Record<string, any> = {
+      id_presupuesto_fk: selId, id_partida_fk: editCell.pid, mes: editCell.mes,
+      [SERIE_META[serie].columna]: monto,
+    }
+    const { error } = await dbCtrl.from('ppto_presupuesto_det').upsert(
+      payload, { onConflict: 'id_presupuesto_fk,id_partida_fk,mes' }
     )
+    if (error) { alert(`No se pudo guardar: ${error.message}`); setEditCell(null); return }
     setDetMap(prev => ({
       ...prev,
       [editCell.pid]: { ...(prev[editCell.pid] ?? {}), [editCell.mes]: monto },
     }))
     setEditCell(null)
+  }
+
+  // ── Copiar cobro → devengado ────────────────────────────────────────────
+  // Sin esto habría que recapturar 63 partidas × 12 meses a mano. Se copia como
+  // punto de partida (el total anual es el mismo en las dos bases) y de ahí se
+  // suaviza el pico de enero.
+  const [copiando, setCopiando] = useState(false)
+  async function copiarCobroADevengado() {
+    if (!selId) return
+    const filas: any[] = []
+    for (const [pid, meses] of Object.entries(detCobro)) {
+      for (const [mes, monto] of Object.entries(meses)) {
+        if (!monto) continue
+        filas.push({ id_presupuesto_fk: selId, id_partida_fk: Number(pid), mes: Number(mes), monto_devengado: monto })
+      }
+    }
+    if (!filas.length) { alert('El presupuesto de cobro está vacío: no hay nada que copiar.'); return }
+    const yaCapturadas = Object.values(detDevengado).reduce((a, m) => a + Object.keys(m).length, 0)
+    const aviso = yaCapturadas > 0
+      ? `Ya hay ${yaCapturadas} celda(s) de devengado capturadas y se van a SOBRESCRIBIR.\n\n`
+      : ''
+    if (!confirm(`${aviso}Copiar ${filas.length} celda(s) del presupuesto de cobro al de devengado como punto de partida?`)) return
+
+    setCopiando(true)
+    for (let i = 0; i < filas.length; i += 200) {
+      const { error } = await dbCtrl.from('ppto_presupuesto_det').upsert(
+        filas.slice(i, i + 200), { onConflict: 'id_presupuesto_fk,id_partida_fk,mes' })
+      if (error) { setCopiando(false); alert(`Error al copiar: ${error.message}`); await loadDet(selId); return }
+    }
+    setCopiando(false)
+    await loadDet(selId)
+    setSerie('devengado')
   }
 
   async function handleNewPpto() {
@@ -278,6 +352,37 @@ export default function CapturaPpto() {
               </select>
             </label>
 
+            {/* ── Serie que se está capturando ─────────────────────── */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Serie:</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {(['cobro', 'devengado'] as Serie[]).map(sr => {
+                  const meta = SERIE_META[sr]
+                  const on = serie === sr
+                  const capturadas = Object.values(sr === 'cobro' ? detCobro : detDevengado)
+                    .reduce((a, m) => a + Object.keys(m).length, 0)
+                  return (
+                    <button key={sr} onClick={() => { setEditCell(null); setSerie(sr) }} title={meta.ayuda}
+                      style={{ padding: '6px 12px', fontSize: 12, fontWeight: on ? 700 : 500, borderRadius: 8, cursor: 'pointer',
+                        border: '1px solid', borderColor: on ? meta.color : '#e2e8f0',
+                        background: on ? meta.bg : '#fff', color: on ? meta.color : '#64748b' }}>
+                      {meta.label}
+                      <span style={{ fontSize: 10, fontWeight: 500, opacity: .75, marginLeft: 5 }}>
+                        {capturadas ? `${capturadas} celdas` : 'sin capturar'}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              {puedeEscribir && !cerrado && (
+                <button className="btn-ghost" onClick={copiarCobroADevengado} disabled={copiando}
+                  title="Copia el presupuesto de cobro al de devengado como punto de partida. El total anual es el mismo en las dos bases; lo que cambia es la distribución mensual."
+                  style={{ fontSize: 12, padding: '5px 10px' }}>
+                  {copiando ? 'Copiando…' : 'Copiar cobro → devengado'}
+                </button>
+              )}
+            </div>
+
             {selPpto && (() => {
               const st = STATUS_STYLE[selPpto.status]
               return (
@@ -329,7 +434,25 @@ export default function CapturaPpto() {
               </p>
             </div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
+            <div>
+              {/* Qué serie se está capturando — visible siempre, para que no se
+                  capture en la equivocada. */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                padding: '8px 12px', marginBottom: 8, borderRadius: 8,
+                background: SERIE_META[serie].bg,
+                border: `1px solid ${SERIE_META[serie].color}33`,
+                fontSize: 12, color: SERIE_META[serie].color,
+              }}>
+                <strong>Capturando: {SERIE_META[serie].label}</strong>
+                <span style={{ color: '#475569' }}>{SERIE_META[serie].ayuda}</span>
+                {serie === 'devengado' && Object.keys(detDevengado).length === 0 && (
+                  <span style={{ color: '#92400e' }}>
+                    Todavía no hay nada capturado en esta serie: el Comparativo sigue usando el presupuesto de cobro y lo marca como tal.
+                  </span>
+                )}
+              </div>
+              <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 900 }}>
                 <thead>
                   <tr style={{ background: '#1e293b', color: '#fff' }}>
@@ -445,6 +568,7 @@ export default function CapturaPpto() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 

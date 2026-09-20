@@ -11,6 +11,7 @@ import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
 import { PrintBar } from '@/app/reportes/utils'
+import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -140,6 +141,24 @@ export default function ComparativoPage() {
   const [partidas, setPartidas] = useState<Partida[]>([])
   const [detMap,   setDetMap]   = useState<DetMap>({})
   const [realMap,  setRealMap]  = useState<DetMap>({})
+
+  // ── Base de medición ────────────────────────────────────────────
+  // 'cobro'     Presupuesto = monto (cobro esperado) · Real = recibos por fecha
+  //             de cobro. Es el comportamiento histórico de este tab.
+  // 'devengado' Presupuesto = monto_devengado · Real = devengado de la cartera,
+  //             prorrateado y sin IVA. Es la base con la que medir un área mes
+  //             a mes: no la mueve el momento del cobro.
+  //
+  // El selector cambia LAS DOS columnas a la vez. Mezclar un presupuesto
+  // devengado contra un real de caja daría una variación que no significa nada,
+  // y es justo el problema que este trabajo viene a resolver.
+  type Base = 'cobro' | 'devengado'
+  const [base, setBase] = useState<Base>('cobro')
+  const [detDevMap, setDetDevMap] = useState<DetMap>({})
+  const [realDevMap, setRealDevMap] = useState<DetMap>({})
+  const [devAvisos, setDevAvisos] = useState<string[]>([])
+  const [devErrores, setDevErrores] = useState<string[]>([])
+  const [loadingDev, setLoadingDev] = useState(false)
   const [realDetalle, setRealDetalle] = useState<DetMapTx>({})
   const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
@@ -197,7 +216,7 @@ export default function ComparativoPage() {
     const [{ data: pData }, { data: det }, { data: manual }] = await Promise.all([
       partidasQ.order('tipo').order('orden').order('nombre'),
       dbCtrl.from('ppto_presupuesto_det')
-        .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
+        .select('id_partida_fk, mes, monto, monto_devengado').eq('id_presupuesto_fk', pptoId),
       dbCtrl.from('ppto_presupuesto_real_manual')
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
     ])
@@ -206,11 +225,19 @@ export default function ComparativoPage() {
     setPartidas(parts)
 
     const dm: DetMap = {}
+    const dd: DetMap = {}
     ;(det ?? []).forEach((r: any) => {
       if (!dm[r.id_partida_fk]) dm[r.id_partida_fk] = {}
       dm[r.id_partida_fk][r.mes] = Number(r.monto)
+      // NULL = devengado esperado no capturado; no se siembra con `monto` para
+      // que el fallback sea visible en pantalla y se sepa qué falta capturar.
+      if (r.monto_devengado != null) {
+        if (!dd[r.id_partida_fk]) dd[r.id_partida_fk] = {}
+        dd[r.id_partida_fk][r.mes] = Number(r.monto_devengado)
+      }
     })
     setDetMap(dm)
+    setDetDevMap(dd)
 
     // ── Clasificar partidas por fuente real ──────────────────────
     const secParts  = parts.filter(p => p.fuente_real === 'seccion'  && p.id_seccion_fk)
@@ -492,14 +519,62 @@ export default function ComparativoPage() {
     refreshManual()
   }
 
+  // ── Real devengado (solo se carga si se pide esa base) ──────────
+  // Viene de las subcuentas de cobranza, prorrateado por meses_devengo y sin
+  // IVA (la tasa se resuelve por concepto desde el catálogo de productos, no
+  // con un /1.16 a ciegas — la cuota de Fraccionamiento es exenta).
+  useEffect(() => {
+    if (base !== 'devengado' || !selPpto) { return }
+    let vivo = true
+    setLoadingDev(true)
+    fetchDevengadoSinIvaPorPartida(selPpto.anio, true).then(r => {
+      if (!vivo) return
+      const map: DetMap = {}
+      for (const p of partidas) {
+        if (p.tipo !== 'ingreso') continue
+        const src = p.fuente_real === 'concepto' && p.id_concepto_fk != null
+          ? r.porConcepto.get(p.id_concepto_fk)
+          : p.fuente_real === 'seccion' && p.id_seccion_fk != null
+            ? r.porSeccion.get(p.id_seccion_fk)
+            : undefined
+        if (src) map[p.id] = { ...src }
+      }
+      setRealDevMap(map)
+      setDevAvisos(r.avisos)
+      setDevErrores(r.errores)
+      setLoadingDev(false)
+    })
+    return () => { vivo = false }
+  }, [base, selPpto, partidas])
+
+  // Partidas de ingreso que no tienen de dónde sacar un Real devengado: no se
+  // rellenan con el real de caja (sería comparar peras con manzanas), se marcan.
+  const ingresosSinDevengado = partidas.filter(p =>
+    p.tipo === 'ingreso' && !realDevMap[p.id] && (detDevMap[p.id] || detMap[p.id]))
+
   // ── Helpers de agregación ──────────────────────────────────────
   const getMeses = () => filterMes === 0 ? Array.from({ length: 12 }, (_, i) => i + 1) : [filterMes]
 
+  const esIngreso = (pid: number) => partidas.find(p => p.id === pid)?.tipo === 'ingreso'
+
+  /** true si la partida no tiene devengado esperado capturado y se cae a `monto`. */
+  function pptoEsFallback(pid: number) {
+    if (base !== 'devengado') return false
+    return getMeses().some(m => detDevMap[pid]?.[m] == null && detMap[pid]?.[m] != null)
+  }
+
   function pptoPartida(pid: number) {
-    return getMeses().reduce((s, m) => s + (detMap[pid]?.[m] ?? 0), 0)
+    const fuente = base === 'devengado' ? detDevMap : detMap
+    // En base devengado se cae a `monto` cuando no hay devengado capturado, para
+    // no dejar la columna en blanco — pero queda marcado (ver pptoEsFallback).
+    return getMeses().reduce((s, m) => s + (fuente[pid]?.[m] ?? (base === 'devengado' ? (detMap[pid]?.[m] ?? 0) : 0)), 0)
   }
   function realPartida(pid: number) {
-    return getMeses().reduce((s, m) => s + (realMap[pid]?.[m] ?? 0), 0)
+    // Los EGRESOS no cambian de base: la OP ya se registra por fecha_op, que es
+    // lo más cercano a devengado que hay hoy. Solo los ingresos por cuotas
+    // tienen dos bases realmente distintas.
+    const fuente = (base === 'devengado' && esIngreso(pid)) ? realDevMap : realMap
+    return getMeses().reduce((s, m) => s + (fuente[pid]?.[m] ?? 0), 0)
   }
 
   // ── Datos de tabla ──────────────────────────────────────────────
@@ -740,6 +815,25 @@ export default function ComparativoPage() {
           </div>
         </div>
 
+        {/* Base de medición: Cobro / Devengado */}
+        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
+          {([
+            { b: 'cobro' as Base,     label: 'Cobro',     t: 'Presupuesto = cobro esperado · Real = recibos por fecha de cobro. Base histórica de este tab.' },
+            { b: 'devengado' as Base, label: 'Devengado', t: 'Presupuesto = devengado esperado · Real = devengado de la cartera, prorrateado y sin IVA. Es la base para medir un área mes a mes.' },
+          ]).map(({ b, label, t }) => (
+            <button key={b} onClick={() => setBase(b)} title={t}
+              style={{
+                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
+                background: base === b ? '#fff' : 'transparent',
+                color: base === b ? (b === 'devengado' ? '#7c3aed' : '#15803d') : '#64748b',
+                fontWeight: base === b ? 700 : 400,
+                boxShadow: base === b ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* Tipo */}
         <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {(['', 'ingreso', 'egreso'] as const).map(t => (
@@ -777,6 +871,47 @@ export default function ComparativoPage() {
           ))}
         </div>
       </div>
+
+      {/* ── Qué se está comparando ─────────────────────────────── */}
+      {base === 'devengado' && (
+        <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 8,
+          background: '#faf5ff', border: '1px solid #e9d5ff', fontSize: 12, color: '#6b21a8' }}>
+          <strong>Base devengado.</strong>{' '}
+          Presupuesto = devengado esperado capturado en{' '}
+          <a href="/presupuestos/captura" style={{ color: '#7c3aed', fontWeight: 600 }}>Captura</a>{' '}
+          (serie «Devengado esperado»). Real de <strong>ingresos</strong> = cuotas del periodo según la cartera,
+          con las cuotas anuales prorrateadas y el IVA extraído con la tasa configurada de cada cuota.
+          Los <strong>egresos no cambian de base</strong>: la OP ya se registra por su fecha, que es lo más
+          cercano a devengado que existe hoy.
+          {loadingDev && <> · <em>cargando devengado…</em></>}
+        </div>
+      )}
+
+      {base === 'devengado' && devErrores.map((e, i) => (
+        <div key={i} style={{ marginBottom: 10, padding: '10px 14px', borderRadius: 8,
+          background: '#fee2e2', border: '1px solid #fecaca', fontSize: 12, color: '#991b1b' }}>
+          <strong>Error al calcular el devengado:</strong> {e}
+        </div>
+      ))}
+
+      {base === 'devengado' && devAvisos.map((a, i) => (
+        <div key={i} style={{ marginBottom: 10, padding: '10px 14px', borderRadius: 8,
+          background: '#fffbeb', border: '1px solid #fde68a', fontSize: 12, color: '#92400e' }}>
+          {a}
+        </div>
+      ))}
+
+      {base === 'devengado' && !loadingDev && ingresosSinDevengado.length > 0 && (
+        <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 8,
+          background: '#fffbeb', border: '1px solid #fde68a', fontSize: 12, color: '#92400e' }}>
+          <strong>{ingresosSinDevengado.length} partida(s) de ingreso sin Real devengado:</strong>{' '}
+          {ingresosSinDevengado.slice(0, 6).map(p => p.nombre).join(' · ')}
+          {ingresosSinDevengado.length > 6 && ` … +${ingresosSinDevengado.length - 6}`}.
+          Su Real aparece en cero porque su cobranza no lleva cuotas con periodo en la cartera
+          (es el caso de Fraccionamiento hasta que se cargue en <code>ctrl.cargos</code>).
+          No se rellena con el real de caja: sería comparar contra otra base.
+        </div>
+      )}
 
       {/* Tabla */}
       {filas.length === 0 ? (
