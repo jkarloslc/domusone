@@ -532,19 +532,20 @@ export default function DashboardPpto() {
         eyebrowLabel="Presupuestos"
         title="Dashboard Presupuestal"
         subtitle="Seguimiento ejecutivo Presupuesto vs Real"
-        actions={<>
-          <select className="input" style={{ minWidth: 240 }}
-            value={selId ?? ''} onChange={e => onChangePpto(Number(e.target.value))}>
-            {presupuestos.map(p => (
-              <option key={p.id} value={p.id}>{p.anio} — {p.nombre}</option>
-            ))}
-          </select>
-          <button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-          </button>
-        </>}
       />
+
+      {/* Filtros */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <select className="select" style={{ minWidth: 240 }}
+          value={selId ?? ''} onChange={e => onChangePpto(Number(e.target.value))}>
+          {presupuestos.map(p => (
+            <option key={p.id} value={p.id}>{p.anio} — {p.nombre}</option>
+          ))}
+        </select>
+        <button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true)} title="Actualizar">
+          <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+        </button>
+      </div>
 
       {/* KPIs + Gráficas por clasificación */}
       <ResumenClasificacion titulo={CLASIFICACION_TITULOS.operativo}
