@@ -88,6 +88,52 @@ export function labelPeriodo(periodo: string | null): string {
     .toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
 }
 
+/** Suma `n` meses a un periodo 'YYYY-MM'. */
+export function sumarMeses(periodo: string, n: number): string {
+  const [y, m] = periodo.split('-').map(Number)
+  const d = new Date(y, m - 1 + n, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+// ── Devengo diferido ──────────────────────────────────────────────────────
+// Una cuota anual (la INSCRIPCIÓN de Golf) se carga completa en un solo
+// periodo pero absorbe 12 meses de resultado. Si se reconoce completa en su
+// mes, enero 2026 devenga $5.05M contra ~$1.35M del resto del año — el mismo
+// pico que la estrategia busca eliminar.
+//
+// `mesesDevengo` viene del catálogo (golf.cat_cuotas_config.meses_devengo,
+// cfg.cuotas_estandar.meses_devengo), no de código: cambiar la política es
+// cambiar un valor. 1 = se reconoce completo en su periodo.
+//
+// El reparto es de PRESENTACIÓN: no toca cargos, saldos ni cobranza. La
+// diferencia entre lo cargado y lo reconocido es ingreso diferido, y el
+// puente devengado→caja la muestra en columna propia para seguir cuadrando.
+
+/**
+ * Reparte el monto de una cuota en sus meses de devengo.
+ * Devuelve una sola rebanada cuando `mesesDevengo <= 1` o no hay periodo.
+ * El último mes absorbe el redondeo, así la suma de rebanadas es exacta.
+ */
+export function repartirDevengo(
+  periodo: string | null,
+  monto: number,
+  mesesDevengo: number,
+): { periodo: string | null; monto: number }[] {
+  const n = Math.max(1, Math.floor(mesesDevengo || 1))
+  if (!periodo || n === 1) return [{ periodo, monto }]
+
+  const base = Math.round((monto / n) * 100) / 100
+  const out: { periodo: string | null; monto: number }[] = []
+  let acum = 0
+  for (let i = 0; i < n; i++) {
+    const esUltimo = i === n - 1
+    const m = esUltimo ? Math.round((monto - acum) * 100) / 100 : base
+    acum = Math.round((acum + m) * 100) / 100
+    out.push({ periodo: sumarMeses(periodo, i), monto: m })
+  }
+  return out
+}
+
 // ── Carga inicial de cartera ──────────────────────────────────────────────
 // Al arrancar un módulo se carga la cartera del año (cargos + pagos ya
 // recibidos) para que los estados de cuenta queden correctos desde el primer
@@ -142,6 +188,8 @@ export type CuotaDevengada = {
   modulo: ModuloCuotas
   linea: string                    // Membresías, Pensión Carrito, sección del lote…
   periodo: string | null
+  /** Meses de resultado que absorbe el cargo (1 = todo en su periodo). */
+  mesesDevengo: number
   cargado: number
   cobrado: number
   saldo: number

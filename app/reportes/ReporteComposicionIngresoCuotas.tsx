@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import * as XLSX from 'xlsx'
 import { PrintBar } from './utils'
 import { AlertTriangle, CalendarClock, CheckCircle, Clock, Info, TrendingUp, Wallet } from 'lucide-react'
-import { fetchCobranzaCuotas, type ResultadoCobranza } from '@/lib/cobranzaCuotas'
+import { fetchCobranzaCuotas, fetchIngresoClasificado, type ResultadoCobranza, type ResultadoIngresoClasificado } from '@/lib/cobranzaCuotas'
 import {
-  BANDAS, BANDA_META, MODULOS_CUOTAS, MODULO_META, labelPeriodo,
+  BANDAS, BANDA_META, MODULOS_CUOTAS, MODULO_META, labelPeriodo, repartirDevengo,
   type BandaCobranza, type ModuloCuotas,
 } from '@/lib/clasificacionCobranza'
 
@@ -41,7 +41,7 @@ const fmtFecha = (d: string | null) =>
 const MESES_CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const MM = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
 
-type Tab = 'composicion' | 'puente' | 'detalle'
+type Tab = 'composicion' | 'puente' | 'ingreso' | 'detalle'
 
 const cellNum: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
 
@@ -52,11 +52,13 @@ export default function ReporteComposicionIngresoCuotas() {
   const [modulosSel, setModulosSel]   = useState<ModuloCuotas[]>([...MODULOS_CUOTAS])
   const [lineaSel, setLineaSel]       = useState('')
   const [incluirCargaInicial, setIncluirCargaInicial] = useState(false)
+  const [prorratear, setProrratear] = useState(true)
   const [tab, setTab]                 = useState<Tab>('composicion')
   const [bandaFiltro, setBandaFiltro] = useState<'' | BandaCobranza>('')
 
   const [data, setData]       = useState<ResultadoCobranza | null>(null)
   const [loading, setLoading] = useState(false)
+  const [ingreso, setIngreso] = useState<ResultadoIngresoClasificado | null>(null)
 
   const cargar = useCallback(async () => {
     setLoading(true)
@@ -66,6 +68,10 @@ export default function ReporteComposicionIngresoCuotas() {
   }, [modulosSel])
 
   useEffect(() => { cargar() }, [cargar])
+
+  // Libro de ingresos — fuente independiente de las subcuentas (ver
+  // fetchIngresoClasificado). Se recarga solo al cambiar de año.
+  useEffect(() => { fetchIngresoClasificado(anio).then(setIngreso) }, [anio])
 
   // Al cambiar los módulos, una línea seleccionada puede dejar de existir.
   useEffect(() => { setLineaSel('') }, [modulosSel])
@@ -114,14 +120,38 @@ export default function ReporteComposicionIngresoCuotas() {
     return { filas, totales, granTotal }
   }, [cobros, anio])
 
+  // ── Devengo reconocido (cuotas anuales prorrateadas) ───────────────────
+  // Reparte cada cuota en sus meses de devengo (`mesesDevengo`, del catálogo).
+  // Una cuota mensual tiene una sola rebanada, así que sin cuotas anuales esto
+  // es idéntico al devengado por cargo.
+  const reconocidoPorPeriodo = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const d of devengado) {
+      const slices = prorratear
+        ? repartirDevengo(d.periodo, d.cargado, d.mesesDevengo)
+        : [{ periodo: d.periodo, monto: d.cargado }]
+      for (const sl of slices) {
+        if (!sl.periodo) continue
+        map.set(sl.periodo, (map.get(sl.periodo) ?? 0) + sl.monto)
+      }
+    }
+    return map
+  }, [devengado, prorratear])
+
+  const hayDiferido = useMemo(
+    () => prorratear && devengado.some(d => d.mesesDevengo > 1),
+    [devengado, prorratear])
+
   // ── Puente devengado → caja, por periodo ───────────────────────────────
-  // D(M) = cobrado en M + cobrado antes de M + cobrado después de M
-  //        + cobrado sin fecha + pendiente
+  // Dos identidades encadenadas:
+  //   1) Devengado reconocido + diferido = devengado por cargo
+  //   2) Devengado por cargo = cobrado en su mes + antes + después
+  //                            + cobrado sin fecha + pendiente
   //
   // `pendiente` se DERIVA como cargado − cobrado en vez de sumar la columna
-  // `saldo`: así el puente cuadra por construcción. Con `saldo` no cuadraba —
-  // las 8 cuotas de Golf con abono sin fecha_pago dejaban un hueco de
-  // $18,519.44 que parecía un error del reporte y en realidad es un dato a
+  // `saldo`: así la identidad (2) cuadra por construcción. Con `saldo` no
+  // cuadraba — las 8 cuotas de Golf con abono sin fecha_pago dejaban un hueco
+  // de $18,519.44 que parecía un error del reporte y en realidad es un dato a
   // corregir en la cobranza. Esas aparecen en su propia columna.
   const puente = useMemo(() => {
     const sinFechaTodas = (data?.cobrosSinFecha ?? []).filter(c => !lineaSel || c.linea === lineaSel)
@@ -142,21 +172,52 @@ export default function ReporteComposicionIngresoCuotas() {
       const sinFecha  = sinFechaTodas.filter(c => c.periodo === per).reduce((a, c) => a + c.monto, 0)
 
       const dif = cargado - (enSuMes + antes + despues + sinFecha + pendiente)
+
+      // Devengado reconocido + diferido = devengado por cargo (identidad exacta
+      // por construcción). Y devengado por cargo = la cadena de cobro de la
+      // derecha. Dos identidades encadenadas, las dos comprobables.
+      const reconocido = reconocidoPorPeriodo.get(per) ?? 0
+      const diferido = cargado - reconocido
+
       return {
         mes: m, label: MESES_CORTO[i], periodo: per,
+        reconocido, diferido,
         cargado, enSuMes, antes, despues, sinFecha, pendiente,
         dif, cuadra: Math.abs(dif) < 1, n: dev.length,
       }
-    }).filter(f => f.cargado !== 0 || f.enSuMes !== 0 || f.antes !== 0 || f.despues !== 0)
+    }).filter(f => f.cargado !== 0 || f.reconocido !== 0 || f.enSuMes !== 0 || f.antes !== 0 || f.despues !== 0)
 
     const tot = filas.reduce((a, f) => ({
+      reconocido: a.reconocido + f.reconocido, diferido: a.diferido + f.diferido,
       cargado: a.cargado + f.cargado, enSuMes: a.enSuMes + f.enSuMes,
       antes: a.antes + f.antes, despues: a.despues + f.despues,
       sinFecha: a.sinFecha + f.sinFecha, pendiente: a.pendiente + f.pendiente,
-    }), { cargado: 0, enSuMes: 0, antes: 0, despues: 0, sinFecha: 0, pendiente: 0 })
+    }), { reconocido: 0, diferido: 0, cargado: 0, enSuMes: 0, antes: 0, despues: 0, sinFecha: 0, pendiente: 0 })
 
     return { filas, tot }
-  }, [devengado, data, anio, lineaSel])
+  }, [devengado, data, anio, lineaSel, reconocidoPorPeriodo])
+
+  // ── Matriz del libro de ingresos (mes × banda capturada) ───────────────
+  // Se construye sobre ctrl.recibos_ingreso, la misma fuente del Comparativo,
+  // así que sus totales SÍ coinciden con el Estado de Resultados.
+  const matrizIngreso = useMemo(() => {
+    const filas = (ingreso?.filas ?? []).filter(f => !lineaSel || f.linea === lineaSel)
+    const porMes = MM.map((m, i) => {
+      const delMes = filas.filter(f => f.fecha.slice(5, 7) === m)
+      const vencido    = delMes.reduce((a, f) => a + f.vencido, 0)
+      const corriente  = delMes.reduce((a, f) => a + f.corriente, 0)
+      const anticipado = delMes.reduce((a, f) => a + f.anticipado, 0)
+      const sinClas    = delMes.reduce((a, f) => a + f.sinClasificar, 0)
+      const total      = delMes.reduce((a, f) => a + f.monto, 0)
+      return { mes: m, label: MESES_CORTO[i], vencido, corriente, anticipado, sinClas, total, n: delMes.length }
+    })
+    const tot = porMes.reduce((a, f) => ({
+      vencido: a.vencido + f.vencido, corriente: a.corriente + f.corriente,
+      anticipado: a.anticipado + f.anticipado, sinClas: a.sinClas + f.sinClas, total: a.total + f.total,
+    }), { vencido: 0, corriente: 0, anticipado: 0, sinClas: 0, total: 0 })
+    const centros = Array.from(new Set(filas.map(f => f.centro))).sort()
+    return { porMes, tot, centros, nFilas: filas.length }
+  }, [ingreso, lineaSel])
 
   // ── Detalle ────────────────────────────────────────────────────────────
   const detalle = useMemo(() => cobros
@@ -168,15 +229,19 @@ export default function ReporteComposicionIngresoCuotas() {
   // ── KPIs ───────────────────────────────────────────────────────────────
   const kpis = useMemo(() => {
     const devAnio = devengado.filter(d => d.periodo?.startsWith(String(anio)))
-    const cargado = devAnio.reduce((a, d) => a + d.cargado, 0)
+    const porCargo = devAnio.reduce((a, d) => a + d.cargado, 0)
     const cobradoDev = devAnio.reduce((a, d) => a + d.cobrado, 0)
+    const reconocido = MM.reduce((a, m) => a + (reconocidoPorPeriodo.get(`${anio}-${m}`) ?? 0), 0)
     return {
-      cargado,
-      pendiente: cargado - cobradoDev,
-      avance: cargado > 0 ? (cobradoDev / cargado) * 100 : 0,
+      // El KPI muestra lo RECONOCIDO (la medida del área); pendiente y avance
+      // se quedan en base cargo, que es la realidad de la cartera.
+      devengado: prorratear ? reconocido : porCargo,
+      porCargo,
+      pendiente: porCargo - cobradoDev,
+      avance: porCargo > 0 ? (cobradoDev / porCargo) * 100 : 0,
       caja: matriz.granTotal,
     }
-  }, [devengado, anio, matriz])
+  }, [devengado, anio, matriz, reconocidoPorPeriodo, prorratear])
 
   const toggleModulo = (m: ModuloCuotas) =>
     setModulosSel(prev => prev.includes(m)
@@ -199,15 +264,26 @@ export default function ReporteComposicionIngresoCuotas() {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja1), 'Composicion del cobro')
 
     const hoja2: any[][] = [
-      ['Periodo', 'Devengado', 'Cobrado en su mes', 'Cobrado antes (anticipo)',
-       'Cobrado después (vencido)', 'Cobrado sin fecha', 'Pendiente', 'Diferencia'],
+      ['Periodo', 'Devengado reconocido', 'Diferido', 'Devengado por cargo', 'Cobrado en su mes',
+       'Cobrado antes (anticipo)', 'Cobrado después (vencido)', 'Cobrado sin fecha', 'Pendiente', 'Diferencia'],
       ...puente.filas.map(f => [
-        labelPeriodo(f.periodo), f.cargado, f.enSuMes, f.antes, f.despues, f.sinFecha, f.pendiente, f.dif,
+        labelPeriodo(f.periodo), f.reconocido, f.diferido, f.cargado,
+        f.enSuMes, f.antes, f.despues, f.sinFecha, f.pendiente, f.dif,
       ]),
-      ['TOTAL', puente.tot.cargado, puente.tot.enSuMes, puente.tot.antes,
-       puente.tot.despues, puente.tot.sinFecha, puente.tot.pendiente, ''],
+      ['TOTAL', puente.tot.reconocido, puente.tot.diferido, puente.tot.cargado, puente.tot.enSuMes,
+       puente.tot.antes, puente.tot.despues, puente.tot.sinFecha, puente.tot.pendiente, ''],
     ]
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja2), 'Puente devengado-caja')
+
+    const hoja3: any[][] = [
+      ['Mes', 'Corriente', 'Vencida', 'Anticipada', 'Sin clasificar', 'Ingreso del mes'],
+      ...matrizIngreso.porMes.filter(f => f.total !== 0).map(f => [
+        `${f.label} ${anio}`, f.corriente, f.vencido, f.anticipado, f.sinClas, f.total,
+      ]),
+      ['TOTAL', matrizIngreso.tot.corriente, matrizIngreso.tot.vencido,
+       matrizIngreso.tot.anticipado, matrizIngreso.tot.sinClas, matrizIngreso.tot.total],
+    ]
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja3), 'Ingreso reconocido')
 
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalle.map(c => ({
       'Fecha de pago': c.fechaPago,
@@ -234,6 +310,7 @@ export default function ReporteComposicionIngresoCuotas() {
 
   const countPrint = tab === 'composicion' ? matriz.filas.filter(f => f.total !== 0).length
                    : tab === 'puente'      ? puente.filas.length
+                   : tab === 'ingreso'     ? matrizIngreso.porMes.filter(f => f.total !== 0).length
                    : detalle.length
 
   return (
@@ -280,6 +357,12 @@ export default function ReporteComposicionIngresoCuotas() {
           Incluir carga inicial de cartera
         </label>
 
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#475569', cursor: 'pointer', paddingBottom: 8 }}
+          title="Las cuotas anuales (ej. la Inscripción de Golf) se reparten en sus meses de devengo en vez de reconocerse completas en el mes del cargo. Solo afecta al devengado; el cobro no cambia.">
+          <input type="checkbox" checked={prorratear} onChange={e => setProrratear(e.target.checked)} />
+          Prorratear cuotas anuales
+        </label>
+
         <button className="btn-ghost" onClick={exportar} disabled={loading} style={{ marginBottom: 1 }}>
           Exportar Excel
         </button>
@@ -323,7 +406,9 @@ export default function ReporteComposicionIngresoCuotas() {
           {/* ── KPIs ──────────────────────────────────────────── */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {[
-              { label: `Devengado ${anio}`, value: fmt0(kpis.cargado),   sub: 'cuotas del periodo, cobradas o no', color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
+              { label: `Devengado ${anio}`, value: fmt0(kpis.devengado),
+                sub: hayDiferido ? 'reconocido, con cuotas anuales prorrateadas' : 'cuotas del periodo, cobradas o no',
+                color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
               { label: 'Cobrado (caja)',    value: fmt0(kpis.caja),      sub: `del año ${anio}`,                   color: '#15803d', bg: '#f0fdf4', icon: Wallet },
               { label: 'Por cobrar',        value: fmt0(kpis.pendiente), sub: 'cartera del devengado del año',     color: '#d97706', bg: '#fffbeb', icon: Clock },
               { label: 'Avance de cobro',   value: `${kpis.avance.toFixed(1)}%`, sub: 'del devengado del año',     color: '#7c3aed', bg: '#faf5ff', icon: TrendingUp },
@@ -362,6 +447,7 @@ export default function ReporteComposicionIngresoCuotas() {
             {([
               { k: 'composicion', label: 'Composición del cobro' },
               { k: 'puente',      label: 'Puente devengado → caja' },
+              { k: 'ingreso',     label: 'Ingreso reconocido (libro)' },
               { k: 'detalle',     label: `Detalle (${detalle.length})` },
             ] as const).map(t => (
               <button key={t.k} onClick={() => setTab(t.k)}
@@ -439,16 +525,20 @@ export default function ReporteComposicionIngresoCuotas() {
             {tab === 'puente' && (
               <>
                 <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 8px' }}>
-                  Por cada periodo: cuánto se devengó y cómo se cobró. <strong>Devengado = cobrado en su mes
-                  + cobrado antes + cobrado después + cobrado sin fecha + pendiente.</strong> Esta tabla siempre
-                  considera el universo completo de cobros, incluida la carga inicial: es lo que explica de dónde
-                  salió el devengado.
+                  Por cada periodo: cuánto se devengó y cómo se cobró.{' '}
+                  {hayDiferido && <><strong>Reconocido + diferido = devengado por cargo</strong>, y{' '}</>}
+                  <strong>devengado por cargo = cobrado en su mes + antes + después + sin fecha + pendiente.</strong>{' '}
+                  Esta tabla siempre considera el universo completo de cobros, incluida la carga inicial: es lo
+                  que explica de dónde salió el devengado.
+                  {hayDiferido && ' El «diferido» es la parte del cargo que se reconoce en otros meses (cuotas anuales prorrateadas).'}
                 </p>
                 <table id="reporte-table" className="table" style={{ width: '100%', fontSize: 12 }}>
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left' }}>Periodo</th>
-                      <th style={cellNum}>Devengado</th>
+                      {hayDiferido && <th style={{ ...cellNum, color: '#7c3aed' }} title="Devengado del mes con las cuotas anuales prorrateadas — es la medida del área">Devengado reconocido</th>}
+                      {hayDiferido && <th style={{ ...cellNum, color: '#a855f7' }} title="Parte del cargo que se reconoce en otros meses">± Diferido</th>}
+                      <th style={cellNum}>{hayDiferido ? 'Devengado por cargo' : 'Devengado'}</th>
                       <th style={{ ...cellNum, color: '#16a34a' }}>Cobrado en su mes</th>
                       <th style={{ ...cellNum, color: '#2563eb' }}>Cobrado antes (anticipo)</th>
                       <th style={{ ...cellNum, color: '#dc2626' }}>Cobrado después (vencido)</th>
@@ -461,6 +551,8 @@ export default function ReporteComposicionIngresoCuotas() {
                     {puente.filas.map(f => (
                       <tr key={f.mes}>
                         <td style={{ fontWeight: 600, textTransform: 'capitalize' }}>{labelPeriodo(f.periodo)}</td>
+                        {hayDiferido && <td style={{ ...cellNum, fontWeight: 700, color: '#7c3aed' }}>{fmt$(f.reconocido)}</td>}
+                        {hayDiferido && <td style={{ ...cellNum, color: f.diferido ? '#a855f7' : '#cbd5e1' }}>{f.diferido ? fmt$(f.diferido) : '—'}</td>}
                         <td style={{ ...cellNum, fontWeight: 700 }}>{fmt$(f.cargado)}</td>
                         <td style={{ ...cellNum, color: f.enSuMes ? '#16a34a' : '#cbd5e1' }}>{f.enSuMes ? fmt$(f.enSuMes) : '—'}</td>
                         <td style={{ ...cellNum, color: f.antes ? '#2563eb' : '#cbd5e1' }}>{f.antes ? fmt$(f.antes) : '—'}</td>
@@ -475,7 +567,7 @@ export default function ReporteComposicionIngresoCuotas() {
                       </tr>
                     ))}
                     {!puente.filas.length && (
-                      <tr><td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                      <tr><td colSpan={hayDiferido ? 10 : 8} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
                         Sin cuotas devengadas en {anio} para los módulos seleccionados.
                       </td></tr>
                     )}
@@ -483,6 +575,8 @@ export default function ReporteComposicionIngresoCuotas() {
                   <tfoot>
                     <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
                       <td>TOTAL {anio}</td>
+                      {hayDiferido && <td style={{ ...cellNum, color: '#7c3aed' }}>{fmt$(puente.tot.reconocido)}</td>}
+                      {hayDiferido && <td style={{ ...cellNum, color: '#a855f7' }}>{fmt$(puente.tot.diferido)}</td>}
                       <td style={cellNum}>{fmt$(puente.tot.cargado)}</td>
                       <td style={{ ...cellNum, color: '#16a34a' }}>{fmt$(puente.tot.enSuMes)}</td>
                       <td style={{ ...cellNum, color: '#2563eb' }}>{fmt$(puente.tot.antes)}</td>
@@ -493,6 +587,98 @@ export default function ReporteComposicionIngresoCuotas() {
                     </tr>
                   </tfoot>
                 </table>
+              </>
+            )}
+
+            {/* ── TAB 3: libro de ingresos ───────────────────── */}
+            {tab === 'ingreso' && (
+              <>
+                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 8px' }}>
+                  Construido sobre <strong>ctrl.recibos_ingreso</strong>, la misma fuente que el Comparativo de
+                  Presupuesto: por eso el total de cada mes <strong>sí coincide</strong> con el Estado de Resultados.
+                  Es otro libro del mismo dinero que las pestañas anteriores (que salen de las subcuentas de cobranza),
+                  así que nunca se suman entre sí.
+                  {matrizIngreso.centros.length > 0 && <> Centros incluidos: {matrizIngreso.centros.join(' · ')}.</>}
+                </p>
+
+                {ingreso && !ingreso.clasificacionDisponible && (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>
+                      Las columnas de clasificación aún no existen en la base: falta ejecutar la migración
+                      <strong> 20260920180000</strong>. Hasta entonces todo el ingreso aparece como «sin clasificar».
+                    </span>
+                  </div>
+                )}
+
+                {(ingreso?.errores ?? []).map((e, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#991b1b' }}>
+                    <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>{e}</span>
+                  </div>
+                ))}
+
+                <table id="reporte-table" className="table" style={{ width: '100%', fontSize: 12 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left' }}>Mes del recibo</th>
+                      <th style={{ ...cellNum, color: '#16a34a' }}>Corriente</th>
+                      <th style={{ ...cellNum, color: '#dc2626' }}>Vencida</th>
+                      <th style={{ ...cellNum, color: '#2563eb' }}>Anticipada</th>
+                      <th style={{ ...cellNum, color: '#64748b' }}>Sin clasificar</th>
+                      <th style={cellNum}>Ingreso del mes</th>
+                      <th style={cellNum}>% clasificado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matrizIngreso.porMes.filter(f => f.total !== 0).map(f => (
+                      <tr key={f.mes}>
+                        <td style={{ fontWeight: 600 }}>{f.label} {anio}</td>
+                        <td style={{ ...cellNum, color: f.corriente ? '#16a34a' : '#cbd5e1' }}>{f.corriente ? fmt$(f.corriente) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.vencido ? '#dc2626' : '#cbd5e1' }}>{f.vencido ? fmt$(f.vencido) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.anticipado ? '#2563eb' : '#cbd5e1' }}>{f.anticipado ? fmt$(f.anticipado) : '—'}</td>
+                        <td style={{ ...cellNum, color: f.sinClas ? '#64748b' : '#cbd5e1' }}>{f.sinClas ? fmt$(f.sinClas) : '—'}</td>
+                        <td style={{ ...cellNum, fontWeight: 700 }}>{fmt$(f.total)}</td>
+                        <td style={cellNum}>{pctStr(f.total - f.sinClas, f.total)}</td>
+                      </tr>
+                    ))}
+                    {matrizIngreso.porMes.every(f => f.total === 0) && (
+                      <tr><td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                        Sin recibos de ingreso confirmados en {anio}.
+                      </td></tr>
+                    )}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                      <td>TOTAL {anio}</td>
+                      <td style={{ ...cellNum, color: '#16a34a' }}>{fmt$(matrizIngreso.tot.corriente)}</td>
+                      <td style={{ ...cellNum, color: '#dc2626' }}>{fmt$(matrizIngreso.tot.vencido)}</td>
+                      <td style={{ ...cellNum, color: '#2563eb' }}>{fmt$(matrizIngreso.tot.anticipado)}</td>
+                      <td style={{ ...cellNum, color: '#64748b' }}>{fmt$(matrizIngreso.tot.sinClas)}</td>
+                      <td style={cellNum}>{fmt$(matrizIngreso.tot.total)}</td>
+                      <td style={cellNum}>{pctStr(matrizIngreso.tot.total - matrizIngreso.tot.sinClas, matrizIngreso.tot.total)}</td>
+                    </tr>
+                    <tr style={{ background: '#f8fafc', fontSize: 11, color: '#64748b' }}>
+                      <td>% del ingreso</td>
+                      <td style={cellNum}>{pctStr(matrizIngreso.tot.corriente, matrizIngreso.tot.total)}</td>
+                      <td style={cellNum}>{pctStr(matrizIngreso.tot.vencido, matrizIngreso.tot.total)}</td>
+                      <td style={cellNum}>{pctStr(matrizIngreso.tot.anticipado, matrizIngreso.tot.total)}</td>
+                      <td style={cellNum}>{pctStr(matrizIngreso.tot.sinClas, matrizIngreso.tot.total)}</td>
+                      <td style={cellNum}>100%</td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+
+                {matrizIngreso.tot.sinClas > 0 && (
+                  <p style={{ fontSize: 11, color: '#92400e', marginTop: 8 }}>
+                    <strong>{fmt$(matrizIngreso.tot.sinClas)}</strong> sin clasificar
+                    ({pctStr(matrizIngreso.tot.sinClas, matrizIngreso.tot.total)} del ingreso).
+                    Se captura por recibo en <strong>Ingresos</strong>, activando «Clasificar cobranza» en el
+                    desglose por sección. Los conceptos que no son cuotas (deslindes, tags, intereses) se quedan
+                    aquí a propósito: no tienen periodo.
+                  </p>
+                )}
               </>
             )}
 

@@ -100,6 +100,8 @@ export type ResultadoCobranza = {
   avisos: string[]
   /** Errores de consulta — nunca se tragan en silencio. */
   errores: string[]
+  /** false = falta la migración de `meses_devengo`; el prorrateo no aplica. */
+  devengoDiferidoDisponible: boolean
 }
 
 /**
@@ -127,16 +129,30 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
   // Se leen del catálogo en vez de mapearse por clave en código: las claves
   // ya se han renombrado varias veces en este proyecto y un mapa hardcodeado
   // rompe en silencio.
+  //
+  // Se piden con select('*') a propósito: `meses_devengo` (migración
+  // 20260920160000) puede no existir todavía, y nombrarlo en el select haría
+  // fallar la consulta completa y con ella el reporte. Son tablas de config de
+  // 1-2 filas, así que traerlas enteras no cuesta nada. Si la columna no está,
+  // mesesDevengo cae a 1 = comportamiento actual, y el reporte lo avisa.
   const [cuotasCfgGolf, carritosCfg, cuotasEstandar] = await Promise.all([
-    modulos.includes('golf')   ? dbGolf.from('cat_cuotas_config').select('id, tipo, id_concepto_ingreso_fk') : Promise.resolve({ data: [] }),
-    modulos.includes('golf')   ? dbGolf.from('cfg_carritos').select('id_concepto_ingreso_fk').limit(1)       : Promise.resolve({ data: [] }),
-    modulos.includes('residencial') ? dbCfg.from('cuotas_estandar').select('id, id_concepto_ingreso_fk')     : Promise.resolve({ data: [] }),
+    modulos.includes('golf')   ? dbGolf.from('cat_cuotas_config').select('*')            : Promise.resolve({ data: [] }),
+    modulos.includes('golf')   ? dbGolf.from('cfg_carritos').select('*').limit(1)        : Promise.resolve({ data: [] }),
+    modulos.includes('residencial') ? dbCfg.from('cuotas_estandar').select('*')          : Promise.resolve({ data: [] }),
   ])
   const conceptoPorCuotaCfg = new Map<number, number | null>(
     ((cuotasCfgGolf as any).data ?? []).map((r: any) => [r.id, r.id_concepto_ingreso_fk ?? null]))
   const conceptoPension = ((carritosCfg as any).data ?? [])[0]?.id_concepto_ingreso_fk ?? null
   const conceptoPorCuotaEstandar = new Map<number, number | null>(
     ((cuotasEstandar as any).data ?? []).map((r: any) => [r.id, r.id_concepto_ingreso_fk ?? null]))
+
+  const devengoPorCuotaCfg = new Map<number, number>(
+    ((cuotasCfgGolf as any).data ?? []).map((r: any) => [r.id, Number(r.meses_devengo) || 1]))
+  const devengoPorCuotaEstandar = new Map<number, number>(
+    ((cuotasEstandar as any).data ?? []).map((r: any) => [r.id, Number(r.meses_devengo) || 1]))
+  const columnaDevengoPresente =
+    ((cuotasCfgGolf as any).data ?? []).some((r: any) => r.meses_devengo !== undefined) ||
+    ((cuotasEstandar as any).data ?? []).some((r: any) => r.meses_devengo !== undefined)
 
   const COLS_CXC = 'id, tipo, concepto, periodo, monto_original, descuento, monto_final, saldo, status, fecha_emision, fecha_vencimiento, fecha_pago, forma_pago'
 
@@ -160,6 +176,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
       devengado.push({
         key: `golf-${c.id}`, modulo: 'golf', linea,
         periodo: c.periodo ?? null,
+        mesesDevengo: c.id_cuota_config_fk != null ? devengoPorCuotaCfg.get(c.id_cuota_config_fk) ?? 1 : 1,
         cargado: Number(c.monto_final) || 0,
         cobrado: cobradoCxc(c),
         saldo: Number(c.saldo) || 0,
@@ -205,6 +222,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
       devengado.push({
         key: `hip-${c.id}`, modulo: 'hipico', linea,
         periodo: c.periodo ?? null,
+        mesesDevengo: 1,
         cargado: Number(c.monto_final) || 0, cobrado: cobradoCxc(c), saldo: Number(c.saldo) || 0,
         status: c.status, fechaVencimiento: c.fecha_vencimiento ?? null,
         cliente, concepto: c.concepto ?? linea, idConceptoFk: null, idSeccionFk: null,
@@ -248,6 +266,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
       devengado.push({
         key: `loc-${c.id}`, modulo: 'locales', linea,
         periodo: c.periodo ?? null,
+        mesesDevengo: 1,
         cargado: Number(c.monto_final) || 0, cobrado: cobradoCxc(c), saldo: Number(c.saldo) || 0,
         status: c.status, fechaVencimiento: c.fecha_vencimiento ?? null,
         cliente, concepto: c.concepto ?? linea, idConceptoFk, idSeccionFk: null,
@@ -345,6 +364,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         key: `res-${c.id}`, modulo: 'residencial',
         linea: sec?.nombre ?? 'Sin sección',
         periodo: periodoDesdeNombre(c.periodo_mes, c.periodo_anio),
+        mesesDevengo: c.id_cuota_estandar_fk != null ? devengoPorCuotaEstandar.get(c.id_cuota_estandar_fk) ?? 1 : 1,
         cargado: Number(c.monto) || 0,
         cobrado: Number(c.monto_pagado) || 0,
         saldo: Number(c.saldo) || 0,
@@ -395,10 +415,138 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
     }
   }
 
+  if (!columnaDevengoPresente && (modulos.includes('golf') || modulos.includes('residencial'))) {
+    avisos.push('La columna `meses_devengo` aún no existe en el catálogo de cuotas: el prorrateo de cuotas anuales (ej. la Inscripción de Golf) no tendrá efecto hasta que se ejecute la migración 20260920160000.')
+  }
+
   if (cobrosSinFecha.length) {
     const total = cobrosSinFecha.reduce((a, c) => a + c.monto, 0)
     avisos.push(`${cobrosSinFecha.length} cuota(s) con abono registrado pero sin fecha de pago (${total.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}). No se pueden ubicar en ningún mes: aparecen como línea aparte en el puente. Corregirlas en el módulo de cobranza hace que el puente cuadre solo.`)
   }
 
-  return { devengado, cobrado, cobrosSinFecha, arranque, modulosConDatos, avisos, errores }
+  return { devengado, cobrado, cobrosSinFecha, arranque, modulosConDatos, avisos, errores, devengoDiferidoDisponible: columnaDevengoPresente }
+}
+
+// ── Ingreso reconocido, clasificado (F2) ──────────────────────────────────
+//
+// Las medidas de arriba salen de las SUBCUENTAS de cobranza. Esta sale del
+// LIBRO DE INGRESOS (ctrl.recibos_ingreso + su desglose), que es exactamente
+// la fuente que usan el Comparativo de Presupuesto y el Estado de Resultados
+// (ver app/presupuestos/comparativo/page.tsx: fuente_real 'seccion'/'concepto').
+//
+// Por eso vive aparte y NUNCA se suma con las anteriores: son dos libros
+// distintos del mismo dinero. Mezclarlos duplicaría. Que se puedan ver lado a
+// lado es justamente lo que hace visible la brecha entre cartera e ingreso.
+//
+// Fraccionamiento ($17.6M en 2026, el 52% del ingreso) no tiene subcuenta en
+// operación, así que esta es hoy la única vía para clasificar su cobranza —
+// capturada a mano en /ingresos.
+
+export type IngresoClasificado = {
+  key: string
+  fecha: string
+  folio: string | null
+  idCentroFk: number | null
+  centro: string
+  origen: 'seccion' | 'concepto'
+  linea: string
+  monto: number
+  vencido: number
+  corriente: number
+  anticipado: number
+  /** Parte del monto sin clasificar. Igual al monto cuando la fila no se capturó. */
+  sinClasificar: number
+  clasificada: boolean
+}
+
+export type ResultadoIngresoClasificado = {
+  filas: IngresoClasificado[]
+  /** false = falta la migración 20260920180000; todo sale como "sin clasificar". */
+  clasificacionDisponible: boolean
+  errores: string[]
+}
+
+export async function fetchIngresoClasificado(anio: number): Promise<ResultadoIngresoClasificado> {
+  const errores: string[] = []
+  const desde = `${anio}-01-01`
+  const hasta = `${anio}-12-31`
+
+  const [{ data: centrosData }, { rows: recibos, error: eRec }] = await Promise.all([
+    dbCfg.from('centros_ingreso').select('id, nombre'),
+    traerTodo((d, h) => dbCtrl.from('recibos_ingreso')
+      .select('id, folio, fecha, status, monto_total, id_centro_ingreso_fk')
+      .eq('status', 'Confirmado')
+      .gte('fecha', desde).lte('fecha', hasta)
+      .range(d, h)),
+  ])
+  if (eRec) errores.push(`Recibos de ingreso: ${eRec}`)
+
+  const nombreCentro = new Map<number, string>(((centrosData ?? []) as any[]).map(c => [c.id, c.nombre]))
+  const reciboPorId = new Map<number, any>(recibos.map(r => [r.id, r]))
+  const ids = recibos.map(r => r.id)
+  if (!ids.length) return { filas: [], clasificacionDisponible: true, errores }
+
+  // Las 3 columnas de clasificación pueden no existir todavía (migración
+  // 20260920180000). Se intenta con ellas y, si la consulta falla, se reintenta
+  // sin ellas y se avisa — en vez de dejar el tab en blanco sin explicación.
+  let clasificacionDisponible = true
+  const COLS_CLASIF = ', monto_vencido, monto_corriente, monto_anticipado'
+
+  // Un error de columna faltante significa "migración pendiente" y se reintenta
+  // sin las 3 columnas. Cualquier otro error (permisos, red) es un error de
+  // verdad y se reporta como tal — si se tratara todo igual, un GRANT faltante
+  // se anunciaría como migración pendiente y se buscaría el problema en el
+  // lugar equivocado.
+  const esColumnaFaltante = (e: { code?: string; message?: string }) =>
+    e.code === '42703' || /does not exist/i.test(e.message ?? '')
+
+  const traerDesglose = async (tabla: string, cols: string) => {
+    const out: any[] = []
+    for (let i = 0; i < ids.length; i += 400) {
+      const lote = ids.slice(i, i + 400)
+      let { data, error } = await dbCtrl.from(tabla).select(cols + COLS_CLASIF).in('id_recibo_fk', lote)
+      if (error) {
+        if (!esColumnaFaltante(error)) { errores.push(`${tabla}: ${error.message}`); return out }
+        clasificacionDisponible = false
+        const retry = await dbCtrl.from(tabla).select(cols).in('id_recibo_fk', lote)
+        if (retry.error) { errores.push(`${tabla}: ${retry.error.message}`); return out }
+        data = retry.data
+      }
+      out.push(...((data ?? []) as any[]))
+    }
+    return out
+  }
+
+  const [secs, concs] = await Promise.all([
+    traerDesglose('recibos_ingreso_secciones', 'id, id_recibo_fk, nombre_seccion, monto'),
+    traerDesglose('recibos_ingreso_conceptos', 'id, id_recibo_fk, nombre_concepto, monto'),
+  ])
+
+  const armar = (r: any, origen: 'seccion' | 'concepto', linea: string, idRow: number): IngresoClasificado | null => {
+    const rec = reciboPorId.get(r.id_recibo_fk)
+    if (!rec) return null
+    const monto = Number(r.monto) || 0
+    const v = r.monto_vencido    != null ? Number(r.monto_vencido)    : 0
+    const c = r.monto_corriente  != null ? Number(r.monto_corriente)  : 0
+    const a = r.monto_anticipado != null ? Number(r.monto_anticipado) : 0
+    const clasificada = r.monto_vencido != null || r.monto_corriente != null || r.monto_anticipado != null
+    return {
+      key: `${origen}-${idRow}`,
+      fecha: rec.fecha, folio: rec.folio ?? `#${rec.id}`,
+      idCentroFk: rec.id_centro_ingreso_fk ?? null,
+      centro: nombreCentro.get(rec.id_centro_ingreso_fk) ?? '(sin centro)',
+      origen, linea, monto,
+      vencido: v, corriente: c, anticipado: a,
+      // Lo no clasificado se muestra como tal en vez de repartirse: un residuo
+      // inventado sería peor que un hueco visible.
+      sinClasificar: Math.max(0, Math.round((monto - v - c - a) * 100) / 100),
+      clasificada,
+    }
+  }
+
+  const filas: IngresoClasificado[] = []
+  for (const r of secs)  { const f = armar(r, 'seccion',  r.nombre_seccion  ?? 'Sin sección', r.id); if (f) filas.push(f) }
+  for (const r of concs) { const f = armar(r, 'concepto', r.nombre_concepto ?? 'Sin concepto', r.id); if (f) filas.push(f) }
+
+  return { filas, clasificacionDisponible, errores }
 }

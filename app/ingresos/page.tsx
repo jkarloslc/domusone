@@ -15,9 +15,10 @@ type Centro = {
   tipo: string | null; tipo_desglose: string; activo: boolean
 }
 type Seccion = { id: number; nombre: string; clave_alfa: string | null }
-type SeccionRow = { id_seccion_fk: number; nombre_seccion: string; monto: number; notas: string }
+type Clasif = { monto_vencido: number | null; monto_corriente: number | null; monto_anticipado: number | null }
+type SeccionRow = { id_seccion_fk: number; nombre_seccion: string; monto: number; notas: string } & Clasif
 type Concepto = { id: number; nombre: string; clave: string | null; orden: number }
-type ConceptoRow = { id_concepto_fk: number; nombre_concepto: string; monto: number; notas: string }
+type ConceptoRow = { id_concepto_fk: number; nombre_concepto: string; monto: number; notas: string } & Clasif
 type FormaPago = { id: number; nombre: string }
 type FormaPagoRow = { id_forma_pago_fk: number; nombre_forma_pago: string; monto: number }
 type Recibo = {
@@ -100,6 +101,10 @@ function ReciboModal({
   const [formaPagoRows, setFormaPagoRows] = useState<FormaPagoRow[]>([])
   const [cuentasBanc, setCuentasBanc]     = useState<any[]>([])
   const [loadingSecs, setLoadingSecs] = useState(false)
+  // Modo clasificación de cobranza (vencido / corriente / anticipado).
+  // Se enciende solo si el recibo que se abre ya trae clasificación capturada,
+  // para no obligar a re-capturarla ni a buscar el toggle.
+  const [clasificando, setClasificando] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [printing, setPrinting] = useState(false)
@@ -119,15 +124,21 @@ function ReciboModal({
     if (recibo) {
       setLoadingSecs(true)
       dbCtrl.from('recibos_ingreso_secciones')
-        .select('id_seccion_fk, nombre_seccion, monto, notas')
+        .select('id_seccion_fk, nombre_seccion, monto, notas, monto_vencido, monto_corriente, monto_anticipado')
         .eq('id_recibo_fk', recibo.id)
         .then(({ data }) => {
           const saved = (data ?? []) as SeccionRow[]
           const full  = initSecRowsVal().map(r => {
             const match = saved.find(s => s.id_seccion_fk === r.id_seccion_fk)
-            return match ? { ...r, monto: match.monto, notas: match.notas } : r
+            return match ? { ...r, monto: match.monto, notas: match.notas,
+                             monto_vencido: match.monto_vencido ?? null,
+                             monto_corriente: match.monto_corriente ?? null,
+                             monto_anticipado: match.monto_anticipado ?? null } : r
           })
           setSecRows(full)
+          if (full.some(r => r.monto_vencido != null || r.monto_corriente != null || r.monto_anticipado != null)) {
+            setClasificando(true)
+          }
           setLoadingSecs(false)
         })
     } else {
@@ -146,7 +157,7 @@ function ReciboModal({
     if (recibo) {
       Promise.all([
         dbCtrl.from('recibos_ingreso_conceptos')
-          .select('id_concepto_fk, nombre_concepto, monto, notas')
+          .select('id_concepto_fk, nombre_concepto, monto, notas, monto_vencido, monto_corriente, monto_anticipado')
           .eq('id_recibo_fk', recibo.id),
         dbCfg.from('conceptos_ingreso')
           .select('id, nombre, clave, orden')
@@ -158,8 +169,8 @@ function ReciboModal({
         const full = (cfg ?? []).map((c: Concepto) => {
           const match = savedRows.find(r => r.id_concepto_fk === c.id)
           return match
-            ? { ...match }
-            : { id_concepto_fk: c.id, nombre_concepto: c.nombre, monto: 0, notas: '' }
+            ? { ...match, monto_vencido: match.monto_vencido ?? null, monto_corriente: match.monto_corriente ?? null, monto_anticipado: match.monto_anticipado ?? null }
+            : { id_concepto_fk: c.id, nombre_concepto: c.nombre, monto: 0, notas: '', monto_vencido: null, monto_corriente: null, monto_anticipado: null }
         })
         setConceptoRows(full)
       })
@@ -180,6 +191,7 @@ function ReciboModal({
       nombre_concepto: c.nombre,
       monto: 0,
       notas: '',
+      monto_vencido: null, monto_corriente: null, monto_anticipado: null,
     })))
   }
 
@@ -229,7 +241,7 @@ function ReciboModal({
   }, [])
 
   const initSecRowsVal = () =>
-    secciones.map(s => ({ id_seccion_fk: s.id, nombre_seccion: s.nombre, monto: 0, notas: '' }))
+    secciones.map(s => ({ id_seccion_fk: s.id, nombre_seccion: s.nombre, monto: 0, notas: '', monto_vencido: null, monto_corriente: null, monto_anticipado: null }))
 
   const CENTRO_CUOTAS_ID = 2
   const descripcionCuotas = (fecha: string) =>
@@ -251,6 +263,24 @@ function ReciboModal({
   })
   const setSecMonto        = (idx: number, val: number) =>
     setSecRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
+
+  // En modo clasificación el MONTO es la suma de las tres bandas: así no pueden
+  // descuadrar de entrada (ver migración 20260920180000, que a propósito no pone
+  // un CHECK en la base).
+  //
+  // Solo se clasifican SECCIONES (cuotas de mantenimiento). Los conceptos
+  // complementarios del mismo centro — deslindes, tags, intereses, revisión de
+  // proyectos — no son cuotas con periodo, así que pertenecen por definición a
+  // la banda "Sin periodo" y clasificarlos sería inventar un dato.
+  const sumaClasif = (r: Clasif) =>
+    (r.monto_vencido ?? 0) + (r.monto_corriente ?? 0) + (r.monto_anticipado ?? 0)
+  const setSecClasif = (idx: number, campo: keyof Clasif, val: number | null) =>
+    setSecRows(rows => rows.map((r, i) => {
+      if (i !== idx) return r
+      const next = { ...r, [campo]: val }
+      return { ...next, monto: parseFloat(sumaClasif(next).toFixed(2)) }
+    }))
+
   const setConceptoMonto   = (idx: number, val: number) =>
     setConceptoRows(rows => rows.map((r, i) => i === idx ? { ...r, monto: val } : r))
   const setFormaPagoMonto  = (idx: number, val: number) =>
@@ -305,6 +335,9 @@ function ReciboModal({
   // Total calculado
   const totalFormasPago = formaPagoRows.reduce((a, r) => a + (r.monto || 0), 0)
   const totalSecs       = secRows.reduce((a, r) => a + (r.monto || 0), 0)
+  const totalSecsVencido    = secRows.reduce((a, r) => a + (r.monto_vencido ?? 0), 0)
+  const totalSecsCorriente  = secRows.reduce((a, r) => a + (r.monto_corriente ?? 0), 0)
+  const totalSecsAnticipado = secRows.reduce((a, r) => a + (r.monto_anticipado ?? 0), 0)
   const totalConceptos  = conceptoRows.reduce((a, r) => a + (r.monto || 0), 0)
   const totalFinal      = esSecciones ? (totalSecs + totalConceptos)
                         : centroSel?.tipo_desglose === 'conceptos' ? totalConceptos
@@ -355,7 +388,8 @@ function ReciboModal({
         .filter(r => r.monto > 0)
         .map(r => {
           const { subtotal, iva } = calcFiscal(r.monto)
-          return { id_recibo_fk: newRec.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, subtotal, iva, notas: r.notas || null }
+          return { id_recibo_fk: newRec.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, subtotal, iva, notas: r.notas || null,
+                   monto_vencido: r.monto_vencido, monto_corriente: r.monto_corriente, monto_anticipado: r.monto_anticipado }
         })
       const { error: errSecs } = await dbCtrl.from('recibos_ingreso_secciones').insert(secsPayload)
       if (errSecs) console.error('insert recibos_ingreso_secciones:', errSecs.message)
@@ -367,7 +401,8 @@ function ReciboModal({
         .filter(r => r.monto > 0)
         .map(r => {
           const { subtotal, iva } = calcFiscal(r.monto)
-          return { id_recibo_fk: newRec.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, subtotal, iva, notas: r.notas || null }
+          return { id_recibo_fk: newRec.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, subtotal, iva, notas: r.notas || null,
+                   monto_vencido: r.monto_vencido, monto_corriente: r.monto_corriente, monto_anticipado: r.monto_anticipado }
         })
       const { error: errConc } = await dbCtrl.from('recibos_ingreso_conceptos').insert(conceptosPayload)
       if (errConc) console.error('insert recibos_ingreso_conceptos:', errConc.message)
@@ -434,7 +469,8 @@ function ReciboModal({
         secRows.filter(r => r.monto > 0)
           .map(r => {
             const { subtotal, iva } = calcFiscal(r.monto)
-            return { id_recibo_fk: recibo.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, subtotal, iva, notas: r.notas || null }
+            return { id_recibo_fk: recibo.id, id_seccion_fk: r.id_seccion_fk, nombre_seccion: r.nombre_seccion, monto: r.monto, subtotal, iva, notas: r.notas || null,
+                     monto_vencido: r.monto_vencido, monto_corriente: r.monto_corriente, monto_anticipado: r.monto_anticipado }
           })
       )
       if (errSecs) console.error('insert recibos_ingreso_secciones:', errSecs.message)
@@ -444,7 +480,8 @@ function ReciboModal({
         conceptoRows.filter(r => r.monto > 0)
           .map(r => {
             const { subtotal, iva } = calcFiscal(r.monto)
-            return { id_recibo_fk: recibo.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, subtotal, iva, notas: r.notas || null }
+            return { id_recibo_fk: recibo.id, id_concepto_fk: r.id_concepto_fk, nombre_concepto: r.nombre_concepto, monto: r.monto, subtotal, iva, notas: r.notas || null,
+                     monto_vencido: r.monto_vencido, monto_corriente: r.monto_corriente, monto_anticipado: r.monto_anticipado }
           })
       )
       if (errConc) console.error('insert recibos_ingreso_conceptos:', errConc.message)
@@ -664,7 +701,7 @@ function ReciboModal({
           : 'Captura manual de ingresos'
       }
       onClose={onClose}
-      maxWidth={600}
+      maxWidth={clasificando ? 820 : 600}
       footer={
         <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -778,46 +815,110 @@ function ReciboModal({
           {/* Montos: desglose por sección, frente, o monto único */}
           {esSecciones ? (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <Layers size={13} style={{ color: '#7c3aed' }} /> Monto por sección residencial
+                <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 500, color: '#475569', cursor: (isView && !isEditMode) ? 'default' : 'pointer' }}
+                  title="Desglosa cada sección en cuotas vencidas, del mes corriente y anticipadas. Es lo que permite al Comparativo y al Estado de Resultados separar desempeño del mes de recuperación de cartera y de pagos adelantados.">
+                  <input type="checkbox" checked={clasificando} disabled={isView && !isEditMode}
+                    onChange={e => {
+                      const on = e.target.checked
+                      setClasificando(on)
+                      // Al encender, el monto ya capturado se siembra como
+                      // «corriente» para no perderlo; el usuario redistribuye.
+                      // Al apagar, se borra la clasificación pero el monto queda.
+                      if (on) {
+                        setSecRows(rows => rows.map(r => r.monto > 0 && r.monto_vencido == null && r.monto_corriente == null && r.monto_anticipado == null
+                          ? { ...r, monto_corriente: r.monto } : r))
+                      } else {
+                        setSecRows(rows => rows.map(r => ({ ...r, monto_vencido: null, monto_corriente: null, monto_anticipado: null })))
+                      }
+                    }} />
+                  Clasificar cobranza
+                </label>
               </div>
+              {clasificando && (
+                <div style={{ fontSize: 10.5, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '6px 9px', marginBottom: 8 }}>
+                  El <strong>monto</strong> de cada fila es la suma de las tres bandas.{' '}
+                  <strong>Vencida</strong>: cuotas de meses anteriores · <strong>Corriente</strong>: la cuota del propio mes del recibo ·{' '}
+                  <strong>Anticipada</strong>: cuotas de meses futuros (pago anualizado).
+                </div>
+              )}
               {loadingSecs ? (
                 <div style={{ textAlign: 'center', padding: 20 }}><Loader size={16} className="animate-spin" /></div>
               ) : (
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '7px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: clasificando ? 'minmax(110px,1fr) 88px 88px 88px 104px' : '1fr 90px 90px 130px', padding: '7px 12px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>SECCIÓN</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>SUBTOTAL</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>IVA</span>
+                    {clasificando ? (
+                      <>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#dc2626', textAlign: 'right' }}>VENCIDA</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#16a34a', textAlign: 'right' }}>CORRIENTE</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#2563eb', textAlign: 'right' }}>ANTICIP.</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>SUBTOTAL</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>IVA</span>
+                      </>
+                    )}
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textAlign: 'right' }}>MONTO</span>
                   </div>
                   {secRows.map((row, i) => {
                     const rowFiscal = calcFiscal(row.monto || 0)
                     return (
                     <div key={row.id_seccion_fk} style={{
-                      display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '8px 12px', alignItems: 'center',
+                      display: 'grid', gridTemplateColumns: clasificando ? 'minmax(110px,1fr) 88px 88px 88px 104px' : '1fr 90px 90px 130px', padding: '8px 12px', alignItems: 'center', gap: 4,
                       borderBottom: i < secRows.length - 1 ? '1px solid #f1f5f9' : 'none',
                       background: row.monto > 0 ? '#f0fdf4' : '#fff',
                     }}>
                       <span style={{ fontSize: 13, color: '#1e293b', fontWeight: row.monto > 0 ? 600 : 400 }}>{row.nombre_seccion}</span>
-                      <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
-                      <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
-                      <div>
-                        <input
-                          className="input" type="number" min="0" step="0.01"
-                          value={row.monto || ''}
-                          onChange={e => setSecMonto(i, parseFloat(e.target.value) || 0)}
-                          disabled={isView && !isEditMode}
-                          style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 8px', fontSize: 13 }}
-                        />
-                      </div>
+                      {clasificando ? (
+                        <>
+                          {(['monto_vencido', 'monto_corriente', 'monto_anticipado'] as const).map(campo => (
+                            <input key={campo}
+                              className="input" type="number" min="0" step="0.01"
+                              value={row[campo] ?? ''}
+                              onChange={e => setSecClasif(i, campo, e.target.value === '' ? null : (parseFloat(e.target.value) || 0))}
+                              disabled={isView && !isEditMode}
+                              style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 6px', fontSize: 12 }}
+                            />
+                          ))}
+                          <span style={{ fontSize: 13, fontWeight: 700, color: row.monto > 0 ? '#15803d' : '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                            {fmt(row.monto)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.subtotal)}</span>
+                          <span style={{ fontSize: 12, color: '#64748b', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(rowFiscal.iva)}</span>
+                          <div>
+                            <input
+                              className="input" type="number" min="0" step="0.01"
+                              value={row.monto || ''}
+                              onChange={e => setSecMonto(i, parseFloat(e.target.value) || 0)}
+                              disabled={isView && !isEditMode}
+                              style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', padding: '5px 8px', fontSize: 13 }}
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                     )
                   })}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 130px', padding: '9px 12px', background: '#f0fdf4', borderTop: '2px solid #bbf7d0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: clasificando ? 'minmax(110px,1fr) 88px 88px 88px 104px' : '1fr 90px 90px 130px', padding: '9px 12px', background: '#f0fdf4', borderTop: '2px solid #bbf7d0', gap: 4 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#15803d' }}>Subtotal secciones</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).subtotal)}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).iva)}</span>
+                    {clasificando ? (
+                      <>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecsVencido)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecsCorriente)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#2563eb', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecsAnticipado)}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).subtotal)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(calcFiscal(totalSecs).iva)}</span>
+                      </>
+                    )}
                     <span style={{ fontSize: 14, fontWeight: 700, color: '#15803d', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSecs)}</span>
                   </div>
                 </div>
