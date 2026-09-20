@@ -1,7 +1,7 @@
 'use client'
 import {
   Landmark, FileText, Building2, ChevronRight,
-  Clock, TrendingDown, Wallet
+  Clock, Wallet
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
@@ -28,14 +28,6 @@ const MODULOS = [
     color: '#7c3aed',
     desc:  'Proyección de posición de caja día a día por centro de costo y periodo',
   },
-  {
-    key:   'panorama',
-    label: 'Panorama Financiero',
-    icon:  TrendingDown,
-    color: '#2563eb',
-    desc:  'Dashboard de ingresos vs egresos, balance neto y KPIs del período',
-    href:  '/inicio',
-  },
 ]
 
 export default function TesoreriaPage() {
@@ -58,7 +50,7 @@ export default function TesoreriaPage() {
           const Icon = m.icon
           return (
             <button key={m.key}
-              onClick={() => router.push((m as any).href ?? `/tesoreria/${m.key}`)}
+              onClick={() => router.push(`/tesoreria/${m.key}`)}
               className="card card-hover"
               style={{ padding: '22px 24px', textAlign: 'left', background: 'none',
                 border: '1px solid #e2e8f0', cursor: 'pointer',
