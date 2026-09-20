@@ -247,6 +247,10 @@ const CATALOGOS: CatConfig[] = [
         staticOptions: ['golf', 'cuotas', 'rentas_espacios', 'caballerizas', 'otro'] },
       { key: 'tipo_desglose', label: 'Tipo de Captura', type: 'select',
         staticOptions: ['unico', 'secciones', 'frentes', 'conceptos'] },
+      // Desde esta fecha el ingreso del centro se deriva del corte de cobranza
+      // y /ingresos bloquea la captura manual, para que el recibo global y el
+      // derivado no se sumen. Vacío = centro 100% manual.
+      { key: 'fecha_corte_derivado', label: 'Corte a Ingreso Derivado', type: 'date', hideInTable: true },
       { key: 'notas',         label: 'Notas',           type: 'textarea' },
     ],
   },

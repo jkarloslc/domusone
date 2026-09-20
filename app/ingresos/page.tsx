@@ -13,6 +13,7 @@ import ModalShell from '@/components/ui/ModalShell'
 type Centro = {
   id: number; nombre: string; codigo: string | null
   tipo: string | null; tipo_desglose: string; activo: boolean
+  fecha_corte_derivado?: string | null
 }
 type Seccion = { id: number; nombre: string; clave_alfa: string | null }
 type Clasif = { monto_vencido: number | null; monto_corriente: number | null; monto_anticipado: number | null }
@@ -113,6 +114,15 @@ function ReciboModal({
   const [error, setError]         = useState('')
 
   const centroSel   = centros.find(c => c.id === Number(form.id_centro_ingreso_fk))
+
+  // ── Corte a ingreso derivado (migración 20260921100000) ─────────────
+  // Desde `fecha_corte_derivado` el ingreso del centro entra por el corte de
+  // cobranza, así que la captura manual queda bloqueada: si se permitiera, el
+  // recibo global y el derivado se sumarían y duplicarían el ingreso del mes
+  // sin que nada lo detecte. Es una fecha, no un switch, para que el histórico
+  // anterior al corte siga siendo editable.
+  const corteDerivado = centroSel?.fecha_corte_derivado || null
+  const bloqueadoPorCorte = !!corteDerivado && form.fecha >= corteDerivado
   const esSecciones  = centroSel?.tipo_desglose === 'secciones'
   const esConceptos  = esSecciones || centroSel?.tipo_desglose === 'conceptos'
 
@@ -344,8 +354,14 @@ function ReciboModal({
                         : totalFormasPago
   const fiscalFinal     = calcFiscal(totalFinal)
 
+  const mensajeCorte = () =>
+    `Este centro deriva su ingreso de la cobranza desde el ${corteDerivado}. ` +
+    `Para fechas a partir de ese día el recibo se genera solo al hacer el corte de cobranza — ` +
+    `capturarlo a mano duplicaría el ingreso del mes. Si necesitas corregir un mes anterior al corte, cambia la fecha.`
+
   const handleSave = async () => {
     if (!form.id_centro_ingreso_fk) { setError('Selecciona un centro de ingreso'); return }
+    if (bloqueadoPorCorte) { setError(mensajeCorte()); return }
     if (totalFinal === 0)           { setError('El monto total debe ser mayor a $0'); return }
 
     // Validar que formas de cobro coincidan con el total general (secciones y conceptos).
@@ -426,6 +442,7 @@ function ReciboModal({
 
   const handleUpdate = async () => {
     if (!recibo) return
+    if (bloqueadoPorCorte) { setError(mensajeCorte()); return }
     if (totalFinal === 0) { setError('El monto total debe ser mayor a $0'); return }
 
     // Misma validación de secciones/conceptos vs formas de cobro que handleSave
@@ -767,6 +784,17 @@ function ReciboModal({
           </div>
         )}
           {error && <div style={{ padding: '8px 12px', background: '#fef2f2', borderRadius: 6, fontSize: 12, color: '#dc2626' }}>{error}</div>}
+
+          {/* Aviso del corte a ingreso derivado: se muestra ANTES de que el
+              usuario capture todo y choque con el error al guardar. */}
+          {bloqueadoPorCorte && (
+            <div style={{ padding: '10px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, fontSize: 12, color: '#92400e' }}>
+              <strong>Captura manual bloqueada para este centro.</strong>{' '}
+              Desde el <strong>{corteDerivado}</strong> su ingreso se genera al hacer el corte de cobranza,
+              con el desglose por sección y la clasificación vencido/corriente/anticipado calculados solos.
+              Capturarlo aquí duplicaría el ingreso del mes. Para corregir un mes anterior al corte, cambia la fecha.
+            </div>
+          )}
 
           {/* Fecha + Centro */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>

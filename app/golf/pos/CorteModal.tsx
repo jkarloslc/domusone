@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { Save, Loader, AlertTriangle, CheckCircle, Scissors } from 'lucide-react'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
+import { distribuirSeccionesRecibo } from '@/lib/distribucionSecciones'
 import ModalShell from '@/components/ui/ModalShell'
 
 type FormaPagoResumen = { id_forma_fk: number; forma_nombre: string; monto: number }
@@ -253,6 +254,12 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
       // Distribuir el ingreso por concepto (solo si el centro de ingreso lo requiere)
       if (recibo && idsPagadas.length > 0) {
         await distribuirConceptosRecibo(recibo.id, idCentroIngreso, idsPagadas)
+        // Centros con desglose por sección (Fraccionamiento): el desglose y las
+        // bandas vencido/corriente/anticipado se derivan de la cobranza que
+        // originó estas ventas. No-op para los centros por concepto.
+        const dSec = await distribuirSeccionesRecibo(recibo.id, idCentroIngreso, idsPagadas)
+        dSec.errores.forEach(e => console.error('distribuirSeccionesRecibo:', e))
+        dSec.avisos.forEach(a => console.warn('distribuirSeccionesRecibo:', a))
       }
 
       // Guardar FK en el corte

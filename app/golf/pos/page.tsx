@@ -11,6 +11,7 @@ import {
 import NuevaVentaModal from './NuevaVentaModal'
 import CorteModal from './CorteModal'
 import { distribuirConceptosRecibo } from './distribucionIngreso'
+import { distribuirSeccionesRecibo } from '@/lib/distribucionSecciones'
 import FacturaUniversalModal from '@/components/facturacion/FacturaUniversalModal'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
@@ -1100,6 +1101,11 @@ ${facturasCorte.length > 0 ? `
       const { data: ventasCorte } = await dbGolf.from('ctrl_ventas').select('id').eq('id_corte_fk', c.id).eq('status', 'PAGADA')
       if (ventasCorte && ventasCorte.length > 0) {
         await distribuirConceptosRecibo(recibo.id, idCentroIngreso, ventasCorte.map((v: any) => v.id))
+        // Ver CorteModal: los centros por sección derivan su desglose (y las
+        // bandas de clasificación) de la cobranza, no de las líneas del POS.
+        const dSec = await distribuirSeccionesRecibo(recibo.id, idCentroIngreso, ventasCorte.map((v: any) => v.id))
+        dSec.errores.forEach(e => console.error('distribuirSeccionesRecibo:', e))
+        dSec.avisos.forEach(a => console.warn('distribuirSeccionesRecibo:', a))
       }
 
       await dbGolf.from('ctrl_cortes_caja').update({ id_recibo_ingreso: recibo.id }).eq('id', c.id)
