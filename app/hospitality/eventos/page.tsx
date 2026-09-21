@@ -200,10 +200,9 @@ function FmFull({ label, children }: { label: string; children: React.ReactNode 
 }
 
 // ── Popup selector de Colaborador (cfg.colaboradores) ───────────
-function ColaboradorPopup({ value, onChange, puesto }: {
+function ColaboradorPopup({ value, onChange }: {
   value: { id: number | null; nombre: string }
   onChange: (c: { id: number; nombre: string } | null) => void
-  puesto: string
 }) {
   const [open, setOpen] = useState(false)
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
@@ -212,9 +211,9 @@ function ColaboradorPopup({ value, onChange, puesto }: {
 
   useEffect(() => {
     if (!open) return
-    dbCfg.from('colaboradores').select('*').eq('activo', true).eq('puesto', puesto).order('nombre')
+    dbCfg.from('colaboradores').select('*').eq('activo', true).order('nombre')
       .then(({ data }) => setColaboradores((data ?? []) as Colaborador[]))
-  }, [open, puesto])
+  }, [open])
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -224,7 +223,10 @@ function ColaboradorPopup({ value, onChange, puesto }: {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const filtrados = colaboradores.filter(c => nombreCompletoColaborador(c).toLowerCase().includes(query.toLowerCase()))
+  const filtrados = colaboradores.filter(c => {
+    const q = query.toLowerCase()
+    return nombreCompletoColaborador(c).toLowerCase().includes(q) || (c.puesto ?? '').toLowerCase().includes(q)
+  })
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
@@ -252,7 +254,7 @@ function ColaboradorPopup({ value, onChange, puesto }: {
           <div style={{ maxHeight: 200, overflowY: 'auto' }}>
             {filtrados.length === 0 ? (
               <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-muted)' }}>
-                Sin colaboradores con puesto {puesto}
+                Sin colaboradores
               </div>
             ) : filtrados.map(c => {
               const nombre = nombreCompletoColaborador(c)
@@ -265,6 +267,9 @@ function ColaboradorPopup({ value, onChange, puesto }: {
                     color: selected ? '#9333ea' : 'var(--text-primary)',
                     border: 'none', cursor: 'pointer' }}>
                   {nombre}
+                  {c.puesto && (
+                    <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{c.puesto}</span>
+                  )}
                 </button>
               )
             })}
@@ -2397,7 +2402,6 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                   <div style={{ gridColumn: '1 / -1' }}>
                     <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nombre del Empleado *</label>
                     <ColaboradorPopup
-                      puesto="Areas Publicas"
                       value={{ id: personalForm.id_colaborador_fk, nombre: personalForm.nombre_empleado }}
                       onChange={c => setPersonalForm(f => ({ ...f, id_colaborador_fk: c?.id ?? null, nombre_empleado: c?.nombre ?? '' }))}
                     />
