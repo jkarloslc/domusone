@@ -28,7 +28,7 @@
 import { dbCtrl, dbCat, dbGolf, dbHip, dbCfg } from '@/lib/supabase'
 import {
   clasificarBanda, esCargaInicial, periodoDesdeNombre, claveArranque,
-  MODULOS_CUOTAS,
+  MODULOS_CUOTAS, MODULO_META,
   type ArranqueOperativo, type CobroAplicado, type CobroSinFecha, type CuotaDevengada,
   type ModuloCuotas,
 } from '@/lib/clasificacionCobranza'
@@ -142,16 +142,40 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
   // fallar la consulta completa y con ella el reporte. Son tablas de config de
   // 1-2 filas, así que traerlas enteras no cuesta nada. Si la columna no está,
   // mesesDevengo cae a 1 = comportamiento actual, y el reporte lo avisa.
-  const [cuotasCfgGolf, carritosCfg, cuotasEstandar] = await Promise.all([
+  const [cuotasCfgGolf, carritosCfg, cuotasEstandar, productosPos, cfgHipData] = await Promise.all([
     modulos.includes('golf')   ? dbGolf.from('cat_cuotas_config').select('*')            : Promise.resolve({ data: [] }),
     modulos.includes('golf')   ? dbGolf.from('cfg_carritos').select('*').limit(1)        : Promise.resolve({ data: [] }),
     modulos.includes('residencial') ? dbCfg.from('cuotas_estandar').select('*')          : Promise.resolve({ data: [] }),
+    dbGolf.from('cat_productos_pos').select('id, id_concepto_ingreso_fk'),
+    modulos.includes('hipico') ? dbHip.from('cfg_hip').select('*').limit(1)              : Promise.resolve({ data: [] }),
   ])
+
+  // ── Concepto de ingreso: la cuota puede declararlo por producto POS ──────
+  // Los cuatro módulos configuran su clasificación con DOS columnas —
+  // `id_producto_pos_fk` e `id_concepto_ingreso_fk`— y los modales de cobro
+  // prefieren el producto cuando está puesto, dejando el concepto en la línea
+  // solo si no hay producto (ver app/hipico/cobranza/CobrarModal.tsx:398,
+  // app/locales/cobranza/CobrarModal.tsx:90, app/golf/carritos/CobrarCuotaModal.tsx:430).
+  // El producto lleva su propio concepto, así que la clasificación existe igual.
+  // Resolver solo la columna directa deja fuera toda cuota configurada por
+  // producto: es lo que dejaba a Hípico y a la mayoría de Locales sin dimensión
+  // con que ligarse a una partida de presupuesto.
+  const conceptoPorProducto = new Map<number, number | null>(
+    ((productosPos as any).data ?? []).map((p: any) => [p.id, p.id_concepto_ingreso_fk ?? null]))
+  const resolverConcepto = (idProducto: any, idConcepto: any): number | null =>
+    (idProducto != null ? conceptoPorProducto.get(idProducto) ?? null : null) ?? (idConcepto ?? null)
+
   const conceptoPorCuotaCfg = new Map<number, number | null>(
-    ((cuotasCfgGolf as any).data ?? []).map((r: any) => [r.id, r.id_concepto_ingreso_fk ?? null]))
-  const conceptoPension = ((carritosCfg as any).data ?? [])[0]?.id_concepto_ingreso_fk ?? null
+    ((cuotasCfgGolf as any).data ?? []).map((r: any) => [r.id, resolverConcepto(r.id_producto_pos_fk, r.id_concepto_ingreso_fk)]))
+  const cfgCarritos = ((carritosCfg as any).data ?? [])[0] ?? null
+  const conceptoPension = resolverConcepto(cfgCarritos?.id_producto_pos_fk, cfgCarritos?.id_concepto_ingreso_fk)
   const conceptoPorCuotaEstandar = new Map<number, number | null>(
-    ((cuotasEstandar as any).data ?? []).map((r: any) => [r.id, r.id_concepto_ingreso_fk ?? null]))
+    ((cuotasEstandar as any).data ?? []).map((r: any) => [r.id, resolverConcepto(r.id_producto_pos_fk, r.id_concepto_ingreso_fk)]))
+
+  // Hípico no tiene catálogo de cuotas: su clasificación es única para el
+  // módulo y vive en la fila de configuración (hip.cfg_hip).
+  const cfgHipRow = ((cfgHipData as any).data ?? [])[0] ?? null
+  const conceptoHipico = resolverConcepto(cfgHipRow?.id_producto_pos_fk, cfgHipRow?.id_concepto_ingreso_fk)
 
   const devengoPorCuotaCfg = new Map<number, number>(
     ((cuotasCfgGolf as any).data ?? []).map((r: any) => [r.id, Number(r.meses_devengo) || 1]))
@@ -234,7 +258,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         mesesDevengo: 1,
         cargado: Number(c.monto_final) || 0, cobrado: cobradoCxc(c), descuento: 0, saldo: Number(c.saldo) || 0,
         status: c.status, fechaVencimiento: c.fecha_vencimiento ?? null,
-        cliente, concepto: c.concepto ?? linea, idConceptoFk: null, idSeccionFk: null,
+        cliente, concepto: c.concepto ?? linea, idConceptoFk: conceptoHipico, idSeccionFk: null,
       })
       const montoCobrado = cobradoCxc(c)
       if (montoCobrado > 0 && !c.fecha_pago) {
@@ -251,7 +275,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
           banda: clasificarBanda(c.periodo ?? null, c.fecha_pago),
           esCargaInicial: esCargaInicial('hipico', c.fecha_pago, arranque),
           cliente, concepto: c.concepto ?? linea, folio: null,
-          idConceptoFk: null, idSeccionFk: null,
+          idConceptoFk: conceptoHipico, idSeccionFk: null,
         })
       }
     }
@@ -262,7 +286,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
   // PostgREST y tsc no lo detecta (error en tiempo de query, no de tipos).
   if (modulos.includes('locales')) {
     const { rows, error } = await traerTodo((d, h) => dbCtrl.from('loc_cxc')
-      .select(`${COLS_CXC}, arrendatario:loc_arrendatarios(nombre, apellido_paterno, razon_social), asignacion:loc_asignaciones(unidad:loc_propiedades(clave, nombre, id_concepto_ingreso_fk))`)
+      .select(`${COLS_CXC}, arrendatario:loc_arrendatarios(nombre, apellido_paterno, razon_social), asignacion:loc_asignaciones(unidad:loc_propiedades(clave, nombre, id_concepto_ingreso_fk, id_producto_pos_fk))`)
       .neq('status', 'CANCELADO')
       .range(d, h))
     if (error) errores.push(`Locales (loc_cxc): ${error}`)
@@ -271,7 +295,8 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
     for (const c of rows) {
       const linea = LINEA_LOCALES[c.tipo] ?? c.tipo ?? 'Sin tipo'
       const cliente = nombrePersona(c.arrendatario)
-      const idConceptoFk = c.asignacion?.unidad?.id_concepto_ingreso_fk ?? null
+      const idConceptoFk = resolverConcepto(
+        c.asignacion?.unidad?.id_producto_pos_fk, c.asignacion?.unidad?.id_concepto_ingreso_fk)
       devengado.push({
         key: `loc-${c.id}`, modulo: 'locales', linea,
         periodo: c.periodo ?? null,
@@ -441,6 +466,12 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
     if (!arranque[m]) {
       avisos.push(`${m}: sin fecha de arranque operativo configurada — todos sus cobros se consideran operativos. Si se cargó cartera histórica, captúrala en Configuración › Cobranza.`)
     }
+  }
+
+  // Hípico clasifica todo su módulo con una sola configuración: si está vacía,
+  // su cartera entera queda sin dimensión y hay que decir dónde se arregla.
+  if (modulosConDatos.includes('hipico') && conceptoHipico == null) {
+    avisos.push('Hípico no tiene producto POS ni concepto de ingreso configurado (Hípico › Cobranza › Configuración): su cartera no puede ligarse a ninguna partida de presupuesto.')
   }
 
   if (!columnaDevengoPresente && (modulos.includes('golf') || modulos.includes('residencial'))) {
@@ -649,27 +680,44 @@ export async function fetchDevengadoSinIvaPorPartida(
   let montoSinTasa = 0
   let montoSinDimension = 0
   const conceptosSinTasa = new Set<number>()
+  // Quién aporta a cada exclusión: sin esto el aviso da una cifra que nadie
+  // sabe dónde buscar (fue justo lo que pasó con los $1.7M de Hípico+Locales).
+  const sinDimensionPorModulo = new Map<string, number>()
+  const sinTasaPorModulo = new Map<string, number>()
+  const acumular = (m: Map<string, number>, k: string, v: number) =>
+    m.set(k, Math.round(((m.get(k) ?? 0) + v) * 100) / 100)
 
   for (const d of cobranza.devengado) {
-    if (d.idConceptoFk == null && d.idSeccionFk == null) { montoSinDimension += d.cargado; continue }
+    const slices = prorratear
+      ? repartirDevengo(d.periodo, d.cargado, d.mesesDevengo)
+      : [{ periodo: d.periodo, monto: d.cargado }]
+
+    // Solo cuenta la parte del devengo que cae en el año que se está viendo.
+    // Medir las exclusiones sobre el cargo completo mezclaría otros años con el
+    // Real de este, y la cifra del aviso no se podría conciliar con la pantalla.
+    const delAnio = slices.filter(sl => !!sl.periodo && sl.periodo.startsWith(String(anio)))
+    if (!delAnio.length) continue
+    const montoAnio = Math.round(delAnio.reduce((a, sl) => a + sl.monto, 0) * 100) / 100
+
+    if (d.idConceptoFk == null && d.idSeccionFk == null) {
+      montoSinDimension = Math.round((montoSinDimension + montoAnio) * 100) / 100
+      acumular(sinDimensionPorModulo, MODULO_META[d.modulo]?.label ?? d.modulo, montoAnio)
+      continue
+    }
 
     // La tasa se busca por el concepto de la cuota. Una partida por sección
     // (Fraccionamiento) también tiene concepto de cuota, así que la resolución
     // es la misma para las dos dimensiones.
     const ivaPct = d.idConceptoFk != null ? tasas.get(d.idConceptoFk) : undefined
     if (ivaPct == null) {
-      montoSinTasa += d.cargado
+      montoSinTasa = Math.round((montoSinTasa + montoAnio) * 100) / 100
+      acumular(sinTasaPorModulo, MODULO_META[d.modulo]?.label ?? d.modulo, montoAnio)
       if (d.idConceptoFk != null) conceptosSinTasa.add(d.idConceptoFk)
       continue
     }
 
-    const slices = prorratear
-      ? repartirDevengo(d.periodo, d.cargado, d.mesesDevengo)
-      : [{ periodo: d.periodo, monto: d.cargado }]
-
-    for (const sl of slices) {
-      if (!sl.periodo || !sl.periodo.startsWith(String(anio))) continue
-      const mes = Number(sl.periodo.slice(5, 7))
+    for (const sl of delAnio) {
+      const mes = Number(sl.periodo!.slice(5, 7))
       const neto = quitarIva(sl.monto, ivaPct)
       const destino = d.idConceptoFk != null ? porConcepto : porSeccion
       const clave = (d.idConceptoFk != null ? d.idConceptoFk : d.idSeccionFk) as number
@@ -679,11 +727,17 @@ export async function fetchDevengadoSinIvaPorPartida(
     }
   }
 
+  // Las dos cifras son montos de cartera, o sea CON IVA, mientras el Real de la
+  // pantalla va sin IVA: si no se dice, se intentan restar y no cuadran.
+  const desglose = (m: Map<string, number>) =>
+    Array.from(m.entries()).sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => `${k} ${v.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}`).join(', ')
+
   if (montoSinTasa > 0) {
-    avisos.push(`${montoSinTasa.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de devengado quedó fuera del Real: no se pudo resolver su tasa de IVA desde el catálogo de productos${conceptosSinTasa.size ? ` (conceptos ${Array.from(conceptosSinTasa).join(', ')})` : ''}. Se excluye en vez de asumirle una tasa.`)
+    avisos.push(`${montoSinTasa.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de devengado ${anio} (con IVA) quedó fuera del Real: no se pudo resolver su tasa de IVA desde el catálogo de productos${conceptosSinTasa.size ? ` (conceptos ${Array.from(conceptosSinTasa).join(', ')})` : ''}. Se excluye en vez de asumirle una tasa. Desglose: ${desglose(sinTasaPorModulo)}.`)
   }
   if (montoSinDimension > 0) {
-    avisos.push(`${montoSinDimension.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de devengado no tiene concepto ni sección con que ligarse a una partida de presupuesto.`)
+    avisos.push(`${montoSinDimension.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de devengado ${anio} (con IVA) no tiene concepto ni sección con que ligarse a una partida de presupuesto. Desglose: ${desglose(sinDimensionPorModulo)}. Se arregla configurando el producto POS o el concepto de ingreso de esas cuotas.`)
   }
 
   return { porConcepto, porSeccion, montoSinTasa, montoSinDimension, avisos, errores }
