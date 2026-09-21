@@ -323,7 +323,12 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
         dbGolf.from('cxc_golf').update({
           saldo:           nuevoSaldo,
           status:          nuevoStatus,
-          fecha_pago:      nuevoStatus === 'PAGADO' ? fechaPago : null,
+          // La fecha se guarda aunque el pago sea parcial. Ponerla en null
+          // dejaba el abono como "cobro sin fecha": dinero cobrado que no se
+          // puede ubicar en ningún mes y que el puente devengado→caja tiene que
+          // reportar aparte. La columna guarda una sola fecha por cuota, así que
+          // en una cuota liquidada en varios abonos queda la del último.
+          fecha_pago:      fechaPago,
           forma_pago:      formasNombres,
           referencia_pago: pagosOk[0]?.referencia || null,
           observaciones:   observaciones || null,

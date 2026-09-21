@@ -538,11 +538,15 @@ export default function CobranzaHipicoPage() {
           if (!c) return null
           const saldoActual = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
           const nuevoSaldo = Math.min(c.monto_final, parseFloat((saldoActual + abonado).toFixed(2)))
+          const sinAbonos = nuevoSaldo >= c.monto_final - 0.005
           return dbHip.from('cxc_hip').update({
             saldo:      nuevoSaldo,
-            status:     nuevoSaldo >= c.monto_final - 0.005 ? 'PENDIENTE' : 'PAGO_PARCIAL',
-            fecha_pago: null,
-            forma_pago: null,
+            status:     sinAbonos ? 'PENDIENTE' : 'PAGO_PARCIAL',
+          // La fecha y la forma de pago solo se borran si la cuota queda sin
+          // ningún abono. Si otro recibo vigente también le abonó, borrarlas
+          // deja un cobro sin fecha: el dinero sigue ahí pero no se puede
+          // ubicar en ningún mes (lo reporta el puente devengado→caja).
+            ...(sinAbonos ? { fecha_pago: null, forma_pago: null } : {}),
           }).eq('id', idC)
         }).filter(Boolean) as PromiseLike<any>[]
         const results = await Promise.all(updates)

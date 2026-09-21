@@ -195,15 +195,17 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
           if (!c) return null
           const saldoActual = c.saldo ?? (c.status === 'PAGADO' ? 0 : c.monto_final)
           const nuevoSaldo = Math.min(c.monto_final, parseFloat((saldoActual + abonado).toFixed(2)))
+          const sinAbonos = nuevoSaldo >= c.monto_final - 0.005
           // Si otro recibo distinto sigue vigente y también abonó a esta cuota,
           // id_recibo_fk ya apunta a ese otro — no lo pisamos al cancelar este.
           return dbGolf.from('cxc_golf').update({
             saldo:           nuevoSaldo,
-            status:          nuevoSaldo >= c.monto_final - 0.005 ? 'PENDIENTE' : 'PAGO_PARCIAL',
-            fecha_pago:      null,
-            forma_pago:      null,
-            referencia_pago: null,
-            usuario_cobra:   null,
+            status:          sinAbonos ? 'PENDIENTE' : 'PAGO_PARCIAL',
+          // La fecha y la forma de pago solo se borran si la cuota queda sin
+          // ningún abono. Si otro recibo vigente también le abonó, borrarlas
+          // deja un cobro sin fecha: el dinero sigue ahí pero no se puede
+          // ubicar en ningún mes (mismo criterio que id_recibo_fk abajo).
+            ...(sinAbonos ? { fecha_pago: null, forma_pago: null, referencia_pago: null, usuario_cobra: null } : {}),
             ...(c.id_recibo_fk === cancelando.id ? { id_recibo_fk: null } : {}),
           }).eq('id', idC)
         }).filter(Boolean) as PromiseLike<any>[]

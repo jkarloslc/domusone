@@ -361,7 +361,12 @@ export default function CobrarModal({ cuotas, nombreArrendatario, idArrendatario
         dbHip.from('cxc_hip').update({
           saldo:      nuevoSaldo,
           status:     nuevoSaldo === 0 ? 'PAGADO' : 'PAGO_PARCIAL',
-          fecha_pago: nuevoSaldo === 0 ? fechaPago : null,
+          // La fecha se guarda aunque el pago sea parcial. Ponerla en null
+          // dejaba el abono como "cobro sin fecha": dinero cobrado que no se
+          // puede ubicar en ningún mes y que el puente devengado→caja tiene que
+          // reportar aparte. La columna guarda una sola fecha por cuota, así que
+          // en una cuota liquidada en varios abonos queda la del último.
+          fecha_pago: fechaPago,
           forma_pago: formasNombre,
         }).eq('id', c.id).select('id')
       )
