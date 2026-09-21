@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp } from '@/lib/supabase'
+import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
 import { Loader, RefreshCw, TrendingUp, TrendingDown, Scale, AlertTriangle, BookOpen, Layers, List, Building2 } from 'lucide-react'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
 import { prorratearDescuento } from '@/lib/prorateoDescuento'
@@ -221,6 +222,19 @@ export default function DashboardPpto() {
   const [partidas, setPartidas] = useState<Partida[]>([])
   const [detMap,   setDetMap]   = useState<DetMap>({})
   const [realMap,  setRealMap]  = useState<DetMap>({})
+
+  // ── Base de medición ────────────────────────────────────────────
+  // Mismo criterio que /presupuestos/comparativo: el selector cambia LAS DOS
+  // columnas a la vez. Un presupuesto devengado contra un real de caja daría
+  // una variación sin significado.
+  //   'cobro'     monto (cobro esperado) vs recibos por fecha de cobro
+  //   'devengado' monto_devengado vs devengado de la cartera, prorrateado y sin IVA
+  type Base = 'cobro' | 'devengado'
+  const [base, setBase] = useState<Base>('cobro')
+  const [detDevMap, setDetDevMap] = useState<DetMap>({})
+  const [realDevMap, setRealDevMap] = useState<DetMap>({})
+  const [devAvisos, setDevAvisos] = useState<string[]>([])
+  const [loadingDev, setLoadingDev] = useState(false)
   const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
   const [vista, setVista] = useState<'detalle' | 'concepto' | 'agrupado'>('detalle')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: { id: number; nombre: string; pptoTotal: number; realTotal: number; varAbs: number; varPct: number | null }[] } | null>(null)
@@ -241,13 +255,21 @@ export default function DashboardPpto() {
 
     // Presupuesto detalle
     const { data: det } = await dbCtrl.from('ppto_presupuesto_det')
-      .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId)
+      .select('id_partida_fk, mes, monto, monto_devengado').eq('id_presupuesto_fk', pptoId)
     const dm: DetMap = {}
+    const dd: DetMap = {}
     ;(det ?? []).forEach((r: any) => {
       if (!dm[r.id_partida_fk]) dm[r.id_partida_fk] = {}
       dm[r.id_partida_fk][r.mes] = Number(r.monto)
+      // NULL = devengado esperado no capturado. No se siembra con `monto`: el
+      // fallback queda visible como aviso en pantalla.
+      if (r.monto_devengado != null) {
+        if (!dd[r.id_partida_fk]) dd[r.id_partida_fk] = {}
+        dd[r.id_partida_fk][r.mes] = Number(r.monto_devengado)
+      }
     })
     setDetMap(dm)
+    setDetDevMap(dd)
 
     // Real manual
     const { data: manual } = await dbCtrl.from('ppto_presupuesto_real_manual')
@@ -413,6 +435,57 @@ export default function DashboardPpto() {
 
   const selPpto = presupuestos.find(p => p.id === selId)
 
+  // ── Real devengado (solo si se pide esa base) ───────────────────
+  useEffect(() => {
+    if (base !== 'devengado' || !selPpto) return
+    let vivo = true
+    setLoadingDev(true)
+    fetchDevengadoSinIvaPorPartida(selPpto.anio, true).then(r => {
+      if (!vivo) return
+      const map: DetMap = {}
+      for (const p of partidas) {
+        if (p.tipo !== 'ingreso') continue
+        const src = p.fuente_real === 'concepto' && p.id_concepto_fk != null
+          ? r.porConcepto.get(p.id_concepto_fk)
+          : p.fuente_real === 'seccion' && p.id_seccion_fk != null
+            ? r.porSeccion.get(p.id_seccion_fk)
+            : undefined
+        if (src) map[p.id] = { ...src }
+      }
+      setRealDevMap(map)
+      setDevAvisos([...r.avisos, ...r.errores])
+      setLoadingDev(false)
+    })
+    return () => { vivo = false }
+  }, [base, selPpto, partidas])
+
+  // Mapas efectivos según la base. Los sub-componentes reciben estos y no
+  // necesitan saber que existen dos bases.
+  //
+  // En base devengado el presupuesto cae a `monto` cuando no hay devengado
+  // capturado (para no dejar el dashboard en blanco), y el Real de EGRESOS no
+  // cambia de base: la OP ya se registra por fecha_op, que es lo más cercano a
+  // devengado que hay hoy. Solo los ingresos por cuotas tienen dos bases
+  // realmente distintas.
+  const esIngresoPid = new Set(partidas.filter(p => p.tipo === 'ingreso').map(p => p.id))
+  const detMapEf: DetMap = base === 'cobro' ? detMap : (() => {
+    const out: DetMap = {}
+    for (const pid of Object.keys(detMap).map(Number)) {
+      out[pid] = { ...(detMap[pid] ?? {}), ...(detDevMap[pid] ?? {}) }
+    }
+    return out
+  })()
+  const realMapEf: DetMap = base === 'cobro' ? realMap : (() => {
+    const out: DetMap = {}
+    for (const pid of Object.keys(realMap).map(Number)) {
+      out[pid] = esIngresoPid.has(pid) ? (realDevMap[pid] ?? {}) : realMap[pid]
+    }
+    for (const pid of Object.keys(realDevMap).map(Number)) {
+      if (!out[pid]) out[pid] = realDevMap[pid]
+    }
+    return out
+  })()
+
   function onChangePpto(id: number) {
     setSelId(id)
     const p = presupuestos.find(x => x.id === id)
@@ -545,23 +618,62 @@ export default function DashboardPpto() {
         <button className="btn-ghost" onClick={() => selPpto && loadEverything(selPpto.id, selPpto.anio, selPpto.modulo, true)} title="Actualizar">
           <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
         </button>
+
+        {/* Base de medición — mismo criterio que el Comparativo */}
+        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: '#64748b', padding: '0 6px', fontWeight: 600 }}>Base</span>
+          {([
+            { b: 'cobro' as Base,     label: 'Cobro',     t: 'Presupuesto = cobro esperado · Real = recibos por fecha de cobro. Base histórica.' },
+            { b: 'devengado' as Base, label: 'Devengado', t: 'Presupuesto = devengado esperado · Real = devengado de la cartera, prorrateado y sin IVA. Es la base para medir un área mes a mes.' },
+          ]).map(({ b, label, t }) => (
+            <button key={b} onClick={() => setBase(b)} title={t}
+              style={{
+                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
+                background: base === b ? '#fff' : 'transparent',
+                color: base === b ? (b === 'devengado' ? '#7c3aed' : '#15803d') : '#64748b',
+                fontWeight: base === b ? 700 : 400,
+                boxShadow: base === b ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {base === 'devengado' && (
+        <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 8,
+          background: '#faf5ff', border: '1px solid #e9d5ff', fontSize: 12, color: '#6b21a8' }}>
+          <strong>Base devengado.</strong>{' '}
+          Ingresos medidos por la cuota del periodo (cuotas anuales prorrateadas, IVA extraído con la tasa
+          configurada de cada cuota), no por cuándo entró el dinero. El presupuesto usa la serie
+          «Devengado esperado» de Captura y cae al de cobro donde no esté capturada.
+          Los <strong>egresos no cambian de base</strong>: la OP ya se registra por su fecha.
+          {loadingDev && <> · <em>cargando devengado…</em></>}
+        </div>
+      )}
+
+      {base === 'devengado' && devAvisos.map((a, i) => (
+        <div key={i} style={{ marginBottom: 10, padding: '10px 14px', borderRadius: 8,
+          background: '#fffbeb', border: '1px solid #fde68a', fontSize: 12, color: '#92400e' }}>
+          {a}
+        </div>
+      ))}
 
       {/* KPIs + Gráficas por clasificación */}
       <ResumenClasificacion titulo={CLASIFICACION_TITULOS.operativo}
         ingresos={porClasificacion(ingresos, 'operativo')} egresos={porClasificacion(egresos, 'operativo')}
-        detMap={detMap} realMap={realMap} />
+        detMap={detMapEf} realMap={realMapEf} />
 
       {(ingFinanciero.length > 0 || egrFinanciero.length > 0) && (
         <ResumenClasificacion titulo={CLASIFICACION_TITULOS.financiero}
           ingresos={ingFinanciero} egresos={egrFinanciero}
-          detMap={detMap} realMap={realMap} />
+          detMap={detMapEf} realMap={realMapEf} />
       )}
 
       {(ingIntercompanias.length > 0 || egrIntercompanias.length > 0) && (
         <ResumenClasificacion titulo={CLASIFICACION_TITULOS.intercompanias}
           ingresos={ingIntercompanias} egresos={egrIntercompanias}
-          detMap={detMap} realMap={realMap} />
+          detMap={detMapEf} realMap={realMapEf} />
       )}
 
       {/* Top desvíos */}

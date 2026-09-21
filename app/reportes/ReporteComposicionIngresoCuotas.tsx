@@ -41,7 +41,7 @@ const fmtFecha = (d: string | null) =>
 const MESES_CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const MM = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
 
-type Tab = 'composicion' | 'puente' | 'ingreso' | 'detalle'
+type Tab = 'composicion' | 'puente' | 'ingreso' | 'cartera' | 'detalle'
 
 const cellNum: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
 
@@ -225,6 +225,63 @@ export default function ReporteComposicionIngresoCuotas() {
     return { porMes, tot, centros, nFilas: filas.length }
   }, [ingreso, lineaSel])
 
+  // ── Cartera por antigüedad ─────────────────────────────────────────────
+  // Mismas bandas que ReporteAntiguedadOPporCC (Por vencer / 0-30 / 31-60 /
+  // 61-90 / +90) para que los dos reportes se lean igual.
+  //
+  // El pendiente se DERIVA como cargado − cobrado, no se lee de `saldo`: en
+  // Fraccionamiento el descuento por pago anticipado ya cierra el cargo vía
+  // descuento_aplicado, y con `saldo` a secas reaparecerían los adeudos
+  // fantasma que la migración 20260920230000 vino a eliminar.
+  //
+  // Una cuota sin fecha_vencimiento no entra en ninguna banda: se cuenta aparte
+  // en vez de asumirle un vencimiento.
+  const cartera = useMemo(() => {
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+    const BANDAS_ANT = [
+      { key: 'porVencer', label: 'Por vencer', color: '#2563eb', test: (d: number) => d <= 0 },
+      { key: 'b30',       label: '1 a 30',     color: '#ca8a04', test: (d: number) => d >= 1 && d <= 30 },
+      { key: 'b60',       label: '31 a 60',    color: '#ea580c', test: (d: number) => d >= 31 && d <= 60 },
+      { key: 'b90',       label: '61 a 90',    color: '#dc2626', test: (d: number) => d >= 61 && d <= 90 },
+      { key: 'mas90',     label: 'Más de 90',  color: '#7f1d1d', test: (d: number) => d > 90 },
+    ] as const
+
+    const porLinea = new Map<string, Record<string, number> & { total: number; n: number }>()
+    const totales: Record<string, number> = { porVencer: 0, b30: 0, b60: 0, b90: 0, mas90: 0 }
+    let total = 0, sinVencimiento = 0, nSinVenc = 0, nCuotas = 0
+
+    for (const d of devengado) {
+      const pendiente = Math.round((d.cargado - d.cobrado) * 100) / 100
+      if (pendiente <= 0.005) continue
+      nCuotas++
+      if (!d.fechaVencimiento) { sinVencimiento += pendiente; nSinVenc++; continue }
+      const venc = new Date(d.fechaVencimiento + 'T00:00:00')
+      const dias = Math.floor((hoy.getTime() - venc.getTime()) / 86400000)
+      const banda = BANDAS_ANT.find(b => b.test(dias))
+      if (!banda) continue
+
+      const clave = `${d.modulo}|${d.linea}`
+      if (!porLinea.has(clave)) {
+        porLinea.set(clave, { porVencer: 0, b30: 0, b60: 0, b90: 0, mas90: 0, total: 0, n: 0 } as any)
+      }
+      const fila = porLinea.get(clave)!
+      fila[banda.key] = (fila[banda.key] ?? 0) + pendiente
+      fila.total += pendiente
+      fila.n += 1
+      totales[banda.key] += pendiente
+      total += pendiente
+    }
+
+    const filas = Array.from(porLinea.entries())
+      .map(([clave, v]) => {
+        const [modulo, linea] = clave.split('|')
+        return { modulo: modulo as ModuloCuotas, linea, ...v }
+      })
+      .sort((a, b) => b.total - a.total)
+
+    return { BANDAS_ANT, filas, totales, total, sinVencimiento, nSinVenc, nCuotas }
+  }, [devengado])
+
   // ── Detalle ────────────────────────────────────────────────────────────
   const detalle = useMemo(() => cobros
     .filter(c => c.fechaPago.slice(0, 4) === String(anio))
@@ -291,6 +348,16 @@ export default function ReporteComposicionIngresoCuotas() {
     ]
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja3), 'Ingreso reconocido')
 
+    const hoja4: any[][] = [
+      ['Módulo', 'Línea', ...cartera.BANDAS_ANT.map(b => b.label), 'Saldo total', 'Cuotas'],
+      ...cartera.filas.map(f => [
+        MODULO_META[f.modulo].label, f.linea,
+        ...cartera.BANDAS_ANT.map(b => (f as any)[b.key] ?? 0), f.total, f.n,
+      ]),
+      ['TOTAL', '', ...cartera.BANDAS_ANT.map(b => cartera.totales[b.key] ?? 0), cartera.total, cartera.nCuotas],
+    ]
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja4), 'Cartera por antiguedad')
+
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalle.map(c => ({
       'Fecha de pago': c.fechaPago,
       'Módulo': MODULO_META[c.modulo].label,
@@ -317,6 +384,7 @@ export default function ReporteComposicionIngresoCuotas() {
   const countPrint = tab === 'composicion' ? matriz.filas.filter(f => f.total !== 0).length
                    : tab === 'puente'      ? puente.filas.length
                    : tab === 'ingreso'     ? matrizIngreso.porMes.filter(f => f.total !== 0).length
+                   : tab === 'cartera'     ? cartera.filas.length
                    : detalle.length
 
   return (
@@ -454,6 +522,7 @@ export default function ReporteComposicionIngresoCuotas() {
               { k: 'composicion', label: 'Composición del cobro' },
               { k: 'puente',      label: 'Puente devengado → caja' },
               { k: 'ingreso',     label: 'Ingreso reconocido (libro)' },
+              { k: 'cartera',     label: 'Cartera por antigüedad' },
               { k: 'detalle',     label: `Detalle (${detalle.length})` },
             ] as const).map(t => (
               <button key={t.k} onClick={() => setTab(t.k)}
@@ -688,6 +757,89 @@ export default function ReporteComposicionIngresoCuotas() {
                     aquí a propósito: no tienen periodo.
                   </p>
                 )}
+              </>
+            )}
+
+            {/* ── TAB 4: cartera por antigüedad ──────────────── */}
+            {tab === 'cartera' && (
+              <>
+                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 8px' }}>
+                  Saldo pendiente a hoy por línea y banda de vencimiento. A diferencia de las otras pestañas,
+                  esto es un <strong>stock</strong>, no un flujo de un mes: no depende del año seleccionado y no
+                  se suma con la composición del cobro. El pendiente se deriva de cargado − cobrado, así que el
+                  descuento por pago anticipado no aparece como adeudo.
+                </p>
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+                  {cartera.BANDAS_ANT.map(b => (
+                    <div key={b.key} className="card" style={{ flex: '1 1 150px', maxWidth: 240, padding: 13, borderColor: b.color + '33' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: b.color, marginBottom: 5 }}>{b.label}</div>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>
+                        {fmt0(cartera.totales[b.key] ?? 0)}
+                      </div>
+                      <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
+                        {pctStr(cartera.totales[b.key] ?? 0, cartera.total)} de la cartera
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {cartera.sinVencimiento > 0 && (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10,
+                    background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>
+                      <strong>{fmt$(cartera.sinVencimiento)}</strong> en {cartera.nSinVenc} cuota(s) sin fecha de
+                      vencimiento: no entran en ninguna banda. Se cuentan aparte en vez de asumirles un vencimiento.
+                    </span>
+                  </div>
+                )}
+
+                <table id="reporte-table" className="table" style={{ width: '100%', fontSize: 12 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left' }}>Módulo</th>
+                      <th style={{ textAlign: 'left' }}>Línea / Sección</th>
+                      {cartera.BANDAS_ANT.map(b => (
+                        <th key={b.key} style={{ ...cellNum, color: b.color }}>{b.label}</th>
+                      ))}
+                      <th style={cellNum}>Saldo total</th>
+                      <th style={cellNum}>Cuotas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cartera.filas.map(f => (
+                      <tr key={`${f.modulo}-${f.linea}`}>
+                        <td style={{ color: MODULO_META[f.modulo].color, fontWeight: 600 }}>{MODULO_META[f.modulo].label}</td>
+                        <td>{f.linea}</td>
+                        {cartera.BANDAS_ANT.map(b => (
+                          <td key={b.key} style={{ ...cellNum, color: (f as any)[b.key] ? b.color : '#cbd5e1' }}>
+                            {(f as any)[b.key] ? fmt$((f as any)[b.key]) : '—'}
+                          </td>
+                        ))}
+                        <td style={{ ...cellNum, fontWeight: 700 }}>{fmt$(f.total)}</td>
+                        <td style={cellNum}>{f.n}</td>
+                      </tr>
+                    ))}
+                    {!cartera.filas.length && (
+                      <tr><td colSpan={cartera.BANDAS_ANT.length + 4} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                        Sin saldo pendiente en los módulos seleccionados.
+                      </td></tr>
+                    )}
+                  </tbody>
+                  {cartera.filas.length > 0 && (
+                    <tfoot>
+                      <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
+                        <td colSpan={2}>TOTAL</td>
+                        {cartera.BANDAS_ANT.map(b => (
+                          <td key={b.key} style={{ ...cellNum, color: b.color }}>{fmt$(cartera.totales[b.key] ?? 0)}</td>
+                        ))}
+                        <td style={cellNum}>{fmt$(cartera.total)}</td>
+                        <td style={cellNum}>{cartera.nCuotas}</td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
               </>
             )}
 

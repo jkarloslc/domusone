@@ -142,6 +142,18 @@ export default function ComparativoPage() {
   const [detMap,   setDetMap]   = useState<DetMap>({})
   const [realMap,  setRealMap]  = useState<DetMap>({})
 
+  // ── Bandas de clasificación del Real por partida y mes ──────────────────
+  // Responde, sobre la cifra que ya se ve en la columna Real: cuánto es
+  // desempeño del mes (corriente), cuánto recuperación de cartera (vencido) y
+  // cuánto dinero de meses futuros (anticipado). Se muestra en el drill.
+  //
+  // Vienen de recibos_ingreso_secciones/_conceptos: capturadas a mano
+  // (migración 20260920180000) o derivadas de la cobranza en los meses
+  // posteriores al corte (lib/distribucionSecciones.ts). NULL = sin clasificar,
+  // y se presenta como tal en vez de repartirse.
+  type Bandas = { vencido: number; corriente: number; anticipado: number; sinClasificar: number }
+  const [bandasMap, setBandasMap] = useState<Record<number, Record<number, Bandas>>>({})
+
   // ── Base de medición ────────────────────────────────────────────
   // 'cobro'     Presupuesto = monto (cobro esperado) · Real = recibos por fecha
   //             de cobro. Es el comportamiento histórico de este tab.
@@ -162,7 +174,7 @@ export default function ComparativoPage() {
   const [realDetalle, setRealDetalle] = useState<DetMapTx>({})
   const [agrupadores, setAgrupadores] = useState<Agrupador[]>([])
   const [proveedores, setProveedores] = useState<Proveedor[]>([])
-  const [drillOps, setDrillOps] = useState<{ partida: string; tipo: 'ingreso' | 'egreso'; conOp: boolean; rows: DetalleTransaccion[] } | null>(null)
+  const [drillOps, setDrillOps] = useState<{ partida: string; tipo: 'ingreso' | 'egreso'; conOp: boolean; rows: DetalleTransaccion[]; bandas?: { vencido: number; corriente: number; anticipado: number; sinClasificar: number } | null } | null>(null)
   const [opDetalle, setOpDetalle]   = useState<any | null>(null)
   const [opLoading,  setOpLoading]  = useState(false)
 
@@ -252,7 +264,7 @@ export default function ComparativoPage() {
     const [{ data: secData }, { data: concData }, { data: opsData }, { data: opsDetData }] = await Promise.all([
       secIds.length > 0
         ? (dbCtrl.from('recibos_ingreso_secciones') as any)
-            .select('id_seccion_fk, monto, subtotal, recibos_ingreso!inner(status, fecha, folio, descripcion)')
+            .select('id_seccion_fk, monto, subtotal, monto_vencido, monto_corriente, monto_anticipado, recibos_ingreso!inner(status, fecha, folio, descripcion)')
             .in('id_seccion_fk', secIds)
             .eq('recibos_ingreso.status', 'Confirmado')
             .gte('recibos_ingreso.fecha', `${anio}-01-01`)
@@ -260,7 +272,7 @@ export default function ComparativoPage() {
         : Promise.resolve({ data: [] }),
       concIds.length > 0
         ? (dbCtrl.from('recibos_ingreso_conceptos') as any)
-            .select('id_concepto_fk, monto, subtotal, recibos_ingreso!inner(status, fecha, folio, descripcion)')
+            .select('id_concepto_fk, monto, subtotal, monto_vencido, monto_corriente, monto_anticipado, recibos_ingreso!inner(status, fecha, folio, descripcion)')
             .in('id_concepto_fk', concIds)
             .eq('recibos_ingreso.status', 'Confirmado')
             .gte('recibos_ingreso.fecha', `${anio}-01-01`)
@@ -345,6 +357,27 @@ export default function ComparativoPage() {
 
     // Por sección — sin IVA: usa el subtotal capturado en /ingresos (calcFiscal,
     // 16%); recibos anteriores a ese cambio no lo tienen y caen al monto tal cual.
+    const bm: Record<number, Record<number, Bandas>> = {}
+    // Las bandas vienen en monto CON IVA, mientras la columna Real es sin IVA:
+    // se aplica a cada banda el mismo factor subtotal/monto de su fila, así el
+    // desglose suma exactamente el Real que se está viendo.
+    const acumBandas = (pid: number, mes: number, r: any) => {
+      const monto = Number(r.monto) || 0
+      if (monto === 0) return
+      const factor = r.subtotal != null ? Number(r.subtotal) / monto : 1
+      const v = r.monto_vencido    != null ? Number(r.monto_vencido)    : 0
+      const c = r.monto_corriente  != null ? Number(r.monto_corriente)  : 0
+      const a = r.monto_anticipado != null ? Number(r.monto_anticipado) : 0
+      const sin = Math.max(0, monto - v - c - a)
+      if (!bm[pid]) bm[pid] = {}
+      if (!bm[pid][mes]) bm[pid][mes] = { vencido: 0, corriente: 0, anticipado: 0, sinClasificar: 0 }
+      const b = bm[pid][mes]
+      b.vencido       += v * factor
+      b.corriente     += c * factor
+      b.anticipado    += a * factor
+      b.sinClasificar += sin * factor
+    }
+
     secParts.forEach(p => {
       rm[p.id] = {}
       rd[p.id] = []
@@ -353,6 +386,7 @@ export default function ComparativoPage() {
           const monto = Number(r.subtotal ?? r.monto)
           const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + monto
+          acumBandas(p.id, mes, r)
           rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto, folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
         })
     })
@@ -368,6 +402,7 @@ export default function ComparativoPage() {
           const monto = Number(r.subtotal ?? r.monto)
           const mes = new Date(r.recibos_ingreso.fecha + 'T12:00:00').getMonth() + 1
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + monto
+          acumBandas(p.id, mes, r)
           rd[p.id].push({ fecha: r.recibos_ingreso.fecha, monto, folio: r.recibos_ingreso.folio, descripcion: r.recibos_ingreso.descripcion })
         })
     })
@@ -415,6 +450,7 @@ export default function ComparativoPage() {
     })
 
     setRealMap(rm)
+    setBandasMap(bm)
     setRealDetalle(rd)
     setLoading(false)
     setRefreshing(false)
@@ -690,7 +726,22 @@ export default function ComparativoPage() {
     const rows = (realDetalle[p.id] ?? [])
       .filter(r => meses.includes(new Date(r.fecha + 'T12:00:00').getMonth() + 1))
       .sort((a, b) => a.fecha.localeCompare(b.fecha))
-    setDrillOps({ partida: p.nombre, tipo: p.tipo, conOp: p.fuente_real === 'op_area', rows })
+
+    // Composición del Real en las 4 bandas — solo para ingresos y solo en base
+    // cobro: el devengado no tiene bandas (es la cuota del periodo, punto).
+    let bandas: Bandas | null = null
+    if (p.tipo === 'ingreso' && base === 'cobro') {
+      const acc: Bandas = { vencido: 0, corriente: 0, anticipado: 0, sinClasificar: 0 }
+      for (const m of meses) {
+        const b = bandasMap[p.id]?.[m]
+        if (!b) continue
+        acc.vencido += b.vencido; acc.corriente += b.corriente
+        acc.anticipado += b.anticipado; acc.sinClasificar += b.sinClasificar
+      }
+      if (acc.vencido + acc.corriente + acc.anticipado + acc.sinClasificar > 0) bandas = acc
+    }
+
+    setDrillOps({ partida: p.nombre, tipo: p.tipo, conOp: p.fuente_real === 'op_area', rows, bandas })
   }
 
   if (loading) return (
@@ -1165,6 +1216,43 @@ export default function ComparativoPage() {
           onClose={() => setDrillOps(null)}
           footer={<button className="btn-secondary" onClick={() => setDrillOps(null)}>Cerrar</button>}
         >
+          {/* Composición del Real: de esta cifra, cuánto es desempeño del mes,
+              cuánto recuperación de cartera y cuánto dinero de meses futuros. */}
+          {drillOps.bandas && (() => {
+            const b = drillOps.bandas!
+            const tot = b.vencido + b.corriente + b.anticipado + b.sinClasificar
+            const pc = (v: number) => tot > 0 ? `${((v / tot) * 100).toFixed(1)}%` : '—'
+            const items = [
+              { label: 'Corriente',          sub: 'cuota del propio mes — desempeño del mes', v: b.corriente,     c: '#16a34a', bg: '#f0fdf4' },
+              { label: 'Vencida recuperada', sub: 'de meses anteriores — recuperación de cartera', v: b.vencido,   c: '#dc2626', bg: '#fef2f2' },
+              { label: 'Anticipada',         sub: 'de meses futuros — pago adelantado', v: b.anticipado,           c: '#2563eb', bg: '#eff6ff' },
+              { label: 'Sin clasificar',     sub: 'no capturado, o conceptos sin periodo', v: b.sinClasificar,     c: '#64748b', bg: '#f8fafc' },
+            ].filter(i => i.v !== 0)
+            return (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  Composición del Real — {fmt(tot)}
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {items.map(i => (
+                    <div key={i.label} title={i.sub}
+                      style={{ flex: '1 1 130px', padding: '9px 11px', borderRadius: 8, background: i.bg, border: `1px solid ${i.c}33` }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: i.c }}>{i.label}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>{fmt(i.v)}</div>
+                      <div style={{ fontSize: 10, color: '#64748b' }}>{pc(i.v)}</div>
+                    </div>
+                  ))}
+                </div>
+                {b.sinClasificar > 0 && (
+                  <div style={{ fontSize: 10.5, color: '#92400e', marginTop: 6 }}>
+                    Lo no clasificado se captura por recibo en <strong>Ingresos</strong> (toggle «Clasificar cobranza»),
+                    o se calcula solo en los meses posteriores al corte a ingreso derivado.
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
           {drillOps.rows.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8', fontSize: 13 }}>
               Sin movimientos para el período seleccionado
