@@ -126,6 +126,7 @@ export function ServiciosTab({ loteId }: { loteId: number }) {
   const [loading, setLoading] = useState(true)
   const [saving,  setSaving]  = useState(false)
   const [msg,     setMsg]     = useState('')
+  const [err,     setErr]     = useState('')
 
   const cargar = useCallback(async () => {
     setLoading(true)
@@ -133,6 +134,11 @@ export function ServiciosTab({ loteId }: { loteId: number }) {
       dbCtrl.from('servicios_cfe').select('*').eq('id_lote_fk', loteId).order('id'),
       dbCtrl.from('servicios_agua').select('*').eq('id_lote_fk', loteId).order('id'),
     ])
+    // Sin revisar el error, una tabla inexistente o sin permisos se ve igual
+    // que un lote sin servicios: la pestaña queda vacía y nadie se entera.
+    // Las dos tablas estuvieron meses sin existir y así pasó desapercibido.
+    const e = r1.error ?? r2.error
+    setErr(e ? `No se pudieron cargar los servicios: ${e.message}` : '')
     setCfe(r1.data ?? [])
     setAgua(r2.data ?? [])
     setLoading(false)
@@ -155,16 +161,29 @@ export function ServiciosTab({ loteId }: { loteId: number }) {
   }
 
   const guardar = async () => {
-    setSaving(true)
+    setSaving(true); setErr('')
+    // Se corta en el primer error en vez de seguir guardando: si falla una
+    // línea, terminar en silencio con «Guardado» es peor que no guardar.
+    const fallo = async (tabla: 'servicios_cfe' | 'servicios_agua', s: any, p: Record<string, unknown>) => {
+      if (s.id) {
+        const { error } = await dbCtrl.from(tabla).update(p).eq('id', s.id)
+        return error?.message ?? null
+      }
+      const { data, error } = await dbCtrl.from(tabla).insert(p).select('id').single()
+      if (error) return error.message
+      if (data) s.id = (data as { id: number }).id
+      return null
+    }
+
     for (const s of cfe) {
       const p = { id_lote_fk: loteId, no_servicio: s.no_servicio || null, tarifa: s.tarifa || null, medidor: s.medidor || null, status: s.status || 'Activo', notas: s.notas || null }
-      if (s.id) await dbCtrl.from('servicios_cfe').update(p).eq('id', s.id)
-      else { const { data } = await dbCtrl.from('servicios_cfe').insert(p).select('id').single(); if (data) s.id = data.id }
+      const e = await fallo('servicios_cfe', s, p)
+      if (e) { setErr(`No se pudo guardar el servicio CFE: ${e}`); setSaving(false); return }
     }
     for (const s of agua) {
       const p = { id_lote_fk: loteId, no_contrato: s.no_contrato || null, tipo_toma: s.tipo_toma || null, medidor: s.medidor || null, status: s.status || 'Activo', notas: s.notas || null }
-      if (s.id) await dbCtrl.from('servicios_agua').update(p).eq('id', s.id)
-      else { const { data } = await dbCtrl.from('servicios_agua').insert(p).select('id').single(); if (data) s.id = data.id }
+      const e = await fallo('servicios_agua', s, p)
+      if (e) { setErr(`No se pudo guardar la toma de agua: ${e}`); setSaving(false); return }
     }
     setSaving(false); setMsg('Guardado')
     setTimeout(() => setMsg(''), 2000)
@@ -270,6 +289,12 @@ export function ServiciosTab({ loteId }: { loteId: number }) {
           </div>
         ))}
       </div>
+
+      {err && (
+        <div style={{ padding: '10px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#b91c1c' }}>
+          {err}
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
         {msg && <span style={{ fontSize: 12, color: '#15803d', fontWeight: 600 }}>✓ {msg}</span>}
