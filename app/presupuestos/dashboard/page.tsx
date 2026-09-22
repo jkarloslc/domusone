@@ -23,6 +23,8 @@ type Partida     = {
   tipo_gasto:           string | null
   id_agrupador_fk:      number | null
   clasificacion:        Clasificacion
+  /** Venta diaria: en base devengado su Real se toma del real de caja. */
+  devengado_igual_a_cobro: boolean
 }
 type Agrupador = { id: number; nombre: string; orden: number }
 type DetMap      = Record<number, Record<number, number>>
@@ -245,7 +247,7 @@ export default function DashboardPpto() {
 
     // Partidas activas filtradas por módulo del presupuesto
     let qPartidas = dbCtrl.from('ppto_partidas')
-      .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion')
+      .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion, devengado_igual_a_cobro')
       .eq('activo', true)
       .eq('incluir_presupuesto', true)
     if (modulo) qPartidas = (qPartidas as any).eq('modulo', modulo)
@@ -467,7 +469,13 @@ export default function DashboardPpto() {
   // cambia de base: la OP ya se registra por fecha_op, que es lo más cercano a
   // devengado que hay hoy. Solo los ingresos por cuotas tienen dos bases
   // realmente distintas.
-  const esIngresoPid = new Set(partidas.filter(p => p.tipo === 'ingreso').map(p => p.id))
+  // Las de VENTA DIARIA se excluyen: su devengado ES su caja (el servicio se
+  // presta y se cobra el mismo día), así que en base devengado su Real sigue
+  // saliendo de realMap. Sin esto quedaban en cero por no tener cartera.
+  // Misma regla que /presupuestos/comparativo → realPartida().
+  const esIngresoPid = new Set(partidas
+    .filter(p => p.tipo === 'ingreso' && !p.devengado_igual_a_cobro)
+    .map(p => p.id))
   const detMapEf: DetMap = base === 'cobro' ? detMap : (() => {
     const out: DetMap = {}
     for (const pid of Object.keys(detMap).map(Number)) {

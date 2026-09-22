@@ -27,6 +27,8 @@ type Partida     = {
   tipo_gasto:           string | null
   id_agrupador_fk:      number | null
   clasificacion:        Clasificacion
+  /** Venta diaria: en base devengado su Real se toma del real de caja. */
+  devengado_igual_a_cobro: boolean
 }
 type Agrupador = { id: number; nombre: string; orden: number }
 type Proveedor = { id: number; nombre: string }
@@ -220,7 +222,7 @@ export default function ComparativoPage() {
     if (!silent) setLoading(true); else setRefreshing(true)
 
     let partidasQ = dbCtrl.from('ppto_partidas')
-      .select('id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion')
+      .select('id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion, devengado_igual_a_cobro')
       .eq('activo', true)
       .eq('incluir_presupuesto', true)
     if (modulo) partidasQ = (partidasQ as any).eq('modulo', modulo)
@@ -585,8 +587,11 @@ export default function ComparativoPage() {
 
   // Partidas de ingreso que no tienen de dónde sacar un Real devengado: no se
   // rellenan con el real de caja (sería comparar peras con manzanas), se marcan.
+  // Las de venta diaria quedan fuera del aviso: ahí caja y devengado coinciden
+  // por naturaleza, así que su Real sí sale — del real de caja, a propósito.
   const ingresosSinDevengado = partidas.filter(p =>
-    p.tipo === 'ingreso' && !realDevMap[p.id] && (detDevMap[p.id] || detMap[p.id]))
+    p.tipo === 'ingreso' && !p.devengado_igual_a_cobro &&
+    !realDevMap[p.id] && (detDevMap[p.id] || detMap[p.id]))
 
   // ── Helpers de agregación ──────────────────────────────────────
   const getMeses = () => filterMes === 0 ? Array.from({ length: 12 }, (_, i) => i + 1) : [filterMes]
@@ -609,7 +614,13 @@ export default function ComparativoPage() {
     // Los EGRESOS no cambian de base: la OP ya se registra por fecha_op, que es
     // lo más cercano a devengado que hay hoy. Solo los ingresos por cuotas
     // tienen dos bases realmente distintas.
-    const fuente = (base === 'devengado' && esIngreso(pid)) ? realDevMap : realMap
+    //
+    // Y dentro de los ingresos, los de VENTA DIARIA tampoco: el servicio se
+    // presta y se cobra el mismo día, así que su devengado ES su caja. Sin esta
+    // excepción quedaban en cero por no tener cartera de dónde devengar
+    // (Golf 2026: $5.61M entre Green Fees, Torneos y Tee de Práctica).
+    const ventaDiaria = partidas.find(p => p.id === pid)?.devengado_igual_a_cobro
+    const fuente = (base === 'devengado' && esIngreso(pid) && !ventaDiaria) ? realDevMap : realMap
     return getMeses().reduce((s, m) => s + (fuente[pid]?.[m] ?? 0), 0)
   }
 

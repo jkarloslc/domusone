@@ -59,6 +59,7 @@ type Partida = {
   activo: boolean
   incluir_presupuesto: boolean
   incluir_flujo:        boolean
+  devengado_igual_a_cobro: boolean
 }
 
 type CC        = { id: number; nombre: string }
@@ -81,6 +82,7 @@ const EMPTY: Omit<Partida, 'id'> = {
   id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, id_agrupador_fk: null,
   clasificacion: 'operativo', orden: 0, activo: true,
   incluir_presupuesto: true, incluir_flujo: true,
+  devengado_igual_a_cobro: false,
 }
 
 const TIPO_LABEL: Record<'ingreso' | 'egreso', string> = { ingreso: 'Ingreso', egreso: 'Egreso' }
@@ -181,6 +183,7 @@ export default function PartidasPage() {
       orden: p.orden, activo: p.activo,
       incluir_presupuesto: p.incluir_presupuesto ?? true,
       incluir_flujo:       p.incluir_flujo ?? true,
+      devengado_igual_a_cobro: p.devengado_igual_a_cobro ?? false,
     })
     setModal(true)
   }
@@ -208,6 +211,8 @@ export default function PartidasPage() {
       id_centro_ingreso_fk: form.tipo === 'ingreso' ? form.id_centro_ingreso_fk : null,
       id_seccion_fk:        (form.tipo === 'ingreso' && form.fuente_real === 'seccion')  ? form.id_seccion_fk  : null,
       id_concepto_fk:       (form.tipo === 'ingreso' && form.fuente_real === 'concepto') ? form.id_concepto_fk : null,
+      // Solo tiene sentido en ingresos: un egreso no cambia de base.
+      devengado_igual_a_cobro: form.tipo === 'ingreso' ? form.devengado_igual_a_cobro : false,
     }
     const { error } = edit
       ? await dbCtrl.from('ppto_partidas').update(payload).eq('id', edit.id)
@@ -253,6 +258,7 @@ export default function PartidasPage() {
       activo:               true,
       incluir_presupuesto:  dupSource.incluir_presupuesto,
       incluir_flujo:        dupSource.incluir_flujo,
+      devengado_igual_a_cobro: dupSource.tipo === 'ingreso' ? (dupSource.devengado_igual_a_cobro ?? false) : false,
       id_centro_costo_fk:   dupSource.tipo === 'egreso' ? t.id_centro_costo_fk : null,
       id_area_fk:           dupSource.tipo === 'egreso' ? t.id_area_fk         : null,
       tipo_gasto:           dupSource.tipo === 'egreso' ? dupSource.tipo_gasto : null,
@@ -482,6 +488,12 @@ export default function PartidasPage() {
                                 {(p.incluir_flujo ?? true) && (
                                   <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#eef2ff', color: '#4338ca' }}>
                                     Flujo
+                                  </span>
+                                )}
+                                {p.devengado_igual_a_cobro && (
+                                  <span title="Venta diaria: en base Generado su Real se toma del cobro"
+                                    style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 9, background: '#f0fdf4', color: '#15803d' }}>
+                                    Venta diaria
                                   </span>
                                 )}
                                 {!(p.incluir_presupuesto ?? true) && !(p.incluir_flujo ?? true) && (
@@ -746,6 +758,19 @@ export default function PartidasPage() {
                 Desmarca &quot;Presupuesto&quot; para partidas solo de financiamiento (aportaciones, pago de capital de deuda, etc.) que no deben contarse en el presupuesto operativo.
               </span>
             </div>
+
+            {form.tipo === 'ingreso' && (
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={form.devengado_igual_a_cobro}
+                    onChange={e => setForm(f => ({ ...f, devengado_igual_a_cobro: e.target.checked }))} />
+                  Venta diaria (el generado es igual al cobro)
+                </label>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                  Márcala cuando el servicio se presta y se cobra el mismo día (green fees, torneos, tee de práctica): no tiene cartera de dónde generar, así que en base Generado su Real se toma del cobro. Sin esto la partida aparece con Real en cero.
+                </span>
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 12 }}>
               <label style={{ ...lbl, flex: 1 }}>
