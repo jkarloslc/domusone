@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { PrintBar } from './utils'
 import { AlertTriangle, CalendarClock, CheckCircle, Clock, Info, Scissors, TrendingUp, Wallet } from 'lucide-react'
+import { useAuth } from '@/lib/AuthContext'
 import { fetchCobranzaCuotas, fetchIngresoClasificado, type ResultadoCobranza, type ResultadoIngresoClasificado } from '@/lib/cobranzaCuotas'
 import {
   BANDAS, BANDA_META, MODULOS_CUOTAS, MODULO_META, labelPeriodo, repartirDevengo,
@@ -47,6 +48,12 @@ const cellNum: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: '
 
 export default function ReporteComposicionIngresoCuotas() {
   const anioActual = new Date().getFullYear()
+
+  // La exportación a Excel queda reservada a superadmin. Mismo patrón que
+  // ReporteOPsPorTipoGasto.tsx:54 — check directo de rol, no `canWrite()`:
+  // esto no es escritura, es sacar datos del sistema.
+  const { authUser } = useAuth()
+  const esSuperadmin = authUser?.rol === 'superadmin'
 
   const [anio, setAnio]               = useState(anioActual)
   const [modulosSel, setModulosSel]   = useState<ModuloCuotas[]>([...MODULOS_CUOTAS])
@@ -549,9 +556,11 @@ export default function ReporteComposicionIngresoCuotas() {
           Prorratear cuotas anuales
         </label>
 
-        <button className="btn-ghost" onClick={exportar} disabled={loading} style={{ marginBottom: 1 }}>
-          Exportar Excel
-        </button>
+        {esSuperadmin && (
+          <button className="btn-ghost" onClick={exportar} disabled={loading} style={{ marginBottom: 1 }}>
+            Exportar Excel
+          </button>
+        )}
 
         <PrintBar
           title={`Composicion-Ingreso-Cuotas-${anio}`}
@@ -1086,7 +1095,10 @@ export default function ReporteComposicionIngresoCuotas() {
                       <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
                         <td colSpan={7}>
                           TOTAL {detalle.length} aplicación(es)
-                          {detalle.length > 1500 && ' — se muestran las primeras 1,500; el Excel trae todas'}
+                          {/* Sin el botón de Excel a la vista, ofrecerlo como salida sería mentir. */}
+                          {detalle.length > 1500 && (esSuperadmin
+                            ? ' — se muestran las primeras 1,500; el Excel trae todas'
+                            : ' — se muestran las primeras 1,500')}
                         </td>
                         <td style={cellNum}>{fmt$(detalle.reduce((a, c) => a + c.monto, 0))}</td>
                         {hayCondonacion && <td style={{ ...cellNum, color: '#be185d' }}>{fmt$(detalle.reduce((a, c) => a + c.condonado, 0))}</td>}
