@@ -46,6 +46,20 @@ type Tab = 'composicion' | 'puente' | 'ingreso' | 'cartera' | 'detalle'
 
 const cellNum: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
 
+// ── Condonación: presentación en pausa ────────────────────────────────────
+//
+// Las condonaciones que hay en la cartera NO son una política de cobranza:
+// salieron de ajustes manuales hechos durante la carga masiva inicial y en
+// algunos registros sueltos. Presentarlas como una dimensión propia del
+// reporte diría algo que el dato no dice.
+//
+// Lo que se apaga es solo la PRESENTACIÓN: la card, las columnas de pantalla
+// y de Excel, y el neteo del KPI de caja. El cálculo se queda completo —
+// lib/cobranzaCuotas.ts sigue repartiendo la parte condonada de forma exacta
+// vía golf.recibos_golf_pagos y `CobroAplicado.condonado` sigue llegando con
+// su valor. Poner esto en `true` devuelve todo sin tocar nada más.
+const MOSTRAR_CONDONACION = false
+
 export default function ReporteComposicionIngresoCuotas() {
   const anioActual = new Date().getFullYear()
 
@@ -197,7 +211,10 @@ export default function ReporteComposicionIngresoCuotas() {
       const porBanda = {} as Record<BandaCobranza, number>
       BANDAS.forEach(b => { porBanda[b] = delMes.filter(c => c.banda === b).reduce((a, c) => a + c.monto, 0) })
       const total = BANDAS.reduce((a, b) => a + porBanda[b], 0)
-      const condonado = delMes.reduce((a, c) => a + c.condonado, 0)
+      // Con la presentación apagada esto queda en 0, y de ahí se cae solo todo
+      // lo demás: `granCaja` vuelve a ser el total, `hayCondonacion` queda en
+      // false y ninguna columna ni card se renderiza. Un solo interruptor.
+      const condonado = MOSTRAR_CONDONACION ? delMes.reduce((a, c) => a + c.condonado, 0) : 0
       return { mes: m, label: MESES_CORTO[i], porBanda, total, condonado, caja: total - condonado, n: delMes.length }
     })
     const totales = {} as Record<BandaCobranza, number>
@@ -424,12 +441,17 @@ export default function ReporteComposicionIngresoCuotas() {
     const wb = XLSX.utils.book_new()
 
     const hoja1: any[][] = [
-      ['Mes', ...BANDAS.map(b => BANDA_META[b].label), 'Total cobrado', 'Condonado', 'Caja (efectivo)', '% Corriente'],
+      // El Excel lleva las mismas columnas que la pantalla: si la condonación
+      // está apagada, tampoco sale en el archivo.
+      ['Mes', ...BANDAS.map(b => BANDA_META[b].label), 'Total cobrado',
+        ...(hayCondonacion ? ['Condonado', 'Caja (efectivo)'] : []), '% Corriente'],
       ...matriz.filas.filter(f => f.total !== 0).map(f => [
-        `${f.label} ${anio}`, ...BANDAS.map(b => f.porBanda[b]), f.total, f.condonado, f.caja,
+        `${f.label} ${anio}`, ...BANDAS.map(b => f.porBanda[b]), f.total,
+        ...(hayCondonacion ? [f.condonado, f.caja] : []),
         f.total > 0 ? f.porBanda.CORRIENTE / f.total : 0,
       ]),
-      ['TOTAL', ...BANDAS.map(b => matriz.totales[b]), matriz.granTotal, matriz.granCondonado, matriz.granCaja,
+      ['TOTAL', ...BANDAS.map(b => matriz.totales[b]), matriz.granTotal,
+        ...(hayCondonacion ? [matriz.granCondonado, matriz.granCaja] : []),
         matriz.granTotal > 0 ? matriz.totales.CORRIENTE / matriz.granTotal : 0],
     ]
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja1), 'Composicion del cobro')
@@ -475,8 +497,7 @@ export default function ReporteComposicionIngresoCuotas() {
       'Periodo de la cuota': c.periodo ?? '(sin periodo)',
       'Clasificación': BANDA_META[c.banda].label,
       'Monto': c.monto,
-      'Condonado': c.condonado,
-      'Caja (efectivo)': c.monto - c.condonado,
+      ...(hayCondonacion ? { 'Condonado': c.condonado, 'Caja (efectivo)': c.monto - c.condonado } : {}),
       'Carga inicial': c.esCargaInicial ? 'Sí' : 'No',
       'Folio': c.folio ?? '',
     }))), 'Detalle')
@@ -742,7 +763,7 @@ export default function ReporteComposicionIngresoCuotas() {
                   </tfoot>
                 </table>
 
-                {data && data.condonacionIndeterminada > 0 && (
+                {hayCondonacion && data && data.condonacionIndeterminada > 0 && (
                   <p style={{ fontSize: 11, color: '#92400e', marginTop: 8 }}>
                     <strong>{fmt$(data.condonacionIndeterminada)}</strong> se cobró con varias formas de pago,
                     una de ellas condonación, y la subcuenta solo guarda el texto concatenado sin los montos:
