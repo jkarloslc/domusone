@@ -211,3 +211,76 @@ WHERE d.id_presupuesto_fk = 4 AND d.monto_devengado IS NULL
 --  WHERE b.id_presupuesto_fk = d.id_presupuesto_fk AND b.id_partida_fk = d.id_partida_fk AND b.mes = d.mes;
 -- (Las filas que el bloque 4 haya INSERTADO no están en el respaldo; se
 --  identifican porque tienen monto = 0 y no aparecen en ctrl.bkp_ppto_det_4_forma.)
+
+
+-- ══ 7. ¿SE VE BIEN EL COMPARATIVO? ══════════════════════════════════════
+-- Reproduce lo que el Comparativo dibuja en base Devengado para las partidas
+-- de ingreso de Golf 2026: presupuesto contra Real. Calca la regla del código
+-- (lib/cobranzaCuotas.ts → fetchDevengadoSinIvaPorPartida):
+--   · el Real se prorratea en meses_devengo desde el periodo de la cuota;
+--   · se le quita el IVA con la tasa del CONCEPTO, resuelta desde
+--     cat_productos_pos — si los productos de un concepto no coinciden en tasa,
+--     el código lo EXCLUYE, así que aquí también sale NULL y hay que verlo.
+-- Si estos números no empatan con la pantalla, el problema está en el reporte,
+-- no en los datos.
+WITH tasa AS (
+  SELECT pp.id_concepto_ingreso_fk AS id_concepto,
+         CASE WHEN COUNT(DISTINCT CASE WHEN pp.aplica_iva IS FALSE THEN 0
+                                       ELSE COALESCE(pp.iva_pct, 0) END) = 1
+              THEN MIN(CASE WHEN pp.aplica_iva IS FALSE THEN 0
+                            ELSE COALESCE(pp.iva_pct, 0) END)
+              ELSE NULL END AS iva_pct
+  FROM golf.cat_productos_pos pp
+  WHERE pp.id_concepto_ingreso_fk IS NOT NULL
+  GROUP BY 1
+),
+real_sin_iva AS (
+  SELECT f.id_concepto, f.mes,
+         ROUND(f.devengado_real / (1 + t.iva_pct / 100.0), 2) AS real_sin_iva,
+         t.iva_pct
+  FROM ctrl.tmp_devengo_forma f
+  LEFT JOIN tasa t ON t.id_concepto = f.id_concepto
+),
+ppto AS (
+  SELECT d.id_partida_fk, d.mes, d.monto_devengado, p.nombre, p.id_concepto_fk
+  FROM ctrl.ppto_presupuesto_det d
+  JOIN ctrl.ppto_partidas p ON p.id = d.id_partida_fk
+  WHERE d.id_presupuesto_fk = 4 AND p.fuente_real = 'concepto' AND p.id_concepto_fk IS NOT NULL
+)
+SELECT pp.nombre, pp.mes,
+       pp.monto_devengado::numeric(14,2)              AS presupuesto,
+       COALESCE(r.real_sin_iva, 0)::numeric(14,2)     AS real_devengado,
+       (COALESCE(r.real_sin_iva, 0) - pp.monto_devengado)::numeric(14,2) AS variacion,
+       r.iva_pct   -- NULL aquí = el Comparativo EXCLUYE ese concepto del Real
+FROM ppto pp
+LEFT JOIN real_sin_iva r ON r.id_concepto = pp.id_concepto_fk AND r.mes = pp.mes
+ORDER BY pp.nombre, pp.mes;
+
+-- 7b. Resumen anual por partida — la foto de una línea
+WITH tasa AS (
+  SELECT pp.id_concepto_ingreso_fk AS id_concepto,
+         CASE WHEN COUNT(DISTINCT CASE WHEN pp.aplica_iva IS FALSE THEN 0
+                                       ELSE COALESCE(pp.iva_pct, 0) END) = 1
+              THEN MIN(CASE WHEN pp.aplica_iva IS FALSE THEN 0
+                            ELSE COALESCE(pp.iva_pct, 0) END)
+              ELSE NULL END AS iva_pct
+  FROM golf.cat_productos_pos pp
+  WHERE pp.id_concepto_ingreso_fk IS NOT NULL
+  GROUP BY 1
+)
+SELECT p.nombre,
+       SUM(d.monto)::numeric(14,2)                           AS ppto_cobro,
+       SUM(d.monto_devengado)::numeric(14,2)                 AS ppto_devengado,
+       COALESCE(SUM(ROUND(f.devengado_real / (1 + t.iva_pct / 100.0), 2)), 0)::numeric(14,2) AS real_devengado,
+       MAX(t.iva_pct)                                        AS iva_pct,
+       -- Pico del año: cuántas veces el mes mayor sobre el promedio. Si el
+       -- devengado sigue picudo (>1.5), la forma no se aplicó donde debía.
+       ROUND(MAX(d.monto_devengado) / NULLIF(AVG(d.monto_devengado), 0), 2) AS pico_devengado,
+       ROUND(MAX(d.monto)           / NULLIF(AVG(d.monto), 0), 2)           AS pico_cobro
+FROM ctrl.ppto_presupuesto_det d
+JOIN ctrl.ppto_partidas p ON p.id = d.id_partida_fk
+LEFT JOIN ctrl.tmp_devengo_forma f ON f.id_concepto = p.id_concepto_fk AND f.mes = d.mes
+LEFT JOIN tasa t ON t.id_concepto = p.id_concepto_fk
+WHERE d.id_presupuesto_fk = 4
+GROUP BY p.nombre
+ORDER BY ppto_cobro DESC;
