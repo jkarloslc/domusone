@@ -48,10 +48,24 @@ const cellNum: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: '
 
 // ── Condonación: presentación en pausa ────────────────────────────────────
 //
-// Las condonaciones que hay en la cartera NO son una política de cobranza:
-// salieron de ajustes manuales hechos durante la carga masiva inicial y en
-// algunos registros sueltos. Presentarlas como una dimensión propia del
-// reporte diría algo que el dato no dice.
+// Las condonaciones que había en la cartera NO eran una política de cobranza:
+// eran la diferencia entre el precio de lista de la categoría y el precio
+// pactado con cada socio, liquidada con la forma de pago «Condonación» porque
+// el cargo no tenía cómo nacer al precio pactado. Presentarlas como una
+// dimensión propia del reporte diría algo que el dato no dice.
+//
+// ACTUALIZACIÓN 2026-09-21: eso ya se corrigió de raíz. golf.cuotas_socios
+// registra la tarifa pactada por socio (migración 20260921180000) y la
+// reexpresión de sql/fase2_reexpresion_condonacion_u1.sql retiró $4,977,177.17
+// de condonación de la cartera de Golf, bajando el cargo a lo realmente
+// pactado. Quedan vivos **$18,350** por decisión explícita del usuario: U2
+// ($2,250, un recibo con corte), U3 ($13,000, tres CFDI timbrados) e Hípico
+// ($3,100). Esos sí son quita de deuda real y se congelaron donde están.
+//
+// Por eso el flag sigue en `false`: no por el motivo original, sino porque
+// dibujar una card y dos columnas en todo el reporte para el 0.1% del dinero
+// es ruido. El KPI de caja los sigue neteando y lo dice. Si la condonación
+// vuelve a ser política de cobranza, poner esto en `true`.
 //
 // Lo que se apaga es solo la PRESENTACIÓN: la card «Condonado», las columnas
 // Condonado / Caja de pantalla y de Excel, y el párrafo de condonación
