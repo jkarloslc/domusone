@@ -4,12 +4,15 @@ import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Zap, Search, X, RefreshCw,
-  Save, Loader, CreditCard, ChevronDown, ChevronRight, Trash2, Pencil, Settings,
+  Save, Loader, CreditCard, ChevronDown, ChevronRight, Trash2, Pencil, Settings, Tag,
 } from 'lucide-react'
 import Link from 'next/link'
 import ModalShell from '@/components/ui/ModalShell'
 import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
 import PageHeader from '@/components/layout/PageHeader'
+import {
+  TarifaPactada, COLS_TARIFA, resolverTarifa, cargarTarifas, montoACargar,
+} from '@/lib/tarifaPactadaGolf'
 
 // ── Tipos ────────────────────────────────────────────────────
 type Cuota = {
@@ -124,8 +127,10 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
 
-  // Resolución de precio por categoría del socio (Mensualidad/Inscripción)
-  const [precioMissing, setPrecioMissing] = useState(false)
+  // Resolución de precio: tarifa pactada del socio > precio de lista de su categoría
+  const [precioLista, setPrecioLista] = useState<number | null>(null)
+  const [tarifas, setTarifas]         = useState<TarifaPactada[]>([])
+  const [tarifaErr, setTarifaErr]     = useState('')
 
   useEffect(() => {
     dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true)
@@ -134,24 +139,48 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
       .then(({ data }) => { setConfigs((data as CuotaConfig[]) ?? []); setLoadingCfg(false) })
   }, [])
 
-  // Resuelve el monto automáticamente según la categoría del socio seleccionado
+  // Precio de lista de la categoría + tarifas pactadas del socio para esta cuota
   useEffect(() => {
-    if (!configSel || !socioSel) { setPrecioMissing(false); return }
-    if (!socioSel.id_categoria_fk) { setPrecioMissing(true); return }
+    if (!configSel || !socioSel) { setPrecioLista(null); setTarifas([]); setTarifaErr(''); return }
     let cancelled = false
-    dbGolf.from('cat_cuotas_config_det')
-      .select('monto')
-      .eq('id_cuota_config_fk', configSel.id)
-      .eq('id_categoria_fk', socioSel.id_categoria_fk)
-      .eq('activo', true)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return
-        if (data) { setMonto(String(data.monto)); setPrecioMissing(false) }
-        else { setPrecioMissing(true) }
-      })
+    ;(async () => {
+      const [{ data: det }, { tarifas: tf, error: eTf }] = await Promise.all([
+        socioSel.id_categoria_fk != null
+          ? dbGolf.from('cat_cuotas_config_det').select('monto')
+              .eq('id_cuota_config_fk', configSel.id)
+              .eq('id_categoria_fk', socioSel.id_categoria_fk)
+              .eq('activo', true).maybeSingle()
+          : Promise.resolve({ data: null }),
+        cargarTarifas(configSel.id, socioSel.id),
+      ])
+      if (cancelled) return
+      setPrecioLista(det ? Number((det as { monto: number }).monto) : null)
+      setTarifas(tf)
+      setTarifaErr(eTf ?? '')
+    })()
     return () => { cancelled = true }
   }, [configSel, socioSel])
+
+  // Periodo con el que se resuelve la vigencia de la tarifa: el primero que se
+  // va a generar. La vigencia se mide contra el periodo devengado, no contra la
+  // fecha de captura.
+  const periodoBase = modalidad === 'UNICA' ? periodoU : periodoKey(anioIni, mesIni)
+
+  const tarifaAplicable = useMemo(
+    () => (configSel && socioSel) ? resolverTarifa(tarifas, socioSel.id, configSel.id, periodoBase) : null,
+    [tarifas, configSel, socioSel, periodoBase])
+
+  // El monto se escribe solo con lo que resuelva la cadena tarifa > lista. Sigue
+  // siendo editable: esta pantalla es captura manual.
+  useEffect(() => {
+    const { monto: m } = montoACargar(tarifaAplicable, precioLista)
+    if (m != null) setMonto(String(m))
+  }, [tarifaAplicable, precioLista])
+
+  // Ni tarifa pactada ni precio de lista: no hay de dónde sacar el monto.
+  const precioMissing = !!configSel && !!socioSel && tarifaAplicable == null && precioLista == null
+  // Tarifa pactada en cortesía: no hay nada que cobrar, así que no hay cargo.
+  const esCortesia = !!tarifaAplicable && Number(tarifaAplicable.monto) === 0
 
   // Búsqueda de socios
   useEffect(() => {
@@ -179,7 +208,6 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
     setDiaVenc(String(c.dia_vencimiento))
     setShowPicker(false)
     setPickerSearch('')
-    setPrecioMissing(false)
     // Si es inscripción, cambiar a cuota única automáticamente
     if (c.tipo === 'INSCRIPCION') setModalidad('UNICA')
     else setModalidad('RANGO')
@@ -192,7 +220,9 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
     setMonto('')
     setDescuento('0')
     setDiaVenc('10')
-    setPrecioMissing(false)
+    setPrecioLista(null)
+    setTarifas([])
+    setTarifaErr('')
   }
 
   // ── Preview de cuotas a generar ───────────────────────────
@@ -304,6 +334,12 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {socioSel && tarifaAplicable && (
+                    <span title={`Tarifa pactada: ${tarifaAplicable.motivo_excepcion}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#fff', border: '1px solid #7c3aed', color: '#7c3aed', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      <Tag size={10} /> Pactada
+                    </span>
+                  )}
                   {socioSel && (
                     <span style={{ fontSize: 14, fontWeight: 700, color: precioMissing ? '#dc2626' : '#7c3aed' }}>
                       {precioMissing ? 'Sin precio' : fmt$(parseFloat(monto) || 0)}
@@ -401,6 +437,28 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
           {configSel && socioSel && precioMissing && (
             <div style={{ marginTop: 8, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
               No hay precio configurado para la categoría de este socio en «{configSel.nombre}». Captura el monto manualmente o agrega la línea de precio en el catálogo de Cuotas.
+            </div>
+          )}
+
+          {tarifaErr && (
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+              No se pudieron leer las tarifas pactadas ({tarifaErr}). No generes el cargo sin revisarlo: si este socio tiene precio pactado, nacería al precio de lista.
+            </div>
+          )}
+
+          {tarifaAplicable && !esCortesia && (
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, fontSize: 12, color: '#5b21b6' }}>
+              <strong>Tarifa pactada</strong> de {fmt$(Number(tarifaAplicable.monto))}
+              {precioLista != null && <> en lugar del precio de lista de {fmt$(precioLista)}</>} — {tarifaAplicable.motivo_excepcion}
+              {(tarifaAplicable.vigente_desde || tarifaAplicable.vigente_hasta) && (
+                <> · vigente {tarifaAplicable.vigente_desde ?? '—'} a {tarifaAplicable.vigente_hasta ?? '—'}</>
+              )}
+            </div>
+          )}
+
+          {esCortesia && (
+            <div style={{ marginTop: 8, padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#475569' }}>
+              Tarifa pactada en <strong>cortesía ($0)</strong> — {tarifaAplicable!.motivo_excepcion}. No hay nada que cobrar, así que no se genera cargo.
             </div>
           )}
 
@@ -561,7 +619,10 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
 }
 
 // ── GenerarMasivoModal ───────────────────────────────────────
-type PreviewRow = { socioId: number; nombre: string; existente: boolean; monto: number | null }
+type PreviewRow = {
+  socioId: number; nombre: string; existente: boolean; monto: number | null
+  esPactada: boolean; motivo: string | null
+}
 
 function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => void; onSaved: () => void; authUser: any }) {
   const [configs, setConfigs]         = useState<CuotaConfig[]>([])
@@ -570,7 +631,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
   const [preview, setPreview]         = useState<PreviewRow[]>([])
   const [loadingPrev, setLoadingPrev] = useState(false)
   const [saving, setSaving]           = useState(false)
-  const [done, setDone]               = useState<{ creadas: number; omitidas: number; sinPrecio: number; total: number } | null>(null)
+  const [done, setDone]               = useState<{ creadas: number; omitidas: number; sinPrecio: number; cortesias: number; total: number } | null>(null)
   const [error, setError]             = useState('')
 
   useEffect(() => {
@@ -586,10 +647,18 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
     if (!configSel || !periodo) { setError('Selecciona tipo de cuota y periodo'); return }
     setError(''); setLoadingPrev(true)
     const cfg = configs.find(c => c.id === Number(configSel))!
-    const [{ data: sociosData }, { data: detData }] = await Promise.all([
+    const [{ data: sociosData }, { data: detData }, { tarifas, error: eTf }] = await Promise.all([
       dbGolf.from('cat_socios').select('id, nombre, apellido_paterno, apellido_materno, id_categoria_fk').eq('activo', true),
       dbGolf.from('cat_cuotas_config_det').select('id_categoria_fk, monto').eq('id_cuota_config_fk', cfg.id).eq('activo', true),
+      cargarTarifas(cfg.id),
     ])
+    // Si las tarifas pactadas no se pueden leer no se previsualiza nada: generar
+    // al precio de lista es justo el bug que la tarifa pactada viene a cerrar.
+    if (eTf) {
+      setPreview([]); setLoadingPrev(false)
+      setError(`No se pudieron leer las tarifas pactadas (${eTf}). No se generan cuotas para no cargarlas al precio de lista.`)
+      return
+    }
     if (!sociosData || sociosData.length === 0) {
       setPreview([]); setLoadingPrev(false); setError('No hay socios activos'); return
     }
@@ -598,12 +667,18 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
       .select('id_socio_fk').eq('periodo', periodo).eq('id_cuota_config_fk', cfg.id)
       .in('id_socio_fk', sociosData.map((s: any) => s.id))
     const existSet = new Set((existentes ?? []).map((e: any) => e.id_socio_fk))
-    setPreview(sociosData.map((s: any) => ({
-      socioId: s.id,
-      nombre: [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' '),
-      existente: existSet.has(s.id),
-      monto: s.id_categoria_fk != null ? (precioPorCategoria.get(s.id_categoria_fk) ?? null) : null,
-    })))
+    setPreview(sociosData.map((s: any) => {
+      const lista   = s.id_categoria_fk != null ? (precioPorCategoria.get(s.id_categoria_fk) ?? null) : null
+      const tarifa  = resolverTarifa(tarifas, s.id, cfg.id, periodo)
+      const { monto, esPactada } = montoACargar(tarifa, lista)
+      return {
+        socioId: s.id,
+        nombre: [s.nombre, s.apellido_paterno, s.apellido_materno].filter(Boolean).join(' '),
+        existente: existSet.has(s.id),
+        monto, esPactada,
+        motivo: tarifa?.motivo_excepcion ?? null,
+      }
+    }))
     setLoadingPrev(false)
   }
 
@@ -611,7 +686,9 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
     if (preview.length === 0) return
     setSaving(true); setError('')
     const cfg    = configObj!
-    const nuevos = preview.filter(p => !p.existente && p.monto != null)
+    // monto 0 = tarifa pactada en cortesía: no hay nada que cobrar, no se
+    // genera cargo (un cargo de $0 solo ensucia cartera y estado de cuenta).
+    const nuevos = preview.filter(p => !p.existente && p.monto != null && p.monto > 0)
     const [anio, mes] = periodo.split('-').map(Number)
     const fechaVenc   = `${anio}-${String(mes).padStart(2,'0')}-${String(cfg.dia_vencimiento).padStart(2,'0')}`
     const rows = nuevos.map(p => ({
@@ -624,13 +701,16 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
       if (err) { setError(err.message); setSaving(false); return }
     }
     const sinPrecio = preview.filter(p => !p.existente && p.monto == null).length
+    const cortesias = preview.filter(p => !p.existente && p.monto === 0).length
     const total = nuevos.reduce((a, p) => a + (p.monto ?? 0), 0)
-    setDone({ creadas: rows.length, omitidas: preview.filter(p => p.existente).length, sinPrecio, total })
+    setDone({ creadas: rows.length, omitidas: preview.filter(p => p.existente).length, sinPrecio, cortesias, total })
     setSaving(false)
   }
 
-  const aCrear      = preview.filter(p => !p.existente && p.monto != null)
+  const aCrear      = preview.filter(p => !p.existente && p.monto != null && p.monto > 0)
   const totalACrear = aCrear.reduce((a, p) => a + (p.monto ?? 0), 0)
+  const nPactadas   = aCrear.filter(p => p.esPactada).length
+  const nCortesias  = preview.filter(p => !p.existente && p.monto === 0).length
 
   return (
     <ModalShell
@@ -658,6 +738,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
               <div style={{ fontSize: 13, color: '#64748b' }}>
                 <strong>{done.creadas}</strong> cuotas creadas · <strong>{done.omitidas}</strong> omitidas (ya existían)
                 {done.sinPrecio > 0 && <> · <strong>{done.sinPrecio}</strong> omitidas (sin precio configurado)</>}
+                {done.cortesias > 0 && <> · <strong>{done.cortesias}</strong> omitidas (tarifa pactada en cortesía)</>}
               </div>
               {done.creadas > 0 && (
                 <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', marginTop: 10 }}>
@@ -696,6 +777,8 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
                       {aCrear.length} a crear · {preview.filter(p => p.existente).length} ya existentes · {preview.filter(p => !p.existente && p.monto == null).length} sin precio configurado
+                      {nPactadas > 0  && <> · <span style={{ color: '#7c3aed' }}>{nPactadas} con tarifa pactada</span></>}
+                      {nCortesias > 0 && <> · {nCortesias} en cortesía (no se generan)</>}
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#7c3aed' }}>
                       Total: {fmt$(totalACrear)}
@@ -704,17 +787,26 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', maxHeight: 240, overflowY: 'auto' }}>
                     {preview.map((p, i) => {
                       const sinPrecio = !p.existente && p.monto == null
+                      const cortesia  = !p.existente && p.monto === 0
+                      const etiqueta  = p.existente ? 'Ya existe' : sinPrecio ? 'Sin precio' : cortesia ? 'Cortesía' : 'Crear'
+                      const estilo    = p.existente || cortesia
+                        ? { bg: '#f1f5f9', fg: '#94a3b8' }
+                        : sinPrecio ? { bg: '#fef2f2', fg: '#dc2626' } : { bg: '#f0fdf4', fg: '#16a34a' }
                       return (
                         <div key={p.socioId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', borderBottom: i < preview.length - 1 ? '1px solid #f1f5f9' : 'none', background: p.existente ? '#f8fafc' : '#fff' }}>
                           <span style={{ fontSize: 13, color: p.existente ? '#94a3b8' : '#1e293b' }}>{p.nombre}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {!p.existente && p.monto != null && (
-                              <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>{fmt$(p.monto)}</span>
+                            {p.esPactada && (
+                              <span title={p.motivo ?? undefined}
+                                style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 20, border: '1px solid #ddd6fe', background: '#f5f3ff', color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                <Tag size={9} /> Pactada
+                              </span>
                             )}
-                            <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 20,
-                              background: p.existente ? '#f1f5f9' : sinPrecio ? '#fef2f2' : '#f0fdf4',
-                              color:      p.existente ? '#94a3b8' : sinPrecio ? '#dc2626' : '#16a34a' }}>
-                              {p.existente ? 'Ya existe' : sinPrecio ? 'Sin precio' : 'Crear'}
+                            {!p.existente && p.monto != null && (
+                              <span style={{ fontSize: 12, fontWeight: 600, color: cortesia ? '#94a3b8' : '#059669' }}>{fmt$(p.monto)}</span>
+                            )}
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 20, background: estilo.bg, color: estilo.fg }}>
+                              {etiqueta}
                             </span>
                           </div>
                         </div>
@@ -723,7 +815,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
                   </div>
                   {configObj && (
                     <div style={{ marginTop: 8, fontSize: 12, color: '#64748b', padding: '8px 12px', background: '#f8fafc', borderRadius: 8 }}>
-                      Vencimiento día <strong>{configObj.dia_vencimiento}</strong> de {periodo} · el monto se calcula según la categoría de cada socio
+                      Vencimiento día <strong>{configObj.dia_vencimiento}</strong> de {periodo} · el monto sale de la <strong>tarifa pactada</strong> del socio si tiene una vigente en {periodo}, y si no del precio de lista de su categoría
                     </div>
                   )}
                 </div>
@@ -910,6 +1002,262 @@ function ConfigConceptosModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+// ── Modal: Tarifas Pactadas por socio ────────────────────────
+// La razón de ser de esta pantalla: antes, si con un socio se pactaba un precio
+// distinto al de su categoría, el cargo nacía al precio de lista y la diferencia
+// se liquidaba condonando. Aquí el precio pactado se registra ANTES de generar
+// el cargo, con su motivo — y el cargo nace por el monto correcto.
+type TarifaRow = TarifaPactada & {
+  cat_socios?: { nombre: string; apellido_paterno: string | null; apellido_materno: string | null; numero_socio: string | null } | null
+  cat_cuotas_config?: { nombre: string; tipo: string } | null
+}
+
+function TarifasPactadasModal({ onClose, authUser }: { onClose: () => void; authUser: any }) {
+  const [rows, setRows]         = useState<TarifaRow[]>([])
+  const [configs, setConfigs]   = useState<CuotaConfig[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState('')
+  const [saving, setSaving]     = useState(false)
+  const [showForm, setShowForm] = useState(false)
+
+  // Alta
+  const [socioSearch, setSocioSearch] = useState('')
+  const [socios, setSocios]           = useState<Socio[]>([])
+  const [socioSel, setSocioSel]       = useState<Socio | null>(null)
+  const [idConfig, setIdConfig]       = useState<number | ''>('')
+  const [monto, setMonto]             = useState('')
+  const [desde, setDesde]             = useState('')
+  const [hasta, setHasta]             = useState('')
+  const [motivo, setMotivo]           = useState('')
+  const [precioLista, setPrecioLista] = useState<number | null>(null)
+
+  const fetchRows = useCallback(async () => {
+    setLoading(true)
+    const { data, error: err } = await dbGolf.from('cuotas_socios')
+      .select(`${COLS_TARIFA}, cat_socios(nombre, apellido_paterno, apellido_materno, numero_socio), cat_cuotas_config(nombre, tipo)`)
+      .eq('activo', true)
+      .order('id', { ascending: false })
+    if (err) setError(err.message)
+    setRows((data as unknown as TarifaRow[]) ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    fetchRows()
+    dbGolf.from('cat_cuotas_config').select('*').eq('activo', true).order('tipo').order('nombre')
+      .then(({ data }) => setConfigs((data as CuotaConfig[]) ?? []))
+  }, [fetchRows])
+
+  // Búsqueda de socios (mismo patrón que NuevaCuotaModal)
+  useEffect(() => {
+    if (socioSearch.length < 2) { setSocios([]); return }
+    const t = setTimeout(async () => {
+      const words = socioSearch.trim().split(/\s+/).filter(Boolean)
+      let qb: any = dbGolf.from('cat_socios')
+        .select('id, nombre, apellido_paterno, apellido_materno, id_categoria_fk')
+        .eq('activo', true)
+      for (const w of words) {
+        qb = qb.or(`nombre.ilike.%${w}%,apellido_paterno.ilike.%${w}%,apellido_materno.ilike.%${w}%,numero_socio.ilike.%${w}%`)
+      }
+      const { data } = await qb.limit(8)
+      setSocios((data as unknown as Socio[]) ?? [])
+    }, 300)
+    return () => clearTimeout(t)
+  }, [socioSearch])
+
+  // Precio de lista de referencia, para que se vea contra qué se está pactando
+  useEffect(() => {
+    if (!socioSel || !idConfig || socioSel.id_categoria_fk == null) { setPrecioLista(null); return }
+    let cancelled = false
+    dbGolf.from('cat_cuotas_config_det').select('monto')
+      .eq('id_cuota_config_fk', Number(idConfig))
+      .eq('id_categoria_fk', socioSel.id_categoria_fk)
+      .eq('activo', true).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setPrecioLista(data ? Number((data as any).monto) : null) })
+    return () => { cancelled = true }
+  }, [socioSel, idConfig])
+
+  const limpiar = () => {
+    setSocioSel(null); setSocioSearch(''); setIdConfig(''); setMonto('')
+    setDesde(''); setHasta(''); setMotivo(''); setPrecioLista(null)
+  }
+
+  const handleSave = async () => {
+    if (!socioSel)        { setError('Selecciona un socio'); return }
+    if (!idConfig)        { setError('Selecciona el tipo de cuota'); return }
+    if (monto === '')     { setError('Captura el monto pactado (0 = cortesía)'); return }
+    const m = parseFloat(monto)
+    if (isNaN(m) || m < 0) { setError('El monto pactado no puede ser negativo'); return }
+    if (!motivo.trim())   { setError('El motivo es obligatorio: una tarifa distinta a la de la categoría tiene que poder explicarse'); return }
+    if (desde && hasta && hasta < desde) { setError('La vigencia final no puede ser anterior a la inicial'); return }
+    setSaving(true); setError('')
+    const { error: err } = await dbGolf.from('cuotas_socios').insert({
+      id_socio_fk:        socioSel.id,
+      id_cuota_config_fk: Number(idConfig),
+      monto:              m,
+      vigente_desde:      desde || null,
+      vigente_hasta:      hasta || null,
+      motivo_excepcion:   motivo.trim(),
+      usuario_crea:       authUser?.nombre ?? null,
+    })
+    setSaving(false)
+    if (err) {
+      setError(err.message.includes('uq_cuotas_socios_activa')
+        ? 'Ya existe una tarifa activa para este socio, esta cuota y esa vigencia. Desactiva la anterior o cambia el inicio de vigencia.'
+        : err.message)
+      return
+    }
+    limpiar(); setShowForm(false); fetchRows()
+  }
+
+  const desactivar = async (r: TarifaRow) => {
+    if (!confirm(`¿Desactivar la tarifa pactada de ${nc(r.cat_socios ?? null)} en «${r.cat_cuotas_config?.nombre ?? ''}»? Los cargos que se generen después volverán al precio de lista de su categoría.`)) return
+    const { error: err } = await dbGolf.from('cuotas_socios').update({ activo: false }).eq('id', r.id)
+    if (err) { setError(err.message); return }
+    fetchRows()
+  }
+
+  return (
+    <ModalShell
+      modulo="golf-miembros"
+      titulo="Tarifas Pactadas por Socio"
+      subtitulo="Ganan sobre el precio de lista de la categoría al generar el cargo"
+      onClose={onClose}
+      maxWidth={760}
+      footer={<>
+        <button className="btn-ghost" onClick={onClose}>Cerrar</button>
+        {!showForm && (
+          <button className="btn-primary" onClick={() => setShowForm(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Plus size={13} /> Nueva tarifa
+          </button>
+        )}
+      </>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {error && (
+          <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{error}</div>
+        )}
+
+        {showForm && (
+          <div style={{ padding: 14, border: '1px solid #ddd6fe', background: '#faf5ff', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={lbl}>Socio *</label>
+                {socioSel ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#fff', border: '1px solid #c4b5fd', borderRadius: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#3b0764' }}>{nc(socioSel)}</span>
+                    <button onClick={() => { setSocioSel(null); setSocioSearch('') }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}><X size={13} /></button>
+                  </div>
+                ) : (
+                  <>
+                    <input style={inp} placeholder="Nombre o número de socio…" value={socioSearch} onChange={e => setSocioSearch(e.target.value)} />
+                    {socios.length > 0 && (
+                      <div style={{ marginTop: 4, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', overflow: 'hidden' }}>
+                        {socios.map(so => (
+                          <button key={so.id} onClick={() => { setSocioSel(so); setSocios([]) }}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px', fontSize: 13, background: 'none', border: 'none', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', fontFamily: 'inherit', color: '#1e293b' }}>
+                            {nc(so)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              <div>
+                <label style={lbl}>Tipo de cuota *</label>
+                <select style={inp} value={idConfig} onChange={e => setIdConfig(e.target.value ? Number(e.target.value) : '')}>
+                  <option value="">— Seleccionar —</option>
+                  {configs.map(c => <option key={c.id} value={c.id}>{c.nombre} · {TIPOS_LABEL[c.tipo] ?? c.tipo}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Monto pactado * <span style={{ fontWeight: 400, color: '#94a3b8' }}>(IVA incluido)</span></label>
+                <input style={inp} type="number" min={0} step={0.01} value={monto} onChange={e => setMonto(e.target.value)} placeholder="0.00" />
+                {precioLista != null && (
+                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                    Precio de lista de su categoría: <strong>{fmt$(precioLista)}</strong>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label style={lbl}>Vigente desde <span style={{ fontWeight: 400, color: '#94a3b8' }}>(periodo)</span></label>
+                <input style={inp} type="month" value={desde} onChange={e => setDesde(e.target.value)} />
+              </div>
+              <div>
+                <label style={lbl}>Vigente hasta <span style={{ fontWeight: 400, color: '#94a3b8' }}>(opcional)</span></label>
+                <input style={inp} type="month" value={hasta} onChange={e => setHasta(e.target.value)} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={lbl}>Motivo *</label>
+                <input style={inp} value={motivo} onChange={e => setMotivo(e.target.value)}
+                  placeholder="Convenio firmado 2026, membresía de cortesía, tarifa de lanzamiento…" />
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b' }}>
+              La vigencia se compara contra el <strong>periodo</strong> de la cuota, no contra la fecha de captura. Sin fechas, la tarifa aplica a todos los periodos. Monto <strong>0</strong> = cortesía: no se genera cargo.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn-ghost" onClick={() => { limpiar(); setShowForm(false); setError('') }}>Cancelar</button>
+              <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />} Guardar tarifa
+              </button>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8' }}><Loader size={16} className="animate-spin" /></div>
+        ) : rows.length === 0 ? (
+          <div style={{ padding: '24px 20px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+            Sin tarifas pactadas. Todos los cargos nacen al precio de lista de la categoría del socio.
+          </div>
+        ) : (
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: '#f8fafc' }}>
+                  {['Socio', 'Cuota', 'Pactado', 'Vigencia', 'Motivo', ''].map((h, i) => (
+                    <th key={h + i} style={{ padding: '8px 10px', textAlign: i === 2 ? 'right' : 'left', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(r => (
+                  <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '8px 10px', color: '#1e293b' }}>
+                      {nc(r.cat_socios ?? null)}
+                      {r.cat_socios?.numero_socio && <span style={{ color: '#94a3b8' }}> · {r.cat_socios.numero_socio}</span>}
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#475569' }}>
+                      {r.cat_cuotas_config?.nombre ?? '—'}
+                      <span style={{ color: '#94a3b8' }}> · {TIPOS_LABEL[r.cat_cuotas_config?.tipo ?? ''] ?? r.cat_cuotas_config?.tipo ?? ''}</span>
+                    </td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: Number(r.monto) === 0 ? '#94a3b8' : '#7c3aed', whiteSpace: 'nowrap' }}>
+                      {Number(r.monto) === 0 ? 'Cortesía' : fmt$(Number(r.monto))}
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                      {r.vigente_desde ?? '—'} a {r.vigente_hasta ?? '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#64748b' }}>{r.motivo_excepcion}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                      <button onClick={() => desactivar(r)} title="Desactivar tarifa"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: 2 }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </ModalShell>
+  )
+}
+
 // ── Página principal ─────────────────────────────────────────
 export default function CuotasGolfPage() {
   const { canWrite, authUser } = useAuth()
@@ -926,6 +1274,7 @@ export default function CuotasGolfPage() {
   const [showNueva, setShowNueva]       = useState(false)
   const [showMasivo, setShowMasivo]     = useState(false)
   const [showConceptos, setShowConceptos] = useState(false)
+  const [showTarifas, setShowTarifas]   = useState(false)
   const [editando, setEditando]         = useState<Cuota | null>(null)
   // grupos expandidos (socioId → bool); por defecto todos expandidos
   const [expandidos, setExpandidos]     = useState<Record<number, boolean>>({})
@@ -1025,6 +1374,10 @@ export default function CuotasGolfPage() {
               <button className="btn-ghost" onClick={() => setShowConceptos(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Settings size={13} /> Concepto de ingreso
+              </button>
+              <button className="btn-ghost" onClick={() => setShowTarifas(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Tag size={13} /> Tarifas pactadas
               </button>
               <button className="btn-ghost" onClick={() => setShowMasivo(true)}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#7c3aed', borderColor: '#ddd6fe' }}>
@@ -1192,6 +1545,7 @@ export default function CuotasGolfPage() {
       {showNueva && <NuevaCuotaModal authUser={authUser} onClose={() => setShowNueva(false)} onSaved={() => { setShowNueva(false); fetchCuotas() }} />}
       {showMasivo && <GenerarMasivoModal authUser={authUser} onClose={() => setShowMasivo(false)} onSaved={() => { setShowMasivo(false); fetchCuotas() }} />}
       {showConceptos && <ConfigConceptosModal onClose={() => setShowConceptos(false)} />}
+      {showTarifas && <TarifasPactadasModal authUser={authUser} onClose={() => setShowTarifas(false)} />}
       {editando && <EditarMontoModal cuota={editando} onClose={() => setEditando(null)} onSaved={() => { setEditando(null); fetchCuotas() }} />}
     </div>
   )

@@ -55,12 +55,22 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
   const [f1, setF1] = useState(hoyStr)
   const [f2, setF2] = useState(hoyStr)
 
+  // Reparte las formas de pago del periodo en las columnas de caja/banco de
+  // ctrl.recibos_ingreso. Lo que no se reconoce NO se asume efectivo: se
+  // devuelve aparte en `no_clasificado` y se avisa en pantalla.
+  //
+  // Antes caía todo al `else` → monto_efectivo. Con eso, las cuotas liquidadas
+  // con la forma de pago «Condonación» (SAT 15) entraban al corte y al recibo
+  // de ingreso como efectivo: caja que nunca existió, en el arqueo y en el
+  // Estado de Resultados. El desglose exacto por forma no se pierde — siempre
+  // se guarda íntegro en ctrl.recibos_ingreso_formas_pago.
   const mapFormasPago = (rows: FormaPagoResumen[]) => {
-    const mapped: Record<string, number> = {
+    const mapped = {
       monto_efectivo: 0, monto_transferencia: 0,
       monto_tarjeta: 0, monto_tarjeta_debito: 0, monto_tarjeta_credito: 0,
       monto_cheque: 0, monto_deposito: 0,
     }
+    const noClasificadas: { forma: string; monto: number }[] = []
     for (const fp of rows) {
       const n = fp.forma_nombre.toLowerCase()
       if (n.includes('efectivo')) {
@@ -80,11 +90,18 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
       } else if (n.includes('dep') || n.includes('ventanilla')) {
         mapped.monto_deposito += fp.monto
       } else {
-        mapped.monto_efectivo += fp.monto
+        noClasificadas.push({ forma: fp.forma_nombre, monto: fp.monto })
       }
     }
-    return mapped
+    const no_clasificado = noClasificadas.reduce((a, f) => a + f.monto, 0)
+    return { ...mapped, no_clasificado, no_clasificadas: noClasificadas }
   }
+
+  // Mapeo de las formas del preview, para poder avisar en pantalla de lo que no
+  // es caja ni banco antes de cerrar el corte.
+  const fpagoPreview        = mapFormasPago(formasPago)
+  const formasNoClasificadas = fpagoPreview.no_clasificadas
+  const montoNoClasificado   = fpagoPreview.no_clasificado
 
   const cargarPreview = async () => {
     setLoading(true)
@@ -354,6 +371,14 @@ export default function CorteModal({ idCentro: idCentroProp, nombreCentro: nombr
                       <span style={{ color: '#059669' }}>{fmt$(totalVentas)}</span>
                     </div>
                   </div>
+                  {formasNoClasificadas.length > 0 && (
+                    <div style={{ marginTop: 8, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                      <strong>{fmt$(montoNoClasificado)}</strong> en formas de pago que no son caja ni banco
+                      ({formasNoClasificadas.map(f => f.forma).join(', ')}): entran al total de ventas y al
+                      recibo de ingreso, pero <strong>no</strong> se suman a efectivo ni a transferencia, así que
+                      el desglose de caja no va a cuadrar con el total. Es intencional — ese dinero no existe.
+                    </div>
+                  )}
                 </>
               )}
 
