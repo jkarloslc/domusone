@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { PrintBar } from './utils'
 import { AlertTriangle, CalendarClock, CheckCircle, Clock, Info, Scissors, TrendingUp, Wallet } from 'lucide-react'
@@ -60,9 +60,22 @@ export default function ReporteComposicionIngresoCuotas() {
   const [loading, setLoading] = useState(false)
   const [ingreso, setIngreso] = useState<ResultadoIngresoClasificado | null>(null)
 
+  // Cada carga lleva número: solo la última pedida puede escribir el estado.
+  //
+  // Sin esto, prender y apagar módulos dejaba líneas de módulos ya
+  // deseleccionados pegadas en el selector. No era un problema de filtrado sino
+  // una carrera: `fetchCobranzaCuotas` tarda en proporción a los módulos que
+  // consulta, así que al DESELECCIONAR uno la petición nueva es más rápida que
+  // la anterior, contesta primero, y la respuesta vieja —con más módulos—
+  // aterriza después y sobreescribe `data`. Quien gana es la última en
+  // contestar, no la última en pedirse.
+  const peticion = useRef(0)
+
   const cargar = useCallback(async () => {
+    const mia = ++peticion.current
     setLoading(true)
     const r = await fetchCobranzaCuotas(modulosSel)
+    if (mia !== peticion.current) return   // llegó tarde: ya hay otra en vuelo
     setData(r)
     setLoading(false)
   }, [modulosSel])
@@ -73,29 +86,58 @@ export default function ReporteComposicionIngresoCuotas() {
   // fetchIngresoClasificado). Se recarga solo al cambiar de año.
   useEffect(() => { fetchIngresoClasificado(anio).then(setIngreso) }, [anio])
 
-  // Al cambiar los módulos, una línea seleccionada puede dejar de existir.
-  useEffect(() => { setLineaSel('') }, [modulosSel])
-
   // ── Conjuntos filtrados ────────────────────────────────────────────────
   // La carga inicial de cartera se excluye del COBRO (ese efectivo no pasó por
   // el sistema ni está en el Estado de Resultados) pero nunca del DEVENGADO
   // (la cuota del periodo sí se devengó). Ver lib/clasificacionCobranza.ts.
+  // ── Filtro de línea, identificada por módulo ───────────────────────────
+  // El valor del selector es `modulo|linea`, no el nombre suelto. Dos módulos
+  // pueden llamar igual a una línea (una sección «Mantenimiento» de
+  // Fraccionamiento y el «Mantenimiento» de Locales) y con el nombre a secas
+  // `new Set` las colapsaba en una sola opción que filtraba las dos a la vez,
+  // mezclando módulos sin decirlo.
+  const lineaFiltro = useMemo(() => {
+    const i = lineaSel.indexOf('|')
+    if (i < 0) return null
+    return { modulo: lineaSel.slice(0, i) as ModuloCuotas, linea: lineaSel.slice(i + 1) }
+  }, [lineaSel])
+
+  const coincideLinea = useCallback(
+    (r: { modulo: ModuloCuotas; linea: string }) =>
+      !lineaFiltro || (r.modulo === lineaFiltro.modulo && r.linea === lineaFiltro.linea),
+    [lineaFiltro])
+
+  // Solo se limpia si el módulo de la línea elegida dejó de estar seleccionado.
+  // Antes se borraba con cualquier cambio de módulos: tener Golf + Hípico con
+  // la línea «Membresías» y apagar Hípico perdía el filtro sin motivo.
+  useEffect(() => {
+    if (lineaFiltro && !modulosSel.includes(lineaFiltro.modulo)) setLineaSel('')
+  }, [modulosSel, lineaFiltro])
+
   const cobros = useMemo(() => {
     if (!data) return []
     return data.cobrado.filter(c =>
-      (incluirCargaInicial || !c.esCargaInicial) &&
-      (!lineaSel || c.linea === lineaSel))
-  }, [data, incluirCargaInicial, lineaSel])
+      (incluirCargaInicial || !c.esCargaInicial) && coincideLinea(c))
+  }, [data, incluirCargaInicial, coincideLinea])
 
   const devengado = useMemo(() => {
     if (!data) return []
-    return data.devengado.filter(d => !lineaSel || d.linea === lineaSel)
-  }, [data, lineaSel])
+    return data.devengado.filter(coincideLinea)
+  }, [data, coincideLinea])
 
-  const lineas = useMemo(() => {
-    if (!data) return []
-    return Array.from(new Set(data.devengado.map(d => d.linea))).sort()
-  }, [data])
+  // Las opciones se acotan a `modulosSel` y no solo a lo que trajo `data`: así
+  // el selector queda correcto en el mismo render en que se toca un módulo, sin
+  // esperar a que vuelva la consulta.
+  const lineasPorModulo = useMemo(() => {
+    const out: { modulo: ModuloCuotas; lineas: string[] }[] = []
+    for (const m of MODULOS_CUOTAS) {
+      if (!modulosSel.includes(m)) continue
+      const set = new Set<string>()
+      for (const d of data?.devengado ?? []) if (d.modulo === m) set.add(d.linea)
+      if (set.size) out.push({ modulo: m, lineas: Array.from(set).sort((a, b) => a.localeCompare(b, 'es')) })
+    }
+    return out
+  }, [data, modulosSel])
 
   // ── Puente módulo → centro de ingreso ──────────────────────────────────
   // El libro de ingresos no sabe de módulos: sabe de centros. Sin este puente
@@ -116,16 +158,16 @@ export default function ReporteComposicionIngresoCuotas() {
   // traduce por lo único que las dos puntas comparten de verdad — el id de
   // concepto o de sección.
   const dimsLinea = useMemo(() => {
-    if (!lineaSel || !data) return null
+    if (!lineaFiltro || !data) return null
     const conceptos = new Set<number>()
     const secciones = new Set<number>()
     for (const d of data.devengado) {
-      if (d.linea !== lineaSel) continue
+      if (!coincideLinea(d)) continue
       if (d.idConceptoFk != null) conceptos.add(d.idConceptoFk)
       if (d.idSeccionFk  != null) secciones.add(d.idSeccionFk)
     }
     return { conceptos, secciones, vacia: !conceptos.size && !secciones.size }
-  }, [data, lineaSel])
+  }, [data, coincideLinea])
 
   const anios = useMemo(() => {
     const s = new Set<number>()
@@ -196,7 +238,7 @@ export default function ReporteComposicionIngresoCuotas() {
   // de $18,519.44 que parecía un error del reporte y en realidad es un dato a
   // corregir en la cobranza. Esas aparecen en su propia columna.
   const puente = useMemo(() => {
-    const sinFechaTodas = (data?.cobrosSinFecha ?? []).filter(c => !lineaSel || c.linea === lineaSel)
+    const sinFechaTodas = (data?.cobrosSinFecha ?? []).filter(coincideLinea)
     const filas = MM.map((m, i) => {
       const per = `${anio}-${m}`
       const dev = devengado.filter(d => d.periodo === per)
@@ -210,7 +252,7 @@ export default function ReporteComposicionIngresoCuotas() {
       // Aquí SIEMPRE se mira el universo completo de cobros del periodo,
       // incluida la carga inicial: el puente explica de dónde salió el
       // devengado, y omitir la carga inicial lo descuadraría.
-      const cobPeriodo = (data?.cobrado ?? []).filter(c => c.periodo === per && (!lineaSel || c.linea === lineaSel))
+      const cobPeriodo = (data?.cobrado ?? []).filter(c => c.periodo === per && coincideLinea(c))
       const enSuMes   = cobPeriodo.filter(c => c.fechaPago.slice(0, 7) === per).reduce((a, c) => a + c.monto, 0)
       const antes     = cobPeriodo.filter(c => c.fechaPago.slice(0, 7) <  per).reduce((a, c) => a + c.monto, 0)
       const despues   = cobPeriodo.filter(c => c.fechaPago.slice(0, 7) >  per).reduce((a, c) => a + c.monto, 0)
@@ -241,7 +283,7 @@ export default function ReporteComposicionIngresoCuotas() {
     }), { reconocido: 0, diferido: 0, cargado: 0, enSuMes: 0, antes: 0, despues: 0, sinFecha: 0, descuento: 0, pendiente: 0 })
 
     return { filas, tot }
-  }, [devengado, data, anio, lineaSel, reconocidoPorPeriodo])
+  }, [devengado, data, anio, coincideLinea, reconocidoPorPeriodo])
 
   // ── Matriz del libro de ingresos (mes × banda capturada) ───────────────
   // Se construye sobre ctrl.recibos_ingreso, la misma fuente del Comparativo,
@@ -481,9 +523,18 @@ export default function ReporteComposicionIngresoCuotas() {
 
         <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Línea / Sección</label>
-          <select className="select" value={lineaSel} onChange={e => setLineaSel(e.target.value)} style={{ minWidth: 170 }}>
+          <select className="select" value={lineaSel} onChange={e => setLineaSel(e.target.value)} style={{ minWidth: 190 }}>
             <option value="">Todas</option>
-            {lineas.map(l => <option key={l} value={l}>{l}</option>)}
+            {/* Un grupo por módulo: con cuatro módulos prendidos la lista plana
+                mezclaba secciones de Fraccionamiento con tipos de cuota de Golf
+                sin decir de dónde venía cada una. */}
+            {lineasPorModulo.map(g => (
+              <optgroup key={g.modulo} label={MODULO_META[g.modulo].label}>
+                {g.lineas.map(l => (
+                  <option key={`${g.modulo}|${l}`} value={`${g.modulo}|${l}`}>{l}</option>
+                ))}
+              </optgroup>
+            ))}
           </select>
         </div>
 
@@ -794,7 +845,7 @@ export default function ReporteComposicionIngresoCuotas() {
                   <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
                     <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
                     <span>
-                      La línea «<strong>{lineaSel}</strong>» no tiene concepto ni sección con que ubicarse en el libro
+                      La línea «<strong>{lineaFiltro?.linea}</strong>» no tiene concepto ni sección con que ubicarse en el libro
                       de ingresos, así que el filtro de línea no se aplica en esta pestaña (las demás sí lo respetan).
                     </span>
                   </div>
