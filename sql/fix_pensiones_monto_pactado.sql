@@ -81,3 +81,29 @@ WHERE pe.id IN (SELECT DISTINCT x2.id_pension_fk FROM golf.tmp_pactado_por_cuota
                  WHERE t.tipo = 'PENSION_CARRITO' AND x2.id_pension_fk IS NOT NULL)
 GROUP BY pe.id, pe.monto_mensual, pe.activo
 ORDER BY pe.monto_mensual;
+
+
+-- ── 4. Pensiones en cortesía — decisión del usuario (2026-09-21) ────────
+-- Los 3 contratos que el bloque 2 dejó fuera por tener pactado $0 quedaron
+-- activos a $800 con CERO cuotas vivas (la Fase 2 canceló las suyas por quedar
+-- en cero). Si alguien genera las cuotas del año siguiente, PensionModal les
+-- propondría $800 y les cobraría una pensión que está pactada en cortesía.
+--
+-- Se decide bloquearlo por dato: con monto_mensual = 0 el modal rechaza
+-- agregar cuotas ("El monto mensual debe ser mayor a 0"), que es el resultado
+-- correcto. El mensaje no lo explica, por eso el motivo va en observaciones.
+--
+-- Los ids salen del bloque 3: activos, a 800.00 y con cuotas_vivas = 0.
+UPDATE golf.ctrl_pensiones
+   SET monto_mensual = 0,
+       observaciones = CONCAT_WS(' | ', NULLIF(observaciones, ''),
+         'Pensión en cortesía: incluida en el convenio del socio. No genera cuotas.')
+ WHERE id IN (2, 68, 77);
+
+-- Verificar: los 3 deben quedar en 0.00, activos y sin cuotas vivas.
+SELECT pe.id, pe.monto_mensual, pe.activo, pe.observaciones,
+       COUNT(x.id) AS cuotas_vivas
+FROM golf.ctrl_pensiones pe
+LEFT JOIN golf.cxc_golf x ON x.id_pension_fk = pe.id AND x.status <> 'CANCELADO'
+WHERE pe.id IN (2, 68, 77)
+GROUP BY pe.id, pe.monto_mensual, pe.activo, pe.observaciones;
