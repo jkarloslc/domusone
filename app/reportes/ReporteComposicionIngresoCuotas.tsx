@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { PrintBar } from './utils'
-import { AlertTriangle, CalendarClock, CheckCircle, Clock, Info, Scissors, TrendingUp, Wallet } from 'lucide-react'
+import { AlertTriangle, CalendarClock, CheckCircle, Clock, FileSpreadsheet, Info, Scissors, TrendingUp, Wallet } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { fetchCobranzaCuotas, fetchIngresoClasificado, type ResultadoCobranza, type ResultadoIngresoClasificado } from '@/lib/cobranzaCuotas'
 import {
@@ -533,7 +533,7 @@ export default function ReporteComposicionIngresoCuotas() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* ── Filtros ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
           <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Año</label>
           <select className="select" value={anio} onChange={e => setAnio(Number(e.target.value))}
@@ -577,28 +577,39 @@ export default function ReporteComposicionIngresoCuotas() {
           </select>
         </div>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#475569', cursor: 'pointer', paddingBottom: 8 }}>
-          <input type="checkbox" checked={incluirCargaInicial} onChange={e => setIncluirCargaInicial(e.target.checked)} />
-          Incluir carga inicial de cartera
-        </label>
+        {/* Los dos switches van juntos y al final: modifican cómo se lee todo el
+            reporte, no qué filas entran, y separados se leían como un filtro más. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 2 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#475569', cursor: 'pointer' }}>
+            <input type="checkbox" checked={incluirCargaInicial} onChange={e => setIncluirCargaInicial(e.target.checked)} />
+            Incluir carga inicial de cartera
+          </label>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#475569', cursor: 'pointer', paddingBottom: 8 }}
-          title="Las cuotas anuales (ej. la Inscripción de Golf) se reparten entre los meses que cubren en vez de reconocerse completas en el mes del cargo. Solo afecta al generado; el cobro no cambia.">
-          <input type="checkbox" checked={prorratear} onChange={e => setProrratear(e.target.checked)} />
-          Prorratear cuotas anuales
-        </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#475569', cursor: 'pointer' }}
+            title="Las cuotas anuales (ej. la Inscripción de Golf) se reparten entre los meses que cubren en vez de reconocerse completas en el mes del cargo. Solo afecta al generado; el cobro no cambia.">
+            <input type="checkbox" checked={prorratear} onChange={e => setProrratear(e.target.checked)} />
+            Prorratear cuotas anuales
+          </label>
+        </div>
+      </div>
+
+      {/* ── Barra de acciones ───────────────────────── */}
+      {/* El margen negativo cancela el `marginBottom` que PrintBar trae dentro:
+          sin él la fila queda 16px más alta que los botones que contiene. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: -6 }}>
+        <div style={{ flex: '1 1 320px', minWidth: 0, marginBottom: -16 }}>
+          <PrintBar
+            title={`Composicion-Ingreso-Cuotas-${anio}`}
+            count={countPrint}
+            reportTitle={`Composición del Ingreso por Cuotas — ${anio}`}
+          />
+        </div>
 
         {esSuperadmin && (
-          <button className="btn-ghost" onClick={exportar} disabled={loading} style={{ marginBottom: 1 }}>
-            Exportar Excel
+          <button className="btn-secondary" onClick={exportar} disabled={loading} style={{ fontSize: 12 }}>
+            <FileSpreadsheet size={13} /> Exportar Excel
           </button>
         )}
-
-        <PrintBar
-          title={`Composicion-Ingreso-Cuotas-${anio}`}
-          count={countPrint}
-          reportTitle={`Composición del Ingreso por Cuotas — ${anio}`}
-        />
       </div>
 
       {/* ── Errores y avisos ────────────────────────────────── */}
