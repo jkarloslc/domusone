@@ -624,7 +624,7 @@ export default function DashboardPpto() {
           <span style={{ fontSize: 11, color: '#64748b', padding: '0 6px', fontWeight: 600 }}>Base</span>
           {([
             { b: 'cobro' as Base,     label: 'Cobro',     t: 'Presupuesto = cobro esperado · Real = recibos por fecha de cobro. Base histórica.' },
-            { b: 'devengado' as Base, label: 'Devengado', t: 'Presupuesto = devengado esperado · Real = devengado de la cartera, prorrateado y sin IVA. Es la base para medir un área mes a mes.' },
+            { b: 'devengado' as Base, label: 'Generado', t: 'Presupuesto = generado esperado · Real = generado de la cartera, prorrateado y sin IVA. Es la base para medir un área mes a mes.' },
           ]).map(({ b, label, t }) => (
             <button key={b} onClick={() => setBase(b)} title={t}
               style={{
@@ -643,12 +643,12 @@ export default function DashboardPpto() {
       {base === 'devengado' && (
         <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 8,
           background: '#faf5ff', border: '1px solid #e9d5ff', fontSize: 12, color: '#6b21a8' }}>
-          <strong>Base devengado.</strong>{' '}
+          <strong>Base generado.</strong>{' '}
           Ingresos medidos por la cuota del periodo (cuotas anuales prorrateadas, IVA extraído con la tasa
           configurada de cada cuota), no por cuándo entró el dinero. El presupuesto usa la serie
-          «Devengado esperado» de Captura y cae al de cobro donde no esté capturada.
+          «Generado esperado» de Captura y cae al de cobro donde no esté capturada.
           Los <strong>egresos no cambian de base</strong>: la OP ya se registra por su fecha.
-          {loadingDev && <> · <em>cargando devengado…</em></>}
+          {loadingDev && <> · <em>cargando generado…</em></>}
         </div>
       )}
 

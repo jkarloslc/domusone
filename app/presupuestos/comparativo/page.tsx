@@ -870,7 +870,7 @@ export default function ComparativoPage() {
         <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {([
             { b: 'cobro' as Base,     label: 'Cobro',     t: 'Presupuesto = cobro esperado · Real = recibos por fecha de cobro. Base histórica de este tab.' },
-            { b: 'devengado' as Base, label: 'Devengado', t: 'Presupuesto = devengado esperado · Real = devengado de la cartera, prorrateado y sin IVA. Es la base para medir un área mes a mes.' },
+            { b: 'devengado' as Base, label: 'Generado', t: 'Presupuesto = generado esperado · Real = generado de la cartera, prorrateado y sin IVA. Es la base para medir un área mes a mes.' },
           ]).map(({ b, label, t }) => (
             <button key={b} onClick={() => setBase(b)} title={t}
               style={{
@@ -927,21 +927,21 @@ export default function ComparativoPage() {
       {base === 'devengado' && (
         <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 8,
           background: '#faf5ff', border: '1px solid #e9d5ff', fontSize: 12, color: '#6b21a8' }}>
-          <strong>Base devengado.</strong>{' '}
-          Presupuesto = devengado esperado capturado en{' '}
+          <strong>Base generado.</strong>{' '}
+          Presupuesto = generado esperado capturado en{' '}
           <a href="/presupuestos/captura" style={{ color: '#7c3aed', fontWeight: 600 }}>Captura</a>{' '}
-          (serie «Devengado esperado»). Real de <strong>ingresos</strong> = cuotas del periodo según la cartera,
+          (serie «Generado esperado»). Real de <strong>ingresos</strong> = cuotas del periodo según la cartera,
           con las cuotas anuales prorrateadas y el IVA extraído con la tasa configurada de cada cuota.
           Los <strong>egresos no cambian de base</strong>: la OP ya se registra por su fecha, que es lo más
-          cercano a devengado que existe hoy.
-          {loadingDev && <> · <em>cargando devengado…</em></>}
+          cercano a lo generado que existe hoy.
+          {loadingDev && <> · <em>cargando generado…</em></>}
         </div>
       )}
 
       {base === 'devengado' && devErrores.map((e, i) => (
         <div key={i} style={{ marginBottom: 10, padding: '10px 14px', borderRadius: 8,
           background: '#fee2e2', border: '1px solid #fecaca', fontSize: 12, color: '#991b1b' }}>
-          <strong>Error al calcular el devengado:</strong> {e}
+          <strong>Error al calcular el generado:</strong> {e}
         </div>
       ))}
 
@@ -955,7 +955,7 @@ export default function ComparativoPage() {
       {base === 'devengado' && !loadingDev && ingresosSinDevengado.length > 0 && (
         <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 8,
           background: '#fffbeb', border: '1px solid #fde68a', fontSize: 12, color: '#92400e' }}>
-          <strong>{ingresosSinDevengado.length} partida(s) de ingreso sin Real devengado:</strong>{' '}
+          <strong>{ingresosSinDevengado.length} partida(s) de ingreso sin Real generado:</strong>{' '}
           {ingresosSinDevengado.slice(0, 6).map(p => p.nombre).join(' · ')}
           {ingresosSinDevengado.length > 6 && ` … +${ingresosSinDevengado.length - 6}`}.
           Su Real aparece en cero porque su cobranza no lleva cuotas con periodo en la cartera

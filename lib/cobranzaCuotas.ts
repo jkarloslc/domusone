@@ -893,10 +893,10 @@ export async function fetchDevengadoSinIvaPorPartida(
       .map(([k, v]) => `${k} ${v.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}`).join(', ')
 
   if (montoSinTasa > 0) {
-    avisos.push(`${montoSinTasa.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de devengado ${anio} (con IVA) quedó fuera del Real: no se pudo resolver su tasa de IVA desde el catálogo de productos${conceptosSinTasa.size ? ` (conceptos ${Array.from(conceptosSinTasa).join(', ')})` : ''}. Se excluye en vez de asumirle una tasa. Desglose: ${desglose(sinTasaPorModulo)}.`)
+    avisos.push(`${montoSinTasa.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de generado ${anio} (con IVA) quedó fuera del Real: no se pudo resolver su tasa de IVA desde el catálogo de productos${conceptosSinTasa.size ? ` (conceptos ${Array.from(conceptosSinTasa).join(', ')})` : ''}. Se excluye en vez de asumirle una tasa. Desglose: ${desglose(sinTasaPorModulo)}.`)
   }
   if (montoSinDimension > 0) {
-    avisos.push(`${montoSinDimension.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de devengado ${anio} (con IVA) no tiene concepto ni sección con que ligarse a una partida de presupuesto. Desglose: ${desglose(sinDimensionPorModulo)}. Se arregla configurando el producto POS o el concepto de ingreso de esas cuotas.`)
+    avisos.push(`${montoSinDimension.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de generado ${anio} (con IVA) no tiene concepto ni sección con que ligarse a una partida de presupuesto. Desglose: ${desglose(sinDimensionPorModulo)}. Se arregla configurando el producto POS o el concepto de ingreso de esas cuotas.`)
   }
 
   return { porConcepto, porSeccion, montoSinTasa, montoSinDimension, avisos, errores }

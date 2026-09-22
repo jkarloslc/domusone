@@ -51,7 +51,7 @@ const SERIE_META: Record<Serie, { label: string; corto: string; columna: string;
     ayuda: 'Lo que se espera COBRAR cada mes (base caja, con el pico de los pagos anualizados). Es la serie que consume el Flujo de Efectivo.',
   },
   devengado: {
-    label: 'Devengado esperado', corto: 'Devengado', columna: 'monto_devengado',
+    label: 'Generado esperado', corto: 'Generado', columna: 'monto_devengado',
     color: '#7c3aed', bg: '#faf5ff',
     ayuda: 'La cuota que corresponde a cada mes, se cobre cuando se cobre. Es la base para medir el área mes a mes y la que consume el Comparativo.',
   },
@@ -205,9 +205,9 @@ export default function CapturaPpto() {
     if (!filas.length) { alert('El presupuesto de cobro está vacío: no hay nada que copiar.'); return }
     const yaCapturadas = Object.values(detDevengado).reduce((a, m) => a + Object.keys(m).length, 0)
     const aviso = yaCapturadas > 0
-      ? `Ya hay ${yaCapturadas} celda(s) de devengado capturadas y se van a SOBRESCRIBIR.\n\n`
+      ? `Ya hay ${yaCapturadas} celda(s) de generado capturadas y se van a SOBRESCRIBIR.\n\n`
       : ''
-    if (!confirm(`${aviso}Copiar ${filas.length} celda(s) del presupuesto de cobro al de devengado como punto de partida?`)) return
+    if (!confirm(`${aviso}Copiar ${filas.length} celda(s) del presupuesto de cobro al de generado como punto de partida?`)) return
 
     setCopiando(true)
     for (let i = 0; i < filas.length; i += 200) {
@@ -376,9 +376,9 @@ export default function CapturaPpto() {
               </div>
               {puedeEscribir && !cerrado && (
                 <button className="btn-ghost" onClick={copiarCobroADevengado} disabled={copiando}
-                  title="Copia el presupuesto de cobro al de devengado como punto de partida. El total anual es el mismo en las dos bases; lo que cambia es la distribución mensual."
+                  title="Copia el presupuesto de cobro al de generado como punto de partida. El total anual es el mismo en las dos bases; lo que cambia es la distribución mensual."
                   style={{ fontSize: 12, padding: '5px 10px' }}>
-                  {copiando ? 'Copiando…' : 'Copiar cobro → devengado'}
+                  {copiando ? 'Copiando…' : 'Copiar cobro → generado'}
                 </button>
               )}
             </div>

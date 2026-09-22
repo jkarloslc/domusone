@@ -130,7 +130,7 @@ const GRUPOS = [
     label: 'Ingresos',
     color: '#059669',
     reportes: [
-      { id: 'composicion-ingreso-cuotas', label: 'Composición del Ingreso por Cuotas',       icon: BarChart3,    desc: 'Descompone el cobro de cuotas de cada mes en corriente, vencida recuperada y anticipada, y lo concilia contra el devengado del periodo — Fraccionamiento, Golf, Hípico y Locales' },
+      { id: 'composicion-ingreso-cuotas', label: 'Composición del Ingreso por Cuotas',       icon: BarChart3,    desc: 'Descompone el cobro de cuotas de cada mes en corriente, vencida recuperada y anticipada, y lo concilia contra lo generado del periodo — Fraccionamiento, Golf, Hípico y Locales' },
       { id: 'ingresos-tipo',            label: 'Ingresos por Tipo',                       icon: TrendingDown, desc: 'Recibos agrupados por tipo de ingreso (Golf, Cuotas, Rentas, Caballerizas)' },
       { id: 'ingresos-centro',          label: 'Ingresos por Centro',                     icon: Building2,    desc: 'Recibos agrupados por centro de ingreso con desglose de forma de pago' },
       { id: 'ingresos-concepto-centro', label: 'Ingresos por Concepto y Centro',          icon: BarChart3,    desc: 'Ingresos desglosados por concepto de cobro dentro de cada centro de ingreso — vista jerárquica y pivot' },

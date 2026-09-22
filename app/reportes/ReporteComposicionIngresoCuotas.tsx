@@ -468,7 +468,7 @@ export default function ReporteComposicionIngresoCuotas() {
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja1), 'Composicion del cobro')
 
     const hoja2: any[][] = [
-      ['Periodo', 'Devengado reconocido', 'Diferido', 'Devengado por cargo', 'Cobrado en su mes',
+      ['Periodo', 'Generado reconocido', 'Diferido', 'Generado por cargo', 'Cobrado en su mes',
        'Cobrado antes (anticipo)', 'Cobrado después (vencido)', 'Cobrado sin fecha', 'Descuento', 'Pendiente', 'Diferencia'],
       ...puente.filas.map(f => [
         labelPeriodo(f.periodo), f.reconocido, f.diferido, f.cargado,
@@ -477,7 +477,7 @@ export default function ReporteComposicionIngresoCuotas() {
       ['TOTAL', puente.tot.reconocido, puente.tot.diferido, puente.tot.cargado, puente.tot.enSuMes,
        puente.tot.antes, puente.tot.despues, puente.tot.sinFecha, puente.tot.descuento, puente.tot.pendiente, ''],
     ]
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja2), 'Puente devengado-caja')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja2), 'Puente generado-caja')
 
     const hoja3: any[][] = [
       ['Mes', 'Corriente', 'Vencida', 'Anticipada', 'Sin clasificar', 'Ingreso del mes'],
@@ -583,7 +583,7 @@ export default function ReporteComposicionIngresoCuotas() {
         </label>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#475569', cursor: 'pointer', paddingBottom: 8 }}
-          title="Las cuotas anuales (ej. la Inscripción de Golf) se reparten en sus meses de devengo en vez de reconocerse completas en el mes del cargo. Solo afecta al devengado; el cobro no cambia.">
+          title="Las cuotas anuales (ej. la Inscripción de Golf) se reparten entre los meses que cubren en vez de reconocerse completas en el mes del cargo. Solo afecta al generado; el cobro no cambia.">
           <input type="checkbox" checked={prorratear} onChange={e => setProrratear(e.target.checked)} />
           Prorratear cuotas anuales
         </label>
@@ -621,7 +621,7 @@ export default function ReporteComposicionIngresoCuotas() {
             <strong>Carga inicial excluida del cobro.</strong>{' '}
             {Object.entries(data!.arranque).map(([m, f]) => `${MODULO_META[m as ModuloCuotas].label}: cobros anteriores al ${fmtFecha(f as string)}`).join(' · ')}.
             {' '}Esos pagos son reales pero no generaron recibo de ingreso, así que no están en el Estado de Resultados.
-            El devengado sí los conserva.
+            El generado sí los conserva.
           </span>
         </div>
       )}
@@ -633,7 +633,7 @@ export default function ReporteComposicionIngresoCuotas() {
           {/* ── KPIs ──────────────────────────────────────────── */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {[
-              { label: `Devengado ${anio}`, value: fmt0(kpis.devengado),
+              { label: `Generado ${anio}`, value: fmt0(kpis.devengado),
                 sub: hayDiferido ? 'reconocido, con cuotas anuales prorrateadas' : 'cuotas del periodo, cobradas o no',
                 color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
               // Con la card de condonación oculta, el subtítulo es lo único
@@ -647,8 +647,8 @@ export default function ReporteComposicionIngresoCuotas() {
                 sub: `liquidado sin efectivo · ${pctStr(kpis.condonado, kpis.liquidado)} de lo cobrado`,
                 color: '#be185d', bg: '#fdf2f8', icon: Scissors,
               }] : []),
-              { label: 'Por cobrar',        value: fmt0(kpis.pendiente), sub: 'cartera del devengado del año',     color: '#d97706', bg: '#fffbeb', icon: Clock },
-              { label: 'Avance de cobro',   value: `${kpis.avance.toFixed(1)}%`, sub: 'del devengado del año',     color: '#7c3aed', bg: '#faf5ff', icon: TrendingUp },
+              { label: 'Por cobrar',        value: fmt0(kpis.pendiente), sub: 'cartera del generado del año',     color: '#d97706', bg: '#fffbeb', icon: Clock },
+              { label: 'Avance de cobro',   value: `${kpis.avance.toFixed(1)}%`, sub: 'del generado del año',     color: '#7c3aed', bg: '#faf5ff', icon: TrendingUp },
             ].map(k => (
               <div key={k.label} className="card" style={{ flex: '1 1 180px', maxWidth: 260, padding: 14, background: k.bg, borderColor: k.color + '33' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
@@ -683,7 +683,7 @@ export default function ReporteComposicionIngresoCuotas() {
           <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e2e8f0' }}>
             {([
               { k: 'composicion', label: 'Composición del cobro' },
-              { k: 'puente',      label: 'Puente devengado → caja' },
+              { k: 'puente',      label: 'Puente generado → caja' },
               { k: 'ingreso',     label: 'Ingreso reconocido (libro)' },
               { k: 'cartera',     label: 'Cartera por antigüedad' },
               { k: 'detalle',     label: `Detalle (${detalle.length})` },
@@ -792,20 +792,20 @@ export default function ReporteComposicionIngresoCuotas() {
             {tab === 'puente' && (
               <>
                 <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 8px' }}>
-                  Por cada periodo: cuánto se devengó y cómo se cobró.{' '}
-                  {hayDiferido && <><strong>Reconocido + diferido = devengado por cargo</strong>, y{' '}</>}
-                  <strong>devengado por cargo = cobrado en su mes + antes + después + sin fecha{hayDescuento ? ' + descuento' : ''} + pendiente.</strong>{' '}
+                  Por cada periodo: cuánto se generó y cómo se cobró.{' '}
+                  {hayDiferido && <><strong>Reconocido + diferido = generado por cargo</strong>, y{' '}</>}
+                  <strong>generado por cargo = cobrado en su mes + antes + después + sin fecha{hayDescuento ? ' + descuento' : ''} + pendiente.</strong>{' '}
                   Esta tabla siempre considera el universo completo de cobros, incluida la carga inicial: es lo
-                  que explica de dónde salió el devengado.
+                  que explica de dónde salió el generado.
                   {hayDiferido && ' El «diferido» es la parte del cargo que se reconoce en otros meses (cuotas anuales prorrateadas).'}
                 </p>
                 <table id="reporte-table" className="table" style={{ width: '100%', fontSize: 12 }}>
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left' }}>Periodo</th>
-                      {hayDiferido && <th style={{ ...cellNum, color: '#7c3aed' }} title="Devengado del mes con las cuotas anuales prorrateadas — es la medida del área">Devengado reconocido</th>}
+                      {hayDiferido && <th style={{ ...cellNum, color: '#7c3aed' }} title="Generado del mes con las cuotas anuales prorrateadas — es la medida del área">Generado reconocido</th>}
                       {hayDiferido && <th style={{ ...cellNum, color: '#a855f7' }} title="Parte del cargo que se reconoce en otros meses">± Diferido</th>}
-                      <th style={cellNum}>{hayDiferido ? 'Devengado por cargo' : 'Devengado'}</th>
+                      <th style={cellNum}>{hayDiferido ? 'Generado por cargo' : 'Generado'}</th>
                       <th style={{ ...cellNum, color: '#16a34a' }}>Cobrado en su mes</th>
                       <th style={{ ...cellNum, color: '#2563eb' }}>Cobrado antes (anticipo)</th>
                       <th style={{ ...cellNum, color: '#dc2626' }}>Cobrado después (vencido)</th>
@@ -837,7 +837,7 @@ export default function ReporteComposicionIngresoCuotas() {
                     ))}
                     {!puente.filas.length && (
                       <tr><td colSpan={(hayDiferido ? 10 : 8) + (hayDescuento ? 1 : 0)} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
-                        Sin cuotas devengadas en {anio} para los módulos seleccionados.
+                        Sin cuotas generadas en {anio} para los módulos seleccionados.
                       </td></tr>
                     )}
                   </tbody>
