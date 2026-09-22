@@ -53,11 +53,18 @@ const cellNum: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: '
 // algunos registros sueltos. Presentarlas como una dimensión propia del
 // reporte diría algo que el dato no dice.
 //
-// Lo que se apaga es solo la PRESENTACIÓN: la card, las columnas de pantalla
-// y de Excel, y el neteo del KPI de caja. El cálculo se queda completo —
-// lib/cobranzaCuotas.ts sigue repartiendo la parte condonada de forma exacta
-// vía golf.recibos_golf_pagos y `CobroAplicado.condonado` sigue llegando con
-// su valor. Poner esto en `true` devuelve todo sin tocar nada más.
+// Lo que se apaga es solo la PRESENTACIÓN: la card «Condonado», las columnas
+// Condonado / Caja de pantalla y de Excel, y el párrafo de condonación
+// indeterminada. Poner esto en `true` las devuelve sin tocar nada más.
+//
+// El NETEO no depende de este flag: el KPI «Cobrado (caja)» resta la
+// condonación siempre, porque es la cifra comparable contra el libro de
+// ingresos y contra el Estado de Resultados. Con las columnas ocultas ese KPI
+// no empata con el «Total cobrado» de la tabla, así que su subtítulo dice que
+// va neto — es lo único que hace auditable la diferencia (ver `hayNeteo`).
+//
+// El cálculo también se queda completo: lib/cobranzaCuotas.ts sigue
+// repartiendo la parte condonada de forma exacta vía golf.recibos_golf_pagos.
 const MOSTRAR_CONDONACION = false
 
 export default function ReporteComposicionIngresoCuotas() {
@@ -211,10 +218,9 @@ export default function ReporteComposicionIngresoCuotas() {
       const porBanda = {} as Record<BandaCobranza, number>
       BANDAS.forEach(b => { porBanda[b] = delMes.filter(c => c.banda === b).reduce((a, c) => a + c.monto, 0) })
       const total = BANDAS.reduce((a, b) => a + porBanda[b], 0)
-      // Con la presentación apagada esto queda en 0, y de ahí se cae solo todo
-      // lo demás: `granCaja` vuelve a ser el total, `hayCondonacion` queda en
-      // false y ninguna columna ni card se renderiza. Un solo interruptor.
-      const condonado = MOSTRAR_CONDONACION ? delMes.reduce((a, c) => a + c.condonado, 0) : 0
+      // Se calcula siempre, apagada o no la presentación: el KPI de caja resta
+      // la condonación en los dos casos. Ver `MOSTRAR_CONDONACION`.
+      const condonado = delMes.reduce((a, c) => a + c.condonado, 0)
       return { mes: m, label: MESES_CORTO[i], porBanda, total, condonado, caja: total - condonado, n: delMes.length }
     })
     const totales = {} as Record<BandaCobranza, number>
@@ -224,7 +230,12 @@ export default function ReporteComposicionIngresoCuotas() {
     return { filas, totales, granTotal, granCondonado, granCaja: granTotal - granCondonado }
   }, [cobros, anio])
 
-  const hayCondonacion = matriz.granCondonado > 0.005
+  // `hayCondonacion` gobierna solo lo que se DIBUJA (card, columnas, Excel).
+  // `hayNeteo` dice si el KPI de caja está restando algo, para poder decirlo
+  // en su subtítulo: son dos preguntas distintas desde que el KPI netea
+  // aunque la presentación esté apagada.
+  const hayNeteo       = matriz.granCondonado > 0.005
+  const hayCondonacion = MOSTRAR_CONDONACION && hayNeteo
 
   // ── Devengo reconocido (cuotas anuales prorrateadas) ───────────────────
   // Reparte cada cuota en sus meses de devengo (`mesesDevengo`, del catálogo).
@@ -625,8 +636,11 @@ export default function ReporteComposicionIngresoCuotas() {
               { label: `Devengado ${anio}`, value: fmt0(kpis.devengado),
                 sub: hayDiferido ? 'reconocido, con cuotas anuales prorrateadas' : 'cuotas del periodo, cobradas o no',
                 color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
+              // Con la card de condonación oculta, el subtítulo es lo único
+              // que explica por qué este KPI no empata con el «Total cobrado»
+              // de la tabla. Sin él la diferencia parece un error del reporte.
               { label: 'Cobrado (caja)',    value: fmt0(kpis.caja),
-                sub: hayCondonacion ? `del año ${anio} · solo efectivo` : `del año ${anio}`,
+                sub: hayNeteo ? `del año ${anio} · neto de condonación` : `del año ${anio}`,
                 color: '#15803d', bg: '#f0fdf4', icon: Wallet },
               ...(hayCondonacion ? [{
                 label: 'Condonado', value: fmt0(kpis.condonado),
