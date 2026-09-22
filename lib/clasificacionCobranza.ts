@@ -219,6 +219,16 @@ export type CobroAplicado = {
   periodo: string | null
   fechaPago: string
   monto: number
+  /**
+   * Parte de `monto` liquidada SIN efectivo (condonación). Extingue el saldo
+   * de la cuota igual que un pago, pero no entró al banco ni generó recibo de
+   * ingreso: por eso no puede contarse como caja. `monto − condonado` es lo
+   * que sí es comparable contra el libro de ingresos.
+   *
+   * Ver `esFormaCondonacion`. 0 cuando la cuota se liquidó solo con formas de
+   * pago reales.
+   */
+  condonado: number
   banda: BandaCobranza
   esCargaInicial: boolean
   cliente: string
@@ -227,6 +237,25 @@ export type CobroAplicado = {
   idConceptoFk: number | null
   idSeccionFk: number | null
 }
+
+// ── Liquidación sin efectivo ──────────────────────────────────────────────
+// La condonación es una FORMA DE PAGO del catálogo SAT (código 15), así que en
+// las subcuentas extingue saldo exactamente igual que una transferencia. Pero
+// no es dinero: no entra al banco, no genera recibo de ingreso y no está en el
+// Estado de Resultados. Contarla como cobro es lo que hacía que el KPI de caja
+// de Golf dijera $18.4M contra $12.9M de recibos.
+//
+// Se detecta por `codigo_sat` y no por nombre — el catálogo cfg.formas_pago es
+// el del SAT y el código es su llave estable; el nombre ya se ha renombrado
+// varias veces en este proyecto. El nombre queda como respaldo para las filas
+// donde solo se guardó el texto (cxc_hip / loc_cxc no tienen id de forma).
+
+/** Código SAT de Condonación. */
+export const SAT_CONDONACION = '15'
+
+/** true si el nombre de la forma de pago corresponde a una condonación. */
+export const esFormaCondonacion = (nombre: string | null | undefined): boolean =>
+  !!nombre && /condona/i.test(nombre)
 
 // Dinero cobrado que NO se puede ubicar en ningún mes porque la cuota tiene
 // abono registrado pero `fecha_pago` vacía. Existe de verdad: al 2026-09-20

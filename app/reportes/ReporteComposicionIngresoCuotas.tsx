@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import * as XLSX from 'xlsx'
 import { PrintBar } from './utils'
-import { AlertTriangle, CalendarClock, CheckCircle, Clock, Info, TrendingUp, Wallet } from 'lucide-react'
+import { AlertTriangle, CalendarClock, CheckCircle, Clock, Info, Scissors, TrendingUp, Wallet } from 'lucide-react'
 import { fetchCobranzaCuotas, fetchIngresoClasificado, type ResultadoCobranza, type ResultadoIngresoClasificado } from '@/lib/cobranzaCuotas'
 import {
   BANDAS, BANDA_META, MODULOS_CUOTAS, MODULO_META, labelPeriodo, repartirDevengo,
@@ -97,6 +97,36 @@ export default function ReporteComposicionIngresoCuotas() {
     return Array.from(new Set(data.devengado.map(d => d.linea))).sort()
   }, [data])
 
+  // ── Puente módulo → centro de ingreso ──────────────────────────────────
+  // El libro de ingresos no sabe de módulos: sabe de centros. Sin este puente
+  // la pestaña «Ingreso reconocido» ignoraba el selector de módulos y mostraba
+  // los seis centros aunque solo estuviera Golf seleccionado — $33.7M contra
+  // los $12.9M del módulo, que es justo la cifra que se quería conciliar.
+  // El mapa sale del catálogo (ver `centrosPorModulo` en lib/cobranzaCuotas).
+  const centrosSel = useMemo(() => {
+    const s = new Set<number>()
+    for (const m of modulosSel) (data?.centrosPorModulo?.[m] ?? []).forEach(c => s.add(c))
+    return s
+  }, [data, modulosSel])
+
+  // ── Puente línea del subledger → dimensión del libro ───────────────────
+  // «Membresías» (tipo de cuota) y «Membresias» (concepto del recibo) son dos
+  // vocabularios distintos que solo empataban de casualidad: el filtro de línea
+  // dejaba la pestaña del libro en blanco para Golf, Hípico y Locales. Se
+  // traduce por lo único que las dos puntas comparten de verdad — el id de
+  // concepto o de sección.
+  const dimsLinea = useMemo(() => {
+    if (!lineaSel || !data) return null
+    const conceptos = new Set<number>()
+    const secciones = new Set<number>()
+    for (const d of data.devengado) {
+      if (d.linea !== lineaSel) continue
+      if (d.idConceptoFk != null) conceptos.add(d.idConceptoFk)
+      if (d.idSeccionFk  != null) secciones.add(d.idSeccionFk)
+    }
+    return { conceptos, secciones, vacia: !conceptos.size && !secciones.size }
+  }, [data, lineaSel])
+
   const anios = useMemo(() => {
     const s = new Set<number>()
     ;(data?.cobrado ?? []).forEach(c => s.add(Number(c.fechaPago.slice(0, 4))))
@@ -106,19 +136,29 @@ export default function ReporteComposicionIngresoCuotas() {
   }, [data, anioActual])
 
   // ── Matriz mes × banda (caja del año seleccionado) ─────────────────────
+  //
+  // Las cuatro bandas siguen sumando el cobro completo: son la descomposición
+  // por PERIODO y no se tocan. La condonación es una dimensión ortogonal —
+  // cómo se extinguió el saldo, no a qué mes pertenecía— así que va en columnas
+  // memo al final. `caja` es lo único comparable contra el libro de ingresos:
+  // la condonación liquida cartera pero no entra al banco ni genera recibo.
   const matriz = useMemo(() => {
     const filas = MM.map((m, i) => {
       const delMes = cobros.filter(c => c.fechaPago.slice(0, 7) === `${anio}-${m}`)
       const porBanda = {} as Record<BandaCobranza, number>
       BANDAS.forEach(b => { porBanda[b] = delMes.filter(c => c.banda === b).reduce((a, c) => a + c.monto, 0) })
       const total = BANDAS.reduce((a, b) => a + porBanda[b], 0)
-      return { mes: m, label: MESES_CORTO[i], porBanda, total, n: delMes.length }
+      const condonado = delMes.reduce((a, c) => a + c.condonado, 0)
+      return { mes: m, label: MESES_CORTO[i], porBanda, total, condonado, caja: total - condonado, n: delMes.length }
     })
     const totales = {} as Record<BandaCobranza, number>
     BANDAS.forEach(b => { totales[b] = filas.reduce((a, f) => a + f.porBanda[b], 0) })
-    const granTotal = BANDAS.reduce((a, b) => a + totales[b], 0)
-    return { filas, totales, granTotal }
+    const granTotal     = BANDAS.reduce((a, b) => a + totales[b], 0)
+    const granCondonado = filas.reduce((a, f) => a + f.condonado, 0)
+    return { filas, totales, granTotal, granCondonado, granCaja: granTotal - granCondonado }
   }, [cobros, anio])
+
+  const hayCondonacion = matriz.granCondonado > 0.005
 
   // ── Devengo reconocido (cuotas anuales prorrateadas) ───────────────────
   // Reparte cada cuota en sus meses de devengo (`mesesDevengo`, del catálogo).
@@ -207,7 +247,17 @@ export default function ReporteComposicionIngresoCuotas() {
   // Se construye sobre ctrl.recibos_ingreso, la misma fuente del Comparativo,
   // así que sus totales SÍ coinciden con el Estado de Resultados.
   const matrizIngreso = useMemo(() => {
-    const filas = (ingreso?.filas ?? []).filter(f => !lineaSel || f.linea === lineaSel)
+    const filas = (ingreso?.filas ?? []).filter(f => {
+      // Sin centros resueltos no se acota: mostrar el libro completo y decirlo
+      // es mejor que devolver una pantalla vacía sin explicación.
+      if (centrosSel.size && !(f.idCentroFk != null && centrosSel.has(f.idCentroFk))) return false
+      if (dimsLinea && !dimsLinea.vacia) {
+        const okConcepto = f.idConceptoFk != null && dimsLinea.conceptos.has(f.idConceptoFk)
+        const okSeccion  = f.idSeccionFk  != null && dimsLinea.secciones.has(f.idSeccionFk)
+        if (!okConcepto && !okSeccion) return false
+      }
+      return true
+    })
     const porMes = MM.map((m, i) => {
       const delMes = filas.filter(f => f.fecha.slice(5, 7) === m)
       const vencido    = delMes.reduce((a, f) => a + f.vencido, 0)
@@ -222,8 +272,12 @@ export default function ReporteComposicionIngresoCuotas() {
       anticipado: a.anticipado + f.anticipado, sinClas: a.sinClas + f.sinClas, total: a.total + f.total,
     }), { vencido: 0, corriente: 0, anticipado: 0, sinClas: 0, total: 0 })
     const centros = Array.from(new Set(filas.map(f => f.centro))).sort()
-    return { porMes, tot, centros, nFilas: filas.length }
-  }, [ingreso, lineaSel])
+    return {
+      porMes, tot, centros, nFilas: filas.length,
+      acotado: centrosSel.size > 0,
+      lineaSinDimension: !!dimsLinea?.vacia,
+    }
+  }, [ingreso, centrosSel, dimsLinea])
 
   // ── Cartera por antigüedad ─────────────────────────────────────────────
   // Mismas bandas que ReporteAntiguedadOPporCC (Por vencer / 0-30 / 31-60 /
@@ -302,7 +356,12 @@ export default function ReporteComposicionIngresoCuotas() {
       porCargo,
       pendiente: porCargo - cobradoDev,
       avance: porCargo > 0 ? (cobradoDev / porCargo) * 100 : 0,
-      caja: matriz.granTotal,
+      // Caja = lo cobrado MENOS lo condonado. La condonación extingue saldo
+      // igual que un pago, pero no entró al banco: incluirla aquí era lo que
+      // hacía que este KPI no se pudiera conciliar con el libro de ingresos.
+      caja: matriz.granCaja,
+      condonado: matriz.granCondonado,
+      liquidado: matriz.granTotal,
     }
   }, [devengado, anio, matriz, reconocidoPorPeriodo, prorratear])
 
@@ -316,12 +375,12 @@ export default function ReporteComposicionIngresoCuotas() {
     const wb = XLSX.utils.book_new()
 
     const hoja1: any[][] = [
-      ['Mes', ...BANDAS.map(b => BANDA_META[b].label), 'Total', '% Corriente'],
+      ['Mes', ...BANDAS.map(b => BANDA_META[b].label), 'Total cobrado', 'Condonado', 'Caja (efectivo)', '% Corriente'],
       ...matriz.filas.filter(f => f.total !== 0).map(f => [
-        `${f.label} ${anio}`, ...BANDAS.map(b => f.porBanda[b]), f.total,
+        `${f.label} ${anio}`, ...BANDAS.map(b => f.porBanda[b]), f.total, f.condonado, f.caja,
         f.total > 0 ? f.porBanda.CORRIENTE / f.total : 0,
       ]),
-      ['TOTAL', ...BANDAS.map(b => matriz.totales[b]), matriz.granTotal,
+      ['TOTAL', ...BANDAS.map(b => matriz.totales[b]), matriz.granTotal, matriz.granCondonado, matriz.granCaja,
         matriz.granTotal > 0 ? matriz.totales.CORRIENTE / matriz.granTotal : 0],
     ]
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hoja1), 'Composicion del cobro')
@@ -367,6 +426,8 @@ export default function ReporteComposicionIngresoCuotas() {
       'Periodo de la cuota': c.periodo ?? '(sin periodo)',
       'Clasificación': BANDA_META[c.banda].label,
       'Monto': c.monto,
+      'Condonado': c.condonado,
+      'Caja (efectivo)': c.monto - c.condonado,
       'Carga inicial': c.esCargaInicial ? 'Sí' : 'No',
       'Folio': c.folio ?? '',
     }))), 'Detalle')
@@ -483,7 +544,14 @@ export default function ReporteComposicionIngresoCuotas() {
               { label: `Devengado ${anio}`, value: fmt0(kpis.devengado),
                 sub: hayDiferido ? 'reconocido, con cuotas anuales prorrateadas' : 'cuotas del periodo, cobradas o no',
                 color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
-              { label: 'Cobrado (caja)',    value: fmt0(kpis.caja),      sub: `del año ${anio}`,                   color: '#15803d', bg: '#f0fdf4', icon: Wallet },
+              { label: 'Cobrado (caja)',    value: fmt0(kpis.caja),
+                sub: hayCondonacion ? `del año ${anio} · solo efectivo` : `del año ${anio}`,
+                color: '#15803d', bg: '#f0fdf4', icon: Wallet },
+              ...(hayCondonacion ? [{
+                label: 'Condonado', value: fmt0(kpis.condonado),
+                sub: `liquidado sin efectivo · ${pctStr(kpis.condonado, kpis.liquidado)} de lo cobrado`,
+                color: '#be185d', bg: '#fdf2f8', icon: Scissors,
+              }] : []),
               { label: 'Por cobrar',        value: fmt0(kpis.pendiente), sub: 'cartera del devengado del año',     color: '#d97706', bg: '#fffbeb', icon: Clock },
               { label: 'Avance de cobro',   value: `${kpis.avance.toFixed(1)}%`, sub: 'del devengado del año',     color: '#7c3aed', bg: '#faf5ff', icon: TrendingUp },
             ].map(k => (
@@ -543,6 +611,12 @@ export default function ReporteComposicionIngresoCuotas() {
                   Las cuatro bandas suman exactamente el cobro del mes: descomponen la cifra sin alterarla.
                   «Corriente» es el desempeño real del mes; «vencida» es recuperación de cartera y «anticipada»
                   es dinero de meses futuros — ninguna de las dos mide el mes en que entró.
+                  {hayCondonacion && <>
+                    {' '}Las dos últimas columnas son <strong>memo</strong>, no parte de la suma: separan de lo
+                    cobrado la parte <strong>condonada</strong>, que extingue cartera pero no entra al banco ni
+                    genera recibo de ingreso. <strong>Caja</strong> es lo único comparable contra el libro de
+                    ingresos y contra el Estado de Resultados.
+                  </>}
                 </p>
                 <table id="reporte-table" className="table" style={{ width: '100%', fontSize: 12 }}>
                   <thead>
@@ -554,6 +628,8 @@ export default function ReporteComposicionIngresoCuotas() {
                         </th>
                       ))}
                       <th style={cellNum}>Total cobrado</th>
+                      {hayCondonacion && <th style={{ ...cellNum, color: '#be185d' }} title="Parte del cobro liquidada por condonación: extingue el saldo de la cuota pero no entra al banco ni genera recibo de ingreso.">Condonado</th>}
+                      {hayCondonacion && <th style={{ ...cellNum, color: '#15803d' }} title="Cobro menos condonación: el efectivo que sí pasó por caja.">Caja (efectivo)</th>}
                       <th style={cellNum}>% Corriente</th>
                     </tr>
                   </thead>
@@ -567,11 +643,19 @@ export default function ReporteComposicionIngresoCuotas() {
                           </td>
                         ))}
                         <td style={{ ...cellNum, fontWeight: 700 }}>{fmt$(f.total)}</td>
+                        {hayCondonacion && (
+                          <td style={{ ...cellNum, color: f.condonado ? '#be185d' : '#cbd5e1' }}>
+                            {f.condonado ? fmt$(f.condonado) : '—'}
+                          </td>
+                        )}
+                        {hayCondonacion && (
+                          <td style={{ ...cellNum, color: '#15803d', fontWeight: 600 }}>{fmt$(f.caja)}</td>
+                        )}
                         <td style={{ ...cellNum, color: '#16a34a', fontWeight: 600 }}>{pctStr(f.porBanda.CORRIENTE, f.total)}</td>
                       </tr>
                     ))}
                     {matriz.filas.every(f => f.total === 0) && (
-                      <tr><td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                      <tr><td colSpan={hayCondonacion ? 9 : 7} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
                         Sin cobros registrados en {anio} para los módulos seleccionados.
                       </td></tr>
                     )}
@@ -583,16 +667,29 @@ export default function ReporteComposicionIngresoCuotas() {
                         <td key={b} style={{ ...cellNum, color: BANDA_META[b].color }}>{fmt$(matriz.totales[b])}</td>
                       ))}
                       <td style={cellNum}>{fmt$(matriz.granTotal)}</td>
+                      {hayCondonacion && <td style={{ ...cellNum, color: '#be185d' }}>{fmt$(matriz.granCondonado)}</td>}
+                      {hayCondonacion && <td style={{ ...cellNum, color: '#15803d' }}>{fmt$(matriz.granCaja)}</td>}
                       <td style={{ ...cellNum, color: '#16a34a' }}>{pctStr(matriz.totales.CORRIENTE, matriz.granTotal)}</td>
                     </tr>
                     <tr style={{ background: '#f8fafc', fontSize: 11, color: '#64748b' }}>
                       <td>% del cobro</td>
                       {BANDAS.map(b => <td key={b} style={cellNum}>{pctStr(matriz.totales[b], matriz.granTotal)}</td>)}
                       <td style={cellNum}>100%</td>
+                      {hayCondonacion && <td style={cellNum}>{pctStr(matriz.granCondonado, matriz.granTotal)}</td>}
+                      {hayCondonacion && <td style={cellNum}>{pctStr(matriz.granCaja, matriz.granTotal)}</td>}
                       <td />
                     </tr>
                   </tfoot>
                 </table>
+
+                {data && data.condonacionIndeterminada > 0 && (
+                  <p style={{ fontSize: 11, color: '#92400e', marginTop: 8 }}>
+                    <strong>{fmt$(data.condonacionIndeterminada)}</strong> se cobró con varias formas de pago,
+                    una de ellas condonación, y la subcuenta solo guarda el texto concatenado sin los montos:
+                    no se puede saber cuánto de eso fue condonación, así que queda contado como caja.
+                    Afecta a Hípico y Locales, cuyas tablas de cartera no apuntan al recibo que sí trae el desglose.
+                  </p>
+                )}
               </>
             )}
 
@@ -677,7 +774,31 @@ export default function ReporteComposicionIngresoCuotas() {
                   Es otro libro del mismo dinero que las pestañas anteriores (que salen de las subcuentas de cobranza),
                   así que nunca se suman entre sí.
                   {matrizIngreso.centros.length > 0 && <> Centros incluidos: {matrizIngreso.centros.join(' · ')}.</>}
+                  {' '}Ojo: aquí está <strong>todo</strong> el ingreso de esos centros, no solo las cuotas — en Golf
+                  eso incluye green fees, torneos y pensiones, que no tienen cartera y por eso no aparecen en las
+                  demás pestañas.
                 </p>
+
+                {!matrizIngreso.acotado && (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>
+                      No se pudo resolver a qué centro de ingreso pertenecen los módulos seleccionados, así que esta
+                      pestaña muestra el libro <strong>completo</strong> y no solo esos módulos. Se arregla
+                      configurando el producto POS o el concepto de ingreso de sus cuotas.
+                    </span>
+                  </div>
+                )}
+
+                {matrizIngreso.lineaSinDimension && (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
+                    <Info size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>
+                      La línea «<strong>{lineaSel}</strong>» no tiene concepto ni sección con que ubicarse en el libro
+                      de ingresos, así que el filtro de línea no se aplica en esta pestaña (las demás sí lo respetan).
+                    </span>
+                  </div>
+                )}
 
                 {ingreso && !ingreso.clasificacionDisponible && (
                   <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '10px 12px', marginBottom: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, fontSize: 12, color: '#92400e' }}>
@@ -868,6 +989,8 @@ export default function ReporteComposicionIngresoCuotas() {
                       <th style={{ textAlign: 'left' }}>Periodo</th>
                       <th style={{ textAlign: 'left' }}>Clasificación</th>
                       <th style={cellNum}>Monto</th>
+                      {hayCondonacion && <th style={{ ...cellNum, color: '#be185d' }}>Condonado</th>}
+                      {hayCondonacion && <th style={{ ...cellNum, color: '#15803d' }}>Caja</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -891,10 +1014,18 @@ export default function ReporteComposicionIngresoCuotas() {
                           )}
                         </td>
                         <td style={{ ...cellNum, fontWeight: 600 }}>{fmt$(c.monto)}</td>
+                        {hayCondonacion && (
+                          <td style={{ ...cellNum, color: c.condonado ? '#be185d' : '#cbd5e1' }}>
+                            {c.condonado ? fmt$(c.condonado) : '—'}
+                          </td>
+                        )}
+                        {hayCondonacion && (
+                          <td style={{ ...cellNum, color: '#15803d' }}>{fmt$(c.monto - c.condonado)}</td>
+                        )}
                       </tr>
                     ))}
                     {!detalle.length && (
-                      <tr><td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
+                      <tr><td colSpan={hayCondonacion ? 10 : 8} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
                         Sin cobros que cumplan los filtros.
                       </td></tr>
                     )}
@@ -907,6 +1038,8 @@ export default function ReporteComposicionIngresoCuotas() {
                           {detalle.length > 1500 && ' — se muestran las primeras 1,500; el Excel trae todas'}
                         </td>
                         <td style={cellNum}>{fmt$(detalle.reduce((a, c) => a + c.monto, 0))}</td>
+                        {hayCondonacion && <td style={{ ...cellNum, color: '#be185d' }}>{fmt$(detalle.reduce((a, c) => a + c.condonado, 0))}</td>}
+                        {hayCondonacion && <td style={{ ...cellNum, color: '#15803d' }}>{fmt$(detalle.reduce((a, c) => a + c.monto - c.condonado, 0))}</td>}
                       </tr>
                     </tfoot>
                   )}

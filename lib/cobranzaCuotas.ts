@@ -28,6 +28,7 @@
 import { dbCtrl, dbCat, dbGolf, dbHip, dbCfg } from '@/lib/supabase'
 import {
   clasificarBanda, esCargaInicial, periodoDesdeNombre, claveArranque,
+  esFormaCondonacion, SAT_CONDONACION,
   MODULOS_CUOTAS, MODULO_META,
   type ArranqueOperativo, type CobroAplicado, type CobroSinFecha, type CuotaDevengada,
   type ModuloCuotas,
@@ -103,6 +104,20 @@ export type ResultadoCobranza = {
   arranque: ArranqueOperativo
   /** Módulos consultados que devolvieron datos. */
   modulosConDatos: ModuloCuotas[]
+  /**
+   * Centros de ingreso de cada módulo, resueltos desde el catálogo
+   * (cuota → concepto de ingreso → cfg.conceptos_ingreso.id_centro_ingreso_fk).
+   * Es el puente entre las subcuentas de cobranza y el libro de ingresos, y
+   * permite acotar ctrl.recibos_ingreso al mismo universo que se está viendo.
+   * Un módulo sin conceptos configurados no aparece aquí.
+   */
+  centrosPorModulo: Partial<Record<ModuloCuotas, number[]>>
+  /**
+   * Cobro cuya parte condonada no se pudo determinar: la cuota se liquidó con
+   * varias formas de pago y solo quedó el texto concatenado, sin los montos.
+   * Se reporta en vez de repartirse a ojo. Hoy es 0 con los datos reales.
+   */
+  condonacionIndeterminada: number
   /** Avisos para mostrar en pantalla (no son errores). */
   avisos: string[]
   /** Errores de consulta — nunca se tragan en silencio. */
@@ -142,13 +157,54 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
   // fallar la consulta completa y con ella el reporte. Son tablas de config de
   // 1-2 filas, así que traerlas enteras no cuesta nada. Si la columna no está,
   // mesesDevengo cae a 1 = comportamiento actual, y el reporte lo avisa.
-  const [cuotasCfgGolf, carritosCfg, cuotasEstandar, productosPos, cfgHipData] = await Promise.all([
+  const [cuotasCfgGolf, carritosCfg, cuotasEstandar, productosPos, cfgHipData, conceptosCfg, formasPagoCfg] = await Promise.all([
     modulos.includes('golf')   ? dbGolf.from('cat_cuotas_config').select('*')            : Promise.resolve({ data: [] }),
     modulos.includes('golf')   ? dbGolf.from('cfg_carritos').select('*').limit(1)        : Promise.resolve({ data: [] }),
     modulos.includes('residencial') ? dbCfg.from('cuotas_estandar').select('*')          : Promise.resolve({ data: [] }),
     dbGolf.from('cat_productos_pos').select('id, id_concepto_ingreso_fk'),
     modulos.includes('hipico') ? dbHip.from('cfg_hip').select('*').limit(1)              : Promise.resolve({ data: [] }),
+    dbCfg.from('conceptos_ingreso').select('id, id_centro_ingreso_fk'),
+    dbCfg.from('formas_pago').select('id, nombre, codigo_sat'),
   ])
+
+  // Centro de ingreso por concepto — el puente hacia ctrl.recibos_ingreso.
+  const centroPorConcepto = new Map<number, number | null>(
+    ((conceptosCfg as any).data ?? []).map((c: any) => [c.id, c.id_centro_ingreso_fk ?? null]))
+
+  // Formas de pago que liquidan sin efectivo. El id sirve para los módulos que
+  // guardan el desglose de pagos; el nombre, para los que solo dejan el texto.
+  const formasCondonacion = new Set<number>(
+    ((formasPagoCfg as any).data ?? [])
+      .filter((f: any) => String(f.codigo_sat ?? '') === SAT_CONDONACION || esFormaCondonacion(f.nombre))
+      .map((f: any) => f.id as number))
+
+  // Acumuladores del reparto módulo → centros de ingreso. Se llenan con los
+  // conceptos que cada cuota resuelve, así que salen del catálogo y no de un
+  // mapa hardcodeado que se desincronizaría al dar de alta un centro nuevo.
+  const centrosPorModuloSet = new Map<ModuloCuotas, Set<number>>()
+  const registrarCentro = (m: ModuloCuotas, idConceptoFk: number | null) => {
+    if (idConceptoFk == null) return
+    const centro = centroPorConcepto.get(idConceptoFk)
+    if (centro == null) return
+    if (!centrosPorModuloSet.has(m)) centrosPorModuloSet.set(m, new Set())
+    centrosPorModuloSet.get(m)!.add(centro)
+  }
+
+  // Parte condonada de un cobro cuando solo se tiene el texto concatenado de
+  // `forma_pago` (cxc_hip / loc_cxc no guardan el id ni el desglose por monto).
+  // Con una sola forma la respuesta es exacta; con varias no hay forma de saber
+  // cuánto tocó a cada una, así que se declara indeterminada en vez de partirlo
+  // en partes iguales — un número inventado sería peor que un hueco medido.
+  let condonacionIndeterminada = 0
+  const condonadoDesdeTexto = (formaPago: string | null, monto: number): number => {
+    const partes = (formaPago ?? '').split('+').map(s => s.trim()).filter(Boolean)
+    if (!partes.length) return 0
+    const cond = partes.filter(esFormaCondonacion).length
+    if (cond === 0) return 0
+    if (cond === partes.length) return monto
+    condonacionIndeterminada = Math.round((condonacionIndeterminada + monto) * 100) / 100
+    return 0
+  }
 
   // ── Concepto de ingreso: la cuota puede declararlo por producto POS ──────
   // Los cuatro módulos configuran su clasificación con DOS columnas —
@@ -197,12 +253,48 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
     if (error) errores.push(`Golf (cxc_golf): ${error}`)
     else if (rows.length) modulosConDatos.push('golf')
 
+    // ── Reparto exacto de la condonación ──────────────────────────────────
+    // Golf es el único módulo cuya cuota apunta a su recibo (`id_recibo_fk`), y
+    // el recibo sí guarda el monto de cada forma de pago. Con eso la parte
+    // condonada se calcula, no se adivina: se toma la proporción condonada del
+    // recibo y se aplica a lo cobrado de cada cuota que ese recibo liquidó.
+    // Al 2026-09-21 el 100% de los cobros de cxc_golf tienen recibo, incluida
+    // la carga inicial de cartera, así que el texto de `forma_pago` no se usa.
+    // El `order` no es cosmético: son 1,167 filas, o sea más de una página, y
+    // paginar con `range` sin orden estable puede repetir o saltarse filas.
+    const { rows: pagosGolf, error: ePagos } = await traerTodo((d, h) => dbGolf
+      .from('recibos_golf_pagos')
+      .select('id_recibo_fk, id_forma_pago_fk, forma_nombre, monto')
+      .order('id')
+      .range(d, h))
+    if (ePagos) errores.push(`Golf (recibos_golf_pagos): ${ePagos}`)
+
+    const shareCondonPorRecibo = new Map<number, number>()
+    {
+      const acum = new Map<number, { total: number; cond: number }>()
+      for (const p of pagosGolf) {
+        const id = p.id_recibo_fk as number
+        const monto = Number(p.monto) || 0
+        if (!acum.has(id)) acum.set(id, { total: 0, cond: 0 })
+        const a = acum.get(id)!
+        a.total += monto
+        if (formasCondonacion.has(p.id_forma_pago_fk) || esFormaCondonacion(p.forma_nombre)) a.cond += monto
+      }
+      acum.forEach((a, id) => shareCondonPorRecibo.set(id, a.total > 0 ? a.cond / a.total : 0))
+    }
+    const condonadoGolf = (c: any, monto: number): number => {
+      const share = c.id_recibo_fk != null ? shareCondonPorRecibo.get(c.id_recibo_fk) : undefined
+      if (share === undefined) return condonadoDesdeTexto(c.forma_pago, monto)
+      return Math.round(monto * share * 100) / 100
+    }
+
     for (const c of rows) {
       const linea = LINEA_GOLF[c.tipo] ?? c.tipo ?? 'Sin tipo'
       const idConceptoFk = c.tipo === 'PENSION_CARRITO'
         ? conceptoPension
         : (c.id_cuota_config_fk != null ? conceptoPorCuotaCfg.get(c.id_cuota_config_fk) ?? null : null)
       const cliente = nombrePersona(c.cat_socios)
+      registrarCentro('golf', idConceptoFk)
 
       devengado.push({
         key: `golf-${c.id}`, modulo: 'golf', linea,
@@ -230,6 +322,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         cobrado.push({
           key: `golf-c-${c.id}`, modulo: 'golf', linea,
           periodo: c.periodo ?? null, fechaPago: c.fecha_pago, monto: montoCobrado,
+          condonado: condonadoGolf(c, montoCobrado),
           banda: clasificarBanda(c.periodo ?? null, c.fecha_pago),
           esCargaInicial: esCargaInicial('golf', c.fecha_pago, arranque),
           cliente, concepto: c.concepto ?? linea,
@@ -252,6 +345,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
     for (const c of rows) {
       const linea = 'Renta Caballeriza'
       const cliente = nombrePersona(c.cat_arrendatarios)
+      registrarCentro('hipico', conceptoHipico)
       devengado.push({
         key: `hip-${c.id}`, modulo: 'hipico', linea,
         periodo: c.periodo ?? null,
@@ -272,6 +366,9 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         cobrado.push({
           key: `hip-c-${c.id}`, modulo: 'hipico', linea,
           periodo: c.periodo ?? null, fechaPago: c.fecha_pago, monto: montoCobrado,
+          // hip.cxc_hip no apunta a su recibo, así que la condonación solo se
+          // puede leer del texto de `forma_pago` (exacto mientras sea una sola).
+          condonado: condonadoDesdeTexto(c.forma_pago, montoCobrado),
           banda: clasificarBanda(c.periodo ?? null, c.fecha_pago),
           esCargaInicial: esCargaInicial('hipico', c.fecha_pago, arranque),
           cliente, concepto: c.concepto ?? linea, folio: null,
@@ -297,6 +394,7 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
       const cliente = nombrePersona(c.arrendatario)
       const idConceptoFk = resolverConcepto(
         c.asignacion?.unidad?.id_producto_pos_fk, c.asignacion?.unidad?.id_concepto_ingreso_fk)
+      registrarCentro('locales', idConceptoFk)
       devengado.push({
         key: `loc-${c.id}`, modulo: 'locales', linea,
         periodo: c.periodo ?? null,
@@ -317,6 +415,8 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         cobrado.push({
           key: `loc-c-${c.id}`, modulo: 'locales', linea,
           periodo: c.periodo ?? null, fechaPago: c.fecha_pago, monto: montoCobrado,
+          // Igual que Hípico: ctrl.loc_cxc no guarda el id del recibo.
+          condonado: condonadoDesdeTexto(c.forma_pago, montoCobrado),
           banda: clasificarBanda(c.periodo ?? null, c.fecha_pago),
           esCargaInicial: esCargaInicial('locales', c.fecha_pago, arranque),
           cliente, concepto: c.concepto ?? linea, folio: null,
@@ -408,6 +508,8 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
 
     for (const c of cargos) {
       const sec = c.id_lote_fk ? seccionPorLote.get(c.id_lote_fk) : undefined
+      registrarCentro('residencial',
+        c.id_cuota_estandar_fk != null ? conceptoPorCuotaEstandar.get(c.id_cuota_estandar_fk) ?? null : null)
       devengado.push({
         key: `res-${c.id}`, modulo: 'residencial',
         linea: sec?.nombre ?? 'Sin sección',
@@ -447,6 +549,10 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
         key: `res-c-${d.id}`, modulo: 'residencial',
         linea: sec?.nombre ?? 'Sin sección',
         periodo, fechaPago, monto,
+        // Fraccionamiento no registra condonación como forma de pago: su
+        // equivalente es el descuento por pago anticipado, que ya viaja en la
+        // columna `descuento` del devengado y en su propia columna del puente.
+        condonado: 0,
         banda: clasificarBanda(periodo, fechaPago),
         esCargaInicial: esCargaInicial('residencial', fechaPago, arranque),
         cliente: r.propietario || sec?.cve || '—',
@@ -483,7 +589,24 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
     avisos.push(`${cobrosSinFecha.length} cuota(s) con abono registrado pero sin fecha de pago (${total.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}). No se pueden ubicar en ningún mes: aparecen como línea aparte en el puente. Corregirlas en el módulo de cobranza hace que el puente cuadre solo.`)
   }
 
-  return { devengado, cobrado, cobrosSinFecha, arranque, modulosConDatos, avisos, errores, devengoDiferidoDisponible: columnaDevengoPresente }
+  if (condonacionIndeterminada > 0) {
+    avisos.push(`${condonacionIndeterminada.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })} de cobro se liquidó con varias formas de pago, una de ellas condonación, y la subcuenta solo guarda el texto concatenado: no se puede saber cuánto tocó a cada forma. Ese monto queda contado como caja. Afecta a Hípico y Locales, cuyas tablas de cartera no apuntan al recibo que sí tiene el desglose.`)
+  }
+
+  const centrosPorModulo: Partial<Record<ModuloCuotas, number[]>> = {}
+  centrosPorModuloSet.forEach((set, m) => { centrosPorModulo[m] = Array.from(set).sort((a, b) => a - b) })
+
+  for (const m of modulosConDatos) {
+    if (!centrosPorModulo[m]?.length) {
+      avisos.push(`${MODULO_META[m].label}: ninguna de sus cuotas resuelve un concepto de ingreso, así que no se puede saber a qué centro de ingreso corresponde. La pestaña «Ingreso reconocido (libro)» no puede acotarse a este módulo hasta que se configure el producto POS o el concepto de sus cuotas.`)
+    }
+  }
+
+  return {
+    devengado, cobrado, cobrosSinFecha, arranque, modulosConDatos,
+    centrosPorModulo, condonacionIndeterminada,
+    avisos, errores, devengoDiferidoDisponible: columnaDevengoPresente,
+  }
 }
 
 // ── Ingreso reconocido, clasificado (F2) ──────────────────────────────────
@@ -508,7 +631,17 @@ export type IngresoClasificado = {
   idCentroFk: number | null
   centro: string
   origen: 'seccion' | 'concepto'
+  /**
+   * Nombre para mostrar, resuelto SIEMPRE desde el catálogo. El desglose
+   * guarda el nombre denormalizado al momento de capturar y ese texto se
+   * queda viejo cuando el catálogo se renombra: el concepto 16 aparece como
+   * «Reinscripciones/Inscrpciones» en 5 filas y como «Inscripciones» en 2, y
+   * agrupando por texto salían como dos líneas distintas.
+   */
   linea: string
+  /** Dimensión real de la fila — con esto se cruza contra las cuotas. */
+  idConceptoFk: number | null
+  idSeccionFk: number | null
   monto: number
   vencido: number
   corriente: number
@@ -530,8 +663,10 @@ export async function fetchIngresoClasificado(anio: number): Promise<ResultadoIn
   const desde = `${anio}-01-01`
   const hasta = `${anio}-12-31`
 
-  const [{ data: centrosData }, { rows: recibos, error: eRec }] = await Promise.all([
+  const [{ data: centrosData }, { data: conceptosData }, { data: seccionesData }, { rows: recibos, error: eRec }] = await Promise.all([
     dbCfg.from('centros_ingreso').select('id, nombre'),
+    dbCfg.from('conceptos_ingreso').select('id, nombre'),
+    dbCfg.from('secciones').select('id, nombre'),
     traerTodo((d, h) => dbCtrl.from('recibos_ingreso')
       .select('id, folio, fecha, status, monto_total, id_centro_ingreso_fk')
       .eq('status', 'Confirmado')
@@ -541,6 +676,8 @@ export async function fetchIngresoClasificado(anio: number): Promise<ResultadoIn
   if (eRec) errores.push(`Recibos de ingreso: ${eRec}`)
 
   const nombreCentro = new Map<number, string>(((centrosData ?? []) as any[]).map(c => [c.id, c.nombre]))
+  const nombreConcepto = new Map<number, string>(((conceptosData ?? []) as any[]).map(c => [c.id, c.nombre]))
+  const nombreSeccionCat = new Map<number, string>(((seccionesData ?? []) as any[]).map(s => [s.id, s.nombre]))
   const reciboPorId = new Map<number, any>(recibos.map(r => [r.id, r]))
   const ids = recibos.map(r => r.id)
   if (!ids.length) return { filas: [], clasificacionDisponible: true, errores }
@@ -569,14 +706,16 @@ export async function fetchIngresoClasificado(anio: number): Promise<ResultadoIn
   }
 
   const [secs, concs] = await Promise.all([
-    traerDesglose('recibos_ingreso_secciones', 'id, id_recibo_fk, nombre_seccion, monto'),
-    traerDesglose('recibos_ingreso_conceptos', 'id, id_recibo_fk, nombre_concepto, monto'),
+    traerDesglose('recibos_ingreso_secciones', 'id, id_recibo_fk, id_seccion_fk, nombre_seccion, monto'),
+    traerDesglose('recibos_ingreso_conceptos', 'id, id_recibo_fk, id_concepto_fk, nombre_concepto, monto'),
   ])
 
   const armar = (r: any, origen: 'seccion' | 'concepto', linea: string, idRow: number): IngresoClasificado | null => {
     const rec = reciboPorId.get(r.id_recibo_fk)
     if (!rec) return null
     const monto = Number(r.monto) || 0
+    const idConceptoFk = origen === 'concepto' ? (r.id_concepto_fk ?? null) : null
+    const idSeccionFk  = origen === 'seccion'  ? (r.id_seccion_fk  ?? null) : null
     const v = r.monto_vencido    != null ? Number(r.monto_vencido)    : 0
     const c = r.monto_corriente  != null ? Number(r.monto_corriente)  : 0
     const a = r.monto_anticipado != null ? Number(r.monto_anticipado) : 0
@@ -586,7 +725,13 @@ export async function fetchIngresoClasificado(anio: number): Promise<ResultadoIn
       fecha: rec.fecha, folio: rec.folio ?? `#${rec.id}`,
       idCentroFk: rec.id_centro_ingreso_fk ?? null,
       centro: nombreCentro.get(rec.id_centro_ingreso_fk) ?? '(sin centro)',
-      origen, linea, monto,
+      origen,
+      linea:
+        (idConceptoFk != null ? nombreConcepto.get(idConceptoFk) : null) ??
+        (idSeccionFk  != null ? nombreSeccionCat.get(idSeccionFk) : null) ??
+        linea,
+      idConceptoFk, idSeccionFk,
+      monto,
       vencido: v, corriente: c, anticipado: a,
       // Lo no clasificado se muestra como tal en vez de repartirse: un residuo
       // inventado sería peor que un hueco visible.
