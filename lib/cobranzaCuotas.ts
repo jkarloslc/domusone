@@ -43,11 +43,24 @@ const esColumnaFaltante = (e: { code?: string; message?: string }) =>
 
 // PostgREST corta en 1000 filas por respuesta; hay que paginar o se pierde
 // silenciosamente el resto (los reportes que no paginan quedan cortos sin avisar).
-async function traerTodo(build: (desde: number, hasta: number) => any): Promise<{ rows: any[]; error: string | null }> {
+//
+// El `order` y el `range` los pone ESTE helper, no quien lo llama: paginar con
+// `range` sobre una consulta sin orden estable no garantiza nada — Postgres
+// puede devolver las filas en otro orden entre página y página, y entonces la
+// misma fila sale dos veces mientras otra no sale nunca. El resultado son
+// totales mal sumados que nadie detecta, porque el reporte no falla: da una
+// cifra distinta. Pasó desapercibido en 6 consultas, varias sobre tablas de
+// miles de filas (cxc_golf: 3,642), así que la firma obliga a declarar la
+// columna de orden y el builder ya no recibe el rango.
+async function traerTodo(
+  /** Columna de orden estable — la PK salvo que haya una razón para otra cosa. */
+  orden: string,
+  build: () => any,
+): Promise<{ rows: any[]; error: string | null }> {
   const out: any[] = []
   const tam = 1000
   for (let desde = 0; ; desde += tam) {
-    const { data, error } = await build(desde, desde + tam - 1)
+    const { data, error } = await build().order(orden).range(desde, desde + tam - 1)
     if (error) return { rows: out, error: error.message }
     const lote = (data ?? []) as any[]
     out.push(...lote)
@@ -246,10 +259,9 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
   // ── Club Golf ───────────────────────────────────────────────────────────
   // cat_socios vive en el schema golf, igual que cxc_golf: el embed se resuelve.
   if (modulos.includes('golf')) {
-    const { rows, error } = await traerTodo((d, h) => dbGolf.from('cxc_golf')
+    const { rows, error } = await traerTodo('id', () => dbGolf.from('cxc_golf')
       .select(`${COLS_CXC}, id_cuota_config_fk, id_recibo_fk, cat_socios(numero_socio, nombre, apellido_paterno, apellido_materno)`)
-      .neq('status', 'CANCELADO')
-      .range(d, h))
+      .neq('status', 'CANCELADO'))
     if (error) errores.push(`Golf (cxc_golf): ${error}`)
     else if (rows.length) modulosConDatos.push('golf')
 
@@ -260,13 +272,9 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
     // recibo y se aplica a lo cobrado de cada cuota que ese recibo liquidó.
     // Al 2026-09-21 el 100% de los cobros de cxc_golf tienen recibo, incluida
     // la carga inicial de cartera, así que el texto de `forma_pago` no se usa.
-    // El `order` no es cosmético: son 1,167 filas, o sea más de una página, y
-    // paginar con `range` sin orden estable puede repetir o saltarse filas.
-    const { rows: pagosGolf, error: ePagos } = await traerTodo((d, h) => dbGolf
+    const { rows: pagosGolf, error: ePagos } = await traerTodo('id', () => dbGolf
       .from('recibos_golf_pagos')
-      .select('id_recibo_fk, id_forma_pago_fk, forma_nombre, monto')
-      .order('id')
-      .range(d, h))
+      .select('id_recibo_fk, id_forma_pago_fk, forma_nombre, monto'))
     if (ePagos) errores.push(`Golf (recibos_golf_pagos): ${ePagos}`)
 
     const shareCondonPorRecibo = new Map<number, number>()
@@ -335,10 +343,9 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
 
   // ── Hípico ──────────────────────────────────────────────────────────────
   if (modulos.includes('hipico')) {
-    const { rows, error } = await traerTodo((d, h) => dbHip.from('cxc_hip')
+    const { rows, error } = await traerTodo('id', () => dbHip.from('cxc_hip')
       .select(`${COLS_CXC}, cat_arrendatarios(nombre, apellido_paterno, razon_social), ctrl_asignaciones(unidad:cat_caballerizas(clave, nombre))`)
-      .neq('status', 'CANCELADO')
-      .range(d, h))
+      .neq('status', 'CANCELADO'))
     if (error) errores.push(`Hípico (cxc_hip): ${error}`)
     else if (rows.length) modulosConDatos.push('hipico')
 
@@ -382,10 +389,9 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
   // Un solo `alias:tabla` por nivel de embed — apilar dos es inválido en
   // PostgREST y tsc no lo detecta (error en tiempo de query, no de tipos).
   if (modulos.includes('locales')) {
-    const { rows, error } = await traerTodo((d, h) => dbCtrl.from('loc_cxc')
+    const { rows, error } = await traerTodo('id', () => dbCtrl.from('loc_cxc')
       .select(`${COLS_CXC}, arrendatario:loc_arrendatarios(nombre, apellido_paterno, razon_social), asignacion:loc_asignaciones(unidad:loc_propiedades(clave, nombre, id_concepto_ingreso_fk, id_producto_pos_fk))`)
-      .neq('status', 'CANCELADO')
-      .range(d, h))
+      .neq('status', 'CANCELADO'))
     if (error) errores.push(`Locales (loc_cxc): ${error}`)
     else if (rows.length) modulosConDatos.push('locales')
 
@@ -436,36 +442,37 @@ export async function fetchCobranzaCuotas(modulos: ModuloCuotas[] = MODULOS_CUOT
     // dejar la cartera de Fraccionamiento fuera del reporte: sin este respaldo,
     // desplegar el código antes de correr la migración rompería el módulo.
     const COLS_CARGO_BASE = 'id, id_lote_fk, id_cuota_estandar_fk, concepto, monto, monto_pagado, saldo, periodo_mes, periodo_anio, fecha_cargo, status'
-    let { rows: cargos, error: eCargos } = await traerTodo((d, h) => dbCtrl.from('cargos')
+    let { rows: cargos, error: eCargos } = await traerTodo('id', () => dbCtrl.from('cargos')
       .select(`${COLS_CARGO_BASE}, descuento_aplicado, fecha_vencimiento`)
-      .neq('status', 'Cancelado')
-      .range(d, h))
+      .neq('status', 'Cancelado'))
     if (eCargos && esColumnaFaltante({ message: eCargos })) {
       avisos.push('ctrl.cargos aún no tiene `descuento_aplicado` / `fecha_vencimiento`: falta ejecutar la migración 20260920230000. Hasta entonces el descuento por pago anticipado deja saldo residual y no hay antigüedad de saldos en Fraccionamiento.')
-      const retry = await traerTodo((d, h) => dbCtrl.from('cargos')
+      const retry = await traerTodo('id', () => dbCtrl.from('cargos')
         .select(COLS_CARGO_BASE)
-        .neq('status', 'Cancelado')
-        .range(d, h))
+        .neq('status', 'Cancelado'))
       cargos = retry.rows
       eCargos = retry.error
     }
     if (eCargos) errores.push(`Fraccionamiento (cargos): ${eCargos}`)
 
-    const { rows: recibos, error: eRec } = await traerTodo((d, h) => dbCtrl.from('recibos')
+    const { rows: recibos, error: eRec } = await traerTodo('id', () => dbCtrl.from('recibos')
       .select('id, folio, fecha_recibo, fecha_pago, propietario, id_lote_fk, activo')
-      .eq('activo', true)
-      .range(d, h))
+      .eq('activo', true))
     if (eRec) errores.push(`Fraccionamiento (recibos): ${eRec}`)
 
     const idsRecibo = recibos.map(r => r.id)
     let detalles: any[] = []
     if (idsRecibo.length) {
+      // Igual que en `traerDesglose`: el troceo acota la URL, no las filas.
+      // Un recibo de Fraccionamiento aplica a varias cuotas, así que 400
+      // recibos pasan de 1000 filas de detalle sin problema.
       for (let i = 0; i < idsRecibo.length; i += 400) {
-        const { data, error } = await dbCtrl.from('recibos_detalle')
+        const lote = idsRecibo.slice(i, i + 400)
+        const { rows, error } = await traerTodo('id', () => dbCtrl.from('recibos_detalle')
           .select('id, id_recibo_fk, concepto, total, periodo_mes, periodo_anio, id_cargo_fk')
-          .in('id_recibo_fk', idsRecibo.slice(i, i + 400))
-        if (error) { errores.push(`Fraccionamiento (recibos_detalle): ${error.message}`); break }
-        detalles.push(...((data ?? []) as any[]))
+          .in('id_recibo_fk', lote))
+        detalles.push(...rows)
+        if (error) { errores.push(`Fraccionamiento (recibos_detalle): ${error}`); break }
       }
     }
 
@@ -667,11 +674,10 @@ export async function fetchIngresoClasificado(anio: number): Promise<ResultadoIn
     dbCfg.from('centros_ingreso').select('id, nombre'),
     dbCfg.from('conceptos_ingreso').select('id, nombre'),
     dbCfg.from('secciones').select('id, nombre'),
-    traerTodo((d, h) => dbCtrl.from('recibos_ingreso')
+    traerTodo('id', () => dbCtrl.from('recibos_ingreso')
       .select('id, folio, fecha, status, monto_total, id_centro_ingreso_fk')
       .eq('status', 'Confirmado')
-      .gte('fecha', desde).lte('fecha', hasta)
-      .range(d, h)),
+      .gte('fecha', desde).lte('fecha', hasta)),
   ])
   if (eRec) errores.push(`Recibos de ingreso: ${eRec}`)
 
@@ -688,19 +694,27 @@ export async function fetchIngresoClasificado(anio: number): Promise<ResultadoIn
   let clasificacionDisponible = true
   const COLS_CLASIF = ', monto_vencido, monto_corriente, monto_anticipado'
 
+  // El troceo de 400 ids reparte la URL, no las filas: un lote de 400 recibos
+  // puede traer más de 1000 filas de desglose (un recibo lleva varios conceptos)
+  // y `in` no limita nada, así que dentro de cada lote también hay que paginar.
+  // Hoy no truncaba de milagro (440 conceptos + 343 secciones sobre 327
+  // recibos), pero Fraccionamiento arranca su cobranza el 2026-10-01 y ahí el
+  // desglose por recibo crece.
   const traerDesglose = async (tabla: string, cols: string) => {
     const out: any[] = []
     for (let i = 0; i < ids.length; i += 400) {
       const lote = ids.slice(i, i + 400)
-      let { data, error } = await dbCtrl.from(tabla).select(cols + COLS_CLASIF).in('id_recibo_fk', lote)
+      let { rows, error } = await traerTodo('id', () => dbCtrl.from(tabla)
+        .select(cols + COLS_CLASIF).in('id_recibo_fk', lote))
       if (error) {
-        if (!esColumnaFaltante(error)) { errores.push(`${tabla}: ${error.message}`); return out }
+        if (!esColumnaFaltante({ message: error })) { errores.push(`${tabla}: ${error}`); return out }
         clasificacionDisponible = false
-        const retry = await dbCtrl.from(tabla).select(cols).in('id_recibo_fk', lote)
-        if (retry.error) { errores.push(`${tabla}: ${retry.error.message}`); return out }
-        data = retry.data
+        const retry = await traerTodo('id', () => dbCtrl.from(tabla)
+          .select(cols).in('id_recibo_fk', lote))
+        if (retry.error) { errores.push(`${tabla}: ${retry.error}`); return out }
+        rows = retry.rows
       }
-      out.push(...((data ?? []) as any[]))
+      out.push(...rows)
     }
     return out
   }
