@@ -433,13 +433,27 @@ export default function FlujoEfectivoPage() {
     setFiltroCC(''); setFiltroArea('')
   }
 
-  const centroIngSel = centrosIng.find(c => String(c.id) === filtroCentroIng)
-  const esSecciones  = centroIngSel?.tipo_desglose === 'secciones'
-  const esConceptos  = centroIngSel?.tipo_desglose === 'conceptos'
-  const conceptosOpts = filtroCentroIng
-    ? conceptosF.filter(c => c.id_centro_ingreso_fk === Number(filtroCentroIng) || c.id_centro_ingreso_fk === null)
-    : conceptosF
-  const areasFFiltradas = filtroCC ? areasF.filter(a => a.id_centro_costo_fk === Number(filtroCC)) : areasF
+  // Opciones de los filtros: solo lo que existe en las partidas del presupuesto
+  // cargado, no el catálogo completo. Con el catálogo, casi cualquier opción
+  // dejaba la tabla vacía (CC Corporativo en el presupuesto de Golf) y el
+  // desglose por concepto usaba el centro del catálogo, no el de la partida
+  // (Pension de Golf cuelga del centro Golf, el catálogo la pone en Pensiones).
+  const idsDe = (rows: Partida[], k: keyof Partida) =>
+    new Set(rows.map(p => p[k]).filter((v): v is number => typeof v === 'number'))
+  const ingParts = partidas.filter(p => p.tipo === 'ingreso')
+  const egrParts = partidas.filter(p => p.tipo === 'egreso')
+  const ingDelCentro = filtroCentroIng ? ingParts.filter(p => p.id_centro_ingreso_fk === Number(filtroCentroIng)) : ingParts
+  const egrDelCC     = filtroCC ? egrParts.filter(p => p.id_centro_costo_fk === Number(filtroCC)) : egrParts
+  const centrosIngOpts   = centrosIng.filter(c => idsDe(ingParts, 'id_centro_ingreso_fk').has(c.id))
+  const seccionesOpts    = seccionesF.filter(s => idsDe(ingDelCentro, 'id_seccion_fk').has(s.id))
+  const conceptosOpts    = conceptosF.filter(c => idsDe(ingDelCentro, 'id_concepto_fk').has(c.id))
+  const centrosCostoOpts = centrosCostoF.filter(c => idsDe(egrParts, 'id_centro_costo_fk').has(c.id))
+  const areasFFiltradas  = areasF.filter(a => idsDe(egrDelCC, 'id_area_fk').has(a.id))
+  // Un centro puede tener partidas por sección Y por concepto (Mantto.
+  // Fraccionamiento: cuotas por sección + otros ingresos por concepto), así
+  // que se muestra cada desglose que tenga datos, no el `tipo_desglose` del centro.
+  const esSecciones = !!filtroCentroIng && seccionesOpts.length > 0
+  const esConceptos = !!filtroCentroIng && conceptosOpts.length > 0
   const hayFiltroIng = !!(filtroCentroIng || filtroSeccion || filtroConcepto)
   const hayFiltroEgr = !!(filtroCC || filtroArea)
 
@@ -698,17 +712,17 @@ export default function FlujoEfectivoPage() {
               onChange={e => { setFiltroCentroIng(e.target.value); setFiltroSeccion(''); setFiltroConcepto('') }}
               style={selStyle(!!filtroCentroIng, ING, 148)}>
               <option value="">Todos los centros</option>
-              {centrosIng.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {centrosIngOpts.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
             {esSecciones && (
-              <select value={filtroSeccion} onChange={e => setFiltroSeccion(e.target.value)}
+              <select value={filtroSeccion} onChange={e => { setFiltroSeccion(e.target.value); setFiltroConcepto('') }}
                 style={selStyle(!!filtroSeccion, ING, 130)}>
                 <option value="">Todas las secciones</option>
-                {seccionesF.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                {seccionesOpts.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             )}
-            {esConceptos && conceptosOpts.length > 0 && (
-              <select value={filtroConcepto} onChange={e => setFiltroConcepto(e.target.value)}
+            {esConceptos && (
+              <select value={filtroConcepto} onChange={e => { setFiltroConcepto(e.target.value); setFiltroSeccion('') }}
                 style={selStyle(!!filtroConcepto, ING, 140)}>
                 <option value="">Todos los conceptos</option>
                 {conceptosOpts.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
@@ -736,7 +750,7 @@ export default function FlujoEfectivoPage() {
               onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}
               style={selStyle(!!filtroCC, EGR, 148)}>
               <option value="">Todos los CC</option>
-              {centrosCostoF.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {centrosCostoOpts.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
             {filtroCC && (
               <select value={filtroArea} onChange={e => setFiltroArea(e.target.value)}
