@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import { dbCtrl } from '@/lib/supabase'
+import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
 import { useAuth } from '@/lib/AuthContext'
 import { Plus, BookOpen, Loader, Save, Settings, BookMarked, Edit2 } from 'lucide-react'
 import Link from 'next/link'
@@ -109,12 +110,8 @@ export default function CapturaPpto() {
     return list
   }, [])
 
-  const loadPartidas = useCallback(async (modulo?: string) => {
-    let q = dbCtrl.from('ppto_partidas').select('id, nombre, tipo, orden, clasificacion')
-      .eq('activo', true)
-    if (modulo && modulo !== 'General') q = (q as any).eq('modulo', modulo)
-    const { data } = await q.order('tipo').order('orden').order('nombre')
-    setPartidas((data ?? []) as Partida[])
+  const loadPartidas = useCallback(async (pptoId: number, modulo?: string) => {
+    setPartidas(await cargarPartidasPresupuesto<Partida>('id, nombre, tipo, orden, clasificacion', pptoId, modulo))
   }, [])
 
   const loadDet = useCallback(async (id: number) => {
@@ -141,11 +138,11 @@ export default function CapturaPpto() {
 
   useEffect(() => {
     setLoading(true)
-    Promise.all([loadPresupuestos(), loadPartidas()]).then(([list]) => {
+    loadPresupuestos().then(async list => {
       if (list.length > 0) {
         setSelId(list[0].id)
         loadDet(list[0].id)
-        loadPartidas(list[0].modulo)
+        await loadPartidas(list[0].id, list[0].modulo)
       }
       setLoading(false)
     })
@@ -344,7 +341,7 @@ export default function CapturaPpto() {
                   const id = Number(e.target.value)
                   setSelId(id)
                   const p = presupuestos.find(x => x.id === id)
-                  if (p) loadPartidas(p.modulo)
+                  if (p) loadPartidas(p.id, p.modulo)
                 }}>
                 {presupuestos.map(p => (
                   <option key={p.id} value={p.id}>{p.anio} — [{p.modulo}] {p.nombre}</option>

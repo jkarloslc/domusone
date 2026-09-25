@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
+import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
 import { Loader, RefreshCw, Wallet, Info, Layers, List, Trash2, Save, Building2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
@@ -181,21 +182,17 @@ export default function FlujoEfectivoPage() {
   const loadEverything = useCallback(async (pptoId: number, anio: number, modulo: string, silent = false) => {
     if (!silent) setLoading(true); else setRefreshing(true)
 
-    let partidasQ = dbCtrl.from('ppto_partidas')
-      .select('id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion')
-      .eq('activo', true)
-      .eq('incluir_flujo', true)
-    if (modulo) partidasQ = (partidasQ as any).eq('modulo', modulo)
-
-    const [{ data: pData }, { data: det }, { data: manual }] = await Promise.all([
-      partidasQ.order('tipo').order('orden').order('nombre'),
+    const [pData, { data: det }, { data: manual }] = await Promise.all([
+      cargarPartidasPresupuesto<Partida>(
+        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion',
+        pptoId, modulo, q => q.eq('incluir_flujo', true)),
       dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
       dbCtrl.from('ppto_presupuesto_real_manual')
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
     ])
 
-    const parts = (pData ?? []) as Partida[]
+    const parts = pData
     setPartidas(parts)
 
     // Presupuestado: idénticos montos ya cargados en Captura (mismos que Presupuestos)

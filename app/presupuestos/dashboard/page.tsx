@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp } from '@/lib/supabase'
+import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
 import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
 import { Loader, RefreshCw, TrendingUp, TrendingDown, Scale, AlertTriangle, BookOpen, Layers, List, Building2 } from 'lucide-react'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
@@ -245,14 +246,10 @@ export default function DashboardPpto() {
     if (!silent) setLoading(true)
     else setRefreshing(true)
 
-    // Partidas activas filtradas por módulo del presupuesto
-    let qPartidas = dbCtrl.from('ppto_partidas')
-      .select('id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion, devengado_igual_a_cobro')
-      .eq('activo', true)
-      .eq('incluir_presupuesto', true)
-    if (modulo) qPartidas = (qPartidas as any).eq('modulo', modulo)
-    const { data: pData } = await qPartidas
-    const parts = (pData ?? []) as Partida[]
+    // Partidas del módulo + las de otro módulo capturadas en este presupuesto
+    const parts = await cargarPartidasPresupuesto<Partida>(
+      'id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion, devengado_igual_a_cobro',
+      pptoId, modulo, q => q.eq('incluir_presupuesto', true))
     setPartidas(parts)
 
     // Presupuesto detalle
