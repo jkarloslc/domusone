@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Download, Users, ClipboardList, Ticket } from 'lucide-react'
+import { Download, Users, ClipboardList, Ticket, UserCheck } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { dbGolf } from '@/lib/supabase'
 import { PrintBar } from './utils'
@@ -9,7 +9,7 @@ import { PrintBar } from './utils'
 // Tipos
 // ---------------------------------------------------------------------------
 
-type Tab = 'resumen' | 'asignaciones' | 'uso'
+type Tab = 'resumen' | 'asignaciones' | 'uso' | 'invitados'
 
 type Categoria = { id: number; nombre: string }
 type TipoPase  = { id: number; nombre: string }
@@ -49,7 +49,19 @@ type Movimiento = {
   ctrl_accesos: { fecha_entrada: string } | null
 }
 
-type Acomp = { id_pase_mov_fk: number; nombre: string }
+type Acomp = { id_pase_mov_fk: number; nombre: string; id_invitado_fk: number | null }
+
+type InvitadoInfo = { nombre: string; id: number | null }
+
+type FilaInvitado = {
+  key: string
+  nombre: string
+  conFicha: boolean
+  visitas: number
+  anfitriones: string[]
+  primera: string
+  ultima: string
+}
 
 type FilaResumen = {
   socio: Socio
@@ -138,7 +150,7 @@ export default function ReporteGolfPasesInvitados() {
   // Datos
   const [lotes, setLotes]         = useState<Lote[]>([])
   const [movs, setMovs]           = useState<Movimiento[]>([])
-  const [invitadoPorMov, setInvitadoPorMov] = useState<Record<number, string>>({})
+  const [invitadoPorMov, setInvitadoPorMov] = useState<Record<number, InvitadoInfo>>({})
   const [loading, setLoading]     = useState(false)
   const [buscado, setBuscado]     = useState(false)
   const [error, setError]         = useState<string | null>(null)
@@ -188,14 +200,35 @@ export default function ReporteGolfPasesInvitados() {
 
       // Invitado de cada consumo: se liga por ctrl_acceso_acomp.id_pase_mov_fk
       const idsConsumo = movsData.filter(m => m.tipo === 'CONSUMO').map(m => m.id)
-      const mapa: Record<number, string> = {}
+      const acomps: Acomp[] = []
       for (let i = 0; i < idsConsumo.length; i += 200) {
         const { data, error: e } = await dbGolf.from('ctrl_acceso_acomp')
-          .select('id_pase_mov_fk, nombre')
+          .select('id_pase_mov_fk, nombre, id_invitado_fk')
           .in('id_pase_mov_fk', idsConsumo.slice(i, i + 200))
         if (e) throw e
-        ;(data as Acomp[] ?? []).forEach(a => { mapa[a.id_pase_mov_fk] = a.nombre })
+        acomps.push(...((data ?? []) as Acomp[]))
       }
+
+      // Nombre oficial desde la ficha del catálogo (cat_invitados) cuando el acompañante está ligado
+      const idsFicha = Array.from(new Set(acomps.map(a => a.id_invitado_fk).filter((x): x is number => x != null)))
+      const fichas: Record<number, string> = {}
+      for (let i = 0; i < idsFicha.length; i += 200) {
+        const { data, error: e } = await dbGolf.from('cat_invitados')
+          .select('id, nombre, apellido_paterno, apellido_materno')
+          .in('id', idsFicha.slice(i, i + 200))
+        if (e) throw e
+        ;(data ?? []).forEach((f: any) => {
+          fichas[f.id] = [f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ')
+        })
+      }
+
+      const mapa: Record<number, InvitadoInfo> = {}
+      acomps.forEach(a => {
+        mapa[a.id_pase_mov_fk] = {
+          id: a.id_invitado_fk,
+          nombre: (a.id_invitado_fk != null ? fichas[a.id_invitado_fk] : null) ?? a.nombre,
+        }
+      })
       setInvitadoPorMov(mapa)
     } catch (err: any) {
       setError(err?.message ?? 'Error al consultar')
@@ -226,8 +259,13 @@ export default function ReporteGolfPasesInvitados() {
   const asignaciones = useMemo(() => movsFiltrados.filter(m => m.tipo === 'ASIGNACION'), [movsFiltrados])
   const consumos     = useMemo(() => movsFiltrados.filter(m => m.tipo === 'CONSUMO'), [movsFiltrados])
 
-  const nombreInvitado = (m: Movimiento) =>
-    invitadoPorMov[m.id] ?? (m.motivo ?? '').replace(/^Invitado:\s*/i, '') ?? '—'
+  const infoInvitado = (m: Movimiento): InvitadoInfo =>
+    invitadoPorMov[m.id] ?? { id: null, nombre: (m.motivo ?? '').replace(/^Invitado:\s*/i, '') }
+  const nombreInvitado = (m: Movimiento) => infoInvitado(m).nombre
+
+  // Sin ficha, se agrupa por nombre normalizado (sin acentos, mayúsculas, espacios colapsados)
+  const normNombre = (n: string) =>
+    n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toUpperCase()
 
   // -------------------------------------------------------------------------
   // Resumen por socio
@@ -277,13 +315,32 @@ export default function ReporteGolfPasesInvitados() {
     vigentes: a.vigentes + f.vigentes, vencidos: a.vencidos + f.vencidos,
   }), { asignados: 0, usados: 0, ajustes: 0, vigentes: 0, vencidos: 0 }), [resumen])
 
-  const invitadosDistintos = useMemo(
-    () => new Set(consumos.map(m => nombreInvitado(m).trim().toUpperCase()).filter(Boolean)).size,
-    [consumos, invitadoPorMov] // eslint-disable-line react-hooks/exhaustive-deps
-  )
+  const porInvitado = useMemo<FilaInvitado[]>(() => {
+    const grupos = new Map<string, FilaInvitado & { _anf: Set<string> }>()
+    for (const m of consumos) {
+      const info = infoInvitado(m)
+      const nombre = info.nombre.trim()
+      if (!nombre) continue
+      const key = info.id != null ? `f${info.id}` : `n${normNombre(nombre)}`
+      const fecha = (m.ctrl_accesos?.fecha_entrada ?? m.created_at).slice(0, 10)
+      let g = grupos.get(key)
+      if (!g) {
+        g = { key, nombre, conFicha: info.id != null, visitas: 0, anfitriones: [], primera: fecha, ultima: fecha, _anf: new Set() }
+        grupos.set(key, g)
+      }
+      g.visitas += 1
+      if (fecha < g.primera) g.primera = fecha
+      if (fecha > g.ultima) g.ultima = fecha
+      g._anf.add(socioLabel(socioMap.get(m.id_socio_fk)))
+    }
+    return Array.from(grupos.values())
+      .map(({ _anf, ...g }) => ({ ...g, anfitriones: Array.from(_anf).sort() }))
+      .sort((a, b) => b.visitas - a.visitas || a.nombre.localeCompare(b.nombre))
+  }, [consumos, invitadoPorMov, socioMap]) // eslint-disable-line react-hooks/exhaustive-deps
+  const invitadosDistintos = porInvitado.length
   const pctUso = tot.asignados > 0 ? Math.round((tot.usados / tot.asignados) * 100) : 0
 
-  const filasTab = tab === 'resumen' ? resumen.length : tab === 'asignaciones' ? asignaciones.length : consumos.length
+  const filasTab = tab === 'resumen' ? resumen.length : tab === 'asignaciones' ? asignaciones.length : tab === 'uso' ? consumos.length : porInvitado.length
 
   // -------------------------------------------------------------------------
   // Exportar a Excel
@@ -330,6 +387,13 @@ export default function ReporteGolfPasesInvitados() {
     ])
     wsUso['!cols'] = [{ wch: 13 }, { wch: 10 }, { wch: 34 }, { wch: 22 }, { wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 22 }]
     XLSX.utils.book_append_sheet(wb, wsUso, 'Uso')
+
+    const wsInv = XLSX.utils.aoa_to_sheet([
+      ['Invitado', 'Con ficha', 'Visitas con pase', 'Socios anfitriones', 'Primera visita', 'Última visita', 'Anfitriones'],
+      ...porInvitado.map(g => [g.nombre, g.conFicha ? 'Sí' : 'No', g.visitas, g.anfitriones.length, fmtFecha(g.primera), fmtFecha(g.ultima), g.anfitriones.join('; ')]),
+    ])
+    wsInv['!cols'] = [{ wch: 34 }, { wch: 10 }, { wch: 16 }, { wch: 18 }, { wch: 13 }, { wch: 13 }, { wch: 60 }]
+    XLSX.utils.book_append_sheet(wb, wsInv, 'Por invitado')
 
     XLSX.writeFile(wb, `Pases-Invitados_${fechaDesde}_a_${fechaHasta}.xlsx`)
   }
@@ -448,7 +512,8 @@ export default function ReporteGolfPasesInvitados() {
           <div style={{ display: 'flex', gap: 4, marginBottom: 12, borderBottom: '1px solid #e2e8f0' }}>
             {tabBtn('resumen', 'Resumen por socio', Users, 'var(--blue)')}
             {tabBtn('asignaciones', `Asignaciones (${asignaciones.length})`, ClipboardList, '#16a34a')}
-            {tabBtn('uso', `Uso por invitado (${consumos.length})`, Ticket, '#dc2626')}
+            {tabBtn('uso', `Uso (${consumos.length})`, Ticket, '#dc2626')}
+            {tabBtn('invitados', `Por invitado (${porInvitado.length})`, UserCheck, '#7c3aed')}
           </div>
 
           <div id="reporte-print-area">
@@ -527,6 +592,45 @@ export default function ReporteGolfPasesInvitados() {
                           </tr>
                         )
                       })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
+
+            {/* ---------------- Agrupado por invitado ---------------- */}
+            {tab === 'invitados' && (
+              porInvitado.length === 0 ? (
+                <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
+                  Sin uso de pases en el período
+                </div>
+              ) : (
+                <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+                  <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    {thead([['Invitado'], ['Ficha'], ['Visitas con pase', true], ['Socios anfitriones', true], ['Primera visita'], ['Última visita'], ['Anfitriones']])}
+                    <tbody>
+                      {porInvitado.map((g, i) => (
+                        <tr key={g.key} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
+                          <td style={{ ...TD, color: 'var(--text-primary)', fontWeight: 500 }}>{g.nombre}</td>
+                          <td style={TD}>
+                            <span title={g.conFicha ? 'Ligado al catálogo de invitados' : 'Sin ficha: agrupado por nombre'}
+                              style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
+                                background: g.conFicha ? '#f0fdf4' : '#fffbeb', color: g.conFicha ? '#16a34a' : '#d97706' }}>
+                              {g.conFicha ? 'Sí' : 'Por nombre'}
+                            </span>
+                          </td>
+                          <td style={{ ...TDR, fontWeight: 700, color: '#7c3aed' }}>{g.visitas}</td>
+                          <td style={TDR}>{g.anfitriones.length}</td>
+                          <td style={{ ...TD, whiteSpace: 'nowrap', fontSize: 11 }}>{fmtFecha(g.primera)}</td>
+                          <td style={{ ...TD, whiteSpace: 'nowrap', fontSize: 11 }}>{fmtFecha(g.ultima)}</td>
+                          <td style={{ ...TD, fontSize: 11 }}>{g.anfitriones.join(' · ')}</td>
+                        </tr>
+                      ))}
+                      <tr style={{ background: '#f1f5f9', borderTop: '2px solid #cbd5e1', fontWeight: 700 }}>
+                        <td style={TD} colSpan={2}>TOTAL ({porInvitado.length} invitados)</td>
+                        <td style={{ ...TDR, color: '#7c3aed' }}>{porInvitado.reduce((a, g) => a + g.visitas, 0)}</td>
+                        <td style={TD} colSpan={4} />
+                      </tr>
                     </tbody>
                   </table>
                 </div>
