@@ -20,7 +20,11 @@ export async function getConfig() {
   return cachedConfig
 }
 
-export function PrintBar({ title, count, reportTitle }: { title: string; count: number; reportTitle?: string }) {
+export function PrintBar({ title, count, reportTitle, extra, hideCSV }: {
+  title: string; count: number; reportTitle?: string
+  extra?: React.ReactNode   // botones adicionales (p. ej. Exportar Excel), antes de CSV/Imprimir
+  hideCSV?: boolean         // ocultar CSV cuando el reporte ya exporta a Excel
+}) {
 
   const handlePrint = async () => {
     const cfg = await getConfig()
@@ -175,9 +179,12 @@ export function PrintBar({ title, count, reportTitle }: { title: string; count: 
         <strong style={{ color: 'var(--text-primary)' }}>{count}</strong> registros
       </span>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="btn-secondary" onClick={handleCSV} style={{ fontSize: 12 }}>
-          <Download size={13} /> Exportar CSV
-        </button>
+        {extra}
+        {!hideCSV && (
+          <button className="btn-secondary" onClick={handleCSV} style={{ fontSize: 12 }}>
+            <Download size={13} /> Exportar CSV
+          </button>
+        )}
         <button className="btn-secondary" onClick={handlePrint} style={{ fontSize: 12 }}>
           <Printer size={13} /> Imprimir
         </button>

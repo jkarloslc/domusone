@@ -465,18 +465,10 @@ export default function ReporteGolfPasesInvitados() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ marginBottom: 16 }}>
         <button className="btn-primary" onClick={fetchData} disabled={loading} style={{ fontSize: 13 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && !error && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button className="btn-ghost" onClick={exportarExcel} style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Download size={14} /> Exportar Excel
-            </button>
-            <PrintBar title="Pases-Invitados" count={filasTab} reportTitle="Asignación y Uso de Pases para Invitados — Club Golf" />
-          </div>
-        )}
       </div>
 
       {error && (
@@ -515,6 +507,18 @@ export default function ReporteGolfPasesInvitados() {
             {tabBtn('uso', `Uso (${consumos.length})`, Ticket, '#dc2626')}
             {tabBtn('invitados', `Por invitado (${porInvitado.length})`, UserCheck, '#7c3aed')}
           </div>
+
+          <PrintBar
+            title="Pases-Invitados"
+            count={filasTab}
+            reportTitle="Asignación y Uso de Pases para Invitados — Club Golf"
+            hideCSV
+            extra={
+              <button className="btn-secondary" onClick={exportarExcel} style={{ fontSize: 12 }}>
+                <Download size={13} /> Exportar Excel
+              </button>
+            }
+          />
 
           <div id="reporte-print-area">
             {/* ---------------- Resumen ---------------- */}
