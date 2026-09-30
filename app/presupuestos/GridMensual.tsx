@@ -28,11 +28,13 @@ const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabu
 
 const SIN_AGRUPADOR = 'Sin Agrupador'
 
-export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda }: {
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback }: {
   filas: FilaGrid[]; detMap: DetMap; realMap: DetMap
   labels: LabelsClas; netoLabel: string; archivo: string
   /** Clic en un monto Real: abre el detalle de movimientos (solo métrica Real). */
   onCelda?: (c: CeldaInfo) => void
+  /** true si el presupuesto de esa partida/mes usa el monto de Cobro por no haber Generado capturado. */
+  pptoFallback?: (pid: number, mes: number) => boolean
   vista: Vista; agrupadores: { id: number; nombre: string; orden: number }[]
 }) {
   const [metrica, setMetrica] = useState<Metrica>('real')
@@ -157,7 +159,10 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
   // Monto clicable (solo métrica Real, celdas ≠ 0): abre el detalle de OP/recibos.
   // En acumulado corrido la celda del mes m cubre Ene..m; la columna Total, el año.
   function Monto({ v, l, tipo, ms }: { v: number; l: Linea; tipo: 'ingreso' | 'egreso'; ms: number[] }) {
-    if (!onCelda || metrica !== 'real' || v === 0) return <>{show(v)}</>
+    // Con Presupuesto o Variación, marca con * los meses cuyo presupuesto es un sustituto.
+    const marca = metrica !== 'real' && !!pptoFallback && l.ids.some(id => ms.some(k => pptoFallback(id, k)))
+    const mk = marca ? <span title="Generado sin capturar: se usa el monto de Cobro" style={{ color: '#7c3aed', fontWeight: 700, marginLeft: 2, cursor: 'help' }}>*</span> : null
+    if (!onCelda || metrica !== 'real' || v === 0) return <>{show(v)}{mk}</>
     return (
       <button onClick={() => onCelda({ ids: l.ids, nombre: l.nombre, tipo, meses: ms })}
         title="Ver detalle"

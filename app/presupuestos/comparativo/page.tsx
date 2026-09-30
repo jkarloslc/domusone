@@ -35,7 +35,7 @@ type Partida     = {
 type Agrupador = { id: number; nombre: string; orden: number }
 type Proveedor = { id: number; nombre: string }
 type DetMap = Record<number, Record<number, number>>
-type FilaPartida = Partida & { pptoVal: number; realVal: number; varAbs: number; varPct: number | null }
+type FilaPartida = Partida & { pptoVal: number; realVal: number; varAbs: number; varPct: number | null; pptoFallback: boolean }
 type FilaGrupo   = { id: string; nombre: string; orden: number; pptoVal: number; realVal: number; varAbs: number; varPct: number | null; partidas: FilaPartida[] }
 type DetalleTransaccion = {
   fecha: string; monto: number
@@ -612,9 +612,11 @@ export default function ComparativoPage() {
   const esIngreso = (pid: number) => partidas.find(p => p.id === pid)?.tipo === 'ingreso'
 
   /** true si la partida no tiene devengado esperado capturado y se cae a `monto`. */
+  function pptoFallbackMes(pid: number, m: number) {
+    return base === 'devengado' && detDevMap[pid]?.[m] == null && (detMap[pid]?.[m] ?? 0) !== 0
+  }
   function pptoEsFallback(pid: number) {
-    if (base !== 'devengado') return false
-    return getMeses().some(m => detDevMap[pid]?.[m] == null && detMap[pid]?.[m] != null)
+    return getMeses().some(m => pptoFallbackMes(pid, m))
   }
 
   function pptoPartida(pid: number) {
@@ -674,7 +676,7 @@ export default function ComparativoPage() {
       const realVal = realPartida(p.id)
       const varAbs  = realVal - pptoVal
       const varPct  = pptoVal > 0 ? Math.round(((realVal - pptoVal) / pptoVal) * 100) : null
-      return { ...p, pptoVal, realVal, varAbs, varPct }
+      return { ...p, pptoVal, realVal, varAbs, varPct, pptoFallback: pptoEsFallback(p.id) }
     })
     // Operativo se sigue ocultando en $0 (son cientos de partidas por CC/área).
     // Financiero/Intercompañías siempre se muestran, aunque sigan en $0 —
@@ -1079,6 +1081,11 @@ export default function ComparativoPage() {
         </div>
       ) : (
         <>
+          {base === 'devengado' && filas.some(f => f.pptoFallback) && (
+            <div style={{ fontSize: 12, color: '#7c3aed', marginBottom: 6 }}>
+              <strong>*</strong> Generado esperado sin capturar: el presupuesto de esa partida usa el monto de Cobro. Captúralo en la pestaña Captura, serie Generado.
+            </div>
+          )}
           {modo === 'resumen' && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
               <button className="btn-ghost" onClick={exportarResumen}
@@ -1091,7 +1098,7 @@ export default function ComparativoPage() {
           {modo === 'mensual' ? (
             <GridMensual filas={filas} detMap={pptoMensual} realMap={realMensual}
               vista={vista} agrupadores={agrupadores}
-              archivo="Comparativo-Presupuesto-vs-Real" onCelda={handleCelda} labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
+              archivo="Comparativo-Presupuesto-vs-Real" onCelda={handleCelda} pptoFallback={pptoFallbackMes} labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
           ) : (
           <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -1287,7 +1294,7 @@ export default function ComparativoPage() {
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                       <td style={td}>{p.nombre}</td>
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                        {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                        {p.pptoVal > 0 ? <>{fmt(p.pptoVal)}{p.pptoFallback && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
                       </td>
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                         {p.realVal > 0 ? fmt(p.realVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
@@ -1440,6 +1447,11 @@ function totalSeccionRows(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
   return rows.reduce((s, r) => s + r[field], 0)
 }
 
+function FallbackMark() {
+  return <span title="Generado sin capturar: se usa el monto de Cobro"
+    style={{ color: '#7c3aed', fontWeight: 700, marginLeft: 3, cursor: 'help' }}>*</span>
+}
+
 function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRowsConcepto, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, onManual, onDrill, onDrillOps }: {
   labels: { ingresos: string; egresos: string; balance: string }
   ingRows: FilaPartida[]; egrRows: FilaPartida[]
@@ -1473,7 +1485,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
               <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>{p.descripcion && <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{p.descripcion}</span>}</td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                {p.pptoVal > 0 ? <>{fmt(p.pptoVal)}{p.pptoFallback && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                 {p.realVal > 0
@@ -1501,7 +1513,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
               <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                {g.pptoVal > 0 ? <MontoDrillButton monto={g.pptoVal} onClick={() => onDrill(g.nombre, 'ingreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
+                {g.pptoVal > 0 ? <><MontoDrillButton monto={g.pptoVal} onClick={() => onDrill(g.nombre, 'ingreso', g.partidas)} fmt={fmt} />{g.partidas.some(x => x.pptoFallback) && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                 {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => onDrill(g.nombre, 'ingreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
@@ -1542,7 +1554,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
               <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>{p.descripcion && <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{p.descripcion}</span>}</td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                {p.pptoVal > 0 ? fmt(p.pptoVal) : <span style={{ color: '#cbd5e1' }}>—</span>}
+                {p.pptoVal > 0 ? <>{fmt(p.pptoVal)}{p.pptoFallback && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                 {p.realVal > 0
@@ -1570,7 +1582,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
               <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{g.nombre}</span></td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
-                {g.pptoVal > 0 ? <MontoDrillButton monto={g.pptoVal} onClick={() => onDrill(g.nombre, 'egreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
+                {g.pptoVal > 0 ? <><MontoDrillButton monto={g.pptoVal} onClick={() => onDrill(g.nombre, 'egreso', g.partidas)} fmt={fmt} />{g.partidas.some(x => x.pptoFallback) && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
               </td>
               <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                 {g.realVal > 0 ? <MontoDrillButton monto={g.realVal} onClick={() => onDrill(g.nombre, 'egreso', g.partidas)} fmt={fmt} /> : <span style={{ color: '#cbd5e1' }}>—</span>}
