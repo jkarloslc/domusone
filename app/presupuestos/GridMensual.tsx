@@ -1,5 +1,7 @@
 'use client'
 import { useState } from 'react'
+import * as XLSX from 'xlsx'
+import { Download } from 'lucide-react'
 
 type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type DetMap = Record<number, Record<number, number>>
@@ -25,19 +27,24 @@ const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabu
 
 const SIN_AGRUPADOR = 'Sin Agrupador'
 
-export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel }: {
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo }: {
   filas: FilaGrid[]; detMap: DetMap; realMap: DetMap
-  labels: LabelsClas; netoLabel: string
+  labels: LabelsClas; netoLabel: string; archivo: string
   vista: Vista; agrupadores: { id: number; nombre: string; orden: number }[]
 }) {
   const [metrica, setMetrica] = useState<Metrica>('real')
   const [ocultarVacios, setOcultarVacios] = useState(false)
+  const [acum, setAcum] = useState(false)
 
   const mesesTodos = Array.from({ length: 12 }, (_, i) => i + 1)
   const ppto = (pid: number, m: number) => detMap[pid]?.[m] ?? 0
   const real = (pid: number, m: number) => realMap[pid]?.[m] ?? 0
-  const valor = (pid: number, m: number) =>
+  // valorMes = monto del mes; valor = lo que se muestra (corrido si Acumulado).
+  // Los totales de fila siempre suman valorMes (el corrido termina en el mismo total).
+  const valorMes = (pid: number, m: number) =>
     metrica === 'real' ? real(pid, m) : metrica === 'ppto' ? ppto(pid, m) : real(pid, m) - ppto(pid, m)
+  const valor = (pid: number, m: number) =>
+    acum ? mesesTodos.filter(k => k <= m).reduce((s, k) => s + valorMes(pid, k), 0) : valorMes(pid, m)
 
   // Líneas visibles según la vista: partida, concepto (tipo_gasto por CC) o agrupador.
   // Misma lógica de agrupación que la vista Resumen.
@@ -61,6 +68,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
     return Array.from(map.values()).sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
   }
   const valorLinea = (l: Linea, m: number) => l.ids.reduce((s, id) => s + valor(id, m), 0)
+  const totalLinea = (l: Linea) => meses.reduce((s, m) => s + l.ids.reduce((a, id) => a + valorMes(id, m), 0), 0)
 
   // Meses sin ningún movimiento (ni ppto ni real) en las filas mostradas
   const meses = ocultarVacios
@@ -68,7 +76,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
     : mesesTodos
 
   const sumaFilas = (rows: FilaGrid[], m: number) => rows.reduce((s, r) => s + valor(r.id, m), 0)
-  const totalFila = (rows: FilaGrid[]) => meses.reduce((s, m) => s + sumaFilas(rows, m), 0)
+  const totalFila = (rows: FilaGrid[]) => meses.reduce((s, m) => s + rows.reduce((a, r) => a + valorMes(r.id, m), 0), 0)
 
   // Color de una celda de variación: ingreso → más real que ppto es bueno; egreso → al revés
   const colorVar = (v: number, tipo: 'ingreso' | 'egreso') =>
@@ -107,7 +115,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
         <tr><td colSpan={meses.length + 2} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, letterSpacing: '.06em',
           textTransform: 'uppercase', color: fg, background: bg }}>{label}</td></tr>
         {lineasDe(rows).map(r => {
-          const t = meses.reduce((s, m) => s + valorLinea(r, m), 0)
+          const t = totalLinea(r)
           return (
             <tr key={r.key} style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ ...stickyBase, background: '#fff', padding: '6px 12px 6px 22px', fontSize: 12, color: '#334155', minWidth: 220, maxWidth: 280,
@@ -128,7 +136,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
   // Flujo neto de un conjunto: ingresos − egresos con la métrica activa
   function FilaNeto({ label, ing, egr, dark }: { label: string; ing: FilaGrid[]; egr: FilaGrid[]; dark?: boolean }) {
     const neto = (m: number) => sumaFilas(ing, m) - sumaFilas(egr, m)
-    const total = meses.reduce((s, m) => s + neto(m), 0)
+    const total = totalFila(ing) - totalFila(egr)
     const bg = dark ? '#1e293b' : '#eef2ff'
     const colorDe = (v: number) => dark ? (v >= 0 ? '#86efac' : '#fca5a5') : (v >= 0 ? '#15803d' : '#dc2626')
     const td = (v: number, extra?: React.CSSProperties): React.CSSProperties =>
@@ -141,6 +149,36 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
         <td style={td(total, { borderLeft: '1px solid #475569' })}>{show(total)}</td>
       </tr>
     )
+  }
+
+  function exportarExcel() {
+    const tag = { real: 'Real', ppto: 'Presupuesto', var: 'Variacion' }[metrica]
+    const aoa: (string | number)[][] = [['Partida', ...meses.map(m => MESES[m - 1]), 'Total']]
+    const bloque = (label: string, rows: FilaGrid[]) => {
+      if (rows.length === 0) return
+      aoa.push([label.toUpperCase()])
+      lineasDe(rows).forEach(l => aoa.push([l.nombre, ...meses.map(m => valorLinea(l, m)), totalLinea(l)]))
+      aoa.push([`Total ${label.replace(/ \(.*\)/, '')}`, ...meses.map(m => sumaFilas(rows, m)), totalFila(rows)])
+    }
+    const neto = (label: string, ing: FilaGrid[], egr: FilaGrid[]) =>
+      aoa.push([label, ...meses.map(m => sumaFilas(ing, m) - sumaFilas(egr, m)), totalFila(ing) - totalFila(egr)])
+    CLASIFICACIONES.forEach(clas => {
+      const ing = ingAll.filter(f => (f.clasificacion ?? 'operativo') === clas)
+      const egr = egrAll.filter(f => (f.clasificacion ?? 'operativo') === clas)
+      if (ing.length === 0 && egr.length === 0) return
+      bloque(LABELS[clas].ingresos, ing); bloque(LABELS[clas].egresos, egr)
+      if (ing.length > 0 && egr.length > 0) neto(LABELS[clas].balance, ing, egr)
+      aoa.push([])
+    })
+    if (ingAll.length > 0 && egrAll.length > 0) neto(netoLabel, ingAll, egrAll)
+    const ws = XLSX.utils.aoa_to_sheet(aoa)
+    ws['!cols'] = [{ wch: 42 }, ...meses.map(() => ({ wch: 13 })), { wch: 15 }]
+    ws['!freeze'] = { xSplit: 1, ySplit: 1 } as any
+    // Formato numérico de miles en todas las celdas numéricas
+    Object.keys(ws).forEach(k => { if (k[0] !== '!' && typeof ws[k].v === 'number') ws[k].z = '#,##0;-#,##0;"-"' })
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, `${tag}${acum ? ' acum' : ''}`.slice(0, 31))
+    XLSX.writeFile(wb, `${archivo}_${tag}${acum ? '-acumulado' : ''}_${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
 
   return (
@@ -162,9 +200,17 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
           <input type="checkbox" checked={ocultarVacios} onChange={e => setOcultarVacios(e.target.checked)} />
           Ocultar meses sin movimiento
         </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#64748b', cursor: 'pointer' }}>
+          <input type="checkbox" checked={acum} onChange={e => setAcum(e.target.checked)} />
+          Acumulado corrido
+        </label>
         {metrica === 'var' && (
           <span style={{ fontSize: 11, color: '#94a3b8' }}>Variación = Real − Presupuesto</span>
         )}
+        <button className="btn-ghost" onClick={exportarExcel}
+          style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 10px' }}>
+          <Download size={13} /> Exportar Excel
+        </button>
       </div>
       <div style={{ overflowX: 'auto', maxHeight: '70vh' }}>
         <table id="reporte-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 12 }}>

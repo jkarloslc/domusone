@@ -1045,7 +1045,7 @@ export default function ComparativoPage() {
           {modo === 'mensual' ? (
             <GridMensual filas={filas} detMap={pptoMensual} realMap={realMensual}
               vista={vista} agrupadores={agrupadores}
-              labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
+              archivo="Comparativo-Presupuesto-vs-Real" labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
           ) : (
           <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

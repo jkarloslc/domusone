@@ -848,7 +848,7 @@ export default function FlujoEfectivoPage() {
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
             <GridMensual filas={filas} detMap={detMap} realMap={realMap} vista={vista} agrupadores={agrupadores}
-              labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
+              archivo="Flujo-de-Efectivo" labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
           ) : (
           <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
