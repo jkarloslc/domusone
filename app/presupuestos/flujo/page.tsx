@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
-import { Loader, RefreshCw, Wallet, Info, Layers, List, Trash2, Save, Building2 } from 'lucide-react'
+import { Loader, RefreshCw, Wallet, Info, Layers, List, Trash2, Save, Building2, CalendarRange } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/AuthContext'
@@ -12,6 +12,7 @@ import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
 import { PrintBar } from '@/app/reportes/utils'
+import GridMensual from './GridMensual'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -165,6 +166,7 @@ export default function FlujoEfectivoPage() {
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
   const [vista, setVista] = useState<'detalle' | 'concepto' | 'agrupado'>('detalle')
+  const [modo, setModo] = useState<'resumen' | 'mensual'>('resumen')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
   // Modal añadir/editar real manual (partidas adicionales de flujo, financiamiento, etc.)
@@ -507,7 +509,7 @@ export default function FlujoEfectivoPage() {
   }
 
   // ── Helpers de agregación ──────────────────────────────────────
-  const getMeses = () => filterMes === 0 ? Array.from({ length: 12 }, (_, i) => i + 1) : [filterMes]
+  const getMeses = () => (filterMes === 0 || modo === 'mensual') ? Array.from({ length: 12 }, (_, i) => i + 1) : [filterMes]
 
   function pptoPartida(pid: number) {
     return getMeses().reduce((s, m) => s + (detMap[pid]?.[m] ?? 0), 0)
@@ -643,7 +645,7 @@ export default function FlujoEfectivoPage() {
     </div>
   )
 
-  const mesLabel = filterMes === 0
+  const mesLabel = (filterMes === 0 || modo === 'mensual')
     ? 'Acumulado anual'
     : `${MESES[filterMes - 1]} ${selPpto?.anio ?? ''}`
 
@@ -689,7 +691,8 @@ export default function FlujoEfectivoPage() {
 
         {/* Mes */}
         <select className="input" style={{ width: 180, flex: '0 0 auto' }}
-          value={filterMes} onChange={e => setFilterMes(Number(e.target.value))}>
+          value={filterMes} onChange={e => setFilterMes(Number(e.target.value))}
+          disabled={modo === 'mensual'} title={modo === 'mensual' ? 'La vista mensual muestra los 12 meses' : undefined}>
           <option value={0}>Acumulado año</option>
           {MESES.map((m, i) => (
             <option key={i + 1} value={i + 1}>{m} {selPpto?.anio}</option>
@@ -784,8 +787,28 @@ export default function FlujoEfectivoPage() {
           ))}
         </div>
 
-        {/* Vista: Detalle / Concepto (CC) / Agrupado */}
+        {/* Modo: Resumen (una columna por período) / Mensual (grid 12 meses) */}
         <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
+          {([
+            { v: 'resumen', label: 'Resumen', icon: List },
+            { v: 'mensual', label: 'Mensual', icon: CalendarRange },
+          ] as const).map(({ v, label, icon: Icon }) => (
+            <button key={v} onClick={() => setModo(v)}
+              style={{
+                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: modo === v ? '#fff' : 'transparent',
+                color: modo === v ? '#1e293b' : '#64748b',
+                fontWeight: modo === v ? 600 : 400,
+                boxShadow: modo === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+              }}>
+              <Icon size={12} /> {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Vista: Detalle / Concepto (CC) / Agrupado */}
+        {modo === 'resumen' && <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {([
             { v: 'detalle',  label: 'Detalle',  icon: List },
             { v: 'concepto', label: 'Concepto', icon: Building2 },
@@ -803,7 +826,7 @@ export default function FlujoEfectivoPage() {
               <Icon size={12} /> {label}
             </button>
           ))}
-        </div>
+        </div>}
       </div>
 
       {/* Tabla */}
@@ -814,7 +837,7 @@ export default function FlujoEfectivoPage() {
       ) : (
         <>
           <PrintBar title="Flujo-de-Efectivo" count={ingRows.length + egrRows.length}
-            reportTitle={`Flujo de Efectivo — ${mesLabel} · ${selPpto?.nombre ?? ''} · Vista ${VISTA_LABEL[vista]}`} />
+            reportTitle={`Flujo de Efectivo — ${mesLabel} · ${selPpto?.nombre ?? ''} · ${modo === 'mensual' ? 'Vista Mensual' : `Vista ${VISTA_LABEL[vista]}`}`} />
           <style>{`
             @media print {
               #reporte-print-area .ppto-print-band { page-break-after: avoid !important; break-after: avoid !important; }
@@ -823,6 +846,9 @@ export default function FlujoEfectivoPage() {
             }
           `}</style>
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          {modo === 'mensual' ? (
+            <GridMensual filas={filas} detMap={detMap} realMap={realMap} />
+          ) : (
           <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
@@ -879,6 +905,7 @@ export default function FlujoEfectivoPage() {
             </tbody>
           </table>
           </div>
+          )}
           </div>
         </>
       )}
