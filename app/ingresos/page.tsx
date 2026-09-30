@@ -256,19 +256,19 @@ function ReciboModal({
   const initSecRowsVal = () =>
     secciones.map(s => ({ id_seccion_fk: s.id, nombre_seccion: s.nombre, monto: 0, notas: '', monto_vencido: null, monto_corriente: null, monto_anticipado: null }))
 
-  const CENTRO_CUOTAS_ID = 2
+  // Centro de cuotas = su agrupador tiene el flag es_cuotas_fraccionamiento
+  const esCuotas = (id: unknown) => { const c = centros.find(x => x.id === Number(id)); return !!c && esCentroCuotas(c) }
   const descripcionCuotas = (fecha: string) =>
     `Cobranza del ${fecha} - Cuotas Mantenimiento y Servicios`
 
   const set = (k: string, v: any) => setForm(f => {
     const next = { ...f, [k]: v }
     if (!recibo) {
-      if (k === 'id_centro_ingreso_fk' && Number(v) === CENTRO_CUOTAS_ID) {
+      if (k === 'id_centro_ingreso_fk' && esCuotas(v)) {
         next.descripcion = descripcionCuotas(next.fecha)
-      } else if (k === 'id_centro_ingreso_fk' && Number(v) !== CENTRO_CUOTAS_ID &&
-                 Number(f.id_centro_ingreso_fk) === CENTRO_CUOTAS_ID) {
+      } else if (k === 'id_centro_ingreso_fk' && !esCuotas(v) && esCuotas(f.id_centro_ingreso_fk)) {
         next.descripcion = ''
-      } else if (k === 'fecha' && Number(next.id_centro_ingreso_fk) === CENTRO_CUOTAS_ID) {
+      } else if (k === 'fecha' && esCuotas(next.id_centro_ingreso_fk)) {
         next.descripcion = descripcionCuotas(v)
       }
     }
