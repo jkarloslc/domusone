@@ -12,7 +12,7 @@ import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
 import { PrintBar } from '@/app/reportes/utils'
-import GridMensual from '../GridMensual'
+import GridMensual, { type CeldaInfo } from '../GridMensual'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -626,11 +626,29 @@ export default function FlujoEfectivoPage() {
   const provMap = Object.fromEntries(proveedores.map(pr => [pr.id, pr.nombre]))
 
   function handleDrillOps(p: FilaPartida) {
+    setDrillPeriodo(null)
     const meses = getMeses()
     const rows = (realDetalle[p.id] ?? [])
       .filter(r => meses.includes(new Date(r.fecha + 'T12:00:00').getMonth() + 1))
       .sort((a, b) => a.fecha.localeCompare(b.fecha))
     setDrillOps({ partida: p.nombre, tipo: p.tipo, conOp: p.fuente_real === 'op_area', rows })
+  }
+
+
+  // Clic en una celda del grid mensual: abre el mismo detalle que el Resumen,
+  // acotado a los meses de la celda. Una partida manual abre su captura.
+  const [drillPeriodo, setDrillPeriodo] = useState<string | null>(null)
+  function handleCelda(c: CeldaInfo) {
+    const ps = filas.filter(f => c.ids.includes(f.id))
+    if (ps.length === 1 && ps[0].fuente_real === 'manual') { handleManual(ps[0].id); return }
+    const rows = ps.flatMap(p => realDetalle[p.id] ?? [])
+      .filter(r => c.meses.includes(new Date(r.fecha + 'T12:00:00').getMonth() + 1))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha))
+    const per = c.meses.length === 12 ? `Año ${selPpto?.anio ?? ''}`
+      : c.meses.length === 1 ? `${MESES[c.meses[0] - 1]} ${selPpto?.anio ?? ''}`
+      : `${MESES[c.meses[0] - 1]}–${MESES[c.meses[c.meses.length - 1] - 1]} ${selPpto?.anio ?? ''}`
+    setDrillPeriodo(per)
+    setDrillOps({ partida: c.nombre, tipo: c.tipo, conOp: ps.some(p => p.fuente_real === 'op_area'), rows })
   }
 
   if (loading) return (
@@ -848,7 +866,7 @@ export default function FlujoEfectivoPage() {
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
             <GridMensual filas={filas} detMap={detMap} realMap={realMap} vista={vista} agrupadores={agrupadores}
-              archivo="Flujo-de-Efectivo" labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
+              archivo="Flujo-de-Efectivo" onCelda={handleCelda} labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
           ) : (
           <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -1081,10 +1099,10 @@ export default function FlujoEfectivoPage() {
         <ModalShell
           modulo="presupuestos"
           titulo={`Real — ${drillOps.partida}`}
-          subtitulo={`${drillOps.rows.length} movimiento${drillOps.rows.length !== 1 ? 's' : ''} · ${mesLabel}`}
+          subtitulo={`${drillOps.rows.length} movimiento${drillOps.rows.length !== 1 ? 's' : ''} · ${drillPeriodo ?? mesLabel}`}
           icono={Wallet}
           maxWidth={620}
-          onClose={() => setDrillOps(null)}
+          onClose={() => { setDrillOps(null); setDrillPeriodo(null) }}
           footer={<button className="btn-secondary" onClick={() => setDrillOps(null)}>Cerrar</button>}
         >
           {drillOps.rows.length === 0 ? (

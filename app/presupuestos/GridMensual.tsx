@@ -9,6 +9,7 @@ export type FilaGrid = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'; clasificacion: Clasificacion
   orden: number; tipo_gasto: string | null; id_centro_costo_fk: number | null; id_agrupador_fk: number | null
 }
+export type CeldaInfo = { ids: number[]; nombre: string; tipo: 'ingreso' | 'egreso'; meses: number[] }
 export type Vista = 'detalle' | 'concepto' | 'agrupado'
 type Linea = { key: string; nombre: string; orden: number; ids: number[] }
 type Metrica = 'real' | 'ppto' | 'var'
@@ -27,9 +28,11 @@ const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabu
 
 const SIN_AGRUPADOR = 'Sin Agrupador'
 
-export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo }: {
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda }: {
   filas: FilaGrid[]; detMap: DetMap; realMap: DetMap
   labels: LabelsClas; netoLabel: string; archivo: string
+  /** Clic en un monto Real: abre el detalle de movimientos (solo métrica Real). */
+  onCelda?: (c: CeldaInfo) => void
   vista: Vista; agrupadores: { id: number; nombre: string; orden: number }[]
 }) {
   const [metrica, setMetrica] = useState<Metrica>('real')
@@ -120,8 +123,8 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
             <tr key={r.key} style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ ...stickyBase, background: '#fff', padding: '6px 12px 6px 22px', fontSize: 12, color: '#334155', minWidth: 220, maxWidth: 280,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.nombre}>{r.nombre}</td>
-              {meses.map(m => { const v = valorLinea(r, m); return <td key={m} style={cell(v, tipo)}>{show(v)}</td> })}
-              <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #e2e8f0', background: '#f8fafc' }}>{show(t)}</td>
+              {meses.map(m => { const v = valorLinea(r, m); return <td key={m} style={cell(v, tipo)}><Monto v={v} l={r} tipo={tipo} ms={acum ? mesesTodos.filter(k => k <= m) : [m]} /></td> })}
+              <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #e2e8f0', background: '#f8fafc' }}><Monto v={t} l={r} tipo={tipo} ms={mesesTodos} /></td>
             </tr>
           )
         })}
@@ -148,6 +151,20 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
         {meses.map(m => <td key={m} style={td(neto(m))}>{show(neto(m))}</td>)}
         <td style={td(total, { borderLeft: '1px solid #475569' })}>{show(total)}</td>
       </tr>
+    )
+  }
+
+  // Monto clicable (solo métrica Real, celdas ≠ 0): abre el detalle de OP/recibos.
+  // En acumulado corrido la celda del mes m cubre Ene..m; la columna Total, el año.
+  function Monto({ v, l, tipo, ms }: { v: number; l: Linea; tipo: 'ingreso' | 'egreso'; ms: number[] }) {
+    if (!onCelda || metrica !== 'real' || v === 0) return <>{show(v)}</>
+    return (
+      <button onClick={() => onCelda({ ids: l.ids, nombre: l.nombre, tipo, meses: ms })}
+        title="Ver detalle"
+        style={{ font: 'inherit', color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+          textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
+        {show(v)}
+      </button>
     )
   }
 
