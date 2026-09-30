@@ -230,7 +230,7 @@ export default function ComparativoPage() {
     const [pData, { data: det }, { data: manual }] = await Promise.all([
       cargarPartidasPresupuesto<Partida>(
         'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion, devengado_igual_a_cobro',
-        pptoId, modulo, q => q.eq('incluir_presupuesto', true)),
+        pptoId, modulo, q => q.eq('incluir_presupuesto', true).eq('clasificacion', 'operativo')),
       dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto, monto_devengado').eq('id_presupuesto_fk', pptoId),
       dbCtrl.from('ppto_presupuesto_real_manual')
@@ -756,7 +756,9 @@ export default function ComparativoPage() {
       .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
   }
 
-  const CLASIFICACIONES: Clasificacion[] = ['operativo', 'financiero', 'intercompanias']
+  // Financiero/Intercompañías (movimientos netos, sin IVA) solo viven en Flujo;
+  // aquí se excluyen desde la carga de partidas.
+  const CLASIFICACIONES: Clasificacion[] = ['operativo']
 
   function handleManual(pid: number) {
     setManualPid(pid); setManualMes(filterMes || new Date().getMonth() + 1)
