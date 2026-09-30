@@ -22,7 +22,7 @@ type FormaPagoRow = { id_recibo_fk: number; nombre_forma_pago: string; monto: nu
 
 type Centro = CentroIngresoAgr
 
-type TabMode = 'tipo' | 'centro'
+type TabMode = 'agrupador' | 'centro'
 
 const TIPO_COLOR: Record<string, string> = {
   golf:            '#059669',
@@ -31,14 +31,6 @@ const TIPO_COLOR: Record<string, string> = {
   caballerizas:    '#d97706',
   otro:            '#64748b',
 }
-const TIPO_LABEL: Record<string, string> = {
-  golf:            'Golf',
-  cuotas:          'Cuotas Fraccionamiento',
-  rentas_espacios: 'Rentas / Espacios',
-  caballerizas:    'Caballerizas',
-  otro:            'Otro',
-}
-
 export default function ReporteIngresos() {
   const [recibos, setRecibos]         = useState<Recibo[]>([])
   const [centros, setCentros]         = useState<Centro[]>([])
