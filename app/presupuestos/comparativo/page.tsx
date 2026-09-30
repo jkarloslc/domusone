@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
-import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2 } from 'lucide-react'
+import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2, CalendarRange } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/AuthContext'
@@ -12,6 +12,7 @@ import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
 import { PrintBar } from '@/app/reportes/utils'
+import GridMensual from '../GridMensual'
 import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
@@ -205,6 +206,7 @@ export default function ComparativoPage() {
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
   const [vista, setVista] = useState<'detalle' | 'concepto' | 'agrupado'>('detalle')
+  const [modo, setModo] = useState<'resumen' | 'mensual'>('resumen')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
   // Modal añadir/editar real manual
@@ -605,7 +607,7 @@ export default function ComparativoPage() {
     !realDevMap[p.id] && (detDevMap[p.id] || detMap[p.id]))
 
   // ── Helpers de agregación ──────────────────────────────────────
-  const getMeses = () => filterMes === 0 ? Array.from({ length: 12 }, (_, i) => i + 1) : [filterMes]
+  const getMeses = () => (filterMes === 0 || modo === 'mensual') ? Array.from({ length: 12 }, (_, i) => i + 1) : [filterMes]
 
   const esIngreso = (pid: number) => partidas.find(p => p.id === pid)?.tipo === 'ingreso'
 
@@ -634,6 +636,22 @@ export default function ComparativoPage() {
     const fuente = (base === 'devengado' && esIngreso(pid) && !ventaDiaria) ? realDevMap : realMap
     return getMeses().reduce((s, m) => s + (fuente[pid]?.[m] ?? 0), 0)
   }
+
+  // Mapas partida→mes→monto con la MISMA regla de base (cobro/devengado) que
+  // pptoPartida/realPartida, para que el grid mensual sume igual que el Resumen.
+  const mesesAnio = Array.from({ length: 12 }, (_, i) => i + 1)
+  const pptoMensual: DetMap = {}
+  const realMensual: DetMap = {}
+  partidas.forEach(p => {
+    const fPpto = base === 'devengado' ? detDevMap : detMap
+    const ventaDiaria = p.devengado_igual_a_cobro
+    const fReal = (base === 'devengado' && p.tipo === 'ingreso' && !ventaDiaria) ? realDevMap : realMap
+    pptoMensual[p.id] = {}; realMensual[p.id] = {}
+    mesesAnio.forEach(m => {
+      pptoMensual[p.id][m] = fPpto[p.id]?.[m] ?? (base === 'devengado' ? (detMap[p.id]?.[m] ?? 0) : 0)
+      realMensual[p.id][m] = fReal[p.id]?.[m] ?? 0
+    })
+  })
 
   // ── Datos de tabla ──────────────────────────────────────────────
   const filas: FilaPartida[] = partidas
@@ -778,7 +796,7 @@ export default function ComparativoPage() {
     </div>
   )
 
-  const mesLabel = filterMes === 0
+  const mesLabel = (filterMes === 0 || modo === 'mensual')
     ? 'Acumulado anual'
     : `${MESES[filterMes - 1]} ${selPpto?.anio ?? ''}`
 
@@ -809,7 +827,8 @@ export default function ComparativoPage() {
 
         {/* Mes */}
         <select className="input" style={{ width: 180, flex: '0 0 auto' }}
-          value={filterMes} onChange={e => setFilterMes(Number(e.target.value))}>
+          value={filterMes} onChange={e => setFilterMes(Number(e.target.value))}
+          disabled={modo === 'mensual'} title={modo === 'mensual' ? 'La vista mensual muestra los 12 meses' : undefined}>
           <option value={0}>Acumulado año</option>
           {MESES.map((m, i) => (
             <option key={i + 1} value={i + 1}>{m} {selPpto?.anio}</option>
@@ -923,6 +942,26 @@ export default function ComparativoPage() {
           ))}
         </div>
 
+        {/* Modo: Resumen (una columna por período) / Mensual (grid 12 meses) */}
+        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
+          {([
+            { v: 'resumen', label: 'Resumen', icon: List },
+            { v: 'mensual', label: 'Mensual', icon: CalendarRange },
+          ] as const).map(({ v, label, icon: Icon }) => (
+            <button key={v} onClick={() => setModo(v)}
+              style={{
+                padding: '4px 14px', borderRadius: 18, border: 'none', cursor: 'pointer', fontSize: 12,
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: modo === v ? '#fff' : 'transparent',
+                color: modo === v ? '#1e293b' : '#64748b',
+                fontWeight: modo === v ? 600 : 400,
+                boxShadow: modo === v ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+              }}>
+              <Icon size={12} /> {label}
+            </button>
+          ))}
+        </div>
+
         {/* Vista: Detalle / Concepto (CC) / Agrupado */}
         <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {([
@@ -994,7 +1033,7 @@ export default function ComparativoPage() {
       ) : (
         <>
           <PrintBar title="Comparativo-Presupuesto-vs-Real" count={ingRows.length + egrRows.length}
-            reportTitle={`Comparativo Presupuesto vs Real — ${mesLabel} · ${selPpto?.nombre ?? ''} · Vista ${VISTA_LABEL[vista]}`} />
+            reportTitle={`Comparativo Presupuesto vs Real — ${mesLabel} · ${selPpto?.nombre ?? ''} · ${modo === 'mensual' ? `Vista Mensual · ${VISTA_LABEL[vista]}` : `Vista ${VISTA_LABEL[vista]}`}`} />
           <style>{`
             @media print {
               #reporte-print-area .ppto-print-band { page-break-after: avoid !important; break-after: avoid !important; }
@@ -1003,6 +1042,11 @@ export default function ComparativoPage() {
             }
           `}</style>
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          {modo === 'mensual' ? (
+            <GridMensual filas={filas} detMap={pptoMensual} realMap={realMensual}
+              vista={vista} agrupadores={agrupadores}
+              labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
+          ) : (
           <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
@@ -1059,6 +1103,7 @@ export default function ComparativoPage() {
             </tbody>
           </table>
           </div>
+          )}
           </div>
         </>
       )}

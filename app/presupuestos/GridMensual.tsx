@@ -13,11 +13,7 @@ type Metrica = 'real' | 'ppto' | 'var'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const CLASIFICACIONES: Clasificacion[] = ['operativo', 'financiero', 'intercompanias']
-const LABELS: Record<Clasificacion, { ingresos: string; egresos: string; balance: string }> = {
-  operativo:      { ingresos: 'Ingresos (cobrado)',               egresos: 'Egresos (pagado)',               balance: 'Flujo Operativo' },
-  financiero:     { ingresos: 'Ingreso Financiero (cobrado)',      egresos: 'Egreso Financiero (pagado)',      balance: 'Flujo Financiero' },
-  intercompanias: { ingresos: 'Ingreso Intercompañías (cobrado)',  egresos: 'Egreso Intercompañías (pagado)',  balance: 'Flujo Intercompañías' },
-}
+export type LabelsClas = Record<Clasificacion, { ingresos: string; egresos: string; balance: string }>
 const METRICAS: { v: Metrica; label: string }[] = [
   { v: 'real', label: 'Real' },
   { v: 'ppto', label: 'Presupuesto' },
@@ -29,8 +25,9 @@ const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabu
 
 const SIN_AGRUPADOR = 'Sin Agrupador'
 
-export default function GridMensual({ filas, detMap, realMap, vista, agrupadores }: {
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel }: {
   filas: FilaGrid[]; detMap: DetMap; realMap: DetMap
+  labels: LabelsClas; netoLabel: string
   vista: Vista; agrupadores: { id: number; nombre: string; orden: number }[]
 }) {
   const [metrica, setMetrica] = useState<Metrica>('real')
@@ -192,7 +189,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
               )
             })}
             {ingAll.length > 0 && egrAll.length > 0 && (
-              <FilaNeto label="Flujo Neto de Efectivo" ing={ingAll} egr={egrAll} dark />
+              <FilaNeto label={netoLabel} ing={ingAll} egr={egrAll} dark />
             )}
           </tbody>
         </table>

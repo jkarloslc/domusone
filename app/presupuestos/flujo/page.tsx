@@ -12,7 +12,7 @@ import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
 import { PrintBar } from '@/app/reportes/utils'
-import GridMensual from './GridMensual'
+import GridMensual from '../GridMensual'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Presupuesto = { id: number; anio: number; nombre: string; status: string; modulo: string }
@@ -847,7 +847,8 @@ export default function FlujoEfectivoPage() {
           `}</style>
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
-            <GridMensual filas={filas} detMap={detMap} realMap={realMap} vista={vista} agrupadores={agrupadores} />
+            <GridMensual filas={filas} detMap={detMap} realMap={realMap} vista={vista} agrupadores={agrupadores}
+              labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
           ) : (
           <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
