@@ -234,6 +234,19 @@ const CATALOGOS: CatConfig[] = [
     ],
   },
   {
+    key:    'agrupadores_ingreso',
+    tabla:  'agrupadores_ingreso',
+    label:  'Agrupadores de Centros de Ingreso',
+    icon:   ArrowUpCircle,
+    color:  '#0d9488',
+    desc:   'Agrupa centros de ingreso para filtrar como "Agrupador/Centro de Ingreso" en reportes, recibos y presupuestos',
+    sortBy: 'orden',
+    campos: [
+      { key: 'nombre', label: 'Nombre *',           type: 'text',   required: true },
+      { key: 'orden',  label: 'Orden de aparición', type: 'number' },
+    ],
+  },
+  {
     key:   'centros_ingreso',
     tabla: 'centros_ingreso',
     label: 'Centros de Ingreso',
@@ -245,6 +258,7 @@ const CATALOGOS: CatConfig[] = [
       { key: 'codigo',        label: 'Código',          type: 'text' },
       { key: 'tipo',          label: 'Tipo',            type: 'select',
         staticOptions: ['golf', 'cuotas', 'rentas_espacios', 'caballerizas', 'otro'] },
+      { key: 'id_agrupador_fk', label: 'Agrupador', type: 'select', selectTabla: 'agrupadores_ingreso' },
       { key: 'tipo_desglose', label: 'Tipo de Captura', type: 'select',
         staticOptions: ['unico', 'secciones', 'frentes', 'conceptos'] },
       // Desde esta fecha el ingreso del centro se deriva del corte de cobranza

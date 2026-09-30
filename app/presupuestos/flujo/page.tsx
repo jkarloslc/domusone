@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
+import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, agrupadoresUsados, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
 import { Loader, RefreshCw, Wallet, Info, Layers, List, Trash2, Save, Building2, CalendarRange, Download } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
@@ -41,7 +42,7 @@ type DetalleTransaccion = {
   id_op_fk?: number | null
 }
 type DetMapTx = Record<number, DetalleTransaccion[]>
-type CentroIng    = { id: number; nombre: string; tipo_desglose: string }
+type CentroIng    = CentroIngresoAgr
 type SeccionF     = { id: number; nombre: string }
 type ConceptoF    = { id: number; nombre: string; id_centro_ingreso_fk: number | null }
 type CentroCostoF = { id: number; nombre: string }
@@ -152,6 +153,8 @@ export default function FlujoEfectivoPage() {
 
   // Catálogos para filtro por CC/Sección (ingresos) y CC/Área (egresos) — mismo modelo que /dashboards/financiero
   const [centrosIng, setCentrosIng]     = useState<CentroIng[]>([])
+  const [agrupadoresIng, setAgrupadoresIng] = useState<AgrupadorIngreso[]>([])
+  const [filtroAgrIng, setFiltroAgrIng] = useState('')
   const [seccionesF, setSeccionesF]     = useState<SeccionF[]>([])
   const [conceptosF, setConceptosF]     = useState<ConceptoF[]>([])
   const [centrosCostoF, setCentrosCostoF] = useState<CentroCostoF[]>([])
@@ -410,8 +413,8 @@ export default function FlujoEfectivoPage() {
       .then(({ data }) => setAgrupadores((data ?? []) as Agrupador[]))
     dbComp.from('proveedores').select('id, nombre').order('nombre')
       .then(({ data }) => setProveedores((data ?? []) as Proveedor[]))
-    dbCfg.from('centros_ingreso').select('id, nombre, tipo_desglose').order('nombre')
-      .then(({ data }) => setCentrosIng((data ?? []) as CentroIng[]))
+    cargarCentrosAgrupados('tipo_desglose')
+      .then(({ centros, agrupadores }) => { setCentrosIng(centros); setAgrupadoresIng(agrupadores) })
     dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
       .then(({ data }) => setSeccionesF((data ?? []) as SeccionF[]))
     dbCfg.from('conceptos_ingreso').select('id, nombre, id_centro_ingreso_fk').eq('activo', true).order('nombre')
@@ -428,7 +431,7 @@ export default function FlujoEfectivoPage() {
     setSelId(id)
     const p = presupuestos.find(x => x.id === id)
     if (p) loadEverything(p.id, p.anio, p.modulo, true)
-    setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('')
+    setFiltroAgrIng(''); setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('')
     setFiltroCC(''); setFiltroArea('')
   }
 
@@ -441,9 +444,12 @@ export default function FlujoEfectivoPage() {
     new Set(rows.map(p => p[k]).filter((v): v is number => typeof v === 'number'))
   const ingParts = partidas.filter(p => p.tipo === 'ingreso')
   const egrParts = partidas.filter(p => p.tipo === 'egreso')
-  const ingDelCentro = filtroCentroIng ? ingParts.filter(p => p.id_centro_ingreso_fk === Number(filtroCentroIng)) : ingParts
+  const idsCentrosIng = idsCentrosFiltro(centrosIng, filtroAgrIng, filtroCentroIng)
+  const ingDelCentro = idsCentrosIng ? ingParts.filter(p => p.id_centro_ingreso_fk != null && idsCentrosIng.has(p.id_centro_ingreso_fk)) : ingParts
   const egrDelCC     = filtroCC ? egrParts.filter(p => p.id_centro_costo_fk === Number(filtroCC)) : egrParts
-  const centrosIngOpts   = centrosIng.filter(c => idsDe(ingParts, 'id_centro_ingreso_fk').has(c.id))
+  const centrosIngConPartida = centrosIng.filter(c => idsDe(ingParts, 'id_centro_ingreso_fk').has(c.id))
+  const agrupadoresIngOpts   = agrupadoresUsados(agrupadoresIng, centrosIngConPartida)
+  const centrosIngOpts       = centrosDeAgrupador(centrosIngConPartida, filtroAgrIng)
   const seccionesOpts    = seccionesF.filter(s => idsDe(ingDelCentro, 'id_seccion_fk').has(s.id))
   const conceptosOpts    = conceptosF.filter(c => idsDe(ingDelCentro, 'id_concepto_fk').has(c.id))
   const centrosCostoOpts = centrosCostoF.filter(c => idsDe(egrParts, 'id_centro_costo_fk').has(c.id))
@@ -453,7 +459,7 @@ export default function FlujoEfectivoPage() {
   // que se muestra cada desglose que tenga datos, no el `tipo_desglose` del centro.
   const esSecciones = !!filtroCentroIng && seccionesOpts.length > 0
   const esConceptos = !!filtroCentroIng && conceptosOpts.length > 0
-  const hayFiltroIng = !!(filtroCentroIng || filtroSeccion || filtroConcepto)
+  const hayFiltroIng = !!(filtroAgrIng || filtroCentroIng || filtroSeccion || filtroConcepto)
   const hayFiltroEgr = !!(filtroCC || filtroArea)
 
   // Carga los registros de real manual ya capturados para una partida
@@ -525,7 +531,7 @@ export default function FlujoEfectivoPage() {
     // Costo/Área (egresos) — mismo modelo que /dashboards/financiero.
     .filter(p => {
       if (p.tipo === 'ingreso') {
-        if (filtroCentroIng && p.id_centro_ingreso_fk !== Number(filtroCentroIng)) return false
+        if (idsCentrosIng && !(p.id_centro_ingreso_fk != null && idsCentrosIng.has(p.id_centro_ingreso_fk))) return false
         if (filtroSeccion && p.id_seccion_fk !== Number(filtroSeccion)) return false
         if (filtroConcepto && p.id_concepto_fk !== Number(filtroConcepto)) return false
       } else {
@@ -743,11 +749,20 @@ export default function FlujoEfectivoPage() {
             Ingresos
           </span>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {agrupadoresIngOpts.length > 0 && (
+              <select value={filtroAgrIng}
+                onChange={e => { setFiltroAgrIng(e.target.value); setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
+                style={selStyle(!!filtroAgrIng, ING, 140)}>
+                <option value="">Todos los agrupadores</option>
+                {agrupadoresIngOpts.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                {centrosIngConPartida.some(c => !c.id_agrupador_fk) && <option value="sin">Sin agrupador</option>}
+              </select>
+            )}
             <select value={filtroCentroIng}
               onChange={e => { setFiltroCentroIng(e.target.value); setFiltroSeccion(''); setFiltroConcepto('') }}
-              style={selStyle(!!filtroCentroIng, ING, 148)}>
+              style={selStyle(!!filtroCentroIng, ING, 170)}>
               <option value="">Todos los centros</option>
-              {centrosIngOpts.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {centrosIngOpts.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
             </select>
             {esSecciones && (
               <select value={filtroSeccion} onChange={e => { setFiltroSeccion(e.target.value); setFiltroConcepto('') }}
@@ -764,7 +779,7 @@ export default function FlujoEfectivoPage() {
               </select>
             )}
             {hayFiltroIng && (
-              <button onClick={() => { setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
+              <button onClick={() => { setFiltroAgrIng(''); setFiltroCentroIng(''); setFiltroSeccion(''); setFiltroConcepto('') }}
                 title="Limpiar filtro ingresos"
                 style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid #bbf7d0',
                   background: '#f0fdf4', color: '#16a34a', cursor: 'pointer', fontSize: 10,

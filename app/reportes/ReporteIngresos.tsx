@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
+import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
+import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { RefreshCw, ChevronDown, ChevronRight } from 'lucide-react'
 
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
@@ -18,7 +20,7 @@ type Recibo = {
 }
 type FormaPagoRow = { id_recibo_fk: number; nombre_forma_pago: string; monto: number }
 
-type Centro = { id: number; nombre: string; tipo: string | null }
+type Centro = CentroIngresoAgr
 
 type TabMode = 'tipo' | 'centro'
 
@@ -46,6 +48,8 @@ export default function ReporteIngresos() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   // Filtros
+  const [agrupadores, setAgrupadores] = useState<AgrupadorIngreso[]>([])
+  const [filtroAgr,    setFiltroAgr]    = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
   const [filtroTipo,   setFiltroTipo]   = useState('')
   const [filtroStatus, setFiltroStatus] = useState('Confirmado')
@@ -54,17 +58,18 @@ export default function ReporteIngresos() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: rs }, { data: cs }] = await Promise.all([
+    const [{ data: rs }, { centros: cs, agrupadores: ags }] = await Promise.all([
       dbCtrl.from('recibos_ingreso')
         .select('id, folio, fecha, status, id_centro_ingreso_fk, descripcion, monto_efectivo, monto_transferencia, monto_tarjeta, monto_tarjeta_debito, monto_tarjeta_credito, monto_cheque, monto_deposito, monto_total, origen')
         .order('fecha', { ascending: false }),
-      dbCfg.from('centros_ingreso').select('id, nombre, tipo').order('nombre'),
+      cargarCentrosAgrupados('tipo'),
     ])
-    setCentros(cs ?? [])
+    setCentros(cs); setAgrupadores(ags)
+    const idsC = idsCentrosFiltro(cs, filtroAgr, filtroCentro)
 
     let result: Recibo[] = rs ?? []
     if (filtroStatus) result = result.filter(r => r.status === filtroStatus)
-    if (filtroCentro) result = result.filter(r => r.id_centro_ingreso_fk === Number(filtroCentro))
+    if (idsC)         result = result.filter(r => r.id_centro_ingreso_fk != null && idsC.has(r.id_centro_ingreso_fk))
     if (filtroTipo) {
       const idsDelTipo = (cs ?? []).filter((c: any) => c.tipo === filtroTipo).map((c: any) => c.id)
       result = result.filter(r => r.id_centro_ingreso_fk && idsDelTipo.includes(r.id_centro_ingreso_fk))
@@ -91,7 +96,7 @@ export default function ReporteIngresos() {
     }
 
     setLoading(false)
-  }, [filtroCentro, filtroTipo, filtroStatus, filtroDe, filtroA])
+  }, [filtroAgr, filtroCentro, filtroTipo, filtroStatus, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -114,7 +119,7 @@ export default function ReporteIngresos() {
     const items = recibos.filter(r => (r.id_centro_ingreso_fk ?? 0) === cid)
     return {
       key:   String(cid),
-      label: c?.nombre ?? 'Sin centro',
+      label: c?.label ?? 'Sin centro',
       tipo:  c?.tipo ?? 'otro',
       items, total: items.reduce((s, r) => s + Number(r.monto_total ?? 0), 0),
     }
@@ -174,16 +179,12 @@ export default function ReporteIngresos() {
           <option value="Borrador">Borrador</option>
           <option value="Cancelado">Cancelado</option>
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setFiltroCentro('') }}>
+        <select className="select" style={{ minWidth: 150 }} value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setFiltroCentro(''); setFiltroAgr('') }}>
           <option value="">Todos los tipos</option>
           {tiposCatalogo.map(t => <option key={t} value={t}>{TIPO_LABEL[t] ?? t}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 200 }} value={filtroCentro} onChange={e => setFiltroCentro(e.target.value)}>
-          <option value="">Todos los centros</option>
-          {(filtroTipo ? centros.filter(c => c.tipo === filtroTipo) : centros).map(c =>
-            <option key={c.id} value={c.id}>{c.nombre}</option>
-          )}
-        </select>
+        <FiltroAgrupadorCentro centros={filtroTipo ? centros.filter(c => c.tipo === filtroTipo) : centros} agrupadores={agrupadores}
+          filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr} filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} />
         <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 140 }} />
         <input className="input" type="date" value={filtroA}  onChange={e => setFiltroA(e.target.value)}  style={{ width: 140 }} />
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
@@ -279,7 +280,7 @@ export default function ReporteIngresos() {
                           {r.folio ?? `ING-${r.id}`}
                           {tab === 'tipo' && r.id_centro_ingreso_fk && (
                             <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'inherit', marginLeft: 6 }}>
-                              · {centroMap[r.id_centro_ingreso_fk]?.nombre ?? '—'}
+                              · {centroMap[r.id_centro_ingreso_fk]?.label ?? '—'}
                             </span>
                           )}
                         </td>

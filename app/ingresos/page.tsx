@@ -8,12 +8,15 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
+import { cargarCentrosAgrupados, idsCentrosFiltro, AgrupadorIngreso } from '@/lib/centrosIngreso'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = {
   id: number; nombre: string; codigo: string | null
   tipo: string | null; tipo_desglose: string; activo: boolean
   fecha_corte_derivado?: string | null
+  id_agrupador_fk?: number | null; label?: string
 }
 type Seccion = { id: number; nombre: string; clave_alfa: string | null }
 type Clasif = { monto_vencido: number | null; monto_corriente: number | null; monto_anticipado: number | null }
@@ -806,7 +809,7 @@ function ReciboModal({
               <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Centro de Ingreso *</label>
               <select className="select" value={form.id_centro_ingreso_fk ?? ''} onChange={e => set('id_centro_ingreso_fk', e.target.value)} disabled={isView && !isEditMode}>
                 <option value="">Seleccionar…</option>
-                {centros.filter(c => c.activo).map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                {centros.filter(c => c.activo).map(c => <option key={c.id} value={c.id}>{c.label ?? c.nombre}</option>)}
               </select>
             </div>
           </div>
@@ -1195,6 +1198,8 @@ export default function IngresosPage() {
   const [page, setPage]         = useState(0)
   const [search, setSearch]     = useState('')
   const [filterCentro, setFilterCentro] = useState('')
+  const [filterAgr, setFilterAgr]       = useState('')
+  const [agrupadores, setAgrupadores]   = useState<AgrupadorIngreso[]>([])
   const [filterStatus, setFilterStatus] = useState('')
   const [filterFechaIni, setFilterFechaIni] = useState('')
   const [filterFechaFin, setFilterFechaFin] = useState('')
@@ -1209,11 +1214,12 @@ export default function IngresosPage() {
   // Carga catálogos una sola vez
   useEffect(() => {
     Promise.all([
-      dbCfg.from('centros_ingreso').select('*').eq('activo', true).order('nombre'),
+      cargarCentrosAgrupados('*', q => q.eq('activo', true)),
       dbCfg.from('secciones').select('id, nombre, clave_alfa').eq('activo', true).order('nombre'),
-    ]).then(([{ data: cs }, { data: ss }]) => {
-      const list = (cs ?? []) as Centro[]
+    ]).then(([{ centros: cs, agrupadores: ags }, { data: ss }]) => {
+      const list = cs as unknown as Centro[]
       setCentros(list)
+      setAgrupadores(ags)
       const map: Record<number, Centro> = {}
       list.forEach(c => { map[c.id] = c })
       setCentrosMap(map)
@@ -1230,7 +1236,8 @@ export default function IngresosPage() {
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
     if (filterStatus)   q = q.eq('status', filterStatus)
-    if (filterCentro)   q = q.eq('id_centro_ingreso_fk', Number(filterCentro))
+    const idsC = idsCentrosFiltro(centrosPermitidos as any, filterAgr, filterCentro)
+    if (idsC)           q = q.in('id_centro_ingreso_fk', idsC.size > 0 ? Array.from(idsC) : [-1])
     if (filterFechaIni) q = q.gte('fecha', filterFechaIni)
     if (filterFechaFin) q = q.lte('fecha', filterFechaFin)
     if (search)         q = q.ilike('folio', `%${search}%`)
@@ -1242,7 +1249,7 @@ export default function IngresosPage() {
     setRows((data ?? []) as Recibo[])
     setTotal(count ?? 0)
     setLoading(false)
-  }, [page, filterStatus, filterCentro, filterFechaIni, filterFechaFin, search, esCobranza, cuotasCentroIds.join(',')])
+  }, [page, filterStatus, filterAgr, filterCentro, centros, filterFechaIni, filterFechaFin, search, esCobranza, cuotasCentroIds.join(',')])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -1284,10 +1291,9 @@ export default function IngresosPage() {
           <input className="input" style={{ paddingLeft: 30 }} placeholder="Buscar folio…" value={search}
             onChange={e => { setSearch(e.target.value); setPage(0) }} />
         </div>
-        <select className="select" style={{ width: 180 }} value={filterCentro} onChange={e => { setFilterCentro(e.target.value); setPage(0) }}>
-          <option value="">Todos los centros</option>
-          {centrosPermitidos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
+        <FiltroAgrupadorCentro centros={centrosPermitidos as any} agrupadores={agrupadores} minWidth={200}
+          filtroAgr={filterAgr} setFiltroAgr={v => { setFilterAgr(v); setPage(0) }}
+          filtroCentro={filterCentro} setFiltroCentro={v => { setFilterCentro(v); setPage(0) }} />
         <select className="select" style={{ width: 150 }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(0) }}>
           <option value="">Todos los status</option>
           <option value="Confirmado">Confirmado</option>
@@ -1353,7 +1359,7 @@ export default function IngresosPage() {
                       {centro && (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 500 }}>
                           <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block' }} />
-                          {centro.nombre}
+                          {centro.label ?? centro.nombre}
                         </span>
                       )}
                     </td>

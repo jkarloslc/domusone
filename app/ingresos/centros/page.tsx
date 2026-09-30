@@ -14,6 +14,7 @@ type Centro = {
   tipo_desglose: string    // 'unico' | 'secciones' | 'frentes'
   activo: boolean
   notas: string | null
+  id_agrupador_fk?: number | null
   created_at: string
 }
 
@@ -34,6 +35,11 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
   })
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
+  const [agrupadores, setAgrupadores] = useState<{ id: number; nombre: string }[]>([])
+  useEffect(() => {
+    dbCfg.from('agrupadores_ingreso').select('id, nombre').eq('activo', true).order('orden').order('nombre')
+      .then(({ data }) => setAgrupadores(data ?? []))
+  }, [])
 
   const set = (k: keyof Centro, v: any) => setForm(f => ({ ...f, [k]: v }))
 
@@ -47,6 +53,8 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
       tipo_desglose: form.tipo_desglose || 'unico',
       activo:        form.activo ?? true,
       notas:         form.notas?.trim() || null,
+      // Solo se envía si hay (o había) agrupador: tolera migración pendiente
+      ...((form.id_agrupador_fk || centro?.id_agrupador_fk) ? { id_agrupador_fk: form.id_agrupador_fk ? Number(form.id_agrupador_fk) : null } : {}),
     }
     const { error: err } = centro?.id
       ? await dbCfg.from('centros_ingreso').update(payload).eq('id', centro.id)
@@ -85,6 +93,14 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
                 {TIPOS.map(t => <option key={t} value={t}>{TIPO_LABEL[t]}</option>)}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Agrupador</label>
+            <select className="select" value={form.id_agrupador_fk ?? ''} onChange={e => set('id_agrupador_fk', e.target.value)}>
+              <option value="">Sin agrupador</option>
+              {agrupadores.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+            </select>
           </div>
 
           <div>
@@ -131,6 +147,12 @@ export default function CentrosIngresoPage() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState(false)
   const [editing, setEditing] = useState<Centro | null>(null)
+
+  const [agrNombre, setAgrNombre] = useState<Record<number, string>>({})
+  useEffect(() => {
+    dbCfg.from('agrupadores_ingreso').select('id, nombre')
+      .then(({ data }) => setAgrNombre(Object.fromEntries((data ?? []).map((a: any) => [a.id, a.nombre]))))
+  }, [])
 
   const fetch = useCallback(async () => {
     setLoading(true)
@@ -205,6 +227,10 @@ export default function CentrosIngresoPage() {
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      {c.id_agrupador_fk && agrNombre[c.id_agrupador_fk] && (
+                        <><span style={{ fontSize: 11, fontWeight: 600, color: '#0d9488' }}>{agrNombre[c.id_agrupador_fk]}</span>
+                        <span style={{ fontSize: 10, color: '#94a3b8' }}>·</span></>
+                      )}
                       <span style={{ fontSize: 11, color: '#64748b' }}>{TIPO_LABEL[c.tipo ?? ''] ?? '—'}</span>
                       <span style={{ fontSize: 10, color: '#94a3b8' }}>·</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>

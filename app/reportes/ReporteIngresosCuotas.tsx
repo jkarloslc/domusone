@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
+import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
+import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { RefreshCw } from 'lucide-react'
 
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
@@ -14,7 +16,7 @@ const calcFiscal = (monto: number) => {
   return { subtotal, iva }
 }
 
-type Centro = { id: number; nombre: string; tipo: string | null; tipo_desglose: string }
+type Centro = CentroIngresoAgr
 
 type ReciboFlat = {
   id: number
@@ -32,6 +34,8 @@ export default function ReporteIngresosCuotas() {
   const [recibos, setRecibos] = useState<ReciboFlat[]>([])
   const [loading, setLoading] = useState(true)
 
+  const [agrupadores, setAgrupadores] = useState<AgrupadorIngreso[]>([])
+  const [filtroAgr,    setFiltroAgr]    = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('Confirmado')
   const [filtroDe,     setFiltroDe]     = useState('')
@@ -43,9 +47,8 @@ export default function ReporteIngresosCuotas() {
   const fetchData = useCallback(async () => {
     setLoading(true)
 
-    const { data: cs } = await dbCfg.from('centros_ingreso')
-      .select('id, nombre, tipo, tipo_desglose').order('nombre')
-    setCentros(cs ?? [])
+    const { centros: cs, agrupadores: ags } = await cargarCentrosAgrupados('tipo, tipo_desglose')
+    setCentros(cs); setAgrupadores(ags)
 
     const cuotaIds = (cs ?? [])
       .filter((c: Centro) => c.tipo === 'cuotas' && c.tipo_desglose === 'secciones')
@@ -53,7 +56,9 @@ export default function ReporteIngresosCuotas() {
 
     if (cuotaIds.length === 0) { setRecibos([]); setLoading(false); return }
 
-    const centroTarget = filtroCentro ? [Number(filtroCentro)] : cuotaIds
+    const idsC = idsCentrosFiltro(cs, filtroAgr, filtroCentro)
+    const centroTarget = idsC ? cuotaIds.filter((id: number) => idsC.has(id)) : cuotaIds
+    if (centroTarget.length === 0) { setRecibos([]); setLoading(false); return }
 
     // Secciones con join a recibos
     let secQ = (dbCtrl.from('recibos_ingreso_secciones') as any)
@@ -101,7 +106,7 @@ export default function ReporteIngresosCuotas() {
       Object.values(reciboMap).sort((a, b) => b.fecha.localeCompare(a.fecha))
     )
     setLoading(false)
-  }, [filtroCentro, filtroStatus, filtroDe, filtroA])
+  }, [filtroAgr, filtroCentro, filtroStatus, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -141,10 +146,8 @@ export default function ReporteIngresosCuotas() {
           <option value="Borrador">Borrador</option>
           <option value="Cancelado">Cancelado</option>
         </select>
-        <select className="select" style={{ minWidth: 220 }} value={filtroCentro} onChange={e => setFiltroCentro(e.target.value)}>
-          <option value="">Todos los centros de cuotas</option>
-          {centrosCuotas.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
+        <FiltroAgrupadorCentro centros={centrosCuotas} agrupadores={agrupadores} filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr}
+          filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} textoTodos="Todos los centros de cuotas" minWidth={220} />
         <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 140 }} />
         <input className="input" type="date" value={filtroA}  onChange={e => setFiltroA(e.target.value)}  style={{ width: 140 }} />
         <button className="btn-ghost" onClick={fetchData}>
@@ -279,7 +282,7 @@ export default function ReporteIngresosCuotas() {
               </thead>
               <tbody>
                 {recibos.map(r => {
-                  const centroNombre = r.id_centro_ingreso_fk ? (centroMap[r.id_centro_ingreso_fk]?.nombre ?? '—') : '—'
+                  const centroNombre = r.id_centro_ingreso_fk ? (centroMap[r.id_centro_ingreso_fk]?.label ?? '—') : '—'
                   const secsText = r.secciones.map(s => `${s.nombre}: ${fmt(s.monto)}`).join(' · ') || '—'
                   const cptText  = r.conceptos.map(c => `${c.nombre}: ${fmt(c.monto)}`).join(' · ') || '—'
                   const fr = calcFiscal(r.monto_total)

@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
+import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
+import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { RefreshCw, ChevronDown, ChevronRight } from 'lucide-react'
 
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
@@ -13,7 +15,7 @@ type Recibo = {
   id_centro_ingreso_fk: number | null; monto_total: number; descripcion: string | null
 }
 type ConceptoRow  = { id_recibo_fk: number; nombre_concepto: string; monto: number }
-type Centro       = { id: number; nombre: string; tipo: string | null }
+type Centro       = CentroIngresoAgr
 
 type ConceptoAgregado = { nombre: string; total: number; recibos: Recibo[]; montoPorRecibo: Record<number, number> }
 type CentroAgregado   = { id: number; nombre: string; total: number; conceptos: ConceptoAgregado[] }
@@ -28,6 +30,8 @@ export default function ReporteIngresosConceptoCentro() {
   const [tab,          setTab]          = useState<'jerarquico' | 'pivot'>('jerarquico')
   const [expanded,     setExpanded]     = useState<Set<string>>(new Set())
 
+  const [agrupadores, setAgrupadores] = useState<AgrupadorIngreso[]>([])
+  const [filtroAgr,    setFiltroAgr]    = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('Confirmado')
   const [filtroDe,     setFiltroDe]     = useState('')
@@ -35,17 +39,18 @@ export default function ReporteIngresosConceptoCentro() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: rs }, { data: cs }] = await Promise.all([
+    const [{ data: rs }, { centros: cs, agrupadores: ags }] = await Promise.all([
       dbCtrl.from('recibos_ingreso')
         .select('id, folio, fecha, status, id_centro_ingreso_fk, monto_total, descripcion')
         .order('fecha', { ascending: false }),
-      dbCfg.from('centros_ingreso').select('id, nombre, tipo').order('nombre'),
+      cargarCentrosAgrupados('tipo'),
     ])
-    setCentros(cs ?? [])
+    setCentros(cs); setAgrupadores(ags)
+    const idsC = idsCentrosFiltro(cs, filtroAgr, filtroCentro)
 
     let result: Recibo[] = rs ?? []
     if (filtroStatus) result = result.filter(r => r.status === filtroStatus)
-    if (filtroCentro) result = result.filter(r => r.id_centro_ingreso_fk === Number(filtroCentro))
+    if (idsC)         result = result.filter(r => r.id_centro_ingreso_fk != null && idsC.has(r.id_centro_ingreso_fk))
     if (filtroDe)     result = result.filter(r => r.fecha >= filtroDe)
     if (filtroA)      result = result.filter(r => r.fecha <= filtroA)
     setRecibos(result)
@@ -66,7 +71,7 @@ export default function ReporteIngresosConceptoCentro() {
       setConceptosMap({})
     }
     setLoading(false)
-  }, [filtroCentro, filtroStatus, filtroDe, filtroA])
+  }, [filtroAgr, filtroCentro, filtroStatus, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -105,7 +110,7 @@ export default function ReporteIngresosConceptoCentro() {
 
     return {
       id:       cid,
-      nombre:   centroMap[cid]?.nombre ?? 'Sin centro',
+      nombre:   centroMap[cid]?.label ?? 'Sin centro',
       total:    cRecibos.reduce((s, r) => s + Number(r.monto_total ?? 0), 0),
       conceptos,
     }
@@ -136,10 +141,8 @@ export default function ReporteIngresosConceptoCentro() {
           <option value="Borrador">Borrador</option>
           <option value="Cancelado">Cancelado</option>
         </select>
-        <select className="select" style={{ minWidth: 220 }} value={filtroCentro} onChange={e => setFiltroCentro(e.target.value)}>
-          <option value="">Todos los centros</option>
-          {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
+        <FiltroAgrupadorCentro centros={centros} agrupadores={agrupadores} filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr}
+          filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} minWidth={220} />
         <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 140 }} />
         <input className="input" type="date" value={filtroA}  onChange={e => setFiltroA(e.target.value)}  style={{ width: 140 }} />
         <button className="btn-ghost" onClick={fetchData}>
