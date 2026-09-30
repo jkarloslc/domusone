@@ -623,7 +623,11 @@ export default function PartidasPage() {
             <label style={lbl}>
               Clasificación *
               <select className="input" value={form.clasificacion}
-                onChange={e => setForm(f => ({ ...f, clasificacion: e.target.value as Clasificacion }))}>
+                onChange={e => setForm(f => {
+                  const clasificacion = e.target.value as Clasificacion
+                  // Financiero/Intercompañías son movimientos netos (bancarios): sin IVA.
+                  return { ...f, clasificacion, iva_pct: clasificacion === 'operativo' ? f.iva_pct : 0 }
+                })}>
                 {(Object.keys(CLASIFICACION_LABEL) as Clasificacion[]).map(c => (
                   <option key={c} value={c}>{CLASIFICACION_LABEL[c]}</option>
                 ))}
