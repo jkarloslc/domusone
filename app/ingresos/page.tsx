@@ -9,14 +9,14 @@ import {
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
-import { esCentroMantoFracc, cargarCentrosAgrupados, idsCentrosFiltro, AgrupadorIngreso } from '@/lib/centrosIngreso'
+import { esCentroCuotas, colorAgrupador, cargarCentrosAgrupados, idsCentrosFiltro, AgrupadorIngreso } from '@/lib/centrosIngreso'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = {
   id: number; nombre: string; codigo: string | null
-  tipo: string | null; tipo_desglose: string; activo: boolean
+  tipo?: string | null; tipo_desglose: string; activo: boolean
   fecha_corte_derivado?: string | null
-  id_agrupador_fk?: number | null; label?: string
+  id_agrupador_fk?: number | null; label?: string; agr_cuotas?: boolean
 }
 type Seccion = { id: number; nombre: string; clave_alfa: string | null }
 type Clasif = { monto_vencido: number | null; monto_corriente: number | null; monto_anticipado: number | null }
@@ -1207,9 +1207,9 @@ export default function IngresosPage() {
   const [modal, setModal]       = useState(false)
   const [detalle, setDetalle]   = useState<Recibo | null>(null)
 
-  // cobranza: solo centros del agrupador Mantto. Fraccionamiento (id 3)
-  const centrosPermitidos = esCobranza ? centros.filter(esCentroMantoFracc) : centros
-  const cuotasCentroIds   = centros.filter(esCentroMantoFracc).map(c => c.id)
+  // cobranza: solo centros del agrupador marcado como cuotas de fraccionamiento
+  const centrosPermitidos = esCobranza ? centros.filter(esCentroCuotas) : centros
+  const cuotasCentroIds   = centros.filter(esCentroCuotas).map(c => c.id)
 
   // Carga catálogos una sola vez
   useEffect(() => {
@@ -1344,7 +1344,7 @@ export default function IngresosPage() {
                 </td></tr>
               ) : rows.map(r => {
                 const centro = centrosMap[r.id_centro_ingreso_fk ?? 0]
-                const color  = CENTRO_COLOR[centro?.tipo ?? 'otro'] ?? '#64748b'
+                const color  = colorAgrupador(centro?.id_agrupador_fk)
                 const sc     = STATUS_STYLE[r.status] ?? { bg: '#f8fafc', color: '#94a3b8' }
                 const esCancelado = r.status === 'Cancelado'
                 return (

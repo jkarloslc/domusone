@@ -39,7 +39,7 @@ export default function ReporteIngresosPorFormaPago() {
       dbCtrl.from('recibos_ingreso')
         .select('id, folio, fecha, status, id_centro_ingreso_fk, descripcion, monto_efectivo, monto_transferencia, monto_tarjeta, monto_tarjeta_debito, monto_tarjeta_credito, monto_cheque, monto_deposito, monto_total')
         .order('fecha', { ascending: false }),
-      cargarCentrosAgrupados('tipo'),
+      cargarCentrosAgrupados(),
     ])
     setCentros(cs); setAgrupadores(ags)
     const idsC = idsCentrosFiltro(cs, filtroAgr, filtroCentro)

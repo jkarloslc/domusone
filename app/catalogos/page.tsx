@@ -37,7 +37,7 @@ type CatConfig = {
 type Campo = {
   key:       string
   label:     string
-  type:      'text' | 'number' | 'textarea' | 'date' | 'select' | 'file' | 'claveSat'
+  type:      'text' | 'number' | 'textarea' | 'date' | 'select' | 'file' | 'claveSat' | 'boolean'
   required?: boolean
   selectTabla?:   string
   selectSchema?:  'cfg' | 'comp' | 'golf'
@@ -244,6 +244,8 @@ const CATALOGOS: CatConfig[] = [
     campos: [
       { key: 'nombre', label: 'Nombre *',           type: 'text',   required: true },
       { key: 'orden',  label: 'Orden de aparición', type: 'number' },
+      // Cobranza solo ve recibos de sus centros y el reporte de Cuotas solo los considera
+      { key: 'es_cuotas_fraccionamiento', label: 'Es de cuotas de Mantto. Fraccionamiento (Cobranza y reporte de Cuotas)', type: 'boolean' },
     ],
   },
   {
@@ -252,12 +254,10 @@ const CATALOGOS: CatConfig[] = [
     label: 'Centros de Ingreso',
     icon:  ArrowUpCircle,
     color: '#059669',
-    desc:  'Centros de ingreso y tipo de captura — Golf, Cuotas, Espacios, Caballerizas',
+    desc:  'Centros de ingreso, su agrupador y tipo de captura',
     campos: [
       { key: 'nombre',        label: 'Nombre *',        type: 'text',   required: true },
       { key: 'codigo',        label: 'Código',          type: 'text' },
-      { key: 'tipo',          label: 'Tipo',            type: 'select',
-        staticOptions: ['golf', 'cuotas', 'rentas_espacios', 'caballerizas', 'otro'] },
       { key: 'id_agrupador_fk', label: 'Agrupador', type: 'select', selectTabla: 'agrupadores_ingreso' },
       { key: 'tipo_desglose', label: 'Tipo de Captura', type: 'select',
         staticOptions: ['unico', 'secciones', 'frentes', 'conceptos'] },
@@ -1363,7 +1363,9 @@ function CatalogoTable({ config }: { config: CatConfig }) {
                 <td style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{row.id}</td>
                 {colsTabla.map(c => (
                   <td key={c.key} style={{ fontSize: c.key === 'nombre' ? 14 : 12, fontWeight: c.key === 'nombre' ? 500 : 400, color: 'var(--text-secondary)' }}>
-                    {c.type === 'select'
+                    {c.type === 'boolean'
+                      ? (row[c.key] ? 'Sí' : '—')
+                      : c.type === 'select'
                       ? (c.staticOptions ? (row[c.key] ?? '—') : (selectMaps[c.key]?.[row[c.key]] ?? '—'))
                       : c.type === 'number' && row[c.key] != null
                         ? (['monto', 'saldo'].includes(c.key) ? '$' + Number(row[c.key]).toLocaleString('es-MX', { minimumFractionDigits: 2 }) : row[c.key])
@@ -2634,7 +2636,8 @@ function CatalogoModal({ config, row, onClose, onSaved }:
 
     const payload: Record<string, any> = { activo: form.activo === 'true' }
     config.campos.forEach(c => {
-      if (c.type === 'number')        payload[c.key] = form[c.key] ? Number(form[c.key]) : null
+      if (c.type === 'boolean')       payload[c.key] = form[c.key] === 'true'
+      else if (c.type === 'number')   payload[c.key] = form[c.key] ? Number(form[c.key]) : null
       else if (c.type === 'select' && c.staticOptions) payload[c.key] = form[c.key] || null
       else if (c.type === 'select')   payload[c.key] = form[c.key] ? Number(form[c.key]) : null
       else if (c.type === 'file')     payload[c.key] = form[c.key]?.trim() || null
@@ -2671,7 +2674,15 @@ function CatalogoModal({ config, row, onClose, onSaved }:
 
           {config.campos.map(c => (
             <div key={c.key}>
-              <label className="label">{c.label}</label>
+              {c.type === 'boolean' ? (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={form[c.key] === 'true'}
+                    onChange={e => setForm(f => ({ ...f, [c.key]: e.target.checked ? 'true' : 'false' }))} />
+                  {c.label}
+                </label>
+              ) : (
+                <label className="label">{c.label}</label>
+              )}
 
               {c.type === 'textarea' && (
                 <textarea className="input" rows={2} value={form[c.key] ?? ''} onChange={set(c.key)} style={{ resize: 'vertical' }} />

@@ -43,7 +43,7 @@ export default function ReporteIngresosConceptoCentro() {
       dbCtrl.from('recibos_ingreso')
         .select('id, folio, fecha, status, id_centro_ingreso_fk, monto_total, descripcion')
         .order('fecha', { ascending: false }),
-      cargarCentrosAgrupados('tipo'),
+      cargarCentrosAgrupados(),
     ])
     setCentros(cs); setAgrupadores(ags)
     const idsC = idsCentrosFiltro(cs, filtroAgr, filtroCentro)

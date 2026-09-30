@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
-import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
+import { colorAgrupador, cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { RefreshCw, ChevronDown, ChevronRight } from 'lucide-react'
 
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
@@ -24,13 +24,6 @@ type Centro = CentroIngresoAgr
 
 type TabMode = 'agrupador' | 'centro'
 
-const TIPO_COLOR: Record<string, string> = {
-  golf:            '#059669',
-  cuotas:          '#2563eb',
-  rentas_espacios: '#7c3aed',
-  caballerizas:    '#d97706',
-  otro:            '#64748b',
-}
 export default function ReporteIngresos() {
   const [recibos, setRecibos]         = useState<Recibo[]>([])
   const [centros, setCentros]         = useState<Centro[]>([])
@@ -53,7 +46,7 @@ export default function ReporteIngresos() {
       dbCtrl.from('recibos_ingreso')
         .select('id, folio, fecha, status, id_centro_ingreso_fk, descripcion, monto_efectivo, monto_transferencia, monto_tarjeta, monto_tarjeta_debito, monto_tarjeta_credito, monto_cheque, monto_deposito, monto_total, origen')
         .order('fecha', { ascending: false }),
-      cargarCentrosAgrupados('tipo'),
+      cargarCentrosAgrupados(),
     ])
     setCentros(cs); setAgrupadores(ags)
     const idsC = idsCentrosFiltro(cs, filtroAgr, filtroCentro)
@@ -105,7 +98,7 @@ export default function ReporteIngresos() {
     return {
       key:   String(cid),
       label: c?.label ?? 'Sin centro',
-      tipo:  c?.tipo ?? 'otro',
+      idAgr: c?.id_agrupador_fk ?? null,
       items, total: items.reduce((s, r) => s + Number(r.monto_total ?? 0), 0),
     }
   }).sort((a, b) => b.total - a.total)
@@ -228,7 +221,7 @@ export default function ReporteIngresos() {
             </thead>
             <tbody>
               {grupos.map(g => {
-                const color = TIPO_COLOR[(g as any).tipo ?? ''] ?? '#0d9488'
+                const color = colorAgrupador((g as any).idAgr ?? (centros.find(c => c.agrupador === g.key)?.id_agrupador_fk))
                 return (
                   <>
                     {/* Fila de grupo */}

@@ -5,12 +5,12 @@ import { Plus, Edit2, Tag, Layers, ChevronLeft, X, Save, Loader } from 'lucide-r
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
+import { colorAgrupador } from '@/lib/centrosIngreso'
 
 type Centro = {
   id: number
   nombre: string
   codigo: string | null
-  tipo: string | null
   tipo_desglose: string    // 'unico' | 'secciones' | 'frentes'
   activo: boolean
   notas: string | null
@@ -18,20 +18,11 @@ type Centro = {
   created_at: string
 }
 
-const TIPOS = ['golf', 'cuotas', 'rentas_espacios', 'caballerizas', 'otro']
-const TIPO_LABEL: Record<string, string> = {
-  golf: 'Golf', cuotas: 'Cuotas Fraccionamiento',
-  rentas_espacios: 'Renta de Espacios', caballerizas: 'Caballerizas', otro: 'Otro',
-}
-const TIPO_COLOR: Record<string, string> = {
-  golf: '#059669', cuotas: '#2563eb', rentas_espacios: '#7c3aed', caballerizas: '#d97706', otro: '#64748b',
-}
-
 // ── Modal alta/edición ────────────────────────────────────────
 function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onClose: () => void; onSaved: () => void }) {
   const { authUser } = useAuth()
   const [form, setForm] = useState<Partial<Centro>>(centro ?? {
-    nombre: '', codigo: '', tipo: 'otro', tipo_desglose: 'unico', activo: true, notas: '',
+    nombre: '', codigo: '', tipo_desglose: 'unico', activo: true, notas: '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
@@ -49,7 +40,6 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
     const payload = {
       nombre:        form.nombre!.trim(),
       codigo:        form.codigo?.trim() || null,
-      tipo:          form.tipo || 'otro',
       tipo_desglose: form.tipo_desglose || 'unico',
       activo:        form.activo ?? true,
       notas:         form.notas?.trim() || null,
@@ -86,12 +76,6 @@ function CentroModal({ centro, onClose, onSaved }: { centro: Centro | null; onCl
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Código</label>
               <input className="input" value={form.codigo ?? ''} onChange={e => set('codigo', e.target.value.toUpperCase())} placeholder="GOLF" maxLength={8} />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Tipo</label>
-              <select className="select" value={form.tipo ?? 'otro'} onChange={e => set('tipo', e.target.value)}>
-                {TIPOS.map(t => <option key={t} value={t}>{TIPO_LABEL[t]}</option>)}
-              </select>
             </div>
           </div>
 
@@ -205,7 +189,7 @@ export default function CentrosIngresoPage() {
         ) : (
           <div>
             {centros.map((c, i) => {
-              const color = TIPO_COLOR[c.tipo ?? 'otro'] ?? '#64748b'
+              const color = colorAgrupador(c.id_agrupador_fk)
               return (
                 <div key={c.id} style={{
                   display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px',
@@ -231,8 +215,6 @@ export default function CentrosIngresoPage() {
                         <><span style={{ fontSize: 11, fontWeight: 600, color: '#0d9488' }}>{agrNombre[c.id_agrupador_fk]}</span>
                         <span style={{ fontSize: 10, color: '#94a3b8' }}>·</span></>
                       )}
-                      <span style={{ fontSize: 11, color: '#64748b' }}>{TIPO_LABEL[c.tipo ?? ''] ?? '—'}</span>
-                      <span style={{ fontSize: 10, color: '#94a3b8' }}>·</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
                         {c.tipo_desglose === 'secciones'
                           ? <><Layers size={11} style={{ color: '#7c3aed' }} /> Desglose por sección</>

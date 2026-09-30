@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
-import { esCentroMantoFracc, cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
+import { esCentroCuotas, cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { RefreshCw } from 'lucide-react'
 
 const fmt  = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
@@ -41,17 +41,17 @@ export default function ReporteIngresosCuotas() {
   const [filtroDe,     setFiltroDe]     = useState('')
   const [filtroA,      setFiltroA]      = useState('')
 
-  const centrosCuotas = centros.filter(c => esCentroMantoFracc(c) && c.tipo_desglose === 'secciones')
+  const centrosCuotas = centros.filter(c => esCentroCuotas(c) && c.tipo_desglose === 'secciones')
   const centroMap     = Object.fromEntries(centros.map(c => [c.id, c]))
 
   const fetchData = useCallback(async () => {
     setLoading(true)
 
-    const { centros: cs, agrupadores: ags } = await cargarCentrosAgrupados('tipo, tipo_desglose')
+    const { centros: cs, agrupadores: ags } = await cargarCentrosAgrupados('tipo_desglose')
     setCentros(cs); setAgrupadores(ags)
 
     const cuotaIds = (cs ?? [])
-      .filter((c: Centro) => esCentroMantoFracc(c) && c.tipo_desglose === 'secciones')
+      .filter((c: Centro) => esCentroCuotas(c) && c.tipo_desglose === 'secciones')
       .map((c: Centro) => c.id)
 
     if (cuotaIds.length === 0) { setRecibos([]); setLoading(false); return }
