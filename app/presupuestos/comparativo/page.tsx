@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
-import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2, CalendarRange } from 'lucide-react'
+import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2, CalendarRange, Download } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/AuthContext'
@@ -11,7 +11,7 @@ import { prorratearDescuento } from '@/lib/prorateoDescuento'
 import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
-import { PrintBar } from '@/app/reportes/utils'
+import { exportarResumenExcel } from '../exportResumen'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
 import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
 
@@ -814,6 +814,23 @@ export default function ComparativoPage() {
     })
   }
 
+  function exportarResumen() {
+    const filaDe = (r: FilaPartida) => ({ nombre: r.nombre, ppto: r.pptoVal, real: r.realVal })
+    const grupoDe = (g: FilaGrupo) => ({ nombre: g.nombre, ppto: g.pptoVal, real: g.realVal })
+    const lineas = (rows: FilaPartida[]) =>
+      vista === 'detalle' ? rows.map(filaDe)
+        : (vista === 'concepto' ? agruparPorConcepto(rows) : agrupar(rows)).map(grupoDe)
+    exportarResumenExcel({
+      titulo: `Comparativo Presupuesto vs Real — ${mesLabel} · ${selPpto?.nombre ?? ''} · Vista ${VISTA_LABEL[vista]}`,
+      secciones: CLASIFICACIONES.map(clas => ({
+        ...CLASIFICACION_LABELS[clas],
+        ing: lineas(porClasificacion(ingRows, clas)),
+        egr: lineas(porClasificacion(egrRows, clas)),
+      })),
+      netoLabel: 'Balance Neto', archivo: 'Comparativo-Presupuesto-vs-Real',
+    })
+  }
+
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
       <Loader size={28} color="#94a3b8" className="animate-spin" />
@@ -1062,15 +1079,14 @@ export default function ComparativoPage() {
         </div>
       ) : (
         <>
-          <PrintBar title="Comparativo-Presupuesto-vs-Real" count={ingRows.length + egrRows.length}
-            reportTitle={`Comparativo Presupuesto vs Real — ${mesLabel} · ${selPpto?.nombre ?? ''} · ${modo === 'mensual' ? `Vista Mensual · ${VISTA_LABEL[vista]}` : `Vista ${VISTA_LABEL[vista]}`}`} />
-          <style>{`
-            @media print {
-              #reporte-print-area .ppto-print-band { page-break-after: avoid !important; break-after: avoid !important; }
-              #reporte-print-area .ppto-print-total { page-break-before: avoid !important; break-before: avoid !important; }
-              #reporte-print-area .btn-ghost { display: none !important; }
-            }
-          `}</style>
+          {modo === 'resumen' && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+              <button className="btn-ghost" onClick={exportarResumen}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '5px 10px' }}>
+                <Download size={13} /> Exportar Excel
+              </button>
+            </div>
+          )}
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
             <GridMensual filas={filas} detMap={pptoMensual} realMap={realMensual}
