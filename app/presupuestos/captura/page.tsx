@@ -95,6 +95,7 @@ export default function CapturaPpto() {
   const [editCell, setEditCell] = useState<{ pid: number; mes: number } | null>(null)
   const [editVal, setEditVal]   = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const skipBlurRef = useRef(false)
 
   const [modalNew, setModalNew]     = useState(false)
   const [formNew, setFormNew]       = useState(EMPTY_PPTO)
@@ -156,6 +157,8 @@ export default function CapturaPpto() {
 
   useEffect(() => {
     if (editCell) inputRef.current?.focus()
+    // El blur del input desmontado (si lo hubo) ya ocurrió: rearmar el guard.
+    skipBlurRef.current = false
   }, [editCell])
 
   function openCell(pid: number, mes: number) {
@@ -166,25 +169,81 @@ export default function CapturaPpto() {
     setEditVal(detMap[pid]?.[mes] ? String(detMap[pid][mes]) : '')
   }
 
-  async function commitCell() {
-    if (!editCell || !selId) { setEditCell(null); return }
-    const monto = parseNum(editVal)
-    // Se manda SOLO la columna de la serie activa: el upsert de PostgREST
-    // actualiza únicamente las columnas del payload, así que capturar devengado
-    // no pisa el cobro ya capturado (ni al revés).
-    const payload: Record<string, any> = {
-      id_presupuesto_fk: selId, id_partida_fk: editCell.pid, mes: editCell.mes,
-      [SERIE_META[serie].columna]: monto,
-    }
-    const { error } = await dbCtrl.from('ppto_presupuesto_det').upsert(
-      payload, { onConflict: 'id_presupuesto_fk,id_partida_fk,mes' }
-    )
-    if (error) { alert(`No se pudo guardar: ${error.message}`); setEditCell(null); return }
-    setDetMap(prev => ({
-      ...prev,
-      [editCell.pid]: { ...(prev[editCell.pid] ?? {}), [editCell.mes]: monto },
+  // Guarda celdas en lote: actualiza el grid al instante y, si el servidor
+  // rechaza, avisa y recarga para no dejar cifras que no están guardadas.
+  // Se manda SOLO la columna de la serie activa: el upsert de PostgREST
+  // actualiza únicamente las columnas del payload, así que capturar devengado
+  // no pisa el cobro ya capturado (ni al revés).
+  async function writeCells(cells: { pid: number; mes: number; monto: number }[]) {
+    if (!selId || cells.length === 0) return
+    setDetMap(prev => {
+      const next = { ...prev }
+      cells.forEach(c => { next[c.pid] = { ...(next[c.pid] ?? {}), [c.mes]: c.monto } })
+      return next
+    })
+    const payload = cells.map(c => ({
+      id_presupuesto_fk: selId, id_partida_fk: c.pid, mes: c.mes,
+      [SERIE_META[serie].columna]: c.monto,
     }))
+    for (let i = 0; i < payload.length; i += 200) {
+      const { error } = await dbCtrl.from('ppto_presupuesto_det').upsert(
+        payload.slice(i, i + 200), { onConflict: 'id_presupuesto_fk,id_partida_fk,mes' })
+      if (error) { alert(`No se pudo guardar: ${error.message}`); await loadDet(selId); return }
+    }
+  }
+
+  // next = celda a la que se salta tras guardar (Tab/Enter/flechas); null = cerrar.
+  // Se cambia de celda ANTES de esperar al servidor para que la captura sea fluida.
+  function commitCell(next: { pid: number; mes: number } | null = null) {
+    if (!editCell || !selId) { setEditCell(null); return }
+    const cell = { pid: editCell.pid, mes: editCell.mes, monto: parseNum(editVal) }
+    skipBlurRef.current = true   // al desmontar el input viejo puede dispararse su onBlur
+    setEditCell(next)
+    setEditVal(next && detMap[next.pid]?.[next.mes] ? String(detMap[next.pid][next.mes]) : '')
+    if (cell.monto !== (detMap[cell.pid]?.[cell.mes] ?? 0)) writeCells([cell])
+  }
+
+  // Navegación tipo Excel. Tab/Shift+Tab: mes siguiente/anterior (salta de renglón
+  // al llegar al borde). Enter/Shift+Enter y ↑/↓: misma columna, renglón siguiente/anterior.
+  function vecino(c: { pid: number; mes: number }, dPid: number, dMes: number) {
+    let idx = navPids.indexOf(c.pid)
+    let mes = c.mes + dMes
+    if (mes > 12) { mes = 1; idx += 1 } else if (mes < 1) { mes = 12; idx -= 1 }
+    idx += dPid
+    return idx >= 0 && idx < navPids.length ? { pid: navPids[idx], mes } : null
+  }
+  function handleKey(e: React.KeyboardEvent) {
+    if (!editCell) return
+    if (e.key === 'Escape') { skipBlurRef.current = true; setEditCell(null); return }
+    let d: [number, number] | null = null
+    if (e.key === 'Tab') d = [0, e.shiftKey ? -1 : 1]
+    else if (e.key === 'Enter') d = [e.shiftKey ? -1 : 1, 0]
+    else if (e.key === 'ArrowDown') d = [1, 0]
+    else if (e.key === 'ArrowUp') d = [-1, 0]
+    if (!d) return
+    e.preventDefault()
+    commitCell(vecino(editCell, d[0], d[1]))
+  }
+
+  // Pegar desde Excel: un bloque (renglones × meses) se acomoda desde la celda activa.
+  function handlePaste(e: React.ClipboardEvent) {
+    if (!editCell) return
+    const texto = e.clipboardData.getData('text')
+    if (!/[\t\n]/.test(texto.trim())) return   // un solo valor: pegado normal
+    e.preventDefault()
+    const idx0 = navPids.indexOf(editCell.pid)
+    const cells: { pid: number; mes: number; monto: number }[] = []
+    texto.trim().split(/\r?\n/).forEach((linea, r) => {
+      const pid = navPids[idx0 + r]
+      if (pid == null) return
+      linea.split('\t').forEach((v, c) => {
+        const mes = editCell.mes + c
+        if (mes <= 12) cells.push({ pid, mes, monto: parseNum(v.replace(/[$]/g, '')) })
+      })
+    })
+    skipBlurRef.current = true
     setEditCell(null)
+    writeCells(cells)
   }
 
   // ── Copiar cobro → devengado ────────────────────────────────────────────
@@ -269,6 +328,8 @@ export default function CapturaPpto() {
   const porClasificacion = (lista: Partida[], clas: Clasificacion) =>
     lista.filter(p => (p.clasificacion ?? 'operativo') === clas)
   const cerrado  = selPpto?.status === 'cerrado'
+  // Orden visual de las partidas (para Tab/Enter y pegado de bloques)
+  const navPids = CLASIFICACIONES.flatMap(c => [...porClasificacion(ingresos, c), ...porClasificacion(egresos, c)]).map(p => p.id)
 
   const totalPartida  = (pid: number) => MESES.reduce((s, _, i) => s + (detMap[pid]?.[i + 1] ?? 0), 0)
   const totalMes      = (mes: number, lista: Partida[]) => lista.reduce((s, p) => s + (detMap[p.id]?.[mes] ?? 0), 0)
@@ -477,11 +538,9 @@ export default function CapturaPpto() {
                               <PartidaRow key={p.id} p={p} detMap={detMap}
                                 editCell={editCell} editVal={editVal}
                                 setEditVal={setEditVal} inputRef={inputRef}
-                                onOpen={openCell} onCommit={commitCell}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); commitCell() }
-                                  if (e.key === 'Escape') setEditCell(null)
-                                }}
+                                onOpen={openCell}
+                                onCommit={() => { if (skipBlurRef.current) return; commitCell() }}
+                                onKeyDown={handleKey} onPaste={handlePaste}
                                 puedeEscribir={puedeEscribir && !cerrado}
                                 rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#f0fdf4" />
                             ))}
@@ -498,11 +557,9 @@ export default function CapturaPpto() {
                               <PartidaRow key={p.id} p={p} detMap={detMap}
                                 editCell={editCell} editVal={editVal}
                                 setEditVal={setEditVal} inputRef={inputRef}
-                                onOpen={openCell} onCommit={commitCell}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); commitCell() }
-                                  if (e.key === 'Escape') setEditCell(null)
-                                }}
+                                onOpen={openCell}
+                                onCommit={() => { if (skipBlurRef.current) return; commitCell() }}
+                                onKeyDown={handleKey} onPaste={handlePaste}
                                 puedeEscribir={puedeEscribir && !cerrado}
                                 rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#fef2f2" />
                             ))}
@@ -778,7 +835,7 @@ function TotalRow({ label, lista, detMap, color, bg, bgTotal, totalMesFn, totalG
 }
 
 function PartidaRow({ p, detMap, editCell, editVal, setEditVal, inputRef,
-  onOpen, onCommit, onKeyDown, puedeEscribir, rowBg, accentBg }: {
+  onOpen, onCommit, onKeyDown, onPaste, puedeEscribir, rowBg, accentBg }: {
   p: Partida; detMap: DetMap
   editCell: { pid: number; mes: number } | null
   editVal: string; setEditVal: (v: string) => void
@@ -786,6 +843,7 @@ function PartidaRow({ p, detMap, editCell, editVal, setEditVal, inputRef,
   onOpen: (pid: number, mes: number) => void
   onCommit: () => void
   onKeyDown: (e: React.KeyboardEvent) => void
+  onPaste: (e: React.ClipboardEvent) => void
   puedeEscribir: boolean; rowBg: string; accentBg: string
 }) {
   const total = MESES.reduce((s, _, i) => s + (detMap[p.id]?.[i + 1] ?? 0), 0)
@@ -807,7 +865,7 @@ function PartidaRow({ p, detMap, editCell, editVal, setEditVal, inputRef,
             {isEdit ? (
               <input ref={inputRef} value={editVal}
                 onChange={e => setEditVal(e.target.value)}
-                onBlur={onCommit} onKeyDown={onKeyDown}
+                onBlur={onCommit} onKeyDown={onKeyDown} onPaste={onPaste}
                 style={{
                   width: '100%', padding: '4px 6px',
                   border: '2px solid #1d4ed8', borderRadius: 4,
