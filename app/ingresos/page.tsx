@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
-import { cargarCentrosAgrupados, idsCentrosFiltro, AgrupadorIngreso } from '@/lib/centrosIngreso'
+import { esCentroMantoFracc, cargarCentrosAgrupados, idsCentrosFiltro, AgrupadorIngreso } from '@/lib/centrosIngreso'
 
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = {
@@ -1207,9 +1207,9 @@ export default function IngresosPage() {
   const [modal, setModal]       = useState(false)
   const [detalle, setDetalle]   = useState<Recibo | null>(null)
 
-  // cobranza: solo Cuotas Residencial (tipo 'cuotas' en cfg.centros_ingreso)
-  const centrosPermitidos = esCobranza ? centros.filter(c => c.tipo === 'cuotas') : centros
-  const cuotasCentroIds   = centros.filter(c => c.tipo === 'cuotas').map(c => c.id)
+  // cobranza: solo centros del agrupador Mantto. Fraccionamiento (id 3)
+  const centrosPermitidos = esCobranza ? centros.filter(esCentroMantoFracc) : centros
+  const cuotasCentroIds   = centros.filter(esCentroMantoFracc).map(c => c.id)
 
   // Carga catálogos una sola vez
   useEffect(() => {

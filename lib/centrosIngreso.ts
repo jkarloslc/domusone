@@ -15,6 +15,16 @@ export type CentroIngresoAgr = {
   label: string
 }
 
+/**
+ * Agrupador "Mantto. Fraccionamiento" (cfg.agrupadores_ingreso.id = 3).
+ * Sustituye a centros_ingreso.tipo = 'cuotas' como condición funcional:
+ * Cobranza solo ve estos centros y el reporte de Cuotas solo los considera a ellos.
+ */
+export const AGRUPADOR_MANTTO_FRACC_ID = 3
+
+export const esCentroMantoFracc = (c: { id_agrupador_fk?: number | null }) =>
+  c.id_agrupador_fk === AGRUPADOR_MANTTO_FRACC_ID
+
 export const etiquetaCentro = (agrupador: string | null | undefined, nombre: string) =>
   agrupador ? `${agrupador}/${nombre}` : nombre
 
