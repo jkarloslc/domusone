@@ -29,6 +29,7 @@ type Partida     = {
   tipo_gasto:           string | null
   id_agrupador_fk:      number | null
   clasificacion:        Clasificacion
+  iva_pct:              number | null
 }
 type Agrupador = { id: number; nombre: string; orden: number }
 type Proveedor = { id: number; nombre: string }
@@ -189,7 +190,7 @@ export default function FlujoEfectivoPage() {
 
     const [pData, { data: det }, { data: manual }] = await Promise.all([
       cargarPartidasPresupuesto<Partida>(
-        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion',
+        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion, iva_pct',
         pptoId, modulo, q => q.eq('incluir_flujo', true)),
       dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
@@ -200,11 +201,14 @@ export default function FlujoEfectivoPage() {
     const parts = pData
     setPartidas(parts)
 
-    // Presupuestado: idénticos montos ya cargados en Captura (mismos que Presupuestos)
+    // Presupuestado: montos de Captura (sin IVA) grosados con el iva_pct de su
+    // partida, porque el Real de Flujo es de caja y trae IVA. Partida sin
+    // iva_pct (no debería pasar) se trata como 16%.
+    const ivaPorPartida = new Map(parts.map(p => [p.id, Number(p.iva_pct ?? 16)]))
     const dm: DetMap = {}
     ;(det ?? []).forEach((r: any) => {
       if (!dm[r.id_partida_fk]) dm[r.id_partida_fk] = {}
-      dm[r.id_partida_fk][r.mes] = Number(r.monto)
+      dm[r.id_partida_fk][r.mes] = Number(r.monto) * (1 + (ivaPorPartida.get(r.id_partida_fk) ?? 16) / 100)
     })
     setDetMap(dm)
 
@@ -716,7 +720,7 @@ export default function FlujoEfectivoPage() {
           <strong>Ingresos:</strong> recibos confirmados, misma fuente que Presupuestos.{' '}
           <strong>Egresos:</strong> pagos reales de Órdenes de Pago (abonos CXP) en su fecha de pago —
           base de efectivo, incluye abonos parciales aunque la OP siga en status &quot;Abonada&quot;.{' '}
-          <strong>Presupuestado:</strong> mismos montos capturados en Presupuestos.
+          <strong>Presupuestado:</strong> montos capturados en Presupuestos (sin IVA) más el IVA de cada partida.
         </span>
       </div>
 

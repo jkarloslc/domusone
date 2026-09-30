@@ -60,6 +60,7 @@ type Partida = {
   incluir_presupuesto: boolean
   incluir_flujo:        boolean
   devengado_igual_a_cobro: boolean
+  iva_pct: number
 }
 
 type CC        = { id: number; nombre: string }
@@ -83,6 +84,7 @@ const EMPTY: Omit<Partida, 'id'> = {
   clasificacion: 'operativo', orden: 0, activo: true,
   incluir_presupuesto: true, incluir_flujo: true,
   devengado_igual_a_cobro: false,
+  iva_pct: 16,
 }
 
 const TIPO_LABEL: Record<'ingreso' | 'egreso', string> = { ingreso: 'Ingreso', egreso: 'Egreso' }
@@ -184,6 +186,7 @@ export default function PartidasPage() {
       incluir_presupuesto: p.incluir_presupuesto ?? true,
       incluir_flujo:       p.incluir_flujo ?? true,
       devengado_igual_a_cobro: p.devengado_igual_a_cobro ?? false,
+      iva_pct: Number(p.iva_pct ?? 16),
     })
     setModal(true)
   }
@@ -203,6 +206,7 @@ export default function PartidasPage() {
       activo:               form.activo,
       incluir_presupuesto:  form.incluir_presupuesto,
       incluir_flujo:        form.incluir_flujo,
+      iva_pct:              Number(form.iva_pct) || 0,
       // Egresos
       id_centro_costo_fk:   form.tipo === 'egreso' ? form.id_centro_costo_fk : null,
       id_area_fk:           form.tipo === 'egreso' ? form.id_area_fk         : null,
@@ -258,6 +262,7 @@ export default function PartidasPage() {
       activo:               true,
       incluir_presupuesto:  dupSource.incluir_presupuesto,
       incluir_flujo:        dupSource.incluir_flujo,
+      iva_pct:              dupSource.iva_pct ?? 16,
       devengado_igual_a_cobro: dupSource.tipo === 'ingreso' ? (dupSource.devengado_igual_a_cobro ?? false) : false,
       id_centro_costo_fk:   dupSource.tipo === 'egreso' ? t.id_centro_costo_fk : null,
       id_area_fk:           dupSource.tipo === 'egreso' ? t.id_area_fk         : null,
@@ -599,6 +604,19 @@ export default function PartidasPage() {
                 readOnly disabled style={{ background: '#f8fafc', color: '#64748b' }} />
               <span style={{ fontSize: 11, color: '#94a3b8' }}>
                 Se genera automáticamente a partir de Tipo + Módulo + Área.
+              </span>
+            </label>
+
+            <label style={lbl}>
+              IVA de la partida (%)
+              <select className="input" value={String(form.iva_pct)}
+                onChange={e => setForm(f => ({ ...f, iva_pct: Number(e.target.value) }))}>
+                <option value="16">16% — grava IVA</option>
+                <option value="0">0% — exento / sin IVA</option>
+              </select>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                El presupuesto se captura sin IVA. Flujo (con IVA) lo multiplica por (1 + %) para
+                compararlo contra el real de caja; Comparativo no lo usa.
               </span>
             </label>
 
