@@ -114,7 +114,7 @@ export default function CapturaPpto() {
   }, [])
 
   const loadPartidas = useCallback(async (pptoId: number, modulo?: string) => {
-    setPartidas(await cargarPartidasPresupuesto<Partida>('id, nombre, tipo, orden, clasificacion', pptoId, modulo))
+    setPartidas(await cargarPartidasPresupuesto<Partida>('id, nombre, tipo, orden, clasificacion', pptoId, modulo, q => q.eq('clasificacion', 'operativo')))
   }, [])
 
   const loadDet = useCallback(async (id: number) => {

@@ -249,7 +249,7 @@ export default function DashboardPpto() {
     // Partidas del módulo + las de otro módulo capturadas en este presupuesto
     const parts = await cargarPartidasPresupuesto<Partida>(
       'id, nombre, tipo, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion, devengado_igual_a_cobro',
-      pptoId, modulo, q => q.eq('incluir_presupuesto', true))
+      pptoId, modulo, q => q.eq('incluir_presupuesto', true).eq('clasificacion', 'operativo'))
     setPartidas(parts)
 
     // Presupuesto detalle
