@@ -44,14 +44,13 @@ export default function ReporteIngresos() {
   const [centros, setCentros]         = useState<Centro[]>([])
   const [formasMap, setFormasMap]     = useState<Record<number, FormaPagoRow[]>>({})
   const [loading, setLoading]         = useState(true)
-  const [tab, setTab]           = useState<TabMode>('tipo')
+  const [tab, setTab]           = useState<TabMode>('agrupador')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   // Filtros
   const [agrupadores, setAgrupadores] = useState<AgrupadorIngreso[]>([])
   const [filtroAgr,    setFiltroAgr]    = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
-  const [filtroTipo,   setFiltroTipo]   = useState('')
   const [filtroStatus, setFiltroStatus] = useState('Confirmado')
   const [filtroDe,     setFiltroDe]     = useState('')
   const [filtroA,      setFiltroA]      = useState('')
@@ -70,10 +69,6 @@ export default function ReporteIngresos() {
     let result: Recibo[] = rs ?? []
     if (filtroStatus) result = result.filter(r => r.status === filtroStatus)
     if (idsC)         result = result.filter(r => r.id_centro_ingreso_fk != null && idsC.has(r.id_centro_ingreso_fk))
-    if (filtroTipo) {
-      const idsDelTipo = (cs ?? []).filter((c: any) => c.tipo === filtroTipo).map((c: any) => c.id)
-      result = result.filter(r => r.id_centro_ingreso_fk && idsDelTipo.includes(r.id_centro_ingreso_fk))
-    }
     if (filtroDe) result = result.filter(r => r.fecha >= filtroDe)
     if (filtroA)  result = result.filter(r => r.fecha <= filtroA)
     setRecibos(result)
@@ -96,20 +91,18 @@ export default function ReporteIngresos() {
     }
 
     setLoading(false)
-  }, [filtroAgr, filtroCentro, filtroTipo, filtroStatus, filtroDe, filtroA])
+  }, [filtroAgr, filtroCentro, filtroStatus, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
   const centroMap = Object.fromEntries(centros.map(c => [c.id, c]))
   const totalGeneral = recibos.reduce((s, r) => s + Number(r.monto_total ?? 0), 0)
 
-  // ── Vista Por Tipo ───────────────────────────────────────────
-  const tiposUnicos = Array.from(new Set(
-    recibos.map(r => centroMap[r.id_centro_ingreso_fk ?? 0]?.tipo ?? 'otro')
-  ))
-  const gruposPorTipo = tiposUnicos.map(tipo => {
-    const items = recibos.filter(r => (centroMap[r.id_centro_ingreso_fk ?? 0]?.tipo ?? 'otro') === tipo)
-    return { key: tipo, label: TIPO_LABEL[tipo] ?? tipo, items, total: items.reduce((s, r) => s + Number(r.monto_total ?? 0), 0) }
+  // ── Vista Por Agrupador ──────────────────────────────────────
+  const agrDe = (r: Recibo) => centroMap[r.id_centro_ingreso_fk ?? 0]?.agrupador || 'Sin agrupador'
+  const gruposPorAgrupador = Array.from(new Set(recibos.map(agrDe))).map(agr => {
+    const items = recibos.filter(r => agrDe(r) === agr)
+    return { key: agr, label: agr, items, total: items.reduce((s, r) => s + Number(r.monto_total ?? 0), 0) }
   }).sort((a, b) => b.total - a.total)
 
   // ── Vista Por Centro ─────────────────────────────────────────
@@ -127,7 +120,7 @@ export default function ReporteIngresos() {
 
   const toggle = (key: string) =>
     setExpanded(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })
-  const grupos = tab === 'tipo' ? gruposPorTipo : gruposPorCentro
+  const grupos = tab === 'agrupador' ? gruposPorAgrupador : gruposPorCentro
   const expandAll   = () => setExpanded(new Set(grupos.map(g => g.key)))
   const collapseAll = () => setExpanded(new Set())
 
@@ -166,9 +159,6 @@ export default function ReporteIngresos() {
     }
   })
 
-  // Tipos únicos disponibles en catálogo
-  const tiposCatalogo = Array.from(new Set(centros.map(c => c.tipo).filter(Boolean))) as string[]
-
   return (
     <div>
       {/* Filtros */}
@@ -179,11 +169,7 @@ export default function ReporteIngresos() {
           <option value="Borrador">Borrador</option>
           <option value="Cancelado">Cancelado</option>
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroTipo} onChange={e => { setFiltroTipo(e.target.value); setFiltroCentro(''); setFiltroAgr('') }}>
-          <option value="">Todos los tipos</option>
-          {tiposCatalogo.map(t => <option key={t} value={t}>{TIPO_LABEL[t] ?? t}</option>)}
-        </select>
-        <FiltroAgrupadorCentro centros={filtroTipo ? centros.filter(c => c.tipo === filtroTipo) : centros} agrupadores={agrupadores}
+        <FiltroAgrupadorCentro centros={centros} agrupadores={agrupadores}
           filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr} filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} />
         <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 140 }} />
         <input className="input" type="date" value={filtroA}  onChange={e => setFiltroA(e.target.value)}  style={{ width: 140 }} />
@@ -211,7 +197,7 @@ export default function ReporteIngresos() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '2px solid #e2e8f0', paddingBottom: 0 }}>
-        {([['tipo', 'Por Tipo de Ingreso'], ['centro', 'Por Centro de Ingreso']] as const).map(([key, label]) => (
+        {([['agrupador', 'Por Agrupador de Ingreso'], ['centro', 'Por Centro de Ingreso']] as const).map(([key, label]) => (
           <button key={key} onClick={() => { setTab(key); setExpanded(new Set()) }}
             style={{
               padding: '8px 18px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
@@ -221,7 +207,7 @@ export default function ReporteIngresos() {
         ))}
       </div>
 
-      <PrintBar title={`Ingresos-${tab}`} count={recibos.length} reportTitle={tab === 'tipo' ? 'Ingresos por Tipo' : 'Ingresos por Centro'} />
+      <PrintBar title={`Ingresos-${tab}`} count={recibos.length} reportTitle={tab === 'agrupador' ? 'Ingresos por Agrupador' : 'Ingresos por Centro'} />
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button className="btn-ghost" style={{ fontSize: 12 }} onClick={expandAll}>Expandir todo</button>
@@ -240,7 +226,7 @@ export default function ReporteIngresos() {
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  {tab === 'tipo' ? 'Tipo / Folio' : 'Centro / Folio'}
+                  {tab === 'agrupador' ? 'Agrupador / Folio' : 'Centro / Folio'}
                 </th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fecha</th>
                 <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Descripción</th>
@@ -250,7 +236,7 @@ export default function ReporteIngresos() {
             </thead>
             <tbody>
               {grupos.map(g => {
-                const color = TIPO_COLOR[(g as any).tipo ?? g.key] ?? TIPO_COLOR[g.key] ?? '#64748b'
+                const color = TIPO_COLOR[(g as any).tipo ?? ''] ?? '#0d9488'
                 return (
                   <>
                     {/* Fila de grupo */}
@@ -278,7 +264,7 @@ export default function ReporteIngresos() {
                       <tr key={`r-${r.id}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
                         <td style={{ padding: '8px 14px 8px 38px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)' }}>
                           {r.folio ?? `ING-${r.id}`}
-                          {tab === 'tipo' && r.id_centro_ingreso_fk && (
+                          {tab === 'agrupador' && r.id_centro_ingreso_fk && (
                             <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'inherit', marginLeft: 6 }}>
                               · {centroMap[r.id_centro_ingreso_fk]?.label ?? '—'}
                             </span>
