@@ -1,0 +1,915 @@
+'use client'
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
+import { dbCtrl } from '@/lib/supabase'
+import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
+import { useAuth } from '@/lib/AuthContext'
+import { Plus, BookOpen, Loader, Save, Settings, BookMarked, Edit2 } from 'lucide-react'
+import Link from 'next/link'
+import ModalShell from '@/components/ui/ModalShell'
+import PageHeader from '@/components/layout/PageHeader'
+
+// Sin 'Locales': sus rentas se presupuestan en la partida de Golf/Polo donde
+// viven, no en un presupuesto propio (se eliminó el 2026-09-24).
+const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's"]
+
+type Presupuesto = {
+  id: number
+  anio: number
+  nombre: string
+  descripcion: string | null
+  modulo: string
+  status: 'borrador' | 'aprobado' | 'cerrado'
+}
+
+type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
+
+type Partida = {
+  id: number
+  nombre: string
+  tipo: 'ingreso' | 'egreso'
+  orden: number
+  clasificacion: Clasificacion
+}
+
+const CLASIFICACION_LABELS: Record<Clasificacion, { ingresos: string; egresos: string; balance: string }> = {
+  operativo:      { ingresos: 'Ingresos',                 egresos: 'Egresos',                 balance: 'Balance Operativo' },
+  financiero:     { ingresos: 'Ingreso Financiero',        egresos: 'Egreso Financiero',        balance: 'Balance Financiero' },
+  intercompanias: { ingresos: 'Ingreso Intercompañías',    egresos: 'Egreso Intercompañías',    balance: 'Balance Intercompañías' },
+}
+
+type DetMap = Record<number, Record<number, number>>
+
+// Dos series capturables por partida/mes (migración 20260920200000):
+//   cobro     → ppto_presupuesto_det.monto            — lo consume /presupuestos/flujo
+//   devengado → ppto_presupuesto_det.monto_devengado  — lo consume /presupuestos/comparativo
+// Una sola cifra no puede ser las dos: con cobranza anualizada el cobro
+// esperado de enero lleva el pico de los pagos anuales y el devengado es plano.
+type Serie = 'cobro' | 'devengado'
+
+const SERIE_META: Record<Serie, { label: string; corto: string; columna: string; color: string; bg: string; ayuda: string }> = {
+  cobro: {
+    label: 'Cobro esperado', corto: 'Cobro', columna: 'monto',
+    color: '#15803d', bg: '#f0fdf4',
+    ayuda: 'Lo que se espera COBRAR cada mes (base caja, con el pico de los pagos anualizados). Es la serie que consume el Flujo de Efectivo.',
+  },
+  devengado: {
+    label: 'Generado esperado', corto: 'Generado', columna: 'monto_devengado',
+    color: '#7c3aed', bg: '#faf5ff',
+    ayuda: 'La cuota que corresponde a cada mes, se cobre cuando se cobre. Es la base para medir el área mes a mes y la que consume el Comparativo.',
+  },
+}
+
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+
+const fmtNum = (n: number) =>
+  n ? n.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—'
+
+const parseNum = (s: string) => parseFloat(s.replace(/,/g, '').replace(/\s/g, '')) || 0
+
+const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
+  borrador: { bg: '#fef9c3', color: '#a16207', label: 'Borrador' },
+  aprobado: { bg: '#dcfce7', color: '#15803d', label: 'Aprobado' },
+  cerrado:  { bg: '#f1f5f9', color: '#475569', label: 'Cerrado'  },
+}
+
+const EMPTY_PPTO = { anio: new Date().getFullYear(), nombre: '', descripcion: '', modulo: 'Golf' }
+
+// soloFlujo: pestaña "Captura Flujo" — partidas Financieras/Intercompañías
+// (movimientos netos, sin IVA) que solo consume /presupuestos/flujo. Captura
+// únicamente la serie de cobro (columna `monto`).
+export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean }) {
+  const { canWrite } = useAuth()
+  const puedeEscribir = canWrite('presupuestos')
+
+  const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([])
+  const [selId, setSelId]               = useState<number | null>(null)
+  const [partidas, setPartidas]         = useState<Partida[]>([])
+  const [detCobro, setDetCobro]         = useState<DetMap>({})
+  const [detDevengado, setDetDevengado] = useState<DetMap>({})
+  const [serie, setSerie]               = useState<Serie>('cobro')
+  // El grid siempre trabaja sobre la serie activa; así los componentes de fila
+  // y de totales no necesitan saber que existen dos.
+  const detMap = serie === 'cobro' ? detCobro : detDevengado
+  const setDetMap = serie === 'cobro' ? setDetCobro : setDetDevengado
+  const [loading, setLoading]           = useState(true)
+  const [loadingDet, setLoadingDet]     = useState(false)
+
+  const [editCell, setEditCell] = useState<{ pid: number; mes: number } | null>(null)
+  const [editVal, setEditVal]   = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const skipBlurRef = useRef(false)
+
+  const [modalNew, setModalNew]     = useState(false)
+  const [formNew, setFormNew]       = useState(EMPTY_PPTO)
+  const [savingNew, setSavingNew]   = useState(false)
+  const [modalStatus, setModalStatus] = useState(false)
+  const [modalEdit, setModalEdit]   = useState(false)
+  const [formEdit, setFormEdit]     = useState(EMPTY_PPTO)
+  const [savingEdit, setSavingEdit] = useState(false)
+
+  const loadPresupuestos = useCallback(async () => {
+    const { data } = await dbCtrl.from('ppto_presupuestos')
+      .select('*').order('anio', { ascending: false }).order('nombre')
+    const list = (data ?? []) as Presupuesto[]
+    setPresupuestos(list)
+    return list
+  }, [])
+
+  const loadPartidas = useCallback(async (pptoId: number, modulo?: string) => {
+    setPartidas(await cargarPartidasPresupuesto<Partida>('id, nombre, tipo, orden, clasificacion', pptoId, modulo, q => soloFlujo ? q.neq('clasificacion', 'operativo') : q.eq('clasificacion', 'operativo')))
+  }, [soloFlujo])
+
+  const loadDet = useCallback(async (id: number) => {
+    setLoadingDet(true)
+    const { data, error } = await dbCtrl.from('ppto_presupuesto_det')
+      .select('id_partida_fk, mes, monto, monto_devengado').eq('id_presupuesto_fk', id)
+    if (error) { console.error('ppto_presupuesto_det:', error.message); setLoadingDet(false); return }
+    const mapC: DetMap = {}
+    const mapD: DetMap = {}
+    ;(data ?? []).forEach((r: any) => {
+      if (!mapC[r.id_partida_fk]) mapC[r.id_partida_fk] = {}
+      mapC[r.id_partida_fk][r.mes] = Number(r.monto) || 0
+      // NULL en monto_devengado = no capturado. No se siembra con `monto`: la
+      // celda queda vacía a propósito, para que se vea qué falta capturar.
+      if (r.monto_devengado != null) {
+        if (!mapD[r.id_partida_fk]) mapD[r.id_partida_fk] = {}
+        mapD[r.id_partida_fk][r.mes] = Number(r.monto_devengado)
+      }
+    })
+    setDetCobro(mapC)
+    setDetDevengado(mapD)
+    setLoadingDet(false)
+  }, [])
+
+  useEffect(() => {
+    setLoading(true)
+    loadPresupuestos().then(async list => {
+      if (list.length > 0) {
+        setSelId(list[0].id)
+        loadDet(list[0].id)
+        await loadPartidas(list[0].id, list[0].modulo)
+      }
+      setLoading(false)
+    })
+  }, [loadPresupuestos, loadPartidas, loadDet])
+
+  useEffect(() => {
+    if (selId) loadDet(selId)
+  }, [selId, loadDet])
+
+  useEffect(() => {
+    if (editCell) inputRef.current?.focus()
+    // El blur del input desmontado (si lo hubo) ya ocurrió: rearmar el guard.
+    skipBlurRef.current = false
+  }, [editCell])
+
+  function openCell(pid: number, mes: number) {
+    if (!puedeEscribir) return
+    const sel = presupuestos.find(p => p.id === selId)
+    if (sel?.status === 'cerrado') return
+    setEditCell({ pid, mes })
+    setEditVal(detMap[pid]?.[mes] ? String(detMap[pid][mes]) : '')
+  }
+
+  // Guarda celdas en lote: actualiza el grid al instante y, si el servidor
+  // rechaza, avisa y recarga para no dejar cifras que no están guardadas.
+  // Se manda SOLO la columna de la serie activa: el upsert de PostgREST
+  // actualiza únicamente las columnas del payload, así que capturar devengado
+  // no pisa el cobro ya capturado (ni al revés).
+  async function writeCells(cells: { pid: number; mes: number; monto: number }[]) {
+    if (!selId || cells.length === 0) return
+    setDetMap(prev => {
+      const next = { ...prev }
+      cells.forEach(c => { next[c.pid] = { ...(next[c.pid] ?? {}), [c.mes]: c.monto } })
+      return next
+    })
+    const payload = cells.map(c => ({
+      id_presupuesto_fk: selId, id_partida_fk: c.pid, mes: c.mes,
+      [SERIE_META[serie].columna]: c.monto,
+    }))
+    for (let i = 0; i < payload.length; i += 200) {
+      const { error } = await dbCtrl.from('ppto_presupuesto_det').upsert(
+        payload.slice(i, i + 200), { onConflict: 'id_presupuesto_fk,id_partida_fk,mes' })
+      if (error) { alert(`No se pudo guardar: ${error.message}`); await loadDet(selId); return }
+    }
+  }
+
+  // next = celda a la que se salta tras guardar (Tab/Enter/flechas); null = cerrar.
+  // Se cambia de celda ANTES de esperar al servidor para que la captura sea fluida.
+  function commitCell(next: { pid: number; mes: number } | null = null) {
+    if (!editCell || !selId) { setEditCell(null); return }
+    const cell = { pid: editCell.pid, mes: editCell.mes, monto: parseNum(editVal) }
+    skipBlurRef.current = true   // al desmontar el input viejo puede dispararse su onBlur
+    setEditCell(next)
+    setEditVal(next && detMap[next.pid]?.[next.mes] ? String(detMap[next.pid][next.mes]) : '')
+    if (cell.monto !== (detMap[cell.pid]?.[cell.mes] ?? 0)) writeCells([cell])
+  }
+
+  // Navegación tipo Excel. Tab/Shift+Tab: mes siguiente/anterior (salta de renglón
+  // al llegar al borde). Enter/Shift+Enter y ↑/↓: misma columna, renglón siguiente/anterior.
+  function vecino(c: { pid: number; mes: number }, dPid: number, dMes: number) {
+    let idx = navPids.indexOf(c.pid)
+    let mes = c.mes + dMes
+    if (mes > 12) { mes = 1; idx += 1 } else if (mes < 1) { mes = 12; idx -= 1 }
+    idx += dPid
+    return idx >= 0 && idx < navPids.length ? { pid: navPids[idx], mes } : null
+  }
+  function handleKey(e: React.KeyboardEvent) {
+    if (!editCell) return
+    if (e.key === 'Escape') { skipBlurRef.current = true; setEditCell(null); return }
+    let d: [number, number] | null = null
+    if (e.key === 'Tab') d = [0, e.shiftKey ? -1 : 1]
+    else if (e.key === 'Enter') d = [e.shiftKey ? -1 : 1, 0]
+    else if (e.key === 'ArrowDown') d = [1, 0]
+    else if (e.key === 'ArrowUp') d = [-1, 0]
+    if (!d) return
+    e.preventDefault()
+    commitCell(vecino(editCell, d[0], d[1]))
+  }
+
+  // Pegar desde Excel: un bloque (renglones × meses) se acomoda desde la celda activa.
+  function handlePaste(e: React.ClipboardEvent) {
+    if (!editCell) return
+    const texto = e.clipboardData.getData('text')
+    if (!/[\t\n]/.test(texto.trim())) return   // un solo valor: pegado normal
+    e.preventDefault()
+    const idx0 = navPids.indexOf(editCell.pid)
+    const cells: { pid: number; mes: number; monto: number }[] = []
+    texto.trim().split(/\r?\n/).forEach((linea, r) => {
+      const pid = navPids[idx0 + r]
+      if (pid == null) return
+      linea.split('\t').forEach((v, c) => {
+        const mes = editCell.mes + c
+        if (mes <= 12) cells.push({ pid, mes, monto: parseNum(v.replace(/[$]/g, '')) })
+      })
+    })
+    skipBlurRef.current = true
+    setEditCell(null)
+    writeCells(cells)
+  }
+
+  // ── Copiar cobro → devengado ────────────────────────────────────────────
+  // Sin esto habría que recapturar 63 partidas × 12 meses a mano. Se copia como
+  // punto de partida (el total anual es el mismo en las dos bases) y de ahí se
+  // suaviza el pico de enero.
+  const [copiando, setCopiando] = useState(false)
+  async function copiarCobroADevengado() {
+    if (!selId) return
+    const filas: any[] = []
+    for (const [pid, meses] of Object.entries(detCobro)) {
+      for (const [mes, monto] of Object.entries(meses)) {
+        if (!monto) continue
+        filas.push({ id_presupuesto_fk: selId, id_partida_fk: Number(pid), mes: Number(mes), monto_devengado: monto })
+      }
+    }
+    if (!filas.length) { alert('El presupuesto de cobro está vacío: no hay nada que copiar.'); return }
+    const yaCapturadas = Object.values(detDevengado).reduce((a, m) => a + Object.keys(m).length, 0)
+    const aviso = yaCapturadas > 0
+      ? `Ya hay ${yaCapturadas} celda(s) de generado capturadas y se van a SOBRESCRIBIR.\n\n`
+      : ''
+    if (!confirm(`${aviso}Copiar ${filas.length} celda(s) del presupuesto de cobro al de generado como punto de partida?`)) return
+
+    setCopiando(true)
+    for (let i = 0; i < filas.length; i += 200) {
+      const { error } = await dbCtrl.from('ppto_presupuesto_det').upsert(
+        filas.slice(i, i + 200), { onConflict: 'id_presupuesto_fk,id_partida_fk,mes' })
+      if (error) { setCopiando(false); alert(`Error al copiar: ${error.message}`); await loadDet(selId); return }
+    }
+    setCopiando(false)
+    await loadDet(selId)
+    setSerie('devengado')
+  }
+
+  async function handleNewPpto() {
+    if (!formNew.nombre.trim()) return
+    setSavingNew(true)
+    const { data } = await dbCtrl.from('ppto_presupuestos').insert({
+      anio: formNew.anio, nombre: formNew.nombre.trim(),
+      descripcion: formNew.descripcion || null,
+      modulo: formNew.modulo, status: 'borrador',
+    }).select().single()
+    setSavingNew(false)
+    setModalNew(false)
+    const list = await loadPresupuestos()
+    if (data) setSelId((data as any).id)
+    else if (list.length > 0) setSelId(list[0].id)
+    setFormNew(EMPTY_PPTO)
+  }
+
+  function openEdit() {
+    if (!selPpto) return
+    setFormEdit({ anio: selPpto.anio, nombre: selPpto.nombre, descripcion: selPpto.descripcion ?? '', modulo: selPpto.modulo ?? 'General' })
+    setModalEdit(true)
+  }
+
+  async function handleEditPpto() {
+    if (!selId || !formEdit.nombre.trim()) return
+    setSavingEdit(true)
+    await dbCtrl.from('ppto_presupuestos').update({
+      anio: formEdit.anio, nombre: formEdit.nombre.trim(),
+      descripcion: formEdit.descripcion || null,
+      modulo: formEdit.modulo,
+    }).eq('id', selId)
+    setSavingEdit(false)
+    setModalEdit(false)
+    await loadPresupuestos()
+  }
+
+  async function handleStatus(newStatus: 'borrador' | 'aprobado' | 'cerrado') {
+    if (!selId) return
+    await dbCtrl.from('ppto_presupuestos').update({ status: newStatus }).eq('id', selId)
+    setPresupuestos(prev => prev.map(p => p.id === selId ? { ...p, status: newStatus } : p))
+    setModalStatus(false)
+  }
+
+  const selPpto = presupuestos.find(p => p.id === selId)
+  // Ingresos/Egresos combinando TODAS las clasificaciones — usados para el
+  // Balance Neto final (grand total) al pie de la tabla.
+  const ingresos = partidas.filter(p => p.tipo === 'ingreso')
+  const egresos  = partidas.filter(p => p.tipo === 'egreso')
+  const porClasificacion = (lista: Partida[], clas: Clasificacion) =>
+    lista.filter(p => (p.clasificacion ?? 'operativo') === clas)
+  const cerrado  = selPpto?.status === 'cerrado'
+  const CLASIFICACIONES: Clasificacion[] = soloFlujo ? ['financiero', 'intercompanias'] : ['operativo']
+  // Orden visual de las partidas (para Tab/Enter y pegado de bloques)
+  const navPids = CLASIFICACIONES.flatMap(c => [...porClasificacion(ingresos, c), ...porClasificacion(egresos, c)]).map(p => p.id)
+
+  const totalPartida  = (pid: number) => MESES.reduce((s, _, i) => s + (detMap[pid]?.[i + 1] ?? 0), 0)
+  const totalMes      = (mes: number, lista: Partida[]) => lista.reduce((s, p) => s + (detMap[p.id]?.[mes] ?? 0), 0)
+  const totalGeneral  = (lista: Partida[]) => lista.reduce((s, p) => s + totalPartida(p.id), 0)
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
+        <Loader size={28} color="#94a3b8" className="animate-spin" />
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
+
+      <PageHeader
+        title={soloFlujo ? 'Captura Flujo' : 'Captura de Presupuesto'}
+        subtitle={soloFlujo
+          ? 'Partidas Financieras e Intercompañías: movimientos netos, sin IVA, que solo se usan en Flujo de Efectivo'
+          : 'Ingresa los montos mensuales por partida presupuestal'}
+        actions={<>
+          <Link href="/presupuestos/partidas"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 14px', borderRadius: 8,
+              border: '1px solid #e2e8f0', background: '#fff',
+              textDecoration: 'none', fontSize: 13, color: '#374151', fontWeight: 500,
+            }}>
+            <Settings size={14} /> Catálogo de Partidas
+          </Link>
+          {puedeEscribir && (
+            <button className="btn-primary" onClick={() => setModalNew(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={15} /> Nuevo Presupuesto
+            </button>
+          )}
+        </>}
+      />
+
+      {/* Estado vacío */}
+      {presupuestos.length === 0 ? (
+        <div className="card" style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', padding: '60px 24px', gap: 12,
+        }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <BookOpen size={28} color="#94a3b8" />
+          </div>
+          <p style={{ color: '#64748b', fontWeight: 500, margin: 0 }}>No hay presupuestos registrados</p>
+          {puedeEscribir && (
+            <button className="btn-primary" onClick={() => setModalNew(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={14} /> Crear primer presupuesto
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Selector de presupuesto */}
+          <div className="card" style={{
+            padding: '12px 18px', marginBottom: 16,
+            display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
+                Presupuesto:
+              </span>
+              <select className="input" style={{ minWidth: 260 }}
+                value={selId ?? ''} onChange={e => {
+                  const id = Number(e.target.value)
+                  setSelId(id)
+                  const p = presupuestos.find(x => x.id === id)
+                  if (p) loadPartidas(p.id, p.modulo)
+                }}>
+                {presupuestos.map(p => (
+                  <option key={p.id} value={p.id}>{p.anio} — [{p.modulo}] {p.nombre}</option>
+                ))}
+              </select>
+            </label>
+
+            {/* ── Serie que se está capturando ─────────────────────── */}
+            {!soloFlujo && <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>Serie:</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {(['cobro', 'devengado'] as Serie[]).map(sr => {
+                  const meta = SERIE_META[sr]
+                  const on = serie === sr
+                  const capturadas = Object.values(sr === 'cobro' ? detCobro : detDevengado)
+                    .reduce((a, m) => a + Object.keys(m).length, 0)
+                  return (
+                    <button key={sr} onClick={() => { setEditCell(null); setSerie(sr) }} title={meta.ayuda}
+                      style={{ padding: '6px 12px', fontSize: 12, fontWeight: on ? 700 : 500, borderRadius: 8, cursor: 'pointer',
+                        border: '1px solid', borderColor: on ? meta.color : '#e2e8f0',
+                        background: on ? meta.bg : '#fff', color: on ? meta.color : '#64748b' }}>
+                      {meta.label}
+                      <span style={{ fontSize: 10, fontWeight: 500, opacity: .75, marginLeft: 5 }}>
+                        {capturadas ? `${capturadas} celdas` : 'sin capturar'}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              {puedeEscribir && !cerrado && (
+                <button className="btn-ghost" onClick={copiarCobroADevengado} disabled={copiando}
+                  title="Copia el presupuesto de cobro al de generado como punto de partida. El total anual es el mismo en las dos bases; lo que cambia es la distribución mensual."
+                  style={{ fontSize: 12, padding: '5px 10px' }}>
+                  {copiando ? 'Copiando…' : 'Copiar cobro → generado'}
+                </button>
+              )}
+            </div>}
+
+            {selPpto && (() => {
+              const st = STATUS_STYLE[selPpto.status]
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 12,
+                    background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0',
+                  }}>
+                    {selPpto.modulo ?? 'General'}
+                  </span>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 12,
+                    background: st.bg, color: st.color,
+                    border: `1px solid ${st.color}33`,
+                  }}>
+                    {st.label}
+                  </span>
+                  {puedeEscribir && (
+                    <button className="btn-ghost" onClick={openEdit}
+                      style={{ fontSize: 12, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Edit2 size={12} /> Editar
+                    </button>
+                  )}
+                  {puedeEscribir && !cerrado && (
+                    <button className="btn-ghost" onClick={() => setModalStatus(true)}
+                      style={{ fontSize: 12, padding: '4px 10px' }}>
+                      Cambiar status
+                    </button>
+                  )}
+                </div>
+              )
+            })()}
+
+            {loadingDet && (
+              <Loader size={15} color="#94a3b8" className="animate-spin" />
+            )}
+          </div>
+
+          {/* Grid de captura */}
+          {partidas.length === 0 ? (
+            <div className="card" style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              justifyContent: 'center', padding: '40px 24px', gap: 10,
+            }}>
+              <p style={{ color: '#94a3b8', margin: 0 }}>
+                No hay partidas activas.{' '}
+                <Link href="/presupuestos/partidas" style={{ color: '#1e40af' }}>Crear partidas</Link>
+                {' '}para comenzar la captura.
+              </p>
+            </div>
+          ) : (
+            <div>
+              {/* Qué serie se está capturando — visible siempre, para que no se
+                  capture en la equivocada. */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                padding: '8px 12px', marginBottom: 8, borderRadius: 8,
+                background: SERIE_META[serie].bg,
+                border: `1px solid ${SERIE_META[serie].color}33`,
+                fontSize: 12, color: SERIE_META[serie].color,
+              }}>
+                <strong>Capturando: {SERIE_META[serie].label}</strong>
+                <span style={{ color: '#475569' }}>{soloFlujo
+                  ? 'Monto neto del mes (sin IVA), tal como se espera mover en bancos. Flujo lo toma tal cual.'
+                  : SERIE_META[serie].ayuda}</span>
+                {serie === 'devengado' && Object.keys(detDevengado).length === 0 && (
+                  <span style={{ color: '#92400e' }}>
+                    Todavía no hay nada capturado en esta serie: el Comparativo sigue usando el presupuesto de cobro y lo marca como tal.
+                  </span>
+                )}
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 900 }}>
+                <thead>
+                  <tr style={{ background: '#1e293b', color: '#fff' }}>
+                    <th style={{ ...thS, textAlign: 'left', minWidth: 200, position: 'sticky', left: 0, background: '#1e293b', zIndex: 2 }}>
+                      Partida
+                    </th>
+                    {MESES.map(m => <th key={m} style={{ ...thS, minWidth: 88 }}>{m}</th>)}
+                    <th style={{ ...thS, minWidth: 110, background: '#0f172a' }}>Total Anual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {CLASIFICACIONES.map(clas => {
+                    const ing = porClasificacion(ingresos, clas)
+                    const egr = porClasificacion(egresos, clas)
+                    const labels = CLASIFICACION_LABELS[clas]
+                    if (ing.length === 0 && egr.length === 0) return null
+                    return (
+                      <Fragment key={clas}>
+                        {ing.length > 0 && (
+                          <>
+                            <SectionHeader label={labels.ingresos} color="#15803d" bg="#f0fdf4" border="#bbf7d0" />
+                            {ing.map((p, i) => (
+                              <PartidaRow key={p.id} p={p} detMap={detMap}
+                                editCell={editCell} editVal={editVal}
+                                setEditVal={setEditVal} inputRef={inputRef}
+                                onOpen={openCell}
+                                onCommit={() => { if (skipBlurRef.current) return; commitCell() }}
+                                onKeyDown={handleKey} onPaste={handlePaste}
+                                puedeEscribir={puedeEscribir && !cerrado}
+                                rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#f0fdf4" />
+                            ))}
+                            <TotalRow label={`Total ${labels.ingresos}`} lista={ing} detMap={detMap}
+                              color="#15803d" bg="#dcfce7" bgTotal="#bbf7d0"
+                              totalMesFn={totalMes} totalGeneralFn={totalGeneral} />
+                          </>
+                        )}
+
+                        {egr.length > 0 && (
+                          <>
+                            <SectionHeader label={labels.egresos} color="#b91c1c" bg="#fef2f2" border="#fecaca" />
+                            {egr.map((p, i) => (
+                              <PartidaRow key={p.id} p={p} detMap={detMap}
+                                editCell={editCell} editVal={editVal}
+                                setEditVal={setEditVal} inputRef={inputRef}
+                                onOpen={openCell}
+                                onCommit={() => { if (skipBlurRef.current) return; commitCell() }}
+                                onKeyDown={handleKey} onPaste={handlePaste}
+                                puedeEscribir={puedeEscribir && !cerrado}
+                                rowBg={i % 2 === 0 ? '#fff' : '#f9fafb'} accentBg="#fef2f2" />
+                            ))}
+                            <TotalRow label={`Total ${labels.egresos}`} lista={egr} detMap={detMap}
+                              color="#b91c1c" bg="#fee2e2" bgTotal="#fecaca"
+                              totalMesFn={totalMes} totalGeneralFn={totalGeneral} />
+                          </>
+                        )}
+
+                        {ing.length > 0 && egr.length > 0 && (
+                          <tr style={{ background: '#334155', color: '#fff', fontWeight: 700 }}>
+                            <td style={{ ...tdS, position: 'sticky', left: 0, background: '#334155', zIndex: 1,
+                              fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                              {labels.balance}
+                            </td>
+                            {MESES.map((_, i) => {
+                              const bal = totalMes(i + 1, ing) - totalMes(i + 1, egr)
+                              return (
+                                <td key={i} style={{ ...tdS, textAlign: 'right', color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                                  {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
+                                </td>
+                              )
+                            })}
+                            <td style={{ ...tdS, textAlign: 'right', background: '#1e293b' }}>
+                              {(() => {
+                                const bal = totalGeneral(ing) - totalGeneral(egr)
+                                return <span style={{ color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                                  {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
+                                </span>
+                              })()}
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    )
+                  })}
+
+                  {/* BALANCE */}
+                  {ingresos.length > 0 && egresos.length > 0 && (
+                    <tr style={{ background: '#1e293b', color: '#fff', fontWeight: 700 }}>
+                      <td style={{ ...tdS, position: 'sticky', left: 0, background: '#1e293b', zIndex: 1,
+                        fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                        Balance Neto
+                      </td>
+                      {MESES.map((_, i) => {
+                        const bal = totalMes(i + 1, ingresos) - totalMes(i + 1, egresos)
+                        return (
+                          <td key={i} style={{ ...tdS, textAlign: 'right', color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                            {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
+                          </td>
+                        )
+                      })}
+                      <td style={{ ...tdS, textAlign: 'right', background: '#0f172a' }}>
+                        {(() => {
+                          const bal = totalGeneral(ingresos) - totalGeneral(egresos)
+                          return <span style={{ color: bal >= 0 ? '#86efac' : '#fca5a5' }}>
+                            {fmtNum(Math.abs(bal))}{bal < 0 ? ' —' : ''}
+                          </span>
+                        })()}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              </div>
+            </div>
+          )}
+
+          {!puedeEscribir && (
+            <p style={{ color: '#94a3b8', fontSize: 12, marginTop: 10 }}>Vista de solo lectura</p>
+          )}
+          {cerrado && (
+            <p style={{ color: '#94a3b8', fontSize: 12, marginTop: 10 }}>Presupuesto cerrado — no se puede modificar</p>
+          )}
+        </>
+      )}
+
+      {/* Modal: Nuevo Presupuesto */}
+      {modalNew && (
+        <ModalShell
+          modulo="presupuestos"
+          titulo="Nuevo Presupuesto"
+          subtitulo="Crea un presupuesto anual para comenzar la captura"
+          icono={BookMarked}
+          maxWidth={420}
+          onClose={() => setModalNew(false)}
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setModalNew(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={handleNewPpto}
+                disabled={savingNew || !formNew.nombre.trim()}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {savingNew
+                  ? <Loader size={14} className="animate-spin" />
+                  : <Save size={14} />}
+                Crear
+              </button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <label style={{ ...lbl, flex: 1 }}>
+                Año *
+                <input className="input" type="number" min={2020} max={2099}
+                  value={formNew.anio}
+                  onChange={e => setFormNew(f => ({ ...f, anio: Number(e.target.value) }))} />
+              </label>
+              <label style={{ ...lbl, flex: 2 }}>
+                Módulo *
+                <select className="input" value={formNew.modulo}
+                  onChange={e => setFormNew(f => ({ ...f, modulo: e.target.value }))}>
+                  {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </label>
+            </div>
+            <label style={lbl}>
+              Nombre *
+              <input className="input" value={formNew.nombre}
+                onChange={e => setFormNew(f => ({ ...f, nombre: e.target.value }))}
+                placeholder="Ej: Presupuesto Anual 2026" />
+            </label>
+            <label style={lbl}>
+              Descripción
+              <input className="input" value={formNew.descripcion}
+                onChange={e => setFormNew(f => ({ ...f, descripcion: e.target.value }))}
+                placeholder="Opcional" />
+            </label>
+          </div>
+        </ModalShell>
+      )}
+
+      {/* Modal: Editar Presupuesto */}
+      {modalEdit && selPpto && (
+        <ModalShell
+          modulo="presupuestos"
+          titulo="Editar Presupuesto"
+          subtitulo={`Modificando: ${selPpto.nombre} · ${selPpto.anio}`}
+          icono={BookMarked}
+          maxWidth={420}
+          onClose={() => setModalEdit(false)}
+          footer={
+            <>
+              <button className="btn-secondary" onClick={() => setModalEdit(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={handleEditPpto}
+                disabled={savingEdit || !formEdit.nombre.trim()}
+                style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {savingEdit ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+                Guardar
+              </button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <label style={{ ...lbl, flex: 1 }}>
+                Año *
+                <input className="input" type="number" min={2020} max={2099}
+                  value={formEdit.anio}
+                  onChange={e => setFormEdit(f => ({ ...f, anio: Number(e.target.value) }))} />
+              </label>
+              <label style={{ ...lbl, flex: 2 }}>
+                Módulo *
+                <select className="input" value={formEdit.modulo}
+                  onChange={e => setFormEdit(f => ({ ...f, modulo: e.target.value }))}>
+                  {MODULOS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </label>
+            </div>
+            <label style={lbl}>
+              Nombre *
+              <input className="input" value={formEdit.nombre}
+                onChange={e => setFormEdit(f => ({ ...f, nombre: e.target.value }))} />
+            </label>
+            <label style={lbl}>
+              Descripción
+              <input className="input" value={formEdit.descripcion}
+                onChange={e => setFormEdit(f => ({ ...f, descripcion: e.target.value }))}
+                placeholder="Opcional" />
+            </label>
+          </div>
+        </ModalShell>
+      )}
+
+      {/* Modal: Cambio de status */}
+      {modalStatus && selPpto && (
+        <ModalShell
+          modulo="presupuestos"
+          titulo="Cambiar Status"
+          subtitulo={`Presupuesto: ${selPpto.nombre} · ${selPpto.anio}`}
+          icono={BookOpen}
+          maxWidth={380}
+          onClose={() => setModalStatus(false)}
+          footer={
+            <button className="btn-secondary" onClick={() => setModalStatus(false)}>Cancelar</button>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p style={{ margin: '0 0 4px', fontSize: 13, color: '#64748b' }}>
+              Status actual:{' '}
+              <span style={{ fontWeight: 600, color: STATUS_STYLE[selPpto.status].color }}>
+                {STATUS_STYLE[selPpto.status].label}
+              </span>
+            </p>
+            {(['borrador', 'aprobado', 'cerrado'] as const)
+              .filter(s => s !== selPpto.status)
+              .map(s => {
+                const st = STATUS_STYLE[s]
+                return (
+                  <button key={s} onClick={() => handleStatus(s)}
+                    style={{
+                      padding: '12px 16px', borderRadius: 10, border: `1px solid ${st.color}33`,
+                      cursor: 'pointer', fontWeight: 600, fontSize: 14, textAlign: 'left',
+                      background: st.bg, color: st.color, transition: 'opacity .15s',
+                    }}>
+                    Cambiar a {st.label}
+                    {s === 'cerrado' && (
+                      <span style={{ fontWeight: 400, fontSize: 12, display: 'block', marginTop: 2, color: '#94a3b8' }}>
+                        El presupuesto no podrá modificarse
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+          </div>
+        </ModalShell>
+      )}
+    </div>
+  )
+}
+
+// ── Sub-componentes ───────────────────────────────────────────────
+
+function SectionHeader({ label, color, bg, border }: {
+  label: string; color: string; bg: string; border: string
+}) {
+  return (
+    <tr>
+      <td colSpan={14} style={{
+        padding: '7px 14px', background: bg,
+        fontWeight: 700, fontSize: 11, color,
+        textTransform: 'uppercase', letterSpacing: '.06em',
+        borderTop: `2px solid ${border}`,
+      }}>
+        {label}
+      </td>
+    </tr>
+  )
+}
+
+function TotalRow({ label, lista, detMap, color, bg, bgTotal, totalMesFn, totalGeneralFn }: {
+  label: string; lista: Partida[]; detMap: DetMap
+  color: string; bg: string; bgTotal: string
+  totalMesFn: (mes: number, lista: Partida[]) => number
+  totalGeneralFn: (lista: Partida[]) => number
+}) {
+  return (
+    <tr style={{ background: bg, fontWeight: 700 }}>
+      <td style={{ ...tdS, position: 'sticky', left: 0, background: bg, zIndex: 1,
+        color, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+        {label}
+      </td>
+      {MESES.map((_, i) => (
+        <td key={i} style={{ ...tdS, textAlign: 'right', color }}>
+          {fmtNum(totalMesFn(i + 1, lista))}
+        </td>
+      ))}
+      <td style={{ ...tdS, textAlign: 'right', color, background: bgTotal }}>
+        {fmtNum(totalGeneralFn(lista))}
+      </td>
+    </tr>
+  )
+}
+
+function PartidaRow({ p, detMap, editCell, editVal, setEditVal, inputRef,
+  onOpen, onCommit, onKeyDown, onPaste, puedeEscribir, rowBg, accentBg }: {
+  p: Partida; detMap: DetMap
+  editCell: { pid: number; mes: number } | null
+  editVal: string; setEditVal: (v: string) => void
+  inputRef: React.RefObject<HTMLInputElement>
+  onOpen: (pid: number, mes: number) => void
+  onCommit: () => void
+  onKeyDown: (e: React.KeyboardEvent) => void
+  onPaste: (e: React.ClipboardEvent) => void
+  puedeEscribir: boolean; rowBg: string; accentBg: string
+}) {
+  const total = MESES.reduce((s, _, i) => s + (detMap[p.id]?.[i + 1] ?? 0), 0)
+
+  return (
+    <tr style={{ background: rowBg, borderBottom: '1px solid #f1f5f9' }}>
+      <td style={{ ...tdS, position: 'sticky', left: 0, background: rowBg, zIndex: 1,
+        fontWeight: 600, color: '#1e293b', borderRight: '1px solid #e2e8f0' }}>
+        {p.nombre}
+      </td>
+      {MESES.map((_, i) => {
+        const mes    = i + 1
+        const isEdit = editCell?.pid === p.id && editCell.mes === mes
+        const val    = detMap[p.id]?.[mes] ?? 0
+
+        return (
+          <td key={mes} style={{ ...tdS, textAlign: 'right', padding: 4 }}
+            onClick={() => !isEdit && onOpen(p.id, mes)}>
+            {isEdit ? (
+              <input ref={inputRef} value={editVal}
+                onChange={e => setEditVal(e.target.value)}
+                onBlur={onCommit} onKeyDown={onKeyDown} onPaste={onPaste}
+                style={{
+                  width: '100%', padding: '4px 6px',
+                  border: '2px solid #1d4ed8', borderRadius: 4,
+                  textAlign: 'right', fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            ) : (
+              <span style={{
+                display: 'block', padding: '4px 8px', borderRadius: 4,
+                cursor: puedeEscribir ? 'pointer' : 'default',
+                color: val ? '#1e293b' : '#cbd5e1',
+              }}
+                onMouseEnter={e => { if (puedeEscribir) (e.currentTarget as HTMLElement).style.background = accentBg }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
+                {val ? fmtNum(val) : '—'}
+              </span>
+            )}
+          </td>
+        )
+      })}
+      <td style={{ ...tdS, textAlign: 'right', fontWeight: 700,
+        color: total ? '#1e293b' : '#cbd5e1',
+        background: total ? '#f8fafc' : 'transparent',
+        borderLeft: '1px solid #e2e8f0' }}>
+        {total ? fmtNum(total) : '—'}
+      </td>
+    </tr>
+  )
+}
+
+const thS: React.CSSProperties = {
+  padding: '10px 10px', fontWeight: 600, fontSize: 11,
+  textTransform: 'uppercase', letterSpacing: '.05em', textAlign: 'right',
+  borderBottom: '1px solid #334155',
+}
+const tdS: React.CSSProperties = { padding: '8px 10px', fontSize: 13 }
+const lbl: React.CSSProperties = {
+  display: 'flex', flexDirection: 'column', gap: 5,
+  fontSize: 13, fontWeight: 500, color: '#374151',
+}

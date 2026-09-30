@@ -6,6 +6,7 @@ import { LayoutDashboard, BookOpen, BarChart3, Settings, Wallet } from 'lucide-r
 const NAV = [
   { href: '/presupuestos/dashboard',   label: 'Dashboard',           icon: LayoutDashboard },
   { href: '/presupuestos/captura',     label: 'Captura',             icon: BookOpen        },
+  { href: '/presupuestos/captura-flujo', label: 'Captura Flujo',      icon: BookOpen        },
   { href: '/presupuestos/comparativo', label: 'Comparativo',         icon: BarChart3       },
   { href: '/presupuestos/flujo',       label: 'Flujo de Efectivo',   icon: Wallet          },
   { href: '/presupuestos/partidas',    label: 'Partidas',            icon: Settings        },
@@ -20,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #e2e8f0',
         paddingLeft: 32, background: '#fff' }}>
         {NAV.map(item => {
-          const active = path.startsWith(item.href)
+          const active = path === item.href || path.startsWith(item.href + '/')
           const Icon   = item.icon
           return (
             <Link key={item.href} href={item.href}
