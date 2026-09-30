@@ -3,7 +3,12 @@ import { useState } from 'react'
 
 type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type DetMap = Record<number, Record<number, number>>
-export type FilaGrid = { id: number; nombre: string; tipo: 'ingreso' | 'egreso'; clasificacion: Clasificacion }
+export type FilaGrid = {
+  id: number; nombre: string; tipo: 'ingreso' | 'egreso'; clasificacion: Clasificacion
+  orden: number; tipo_gasto: string | null; id_centro_costo_fk: number | null; id_agrupador_fk: number | null
+}
+export type Vista = 'detalle' | 'concepto' | 'agrupado'
+type Linea = { key: string; nombre: string; orden: number; ids: number[] }
 type Metrica = 'real' | 'ppto' | 'var'
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
@@ -22,8 +27,11 @@ const METRICAS: { v: Metrica; label: string }[] = [
 const fmtN = (n: number) => Math.round(n).toLocaleString('es-MX')
 const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }
 
-export default function GridMensual({ filas, detMap, realMap }: {
+const SIN_AGRUPADOR = 'Sin Agrupador'
+
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores }: {
   filas: FilaGrid[]; detMap: DetMap; realMap: DetMap
+  vista: Vista; agrupadores: { id: number; nombre: string; orden: number }[]
 }) {
   const [metrica, setMetrica] = useState<Metrica>('real')
   const [ocultarVacios, setOcultarVacios] = useState(false)
@@ -33,6 +41,29 @@ export default function GridMensual({ filas, detMap, realMap }: {
   const real = (pid: number, m: number) => realMap[pid]?.[m] ?? 0
   const valor = (pid: number, m: number) =>
     metrica === 'real' ? real(pid, m) : metrica === 'ppto' ? ppto(pid, m) : real(pid, m) - ppto(pid, m)
+
+  // Líneas visibles según la vista: partida, concepto (tipo_gasto por CC) o agrupador.
+  // Misma lógica de agrupación que la vista Resumen.
+  function lineasDe(rows: FilaGrid[]): Linea[] {
+    if (vista === 'detalle') return rows.map(r => ({ key: `p-${r.id}`, nombre: r.nombre, orden: r.orden, ids: [r.id] }))
+    const map = new Map<string, Linea>()
+    rows.forEach(r => {
+      let key: string, nombre: string, orden: number
+      if (vista === 'concepto') {
+        key = r.tipo_gasto ? `${r.id_centro_costo_fk ?? 0}-${r.tipo_gasto}` : `p-${r.id}`
+        nombre = r.tipo_gasto ?? r.nombre; orden = r.orden
+      } else {
+        const ag = r.id_agrupador_fk ? agrupadores.find(a => a.id === r.id_agrupador_fk) : null
+        key = `ag-${r.id_agrupador_fk ?? 0}`
+        nombre = ag?.nombre ?? SIN_AGRUPADOR; orden = ag?.orden ?? Number.MAX_SAFE_INTEGER
+      }
+      const g = map.get(key)
+      if (g) { g.ids.push(r.id); g.orden = Math.min(g.orden, orden) }
+      else map.set(key, { key, nombre, orden, ids: [r.id] })
+    })
+    return Array.from(map.values()).sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
+  }
+  const valorLinea = (l: Linea, m: number) => l.ids.reduce((s, id) => s + valor(id, m), 0)
 
   // Meses sin ningún movimiento (ni ppto ni real) en las filas mostradas
   const meses = ocultarVacios
@@ -78,13 +109,13 @@ export default function GridMensual({ filas, detMap, realMap }: {
       <>
         <tr><td colSpan={meses.length + 2} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, letterSpacing: '.06em',
           textTransform: 'uppercase', color: fg, background: bg }}>{label}</td></tr>
-        {rows.map(r => {
-          const t = meses.reduce((s, m) => s + valor(r.id, m), 0)
+        {lineasDe(rows).map(r => {
+          const t = meses.reduce((s, m) => s + valorLinea(r, m), 0)
           return (
-            <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+            <tr key={r.key} style={{ borderBottom: '1px solid #f1f5f9' }}>
               <td style={{ ...stickyBase, background: '#fff', padding: '6px 12px 6px 22px', fontSize: 12, color: '#334155', minWidth: 220, maxWidth: 280,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.nombre}>{r.nombre}</td>
-              {meses.map(m => { const v = valor(r.id, m); return <td key={m} style={cell(v, tipo)}>{show(v)}</td> })}
+              {meses.map(m => { const v = valorLinea(r, m); return <td key={m} style={cell(v, tipo)}>{show(v)}</td> })}
               <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #e2e8f0', background: '#f8fafc' }}>{show(t)}</td>
             </tr>
           )

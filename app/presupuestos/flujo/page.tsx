@@ -808,7 +808,7 @@ export default function FlujoEfectivoPage() {
         </div>
 
         {/* Vista: Detalle / Concepto (CC) / Agrupado */}
-        {modo === 'resumen' && <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
+        <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {([
             { v: 'detalle',  label: 'Detalle',  icon: List },
             { v: 'concepto', label: 'Concepto', icon: Building2 },
@@ -826,7 +826,7 @@ export default function FlujoEfectivoPage() {
               <Icon size={12} /> {label}
             </button>
           ))}
-        </div>}
+        </div>
       </div>
 
       {/* Tabla */}
@@ -837,7 +837,7 @@ export default function FlujoEfectivoPage() {
       ) : (
         <>
           <PrintBar title="Flujo-de-Efectivo" count={ingRows.length + egrRows.length}
-            reportTitle={`Flujo de Efectivo — ${mesLabel} · ${selPpto?.nombre ?? ''} · ${modo === 'mensual' ? 'Vista Mensual' : `Vista ${VISTA_LABEL[vista]}`}`} />
+            reportTitle={`Flujo de Efectivo — ${mesLabel} · ${selPpto?.nombre ?? ''} · ${modo === 'mensual' ? `Vista Mensual · ${VISTA_LABEL[vista]}` : `Vista ${VISTA_LABEL[vista]}`}`} />
           <style>{`
             @media print {
               #reporte-print-area .ppto-print-band { page-break-after: avoid !important; break-after: avoid !important; }
@@ -847,7 +847,7 @@ export default function FlujoEfectivoPage() {
           `}</style>
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
-            <GridMensual filas={filas} detMap={detMap} realMap={realMap} />
+            <GridMensual filas={filas} detMap={detMap} realMap={realMap} vista={vista} agrupadores={agrupadores} />
           ) : (
           <div style={{ overflowX: 'auto' }}>
           <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
