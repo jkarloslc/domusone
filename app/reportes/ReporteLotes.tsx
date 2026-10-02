@@ -8,6 +8,7 @@ export default function ReporteLotes() {
   const [lotes, setLotes]       = useState<any[]>([])
   const [secciones, setSecciones] = useState<any[]>([])
   const [seccionMap, setSeccionMap] = useState<Record<number, string>>({})
+  const [clasifMap, setClasifMap] = useState<Record<number, string>>({})
   const [filterSec, setFilterSec] = useState('')
   const [loading, setLoading]   = useState(true)
 
@@ -19,6 +20,14 @@ export default function ReporteLotes() {
         ;(data ?? []).forEach((s: any) => { map[s.id] = s.nombre })
         setSeccionMap(map)
       })
+  }, [])
+
+  useEffect(() => {
+    dbCfg.from('clasificacion').select('id, nombre').then(({ data }) => {
+      const map: Record<number, string> = {}
+      ;(data ?? []).forEach((c: any) => { map[c.id] = c.nombre })
+      setClasifMap(map)
+    })
   }, [])
 
   useEffect(() => {
@@ -54,7 +63,7 @@ export default function ReporteLotes() {
               <th>Tipo</th>
               <th style={{ textAlign: 'right' }}>Superficie m²</th>
               <th>Status</th>
-              <th>Cobranza</th>
+              <th>Clasificación</th>
               <th>Vendedor</th>
               <th style={{ textAlign: 'right' }}>Valor Operación</th>
             </tr>
@@ -73,7 +82,7 @@ export default function ReporteLotes() {
                     {l.status_lote ?? '—'}
                   </span>
                 </td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.clasificacion_cobranza ?? '—'}</td>
+                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.id_clasificacion_fk ? (clasifMap[l.id_clasificacion_fk] ?? '—') : '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.vendedor ?? '—'}</td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
                   {l.valor_operacion ? '$' + Number(l.valor_operacion).toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'}
