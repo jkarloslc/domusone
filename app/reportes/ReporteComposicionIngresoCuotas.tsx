@@ -91,7 +91,15 @@ export default function ReporteComposicionIngresoCuotas() {
   const esSuperadmin = authUser?.rol === 'superadmin'
 
   const [anio, setAnio]               = useState(anioActual)
-  const [mes, setMes]                 = useState('')   // '' = todo el año; si no, 'MM'
+  // Rango de meses ('01'..'12', ambos inclusive). Por defecto todo el año.
+  const [mesDesde, setMesDesde]       = useState('01')
+  const [mesHasta, setMesHasta]       = useState('12')
+  const enRango = useCallback((m: string) => m >= mesDesde && m <= mesHasta, [mesDesde, mesHasta])
+  const filtraMes = mesDesde !== '01' || mesHasta !== '12'
+  // Texto del periodo elegido: «2026», «Sep 2026» o «Ene–Sep 2026».
+  const periodoTxt = !filtraMes ? String(anio)
+    : mesDesde === mesHasta ? `${MESES_CORTO[Number(mesDesde) - 1]} ${anio}`
+    : `${MESES_CORTO[Number(mesDesde) - 1]}–${MESES_CORTO[Number(mesHasta) - 1]} ${anio}`
   const [modulosSel, setModulosSel]   = useState<ModuloCuotas[]>([...MODULOS_CUOTAS])
   const [lineaSel, setLineaSel]       = useState('')
   const [incluirCargaInicial, setIncluirCargaInicial] = useState(false)
@@ -237,13 +245,13 @@ export default function ReporteComposicionIngresoCuotas() {
       // la condonación en los dos casos. Ver `MOSTRAR_CONDONACION`.
       const condonado = delMes.reduce((a, c) => a + c.condonado, 0)
       return { mes: m, label: MESES_CORTO[i], porBanda, total, condonado, caja: total - condonado, n: delMes.length }
-    }).filter(f => !mes || f.mes === mes)
+    }).filter(f => enRango(f.mes))
     const totales = {} as Record<BandaCobranza, number>
     BANDAS.forEach(b => { totales[b] = filas.reduce((a, f) => a + f.porBanda[b], 0) })
     const granTotal     = BANDAS.reduce((a, b) => a + totales[b], 0)
     const granCondonado = filas.reduce((a, f) => a + f.condonado, 0)
     return { filas, totales, granTotal, granCondonado, granCaja: granTotal - granCondonado }
-  }, [cobros, anio, mes])
+  }, [cobros, anio, enRango])
 
   // `hayCondonacion` gobierna solo lo que se DIBUJA (card, columnas, Excel).
   // `hayNeteo` dice si el KPI de caja está restando algo, para poder decirlo
@@ -322,7 +330,7 @@ export default function ReporteComposicionIngresoCuotas() {
         cargado, enSuMes, antes, despues, sinFecha, descuento, pendiente,
         dif, cuadra: Math.abs(dif) < 1, n: dev.length,
       }
-    }).filter(f => (!mes || f.mes === mes) && (f.cargado !== 0 || f.reconocido !== 0 || f.enSuMes !== 0 || f.antes !== 0 || f.despues !== 0))
+    }).filter(f => enRango(f.mes) && (f.cargado !== 0 || f.reconocido !== 0 || f.enSuMes !== 0 || f.antes !== 0 || f.despues !== 0))
 
     const tot = filas.reduce((a, f) => ({
       reconocido: a.reconocido + f.reconocido, diferido: a.diferido + f.diferido,
@@ -333,7 +341,7 @@ export default function ReporteComposicionIngresoCuotas() {
     }), { reconocido: 0, diferido: 0, cargado: 0, enSuMes: 0, antes: 0, despues: 0, sinFecha: 0, descuento: 0, pendiente: 0 })
 
     return { filas, tot }
-  }, [devengado, data, anio, mes, coincideLinea, reconocidoPorPeriodo])
+  }, [devengado, data, anio, enRango, coincideLinea, reconocidoPorPeriodo])
 
   // ── Matriz del libro de ingresos (mes × banda capturada) ───────────────
   // Se construye sobre ctrl.recibos_ingreso, la misma fuente del Comparativo,
@@ -358,7 +366,7 @@ export default function ReporteComposicionIngresoCuotas() {
       const sinClas    = delMes.reduce((a, f) => a + f.sinClasificar, 0)
       const total      = delMes.reduce((a, f) => a + f.monto, 0)
       return { mes: m, label: MESES_CORTO[i], vencido, corriente, anticipado, sinClas, total, n: delMes.length }
-    }).filter(f => !mes || f.mes === mes)
+    }).filter(f => enRango(f.mes))
     const tot = porMes.reduce((a, f) => ({
       vencido: a.vencido + f.vencido, corriente: a.corriente + f.corriente,
       anticipado: a.anticipado + f.anticipado, sinClas: a.sinClas + f.sinClas, total: a.total + f.total,
@@ -369,7 +377,7 @@ export default function ReporteComposicionIngresoCuotas() {
       acotado: centrosSel.size > 0,
       lineaSinDimension: !!dimsLinea?.vacia,
     }
-  }, [ingreso, centrosSel, dimsLinea, mes])
+  }, [ingreso, centrosSel, dimsLinea, enRango])
 
   // ── Cartera por antigüedad ─────────────────────────────────────────────
   // Mismas bandas que ReporteAntiguedadOPporCC (Por vencer / 0-30 / 31-60 /
@@ -430,17 +438,17 @@ export default function ReporteComposicionIngresoCuotas() {
 
   // ── Detalle ────────────────────────────────────────────────────────────
   const detalle = useMemo(() => cobros
-    .filter(c => c.fechaPago.slice(0, mes ? 7 : 4) === (mes ? `${anio}-${mes}` : String(anio)))
+    .filter(c => c.fechaPago.slice(0, 4) === String(anio) && enRango(c.fechaPago.slice(5, 7)))
     .filter(c => !bandaFiltro || c.banda === bandaFiltro)
     .sort((a, b) => a.fechaPago.localeCompare(b.fechaPago) || a.cliente.localeCompare(b.cliente)),
-    [cobros, anio, mes, bandaFiltro])
+    [cobros, anio, enRango, bandaFiltro])
 
   // ── KPIs ───────────────────────────────────────────────────────────────
   const kpis = useMemo(() => {
-    const devAnio = devengado.filter(d => d.periodo?.startsWith(mes ? `${anio}-${mes}` : String(anio)))
+    const devAnio = devengado.filter(d => d.periodo?.startsWith(String(anio)) && enRango(d.periodo.slice(5, 7)))
     const porCargo = devAnio.reduce((a, d) => a + d.cargado, 0)
     const cobradoDev = devAnio.reduce((a, d) => a + d.cobrado, 0)
-    const reconocido = MM.filter(m => !mes || m === mes).reduce((a, m) => a + (reconocidoPorPeriodo.get(`${anio}-${m}`) ?? 0), 0)
+    const reconocido = MM.filter(enRango).reduce((a, m) => a + (reconocidoPorPeriodo.get(`${anio}-${m}`) ?? 0), 0)
     return {
       // El KPI muestra lo RECONOCIDO (la medida del área); pendiente y avance
       // se quedan en base cargo, que es la realidad de la cartera.
@@ -455,7 +463,7 @@ export default function ReporteComposicionIngresoCuotas() {
       condonado: matriz.granCondonado,
       liquidado: matriz.granTotal,
     }
-  }, [devengado, anio, mes, matriz, reconocidoPorPeriodo, prorratear])
+  }, [devengado, anio, enRango, matriz, reconocidoPorPeriodo, prorratear])
 
   const toggleModulo = (m: ModuloCuotas) =>
     setModulosSel(prev => prev.includes(m)
@@ -535,7 +543,7 @@ export default function ReporteComposicionIngresoCuotas() {
       }))), 'Cobros sin fecha')
     }
 
-    XLSX.writeFile(wb, `Composicion-Ingreso-Cuotas_${anio}${mes ? '-' + mes : ''}_${new Date().toLocaleDateString('en-CA')}.xlsx`)
+    XLSX.writeFile(wb, `Composicion-Ingreso-Cuotas_${anio}${filtraMes ? `-${mesDesde}a${mesHasta}` : ''}_${new Date().toLocaleDateString('en-CA')}.xlsx`)
   }
 
   const countPrint = tab === 'composicion' ? matriz.filas.filter(f => f.total !== 0).length
@@ -558,10 +566,19 @@ export default function ReporteComposicionIngresoCuotas() {
         </div>
 
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Mes</label>
-          <select className="select" value={mes} onChange={e => setMes(e.target.value)}
-            style={{ minWidth: 130 }}>
-            <option value="">Todo el año</option>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Del mes</label>
+          <select className="select" value={mesDesde}
+            onChange={e => { setMesDesde(e.target.value); if (e.target.value > mesHasta) setMesHasta(e.target.value) }}
+            style={{ minWidth: 100 }}>
+            {MM.map((m, i) => <option key={m} value={m}>{MESES_CORTO[i]}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Al mes</label>
+          <select className="select" value={mesHasta}
+            onChange={e => { setMesHasta(e.target.value); if (e.target.value < mesDesde) setMesDesde(e.target.value) }}
+            style={{ minWidth: 100 }}>
             {MM.map((m, i) => <option key={m} value={m}>{MESES_CORTO[i]}</option>)}
           </select>
         </div>
@@ -623,9 +640,9 @@ export default function ReporteComposicionIngresoCuotas() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: -6 }}>
         <div style={{ flex: '1 1 320px', minWidth: 0, marginBottom: -16 }}>
           <PrintBar
-            title={`Composicion-Ingreso-Cuotas-${anio}${mes ? '-' + mes : ''}`}
+            title={`Composicion-Ingreso-Cuotas-${anio}${filtraMes ? `-${mesDesde}a${mesHasta}` : ''}`}
             count={countPrint}
-            reportTitle={`Composición del Ingreso por Cuotas — ${mes ? MESES_CORTO[Number(mes) - 1] + ' ' : ''}${anio}`}
+            reportTitle={`Composición del Ingreso por Cuotas — ${periodoTxt}`}
           />
         </div>
 
@@ -707,7 +724,7 @@ export default function ReporteComposicionIngresoCuotas() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: meta.color, marginBottom: 6 }}>{meta.label}</div>
                   <div style={{ fontSize: 19, fontWeight: 700, color: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>{fmt0(monto)}</div>
                   <div style={{ fontSize: 10, color: '#64748b', marginTop: 2 }}>
-                    {pctStr(monto, matriz.granTotal)} del cobro {anio}
+                    {pctStr(monto, matriz.granTotal)} del cobro {periodoTxt}
                   </div>
                 </div>
               )
@@ -786,13 +803,13 @@ export default function ReporteComposicionIngresoCuotas() {
                     ))}
                     {matriz.filas.every(f => f.total === 0) && (
                       <tr><td colSpan={hayCondonacion ? 9 : 7} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
-                        Sin cobros registrados en {anio} para los módulos seleccionados.
+                        Sin cobros registrados en {periodoTxt} para los módulos seleccionados.
                       </td></tr>
                     )}
                   </tbody>
                   <tfoot>
                     <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
-                      <td>TOTAL {anio}</td>
+                      <td>TOTAL {periodoTxt}</td>
                       {BANDAS.map(b => (
                         <td key={b} style={{ ...cellNum, color: BANDA_META[b].color }}>{fmt$(matriz.totales[b])}</td>
                       ))}
@@ -872,13 +889,13 @@ export default function ReporteComposicionIngresoCuotas() {
                     ))}
                     {!puente.filas.length && (
                       <tr><td colSpan={(hayDiferido ? 10 : 8) + (hayDescuento ? 1 : 0)} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
-                        Sin cuotas generadas en {anio} para los módulos seleccionados.
+                        Sin cuotas generadas en {periodoTxt} para los módulos seleccionados.
                       </td></tr>
                     )}
                   </tbody>
                   <tfoot>
                     <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
-                      <td>TOTAL {anio}</td>
+                      <td>TOTAL {periodoTxt}</td>
                       {hayDiferido && <td style={{ ...cellNum, color: '#7c3aed' }}>{fmt$(puente.tot.reconocido)}</td>}
                       {hayDiferido && <td style={{ ...cellNum, color: '#a855f7' }}>{fmt$(puente.tot.diferido)}</td>}
                       <td style={cellNum}>{fmt$(puente.tot.cargado)}</td>
@@ -973,13 +990,13 @@ export default function ReporteComposicionIngresoCuotas() {
                     ))}
                     {matrizIngreso.porMes.every(f => f.total === 0) && (
                       <tr><td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: 20 }}>
-                        Sin recibos de ingreso confirmados en {anio}.
+                        Sin recibos de ingreso confirmados en {periodoTxt}.
                       </td></tr>
                     )}
                   </tbody>
                   <tfoot>
                     <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
-                      <td>TOTAL {anio}</td>
+                      <td>TOTAL {periodoTxt}</td>
                       <td style={{ ...cellNum, color: '#16a34a' }}>{fmt$(matrizIngreso.tot.corriente)}</td>
                       <td style={{ ...cellNum, color: '#dc2626' }}>{fmt$(matrizIngreso.tot.vencido)}</td>
                       <td style={{ ...cellNum, color: '#2563eb' }}>{fmt$(matrizIngreso.tot.anticipado)}</td>
