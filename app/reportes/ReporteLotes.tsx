@@ -60,12 +60,12 @@ export default function ReporteLotes() {
             <tr>
               <th>Clave Lote</th>
               <th>Sección</th>
-              <th>Tipo</th>
+              <th>Manzana</th>
+              <th>Número</th>
+              <th>Calle</th>
               <th style={{ textAlign: 'right' }}>Superficie m²</th>
               <th>Status</th>
               <th>Clasificación</th>
-              <th>Vendedor</th>
-              <th style={{ textAlign: 'right' }}>Valor Operación</th>
             </tr>
           </thead>
           <tbody>
@@ -75,7 +75,9 @@ export default function ReporteLotes() {
               <tr key={l.id}>
                 <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{l.cve_lote ?? `#${l.lote}`}</td>
                 <td style={{ color: 'var(--text-secondary)' }}>{l.id_seccion_fk ? (seccionMap[l.id_seccion_fk] ?? '—') : '—'}</td>
-                <td style={{ color: 'var(--text-secondary)' }}>{l.tipo_lote ?? '—'}</td>
+                <td style={{ color: 'var(--text-secondary)' }}>{l.manzana ?? '—'}</td>
+                <td style={{ color: 'var(--text-secondary)' }}>{l.numero ?? '—'}</td>
+                <td style={{ color: 'var(--text-secondary)' }}>{l.calle ?? '—'}</td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{l.superficie ? l.superficie.toLocaleString('es-MX') : '—'}</td>
                 <td>
                   <span style={{ fontSize: 11, fontWeight: 600, color: STATUS_COLOR[l.status_lote ?? ''] ?? 'var(--text-muted)' }}>
@@ -83,10 +85,6 @@ export default function ReporteLotes() {
                   </span>
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.id_clasificacion_fk ? (clasifMap[l.id_clasificacion_fk] ?? '—') : '—'}</td>
-                <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.vendedor ?? '—'}</td>
-                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}>
-                  {l.valor_operacion ? '$' + Number(l.valor_operacion).toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—'}
-                </td>
               </tr>
             ))}
           </tbody>
