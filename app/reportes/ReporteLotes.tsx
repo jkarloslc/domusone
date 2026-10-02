@@ -38,7 +38,7 @@ export default function ReporteLotes() {
     if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
     q.then(({ data }) => {
       const set = new Set<string>((data ?? []).map((r: any) => String(r.manzana)).filter(Boolean))
-      setManzanas([...set].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })))
+      setManzanas(Array.from(set).sort((a, b) => a.localeCompare(b, 'es', { numeric: true })))
     })
   }, [filterSec])
 
