@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { dbCat, dbCfg } from '@/lib/supabase'
 import { RefreshCw } from 'lucide-react'
 import { PrintBar } from './utils'
@@ -48,11 +48,15 @@ export default function ReporteLotes() {
     if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
     if (filterMz) q = q.eq('manzana', filterMz)
     q.then(({ data }) => {
-      const sorted = [...(data ?? [])].sort((a: any, b: any) =>
-        String(a.lote ?? '').localeCompare(String(b.lote ?? ''), 'es', { numeric: true }))
-      setLotes(sorted); setLoading(false)
+      setLotes(data ?? []); setLoading(false)
     })
   }, [filterSec, filterMz])
+
+  // Agrupa por sección (nombre) y luego por No. Lote (orden numérico natural)
+  const lotesOrd = useMemo(() => [...lotes].sort((a, b) =>
+    (seccionMap[a.id_seccion_fk] ?? '\uffff').localeCompare(seccionMap[b.id_seccion_fk] ?? '\uffff', 'es', { numeric: true }) ||
+    String(a.lote ?? '').localeCompare(String(b.lote ?? ''), 'es', { numeric: true })
+  ), [lotes, seccionMap])
 
   const STATUS_COLOR: Record<string, string> = {
     'Vendido': '#15803d', 'Libre': '#1d4ed8', 'Bloqueado': '#dc2626',
@@ -93,7 +97,7 @@ export default function ReporteLotes() {
           <tbody>
             {lotes.length === 0 ? (
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
-            ) : lotes.map(l => (
+            ) : lotesOrd.map(l => (
               <tr key={l.id}>
                 <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{l.cve_lote ?? `#${l.lote}`}</td>
                 <td style={{ color: 'var(--text-secondary)' }}>{l.id_seccion_fk ? (seccionMap[l.id_seccion_fk] ?? '—') : '—'}</td>
