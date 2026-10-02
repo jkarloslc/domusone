@@ -1,12 +1,13 @@
 'use client'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { dbCat, dbCfg } from '@/lib/supabase'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Edit2, Save, Loader } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 import { PrintBar } from './utils'
 
 const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
 
-export default function ReporteLotes() {
+export default function ReporteLotes({ editable = false }: { editable?: boolean }) {
   const [lotes, setLotes]       = useState<any[]>([])
   const [secciones, setSecciones] = useState<any[]>([])
   const [seccionMap, setSeccionMap] = useState<Record<number, string>>({})
@@ -15,6 +16,8 @@ export default function ReporteLotes() {
   const [filterMz, setFilterMz]   = useState('')
   const [manzanas, setManzanas]   = useState<string[]>([])
   const [loading, setLoading]   = useState(true)
+  const [editing, setEditing]   = useState<any | null>(null)
+  const [reload, setReload]     = useState(0)
 
   useEffect(() => {
     dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre')
@@ -54,7 +57,7 @@ export default function ReporteLotes() {
     q.then(({ data }) => {
       setLotes(data ?? []); setLoading(false)
     })
-  }, [filterSec, filterMz])
+  }, [filterSec, filterMz, reload])
 
   // Agrupa por sección (nombre) y luego por No. Lote (orden numérico natural)
   const lotesOrd = useMemo(() => [...lotes].sort((a, b) =>
@@ -92,6 +95,7 @@ export default function ReporteLotes() {
         {loading && <RefreshCw size={14} className="animate-spin" style={{ color: 'var(--text-muted)' }} />}
       </div>
 
+      <style>{`@media print { .col-acciones { display: none !important } }`}</style>
       <PrintBar title="Lotes_por_Seccion" count={lotes.length} reportTitle="Lotes por Sección" />
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -107,11 +111,12 @@ export default function ReporteLotes() {
               <th style={{ textAlign: 'right' }}>Superficie m²</th>
               <th>Status</th>
               <th>Clasificación</th>
+              {editable && <th className="col-acciones" style={{ width: 60 }}></th>}
             </tr>
           </thead>
           <tbody>
             {lotes.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
+              <tr><td colSpan={editable ? 10 : 9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
             ) : (<>
               {lotesOrd.map((l, i) => {
                 const sec = l.id_seccion_fk ? (seccionMap[l.id_seccion_fk] ?? '—') : 'Sin sección'
@@ -134,12 +139,19 @@ export default function ReporteLotes() {
                   </span>
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.id_clasificacion_fk ? (clasifMap[l.id_clasificacion_fk] ?? '—') : '—'}</td>
+                {editable && (
+                  <td className="col-acciones">
+                    <button className="btn-ghost" style={{ padding: '4px 6px' }} title="Edición rápida" onClick={() => setEditing(l)}>
+                      <Edit2 size={13} />
+                    </button>
+                  </td>
+                )}
               </tr>
                     {finGrupo && st && (
                       <tr style={{ background: 'var(--bg-secondary)', fontWeight: 700 }}>
                         <td colSpan={6}>Subtotal {sec} — {st.n} lote{st.n === 1 ? '' : 's'}</td>
                         <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{st.sup.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</td>
-                        <td colSpan={2}></td>
+                        <td colSpan={editable ? 3 : 2}></td>
                       </tr>
                     )}
                   </Fragment>
@@ -148,12 +160,104 @@ export default function ReporteLotes() {
               <tr style={{ background: 'var(--bg-secondary)', fontWeight: 800 }}>
                 <td colSpan={6}>TOTAL — {lotesOrd.length} lotes</td>
                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{totalSup.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</td>
-                <td colSpan={2}></td>
+                <td colSpan={editable ? 3 : 2}></td>
               </tr>
             </>)}
           </tbody>
         </table>
       </div>
+      {editing && (
+        <EdicionRapida lote={editing} secciones={secciones} clasifs={clasifMap}
+          onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setReload(r => r + 1) }} />
+      )}
     </div>
+  )
+}
+
+const STATUS_LOTE = ['Libre', 'Vendido', 'Bloqueado']
+
+function F({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <label className="label">{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function EdicionRapida({ lote, secciones, clasifs, onClose, onSaved }: {
+  lote: any; secciones: any[]; clasifs: Record<number, string>; onClose: () => void; onSaved: () => void
+}) {
+  const [form, setForm] = useState({
+    cve_lote:            lote.cve_lote ?? '',
+    lote:                lote.lote ?? '',
+    manzana:             lote.manzana ?? '',
+    numero:              lote.numero ?? '',
+    calle:               lote.calle ?? '',
+    superficie:          lote.superficie ?? '',
+    status_lote:         lote.status_lote ?? 'Libre',
+    id_clasificacion_fk: lote.id_clasificacion_fk ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError]   = useState('')
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const guardar = async () => {
+    setSaving(true); setError('')
+    const { error: err } = await dbCat.from('lotes').update({
+      cve_lote:            String(form.cve_lote).trim() || null,
+      lote:                form.lote !== '' ? Number(form.lote) : null,
+      manzana:             String(form.manzana).trim() || null,
+      numero:              String(form.numero).trim() || null,
+      calle:               String(form.calle).trim() || null,
+      superficie:          form.superficie !== '' ? Number(form.superficie) : null,
+      status_lote:         form.status_lote || null,
+      id_clasificacion_fk: form.id_clasificacion_fk !== '' ? Number(form.id_clasificacion_fk) : null,
+    }).eq('id', lote.id)
+    setSaving(false)
+    if (err) { setError(err.message); return }
+    onSaved()
+  }
+
+  const sec = secciones.find(x => x.id === lote.id_seccion_fk)?.nombre
+
+  return (
+    <ModalShell modulo="lotes" titulo={`Edición rápida · ${lote.cve_lote ?? '#' + lote.lote}`}
+      subtitulo={sec ? `Sección ${sec}` : undefined} size="md" onClose={onClose}
+      footer={<>
+        <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn-primary" onClick={guardar} disabled={saving}>
+          {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+          {saving ? 'Guardando…' : 'Guardar'}
+        </button>
+      </>}>
+      {error && <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#dc2626', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <F label="Clave Lote"><input className="input" value={form.cve_lote} onChange={set('cve_lote')} /></F>
+          <F label="No. Lote"><input className="input" type="number" value={form.lote} onChange={set('lote')} /></F>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <F label="Manzana"><input className="input" value={form.manzana} onChange={set('manzana')} /></F>
+          <F label="Número"><input className="input" value={form.numero} onChange={set('numero')} /></F>
+        </div>
+        <F label="Calle"><input className="input" value={form.calle} onChange={set('calle')} /></F>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <F label="Superficie m²"><input className="input" type="number" step="any" value={form.superficie} onChange={set('superficie')} /></F>
+          <F label="Status">
+            <select className="select" value={form.status_lote} onChange={set('status_lote')}>
+              {STATUS_LOTE.map(x => <option key={x}>{x}</option>)}
+            </select>
+          </F>
+        </div>
+        <F label="Clasificación">
+          <select className="select" value={form.id_clasificacion_fk} onChange={set('id_clasificacion_fk')}>
+            <option value="">— Sin clasificación —</option>
+            {Object.entries(clasifs).map(([id, n]) => <option key={id} value={id}>{n}</option>)}
+          </select>
+        </F>
+      </div>
+    </ModalShell>
   )
 }

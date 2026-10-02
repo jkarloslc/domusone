@@ -11,37 +11,7 @@ import {
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
-
-// ── Tabs compartidos ─────────────────────────────────────────
-function LotesTabs() {
-  const pathname = usePathname()
-  const tabs = [
-    { href: '/lotes', label: 'Catálogo', icon: List },
-    { href: '/lotes/expediente', label: 'Expediente de Lote', icon: MapPinned },
-  ]
-  return (
-    <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e2e8f0', marginBottom: 24 }}>
-      {tabs.map(t => {
-        const active = pathname === t.href || (t.href !== '/lotes' && pathname.startsWith(t.href))
-        const Icon = t.icon
-        return (
-          <Link key={t.href} href={t.href}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 7, padding: '10px 20px',
-              fontSize: 13, fontWeight: active ? 700 : 500,
-              color: active ? 'var(--blue)' : 'var(--text-muted)',
-              borderBottom: active ? '2px solid var(--blue)' : '2px solid transparent',
-              marginBottom: -2, textDecoration: 'none', transition: 'all 0.15s',
-              background: 'none',
-            }}>
-            <Icon size={14} />
-            {t.label}
-          </Link>
-        )
-      })}
-    </div>
-  )
-}
+import LotesTabs from '../LotesTabs'
 
 // ── Tipos ─────────────────────────────────────────────────────
 type Lote = Record<string, any>

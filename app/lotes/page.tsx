@@ -12,34 +12,7 @@ import LoteDetail from './LoteDetail'
 import HistorialPropietarios from './HistorialPropietarios'
 import { useAuth } from '@/lib/AuthContext'
 import PageHeader from '@/components/layout/PageHeader'
-
-// ── Tabs compartidos ─────────────────────────────────────────
-function LotesTabs() {
-  return (
-    <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e2e8f0', marginBottom: 24 }}>
-      {[
-        { href: '/lotes', label: 'Catálogo', icon: List },
-        { href: '/lotes/expediente', label: 'Expediente de Lote', icon: MapPinned },
-      ].map(t => {
-        const Icon = t.icon
-        const active = t.href === '/lotes'
-        return (
-          <Link key={t.href} href={t.href}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 7, padding: '10px 20px',
-              fontSize: 13, fontWeight: active ? 700 : 500,
-              color: active ? 'var(--blue)' : 'var(--text-muted)',
-              borderBottom: active ? '2px solid var(--blue)' : '2px solid transparent',
-              marginBottom: -2, textDecoration: 'none', transition: 'all 0.15s',
-            }}>
-            <Icon size={14} />
-            {t.label}
-          </Link>
-        )
-      })}
-    </div>
-  )
-}
+import LotesTabs from './LotesTabs'
 
 const STATUS_COLORS: Record<string, string> = {
   'Vendido':   'badge-vendido',
