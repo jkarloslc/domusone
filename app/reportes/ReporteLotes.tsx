@@ -1,8 +1,10 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { dbCat, dbCfg } from '@/lib/supabase'
 import { RefreshCw } from 'lucide-react'
 import { PrintBar } from './utils'
+
+const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
 
 export default function ReporteLotes() {
   const [lotes, setLotes]       = useState<any[]>([])
@@ -37,8 +39,10 @@ export default function ReporteLotes() {
     let q = dbCat.from('lotes').select('manzana').not('manzana', 'is', null)
     if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
     q.then(({ data }) => {
-      const set = new Set<string>((data ?? []).map((r: any) => String(r.manzana)).filter(Boolean))
-      setManzanas(Array.from(set).sort((a, b) => a.localeCompare(b, 'es', { numeric: true })))
+      const set = new Set<string>((data ?? []).map((r: any) => String(r.manzana).trim()).filter(Boolean))
+      ROMANOS.forEach(r => set.add(r))
+      const rv = (m: string) => { const i = ROMANOS.indexOf(m.toUpperCase()); return i < 0 ? 999 : i }
+      setManzanas(Array.from(set).sort((a, b) => rv(a) - rv(b) || a.localeCompare(b, 'es', { numeric: true })))
     })
   }, [filterSec])
 
@@ -57,6 +61,17 @@ export default function ReporteLotes() {
     (seccionMap[a.id_seccion_fk] ?? '\uffff').localeCompare(seccionMap[b.id_seccion_fk] ?? '\uffff', 'es', { numeric: true }) ||
     String(a.lote ?? '').localeCompare(String(b.lote ?? ''), 'es', { numeric: true })
   ), [lotes, seccionMap])
+
+  const subt = useMemo(() => {
+    const m: Record<number, { n: number; sup: number }> = {}
+    lotesOrd.forEach(l => {
+      const k = l.id_seccion_fk ?? 0
+      const e = m[k] ?? (m[k] = { n: 0, sup: 0 })
+      e.n++; e.sup += Number(l.superficie) || 0
+    })
+    return m
+  }, [lotesOrd])
+  const totalSup = lotesOrd.reduce((a, l) => a + (Number(l.superficie) || 0), 0)
 
   const STATUS_COLOR: Record<string, string> = {
     'Vendido': '#15803d', 'Libre': '#1d4ed8', 'Bloqueado': '#dc2626',
@@ -97,8 +112,15 @@ export default function ReporteLotes() {
           <tbody>
             {lotes.length === 0 ? (
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
-            ) : lotesOrd.map(l => (
-              <tr key={l.id}>
+            ) : (<>
+              {lotesOrd.map((l, i) => {
+                const sec = l.id_seccion_fk ? (seccionMap[l.id_seccion_fk] ?? '—') : 'Sin sección'
+                const sig = lotesOrd[i + 1]
+                const finGrupo = !sig || sig.id_seccion_fk !== l.id_seccion_fk
+                const st = subt[l.id_seccion_fk ?? 0]
+                return (
+                  <Fragment key={l.id}>
+              <tr>
                 <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{l.cve_lote ?? `#${l.lote}`}</td>
                 <td style={{ color: 'var(--text-secondary)' }}>{l.id_seccion_fk ? (seccionMap[l.id_seccion_fk] ?? '—') : '—'}</td>
                 <td style={{ fontWeight: 600 }}>{l.lote ?? '—'}</td>
@@ -113,7 +135,22 @@ export default function ReporteLotes() {
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{l.id_clasificacion_fk ? (clasifMap[l.id_clasificacion_fk] ?? '—') : '—'}</td>
               </tr>
-            ))}
+                    {finGrupo && st && (
+                      <tr style={{ background: 'var(--bg-secondary)', fontWeight: 700 }}>
+                        <td colSpan={6}>Subtotal {sec} — {st.n} lote{st.n === 1 ? '' : 's'}</td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{st.sup.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</td>
+                        <td colSpan={2}></td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
+              <tr style={{ background: 'var(--bg-secondary)', fontWeight: 800 }}>
+                <td colSpan={6}>TOTAL — {lotesOrd.length} lotes</td>
+                <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{totalSup.toLocaleString('es-MX', { maximumFractionDigits: 2 })}</td>
+                <td colSpan={2}></td>
+              </tr>
+            </>)}
           </tbody>
         </table>
       </div>
