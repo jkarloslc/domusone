@@ -47,7 +47,11 @@ export default function ReporteLotes() {
     let q = dbCat.from('lotes').select('*').order('cve_lote')
     if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
     if (filterMz) q = q.eq('manzana', filterMz)
-    q.then(({ data }) => { setLotes(data ?? []); setLoading(false) })
+    q.then(({ data }) => {
+      const sorted = [...(data ?? [])].sort((a: any, b: any) =>
+        String(a.lote ?? '').localeCompare(String(b.lote ?? ''), 'es', { numeric: true }))
+      setLotes(sorted); setLoading(false)
+    })
   }, [filterSec, filterMz])
 
   const STATUS_COLOR: Record<string, string> = {
@@ -77,6 +81,7 @@ export default function ReporteLotes() {
             <tr>
               <th>Clave Lote</th>
               <th>Sección</th>
+              <th>No. Lote</th>
               <th>Manzana</th>
               <th>Número</th>
               <th>Calle</th>
@@ -87,11 +92,12 @@ export default function ReporteLotes() {
           </thead>
           <tbody>
             {lotes.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin registros</td></tr>
             ) : lotes.map(l => (
               <tr key={l.id}>
                 <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{l.cve_lote ?? `#${l.lote}`}</td>
                 <td style={{ color: 'var(--text-secondary)' }}>{l.id_seccion_fk ? (seccionMap[l.id_seccion_fk] ?? '—') : '—'}</td>
+                <td style={{ fontWeight: 600 }}>{l.lote ?? '—'}</td>
                 <td style={{ color: 'var(--text-secondary)' }}>{l.manzana ?? '—'}</td>
                 <td style={{ color: 'var(--text-secondary)' }}>{l.numero ?? '—'}</td>
                 <td style={{ color: 'var(--text-secondary)' }}>{l.calle ?? '—'}</td>
