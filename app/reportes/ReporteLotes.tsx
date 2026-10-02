@@ -10,6 +10,8 @@ export default function ReporteLotes() {
   const [seccionMap, setSeccionMap] = useState<Record<number, string>>({})
   const [clasifMap, setClasifMap] = useState<Record<number, string>>({})
   const [filterSec, setFilterSec] = useState('')
+  const [filterMz, setFilterMz]   = useState('')
+  const [manzanas, setManzanas]   = useState<string[]>([])
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
@@ -31,11 +33,22 @@ export default function ReporteLotes() {
   }, [])
 
   useEffect(() => {
+    setFilterMz('')
+    let q = dbCat.from('lotes').select('manzana').not('manzana', 'is', null)
+    if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
+    q.then(({ data }) => {
+      const set = new Set<string>((data ?? []).map((r: any) => String(r.manzana)).filter(Boolean))
+      setManzanas([...set].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })))
+    })
+  }, [filterSec])
+
+  useEffect(() => {
     setLoading(true)
     let q = dbCat.from('lotes').select('*').order('cve_lote')
     if (filterSec) q = q.eq('id_seccion_fk', Number(filterSec))
+    if (filterMz) q = q.eq('manzana', filterMz)
     q.then(({ data }) => { setLotes(data ?? []); setLoading(false) })
-  }, [filterSec])
+  }, [filterSec, filterMz])
 
   const STATUS_COLOR: Record<string, string> = {
     'Vendido': '#15803d', 'Libre': '#1d4ed8', 'Bloqueado': '#dc2626',
@@ -48,6 +61,10 @@ export default function ReporteLotes() {
         <select className="select" style={{ width: 220 }} value={filterSec} onChange={e => setFilterSec(e.target.value)}>
           <option value="">Todas las secciones</option>
           {secciones.map((s: any) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+        </select>
+        <select className="select" style={{ width: 180 }} value={filterMz} onChange={e => setFilterMz(e.target.value)}>
+          <option value="">Todas las manzanas</option>
+          {manzanas.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
         {loading && <RefreshCw size={14} className="animate-spin" style={{ color: 'var(--text-muted)' }} />}
       </div>
