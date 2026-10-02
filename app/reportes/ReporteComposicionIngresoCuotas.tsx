@@ -692,7 +692,7 @@ export default function ReporteComposicionIngresoCuotas() {
               // que explica por qué este KPI no empata con el «Total cobrado»
               // de la tabla. Sin él la diferencia parece un error del reporte.
               { label: 'Cobrado (caja)',    value: fmt0(kpis.caja),
-                sub: hayNeteo ? `del año ${anio} · neto de condonación` : `del año ${anio}`,
+                sub: `del año ${anio}`,
                 color: '#15803d', bg: '#f0fdf4', icon: Wallet },
               ...(hayCondonacion ? [{
                 label: 'Condonado', value: fmt0(kpis.condonado),

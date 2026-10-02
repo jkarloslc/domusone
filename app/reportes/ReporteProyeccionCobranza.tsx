@@ -185,9 +185,21 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
   const [vencidos, setVencidos]     = useState<CobroRow[]>([])
   const [loadingFlujo, setLoadingFlujo] = useState(false)
 
+  // Rango propio del Flujo de Cobranza ('YYYY-MM'). Mientras no se toque, sigue
+  // al «Período (mes)» general; al cambiar éste se vuelve a alinear. El resto de
+  // la pantalla (proyección, cuotas del período) sigue usando un solo mes.
+  const [flujoDesdeSel, setFlujoDesdeSel] = useState<string | null>(null)
+  const [flujoHastaSel, setFlujoHastaSel] = useState<string | null>(null)
+  useEffect(() => { setFlujoDesdeSel(null); setFlujoHastaSel(null) }, [mes])
+  const flujoDesde = flujoDesdeSel ?? mes
+  const flujoHasta = flujoHastaSel ?? mes
+  const flujoTxt = flujoDesde === flujoHasta ? labelMes(flujoDesde)
+    : `${labelMes(flujoDesde)} a ${labelMes(flujoHasta)}`
+
   const fetchFlujo = useCallback(async () => {
     setLoadingFlujo(true)
-    const { inicio, fin } = rangoMes(mes)
+    const inicio = rangoMes(flujoDesde).inicio
+    const fin    = rangoMes(flujoHasta).fin
     const hoyStr = new Date().toLocaleDateString('en-CA')
     const selectCols = `id, tipo, concepto, periodo, monto_final, saldo, status, fecha_pago, fecha_vencimiento, ${cfg.selectJoin}`
 
@@ -215,7 +227,7 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
     setCobrosMes(normalizar((dCobros as any[]) ?? []))
     setVencidos(normalizar((dVencidos as any[]) ?? []))
     setLoadingFlujo(false)
-  }, [mes, cfg])
+  }, [flujoDesde, flujoHasta, cfg])
 
   useEffect(() => { fetchFlujo() }, [fetchFlujo])
 
@@ -473,13 +485,30 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
       {/* ── Flujo de Cobranza: cobrado del mes / anticipado / vencido ── */}
       <div>
         <h3 style={{ fontSize: 13, fontWeight: 700, color: '#334155', margin: '4px 0 10px' }}>
-          Flujo de Cobranza — {labelMes(mes)}
+          Flujo de Cobranza — {flujoTxt}
         </h3>
+
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 12 }}>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Del mes</label>
+            <select className="select" value={flujoDesde}
+              onChange={e => { setFlujoDesdeSel(e.target.value); if (e.target.value > flujoHasta) setFlujoHastaSel(e.target.value) }}>
+              {meses.map(m => <option key={m} value={m} style={{ textTransform: 'capitalize' }}>{labelMes(m)}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Al mes</label>
+            <select className="select" value={flujoHasta}
+              onChange={e => { setFlujoHastaSel(e.target.value); if (e.target.value < flujoDesde) setFlujoDesdeSel(e.target.value) }}>
+              {meses.map(m => <option key={m} value={m} style={{ textTransform: 'capitalize' }}>{labelMes(m)}</option>)}
+            </select>
+          </div>
+        </div>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {[
-            { label: 'Cobrado del mes', value: fmt$(totalCobradoMesFlujo), sub: `${cobrosMes.length} pago${cobrosMes.length !== 1 ? 's' : ''} registrado${cobrosMes.length !== 1 ? 's' : ''}`, color: '#15803d', bg: '#f0fdf4', icon: CheckCircle },
-            { label: 'Corriente del mes', value: fmt$(totalCorriente),    sub: `${corrienteRows.length} cuota${corrienteRows.length !== 1 ? 's' : ''} del propio ${labelMes(mes)}`, color: '#16a34a', bg: '#f0fdf4', icon: CheckCircle },
+            { label: flujoDesde === flujoHasta ? 'Cobrado del mes' : 'Cobrado del periodo', value: fmt$(totalCobradoMesFlujo), sub: `${cobrosMes.length} pago${cobrosMes.length !== 1 ? 's' : ''} registrado${cobrosMes.length !== 1 ? 's' : ''}`, color: '#15803d', bg: '#f0fdf4', icon: CheckCircle },
+            { label: flujoDesde === flujoHasta ? 'Corriente del mes' : 'Corriente', value: fmt$(totalCorriente),    sub: `${corrienteRows.length} cuota${corrienteRows.length !== 1 ? 's' : ''} de su propio mes de cobro`, color: '#16a34a', bg: '#f0fdf4', icon: CheckCircle },
             { label: 'Vencido recuperado', value: fmt$(totalVencidaRec),  sub: `${vencidaRows.length} de periodos anteriores`,        color: '#ea580c', bg: '#fff7ed', icon: Clock },
             { label: 'Anticipado',      value: fmt$(totalAnticipado),      sub: `${anticipadoRows.length} de periodos futuros`,       color: '#2563eb', bg: '#eff6ff', icon: CalendarClock },
             { label: 'Cartera vencida (saldo a hoy)', value: fmt$(totalVencidoFlujo), sub: `${vencidos.length} cuota${vencidos.length !== 1 ? 's' : ''} sin cobrar — es un saldo, no flujo del mes`, color: '#dc2626', bg: '#fef2f2', icon: AlertTriangle },
@@ -501,7 +530,7 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
         {!loadingFlujo && cobrosMes.length > 0 && (
           <div style={{ marginTop: 14 }}>
             <div style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>
-              De lo cobrado en el mes: <strong style={{ color: '#16a34a' }}>{fmt$(totalCorriente)}</strong> del propio {labelMes(mes)} (desempeño del mes)
+              De lo cobrado en el periodo: <strong style={{ color: '#16a34a' }}>{fmt$(totalCorriente)}</strong> del propio mes de cobro (desempeño)
               {' '}· <strong style={{ color: '#ea580c' }}>{fmt$(totalVencidaRec)}</strong> de periodos anteriores (recuperación de cartera)
               {' '}· <strong style={{ color: '#2563eb' }}>{fmt$(totalAnticipado)}</strong> de periodos futuros (adelantado)
               {totalOtros > 0 && <> · <strong style={{ color: '#64748b' }}>{fmt$(totalOtros)}</strong> sin periodo</>}
