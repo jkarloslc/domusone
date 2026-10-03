@@ -1,14 +1,17 @@
 'use client'
 import { useState, useCallback, useMemo } from 'react'
 import { dbGolf } from '@/lib/supabase'
+import * as XLSX from 'xlsx'
 import { PrintBar } from './utils'
 
 // ── Socios de Golf: pago Anual vs Mensual de la membresía ────────
 // Se basa en el registro de pagos (recibos_golf_det, tipo MENSUALIDAD, recibos no cancelados).
 // Si UN MISMO recibo agrupa las 12 mensualidades del año → pago ANUAL (anticipado).
-// En cualquier otro caso → pago MENSUAL (cuotas pagadas mes a mes o en bloques menores a 12).
+// Si un recibo agrupa de 2 a 11 mensualidades → ANTICIPADO PARCIAL (pago por bloques).
+// Si ningún recibo agrupa más de una mensualidad → pago MENSUAL (mes a mes).
+// La clasificación del socio toma su recibo más grande del año.
 
-type Forma = 'ANUAL' | 'MENSUAL'
+type Forma = 'ANUAL' | 'PARCIAL' | 'MENSUAL'
 
 type DetRow = {
   id: number
@@ -39,6 +42,7 @@ type SocioRow = {
 
 const FORMA_META: Record<Forma, { label: string; color: string; bg: string }> = {
   ANUAL:   { label: 'Anual / Anticipado', color: '#2563eb', bg: '#dbeafe' },
+  PARCIAL: { label: 'Anticipado parcial', color: '#d97706', bg: '#fef3c7' },
   MENSUAL: { label: 'Mensual',            color: '#16a34a', bg: '#dcfce7' },
 }
 
@@ -112,6 +116,7 @@ export default function ReporteGolfFormaPagoMembresia() {
         row.recibos.sort((a, b) => a.fecha.localeCompare(b.fecha))
         const anual = row.recibos.find(x => x.nMeses >= 12)
         if (anual) { row.forma = 'ANUAL'; row.fechaAnual = anual.fecha }
+        else if (row.recibos.some(x => x.nMeses >= 2)) row.forma = 'PARCIAL'
       }
 
       setRows(Array.from(socios.values()).sort((a, b) =>
@@ -127,6 +132,7 @@ export default function ReporteGolfFormaPagoMembresia() {
 
   // KPIs sobre el universo completo del año (los filtros solo acotan el detalle)
   const anuales  = rows.filter(r => r.forma === 'ANUAL')
+  const parciales = rows.filter(r => r.forma === 'PARCIAL')
   const mensuales = rows.filter(r => r.forma === 'MENSUAL')
   const sumMonto = (a: SocioRow[]) => a.reduce((s, r) => s + r.monto, 0)
 
@@ -134,6 +140,49 @@ export default function ReporteGolfFormaPagoMembresia() {
     (!filtroForma || r.forma === filtroForma) &&
     (!filtroCat || r.categoria === filtroCat) &&
     (!search || `${r.numero} ${r.nombre}`.toLowerCase().includes(search.toLowerCase())))
+
+  const textoRecibos = (r: SocioRow) =>
+    r.forma === 'ANUAL'
+      ? r.recibos.filter(x => x.nMeses >= 12).map(x => x.folio).join(', ')
+      : r.forma === 'PARCIAL'
+        ? r.recibos.filter(x => x.nMeses >= 2).map(x => `${x.folio} (${x.nMeses}m)`).join(', ')
+        : `${r.recibos.length} recibo${r.recibos.length === 1 ? '' : 's'}`
+
+  const exportarExcel = () => {
+    const wb = XLSX.utils.book_new()
+    const tot = (a: SocioRow[]) => Number(sumMonto(a).toFixed(2))
+    const resumen = [
+      ...(['ANUAL', 'PARCIAL', 'MENSUAL'] as Forma[]).map(f => {
+        const g = rows.filter(r => r.forma === f)
+        return { 'Forma de pago': FORMA_META[f].label, 'Socios': g.length,
+          '% de socios': rows.length ? Number(((g.length / rows.length) * 100).toFixed(1)) : 0, 'Monto': tot(g) }
+      }),
+      { 'Forma de pago': 'TOTAL', 'Socios': rows.length, '% de socios': rows.length ? 100 : 0, 'Monto': tot(rows) },
+    ]
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumen), 'Resumen')
+
+    const detalleRows = detalle.map(r => {
+      const o: Record<string, any> = {
+        'No. Socio': r.numero, 'Socio': r.nombre, 'Categoría': r.categoria,
+        'Forma de pago': FORMA_META[r.forma].label,
+        'Fecha pago anual': r.fechaAnual ?? '',
+      }
+      MESES_CORTO.forEach((m, i) => { o[m] = r.meses.has(i + 1) ? '✓' : '' })
+      o['Meses pagados'] = r.meses.size
+      o['Recibos'] = r.recibos.map(x => `${x.folio} (${x.nMeses}m, ${x.fecha})`).join('; ')
+      o['Monto'] = Number(r.monto.toFixed(2))
+      return o
+    })
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalleRows), 'Socios')
+
+    const recRows = detalle.flatMap(r => r.recibos.map(x => ({
+      'No. Socio': r.numero, 'Socio': r.nombre, 'Forma de pago': FORMA_META[r.forma].label,
+      'Folio': x.folio, 'Fecha recibo': x.fecha, 'Mensualidades en el recibo': x.nMeses,
+    })))
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recRows), 'Recibos')
+
+    XLSX.writeFile(wb, `Golf-Socios-Anual-Mensual-${anio}_${new Date().toLocaleDateString('en-CA')}.xlsx`)
+  }
 
   const th = (h: string, right = false, center = false): React.CSSProperties => ({
     padding: '9px 8px', textAlign: right ? 'right' : center ? 'center' : 'left',
@@ -155,6 +204,7 @@ export default function ReporteGolfFormaPagoMembresia() {
           <select className="input" value={filtroForma} onChange={e => setFiltroForma(e.target.value as '' | Forma)} style={{ fontSize: 12, minWidth: 160 }}>
             <option value="">Todas</option>
             <option value="ANUAL">Anual / Anticipado</option>
+            <option value="PARCIAL">Anticipado parcial</option>
             <option value="MENSUAL">Mensual</option>
           </select>
         </div>
@@ -175,7 +225,8 @@ export default function ReporteGolfFormaPagoMembresia() {
         <button className="btn-primary" onClick={fetchData} disabled={loading} style={{ fontSize: 13 }}>
           {loading ? 'Consultando…' : 'Consultar'}
         </button>
-        {buscado && !loading && <PrintBar title={`Golf-Socios-Anual-Mensual-${anio}`} count={detalle.length} reportTitle={`Socios Golf — Pago Anual vs Mensual ${anio}`} />}
+        {buscado && !loading && <PrintBar title={`Golf-Socios-Anual-Mensual-${anio}`} count={detalle.length} reportTitle={`Socios Golf — Pago Anual vs Mensual ${anio}`} hideCSV
+          extra={<button className="btn-ghost" onClick={exportarExcel} style={{ fontSize: 12 }}>Exportar Excel</button>} />}
       </div>
 
       {error && (
@@ -187,7 +238,7 @@ export default function ReporteGolfFormaPagoMembresia() {
       {!buscado && (
         <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
           Selecciona el año y haz clic en Consultar.<br/>
-          <span style={{ fontSize: 12 }}>Anual = un mismo recibo agrupa las 12 mensualidades del año · Mensual = cualquier otro caso</span>
+          <span style={{ fontSize: 12 }}>Anual = un recibo con las 12 mensualidades · Anticipado parcial = un recibo con 2 a 11 · Mensual = un mes por recibo</span>
         </div>
       )}
 
@@ -197,6 +248,7 @@ export default function ReporteGolfFormaPagoMembresia() {
             {[
               { label: 'Socios con pagos en el año', value: String(rows.length), color: '#334155', bg: '#f8fafc', sub: fmt$(sumMonto(rows)) },
               { label: 'Pago anual / anticipado',    value: String(anuales.length),   color: '#2563eb', bg: '#eff6ff', sub: `${fmt$(sumMonto(anuales))} · ${rows.length ? ((anuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
+              { label: 'Anticipado parcial (2 a 11 meses en un recibo)', value: String(parciales.length), color: '#d97706', bg: '#fffbeb', sub: `${fmt$(sumMonto(parciales))} · ${rows.length ? ((parciales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
               { label: 'Pago mensual',               value: String(mensuales.length), color: '#16a34a', bg: '#f0fdf4', sub: `${fmt$(sumMonto(mensuales))} · ${rows.length ? ((mensuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
             ].map(k => (
               <div key={k.label} className="card" style={{ flex: '1 1 200px', padding: '12px 16px', background: k.bg }}>
@@ -246,9 +298,7 @@ export default function ReporteGolfFormaPagoMembresia() {
                           ))}
                           <td style={{ padding: '8px', textAlign: 'center', fontWeight: 600 }}>{r.meses.size}/12</td>
                           <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: 10, color: 'var(--text-muted)' }}>
-                            {r.forma === 'ANUAL'
-                              ? r.recibos.filter(x => x.nMeses >= 12).map(x => x.folio).join(', ')
-                              : `${r.recibos.length} recibo${r.recibos.length === 1 ? '' : 's'}`}
+                            {textoRecibos(r)}
                           </td>
                           <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmt$(r.monto)}</td>
                         </tr>
