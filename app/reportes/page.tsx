@@ -171,7 +171,7 @@ const GRUPOS = [
     reportes: [
       { id: 'golf-estado-cuenta', label: 'Estado de Cuenta',    icon: FileText,  desc: 'Cuotas y recibos por socio en un período' },
       { id: 'golf-miembros-categoria', label: 'Miembros por Categoría', icon: Users, desc: 'Socios agrupados por categoría con desglose de status (activo/vencido/inactivo) y detalle drill-down' },
-      { id: 'golf-forma-pago-membresia', label: 'Socios: Pago Anual vs Mensual', icon: Users, desc: 'Socios que pagaron su membresía anual (12 mensualidades en un recibo), anticipado parcial (mín. 2 meses adelantados) o mensual, con mapa de meses pagados' },
+      { id: 'golf-forma-pago-membresia', label: 'Socios: Pago Anual vs Mensual', icon: Users, desc: 'Socios que pagaron su membresía anual (12 mensualidades en un mismo recibo) o mensual, con mapa de meses pagados' },
       { id: 'golf-cobranza',      label: 'Cobranza / CXC',      icon: Wallet,    desc: 'Cuotas por categoría, tipo y status con resumen y detalle' },
       { id: 'golf-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Cuotas de socios cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
       { id: 'golf-pensiones-corriente-vencida', label: 'Pensiones — Corriente vs Vencida', icon: Wallet, desc: 'Pensiones de carritos cobradas clasificadas por fecha de pago: corriente vs vencida, con resumen mensual y detalle' },
