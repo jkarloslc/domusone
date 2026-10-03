@@ -7,8 +7,9 @@ import { PrintBar } from './utils'
 // ── Socios de Golf: pago Anual vs Mensual de la membresía ────────
 // Se basa en el registro de pagos (recibos_golf_det, tipo MENSUALIDAD, recibos no cancelados).
 // Si UN MISMO recibo agrupa las 12 mensualidades del año → pago ANUAL (anticipado).
-// Si un recibo agrupa de 2 a 11 mensualidades → ANTICIPADO PARCIAL (pago por bloques).
-// Si ningún recibo agrupa más de una mensualidad → pago MENSUAL (mes a mes).
+// Si un recibo agrupa de 2 a 11 mensualidades Y al menos una es de un mes posterior al de
+// la fecha de pago → ANTICIPADO PARCIAL. Pagar meses atrasados/corrientes (aunque sean varios
+// en un recibo) es pago MENSUAL.
 // La clasificación del socio toma su recibo más grande del año.
 
 type Forma = 'ANUAL' | 'PARCIAL' | 'MENSUAL'
@@ -36,7 +37,7 @@ type SocioRow = {
   forma: Forma
   meses: Set<number>        // 1..12 pagados en el año
   monto: number
-  recibos: { folio: string; fecha: string; nMeses: number }[]
+  recibos: { folio: string; fecha: string; nMeses: number; nAnticipados: number }[]
   fechaAnual: string | null
 }
 
@@ -109,14 +110,15 @@ export default function ReporteGolfFormaPagoMembresia() {
         const k = `${s.id}|${r.id}`
         porRecibo.set(k, (porRecibo.get(k) ?? 0) + 1)
         let rec = row.recibos.find(x => x.folio === r.folio)
-        if (!rec) { rec = { folio: r.folio, fecha: r.fecha_recibo, nMeses: 0 }; row.recibos.push(rec) }
+        if (!rec) { rec = { folio: r.folio, fecha: r.fecha_recibo, nMeses: 0, nAnticipados: 0 }; row.recibos.push(rec) }
         rec.nMeses += 1
+        if (d.periodo > r.fecha_recibo.slice(0, 7)) rec.nAnticipados += 1   // cuota de un mes posterior al del pago
       }
       for (const row of Array.from(socios.values())) {
         row.recibos.sort((a, b) => a.fecha.localeCompare(b.fecha))
         const anual = row.recibos.find(x => x.nMeses >= 12)
         if (anual) { row.forma = 'ANUAL'; row.fechaAnual = anual.fecha }
-        else if (row.recibos.some(x => x.nMeses >= 2)) row.forma = 'PARCIAL'
+        else if (row.recibos.some(x => x.nMeses >= 2 && x.nAnticipados >= 1)) row.forma = 'PARCIAL'
       }
 
       setRows(Array.from(socios.values()).sort((a, b) =>
@@ -145,7 +147,7 @@ export default function ReporteGolfFormaPagoMembresia() {
     r.forma === 'ANUAL'
       ? r.recibos.filter(x => x.nMeses >= 12).map(x => x.folio).join(', ')
       : r.forma === 'PARCIAL'
-        ? r.recibos.filter(x => x.nMeses >= 2).map(x => `${x.folio} (${x.nMeses}m)`).join(', ')
+        ? r.recibos.filter(x => x.nMeses >= 2 && x.nAnticipados >= 1).map(x => `${x.folio} (${x.nMeses}m, ${x.nAnticipados} adelantados)`).join(', ')
         : `${r.recibos.length} recibo${r.recibos.length === 1 ? '' : 's'}`
 
   const exportarExcel = () => {
@@ -177,7 +179,7 @@ export default function ReporteGolfFormaPagoMembresia() {
 
     const recRows = detalle.flatMap(r => r.recibos.map(x => ({
       'No. Socio': r.numero, 'Socio': r.nombre, 'Forma de pago': FORMA_META[r.forma].label,
-      'Folio': x.folio, 'Fecha recibo': x.fecha, 'Mensualidades en el recibo': x.nMeses,
+      'Folio': x.folio, 'Fecha recibo': x.fecha, 'Mensualidades en el recibo': x.nMeses, 'Meses adelantados': x.nAnticipados,
     })))
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recRows), 'Recibos')
 
@@ -238,7 +240,7 @@ export default function ReporteGolfFormaPagoMembresia() {
       {!buscado && (
         <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>
           Selecciona el año y haz clic en Consultar.<br/>
-          <span style={{ fontSize: 12 }}>Anual = un recibo con las 12 mensualidades · Anticipado parcial = un recibo con 2 a 11 · Mensual = un mes por recibo</span>
+          <span style={{ fontSize: 12 }}>Anual = un recibo con las 12 mensualidades · Anticipado parcial = un recibo con 2 a 11 meses, al menos uno posterior a la fecha de pago · Mensual = el resto (mes a mes o atrasados)</span>
         </div>
       )}
 
@@ -248,7 +250,7 @@ export default function ReporteGolfFormaPagoMembresia() {
             {[
               { label: 'Socios con pagos en el año', value: String(rows.length), color: '#334155', bg: '#f8fafc', sub: fmt$(sumMonto(rows)) },
               { label: 'Pago anual (12 meses en un recibo)',    value: String(anuales.length),   color: '#2563eb', bg: '#eff6ff', sub: `${fmt$(sumMonto(anuales))} · ${rows.length ? ((anuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
-              { label: 'Anticipado parcial (2 a 11 meses en un recibo)', value: String(parciales.length), color: '#d97706', bg: '#fffbeb', sub: `${fmt$(sumMonto(parciales))} · ${rows.length ? ((parciales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
+              { label: 'Anticipado parcial (2-11 meses, alguno por adelantado)', value: String(parciales.length), color: '#d97706', bg: '#fffbeb', sub: `${fmt$(sumMonto(parciales))} · ${rows.length ? ((parciales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
               { label: 'Pago mensual',               value: String(mensuales.length), color: '#16a34a', bg: '#f0fdf4', sub: `${fmt$(sumMonto(mensuales))} · ${rows.length ? ((mensuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
             ].map(k => (
               <div key={k.label} className="card" style={{ flex: '1 1 200px', padding: '12px 16px', background: k.bg }}>
