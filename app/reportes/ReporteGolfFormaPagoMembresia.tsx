@@ -41,7 +41,7 @@ type SocioRow = {
 }
 
 const FORMA_META: Record<Forma, { label: string; color: string; bg: string }> = {
-  ANUAL:   { label: 'Anual / Anticipado', color: '#2563eb', bg: '#dbeafe' },
+  ANUAL:   { label: 'Anual (12 meses)', color: '#2563eb', bg: '#dbeafe' },
   PARCIAL: { label: 'Anticipado parcial', color: '#d97706', bg: '#fef3c7' },
   MENSUAL: { label: 'Mensual',            color: '#16a34a', bg: '#dcfce7' },
 }
@@ -203,7 +203,7 @@ export default function ReporteGolfFormaPagoMembresia() {
           <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Forma de pago</label>
           <select className="input" value={filtroForma} onChange={e => setFiltroForma(e.target.value as '' | Forma)} style={{ fontSize: 12, minWidth: 160 }}>
             <option value="">Todas</option>
-            <option value="ANUAL">Anual / Anticipado</option>
+            <option value="ANUAL">Anual (12 meses)</option>
             <option value="PARCIAL">Anticipado parcial</option>
             <option value="MENSUAL">Mensual</option>
           </select>
@@ -247,7 +247,7 @@ export default function ReporteGolfFormaPagoMembresia() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
             {[
               { label: 'Socios con pagos en el año', value: String(rows.length), color: '#334155', bg: '#f8fafc', sub: fmt$(sumMonto(rows)) },
-              { label: 'Pago anual / anticipado',    value: String(anuales.length),   color: '#2563eb', bg: '#eff6ff', sub: `${fmt$(sumMonto(anuales))} · ${rows.length ? ((anuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
+              { label: 'Pago anual (12 meses en un recibo)',    value: String(anuales.length),   color: '#2563eb', bg: '#eff6ff', sub: `${fmt$(sumMonto(anuales))} · ${rows.length ? ((anuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
               { label: 'Anticipado parcial (2 a 11 meses en un recibo)', value: String(parciales.length), color: '#d97706', bg: '#fffbeb', sub: `${fmt$(sumMonto(parciales))} · ${rows.length ? ((parciales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
               { label: 'Pago mensual',               value: String(mensuales.length), color: '#16a34a', bg: '#f0fdf4', sub: `${fmt$(sumMonto(mensuales))} · ${rows.length ? ((mensuales.length / rows.length) * 100).toFixed(1) : '0'}% de socios` },
             ].map(k => (
