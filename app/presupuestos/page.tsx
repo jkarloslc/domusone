@@ -4,6 +4,6 @@ import { useEffect } from 'react'
 
 export default function PresupuestosIndex() {
   const router = useRouter()
-  useEffect(() => { router.replace('/presupuestos/dashboard') }, [router])
+  useEffect(() => { router.replace('/presupuestos/comparativo') }, [router])
   return null
 }

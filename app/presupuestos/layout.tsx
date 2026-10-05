@@ -1,10 +1,9 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, BookOpen, BarChart3, Settings, Wallet } from 'lucide-react'
+import { BookOpen, BarChart3, Settings, Wallet } from 'lucide-react'
 
 const NAV = [
-  { href: '/presupuestos/dashboard',   label: 'Dashboard',           icon: LayoutDashboard },
   { href: '/presupuestos/captura',     label: 'Captura',             icon: BookOpen        },
   { href: '/presupuestos/captura-flujo', label: 'Captura Flujo',      icon: BookOpen        },
   { href: '/presupuestos/comparativo', label: 'Comparativo',         icon: BarChart3       },
