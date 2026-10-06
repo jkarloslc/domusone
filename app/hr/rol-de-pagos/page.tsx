@@ -52,9 +52,8 @@ const addDias = (fecha: string, n: number) => {
   d.setDate(d.getDate() + n)
   return d.toISOString().slice(0, 10)
 }
-// Rango del rol duplicado: el periodo inmediato siguiente, de la misma duración
-const offsetDuplicado = (l: any) =>
-  Math.round((new Date(l.fecha_hasta + 'T12:00:00').getTime() - new Date(l.fecha_desde + 'T12:00:00').getTime()) / 86400000) + 1
+// Rol duplicado: el periodo se recorre 7 días respecto al original
+const DIAS_DUPLICADO = 7
 const diaLabel = (fecha: string) => {
   const d = new Date(fecha + 'T12:00:00')
   return {
@@ -209,7 +208,7 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
   const { authUser } = useAuth()
   const isEdit = !!lote
   const src = lote ?? duplicarDe ?? null            // lote del que se cargan colaboradores
-  const shift = duplicarDe ? offsetDuplicado(duplicarDe) : 0
+  const shift = duplicarDe ? DIAS_DUPLICADO : 0
   const editable = puedeCapturar && (!isEdit || lote.status === 'Capturado' || lote.status === 'Rechazado')
 
   const [fechaDesde, setFechaDesde] = useState(lote?.fecha_desde ?? (duplicarDe ? addDias(duplicarDe.fecha_desde, shift) : ''))
@@ -707,7 +706,7 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
 
       {duplicarDe && (
         <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: 'var(--blue)', fontSize: 12, marginBottom: 14 }}>
-          Copia de {duplicarDe.folio}: se movió el periodo al siguiente y se copiaron colaboradores, Área/Frente, costo por día y asistencias. Revisa y ajusta antes de guardar; se creará con un folio nuevo.
+          Copia de {duplicarDe.folio}: el periodo se recorrió 7 días y se copiaron colaboradores, Área/Frente, costo por día y asistencias. Revisa y ajusta antes de guardar; se creará con un folio nuevo.
         </div>
       )}
 
