@@ -54,7 +54,7 @@ const addDias = (fecha: string, n: number) => {
 }
 // Rol duplicado: el periodo se recorre 7 días respecto al original
 const DIAS_DUPLICADO = 7
-const DIAS_PERIODO_DUPLICADO = 5   // fecha hasta = fecha desde + 5 días
+const DIAS_PERIODO_DUPLICADO = 4   // fecha hasta = fecha desde + 4 días (periodo de 5 días)
 const diaLabel = (fecha: string) => {
   const d = new Date(fecha + 'T12:00:00')
   return {
@@ -707,7 +707,7 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
 
       {duplicarDe && (
         <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: 'var(--blue)', fontSize: 12, marginBottom: 14 }}>
-          Copia de {duplicarDe.folio}: el periodo inicia 7 días después y termina 5 días después de su fecha desde y se copiaron colaboradores, Área/Frente, costo por día y asistencias. Revisa y ajusta antes de guardar; se creará con un folio nuevo.
+          Copia de {duplicarDe.folio}: el periodo inicia 7 días después y termina 4 días después (periodo de 5 días) y se copiaron colaboradores, Área/Frente, costo por día y asistencias. Revisa y ajusta antes de guardar; se creará con un folio nuevo.
         </div>
       )}
 
