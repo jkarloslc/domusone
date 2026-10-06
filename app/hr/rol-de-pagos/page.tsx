@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Wallet, Plus, Save, Loader, Eye, Printer,
   CheckCircle, XCircle, Trash2, AlertTriangle, User, ChevronDown, Search,
-  Receipt, ExternalLink,
+  Receipt, ExternalLink, Copy,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
@@ -47,6 +47,14 @@ function diasEnRango(desde: string, hasta: string): string[] {
   }
   return out
 }
+const addDias = (fecha: string, n: number) => {
+  const d = new Date(fecha + 'T12:00:00')
+  d.setDate(d.getDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+// Rango del rol duplicado: el periodo inmediato siguiente, de la misma duración
+const offsetDuplicado = (l: any) =>
+  Math.round((new Date(l.fecha_hasta + 'T12:00:00').getTime() - new Date(l.fecha_desde + 'T12:00:00').getTime()) / 86400000) + 1
 const diaLabel = (fecha: string) => {
   const d = new Date(fecha + 'T12:00:00')
   return {
@@ -79,6 +87,7 @@ export default function RolDePagosPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [modal, setModal]       = useState(false)
   const [editLote, setEditLote] = useState<any | null>(null)
+  const [dupLote, setDupLote]   = useState<any | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -98,8 +107,9 @@ export default function RolDePagosPage() {
     })
   }, [])
 
-  const openNew  = () => { setEditLote(null); setModal(true) }
-  const openEdit = (l: any) => { setEditLote(l); setModal(true) }
+  const openNew  = () => { setEditLote(null); setDupLote(null); setModal(true) }
+  const openEdit = (l: any) => { setEditLote(l); setDupLote(null); setModal(true) }
+  const openDup  = (l: any) => { setEditLote(null); setDupLote(l); setModal(true) }
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -135,7 +145,7 @@ export default function RolDePagosPage() {
               <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Centro de Costo</th>
               <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total</th>
               <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</th>
-              <th style={{ width: 40, padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Acciones</th>
+              <th style={{ width: 80, padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -161,6 +171,11 @@ export default function RolDePagosPage() {
                   <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Ver" onClick={() => openEdit(l)}>
                     <Eye size={14} />
                   </button>
+                  {puedeCapturar && (
+                    <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Duplicar para el siguiente periodo" onClick={() => openDup(l)}>
+                      <Copy size={14} />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -171,6 +186,7 @@ export default function RolDePagosPage() {
       {modal && (
         <LoteModal
           lote={editLote}
+          duplicarDe={dupLote}
           puedeCapturar={puedeCapturar}
           puedeAutorizar={puedeAutorizar}
           onClose={() => setModal(false)}
@@ -182,8 +198,9 @@ export default function RolDePagosPage() {
 }
 
 // ── Modal de captura / autorización ──────────────────────────────────────
-function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
+function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   lote: any | null
+  duplicarDe?: any | null
   puedeCapturar: boolean
   puedeAutorizar: boolean
   onClose: () => void
@@ -191,12 +208,14 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
 }) {
   const { authUser } = useAuth()
   const isEdit = !!lote
+  const src = lote ?? duplicarDe ?? null            // lote del que se cargan colaboradores
+  const shift = duplicarDe ? offsetDuplicado(duplicarDe) : 0
   const editable = puedeCapturar && (!isEdit || lote.status === 'Capturado' || lote.status === 'Rechazado')
 
-  const [fechaDesde, setFechaDesde] = useState(lote?.fecha_desde ?? '')
-  const [fechaHasta, setFechaHasta] = useState(lote?.fecha_hasta ?? '')
-  const [ccId, setCcId]             = useState(lote?.id_centro_costo_fk?.toString() ?? '')
-  const [notas, setNotas]           = useState(lote?.notas ?? '')
+  const [fechaDesde, setFechaDesde] = useState(lote?.fecha_desde ?? (duplicarDe ? addDias(duplicarDe.fecha_desde, shift) : ''))
+  const [fechaHasta, setFechaHasta] = useState(lote?.fecha_hasta ?? (duplicarDe ? addDias(duplicarDe.fecha_hasta, shift) : ''))
+  const [ccId, setCcId]             = useState(src?.id_centro_costo_fk?.toString() ?? '')
+  const [notas, setNotas]           = useState(src?.notas ?? '')
   const [centrosCosto, setCentrosCosto] = useState<any[]>([])
   const [ccAreas, setCcAreas]       = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
   const [frentes, setFrentes]       = useState<any[]>([])
@@ -226,8 +245,8 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   }, [idOpFk])
 
   useEffect(() => {
-    if (!isEdit) return
-    dbCtrl.from('rol_pagos_colaboradores').select('*').eq('id_lote_fk', lote.id).order('id').then(async ({ data: cs }) => {
+    if (!src) return
+    dbCtrl.from('rol_pagos_colaboradores').select('*').eq('id_lote_fk', src.id).order('id').then(async ({ data: cs }) => {
       const colabsData = cs ?? []
       const ids = colabsData.map((c: any) => c.id)
       const { data: asis } = ids.length
@@ -235,18 +254,18 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
         : { data: [] }
       setTrabajadores(colabsData.map((c: any, i: number) => ({
         tempId: i,
-        id: c.id,
+        id: duplicarDe ? undefined : c.id,
         id_colaborador_fk: c.id_colaborador_fk ?? null,
         nombre: c.nombre,
         puesto: c.puesto ?? '',
         costo_dia: c.costo_dia?.toString() ?? '0',
         id_area_fk:   c.id_area_fk?.toString()   ?? '',
         id_frente_fk: c.id_frente_fk?.toString() ?? '',
-        asistencias: Object.fromEntries((asis ?? []).filter((a: any) => a.id_colaborador_lote_fk === c.id).map((a: any) => [a.fecha, true])),
+        asistencias: Object.fromEntries((asis ?? []).filter((a: any) => a.id_colaborador_lote_fk === c.id).map((a: any) => [shift ? addDias(a.fecha, shift) : a.fecha, true])),
       })))
       setNextTempId(colabsData.length)
     })
-  }, [isEdit, lote?.id])
+  }, [src?.id])
 
   const dias = diasEnRango(fechaDesde, fechaHasta)
 
@@ -638,7 +657,7 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
   return (
     <ModalShell
       modulo="hr"
-      titulo={isEdit ? `Rol de Pagos ${lote.folio}` : 'Nuevo Rol de Pagos'}
+      titulo={isEdit ? `Rol de Pagos ${lote.folio}` : duplicarDe ? `Duplicar Rol de Pagos ${duplicarDe.folio}` : 'Nuevo Rol de Pagos'}
       subtitulo="HR · Rol de Pagos"
       icono={Wallet}
       maxWidth={880}
@@ -683,6 +702,12 @@ function LoteModal({ lote, puedeCapturar, puedeAutorizar, onClose, onSaved }: {
       {error && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', fontSize: 12, marginBottom: 14 }}>
           <AlertTriangle size={14} /> {error}
+        </div>
+      )}
+
+      {duplicarDe && (
+        <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: 'var(--blue)', fontSize: 12, marginBottom: 14 }}>
+          Copia de {duplicarDe.folio}: se movió el periodo al siguiente y se copiaron colaboradores, Área/Frente, costo por día y asistencias. Revisa y ajusta antes de guardar; se creará con un folio nuevo.
         </div>
       )}
 
