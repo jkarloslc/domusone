@@ -54,6 +54,7 @@ const addDias = (fecha: string, n: number) => {
 }
 // Rol duplicado: el periodo se recorre 7 días respecto al original
 const DIAS_DUPLICADO = 7
+const DIAS_PERIODO_DUPLICADO = 5   // fecha hasta = fecha desde + 5 días
 const diaLabel = (fecha: string) => {
   const d = new Date(fecha + 'T12:00:00')
   return {
@@ -212,7 +213,7 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
   const editable = puedeCapturar && (!isEdit || lote.status === 'Capturado' || lote.status === 'Rechazado')
 
   const [fechaDesde, setFechaDesde] = useState(lote?.fecha_desde ?? (duplicarDe ? addDias(duplicarDe.fecha_desde, shift) : ''))
-  const [fechaHasta, setFechaHasta] = useState(lote?.fecha_hasta ?? (duplicarDe ? addDias(duplicarDe.fecha_hasta, shift) : ''))
+  const [fechaHasta, setFechaHasta] = useState(lote?.fecha_hasta ?? (duplicarDe ? addDias(duplicarDe.fecha_desde, shift + DIAS_PERIODO_DUPLICADO) : ''))
   const [ccId, setCcId]             = useState(src?.id_centro_costo_fk?.toString() ?? '')
   const [notas, setNotas]           = useState(src?.notas ?? '')
   const [centrosCosto, setCentrosCosto] = useState<any[]>([])
@@ -260,7 +261,7 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
         costo_dia: c.costo_dia?.toString() ?? '0',
         id_area_fk:   c.id_area_fk?.toString()   ?? '',
         id_frente_fk: c.id_frente_fk?.toString() ?? '',
-        asistencias: Object.fromEntries((asis ?? []).filter((a: any) => a.id_colaborador_lote_fk === c.id).map((a: any) => [shift ? addDias(a.fecha, shift) : a.fecha, true])),
+        asistencias: Object.fromEntries((asis ?? []).filter((a: any) => a.id_colaborador_lote_fk === c.id && (!duplicarDe || (addDias(a.fecha, shift) >= addDias(duplicarDe.fecha_desde, shift) && addDias(a.fecha, shift) <= addDias(duplicarDe.fecha_desde, shift + DIAS_PERIODO_DUPLICADO)))).map((a: any) => [shift ? addDias(a.fecha, shift) : a.fecha, true])),
       })))
       setNextTempId(colabsData.length)
     })
@@ -706,7 +707,7 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
 
       {duplicarDe && (
         <div style={{ padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: 'var(--blue)', fontSize: 12, marginBottom: 14 }}>
-          Copia de {duplicarDe.folio}: el periodo se recorrió 7 días y se copiaron colaboradores, Área/Frente, costo por día y asistencias. Revisa y ajusta antes de guardar; se creará con un folio nuevo.
+          Copia de {duplicarDe.folio}: el periodo inicia 7 días después y termina 5 días después de su fecha desde y se copiaron colaboradores, Área/Frente, costo por día y asistencias. Revisa y ajusta antes de guardar; se creará con un folio nuevo.
         </div>
       )}
 
