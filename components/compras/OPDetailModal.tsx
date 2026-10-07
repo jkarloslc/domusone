@@ -259,7 +259,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
 
   const cancelar = async () => {
     if (!puedeCancelar) return
-    if (!confirm(`¿Cancelar ${op.folio}? No ingresará a Cuentas por Pagar y esta acción no se puede deshacer.`)) return
+    if (!confirm(`¿Cancelar ${op.folio}? No ingresará a Cuentas por Pagar, se liberarán sus vales/bitácoras/perimetrales y se eliminarán los consumos de servicio ligados. No se puede deshacer.`)) return
     // Releer el status: otro usuario pudo haberla pagado mientras el modal estaba abierto
     const { data: act } = await dbComp.from('ordenes_pago').select('status, monto_pagado').eq('id', op.id).single()
     if (!act || !STATUS_CANCELABLES.includes(act.status) || (act.monto_pagado ?? 0) > 0) {
@@ -630,7 +630,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   // distribuida puede traer líneas de distintos CC cuando el header se queda
   // sin CC propio (ver headerCCId/áreas por CC en el modal de captura).
   const ccDeLinea = (l: any) => l.id_area_fk ? (areaCcMap[l.id_area_fk] ?? null) : null
-  const puedeCancelar = canWrite('ordenes-pago') && STATUS_CANCELABLES.includes(op.status) && !((op.monto_pagado ?? 0) > 0)
+  const puedeCancelar = ['superadmin', 'admin'].includes(authUser?.rol ?? '') && STATUS_CANCELABLES.includes(op.status) && !((op.monto_pagado ?? 0) > 0)
 
   const detCCsDistintos = Array.from(new Set(detLinesView.map(ccDeLinea).filter((id): id is number => id != null)))
 
