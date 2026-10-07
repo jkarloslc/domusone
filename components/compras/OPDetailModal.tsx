@@ -28,6 +28,9 @@ const VALE_STATUS_COLOR: Record<string, { color: string; bg: string; border: str
   'Cancelado':  { color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
 }
 
+// OP en proceso (aún sin pagar): se pueden cancelar incluso durante autorizaciones
+const STATUS_CANCELABLES = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente']
+
 export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
@@ -255,8 +258,18 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   }, [op.id])
 
   const cancelar = async () => {
-    if (!confirm('¿Cancelar esta orden de pago?')) return
-    await dbComp.from('ordenes_pago').update({ status: 'Cancelada' }).eq('id', op.id)
+    if (!puedeCancelar) return
+    if (!confirm(`¿Cancelar ${op.folio}? No ingresará a Cuentas por Pagar y esta acción no se puede deshacer.`)) return
+    // Releer el status: otro usuario pudo haberla pagado mientras el modal estaba abierto
+    const { data: act } = await dbComp.from('ordenes_pago').select('status, monto_pagado').eq('id', op.id).single()
+    if (!act || !STATUS_CANCELABLES.includes(act.status) || (act.monto_pagado ?? 0) > 0) {
+      alert('Esta OP ya no se puede cancelar (tiene pagos aplicados o cambió de status).')
+      return
+    }
+    const nota = `[Cancelada por ${authUser?.nombre ?? ''} el ${new Date().toLocaleDateString('es-MX')}]`
+    const { error } = await dbComp.from('ordenes_pago')
+      .update({ status: 'Cancelada', notas: `${nota}${op.notas ? '\n' + op.notas : ''}` }).eq('id', op.id)
+    if (error) { alert('Error al cancelar: ' + error.message); return }
     onCanceled()
   }
 
@@ -617,6 +630,8 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   // distribuida puede traer líneas de distintos CC cuando el header se queda
   // sin CC propio (ver headerCCId/áreas por CC en el modal de captura).
   const ccDeLinea = (l: any) => l.id_area_fk ? (areaCcMap[l.id_area_fk] ?? null) : null
+  const puedeCancelar = canWrite('ordenes-pago') && STATUS_CANCELABLES.includes(op.status) && !((op.monto_pagado ?? 0) > 0)
+
   const detCCsDistintos = Array.from(new Set(detLinesView.map(ccDeLinea).filter((id): id is number => id != null)))
 
   return (
@@ -630,7 +645,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
       footer={
         <>
           <div>
-            {op.status === 'Pendiente' && (
+            {puedeCancelar && (
               <button onClick={cancelar} style={{ fontSize: 12, padding: '7px 14px', borderRadius: 7,
                 background: 'none', border: '1px solid #fecaca', color: '#dc2626', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                 Cancelar OP
