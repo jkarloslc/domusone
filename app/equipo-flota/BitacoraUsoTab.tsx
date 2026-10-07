@@ -478,7 +478,14 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
     if (reg?.id_combustible_mov_fk) {
       await dbComp.from('combustible_movimientos').delete().eq('id', reg.id_combustible_mov_fk)
     }
-    const tipoKardex = payload.litros ? KARDEX_TIPO_MAP[payload.tipo_combustible ?? ''] : undefined
+    // Vale de Gasolinería = consumo en estación, no sale del tanque: sin salida en Kardex.
+    let valeGasolineria = false
+    if (payload.id_vale_combustible_fk) {
+      const { data: vk } = await dbCtrl.from('vales_combustible')
+        .select('tipo_suministro').eq('id', payload.id_vale_combustible_fk).single()
+      valeGasolineria = vk?.tipo_suministro === 'Gasolinería'
+    }
+    const tipoKardex = payload.litros && !valeGasolineria ? KARDEX_TIPO_MAP[payload.tipo_combustible ?? ''] : undefined
     if (tipoKardex && payload.litros) {
       const { data: mov, error: movErr } = await dbComp.from('combustible_movimientos').insert({
         tipo_combustible: tipoKardex,
