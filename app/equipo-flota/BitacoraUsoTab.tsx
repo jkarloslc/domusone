@@ -8,6 +8,9 @@ import {
   Filter, Gauge, Activity, Upload,
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import Paginador from '@/components/ui/Paginador'
+
+const PAGE_SIZE = 20
 
 const TIPOS_COMBUSTIBLE = ['Magna', 'Premium', 'Diesel', 'Gas LP', 'Eléctrico']
 
@@ -47,6 +50,7 @@ export default function BitacoraUsoTab({
   const [filterDesde, setFilterDesde] = useState('')
   const [filterHasta, setFilterHasta] = useState('')
   const [modal,       setModal]       = useState<{ open: boolean; reg?: any }>({ open: false })
+  const [page,        setPage]        = useState(0)
 
   const fetchRegistros = useCallback(async () => {
     setLoading(true)
@@ -64,6 +68,9 @@ export default function BitacoraUsoTab({
   }, [filterEq, filterDesde, filterHasta])
 
   useEffect(() => { fetchRegistros() }, [fetchRegistros])
+  useEffect(() => { setPage(0) }, [filterEq, filterDesde, filterHasta])
+  const curPage = Math.min(page, Math.max(0, Math.ceil(registros.length / PAGE_SIZE) - 1))
+  const registrosPag = registros.slice(curPage * PAGE_SIZE, (curPage + 1) * PAGE_SIZE)
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este registro?')) return
@@ -203,7 +210,7 @@ export default function BitacoraUsoTab({
               <tr><td colSpan={12} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
                 Sin registros de uso. Usa <strong>Nuevo Registro</strong> para comenzar.
               </td></tr>
-            ) : registros.map(r => {
+            ) : registrosPag.map(r => {
               const eq      = equipoMap[r.id_equipo_fk]
               const unidad  = eq?.unidad_odometro ?? 'km'
               const recorrido =
@@ -270,6 +277,7 @@ export default function BitacoraUsoTab({
             })}
           </tbody>
         </table>
+        <Paginador page={curPage} pageSize={PAGE_SIZE} totalItems={registros.length} onChange={setPage} />
       </div>
 
       {/* ── Rendimiento por equipo ────────────────────────────── */}

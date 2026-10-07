@@ -5,9 +5,10 @@ import { useAuth } from '@/lib/AuthContext'
 import { recomputeValeCombustible, eliminarEntradaKardexVale } from '@/lib/combustible'
 import { nombreCompletoColaborador } from '@/lib/colaboradores'
 import ModalShell from '@/components/ui/ModalShell'
+import Paginador from '@/components/ui/Paginador'
 import {
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2, Printer,
-  ChevronLeft, ChevronRight, Fuel, Droplets, FileText, Search, Upload, CheckCircle, AlertTriangle
+  Fuel, Droplets, FileText, Search, Upload, CheckCircle, AlertTriangle
 } from 'lucide-react'
 
 const PAGE_SIZE = 20
@@ -307,16 +308,6 @@ export default function CombustibleTab() {
   const curPageC = Math.min(pageC, totalPagesC - 1)
   const valesPag  = filteredVales.slice(curPageV * PAGE_SIZE, (curPageV + 1) * PAGE_SIZE)
   const cargasPag = filteredCargas.slice(curPageC * PAGE_SIZE, (curPageC + 1) * PAGE_SIZE)
-  const Paginador = ({ page, total, totalItems, setPage }: { page: number; total: number; totalItems: number; setPage: (fn: (p: number) => number) => void }) =>
-    total > 1 ? (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pág. {page + 1} de {total} · {totalItems} registros</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-          <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= total - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-        </div>
-      </div>
-    ) : null
 
   return (
     <div style={{ padding: '16px 0' }}>
@@ -431,7 +422,7 @@ export default function CombustibleTab() {
                   })}
                 </tbody>
               </table>
-              <Paginador page={curPageV} total={totalPagesV} totalItems={filteredVales.length} setPage={setPageV} />
+              <Paginador page={curPageV} pageSize={PAGE_SIZE} totalItems={filteredVales.length} onChange={setPageV} />
             </div>
           )}
         </div>
@@ -501,7 +492,7 @@ export default function CombustibleTab() {
                   ))}
                 </tbody>
               </table>
-              <Paginador page={curPageC} total={totalPagesC} totalItems={filteredCargas.length} setPage={setPageC} />
+              <Paginador page={curPageC} pageSize={PAGE_SIZE} totalItems={filteredCargas.length} onChange={setPageC} />
             </div>
           )}
         </div>
