@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 
 const TIPOS_SUMINISTRO = ['Gasolinería', 'Garrafa']
+const TIPOS_COMBUSTIBLE = ['Magna', 'Premium', 'Diesel', 'Gas LP']
 const TIPOS_CARGA      = ['Gasolinería', 'Entrega Garrafa', 'Consumo Garrafa']
 
 // El status ya no se elige manualmente: avanza solo con el proceso.
@@ -126,6 +127,7 @@ async function imprimirVale(
     <div class="info-grid">
       <div class="info-item"><label>Solicitante</label><span>${vale.solicitante ?? '—'}</span></div>
       <div class="info-item"><label>Centro de Costo</label><span>${ccMap[vale.id_centro_costo_fk] ?? '—'}</span></div>
+      <div class="info-item"><label>Tipo de Combustible</label><span>${vale.tipo_combustible ?? '—'}</span></div>
       <div class="info-item"><label>Periodo</label><span>${vale.periodo ?? '—'}</span></div>
       <div class="info-item"><label>Vigencia</label><span>${fmtF(vale.vigencia)}</span></div>
       <div class="info-item"><label>Litros Autorizados</label><span>${fmtL(vale.litros_autorizados)}</span></div>
@@ -363,7 +365,7 @@ export default function CombustibleTab() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    {['Folio', 'Tipo', 'Centro de Costo', 'Periodo', 'Litros Auth.', 'Litros Usados', 'Monto Auth.', 'Vigencia', 'Status', ''].map(h => (
+                    {['Folio', 'Tipo', 'Combustible', 'Centro de Costo', 'Periodo', 'Litros Auth.', 'Litros Usados', 'Monto Auth.', 'Vigencia', 'Status', ''].map(h => (
                       <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -375,6 +377,7 @@ export default function CombustibleTab() {
                       <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                         <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio}</td>
                         <td style={{ padding: '8px 10px' }}><Badge text={v.tipo_suministro} map={CARGA_TIPO_STYLE} /></td>
+                        <td style={{ padding: '8px 10px', fontSize: 12 }}>{v.tipo_combustible ?? '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>{ccMap[v.id_centro_costo_fk] ?? '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12 }}>{v.periodo ?? '—'}</td>
                         <td style={{ padding: '8px 10px', fontSize: 12, textAlign: 'right' }}>{fmtL(v.litros_autorizados)}</td>
@@ -520,6 +523,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
   const [form, setForm] = useState({
     tipo_suministro:    vale?.tipo_suministro    ?? 'Gasolinería',
     solicitante:        vale?.solicitante         ?? '',
+    tipo_combustible:   vale?.tipo_combustible    ?? '',
     id_centro_costo_fk: vale?.id_centro_costo_fk?.toString() ?? '',
     periodo:            vale?.periodo            ?? '',
     litros_autorizados: vale?.litros_autorizados?.toString() ?? '',
@@ -557,6 +561,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
   const buildPayload = () => ({
     tipo_suministro:   form.tipo_suministro,
     solicitante:       form.solicitante.trim() || null,
+    tipo_combustible:  form.tipo_combustible || null,
     id_centro_costo_fk:Number(form.id_centro_costo_fk),
     periodo:           form.periodo.trim() || null,
     litros_autorizados:Number(form.litros_autorizados),
@@ -570,6 +575,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
   const validar = () => {
     if (!form.solicitante.trim())  { setError('El solicitante es obligatorio'); return false }
     if (!form.id_centro_costo_fk)  { setError('El centro de costo es obligatorio'); return false }
+    if (!form.tipo_combustible)    { setError('El tipo de combustible es obligatorio'); return false }
     if (!form.litros_autorizados)  { setError('Los litros son obligatorios'); return false }
     return true
   }
@@ -733,6 +739,13 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
             <select className="select" style={{ fontSize: 12 }} value={form.id_centro_costo_fk} onChange={setF('id_centro_costo_fk')}>
               <option value="">— Seleccionar —</option>
               {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Tipo de Combustible *</label>
+            <select className="select" style={{ fontSize: 12 }} value={form.tipo_combustible} onChange={setF('tipo_combustible')}>
+              <option value="">— Seleccionar —</option>
+              {TIPOS_COMBUSTIBLE.map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
           <div>
@@ -1031,7 +1044,7 @@ function ValeDetail({ vale, ccMap, equipoMap, onClose }: {
   return (
     <ModalShell modulo="mantenimiento" icono={FileText}
       titulo={vale.folio}
-      subtitulo={`${vale.tipo_suministro}${vale.periodo ? ` · ${vale.periodo}` : ''}`}
+      subtitulo={`${vale.tipo_suministro}${vale.tipo_combustible ? ` · ${vale.tipo_combustible}` : ''}${vale.periodo ? ` · ${vale.periodo}` : ''}`}
       onClose={onClose} maxWidth={540}
       footer={<>
         <button className="btn-secondary" onClick={handleImprimir} disabled={printing} style={{ fontSize: 12 }}>

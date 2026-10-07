@@ -549,11 +549,12 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
       ${valesComb.length > 0 ? `
       <h3 style="font-size:13px;font-weight:700;color:#0D4F80;margin:18px 0 8px">Vales de Combustible Asociados</h3>
       <table>
-        <thead><tr><th>Folio</th><th>Suministro</th><th>Equipo / Área</th><th style="text-align:right">Litros Aut.</th><th style="text-align:right">Litros Cons.</th><th style="text-align:right">Monto Aut.</th><th>Status</th></tr></thead>
+        <thead><tr><th>Folio</th><th>Suministro</th><th>Combustible</th><th>Equipo / Área</th><th style="text-align:right">Litros Aut.</th><th style="text-align:right">Litros Cons.</th><th style="text-align:right">Monto Aut.</th><th>Status</th></tr></thead>
         <tbody>
           ${valesComb.map((v: any) => `<tr>
             <td style="font-family:monospace">${v.folio ?? `#${v.id}`}</td>
             <td>${v.tipo_suministro ?? '—'}</td>
+            <td>${v.tipo_combustible ?? '—'}</td>
             <td>${v.id_equipo_fk ? (equiposMap[v.id_equipo_fk] ?? `#${v.id_equipo_fk}`) : (v.id_area_fk ? (areaMap[v.id_area_fk] ?? `#${v.id_area_fk}`) : '—')}</td>
             <td style="text-align:right">${v.litros_autorizados ?? '—'}</td>
             <td style="text-align:right">${v.litros_consumidos ?? 0}</td>
@@ -976,7 +977,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                 <table>
                   <thead>
                     <tr>
-                      <th>Folio</th><th>Suministro</th><th>Equipo / Área</th>
+                      <th>Folio</th><th>Suministro</th><th>Combustible</th><th>Equipo / Área</th>
                       <th style={{ textAlign: 'right' }}>Litros Aut.</th>
                       <th style={{ textAlign: 'right' }}>Litros Cons.</th>
                       <th style={{ textAlign: 'right' }}>Monto Aut.</th>
@@ -990,6 +991,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                         <tr key={v.id}>
                           <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{v.folio ?? `#${v.id}`}</td>
                           <td style={{ fontSize: 12 }}>{v.tipo_suministro ?? '—'}</td>
+                          <td style={{ fontSize: 12 }}>{v.tipo_combustible ?? '—'}</td>
                           <td style={{ fontSize: 12 }}>{v.id_equipo_fk ? (equiposMap[v.id_equipo_fk] ?? `#${v.id_equipo_fk}`) : (v.id_area_fk ? (areaMap[v.id_area_fk] ?? `#${v.id_area_fk}`) : '—')}</td>
                           <td style={{ textAlign: 'right', fontSize: 12 }}>{v.litros_autorizados ?? '—'}</td>
                           <td style={{ textAlign: 'right', fontSize: 12 }}>{v.litros_consumidos ?? 0}</td>
