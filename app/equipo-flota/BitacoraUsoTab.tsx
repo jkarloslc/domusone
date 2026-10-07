@@ -405,7 +405,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
   useEffect(() => {
     Promise.all([
       dbCtrl.from('vales_combustible')
-        .select('id, folio, tipo_suministro, periodo, litros_autorizados, litros_usados, id_centro_costo_fk')
+        .select('id, folio, tipo_suministro, tipo_combustible, periodo, litros_autorizados, litros_usados, id_centro_costo_fk')
         .in('status', ['Emitido', 'Parcial']).order('created_at', { ascending: false }),
       dbCfg.from('centros_costo').select('id, nombre'),
     ]).then(([{ data: v, error: verr }, { data: cc }]) => {
@@ -430,6 +430,10 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
     if (!form.fecha)         { setError('La fecha es obligatoria'); return }
     if (form.id_vale_combustible_fk && !form.litros) {
       setError('Especifica los litros a descontar del vale'); return
+    }
+    const valeSel = vales.find(v => String(v.id) === String(form.id_vale_combustible_fk))
+    if (valeSel?.tipo_combustible && form.litros && valeSel.tipo_combustible !== form.tipo_combustible) {
+      setError(`El vale ${valeSel.folio} es de ${valeSel.tipo_combustible}; el tipo capturado es ${form.tipo_combustible}`); return
     }
     setSaving(true); setError('')
 
@@ -476,7 +480,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
     }
     const tipoKardex = payload.litros ? KARDEX_TIPO_MAP[payload.tipo_combustible ?? ''] : undefined
     if (tipoKardex && payload.litros) {
-      const { data: mov } = await dbComp.from('combustible_movimientos').insert({
+      const { data: mov, error: movErr } = await dbComp.from('combustible_movimientos').insert({
         tipo_combustible: tipoKardex,
         tipo_mov:         'SALIDA',
         fecha:            payload.fecha,
@@ -486,6 +490,11 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
         observaciones:    payload.actividad,
         created_by:       authUser?.nombre ?? null,
       }).select('id').single()
+      if (movErr) {
+        await dbCtrl.from('bitacora_uso_equipos').update({ id_combustible_mov_fk: null }).eq('id', regId)
+        // Se avisa y se sigue: el registro ya existe, reintentar desde el modal lo duplicaría.
+        alert('El registro se guardó, pero la salida no se pudo registrar en el Kardex: ' + movErr.message)
+      }
       if (mov) {
         await dbCtrl.from('bitacora_uso_equipos').update({ id_combustible_mov_fk: mov.id }).eq('id', regId)
       }
@@ -634,13 +643,20 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
           <div style={{ marginTop: 8 }}>
             <label className="label" style={{ fontSize: 11 }}>Vale de combustible vinculado (opcional)</label>
             <select className="select" style={{ fontSize: 12 }}
-              value={form.id_vale_combustible_fk} onChange={setF('id_vale_combustible_fk')}>
+              value={form.id_vale_combustible_fk}
+              onChange={e => {
+                // El vale ya define el combustible: se precarga para que la bitácora
+                // y el Kardex descuenten el mismo tipo que se pagó.
+                const v = vales.find(x => String(x.id) === e.target.value)
+                setForm(f => ({ ...f, id_vale_combustible_fk: e.target.value,
+                  tipo_combustible: v?.tipo_combustible ?? f.tipo_combustible }))
+              }}>
               <option value="">— Sin vale —</option>
               {vales.map(v => {
                 const restante = (v.litros_autorizados ?? 0) - (v.litros_usados ?? 0)
                 return (
                   <option key={v.id} value={v.id}>
-                    {v.folio} · {v.tipo_suministro} · {v.ccNombre ?? ''} · {fmtN(restante)} L restantes
+                    {v.folio} · {v.tipo_suministro}{v.tipo_combustible ? ` · ${v.tipo_combustible}` : ''} · {v.ccNombre ?? ''} · {fmtN(restante)} L restantes
                   </option>
                 )
               })}
