@@ -602,7 +602,12 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
     if (isNew) payload.status = 'Solicitado'
     // Una vez emitido (pagado) los litros no se modifican, ni siquiera por superadmin:
     // la entrada al Kardex y el consumo ya se calcularon con esa cantidad.
-    if (!isNew && vale.status !== 'Solicitado') payload.litros_autorizados = vale.litros_autorizados
+    if (!isNew && vale.status !== 'Solicitado') {
+      payload.litros_autorizados = vale.litros_autorizados
+      payload.tipo_suministro    = vale.tipo_suministro
+      // Vales anteriores sin tipo sí pueden capturarlo una vez (carga manual).
+      if (vale.tipo_combustible) payload.tipo_combustible = vale.tipo_combustible
+    }
 
     for (let intento = 0; intento < 3; intento++) {
       if (isNew) payload.folio = await generarFolioVale()
@@ -692,7 +697,8 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
             <label className="label" style={{ fontSize: 11 }}>Tipo de Suministro *</label>
-            <select className="select" style={{ fontSize: 12 }} value={form.tipo_suministro} onChange={setF('tipo_suministro')}>
+            <select className="select" style={{ fontSize: 12 }} value={form.tipo_suministro} onChange={setF('tipo_suministro')}
+              disabled={!isNew && status !== 'Solicitado'} title={!isNew && status !== 'Solicitado' ? 'No se puede modificar una vez emitido el vale' : undefined}>
               {TIPOS_SUMINISTRO.map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
@@ -747,7 +753,8 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
           </div>
           <div>
             <label className="label" style={{ fontSize: 11 }}>Tipo de Combustible *</label>
-            <select className="select" style={{ fontSize: 12 }} value={form.tipo_combustible} onChange={setF('tipo_combustible')}>
+            <select className="select" style={{ fontSize: 12 }} value={form.tipo_combustible} onChange={setF('tipo_combustible')}
+              disabled={!isNew && status !== 'Solicitado' && !!vale?.tipo_combustible} title={!isNew && status !== 'Solicitado' && vale?.tipo_combustible ? 'No se puede modificar una vez emitido el vale' : undefined}>
               <option value="">— Seleccionar —</option>
               {TIPOS_COMBUSTIBLE.map(t => <option key={t}>{t}</option>)}
             </select>
