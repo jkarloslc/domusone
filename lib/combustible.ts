@@ -81,3 +81,10 @@ export async function revertirValesPorPagoOP(idOp: number) {
       .in('id_vale_combustible_fk', ids).eq('tipo_mov', 'ENTRADA')
   }
 }
+
+// Al cancelar un vale se elimina la entrada que pudo haber generado en el Kardex
+// (vale Garrafa pagado). Las salidas de bitácora no se tocan: son consumos reales.
+export async function eliminarEntradaKardexVale(idVale: number) {
+  await dbComp.from('combustible_movimientos').delete()
+    .eq('id_vale_combustible_fk', idVale).eq('tipo_mov', 'ENTRADA')
+}

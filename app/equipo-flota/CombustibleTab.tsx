@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { recomputeValeCombustible } from '@/lib/combustible'
+import { recomputeValeCombustible, eliminarEntradaKardexVale } from '@/lib/combustible'
 import { nombreCompletoColaborador } from '@/lib/colaboradores'
 import ModalShell from '@/components/ui/ModalShell'
 import {
@@ -600,6 +600,9 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
 
     const payload: any = { ...buildPayload() }
     if (isNew) payload.status = 'Solicitado'
+    // Una vez emitido (pagado) los litros no se modifican, ni siquiera por superadmin:
+    // la entrada al Kardex y el consumo ya se calcularon con esa cantidad.
+    if (!isNew && vale.status !== 'Solicitado') payload.litros_autorizados = vale.litros_autorizados
 
     for (let intento = 0; intento < 3; intento++) {
       if (isNew) payload.folio = await generarFolioVale()
@@ -629,6 +632,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
     const { error: err } = await dbCtrl.from('vales_combustible')
       .update({ status: 'Cancelado', updated_at: new Date().toISOString() }).eq('id', vale.id)
     if (err) { setError(err.message); setSaving(false); return }
+    await eliminarEntradaKardexVale(vale.id)
     onSaved()
   }
 
@@ -758,7 +762,8 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
           </div>
           <div>
             <label className="label" style={{ fontSize: 11 }}>{status === 'Solicitado' ? 'Litros Solicitados *' : 'Litros Autorizados *'}</label>
-            <input className="input" type="number" step="0.01" style={{ fontSize: 12 }} value={form.litros_autorizados} onChange={setF('litros_autorizados')} placeholder="0.00" />
+            <input className="input" type="number" step="0.01" style={{ fontSize: 12 }} value={form.litros_autorizados} onChange={setF('litros_autorizados')} placeholder="0.00"
+              disabled={!isNew && status !== 'Solicitado'} title={!isNew && status !== 'Solicitado' ? 'Los litros no se pueden modificar una vez emitido el vale' : undefined} />
           </div>
           <div>
             <label className="label" style={{ fontSize: 11 }}>Monto Autorizado ($)</label>
