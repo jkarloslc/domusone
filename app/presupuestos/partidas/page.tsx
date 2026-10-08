@@ -53,6 +53,7 @@ type Partida = {
   id_seccion_fk:        number | null
   id_concepto_fk:       number | null
   tipo_gasto:           string | null
+  id_tipo_gasto_fk:     number | null
   id_agrupador_fk: number | null
   clasificacion: Clasificacion
   orden: number
@@ -80,7 +81,7 @@ type DupTarget = {
 const EMPTY: Omit<Partida, 'id'> = {
   nombre: '', descripcion: null, tipo: 'egreso', modulo: 'Golf', fuente_real: 'op_area',
   id_centro_costo_fk: null, id_area_fk: null, id_centro_ingreso_fk: null,
-  id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, id_agrupador_fk: null,
+  id_seccion_fk: null, id_concepto_fk: null, tipo_gasto: null, id_tipo_gasto_fk: null, id_agrupador_fk: null,
   clasificacion: 'operativo', orden: 0, activo: true,
   incluir_presupuesto: true, incluir_flujo: true,
   devengado_igual_a_cobro: false,
@@ -110,6 +111,12 @@ export default function PartidasPage() {
   const puedeEscribir = canWrite('presupuestos')
   const esSuperadmin  = authUser?.rol === 'superadmin'
   const tiposGasto = useTiposGasto()
+  // nombre → id del catálogo, para guardar la FK id_tipo_gasto_fk
+  const [tipoGastoId, setTipoGastoId] = useState<Record<string, number>>({})
+  useEffect(() => {
+    dbCfg.from('tipos_gasto').select('id, nombre')
+      .then(({ data }) => setTipoGastoId(Object.fromEntries((data ?? []).map((r: any) => [r.nombre, r.id]))))
+  }, [])
 
   const [partidas, setPartidas]       = useState<Partida[]>([])
   const [ccs, setCCs]                 = useState<CC[]>([])
@@ -180,7 +187,7 @@ export default function PartidasPage() {
       id_centro_costo_fk: p.id_centro_costo_fk, id_area_fk: p.id_area_fk,
       id_centro_ingreso_fk: p.id_centro_ingreso_fk,
       id_seccion_fk: p.id_seccion_fk, id_concepto_fk: p.id_concepto_fk,
-      tipo_gasto: p.tipo_gasto, id_agrupador_fk: p.id_agrupador_fk,
+      tipo_gasto: p.tipo_gasto, id_tipo_gasto_fk: p.id_tipo_gasto_fk ?? null, id_agrupador_fk: p.id_agrupador_fk,
       clasificacion: p.clasificacion ?? 'operativo',
       orden: p.orden, activo: p.activo,
       incluir_presupuesto: p.incluir_presupuesto ?? true,
@@ -211,6 +218,7 @@ export default function PartidasPage() {
       id_centro_costo_fk:   form.tipo === 'egreso' ? form.id_centro_costo_fk : null,
       id_area_fk:           form.tipo === 'egreso' ? form.id_area_fk         : null,
       tipo_gasto:           form.tipo === 'egreso' ? form.tipo_gasto         : null,
+      id_tipo_gasto_fk:     form.tipo === 'egreso' && form.tipo_gasto ? (tipoGastoId[form.tipo_gasto] ?? null) : null,
       // Ingresos
       id_centro_ingreso_fk: form.tipo === 'ingreso' ? form.id_centro_ingreso_fk : null,
       id_seccion_fk:        (form.tipo === 'ingreso' && form.fuente_real === 'seccion')  ? form.id_seccion_fk  : null,
@@ -267,6 +275,7 @@ export default function PartidasPage() {
       id_centro_costo_fk:   dupSource.tipo === 'egreso' ? t.id_centro_costo_fk : null,
       id_area_fk:           dupSource.tipo === 'egreso' ? t.id_area_fk         : null,
       tipo_gasto:           dupSource.tipo === 'egreso' ? dupSource.tipo_gasto : null,
+      id_tipo_gasto_fk:     dupSource.tipo === 'egreso' ? (dupSource.id_tipo_gasto_fk ?? null) : null,
       id_centro_ingreso_fk: dupSource.tipo === 'ingreso' ? dupSource.id_centro_ingreso_fk : null,
       id_seccion_fk:        (dupSource.tipo === 'ingreso' && dupSource.fuente_real === 'seccion')  ? dupSource.id_seccion_fk  : null,
       id_concepto_fk:       (dupSource.tipo === 'ingreso' && dupSource.fuente_real === 'concepto') ? dupSource.id_concepto_fk : null,
