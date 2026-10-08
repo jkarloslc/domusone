@@ -3,7 +3,7 @@ import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { resolverCategoriasPorOp } from '@/lib/pptoOcCategoria'
-import { useCategoriasArticulo } from '@/lib/useCategoriasArticulo'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
@@ -39,7 +39,7 @@ type OP = {
 // su(s) OC vinculada(s) — ver lib/pptoOcCategoria.ts. Una OP con líneas de
 // varias categorías genera varias filas, una por categoría, con monto/saldo
 // prorrateados según la fracción resuelta.
-type OPCat = OP & { categoria: string; fraction: number; _catIdx: number }
+type OPCat = OP & { id_categoria: number | null; fraction: number; _catIdx: number }
 
 type CatBucket = {
   nombre: string
@@ -53,7 +53,8 @@ type CatBucket = {
 type Tab = 'jerarquico' | 'matriz'
 
 export default function ReporteOPsPorClasificacionArticulos() {
-  const CATEGORIAS_ART = useCategoriasArticulo()
+  const catTG = useCatalogoTiposGasto()
+  const nombreCategoria = (id: number | null) => (id != null ? (catTG.nombre(id) ?? `#${id}`) : SIN_CATEGORIA)
   const [opsConOC, setOpsConOC]     = useState<OP[]>([])
   const [opsCat, setOpsCat]         = useState<OPCat[]>([])
   const [centrosCosto, setCentros]  = useState<{ id: number; nombre: string }[]>([])
@@ -101,13 +102,13 @@ export default function ReporteOPsPorClasificacionArticulos() {
 
     const exploded: OPCat[] = []
     conOC.forEach(op => {
-      const entradas = catsPorOp.get(op.id) ?? [{ categoria: null, fraction: 1 }]
+      const entradas = catsPorOp.get(op.id) ?? [{ id_tipo_gasto_fk: null, fraction: 1 }]
       const monto  = Number(op.monto ?? 0)
       const saldo  = Number(op.saldo ?? op.monto ?? 0)
       entradas.forEach((e, idx) => {
         exploded.push({
           ...op,
-          categoria: e.categoria ?? SIN_CATEGORIA,
+          id_categoria: e.id_tipo_gasto_fk,
           fraction: e.fraction,
           monto: monto * e.fraction,
           saldo: saldo * e.fraction,
@@ -144,7 +145,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
       if (filtroCC        && op.id_centro_costo_fk !== Number(filtroCC)) return false
       if (filtroArea       && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv       && op.id_proveedor_fk !== Number(filtroProv)) return false
-      if (filtroCategoria  && op.categoria !== filtroCategoria) return false
+      if (filtroCategoria  && (filtroCategoria === SIN_CATEGORIA ? op.id_categoria != null : String(op.id_categoria) !== filtroCategoria)) return false
       if (filtroDe         && (!op.fecha_op || op.fecha_op < filtroDe)) return false
       if (filtroA          && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
@@ -155,8 +156,8 @@ export default function ReporteOPsPorClasificacionArticulos() {
   const grupos = useMemo(() => {
     const res: Record<string, CatBucket> = {}
     for (const op of opsFiltradas) {
-      const key = op.categoria
-      if (!res[key]) res[key] = { nombre: key, total: 0, pagado: 0, saldo: 0, docs: 0, ops: [] }
+      const key = String(op.id_categoria ?? 'sin')
+      if (!res[key]) res[key] = { nombre: nombreCategoria(op.id_categoria), total: 0, pagado: 0, saldo: 0, docs: 0, ops: [] }
 
       const monto  = Number(op.monto ?? 0)
       const saldo  = Number(op.saldo ?? 0)
@@ -257,7 +258,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
       const provNom = op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : ''
       return {
         'Folio':           op.folio,
-        'Categoría':       op.categoria,
+        'Categoría':       nombreCategoria(op.id_categoria),
         '% de la OP':      Math.round(op.fraction * 1000) / 10,
         'Centro de Costo': ccNom,
         'Área':            arNom,
@@ -321,7 +322,7 @@ export default function ReporteOPsPorClasificacionArticulos() {
         </select>
         <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 160, flex: '0 0 auto' }} value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}>
           <option value="">Todas las categorías</option>
-          {CATEGORIAS_ART.map(c => <option key={c}>{c}</option>)}
+          {catTG.activos.filter(t => t.es_articulo).map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
           <option value={SIN_CATEGORIA}>{SIN_CATEGORIA}</option>
         </select>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: '0 0 auto' }}>

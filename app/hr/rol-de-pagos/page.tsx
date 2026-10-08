@@ -13,6 +13,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import { montoALetras } from '@/lib/numeroALetras'
 import { nextFolio } from '@/app/compras/types'
+import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
 
 const STATUS_COLOR: Record<string, { bg: string; color: string; border: string }> = {
   'Capturado':  { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
@@ -392,10 +393,13 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
     setGenerandoOp(true); setError('')
     try {
       const folio = await nextFolio(dbComp, 'OP')
+      const catTG = armarCatalogo(await cargarTiposGasto())
+      const idTipoPersonal = catTG.idPorClave('personal_externo')
+      if (idTipoPersonal == null) throw new Error('El catálogo de tipos de gasto no tiene el tipo "Pagos a Personal Externo" (clave personal_externo)')
       const { data: op, error: opErr } = await dbComp.from('ordenes_pago').insert({
         folio,
         concepto: `Rol de Pagos ${lote.folio} · ${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}`,
-        tipo_gasto: 'Pagos a Personal Externo',
+        id_tipo_gasto_fk: idTipoPersonal,
         forma_pago: 'Transferencia',
         urgencia: 'Media',
         fecha_vencimiento: fechaHasta || null,

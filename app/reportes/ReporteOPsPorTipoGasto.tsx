@@ -2,7 +2,7 @@
 import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { useTiposGasto } from '@/lib/useTiposGasto'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { PrintBar } from './utils'
 import ModalShell from '@/components/ui/ModalShell'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3, Pencil, Tag, Save, Loader } from 'lucide-react'
@@ -23,7 +23,7 @@ type OP = {
   id: number
   folio: string
   concepto: string | null
-  tipo_gasto: string | null
+  id_tipo_gasto_fk: number | null
   monto: number | null
   saldo: number | null
   fecha_op: string | null
@@ -52,7 +52,7 @@ type Tab = 'jerarquico' | 'matriz'
 export default function ReporteOPsPorTipoGasto() {
   const { authUser } = useAuth()
   const esSuperadmin = authUser?.rol === 'superadmin'
-  const tiposGasto = useTiposGasto()
+  const catTG = useCatalogoTiposGasto()
 
   const [ops, setOps]               = useState<OP[]>([])
   const [centrosCosto, setCentros]  = useState<{ id: number; nombre: string }[]>([])
@@ -83,7 +83,7 @@ export default function ReporteOPsPorTipoGasto() {
       dbCfg.from('rel_area_frente').select('id_area, id_frente'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, concepto, tipo_gasto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_frente_fk, id_oc_fk, reclasificado_por, fecha_reclasificacion')
+        .select('id, folio, concepto, id_tipo_gasto_fk, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_frente_fk, id_oc_fk, reclasificado_por, fecha_reclasificacion')
         .order('fecha_op', { ascending: false }),
       dbComp.from('ordenes_pago_oc').select('id_op_fk'),
     ])
@@ -129,7 +129,7 @@ export default function ReporteOPsPorTipoGasto() {
       if (filtroCC     && op.id_centro_costo_fk !== Number(filtroCC)) return false
       if (filtroArea   && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv   && op.id_proveedor_fk !== Number(filtroProv)) return false
-      if (filtroTipo   && op.tipo_gasto !== filtroTipo) return false
+      if (filtroTipo   && String(op.id_tipo_gasto_fk ?? '') !== filtroTipo) return false
       if (filtroDe     && (!op.fecha_op || op.fecha_op < filtroDe)) return false
       if (filtroA      && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
@@ -140,8 +140,8 @@ export default function ReporteOPsPorTipoGasto() {
   const grupos = useMemo(() => {
     const res: Record<string, TipoBucket> = {}
     for (const op of opsFiltradas) {
-      const key    = op.tipo_gasto ?? 'sin-tipo'
-      const nombre = op.tipo_gasto ?? 'Sin tipo de gasto'
+      const key    = op.id_tipo_gasto_fk != null ? String(op.id_tipo_gasto_fk) : 'sin-tipo'
+      const nombre = catTG.nombre(op.id_tipo_gasto_fk) ?? 'Sin tipo de gasto'
       if (!res[key]) res[key] = { nombre, total: 0, pagado: 0, saldo: 0, docs: 0, ops: [] }
 
       const monto  = Number(op.monto ?? 0)
@@ -215,7 +215,7 @@ export default function ReporteOPsPorTipoGasto() {
     setReclasCC(op.id_centro_costo_fk?.toString() ?? '')
     setReclasArea(op.id_area_fk?.toString() ?? '')
     setReclasFrente(op.id_frente_fk?.toString() ?? '')
-    setReclasTipoGasto(op.tipo_gasto ?? '')
+    setReclasTipoGasto(op.id_tipo_gasto_fk != null ? String(op.id_tipo_gasto_fk) : '')
     setReclasError('')
   }
   const cerrarReclasificar = () => { setReclasOp(null); setReclasError('') }
@@ -229,7 +229,7 @@ export default function ReporteOPsPorTipoGasto() {
       id_centro_costo_fk: reclasCC ? Number(reclasCC) : null,
       id_area_fk:         reclasArea ? Number(reclasArea) : null,
       id_frente_fk:        reclasFrente ? Number(reclasFrente) : null,
-      tipo_gasto:          reclasTipoGasto || null,
+      id_tipo_gasto_fk:    reclasTipoGasto ? Number(reclasTipoGasto) : null,
       reclasificado_por:      authUser?.nombre ?? null,
       fecha_reclasificacion:  new Date().toISOString(),
     }).eq('id', reclasOp.id)
@@ -245,7 +245,7 @@ export default function ReporteOPsPorTipoGasto() {
       if (filtroCC   && op.id_centro_costo_fk !== Number(filtroCC)) return false
       if (filtroArea && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv && op.id_proveedor_fk !== Number(filtroProv)) return false
-      if (filtroTipo && op.tipo_gasto !== filtroTipo) return false
+      if (filtroTipo && String(op.id_tipo_gasto_fk ?? '') !== filtroTipo) return false
       if (filtroDe   && (!op.fecha_op || op.fecha_op < filtroDe)) return false
       if (filtroA    && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
@@ -282,7 +282,7 @@ export default function ReporteOPsPorTipoGasto() {
       const provNom = op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : ''
       return {
         'Folio':           op.folio,
-        'Tipo de Gasto':   op.tipo_gasto ?? 'Sin tipo de gasto',
+        'Tipo de Gasto':   catTG.nombre(op.id_tipo_gasto_fk) ?? 'Sin tipo de gasto',
         'Centro de Costo': ccNom,
         'Área':            arNom,
         'Proveedor':       provNom,
@@ -345,7 +345,7 @@ export default function ReporteOPsPorTipoGasto() {
         </select>
         <select className="select" style={{ fontSize: 12, padding: '5px 8px', width: 150, flex: '0 0 auto' }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
-          {tiposGasto.map(t => <option key={t}>{t}</option>)}
+          {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
         </select>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center', flex: '0 0 auto' }}>
           <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ fontSize: 12, padding: '5px 8px', width: 118 }} />
@@ -605,7 +605,7 @@ export default function ReporteOPsPorTipoGasto() {
             <div><label className="label">Tipo de Gasto</label>
               <select className="select" value={reclasTipoGasto} onChange={e => setReclasTipoGasto(e.target.value)}>
                 <option value="">— Sin asignar —</option>
-                {tiposGasto.map(t => <option key={t} value={t}>{t}</option>)}
+                {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
               </select>
             </div>
           </div>

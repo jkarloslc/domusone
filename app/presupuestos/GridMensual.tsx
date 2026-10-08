@@ -7,7 +7,7 @@ type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type DetMap = Record<number, Record<number, number>>
 export type FilaGrid = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'; clasificacion: Clasificacion
-  orden: number; tipo_gasto: string | null; id_centro_costo_fk: number | null; id_agrupador_fk: number | null
+  orden: number; tipo_gasto: string | null; id_tipo_gasto_fk: number | null; id_centro_costo_fk: number | null; id_agrupador_fk: number | null
 }
 export type CeldaInfo = { ids: number[]; nombre: string; tipo: 'ingreso' | 'egreso'; meses: number[] }
 export type Vista = 'detalle' | 'concepto' | 'agrupado'
@@ -59,7 +59,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
     rows.forEach(r => {
       let key: string, nombre: string, orden: number
       if (vista === 'concepto') {
-        key = r.tipo_gasto ? `${r.id_centro_costo_fk ?? 0}-${r.tipo_gasto}` : `p-${r.id}`
+        key = r.id_tipo_gasto_fk ? `${r.id_centro_costo_fk ?? 0}-${r.id_tipo_gasto_fk}` : `p-${r.id}`
         nombre = r.tipo_gasto ?? r.nombre; orden = r.orden
       } else {
         const ag = r.id_agrupador_fk ? agrupadores.find(a => a.id === r.id_agrupador_fk) : null

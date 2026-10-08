@@ -12,6 +12,7 @@ import { prorratearDescuento } from '@/lib/prorateoDescuento'
 import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
+import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
 import { exportarResumenExcel } from '../exportResumen'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
 import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
@@ -27,7 +28,8 @@ type Partida     = {
   id_area_fk:           number | null
   id_seccion_fk:        number | null
   id_concepto_fk:       number | null
-  tipo_gasto:           string | null
+  tipo_gasto:           string | null   // solo para mostrar; se resuelve desde el catálogo por id
+  id_tipo_gasto_fk:     number | null
   id_agrupador_fk:      number | null
   clasificacion:        Clasificacion
   /** Venta diaria: en base devengado su Real se toma del real de caja. */
@@ -229,7 +231,7 @@ export default function ComparativoPage() {
 
     const [pData, { data: det }, { data: manual }] = await Promise.all([
       cargarPartidasPresupuesto<Partida>(
-        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion, devengado_igual_a_cobro',
+        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, id_tipo_gasto_fk, id_agrupador_fk, clasificacion, devengado_igual_a_cobro',
         pptoId, modulo, q => q.eq('incluir_presupuesto', true).eq('clasificacion', 'operativo')),
       dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto, monto_devengado').eq('id_presupuesto_fk', pptoId),
@@ -237,7 +239,8 @@ export default function ComparativoPage() {
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
     ])
 
-    const parts = pData
+    const cat = armarCatalogo(await cargarTiposGasto())
+    const parts = pData.map(p => ({ ...p, tipo_gasto: cat.nombre(p.id_tipo_gasto_fk) }))
     setPartidas(parts)
 
     const dm: DetMap = {}
@@ -284,7 +287,7 @@ export default function ComparativoPage() {
         : Promise.resolve({ data: [] }),
       areaIds.length > 0
         ? dbComp.from('ordenes_pago')
-            .select('id, id_centro_costo_fk, id_area_fk, tipo_gasto, fecha_op, monto, subtotal, status, id_oc_fk, folio, concepto, id_proveedor_fk')
+            .select('id, id_centro_costo_fk, id_area_fk, id_tipo_gasto_fk, fecha_op, monto, subtotal, status, id_oc_fk, folio, concepto, id_proveedor_fk')
             .in('id_area_fk', areaIds)
             .gte('fecha_op', `${anio}-01-01`)
             .lte('fecha_op', `${anio}-12-31`)
@@ -295,7 +298,7 @@ export default function ComparativoPage() {
       // arriba — hay que sumar cada línea por su propia área.
       areaIds.length > 0
         ? (dbComp.from('ordenes_pago_det') as any)
-            .select('id_area_fk, monto, ordenes_pago!inner(id, tipo_gasto, fecha_op, status, id_area_fk, folio, concepto, id_proveedor_fk, monto, subtotal)')
+            .select('id_area_fk, monto, ordenes_pago!inner(id, id_tipo_gasto_fk, fecha_op, status, id_area_fk, folio, concepto, id_proveedor_fk, monto, subtotal)')
             .in('id_area_fk', areaIds)
             .is('ordenes_pago.id_area_fk', null)
             .gte('ordenes_pago.fecha_op', `${anio}-01-01`)
@@ -315,7 +318,7 @@ export default function ComparativoPage() {
     const opsDistribuidas = (opsDetData ?? []).map((r: any) => ({
       id:         r.ordenes_pago.id,
       id_area_fk: r.id_area_fk,
-      tipo_gasto: r.ordenes_pago.tipo_gasto,
+      id_tipo_gasto_fk: r.ordenes_pago.id_tipo_gasto_fk,
       fecha_op:   r.ordenes_pago.fecha_op,
       status:     r.ordenes_pago.status,
       monto:      r.monto,
@@ -331,7 +334,7 @@ export default function ComparativoPage() {
     // el catch-all la sigue capturando sin cambios (ver tiposEspecificosPorArea
     // más abajo) — seguro desplegar antes de crear esas partidas.
     const candidatosOC = (opsData ?? [])
-      .filter((o: any) => o.tipo_gasto === null && o.id_oc_fk != null)
+      .filter((o: any) => o.id_tipo_gasto_fk === null && o.id_oc_fk != null)
       .map((o: any) => ({ id: o.id, id_oc_fk: o.id_oc_fk }))
     const categoriasPorOp = await resolverCategoriasPorOp(candidatosOC)
     const opsCategoria: any[] = []
@@ -341,7 +344,7 @@ export default function ComparativoPage() {
       const factor = factorSinIva(op.subtotal, Number(op.monto))
       prorratearDescuento(shares, s => s.fraction, 1, Number(op.monto)).forEach(({ item, montoNeto }) => {
         opsCategoria.push({
-          id: op.id, id_area_fk: op.id_area_fk, tipo_gasto: item.categoria,
+          id: op.id, id_area_fk: op.id_area_fk, id_tipo_gasto_fk: item.id_tipo_gasto_fk,
           fecha_op: op.fecha_op, status: op.status, monto: montoNeto, subtotal: montoNeto * factor,
           folio: op.folio, concepto: op.concepto, id_proveedor_fk: op.id_proveedor_fk,
         })
@@ -414,22 +417,22 @@ export default function ComparativoPage() {
     // Por área (ordenes de pago) — la partida comodín de un área ("Otros", o
     // legado sin tipo_gasto) excluye los tipo_gasto que ya cubre otra partida
     // específica de esa misma área, para no contar la misma OP dos veces.
-    const tiposEspecificosPorArea: Record<number, Set<string>> = {}
+    const tiposEspecificosPorArea: Record<number, Set<number>> = {}
     areaParts.forEach(p => {
-      if (p.tipo_gasto && !esComodin(p.tipo_gasto) && p.id_area_fk) {
+      if (p.id_tipo_gasto_fk && !esComodin(p.id_tipo_gasto_fk, cat.comodines) && p.id_area_fk) {
         if (!tiposEspecificosPorArea[p.id_area_fk]) tiposEspecificosPorArea[p.id_area_fk] = new Set()
-        tiposEspecificosPorArea[p.id_area_fk].add(p.tipo_gasto)
+        tiposEspecificosPorArea[p.id_area_fk].add(p.id_tipo_gasto_fk)
       }
     })
 
     areaParts.forEach(p => {
       rm[p.id] = {}
       rd[p.id] = []
-      const tiposCubiertos = esComodin(p.tipo_gasto) && p.id_area_fk ? tiposEspecificosPorArea[p.id_area_fk] : null
+      const tiposCubiertos = esComodin(p.id_tipo_gasto_fk, cat.comodines) && p.id_area_fk ? tiposEspecificosPorArea[p.id_area_fk] : null
       opsTodas.filter((op: any) => {
           if (p.id_area_fk && op.id_area_fk !== p.id_area_fk) return false
-          if (p.tipo_gasto && !esComodin(p.tipo_gasto) && op.tipo_gasto !== p.tipo_gasto) return false
-          if (tiposCubiertos && op.tipo_gasto && tiposCubiertos.has(op.tipo_gasto)) return false
+          if (p.id_tipo_gasto_fk && !esComodin(p.id_tipo_gasto_fk, cat.comodines) && op.id_tipo_gasto_fk !== p.id_tipo_gasto_fk) return false
+          if (tiposCubiertos && op.id_tipo_gasto_fk && tiposCubiertos.has(op.id_tipo_gasto_fk)) return false
           return true
         })
         .forEach((op: any) => {
@@ -441,7 +444,7 @@ export default function ComparativoPage() {
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + monto
           rd[p.id].push({
             fecha: op.fecha_op, monto, folio: op.folio,
-            id_proveedor_fk: op.id_proveedor_fk, tipo_gasto: op.tipo_gasto, descripcion: op.concepto,
+            id_proveedor_fk: op.id_proveedor_fk, tipo_gasto: cat.nombre(op.id_tipo_gasto_fk), descripcion: op.concepto,
             id_op_fk: op.id,
           })
         })
@@ -737,7 +740,7 @@ export default function ComparativoPage() {
   function agruparPorConcepto(rows: FilaPartida[]): FilaGrupo[] {
     const map = new Map<string, { nombre: string; orden: number; pptoVal: number; realVal: number; partidas: FilaPartida[] }>()
     rows.forEach(r => {
-      const key = r.tipo_gasto ? `${r.id_centro_costo_fk ?? 0}-${r.tipo_gasto}` : `p-${r.id}`
+      const key = r.id_tipo_gasto_fk ? `${r.id_centro_costo_fk ?? 0}-${r.id_tipo_gasto_fk}` : `p-${r.id}`
       if (!map.has(key)) {
         map.set(key, { nombre: r.tipo_gasto ?? r.nombre, orden: r.orden, pptoVal: 0, realVal: 0, partidas: [] })
       }

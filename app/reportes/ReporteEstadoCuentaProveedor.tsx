@@ -1,4 +1,5 @@
 'use client'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
@@ -20,13 +21,14 @@ type Prov = {
   banco: string | null; cuenta_clabe: string | null; condiciones_pago: string | null
 }
 type OP = {
-  id: number; folio: string; concepto: string | null; tipo_gasto: string | null
+  id: number; folio: string; concepto: string | null; id_tipo_gasto_fk: number | null
   monto: number; saldo: number | null; fecha_op: string | null
   fecha_vencimiento: string | null; status: string
   id_centro_costo_fk: number | null; id_area_fk: number | null
 }
 
 export default function ReporteEstadoCuentaProveedor() {
+  const catTG = useCatalogoTiposGasto()
   const [provs,     setProvs]     = useState<Prov[]>([])
   const [ops,       setOps]       = useState<OP[]>([])
   const [ccMap,     setCcMap]     = useState<Record<number, string>>({})
@@ -61,7 +63,7 @@ export default function ReporteEstadoCuentaProveedor() {
     if (!provSel) return
     setLoading(true)
     let q = dbComp.from('ordenes_pago')
-      .select('id, folio, concepto, tipo_gasto, monto, saldo, fecha_op, fecha_vencimiento, status, id_centro_costo_fk, id_area_fk')
+      .select('id, folio, concepto, id_tipo_gasto_fk, monto, saldo, fecha_op, fecha_vencimiento, status, id_centro_costo_fk, id_area_fk')
       .eq('id_proveedor_fk', Number(provSel))
       .order('fecha_op', { ascending: true })
     if (filtroDe) q = q.gte('fecha_op', filtroDe)
@@ -233,8 +235,8 @@ export default function ReporteEstadoCuentaProveedor() {
                       </td>
                       <td style={{ padding: '8px 10px', maxWidth: 220 }}>
                         <div style={{ color: '#1e293b' }}>{op.concepto ?? '—'}</div>
-                        {op.tipo_gasto && (
-                          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#f1f5f9', color: '#475569' }}>{op.tipo_gasto}</span>
+                        {op.id_tipo_gasto_fk && (
+                          <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 8, background: '#f1f5f9', color: '#475569' }}>{catTG.nombre(op.id_tipo_gasto_fk)}</span>
                         )}
                       </td>
                       <td style={{ padding: '8px 10px', fontSize: 11, color: '#64748b' }}>

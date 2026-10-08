@@ -2,7 +2,7 @@
 
 export type Articulo = {
   id: number; clave: string; nombre: string; descripcion: string | null
-  unidad: string; categoria: string | null; stock_minimo: number
+  unidad: string; categoria: string | null; id_tipo_gasto_fk: number | null; stock_minimo: number
   stock_maximo: number | null; precio_ref: number | null; activo: boolean
 }
 
@@ -83,7 +83,7 @@ export const PRIORIDAD_COLOR: Record<string, string> = {
 }
 
 export const UNIDADES = ['PZA', 'KG', 'LT', 'MT', 'M2', 'M3', 'CAJA', 'PAQ', 'ROLLO', 'BULTO', 'TONELADA', 'GALÓN', 'SERVICIO']
-// Categorías de artículo: ver lib/useCategoriasArticulo.ts (cfg.tipos_gasto
+// Categorías de artículo: ver lib/tiposGasto.ts (cfg.tipos_gasto
 // con es_articulo=true) — ya no es un array hardcodeado aquí.
 export const FORMAS_PAGO_COMP = ['Transferencia', 'Cheque', 'Efectivo', 'Tarjeta', 'Crédito 30 días', 'Crédito 60 días', 'Crédito 90 días']
 export const CONDICIONES_PAGO_PROV = ['Contado', 'Crédito 30 días', 'Crédito 60 días', 'Crédito 90 días']

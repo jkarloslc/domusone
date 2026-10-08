@@ -1,10 +1,12 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbComp } from '@/lib/supabase'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { PrintBar } from './utils'
 import { RefreshCw, AlertTriangle } from 'lucide-react'
 
 export default function ReporteInventario() {
+  const catTG = useCatalogoTiposGasto()
   const [rows, setRows]       = useState<any[]>([])
   const [almacenes, setAlms]  = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -25,7 +27,7 @@ export default function ReporteInventario() {
     // Cargar artículos de los que hay inventario
     const artIds = Array.from(new Set((inv ?? []).map((i: any) => i.id_articulo_fk)))
     const { data: arts } = artIds.length
-      ? await dbComp.from('articulos').select('id, clave, nombre, unidad, categoria, stock_minimo, precio_ref').in('id', artIds)
+      ? await dbComp.from('articulos').select('id, clave, nombre, unidad, id_tipo_gasto_fk, stock_minimo, precio_ref').in('id', artIds)
       : { data: [] }
 
     const artMap: Record<number, any> = {}
@@ -42,7 +44,7 @@ export default function ReporteInventario() {
     }))
 
     if (filtroAlm) result = result.filter(r => r.id_almacen_fk === Number(filtroAlm))
-    if (filtroCat) result = result.filter(r => r.articulo?.categoria === filtroCat)
+    if (filtroCat) result = result.filter(r => String(r.articulo?.id_tipo_gasto_fk ?? '') === filtroCat)
     if (soloAlertas) result = result.filter(r => r.bajoMin)
 
     result.sort((a, b) => (a.almacen?.nombre ?? '').localeCompare(b.almacen?.nombre ?? ''))
@@ -55,7 +57,6 @@ export default function ReporteInventario() {
   const fmt = (n: number) => '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2 })
   const valorTotal  = rows.reduce((a, r) => a + r.valor, 0)
   const alertas     = rows.filter(r => r.bajoMin).length
-  const CATS = ['Agroquimicos','Alimento para caballos','Construcción, Ferreteria y Pinturas','Jardineria','Limpieza y Suministros','Papeleria','Refacciones','Servicios']
 
   return (
     <div>
@@ -66,7 +67,7 @@ export default function ReporteInventario() {
         </select>
         <select className="select" style={{ minWidth: 180 }} value={filtroCat} onChange={e => setFiltroCat(e.target.value)}>
           <option value="">Todas las categorías</option>
-          {CATS.map(c => <option key={c}>{c}</option>)}
+          {catTG.activos.filter(t => t.es_articulo).map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
         </select>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
           <input type="checkbox" checked={soloAlertas} onChange={e => setSoloAlertas(e.target.checked)} />
@@ -123,7 +124,7 @@ export default function ReporteInventario() {
                   {r.bajoMin && <AlertTriangle size={11} style={{ color: '#dc2626', marginRight: 4 }} />}
                   {r.articulo?.nombre ?? `#${r.id_articulo_fk}`}
                 </td>
-                <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.articulo?.categoria ?? '—'}</td>
+                <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(r.articulo?.id_tipo_gasto_fk) ?? '—'}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>{r.articulo?.stock_minimo ?? 0}</td>
                 <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums',
                   color: Number(r.cantidad) === 0 ? '#dc2626' : r.bajoMin ? '#d97706' : '#15803d', fontSize: 14 }}>

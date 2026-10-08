@@ -4,7 +4,7 @@ import { dbComp } from '@/lib/supabase'
 // (ver app/compras/ordenes-pago/page.tsx, el campo Tipo de Gasto solo se
 // captura en el flujo "sin OC"). Esta función deriva, para cada una, cómo se
 // reparte su monto entre las categorías de los artículos realmente comprados
-// (comp.articulos.categoria vía comp.ordenes_compra_det), para que Real en
+// (comp.articulos.id_tipo_gasto_fk vía comp.ordenes_compra_det), para que Real en
 // Presupuestos/Flujo pueda atribuirlas a algo más útil que el catch-all
 // "Otros Gastos [Área]".
 //
@@ -15,13 +15,13 @@ import { dbComp } from '@/lib/supabase'
 // exactamente con el monto de la OP (descuentos, ajustes de cabecera).
 //
 // Líneas sin id_articulo_fk o cuyo artículo no tiene categoría quedan en un
-// bucket categoria=null — exactamente el valor que ya hace que una fila
+// bucket id_tipo_gasto_fk=null — exactamente el valor que ya hace que una fila
 // caiga en el catch-all del área, así que el remanente no clasificable
 // sigue cayendo ahí, igual que hoy.
 export async function resolverCategoriasPorOp(
   candidatos: { id: number; id_oc_fk: number | null }[]
-): Promise<Map<number, { categoria: string | null; fraction: number }[]>> {
-  const resultado = new Map<number, { categoria: string | null; fraction: number }[]>()
+): Promise<Map<number, { id_tipo_gasto_fk: number | null; fraction: number }[]>> {
+  const resultado = new Map<number, { id_tipo_gasto_fk: number | null; fraction: number }[]>()
   if (candidatos.length === 0) return resultado
 
   const opIds = candidatos.map(c => c.id)
@@ -50,15 +50,15 @@ export async function resolverCategoriasPorOp(
   // 2) Líneas de cada OC con la categoría de su artículo (sin !inner, para
   //    no perder líneas con id_articulo_fk null).
   const { data: detLines } = await (dbComp.from('ordenes_compra_det') as any)
-    .select('id_oc_fk, cantidad, precio_unitario, tasa_iva, articulos(categoria)')
+    .select('id_oc_fk, cantidad, precio_unitario, tasa_iva, articulos(id_tipo_gasto_fk)')
     .in('id_oc_fk', ocIds)
 
   // 3) Por OC: total de cada categoría (bucket null para líneas sin
   //    artículo/categoría) y total general de la OC.
-  const categoriasPorOC = new Map<number, Map<string | null, number>>()
+  const categoriasPorOC = new Map<number, Map<number | null, number>>()
   ;(detLines ?? []).forEach((d: any) => {
     const total = (Number(d.cantidad) || 0) * (Number(d.precio_unitario) || 0) * (1 + (Number(d.tasa_iva) || 0))
-    const categoria: string | null = d.articulos?.categoria ?? null
+    const categoria: number | null = d.articulos?.id_tipo_gasto_fk ?? null
     if (!categoriasPorOC.has(d.id_oc_fk)) categoriasPorOC.set(d.id_oc_fk, new Map())
     const m = categoriasPorOC.get(d.id_oc_fk)!
     m.set(categoria, (m.get(categoria) ?? 0) + total)
@@ -71,7 +71,7 @@ export async function resolverCategoriasPorOp(
     const ocs = ocsPorOp.get(c.id)
     if (!ocs || ocs.length === 0) return
 
-    const acumulado = new Map<string | null, number>()
+    const acumulado = new Map<number | null, number>()
     ocs.forEach(({ id_oc_fk, peso }) => {
       const cats = categoriasPorOC.get(id_oc_fk)
       const totalOC = cats ? Array.from(cats.values()).reduce((a, v) => a + v, 0) : 0
@@ -87,8 +87,8 @@ export async function resolverCategoriasPorOp(
     const totalAcumulado = Array.from(acumulado.values()).reduce((a, v) => a + v, 0)
     if (totalAcumulado <= 0) return
 
-    resultado.set(c.id, Array.from(acumulado.entries()).map(([categoria, v]) => ({
-      categoria,
+    resultado.set(c.id, Array.from(acumulado.entries()).map(([id_tipo_gasto_fk, v]) => ({
+      id_tipo_gasto_fk,
       fraction: v / totalAcumulado,
     })))
   })

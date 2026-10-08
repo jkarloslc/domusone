@@ -1,7 +1,7 @@
 'use client'
 import { Fragment, useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
-import { useTiposGasto } from '@/lib/useTiposGasto'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter, ChevronDown, ChevronRight, FileSpreadsheet, LayoutList, Grid3x3 } from 'lucide-react'
 import * as XLSX from 'xlsx'
@@ -22,7 +22,7 @@ type OP = {
   id: number
   folio: string
   concepto: string | null
-  tipo_gasto: string | null
+  id_tipo_gasto_fk: number | null
   monto: number | null
   saldo: number | null
   fecha_op: string | null
@@ -87,7 +87,7 @@ type CCBucket = {
 type Tab = 'jerarquico' | 'matriz'
 
 export default function ReporteOrdenesPago() {
-  const tiposGasto = useTiposGasto()
+  const catTG = useCatalogoTiposGasto()
   const [ops, setOps]               = useState<OP[]>([])
   const [centrosCosto, setCentros]  = useState<{ id: number; nombre: string }[]>([])
   const [areas, setAreas]           = useState<{ id: number; nombre: string; id_centro_costo_fk: number }[]>([])
@@ -118,7 +118,7 @@ export default function ReporteOrdenesPago() {
       dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, concepto, tipo_gasto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk')
+        .select('id, folio, concepto, id_tipo_gasto_fk, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk')
         .order('fecha_op', { ascending: false }),
       dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, monto'),
     ])
@@ -168,7 +168,7 @@ export default function ReporteOrdenesPago() {
       if (filtroCC     && op.id_centro_costo_fk !== Number(filtroCC)) return false
       if (filtroArea   && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv   && op.id_proveedor_fk !== Number(filtroProv)) return false
-      if (filtroTipo   && op.tipo_gasto !== filtroTipo) return false
+      if (filtroTipo   && String(op.id_tipo_gasto_fk ?? '') !== filtroTipo) return false
       if (filtroDe     && (!op.fecha_op || op.fecha_op < filtroDe)) return false
       if (filtroA      && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
@@ -276,7 +276,7 @@ export default function ReporteOrdenesPago() {
       if (filtroCC   && op.id_centro_costo_fk !== Number(filtroCC)) return false
       if (filtroArea && op.id_area_fk !== Number(filtroArea)) return false
       if (filtroProv && op.id_proveedor_fk !== Number(filtroProv)) return false
-      if (filtroTipo && op.tipo_gasto !== filtroTipo) return false
+      if (filtroTipo && String(op.id_tipo_gasto_fk ?? '') !== filtroTipo) return false
       if (filtroDe   && (!op.fecha_op || op.fecha_op < filtroDe)) return false
       if (filtroA    && (!op.fecha_op || op.fecha_op > filtroA))  return false
       return true
@@ -327,7 +327,7 @@ export default function ReporteOrdenesPago() {
         'Área':              arNom,
         'Proveedor':         provNom,
         'Concepto':          op.concepto ?? '',
-        'Tipo Gasto':        op.tipo_gasto ?? '',
+        'Tipo Gasto':        catTG.nombre(op.id_tipo_gasto_fk) ?? '',
         'Fecha OP':          op.fecha_op ?? '',
         'Fecha Venc.':       op.fecha_vencimiento ?? '',
         'Monto':             monto,
@@ -399,7 +399,7 @@ export default function ReporteOrdenesPago() {
         </select>
         <select className="select" style={{ minWidth: 200 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
-          {tiposGasto.map(t => <option key={t}>{t}</option>)}
+          {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
         </select>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
           <button className="btn-secondary" onClick={exportExcel} style={{ fontSize: 12 }}>
@@ -570,7 +570,7 @@ export default function ReporteOrdenesPago() {
                                 <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600, paddingLeft: 48 }}>{op.folio}</td>
                                 <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? `#${op.id_proveedor_fk}`) : '—'}</td>
                                 <td style={{ fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
-                                <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{op.tipo_gasto ?? '—'}</td>
+                                <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(op.id_tipo_gasto_fk) ?? '—'}</td>
                                 <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtF(op.fecha_op)}</td>
                                 <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: vencido ? '#dc2626' : 'var(--text-secondary)', fontWeight: vencido ? 600 : 400 }}>{fmtF(op.fecha_vencimiento)}</td>
                                 <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(monto)}</td>

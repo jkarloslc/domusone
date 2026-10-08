@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { dbComp, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { useTiposGasto } from '@/lib/useTiposGasto'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { fmt, fmtFecha, nextFolio, StatusBadge } from '@/app/compras/types'
 import { OCDetail } from '@/components/compras/OCDetailModal'
 import ModalShell from '@/components/ui/ModalShell'
@@ -35,7 +35,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
 }) {
   const { authUser, canWrite, canAuth, canAuthFinanzas } = useAuth()
-  const tiposGasto = useTiposGasto()
+  const catTG = useCatalogoTiposGasto()
   const puedePublicarInstruccion = Boolean(
     authUser && (canWrite('ordenes-pago') || authUser.rol === 'tesoreria')
   )
@@ -317,7 +317,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     setReclasCC(op.id_centro_costo_fk?.toString() ?? '')
     setReclasArea(op.id_area_fk?.toString() ?? '')
     setReclasFrente(op.id_frente_fk?.toString() ?? '')
-    setReclasTipoGasto(op.tipo_gasto ?? '')
+    setReclasTipoGasto(op.id_tipo_gasto_fk != null ? String(op.id_tipo_gasto_fk) : '')
     setReclasError('')
     setReclasOpen(true)
   }
@@ -330,7 +330,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
       id_centro_costo_fk: reclasCC ? Number(reclasCC) : null,
       id_area_fk:         reclasArea ? Number(reclasArea) : null,
       id_frente_fk:        reclasFrente ? Number(reclasFrente) : null,
-      tipo_gasto:          reclasTipoGasto || null,
+      id_tipo_gasto_fk:    reclasTipoGasto ? Number(reclasTipoGasto) : null,
       reclasificado_por:      authUser?.nombre ?? null,
       fecha_reclasificacion:  new Date().toISOString(),
     }).eq('id', op.id)
@@ -383,7 +383,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
       forma_pago:           op.forma_pago,
       fecha_vencimiento:    op.fecha_vencimiento,
       concepto:             op.concepto,
-      tipo_gasto:           op.tipo_gasto,
+      id_tipo_gasto_fk:     op.id_tipo_gasto_fk,
       urgencia:             op.urgencia,
       banco_destino:        op.banco_destino,
       cuenta_clabe:         op.cuenta_clabe,
@@ -535,7 +535,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
         <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
         <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
         <tr><th>Almacén</th><td>${opData._almNombre ?? '—'}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
-        ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
+        ${opData.id_tipo_gasto_fk ? `<tr><th>Tipo de Gasto</th><td colspan="3">${catTG.nombre(opData.id_tipo_gasto_fk) ?? ''}</td></tr>` : ''}
         ${opData.urgencia ? `<tr><th>Urgencia</th><td colspan="3" style="font-weight:700">${opData.urgencia}</td></tr>` : ''}
         <tr><th>Centro de Costo</th><td colspan="3">${centroCostoNombre}</td></tr>
         ${detLinesView.length === 0 ? `<tr><th>Área</th><td>${areaNombre}</td><th>Frente</th><td>${frenteNombre}</td></tr>` : ''}
@@ -685,7 +685,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
           <Sec label="Detalle del Pago">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 20px' }}>
               <DI label="Concepto"        value={op.concepto} />
-              <DI label="Tipo de Gasto"   value={op.tipo_gasto} />
+              <DI label="Tipo de Gasto"   value={catTG.nombre(op.id_tipo_gasto_fk)} />
               <DI label="Almacén"         value={op._almNombre} />
               <DI label="Vencimiento"     value={fmtFecha(op.fecha_vencimiento)} />
               <DI label="Folio Factura"   value={op.folio_factura} mono />
@@ -1352,7 +1352,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                     <div><label className="label">Tipo de Gasto</label>
                       <select className="select" value={reclasTipoGasto} onChange={e => setReclasTipoGasto(e.target.value)}>
                         <option value="">— Sin asignar —</option>
-                        {tiposGasto.map(t => <option key={t} value={t}>{t}</option>)}
+                        {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                       </select>
                     </div>
                   </div>

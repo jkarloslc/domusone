@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { useTiposGasto } from '@/lib/useTiposGasto'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { fmt, fmtFecha, nextFolio, StatusBadge, FORMAS_PAGO_COMP } from '@/app/compras/types'
 import ModalShell from '@/components/ui/ModalShell'
 import { Pencil, Printer, CheckCircle, XCircle, Plus, Save, Loader, Tag } from 'lucide-react'
@@ -12,7 +12,7 @@ import { Pencil, Printer, CheckCircle, XCircle, Plus, Save, Loader, Tag } from '
 // folio de la OC en "Órdenes de Compra Relacionadas").
 export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; canAuth: boolean; onClose: () => void; onAuth: (id: number, ap: boolean, c: string) => void; onEdit?: () => void }) {
   const { authUser } = useAuth()
-  const tiposGasto = useTiposGasto()
+  const catTG = useCatalogoTiposGasto()
   const [det, setDet]       = useState<any[]>([])
   const [op, setOP]         = useState<any | null>(null)
   const [prov, setProv]     = useState<any | null>(null)
@@ -23,7 +23,7 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
   const [comentario, setCom]    = useState('')
   const [creandoOP, setCreandoOP] = useState(false)
   const [savingOP, setSavingOP]   = useState(false)
-  const [opForm, setOpForm] = useState({ forma_pago: 'Transferencia', fecha_vencimiento: '', concepto: `OC ${oc.folio}`, tipo_gasto: '', notas: '' })
+  const [opForm, setOpForm] = useState({ forma_pago: 'Transferencia', fecha_vencimiento: '', concepto: `OC ${oc.folio}`, id_tipo_gasto_fk: '', notas: '' })
 
   // Reclasificar (superadmin) — corrige CC/Área/Frente de un documento ya
   // capturado, sin importar status, sin tocar monto/pagos.
@@ -111,7 +111,7 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
       forma_pago:         opForm.forma_pago,
       fecha_vencimiento:  opForm.fecha_vencimiento || null,
       concepto:           opForm.concepto,
-      tipo_gasto:         opForm.tipo_gasto || null,
+      id_tipo_gasto_fk:   opForm.id_tipo_gasto_fk ? Number(opForm.id_tipo_gasto_fk) : null,
       notas:              opForm.notas || null,
       banco_destino:      prov?.banco ?? null,
       cuenta_clabe:       prov?.cuenta_clabe ?? null,
@@ -209,7 +209,7 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
         <tr><th>CLABE / Cuenta</th><td style="font-family:monospace">${opData.cuenta_clabe ?? prov?.cuenta_clabe ?? '—'}</td><th>Forma de Pago</th><td>${opData.forma_pago}</td></tr>
         <tr><th>Concepto</th><td colspan="3">${opData.concepto ?? '—'}</td></tr>
         <tr><th>Almacén</th><td>${almNombre}</td><th>Vencimiento</th><td>${fmtFecha(opData.fecha_vencimiento)}</td></tr>
-        ${opData.tipo_gasto ? `<tr><th>Tipo de Gasto</th><td colspan="3">${opData.tipo_gasto}</td></tr>` : ''}
+        ${opData.id_tipo_gasto_fk ? `<tr><th>Tipo de Gasto</th><td colspan="3">${catTG.nombre(opData.id_tipo_gasto_fk) ?? ''}</td></tr>` : ''}
         <tr><th>Centro de Costo</th><td colspan="3">${centroCostoNombre}</td></tr>
         <tr><th>Área</th><td>${areaNombre}</td><th>Frente</th><td>${frenteNombre}</td></tr>
         <tr><th>OC Relacionada</th><td colspan="3">${oc.folio}</td></tr>
@@ -354,9 +354,9 @@ export function OCDetail({ oc, canAuth, onClose, onAuth, onEdit }: { oc: any; ca
                 <input className="input" value={opForm.concepto} onChange={e => setOpForm(f => ({ ...f, concepto: e.target.value }))} />
               </div>
               <div style={{ marginTop: 10 }}><label className="label">Tipo de Gasto (opcional)</label>
-                <select className="select" value={opForm.tipo_gasto} onChange={e => setOpForm(f => ({ ...f, tipo_gasto: e.target.value }))}>
+                <select className="select" value={opForm.id_tipo_gasto_fk} onChange={e => setOpForm(f => ({ ...f, id_tipo_gasto_fk: e.target.value }))}>
                   <option value="">— Sin clasificar —</option>
-                  {tiposGasto.map(t => <option key={t}>{t}</option>)}
+                  {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                 </select>
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>

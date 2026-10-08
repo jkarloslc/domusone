@@ -1,6 +1,6 @@
 'use client'
 import { useDebounce } from '@/lib/useDebounce'
-import { useTiposGasto } from '@/lib/useTiposGasto'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { dbComp, dbCfg, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
@@ -18,7 +18,7 @@ import { OPDetail, Sec, DI, URGENCIA_COLOR } from '@/components/compras/OPDetail
 
 const PAGE_SIZES = [10, 25, 50, 100]
 
-type RolTipoOp = { tipo_gasto: string; modo: string; solo_propios: boolean }
+type RolTipoOp = { id_tipo_gasto_fk: number; modo: string; solo_propios: boolean }
 
 const URGENCIAS = ['Crítica', 'Alta', 'Media', 'Baja'] as const
 const URGENCIA_BADGE: Record<string, { color: string; bg: string; border: string }> = {
@@ -32,7 +32,7 @@ export default function OrdenesPagoPage() {
   const { canWrite } = useAuth()
   const router = useRouter()
   const { authUser } = useAuth()
-  const tiposGasto = useTiposGasto()
+  const catTG = useCatalogoTiposGasto()
   const [rows, setRows]         = useState<any[]>([])
   const [provMap, setProvMap]   = useState<Record<number, string>>({})
   const [almMap, setAlmMap]     = useState<Record<number, string>>({})
@@ -58,10 +58,10 @@ export default function OrdenesPagoPage() {
   const [clasifMap, setClasifMap] = useState<Record<number, string[]>>({})
 
   const tiposPermitidos = rolRestricciones !== null && rolRestricciones.some(r => r.modo === 'ALLOW')
-    ? rolRestricciones.filter(r => r.modo === 'ALLOW').map(r => r.tipo_gasto)
+    ? rolRestricciones.filter(r => r.modo === 'ALLOW').map(r => r.id_tipo_gasto_fk)
     : null
   const tiposExcluidos = rolRestricciones !== null && rolRestricciones.some(r => r.modo === 'DENY')
-    ? rolRestricciones.filter(r => r.modo === 'DENY').map(r => r.tipo_gasto)
+    ? rolRestricciones.filter(r => r.modo === 'DENY').map(r => r.id_tipo_gasto_fk)
     : null
   const soloPropios = rolRestricciones?.some(r => r.modo === 'ALLOW' && r.solo_propios) ?? false
 
@@ -106,23 +106,23 @@ export default function OrdenesPagoPage() {
         : q.eq('id_area_fk', Number(filterArea))
     }
     if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
-    if (filterTipoGasto === '__SIN_TIPO__') q = q.is('tipo_gasto', null)
-    else if (filterTipoGasto) q = q.eq('tipo_gasto', filterTipoGasto)
+    if (filterTipoGasto === '__SIN_TIPO__') q = q.is('id_tipo_gasto_fk', null)
+    else if (filterTipoGasto) q = q.eq('id_tipo_gasto_fk', Number(filterTipoGasto))
     if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
     if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,concepto.ilike.%${debouncedSearch}%`)
 
     // Restricciones por rol
     if (tiposPermitidos) {
-      q = q.in('tipo_gasto', tiposPermitidos)
+      q = q.in('id_tipo_gasto_fk', tiposPermitidos)
       if (soloPropios && authUser?.user.id) q = q.eq('created_by_id', authUser.user.id)
     }
     if (tiposExcluidos && tiposExcluidos.length === 1) {
-      q = q.or(`tipo_gasto.is.null,tipo_gasto.neq.${tiposExcluidos[0]}`)
+      q = q.or(`id_tipo_gasto_fk.is.null,id_tipo_gasto_fk.neq.${tiposExcluidos[0]}`)
     } else if (tiposExcluidos && tiposExcluidos.length > 1) {
-      // NOT (tipo_gasto IN (...)) es NULL (excluye la fila) cuando tipo_gasto es NULL en SQL —
-      // hay que incluir tipo_gasto.is.null explícitamente o las OP sin tipo de gasto desaparecen.
-      q = q.or(`tipo_gasto.is.null,tipo_gasto.not.in.(${tiposExcluidos.join(',')})`)
+      // NOT (id_tipo_gasto_fk IN (...)) es NULL (excluye la fila) cuando es NULL en SQL —
+      // hay que incluir id_tipo_gasto_fk.is.null explícitamente o las OP sin tipo de gasto desaparecen.
+      q = q.or(`id_tipo_gasto_fk.is.null,id_tipo_gasto_fk.not.in.(${tiposExcluidos.join(',')})`)
     }
 
     const { data, count } = await q
@@ -180,7 +180,7 @@ export default function OrdenesPagoPage() {
 
   useEffect(() => {
     if (!authUser) return
-    dbCfg.from('rol_tipos_op').select('tipo_gasto, modo, solo_propios').eq('rol', authUser.rol)
+    dbCfg.from('rol_tipos_op').select('id_tipo_gasto_fk, modo, solo_propios').eq('rol', authUser.rol)
       .then(({ data }) => setRolRestricciones(data ?? []))
   }, [authUser?.rol])
 
@@ -238,9 +238,9 @@ export default function OrdenesPagoPage() {
             onChange={e => { setFilterTipoGasto(e.target.value); setPage(0) }}>
             <option value="">Todos los tipos</option>
             <option value="__SIN_TIPO__">⚠ Sin tipo de gasto</option>
-            {tiposGasto
-              .filter(t => !tiposExcluidos || !tiposExcluidos.includes(t))
-              .map(t => <option key={t}>{t}</option>)}
+            {catTG.activos
+              .filter(t => !tiposExcluidos || !tiposExcluidos.includes(t.id))
+              .map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
           </select>
         )}
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
@@ -308,7 +308,7 @@ export default function OrdenesPagoPage() {
                   )}
                 </td>
                 <td style={{ fontSize: 12 }}>
-                  {r.tipo_gasto ? <span style={{ fontSize: 10, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span> : <span title="Esta OP no tiene Tipo de Gasto (null). Revisar caso por caso." style={{ fontSize: 10, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', padding: '1px 6px', borderRadius: 10, whiteSpace: 'nowrap' }}>⚠ Sin tipo de gasto · revisar</span>}
+                  {r.id_tipo_gasto_fk ? <span style={{ fontSize: 10, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{catTG.nombre(r.id_tipo_gasto_fk)}</span> : <span title="Esta OP no tiene Tipo de Gasto (null). Revisar caso por caso." style={{ fontSize: 10, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', padding: '1px 6px', borderRadius: 10, whiteSpace: 'nowrap' }}>⚠ Sin tipo de gasto · revisar</span>}
                   {!r.id_area_fk && !r.id_oc_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#7c3aed', background: '#f5f3ff', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
                 </td>
                 <td style={{ whiteSpace: 'nowrap' }}>
@@ -405,7 +405,7 @@ export default function OrdenesPagoPage() {
 // ════════════════════════════════════════════════════════════
 function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => void; onSaved: () => void }) {
   const { authUser } = useAuth()
-  const tiposGasto = useTiposGasto()
+  const catTG = useCatalogoTiposGasto()
   const isEdit = !!opEdit
   const [rolRestriccionesModal, setRolRestriccionesModal] = useState<RolTipoOp[] | null>(null)
   const [saving, setSaving]       = useState(false)
@@ -460,7 +460,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     forma_pago:        opEdit?.forma_pago        ?? 'Transferencia',
     fecha_vencimiento: opEdit?.fecha_vencimiento ?? '',
     concepto:          opEdit?.concepto          ?? '',
-    tipo_gasto:        opEdit?.tipo_gasto        ?? '',
+    id_tipo_gasto_fk:  opEdit?.id_tipo_gasto_fk?.toString() ?? '',
     urgencia:          opEdit?.urgencia          ?? 'Media',
     banco_destino:     opEdit?.banco_destino     ?? '',
     cuenta_clabe:      opEdit?.cuenta_clabe      ?? '',
@@ -475,6 +475,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     soporte_url:       opEdit?.soporte_url       ?? '',
     id_servicio_fk:    opEdit?.id_servicio_fk?.toString() ?? '',
   })
+  // Los flujos propios por tipo de gasto se identifican por `clave` del catálogo
+  // (cfg.tipos_gasto.clave), nunca por el nombre.
+  const claveTG = catTG.tipos.find(t => String(t.id) === form.id_tipo_gasto_fk)?.clave ?? null
 
   useEffect(() => {
     Promise.all([
@@ -586,13 +589,13 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
   useEffect(() => {
     if (!authUser) return
-    dbCfg.from('rol_tipos_op').select('tipo_gasto, modo, solo_propios').eq('rol', authUser.rol)
+    dbCfg.from('rol_tipos_op').select('id_tipo_gasto_fk, modo, solo_propios').eq('rol', authUser.rol)
       .then(({ data }) => {
         const rows = (data ?? []) as RolTipoOp[]
         setRolRestriccionesModal(rows)
-        const permitidos = rows.filter(r => r.modo === 'ALLOW').map(r => r.tipo_gasto)
+        const permitidos = rows.filter(r => r.modo === 'ALLOW').map(r => r.id_tipo_gasto_fk)
         if (!isEdit && permitidos.length === 1) {
-          setForm(f => ({ ...f, tipo_gasto: permitidos[0] }))
+          setForm(f => ({ ...f, id_tipo_gasto_fk: String(permitidos[0]) }))
         }
       })
   }, [authUser?.rol, isEdit])
@@ -605,7 +608,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // Nota: sin embed de `areas` — PostgREST no resuelve relaciones cross-schema
   // (ctrl -> cfg) por FK; el nombre del centro de costo se resuelve con centrosCosto (ya cargado).
   useEffect(() => {
-    if (form.tipo_gasto !== 'Combustible') return
+    if (claveTG !== 'combustible') return
     let q = dbCtrl.from('vales_combustible')
       .select('id, folio, tipo_suministro, tipo_combustible, periodo, litros_autorizados, monto_autorizado, id_centro_costo_fk, id_op_fk')
       .eq('status', 'Solicitado').order('created_at', { ascending: false })
@@ -615,14 +618,14 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       setValesCombDisp(data ?? [])
       if (isEdit) setValesCombSel((data ?? []).filter((v: any) => v.id_op_fk === opEdit.id).map((v: any) => v.id))
     })
-  }, [form.tipo_gasto])
+  }, [claveTG])
 
   const toggleValeComb = (id: number) =>
     setValesCombSel(sel => sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id])
 
   // Sugiere el monto de la OP con la suma de los vales seleccionados (el usuario puede ajustarlo)
   useEffect(() => {
-    if (form.tipo_gasto !== 'Combustible' || valesCombSel.length === 0) return
+    if (claveTG !== 'combustible' || valesCombSel.length === 0) return
     const total = valesCombDisp.filter(v => valesCombSel.includes(v.id)).reduce((a, v) => a + (v.monto_autorizado ?? 0), 0)
     if (total > 0) setForm(f => ({ ...f, monto_manual: total.toFixed(2) }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -632,7 +635,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // (mismo patrón que vales de combustible: se capturan/autorizan en /vigilancia-extras
   // y aquí solo se vinculan cuando el tipo de gasto es Perimetrales).
   useEffect(() => {
-    if (form.tipo_gasto !== 'Perimetrales') return
+    if (claveTG !== 'perimetrales') return
     let q = dbCtrl.from('vigilancia_extras_lotes')
       .select('id, folio, fecha_desde, fecha_hasta, id_area_fk, total, id_op_fk')
       .eq('status', 'Autorizado').order('fecha_desde', { ascending: false })
@@ -642,14 +645,14 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       setVigLotesDisp(data ?? [])
       if (isEdit) setVigLotesSel((data ?? []).filter((l: any) => l.id_op_fk === opEdit.id).map((l: any) => l.id))
     })
-  }, [form.tipo_gasto])
+  }, [claveTG])
 
   const toggleVigLote = (id: number) =>
     setVigLotesSel(sel => sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id])
 
   // Sugiere el monto de la OP con la suma de los lotes seleccionados (el usuario puede ajustarlo)
   useEffect(() => {
-    if (form.tipo_gasto !== 'Perimetrales' || vigLotesSel.length === 0) return
+    if (claveTG !== 'perimetrales' || vigLotesSel.length === 0) return
     const total = vigLotesDisp.filter(l => vigLotesSel.includes(l.id)).reduce((a, l) => a + (l.total ?? 0), 0)
     if (total > 0) setForm(f => ({ ...f, monto_manual: total.toFixed(2) }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -661,7 +664,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // se trata igual de simple: disponible = sin ninguna liga todavía (o solo
   // ligada a esta misma OP, en edición).
   useEffect(() => {
-    if (form.tipo_gasto !== 'Mantenimiento de Vehículos') return
+    if (claveTG !== 'vehiculos') return
     Promise.all([
       dbCtrl.from('bitacora_equipos')
         .select('id, folio, id_equipo_fk, tipo, descripcion, fecha_fin, costo_total')
@@ -675,14 +678,14 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       setBitacorasDisp((bits ?? []).filter((b: any) => !ligadaOtra.has(b.id)))
       if (isEdit) setBitacorasSel((links ?? []).filter((l: any) => l.id_op_fk === opEdit.id).map((l: any) => l.id_bitacora_fk))
     })
-  }, [form.tipo_gasto])
+  }, [claveTG])
 
   const toggleBitacora = (id: number) =>
     setBitacorasSel(sel => sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id])
 
   // Sugiere el monto de la OP con la suma de las bitácoras seleccionadas
   useEffect(() => {
-    if (form.tipo_gasto !== 'Mantenimiento de Vehículos' || bitacorasSel.length === 0) return
+    if (claveTG !== 'vehiculos' || bitacorasSel.length === 0) return
     const total = bitacorasDisp.filter(b => bitacorasSel.includes(b.id)).reduce((a, b) => a + (b.costo_total ?? 0), 0)
     if (total > 0) setForm(f => ({ ...f, monto_manual: total.toFixed(2) }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -777,20 +780,20 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // Combustible/Perimetrales/Mantenimiento de Vehículos: el monto se sugiere
   // automáticamente de las selecciones (vales/lotes/bitácoras), sin desglose
   // de factura — ahí se sigue capturando un Monto único.
-  const isVale = ['Combustible', 'Perimetrales', 'Mantenimiento de Vehículos'].includes(form.tipo_gasto)
+  const isVale = ['combustible', 'perimetrales', 'vehiculos'].includes(claveTG ?? '')
   // "Servicio de suministro asociado" aplica en dos contextos: proveedor CFE (id 75,
   // cubre Electricidad y Agua) o cualquier proveedor con tipo de gasto Gas LP (hay
   // varios proveedores de Gas LP, a diferencia de CFE que es único) — ver serviciosFiltrados.
-  const servicioAplica       = Number(form.id_proveedor_fk) === 75 || form.tipo_gasto === 'Gas LP'
-  const servicioObligatorio  = (Number(form.id_proveedor_fk) === 75 && form.tipo_gasto === 'Electricidad') || form.tipo_gasto === 'Gas LP'
-  const serviciosFiltrados   = form.tipo_gasto === 'Gas LP'
+  const servicioAplica       = Number(form.id_proveedor_fk) === 75 || claveTG === 'gas_lp'
+  const servicioObligatorio  = (Number(form.id_proveedor_fk) === 75 && claveTG === 'electricidad') || claveTG === 'gas_lp'
+  const serviciosFiltrados   = claveTG === 'gas_lp'
     ? serviciosCatalogo.filter((s: any) => s.tipo_servicio === 'Gas LP')
     : serviciosCatalogo.filter((s: any) => s.tipo_servicio !== 'Gas LP')
   // Pagos a Personal Externo (rol de pagos): la distribución por Área/Frente
   // es solo informativa (de dónde salió cada colaborador) — el total de la OP
   // se captura/edita aparte y no tiene que cuadrar con la suma del detalle
   // (ajustes de nómina, retenciones, anticipos, etc. no siempre son 1:1).
-  const esPagosPersonal = form.tipo_gasto === 'Pagos a Personal Externo'
+  const esPagosPersonal = claveTG === 'personal_externo'
   const subtotalNum = Number(form.subtotal) || 0
   const ivaNum      = Number(form.iva) || 0
   const montoManual = (!conOC && !isVale) ? subtotalNum + ivaNum : (Number(form.monto_manual) || 0)
@@ -871,13 +874,13 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     }
     if (detLines.length > 0 && detLines.some(l => !l.id_area_fk)) { setError('Todas las líneas de distribución deben tener Área asignada'); return }
     if (detLines.length > 0 && detTotal <= 0) { setError('El total de distribución debe ser mayor a cero'); return }
-    if (form.tipo_gasto === 'Combustible' && valesCombSel.length === 0) {
+    if (claveTG === 'combustible' && valesCombSel.length === 0) {
       setError('Selecciona al menos un vale solicitado a pagar'); return
     }
-    if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length === 0) {
+    if (claveTG === 'perimetrales' && vigLotesSel.length === 0) {
       setError('Selecciona al menos un perimetral de Vigilancia autorizado'); return
     }
-    if (form.tipo_gasto === 'Mantenimiento de Vehículos' && bitacorasSel.length === 0) {
+    if (claveTG === 'vehiculos' && bitacorasSel.length === 0) {
       setError('Selecciona al menos una bitácora de servicio cerrada'); return
     }
     if (servicioObligatorio && !form.id_servicio_fk) {
@@ -894,9 +897,9 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       }
     }
     if (detLines.length > 0 && !conOC && isVale) {
-      const sourceTotal = form.tipo_gasto === 'Combustible'
+      const sourceTotal = claveTG === 'combustible'
         ? valesCombDisp.filter(v => valesCombSel.includes(v.id)).reduce((a, v) => a + (Number(v.monto_autorizado) || 0), 0)
-        : form.tipo_gasto === 'Perimetrales'
+        : claveTG === 'perimetrales'
           ? vigLotesDisp.filter(l => vigLotesSel.includes(l.id)).reduce((a, l) => a + (Number(l.total) || 0), 0)
           : bitacorasDisp.filter(b => bitacorasSel.includes(b.id)).reduce((a, b) => a + (Number(b.costo_total) || 0), 0)
       if (Math.abs(detTotal - sourceTotal) > 0.01) {
@@ -934,7 +937,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       forma_pago:        form.forma_pago,
       fecha_vencimiento: form.fecha_vencimiento || null,
       concepto:          form.concepto.trim() || null,
-      tipo_gasto:        form.tipo_gasto || null,
+      id_tipo_gasto_fk:  form.id_tipo_gasto_fk ? Number(form.id_tipo_gasto_fk) : null,
       urgencia:          form.urgencia || null,
       banco_destino:     form.banco_destino.trim() || null,
       cuenta_clabe:      form.cuenta_clabe.trim() || null,
@@ -956,17 +959,17 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       if (err) { setError(err.message); setSaving(false); return }
       // Sincronizar vales de combustible ligados a esta OP
       await dbCtrl.from('vales_combustible').update({ id_op_fk: null }).eq('id_op_fk', opEdit.id)
-      if (form.tipo_gasto === 'Combustible' && valesCombSel.length > 0) {
+      if (claveTG === 'combustible' && valesCombSel.length > 0) {
         await dbCtrl.from('vales_combustible').update({ id_op_fk: opEdit.id }).in('id', valesCombSel)
       }
       // Sincronizar lotes de Vigilancia Extras ligados a esta OP
       await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: null }).eq('id_op_fk', opEdit.id)
-      if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length > 0) {
+      if (claveTG === 'perimetrales' && vigLotesSel.length > 0) {
         await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: opEdit.id }).in('id', vigLotesSel)
       }
       // Sincronizar bitácoras de servicio ligadas a esta OP (tabla puente)
       await dbCtrl.from('bitacora_equipo_ops').delete().eq('id_op_fk', opEdit.id)
-      if (form.tipo_gasto === 'Mantenimiento de Vehículos' && bitacorasSel.length > 0) {
+      if (claveTG === 'vehiculos' && bitacorasSel.length > 0) {
         await dbCtrl.from('bitacora_equipo_ops').insert(
           bitacorasSel.map(id => ({
             id_bitacora_fk: id, id_op_fk: opEdit.id,
@@ -1024,13 +1027,13 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     const { data: op, error: err } = await dbComp.from('ordenes_pago').insert(payload).select('id').single()
     if (err) { setError(err.message); setSaving(false); return }
 
-    if (form.tipo_gasto === 'Combustible' && valesCombSel.length > 0) {
+    if (claveTG === 'combustible' && valesCombSel.length > 0) {
       await dbCtrl.from('vales_combustible').update({ id_op_fk: op.id }).in('id', valesCombSel)
     }
-    if (form.tipo_gasto === 'Perimetrales' && vigLotesSel.length > 0) {
+    if (claveTG === 'perimetrales' && vigLotesSel.length > 0) {
       await dbCtrl.from('vigilancia_extras_lotes').update({ id_op_fk: op.id }).in('id', vigLotesSel)
     }
-    if (form.tipo_gasto === 'Mantenimiento de Vehículos' && bitacorasSel.length > 0) {
+    if (claveTG === 'vehiculos' && bitacorasSel.length > 0) {
       await dbCtrl.from('bitacora_equipo_ops').insert(
         bitacorasSel.map(id => ({
           id_bitacora_fk: id, id_op_fk: op.id,
@@ -1192,7 +1195,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
 
             {/* Servicio asociado — proveedor CFE/Agua (id 75) o tipo de gasto Gas LP */}
             {servicioAplica && (() => {
-              const esGasLP = form.tipo_gasto === 'Gas LP'
+              const esGasLP = claveTG === 'gas_lp'
               const colores = esGasLP
                 ? { bg: '#fff7ed', border: '#fed7aa', text: '#9a3412', textAlt: '#c2410c' }
                 : { bg: '#fffbeb', border: '#fde68a', text: '#92400e', textAlt: '#b45309' }
@@ -1416,18 +1419,18 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
                 <div>
                   <label className="label">Tipo de Gasto *</label>
                   {(() => {
-                    const permitidos = rolRestriccionesModal?.filter(r => r.modo === 'ALLOW').map(r => r.tipo_gasto) ?? null
-                    const excluidos  = rolRestriccionesModal?.filter(r => r.modo === 'DENY').map(r => r.tipo_gasto) ?? null
+                    const permitidos = rolRestriccionesModal?.filter(r => r.modo === 'ALLOW').map(r => r.id_tipo_gasto_fk) ?? null
+                    const excluidos  = rolRestriccionesModal?.filter(r => r.modo === 'DENY').map(r => r.id_tipo_gasto_fk) ?? null
                     if (permitidos && permitidos.length === 1) {
-                      return <input className="input" value={permitidos[0]} readOnly
+                      return <input className="input" value={catTG.nombre(permitidos[0]) ?? ''} readOnly
                         style={{ background: '#f8fafc', color: '#64748b', cursor: 'not-allowed' }} />
                     }
                     return (
-                      <select className="select" value={form.tipo_gasto} onChange={setF('tipo_gasto')}>
+                      <select className="select" value={form.id_tipo_gasto_fk} onChange={setF('id_tipo_gasto_fk')}>
                         <option value="">— Seleccionar —</option>
-                        {tiposGasto
-                          .filter(t => !excluidos || !excluidos.includes(t))
-                          .map(t => <option key={t}>{t}</option>)}
+                        {catTG.activos
+                          .filter(t => !excluidos || !excluidos.includes(t.id))
+                          .map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                       </select>
                     )
                   })()}
@@ -1457,7 +1460,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               </div>
             )}
 
-            {!conOC && form.tipo_gasto === 'Combustible' && (
+            {!conOC && claveTG === 'combustible' && (
               <div>
                 <label className="label">Vales solicitados a pagar *</label>
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
@@ -1489,7 +1492,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               </div>
             )}
 
-            {!conOC && form.tipo_gasto === 'Perimetrales' && (
+            {!conOC && claveTG === 'perimetrales' && (
               <div>
                 <label className="label">Perimetrales de Vigilancia autorizados a pagar *</label>
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
@@ -1521,7 +1524,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
               </div>
             )}
 
-            {!conOC && form.tipo_gasto === 'Mantenimiento de Vehículos' && (
+            {!conOC && claveTG === 'vehiculos' && (
               <div>
                 <label className="label">Bitácoras de Servicio cerradas a pagar *</label>
                 <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>

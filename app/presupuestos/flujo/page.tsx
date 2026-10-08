@@ -12,6 +12,7 @@ import { prorratearDescuento } from '@/lib/prorateoDescuento'
 import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
+import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
 import { exportarResumenExcel } from '../exportResumen'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
 
@@ -26,7 +27,8 @@ type Partida     = {
   id_area_fk:           number | null
   id_seccion_fk:        number | null
   id_concepto_fk:       number | null
-  tipo_gasto:           string | null
+  tipo_gasto:           string | null   // solo para mostrar; se resuelve desde el catálogo por id
+  id_tipo_gasto_fk:     number | null
   id_agrupador_fk:      number | null
   clasificacion:        Clasificacion
   iva_pct:              number | null
@@ -190,7 +192,7 @@ export default function FlujoEfectivoPage() {
 
     const [pData, { data: det }, { data: manual }] = await Promise.all([
       cargarPartidasPresupuesto<Partida>(
-        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, tipo_gasto, id_agrupador_fk, clasificacion, iva_pct',
+        'id, nombre, descripcion, tipo, orden, fuente_real, id_centro_ingreso_fk, id_centro_costo_fk, id_area_fk, id_seccion_fk, id_concepto_fk, id_tipo_gasto_fk, id_agrupador_fk, clasificacion, iva_pct',
         pptoId, modulo, q => q.eq('incluir_flujo', true)),
       dbCtrl.from('ppto_presupuesto_det')
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
@@ -198,7 +200,8 @@ export default function FlujoEfectivoPage() {
         .select('id_partida_fk, mes, monto').eq('id_presupuesto_fk', pptoId),
     ])
 
-    const parts = pData
+    const cat = armarCatalogo(await cargarTiposGasto())
+    const parts = pData.map(p => ({ ...p, tipo_gasto: cat.nombre(p.id_tipo_gasto_fk) }))
     setPartidas(parts)
 
     // Presupuestado: montos de Captura (sin IVA) grosados con el iva_pct de su
@@ -244,7 +247,7 @@ export default function FlujoEfectivoPage() {
         : Promise.resolve({ data: [] }),
       areaIds.length > 0
         ? (dbComp.from('cxp_abonos') as any)
-            .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, tipo_gasto, status, monto, id_oc_fk, folio, concepto, id_proveedor_fk)')
+            .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, id_tipo_gasto_fk, status, monto, id_oc_fk, folio, concepto, id_proveedor_fk)')
             .in('ordenes_pago.id_area_fk', areaIds)
             .neq('ordenes_pago.status', 'Cancelada')
             .gte('fecha_abono', `${anio}-01-01`)
@@ -259,7 +262,7 @@ export default function FlujoEfectivoPage() {
     let abonosDistribuidos: any[] = []
     if (areaIds.length > 0) {
       const { data: abonosDist } = await (dbComp.from('cxp_abonos') as any)
-        .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, tipo_gasto, status, monto, folio, concepto, id_proveedor_fk)')
+        .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, id_tipo_gasto_fk, status, monto, folio, concepto, id_proveedor_fk)')
         .is('ordenes_pago.id_area_fk', null)
         .neq('ordenes_pago.status', 'Cancelada')
         .gte('fecha_abono', `${anio}-01-01`)
@@ -280,7 +283,7 @@ export default function FlujoEfectivoPage() {
               fecha_abono: a.fecha_abono,
               id_op_fk: a.id_op_fk,
               ordenes_pago: {
-                id_area_fk: d.id_area_fk, tipo_gasto: a.ordenes_pago.tipo_gasto, status: a.ordenes_pago.status,
+                id_area_fk: d.id_area_fk, id_tipo_gasto_fk: a.ordenes_pago.id_tipo_gasto_fk, status: a.ordenes_pago.status,
                 folio: a.ordenes_pago.folio, concepto: a.ordenes_pago.concepto, id_proveedor_fk: a.ordenes_pago.id_proveedor_fk,
               },
             }))
@@ -296,7 +299,7 @@ export default function FlujoEfectivoPage() {
     // esas partidas.
     const opIdsOC: number[] = Array.from(new Set(
       (abonosData ?? [])
-        .filter((a: any) => a.ordenes_pago.tipo_gasto === null && a.ordenes_pago.id_oc_fk != null)
+        .filter((a: any) => a.ordenes_pago.id_tipo_gasto_fk === null && a.ordenes_pago.id_oc_fk != null)
         .map((a: any) => a.id_op_fk as number)
     ))
     const candidatosOC = opIdsOC.map(id => {
@@ -313,7 +316,7 @@ export default function FlujoEfectivoPage() {
           monto: montoNeto, fecha_abono: a.fecha_abono,
           id_op_fk: a.id_op_fk,
           ordenes_pago: {
-            id_area_fk: a.ordenes_pago.id_area_fk, tipo_gasto: item.categoria, status: a.ordenes_pago.status,
+            id_area_fk: a.ordenes_pago.id_area_fk, id_tipo_gasto_fk: item.id_tipo_gasto_fk, status: a.ordenes_pago.status,
             folio: a.ordenes_pago.folio, concepto: a.ordenes_pago.concepto, id_proveedor_fk: a.ordenes_pago.id_proveedor_fk,
           },
         })
@@ -358,24 +361,24 @@ export default function FlujoEfectivoPage() {
     // La partida comodín de un área ("Otros", o legado sin tipo_gasto) excluye
     // los tipo_gasto que ya cubre otra partida específica de esa misma área,
     // para no contar el mismo abono dos veces.
-    const tiposEspecificosPorArea: Record<number, Set<string>> = {}
+    const tiposEspecificosPorArea: Record<number, Set<number>> = {}
     areaParts.forEach(p => {
-      if (p.tipo_gasto && !esComodin(p.tipo_gasto) && p.id_area_fk) {
+      if (p.id_tipo_gasto_fk && !esComodin(p.id_tipo_gasto_fk, cat.comodines) && p.id_area_fk) {
         if (!tiposEspecificosPorArea[p.id_area_fk]) tiposEspecificosPorArea[p.id_area_fk] = new Set()
-        tiposEspecificosPorArea[p.id_area_fk].add(p.tipo_gasto)
+        tiposEspecificosPorArea[p.id_area_fk].add(p.id_tipo_gasto_fk)
       }
     })
 
     areaParts.forEach(p => {
       rm[p.id] = {}
       rd[p.id] = []
-      const tiposCubiertos = esComodin(p.tipo_gasto) && p.id_area_fk ? tiposEspecificosPorArea[p.id_area_fk] : null
+      const tiposCubiertos = esComodin(p.id_tipo_gasto_fk, cat.comodines) && p.id_area_fk ? tiposEspecificosPorArea[p.id_area_fk] : null
       abonosTodos.filter((a: any) => {
           const op = a.ordenes_pago
           if (!op) return false
           if (p.id_area_fk && op.id_area_fk !== p.id_area_fk) return false
-          if (p.tipo_gasto && !esComodin(p.tipo_gasto) && op.tipo_gasto !== p.tipo_gasto) return false
-          if (tiposCubiertos && op.tipo_gasto && tiposCubiertos.has(op.tipo_gasto)) return false
+          if (p.id_tipo_gasto_fk && !esComodin(p.id_tipo_gasto_fk, cat.comodines) && op.id_tipo_gasto_fk !== p.id_tipo_gasto_fk) return false
+          if (tiposCubiertos && op.id_tipo_gasto_fk && tiposCubiertos.has(op.id_tipo_gasto_fk)) return false
           return true
         })
         .forEach((a: any) => {
@@ -384,7 +387,7 @@ export default function FlujoEfectivoPage() {
           rm[p.id][mes] = (rm[p.id][mes] ?? 0) + Number(a.monto)
           rd[p.id].push({
             fecha: a.fecha_abono, monto: Number(a.monto), folio: a.ordenes_pago.folio,
-            id_proveedor_fk: a.ordenes_pago.id_proveedor_fk, tipo_gasto: a.ordenes_pago.tipo_gasto, descripcion: a.ordenes_pago.concepto,
+            id_proveedor_fk: a.ordenes_pago.id_proveedor_fk, tipo_gasto: cat.nombre(a.ordenes_pago.id_tipo_gasto_fk), descripcion: a.ordenes_pago.concepto,
             id_op_fk: a.id_op_fk,
           })
         })
@@ -603,7 +606,7 @@ export default function FlujoEfectivoPage() {
   function agruparPorConcepto(rows: FilaPartida[]): FilaGrupo[] {
     const map = new Map<string, { nombre: string; orden: number; pptoVal: number; realVal: number; partidas: FilaPartida[] }>()
     rows.forEach(r => {
-      const key = r.tipo_gasto ? `${r.id_centro_costo_fk ?? 0}-${r.tipo_gasto}` : `p-${r.id}`
+      const key = r.id_tipo_gasto_fk ? `${r.id_centro_costo_fk ?? 0}-${r.id_tipo_gasto_fk}` : `p-${r.id}`
       if (!map.has(key)) {
         map.set(key, { nombre: r.tipo_gasto ?? r.nombre, orden: r.orden, pptoVal: 0, realVal: 0, partidas: [] })
       }

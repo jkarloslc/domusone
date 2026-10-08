@@ -1,4 +1,5 @@
 'use client'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { useState, useEffect, useCallback } from 'react'
 import { dbComp } from '@/lib/supabase'
 import { PrintBar } from './utils'
@@ -18,6 +19,7 @@ const banda = (dias: number) => {
 }
 
 export default function ReporteCXP() {
+  const catTG = useCatalogoTiposGasto()
   const [rows, setRows]       = useState<any[]>([])
   const [provMap, setProvMap] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(true)
@@ -119,7 +121,7 @@ export default function ReporteCXP() {
                   <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                   <td style={{ fontSize: 12 }}>{r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? '—') : '—'}</td>
                   <td style={{ fontSize: 12, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.concepto ?? '—'}</td>
-                  <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.tipo_gasto ?? '—'}</td>
+                  <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(r.id_tipo_gasto_fk) ?? '—'}</td>
                   <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{fmtF(r.fecha_op)}</td>
                   <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: r.dias > 0 ? b.color : 'var(--text-secondary)', fontWeight: r.dias > 0 ? 600 : 400 }}>
                     {fmtF(r.fecha_vencimiento)}

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { type Articulo, fmt, UNIDADES, nextFolio } from '../types'
-import { useCategoriasArticulo } from '@/lib/useCategoriasArticulo'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
@@ -18,7 +18,7 @@ const PAGE_SIZE = 50
 export default function ArticulosPage() {
   const { canWrite, canDelete } = useAuth()
   const router = useRouter()
-  const CATEGORIAS_ART = useCategoriasArticulo()
+  const catTG = useCatalogoTiposGasto()
   const [rows, setRows]         = useState<Articulo[]>([])
   const [inventario, setInv]    = useState<Record<number, number>>({})  // articuloId → saldo total
   const [total, setTotal]       = useState(0)
@@ -35,7 +35,7 @@ export default function ArticulosPage() {
     let q = dbComp.from('articulos').select('*', { count: 'exact' }).order('clave')
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
     if (debouncedSearch) q = q.or(`clave.ilike.%${debouncedSearch}%,nombre.ilike.%${debouncedSearch}%,descripcion.ilike.%${debouncedSearch}%`)
-    if (filterCat)       q = q.eq('categoria', filterCat)
+    if (filterCat)       q = q.eq('id_tipo_gasto_fk', Number(filterCat))
     const { data, count } = await q
     const arts = (data as Articulo[] ?? [])
     setRows(arts); setTotal(count ?? 0)
@@ -109,7 +109,7 @@ export default function ArticulosPage() {
           <select className="select" style={{ paddingLeft: 28, minWidth: 170 }}
             value={filterCat} onChange={e => setFilterCat(e.target.value)}>
             <option value="">Todas las categorías</option>
-            {CATEGORIAS_ART.map(c => <option key={c}>{c}</option>)}
+            {catTG.activos.filter(t => t.es_articulo).map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
           </select>
         </div>
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
@@ -159,10 +159,10 @@ export default function ArticulosPage() {
                     )}
                   </td>
                   <td>
-                    {r.categoria ? (
+                    {r.id_tipo_gasto_fk ? (
                       <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20,
                         background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }}>
-                        {r.categoria}
+                        {catTG.nombre(r.id_tipo_gasto_fk)}
                       </span>
                     ) : <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>}
                   </td>
@@ -239,7 +239,7 @@ export default function ArticulosPage() {
 // Modal
 // ════════════════════════════════════════════════════════════
 function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClose: () => void; onSaved: () => void }) {
-  const CATEGORIAS_ART = useCategoriasArticulo()
+  const catTG = useCatalogoTiposGasto()
   const isNew = !row
   const [saving, setSaving] = useState(false)
   const [loadingClave, setLoadingClave] = useState(false)
@@ -252,7 +252,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
     nombre:       row?.nombre       ?? '',
     descripcion:  row?.descripcion  ?? '',
     unidad:       row?.unidad       ?? 'PZA',
-    categoria:    row?.categoria    ?? '',
+    id_tipo_gasto_fk: row?.id_tipo_gasto_fk?.toString() ?? '',
     stock_minimo: row?.stock_minimo?.toString() ?? '0',
     stock_maximo: row?.stock_maximo?.toString() ?? '',
     precio_ref:   row?.precio_ref?.toString()   ?? '',
@@ -302,7 +302,7 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
       nombre:       form.nombre.trim(),
       descripcion:  form.descripcion.trim() || null,
       unidad:       form.unidad,
-      categoria:    form.categoria || null,
+      id_tipo_gasto_fk: form.id_tipo_gasto_fk ? Number(form.id_tipo_gasto_fk) : null,
       stock_minimo: form.stock_minimo ? Number(form.stock_minimo) : 0,
       stock_maximo: form.stock_maximo ? Number(form.stock_maximo) : null,
       precio_ref:   form.precio_ref   ? Number(form.precio_ref)   : null,
@@ -388,9 +388,9 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
                 </div>
                 <div>
                   <label className="label">Categoría</label>
-                  <select className="select" value={form.categoria} onChange={set('categoria')}>
+                  <select className="select" value={form.id_tipo_gasto_fk} onChange={set('id_tipo_gasto_fk')}>
                     <option value="">— Sin categoría —</option>
-                    {CATEGORIAS_ART.map(c => <option key={c}>{c}</option>)}
+                    {catTG.activos.filter(t => t.es_articulo).map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                   </select>
                 </div>
               </div>

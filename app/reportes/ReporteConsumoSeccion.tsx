@@ -1,12 +1,12 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
-import { useTiposGasto } from '@/lib/useTiposGasto'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter } from 'lucide-react'
 
 export default function ReporteConsumoSeccion() {
-  const tiposGasto = useTiposGasto()
+  const catTG = useCatalogoTiposGasto()
   const [rows, setRows]           = useState<any[]>([])
   const [areas, setAreas] = useState<any[]>([])
   const [provMap, setProvMap]     = useState<Record<number, string>>({})
@@ -23,7 +23,7 @@ export default function ReporteConsumoSeccion() {
       dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, id_area_fk, id_proveedor_fk, concepto, tipo_gasto, monto, saldo, fecha_op, status')
+        .select('id, folio, id_area_fk, id_proveedor_fk, concepto, id_tipo_gasto_fk, monto, saldo, fecha_op, status')
         .not('id_area_fk', 'is', null)
         .neq('status', 'Cancelada')
         .order('fecha_op', { ascending: false }),
@@ -41,7 +41,7 @@ export default function ReporteConsumoSeccion() {
     // Filtrar
     let opsFiltradas = ops ?? []
     if (filtroArea)  opsFiltradas = opsFiltradas.filter((r: any) => r.id_area_fk === Number(filtroArea))
-    if (filtroTipo) opsFiltradas = opsFiltradas.filter((r: any) => r.tipo_gasto === filtroTipo)
+    if (filtroTipo) opsFiltradas = opsFiltradas.filter((r: any) => String(r.id_tipo_gasto_fk ?? '') === filtroTipo)
     if (filtroDe)   opsFiltradas = opsFiltradas.filter((r: any) => r.fecha_op >= filtroDe)
     if (filtroA)    opsFiltradas = opsFiltradas.filter((r: any) => r.fecha_op <= filtroA)
 
@@ -100,7 +100,7 @@ export default function ReporteConsumoSeccion() {
         </div>
         <select className="select" style={{ minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
-          {tiposGasto.map(t => <option key={t}>{t}</option>)}
+          {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
         </select>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <input className="input" type="date" value={filtroDe} onChange={e => setFiltroDe(e.target.value)} style={{ width: 145 }} />
@@ -186,7 +186,7 @@ export default function ReporteConsumoSeccion() {
                     <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{op.folio}</td>
                     <td style={{ fontSize: 12 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '—') : '—'}</td>
                     <td style={{ fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{op.concepto ?? '—'}</td>
-                    <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{op.tipo_gasto ?? '—'}</td>
+                    <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{catTG.nombre(op.id_tipo_gasto_fk) ?? '—'}</td>
                     <td style={{ fontSize: 12, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{fmtF(op.fecha_op)}</td>
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(Number(op.monto ?? 0))}</td>
                     <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: Number(op.saldo ?? op.monto ?? 0) > 0 ? '#dc2626' : '#15803d', fontWeight: 600 }}>

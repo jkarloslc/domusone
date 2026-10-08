@@ -1,4 +1,5 @@
 'use client'
+import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
@@ -17,7 +18,7 @@ const STATUS_CLR: Record<string, string> = {
 }
 
 type OP = {
-  id: number; folio: string; concepto: string | null; tipo_gasto: string | null
+  id: number; folio: string; concepto: string | null; id_tipo_gasto_fk: number | null
   monto: number; saldo: number | null; fecha_op: string | null
   fecha_vencimiento: string | null; status: string
   id_proveedor_fk: number | null; id_centro_costo_fk: number | null; id_area_fk: number | null
@@ -25,6 +26,7 @@ type OP = {
 type Prov = { id: number; nombre: string; rfc: string | null; clave: string | null }
 
 export default function ReporteOPsPorProveedor() {
+  const catTG = useCatalogoTiposGasto()
   const [ops,     setOps]     = useState<OP[]>([])
   const [provs,   setProvs]   = useState<Prov[]>([])
   const [ccMap,   setCcMap]   = useState<Record<number, string>>({})
@@ -44,7 +46,7 @@ export default function ReporteOPsPorProveedor() {
     const [{ data: psData }, { data: opsData }, { data: ccData }, { data: arData }] = await Promise.all([
       dbComp.from('proveedores').select('id, nombre, rfc, clave').order('nombre'),
       dbComp.from('ordenes_pago')
-        .select('id, folio, concepto, tipo_gasto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk')
+        .select('id, folio, concepto, id_tipo_gasto_fk, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk')
         .order('fecha_op', { ascending: false }),
       dbCfg.from('centros_costo').select('id, nombre').order('nombre'),
       dbCfg.from('areas').select('id, nombre').order('nombre'),
@@ -66,7 +68,7 @@ export default function ReporteOPsPorProveedor() {
   const opsFiltradas = useMemo(() => ops.filter(op => {
     if (filtroProv   && op.id_proveedor_fk !== Number(filtroProv)) return false
     if (filtroStatus && op.status !== filtroStatus)                 return false
-    if (filtroTipo   && op.tipo_gasto !== filtroTipo)               return false
+    if (filtroTipo   && String(op.id_tipo_gasto_fk ?? '') !== filtroTipo)               return false
     if (filtroDe     && (!op.fecha_op || op.fecha_op < filtroDe))  return false
     if (filtroA      && (!op.fecha_op || op.fecha_op > filtroA))   return false
     return true
@@ -92,7 +94,11 @@ export default function ReporteOPsPorProveedor() {
   const pagadoGlobal = useMemo(() => opsFiltradas.reduce((s, o) => s + Math.max(0, (o.monto ?? 0) - (o.saldo ?? o.monto ?? 0)), 0), [opsFiltradas])
   const saldoGlobal  = useMemo(() => opsFiltradas.reduce((s, o) => s + (o.saldo ?? o.monto ?? 0), 0), [opsFiltradas])
 
-  const tiposGasto = useMemo(() => Array.from(new Set(ops.map(o => o.tipo_gasto).filter(Boolean))).sort(), [ops])
+  // solo los tipos que aparecen en las OP cargadas
+  const tiposGasto = useMemo(() => {
+    const usados = new Set(ops.map(o => o.id_tipo_gasto_fk).filter((x): x is number => x != null))
+    return catTG.tipos.filter(t => usados.has(t.id))
+  }, [ops, catTG])
 
   const toggle = (id: number | null) =>
     setExpanded(prev => { const n = new Set(prev); n.has(id as number) ? n.delete(id as number) : n.add(id as number); return n })
@@ -118,7 +124,7 @@ export default function ReporteOPsPorProveedor() {
       Folio:       o.folio,
       Proveedor:   provs.find(p => p.id === o.id_proveedor_fk)?.nombre ?? '—',
       Concepto:    o.concepto ?? '',
-      'Tipo Gasto':o.tipo_gasto ?? '',
+      'Tipo Gasto':catTG.nombre(o.id_tipo_gasto_fk) ?? '',
       'Fecha OP':  o.fecha_op  ?? '',
       'Vencimiento':o.fecha_vencimiento ?? '',
       Monto:       o.monto ?? 0,
@@ -158,7 +164,7 @@ export default function ReporteOPsPorProveedor() {
           <label className="label">Tipo de Gasto</label>
           <select className="select" style={{ minWidth: 160 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
             <option value="">Todos</option>
-            {tiposGasto.map(t => <option key={t!} value={t!}>{t}</option>)}
+            {tiposGasto.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
           </select>
         </div>
         <div>
@@ -252,7 +258,7 @@ export default function ReporteOPsPorProveedor() {
                               <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 12 }}>{op.folio}</div>
                               <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>
                                 {op.concepto ?? '—'}
-                                {op.tipo_gasto && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 8, background: '#f1f5f9', color: '#475569', fontSize: 10 }}>{op.tipo_gasto}</span>}
+                                {op.id_tipo_gasto_fk && <span style={{ marginLeft: 8, padding: '1px 6px', borderRadius: 8, background: '#f1f5f9', color: '#475569', fontSize: 10 }}>{catTG.nombre(op.id_tipo_gasto_fk)}</span>}
                               </div>
                               <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>
                                 {op.id_centro_costo_fk && ccMap[op.id_centro_costo_fk] ? ccMap[op.id_centro_costo_fk] : ''}
