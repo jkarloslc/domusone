@@ -312,7 +312,7 @@ export default function OrdenesPagoPage() {
                   )}
                 </td>
                 <td style={{ fontSize: 12 }}>
-                  {r.tipo_gasto ? <span style={{ fontSize: 10, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span> : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                  {r.tipo_gasto ? <span style={{ fontSize: 10, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span> : <span title="Esta OP no tiene Tipo de Gasto (null). Revisar caso por caso." style={{ fontSize: 10, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', padding: '1px 6px', borderRadius: 10, whiteSpace: 'nowrap' }}>⚠ Sin tipo de gasto · revisar</span>}
                   {!r.id_area_fk && !r.id_oc_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#7c3aed', background: '#f5f3ff', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
                 </td>
                 <td style={{ whiteSpace: 'nowrap' }}>
