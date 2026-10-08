@@ -31,11 +31,14 @@ type Socio = {
 type Linea = {
   id: number; tipo: TipoCuota; mes: string; periodo: string; monto: number; saldo: number
   pagada: boolean; fechaPago: string | null; vence: string | null; forma: string; folio: string
+  anioInsc: string
 }
+type InscItem = { anio: string; status: string; monto: number; saldo: number; fechaPago: string | null; cond: boolean }
 type SocioRow = {
   socio: Socio; nombre: string; categoria: string
   lineas: Linea[]
-  inscripcion: EstInsc; inscDetalle: string
+  inscs: InscItem[]
+  inscripcion: EstInsc; inscDetalle: string; enUniverso: boolean
   pagadoMens: number; nPagMens: number; porPagarMens: number; nPorMens: number
   pagadoOtros: number; porPagarOtros: number
 }
@@ -77,6 +80,7 @@ export default function ReporteGolfSociosCuotas() {
   const [anio, setAnio]         = useState(anioActual)
   const [tipo, setTipo]         = useState<'' | TipoCuota>('')
   const [estadoCuota, setEstadoCuota] = useState<'' | 'PAGADA' | 'POR_PAGAR'>('')
+  const [anioInsc, setAnioInsc]   = useState('')
   const [filtroInsc, setFiltroInsc]   = useState<'' | 'NO_PAGADA' | EstInsc>('')
   const [filtroCat, setFiltroCat]     = useState('')
   const [estSocio, setEstSocio]       = useState<'' | 'activo' | 'inactivo'>('activo')
@@ -132,30 +136,15 @@ export default function ReporteGolfSociosCuotas() {
         const mis = cxcPorSocio.get(s.id) ?? []
         const row: SocioRow = {
           socio: s, nombre: nombreSocio(s), categoria: s.cat_categorias_socios?.nombre ?? 'Sin categoría',
-          lineas: [], inscripcion: 'SIN_CARGO', inscDetalle: 'No se le generó cuota de inscripción',
+          lineas: [], inscs: [], inscripcion: 'SIN_CARGO', inscDetalle: 'No se le generó cuota de inscripción', enUniverso: true,
           pagadoMens: 0, nPagMens: 0, porPagarMens: 0, nPorMens: 0, pagadoOtros: 0, porPagarOtros: 0,
         }
 
-        // Inscripción (sin filtro de año)
-        const insc = mis.filter(c => c.tipo === 'INSCRIPCION')
-        const vivas = insc.filter(c => c.status !== 'CANCELADO')
-        if (vivas.length) {
-          const pend = vivas.filter(c => c.status === 'PENDIENTE' || c.status === 'PAGO_PARCIAL')
-          const pag  = vivas.filter(c => c.status === 'PAGADO')
-          if (pend.length) {
-            row.inscripcion = 'POR_PAGAR'
-            row.inscDetalle = `Saldo ${fmt$(pend.reduce((a, c) => a + (c.saldo ?? c.monto_final ?? 0), 0))}`
-          } else if (pag.length && pag.every(condonada)) {
-            row.inscripcion = 'CONDONADA'
-            row.inscDetalle = `Cobrada con forma Condonación (${fmt$(pag.reduce((a, c) => a + (c.monto_final ?? 0), 0))})`
-          } else {
-            row.inscripcion = 'PAGADA'
-            row.inscDetalle = `${fmt$(pag.reduce((a, c) => a + (c.monto_final ?? 0), 0))} · ${fmtFecha(pag[0]?.fecha_pago ?? null)}`
-          }
-        } else if (insc.length) {
-          row.inscripcion = 'CANCELADA'
-          row.inscDetalle = 'La cuota se generó y fue cancelada (cortesía / condonación)'
-        }
+        row.inscs = mis.filter(c => c.tipo === 'INSCRIPCION').map(c => ({
+          anio: (c.periodo ?? c.fecha_emision ?? '').slice(0, 4), status: c.status,
+          monto: Number(c.monto_final) || 0, saldo: c.saldo ?? Number(c.monto_final) ?? 0,
+          fechaPago: c.fecha_pago, cond: condonada(c),
+        }))
 
         for (const c of mis) {
           if (c.status === 'CANCELADO') continue
@@ -169,6 +158,7 @@ export default function ReporteGolfSociosCuotas() {
             fechaPago: c.fecha_pago, vence: c.fecha_vencimiento,
             forma: condonada(c) && pagada ? 'Condonación' : formaDe(c),
             folio: c.id_recibo_fk ? `REC-${c.id_recibo_fk}` : '',
+            anioInsc: (c.periodo ?? c.fecha_emision ?? '').slice(0, 4),
           })
           const cobrado = monto - saldo
           if (c.tipo === 'MENSUALIDAD') {
@@ -192,11 +182,31 @@ export default function ReporteGolfSociosCuotas() {
 
   const categorias = useMemo(() => Array.from(new Set(rows.map(r => r.categoria))).sort(), [rows])
 
+  // Inscripción evaluada para un año (''=histórico). Con año: universo = socios dados de alta ese año
+  // o con cargo de inscripción de ese año.
+  const clasificar = (r: SocioRow): SocioRow => {
+    const insc = r.inscs.filter(c => !anioInsc || c.anio === anioInsc)
+    const alta = (r.socio.fecha_alta ?? '').slice(0, 4)
+    const enUniverso = !anioInsc || insc.length > 0 || alta === anioInsc
+    const vivas = insc.filter(c => c.status !== 'CANCELADO')
+    let est: EstInsc = 'SIN_CARGO', det = 'No se le generó cuota de inscripción'
+    if (vivas.length) {
+      const pend = vivas.filter(c => c.status === 'PENDIENTE' || c.status === 'PAGO_PARCIAL')
+      const pag = vivas.filter(c => c.status === 'PAGADO')
+      if (pend.length) { est = 'POR_PAGAR'; det = `Saldo ${fmt$(pend.reduce((a, c) => a + c.saldo, 0))}` }
+      else if (pag.length && pag.every(c => c.cond)) { est = 'CONDONADA'; det = `Cobrada con forma Condonación (${fmt$(pag.reduce((a, c) => a + c.monto, 0))})` }
+      else { est = 'PAGADA'; det = `${fmt$(pag.reduce((a, c) => a + c.monto, 0))} · ${fmtFecha(pag[0]?.fechaPago ?? null)}` }
+    } else if (insc.length) { est = 'CANCELADA'; det = 'La cuota se generó y fue cancelada (cortesía / condonación)' }
+    return { ...r, inscripcion: est, inscDetalle: det, enUniverso }
+  }
+
   const lineasVisibles = (r: SocioRow) => r.lineas.filter(l =>
+    (l.tipo !== 'INSCRIPCION' || !anioInsc || l.anioInsc === anioInsc) &&
     (!tipo || l.tipo === tipo) &&
     (!estadoCuota || (estadoCuota === 'PAGADA' ? l.pagada : !l.pagada)))
 
-  const base = rows.filter(r =>
+  const base = rows.map(clasificar).filter(r =>
+    r.enUniverso &&
     (!estSocio || (estSocio === 'activo' ? r.socio.activo : !r.socio.activo)) &&
     (!filtroCat || r.categoria === filtroCat) &&
     (!search || `${r.socio.numero_socio} ${r.nombre}`.toLowerCase().includes(search.toLowerCase())))
@@ -264,6 +274,13 @@ export default function ReporteGolfSociosCuotas() {
             <option value="">Pagadas y por pagar</option>
             <option value="PAGADA">Solo pagadas</option>
             <option value="POR_PAGAR">Solo por pagar</option>
+          </select>
+        </div>
+        <div>
+          <label style={lbl}>Año de inscripción</label>
+          <select className="input" value={anioInsc} onChange={e => setAnioInsc(e.target.value)} style={{ fontSize: 12, minWidth: 110 }}>
+            <option value="">Todos</option>
+            {Array.from({ length: 12 }, (_, i) => String(anioActual + 1 - i)).map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
         <div>
@@ -337,7 +354,7 @@ export default function ReporteGolfSociosCuotas() {
             </div>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
-            Los contadores de inscripción respetan categoría/estatus/búsqueda; haz clic en uno para filtrar. «Sin cargo» = nunca se generó la cuota;
+            Los contadores de inscripción respetan categoría/estatus/búsqueda; haz clic en uno para filtrar. Con «Año de inscripción», se consideran los socios dados de alta ese año o con cargo de inscripción de ese año. «Sin cargo» = nunca se generó la cuota;
             «Cuota cancelada» = se generó y se canceló (cortesía o condonación reexpresada); «Condonada» = se cobró con forma de pago Condonación.
           </div>
 
