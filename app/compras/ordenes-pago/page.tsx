@@ -106,7 +106,8 @@ export default function OrdenesPagoPage() {
         : q.eq('id_area_fk', Number(filterArea))
     }
     if (filterProv) q = q.eq('id_proveedor_fk', Number(filterProv))
-    if (filterTipoGasto) q = q.eq('tipo_gasto', filterTipoGasto)
+    if (filterTipoGasto === '__SIN_TIPO__') q = q.is('tipo_gasto', null)
+    else if (filterTipoGasto) q = q.eq('tipo_gasto', filterTipoGasto)
     if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
     if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,concepto.ilike.%${debouncedSearch}%`)
@@ -236,6 +237,7 @@ export default function OrdenesPagoPage() {
           <select className="select" style={{ width: 180 }} value={filterTipoGasto}
             onChange={e => { setFilterTipoGasto(e.target.value); setPage(0) }}>
             <option value="">Todos los tipos</option>
+            <option value="__SIN_TIPO__">⚠ Sin tipo de gasto</option>
             {tiposGasto
               .filter(t => !tiposExcluidos || !tiposExcluidos.includes(t))
               .map(t => <option key={t}>{t}</option>)}
