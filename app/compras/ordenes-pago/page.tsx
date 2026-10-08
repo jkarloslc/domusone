@@ -362,7 +362,7 @@ export default function OrdenesPagoPage() {
                       </div>
                     )}
                   </td>
-                  <td colSpan={2} style={{ padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)' }}>
+                  <td colSpan={3} style={{ padding: '10px 14px', fontSize: 11, color: 'var(--text-muted)' }}>
                     {sumaPagadoPage > 0 && <span>Pagado: {fmt(sumaPagadoPage)}</span>}
                   </td>
                 </tr>
