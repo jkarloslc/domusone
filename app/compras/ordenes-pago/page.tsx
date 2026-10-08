@@ -55,6 +55,7 @@ export default function OrdenesPagoPage() {
   const [modal, setModal]       = useState(false)
   const [editOp, setEditOp]     = useState<any | null>(null)
   const [detail, setDetail]     = useState<any | null>(null)
+  const [clasifMap, setClasifMap] = useState<Record<number, string[]>>({})
 
   const tiposPermitidos = rolRestricciones !== null && rolRestricciones.some(r => r.modo === 'ALLOW')
     ? rolRestricciones.filter(r => r.modo === 'ALLOW').map(r => r.tipo_gasto)
@@ -137,6 +138,34 @@ export default function OrdenesPagoPage() {
     ;(alms  ?? []).forEach((a: any) => { am[a.id] = a.nombre })
     setProvMap(pm)
     setAlmMap(am)
+
+    // CC / Área / Frente: nombres (incluye inactivos) + líneas de distribución de la página
+    const ids = (data ?? []).map((r: any) => r.id)
+    const [{ data: ccs }, { data: ars }, { data: frs }, { data: dets }] = await Promise.all([
+      dbCfg.from('centros_costo').select('id, nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk'),
+      dbCfg.from('frentes').select('id, nombre'),
+      ids.length > 0
+        ? dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, id_frente_fk').in('id_op_fk', ids)
+        : Promise.resolve({ data: [] as any[] }),
+    ])
+    const ccN: Record<number, string> = {}; (ccs ?? []).forEach((c: any) => { ccN[c.id] = c.nombre })
+    const arN: Record<number, { n: string; cc: number | null }> = {}
+    ;(ars ?? []).forEach((a: any) => { arN[a.id] = { n: a.nombre, cc: a.id_centro_costo_fk } })
+    const frN: Record<number, string> = {}; (frs ?? []).forEach((f: any) => { frN[f.id] = f.nombre })
+    const fmtCAF = (cc?: number | null, ar?: number | null, fr?: number | null) =>
+      [cc ? ccN[cc] : null, ar ? arN[ar]?.n : null, fr ? frN[fr] : null].filter(Boolean).join(' / ')
+    const detBy: Record<number, any[]> = {}
+    ;(dets ?? []).forEach((d: any) => { (detBy[d.id_op_fk] ||= []).push(d) })
+    const cm: Record<number, string[]> = {}
+    ;(data ?? []).forEach((r: any) => {
+      const ls = detBy[r.id]
+      const out = ls?.length
+        ? Array.from(new Set(ls.map((l: any) => fmtCAF(arN[l.id_area_fk]?.cc ?? r.id_centro_costo_fk, l.id_area_fk, l.id_frente_fk)).filter(Boolean)))
+        : [fmtCAF(r.id_centro_costo_fk, r.id_area_fk, r.id_frente_fk)].filter(Boolean)
+      cm[r.id] = out as string[]
+    })
+    setClasifMap(cm)
     setLoading(false)
   }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterTipoGasto, filterFechaDesde, filterFechaHasta, rolRestricciones, authUser?.user.id, areaFiltros])
 
@@ -241,7 +270,8 @@ export default function OrdenesPagoPage() {
             <tr>
               <th style={{ width: 110 }}>Folio</th>
               <th>Proveedor</th>
-              <th>Concepto / Tipo</th>
+              <th>CC / Área / Frente</th>
+              <th>Tipo de Gasto</th>
               <th style={{ width: 90 }}>Urgencia</th>
               <th style={{ textAlign: 'right', width: 110 }}>Monto</th>
               <th style={{ whiteSpace: 'nowrap' }}>Status</th>
@@ -250,11 +280,11 @@ export default function OrdenesPagoPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                 Sin órdenes de pago registradas
               </td></tr>
             ) : rows.map(r => (
@@ -273,13 +303,16 @@ export default function OrdenesPagoPage() {
                   )}
                 </td>
                 <td style={{ fontSize: 13 }}>{r.id_proveedor_fk ? (provMap[r.id_proveedor_fk] ?? `#${r.id_proveedor_fk}`) : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-                <td style={{ fontSize: 12, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {r.concepto ?? '—'}
-                  {r.tipo_gasto && <span style={{ fontSize: 10, marginLeft: 6, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span>}
-                  {/* Sin OC y sin Área en el header ⇒ tiene líneas de distribución
-                      (la validación al guardar exige Área cuando no hay líneas) —
-                      cubre tanto el caso legacy (mismo CC) como líneas con CC propio
-                      (header también queda sin CC). */}
+                <td style={{ fontSize: 12, maxWidth: 300 }}>
+                  {(clasifMap[r.id] ?? []).length === 0 ? <span style={{ color: 'var(--text-muted)' }}>—</span> : (
+                    <>
+                      {(clasifMap[r.id] ?? []).slice(0, 3).map((t, i) => <div key={i}>{t}</div>)}
+                      {(clasifMap[r.id] ?? []).length > 3 && <div style={{ color: 'var(--text-muted)' }}>+{(clasifMap[r.id] ?? []).length - 3} más</div>}
+                    </>
+                  )}
+                </td>
+                <td style={{ fontSize: 12 }}>
+                  {r.tipo_gasto ? <span style={{ fontSize: 10, color: 'var(--text-muted)', background: '#f1f5f9', padding: '1px 6px', borderRadius: 10 }}>{r.tipo_gasto}</span> : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                   {!r.id_area_fk && !r.id_oc_fk && <span style={{ fontSize: 9, marginLeft: 6, color: '#7c3aed', background: '#f5f3ff', padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>distribuido</span>}
                 </td>
                 <td style={{ whiteSpace: 'nowrap' }}>
@@ -312,7 +345,7 @@ export default function OrdenesPagoPage() {
             return (
               <tfoot>
                 <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
-                  <td colSpan={4} style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <td colSpan={5} style={{ padding: '10px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Subtotal página ({rows.length} reg.)
                   </td>
                   <td style={{ textAlign: 'right', padding: '10px 14px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', fontSize: 14, color: 'var(--text-primary)' }}>
