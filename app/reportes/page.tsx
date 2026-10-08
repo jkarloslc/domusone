@@ -41,6 +41,7 @@ import ReporteGolfAccesos from './ReporteGolfAccesos'
 import ReporteGolfPasesInvitados from './ReporteGolfPasesInvitados'
 import ReporteGolfMiembrosCategoria from './ReporteGolfMiembrosCategoria'
 import ReporteGolfFormaPagoMembresia from './ReporteGolfFormaPagoMembresia'
+import ReporteGolfSociosCuotas from './ReporteGolfSociosCuotas'
 import ReporteHospitalityEventos from './ReporteHospitalityEventos'
 import ReporteOPsPorProveedor from './ReporteOPsPorProveedor'
 import ReporteEstadoCuentaProveedor from './ReporteEstadoCuentaProveedor'
@@ -172,6 +173,7 @@ const GRUPOS = [
       { id: 'golf-estado-cuenta', label: 'Estado de Cuenta',    icon: FileText,  desc: 'Cuotas y recibos por socio en un período' },
       { id: 'golf-miembros-categoria', label: 'Miembros por Categoría', icon: Users, desc: 'Socios agrupados por categoría con desglose de status (activo/vencido/inactivo) y detalle drill-down' },
       { id: 'golf-forma-pago-membresia', label: 'Socios: Pago Anual vs Mensual', icon: Users, desc: 'Socios que pagaron su membresía anual (12 mensualidades en un mismo recibo) o mensual, con mapa de meses pagados' },
+      { id: 'golf-socios-cuotas', label: 'Socios: Cuotas e Inscripción', icon: Users, desc: 'Por socio: cuotas pagadas y por pagar por mes con forma de pago y recibo, filtro por tipo, y control de quién no pagó inscripción (sin cargo, cancelada o condonada)' },
       { id: 'golf-cobranza',      label: 'Cobranza / CXC',      icon: Wallet,    desc: 'Cuotas por categoría, tipo y status con resumen y detalle' },
       { id: 'golf-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Cuotas de socios cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
       { id: 'golf-pensiones-corriente-vencida', label: 'Pensiones — Corriente vs Vencida', icon: Wallet, desc: 'Pensiones de carritos cobradas clasificadas por fecha de pago: corriente vs vencida, con resumen mensual y detalle' },
@@ -356,6 +358,7 @@ function ReportesContent() {
       {active === 'golf-estado-cuenta' && <ReporteGolfEstadoCuenta />}
       {active === 'golf-miembros-categoria' && <ReporteGolfMiembrosCategoria />}
       {active === 'golf-forma-pago-membresia' && <ReporteGolfFormaPagoMembresia />}
+      {active === 'golf-socios-cuotas' && <ReporteGolfSociosCuotas />}
       {active === 'golf-cobranza'               && <ReporteGolfCobranza />}
       {active === 'golf-cobranza-corriente-vencida'  && <ReporteCobranzaCorrienteVencida fuente="golf" />}
       {active === 'golf-pensiones-corriente-vencida' && <ReporteCobranzaCorrienteVencida fuente="pensiones" />}
