@@ -82,10 +82,6 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [reclasFrente, setReclasFrente] = useState('')
   const [reclasTipoGasto, setReclasTipoGasto] = useState('')
   const [reclasSaving, setReclasSaving] = useState(false)
-  // Distribución por líneas (Área/Frente/Monto) — CC se deriva del Área.
-  type ReclasLine = { descripcion: string; id_area_fk: string; id_frente_fk: string; monto: string }
-  const [reclasLines, setReclasLines] = useState<ReclasLine[]>([])
-  const [reclasDist, setReclasDist]   = useState(false)
   const [reclasError, setReclasError] = useState('')
 
   // Reabrir / Duplicar (superadmin) — solo para OP Rechazada.
@@ -322,57 +318,24 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
     setReclasArea(op.id_area_fk?.toString() ?? '')
     setReclasFrente(op.id_frente_fk?.toString() ?? '')
     setReclasTipoGasto(op.tipo_gasto ?? '')
-    setReclasLines(detLinesView.map((l: any) => ({
-      descripcion:  l.descripcion ?? '',
-      id_area_fk:   l.id_area_fk?.toString() ?? '',
-      id_frente_fk: l.id_frente_fk?.toString() ?? '',
-      monto:        l.monto?.toString() ?? '0',
-    })))
-    setReclasDist(detLinesView.length > 0)
     setReclasError('')
     setReclasOpen(true)
   }
 
   // Update mínimo y explícito: SOLO estos 4 campos + auditoría. Nunca
   // monto, saldo, status, ni ningún campo de pago.
-  const reclasTotal = reclasLines.reduce((a, l) => a + (Number(l.monto) || 0), 0)
   const handleReclasificar = async () => {
-    setReclasError('')
-    if (reclasDist) {
-      if (reclasLines.length === 0) { setReclasError('Agrega al menos una línea de distribución'); return }
-      if (reclasLines.some(l => !l.id_area_fk)) { setReclasError('Todas las líneas deben tener Área'); return }
-      if (Math.abs(reclasTotal - (op.monto ?? 0)) > 0.01) {
-        setReclasError(`El total de distribución (${fmt(reclasTotal)}) debe ser igual al monto de la OP (${fmt(op.monto ?? 0)})`); return
-      }
-    }
-    setReclasSaving(true)
-    // Con distribución: el Área/Frente viven en las líneas (header en null); el
-    // header conserva CC solo si se eligió uno fijo (mismo CC), si no cada línea
-    // trae el suyo vía su Área.
+    setReclasSaving(true); setReclasError('')
     const { error: err } = await dbComp.from('ordenes_pago').update({
       id_centro_costo_fk: reclasCC ? Number(reclasCC) : null,
-      id_area_fk:         reclasDist ? null : (reclasArea ? Number(reclasArea) : null),
-      id_frente_fk:       reclasDist ? null : (reclasFrente ? Number(reclasFrente) : null),
+      id_area_fk:         reclasArea ? Number(reclasArea) : null,
+      id_frente_fk:        reclasFrente ? Number(reclasFrente) : null,
       tipo_gasto:          reclasTipoGasto || null,
       reclasificado_por:      authUser?.nombre ?? null,
       fecha_reclasificacion:  new Date().toISOString(),
     }).eq('id', op.id)
-    if (err) { setReclasSaving(false); setReclasError(err.message); return }
-    const { error: errDel } = await dbComp.from('ordenes_pago_det').delete().eq('id_op_fk', op.id)
-    if (errDel) { setReclasSaving(false); setReclasError(errDel.message); return }
-    if (reclasDist) {
-      const { error: errIns } = await dbComp.from('ordenes_pago_det').insert(
-        reclasLines.map(l => ({
-          id_op_fk:     op.id,
-          descripcion:  l.descripcion.trim() || null,
-          id_area_fk:   Number(l.id_area_fk),
-          id_frente_fk: l.id_frente_fk ? Number(l.id_frente_fk) : null,
-          monto:        Number(l.monto) || 0,
-        }))
-      )
-      if (errIns) { setReclasSaving(false); setReclasError(errIns.message); return }
-    }
     setReclasSaving(false)
+    if (err) { setReclasError(err.message); return }
     setReclasOpen(false)
     onAuthorized()
   }
@@ -1362,7 +1325,7 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               ) : (
                 <>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10 }}>
-                    Reclasificar — solo corrige clasificación y distribución, no toca monto ni pagos
+                    Reclasificar — solo corrige clasificación, no toca monto ni pagos
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                     <div><label className="label">Centro de Costo</label>
@@ -1375,13 +1338,13 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                     <div><label className="label">Área</label>
                       <select className="select" value={reclasArea}
                         onChange={e => { setReclasArea(e.target.value); setReclasFrente('') }}
-                        disabled={!reclasCC || reclasDist}>
+                        disabled={!reclasCC}>
                         <option value="">— Sin asignar —</option>
                         {areaList.filter(a => a.id_centro_costo_fk === Number(reclasCC)).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                       </select>
                     </div>
                     <div><label className="label">Frente</label>
-                      <select className="select" value={reclasFrente} onChange={e => setReclasFrente(e.target.value)} disabled={!reclasArea || reclasDist}>
+                      <select className="select" value={reclasFrente} onChange={e => setReclasFrente(e.target.value)} disabled={!reclasArea}>
                         <option value="">— Sin asignar —</option>
                         {frenteList.filter(f => relAF.some(r => r.id_area === Number(reclasArea) && r.id_frente === f.id)).map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                       </select>
@@ -1392,51 +1355,6 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                         {tiposGasto.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
-                  </div>
-                  <div style={{ marginBottom: 10 }}>
-                    <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                      <input type="checkbox" checked={reclasDist} onChange={e => {
-                        setReclasDist(e.target.checked)
-                        if (e.target.checked && reclasLines.length === 0)
-                          setReclasLines([{ descripcion: '', id_area_fk: '', id_frente_fk: '', monto: String(op.monto ?? 0) }])
-                      }} />
-                      Distribuir en varias líneas (Área / Frente / Monto)
-                    </label>
-                    {reclasDist && (
-                      <div style={{ marginTop: 8 }}>
-                        <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 6px' }}>
-                          {reclasCC ? 'Todas las líneas dentro del Centro de Costo elegido.' : 'Sin Centro de Costo fijo: cada línea toma el CC de su Área.'}
-                        </p>
-                        {reclasLines.map((l, i) => {
-                          const setL = (patch: Partial<ReclasLine>) => setReclasLines(ls => ls.map((x, j) => j === i ? { ...x, ...patch } : x))
-                          const areasOpc = areaList.filter(a => !reclasCC || a.id_centro_costo_fk === Number(reclasCC))
-                          return (
-                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.2fr 1fr 0.8fr auto', gap: 6, marginBottom: 6 }}>
-                              <select className="select" value={l.id_area_fk} onChange={e => setL({ id_area_fk: e.target.value, id_frente_fk: '' })}>
-                                <option value="">— Área —</option>
-                                {areasOpc.map(a => <option key={a.id} value={a.id}>{reclasCC ? a.nombre : `${ccList.find(c => c.id === a.id_centro_costo_fk)?.nombre ?? ''} › ${a.nombre}`}</option>)}
-                              </select>
-                              <select className="select" value={l.id_frente_fk} onChange={e => setL({ id_frente_fk: e.target.value })} disabled={!l.id_area_fk}>
-                                <option value="">— Frente —</option>
-                                {frenteList.filter(f => relAF.some(r => r.id_area === Number(l.id_area_fk) && r.id_frente === f.id)).map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-                              </select>
-                              <input className="input" placeholder="Descripción" value={l.descripcion} onChange={e => setL({ descripcion: e.target.value })} />
-                              <input className="input" type="number" step="0.01" placeholder="Monto" value={l.monto} onChange={e => setL({ monto: e.target.value })} />
-                              <button className="btn-ghost" onClick={() => setReclasLines(ls => ls.filter((_, j) => j !== i))} title="Quitar línea">✕</button>
-                            </div>
-                          )
-                        })}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <button className="btn-secondary" style={{ fontSize: 12 }}
-                            onClick={() => setReclasLines(ls => [...ls, { descripcion: '', id_area_fk: '', id_frente_fk: '', monto: '0' }])}>
-                            + Agregar línea
-                          </button>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: Math.abs(reclasTotal - (op.monto ?? 0)) > 0.01 ? '#dc2626' : '#15803d' }}>
-                            Total {fmt(reclasTotal)} / Monto OP {fmt(op.monto ?? 0)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                   {reclasError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{reclasError}</p>}
                   <div style={{ display: 'flex', gap: 8 }}>
