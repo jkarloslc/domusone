@@ -10,7 +10,7 @@ import PageHeader from '@/components/layout/PageHeader'
 
 // Sin 'Locales': sus rentas se presupuestan en la partida de Golf/Polo donde
 // viven, no en un presupuesto propio (se eliminó el 2026-09-24).
-const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's"]
+const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's", 'Corporativo']
 
 type Presupuesto = {
   id: number

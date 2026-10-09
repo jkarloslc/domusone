@@ -21,7 +21,7 @@ const CLASIFICACION_COLOR: Record<Clasificacion, { bg: string; color: string }> 
   intercompanias: { bg: '#fff7ed', color: '#c2410c' },
 }
 
-const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's", 'Locales']
+const MODULOS = ['Golf', 'Mantenimiento', 'Hípico', 'Polo', 'Eventos', "Patron's", 'Locales', 'Corporativo']
 
 // Datos legacy: partidas ya guardadas con modulo='Residencial' — el valor se conserva
 // para no tocar datos, solo se traduce la etiqueta visible.
