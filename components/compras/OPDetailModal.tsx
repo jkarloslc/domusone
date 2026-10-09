@@ -32,8 +32,9 @@ const VALE_STATUS_COLOR: Record<string, { color: string; bg: string; border: str
 // OP en proceso (aún sin pagar): se pueden cancelar incluso durante autorizaciones
 const STATUS_CANCELABLES = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente']
 
-export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
+export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDuplicar }: {
   op: any; onClose: () => void; onCanceled: () => void; onEdit: () => void; onAuthorized: () => void
+  onDuplicar?: () => void
 }) {
   const { authUser, canWrite, canAuth, canAuthFinanzas } = useAuth()
   const catTG = useCatalogoTiposGasto()
@@ -674,6 +675,12 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
             <button className="btn-secondary" style={{ fontSize: 12 }} onClick={imprimir}>
               <Printer size={13} /> Imprimir
             </button>
+            {onDuplicar && !op.id_oc_fk && ['superadmin', 'admin', 'compras'].includes(authUser?.rol ?? '') && (
+              <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onDuplicar}
+                title="Crea una OP nueva con los mismos datos (para pagos recurrentes)">
+                <Copy size={13} /> Duplicar
+              </button>
+            )}
             {['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente', 'Rechazada'].includes(op.status) && (
               <button className="btn-secondary" style={{ fontSize: 12 }} onClick={onEdit}>
                 <Edit2 size={13} /> Editar

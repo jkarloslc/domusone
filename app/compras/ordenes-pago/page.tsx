@@ -54,6 +54,7 @@ export default function OrdenesPagoPage() {
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState(false)
   const [editOp, setEditOp]     = useState<any | null>(null)
+  const [duplicando, setDuplicando] = useState(false)
   const [detail, setDetail]     = useState<any | null>(null)
   const [clasifMap, setClasifMap] = useState<Record<number, string[]>>({})
 
@@ -392,9 +393,10 @@ export default function OrdenesPagoPage() {
         </div>
       </div>
 
-      {modal  && <OPModal   op={editOp} onClose={() => { setModal(false); setEditOp(null) }} onSaved={() => { setModal(false); setEditOp(null); fetchData() }} />}
+      {modal  && <OPModal   op={editOp} duplicar={duplicando} onClose={() => { setModal(false); setEditOp(null); setDuplicando(false) }} onSaved={() => { setModal(false); setEditOp(null); setDuplicando(false); fetchData() }} />}
       {detail && <OPDetail  op={detail} onClose={() => { setDetail(null); fetchData() }} onCanceled={() => { setDetail(null); fetchData() }}
         onEdit={() => { setEditOp(detail); setDetail(null); setModal(true) }}
+        onDuplicar={() => { setEditOp(detail); setDuplicando(true); setDetail(null); setModal(true) }}
         onAuthorized={() => { setDetail(null); fetchData() }} />}
     </div>
   )
@@ -403,10 +405,11 @@ export default function OrdenesPagoPage() {
 // ════════════════════════════════════════════════════════════
 // Modal Orden de Pago — incluye PDF Factura + XML Factura
 // ════════════════════════════════════════════════════════════
-function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => void; onSaved: () => void }) {
+function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any; duplicar?: boolean; onClose: () => void; onSaved: () => void }) {
   const { authUser } = useAuth()
   const catTG = useCatalogoTiposGasto()
-  const isEdit = !!opEdit
+  // duplicar: precarga desde opEdit pero se guarda como OP NUEVA (isEdit=false)
+  const isEdit = !!opEdit && !duplicar
   const [rolRestriccionesModal, setRolRestriccionesModal] = useState<RolTipoOp[] | null>(null)
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState('')
@@ -429,7 +432,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   const [bitacorasSel,  setBitacorasSel]  = useState<number[]>([])
   const [equiposMapModal, setEquiposMapModal] = useState<Record<number, string>>({})
   const [conOC, setConOC] = useState<boolean | null>(
-    opEdit ? (opEdit.id_oc_fk != null) : null
+    opEdit ? (duplicar ? false : opEdit.id_oc_fk != null) : null
   )
   const [ocCCPreview, setOcCCPreview] = useState<{ cc: string; sec: string; frente: string } | null>(null)
   const [ocCCId, setOcCCId]           = useState<number | null>(opEdit?.id_centro_costo_fk ?? null)
@@ -458,7 +461,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     id_area_fk:         opEdit?.id_area_fk?.toString()       ?? '',
     id_frente_fk:       opEdit?.id_frente_fk?.toString()    ?? '',
     forma_pago:        opEdit?.forma_pago        ?? 'Transferencia',
-    fecha_vencimiento: opEdit?.fecha_vencimiento ?? '',
+    fecha_vencimiento: duplicar ? '' : (opEdit?.fecha_vencimiento ?? ''),
     concepto:          opEdit?.concepto          ?? '',
     id_tipo_gasto_fk:  opEdit?.id_tipo_gasto_fk?.toString() ?? '',
     urgencia:          opEdit?.urgencia          ?? 'Media',
@@ -466,13 +469,13 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
     cuenta_clabe:      opEdit?.cuenta_clabe      ?? '',
     notas:             opEdit?.notas             ?? '',
     monto_manual:      opEdit?.monto?.toString() ?? '',
-    fecha_factura:     opEdit?.fecha_factura     ?? '',
-    folio_factura:     opEdit?.folio_factura     ?? '',
+    fecha_factura: duplicar ? '' : (opEdit?.fecha_factura ?? ''),
+    folio_factura: duplicar ? '' : (opEdit?.folio_factura ?? ''),
     subtotal:          opEdit?.subtotal?.toString() ?? '',
     iva:               opEdit?.iva?.toString()      ?? '',
-    pdf_factura:       opEdit?.pdf_factura       ?? '',
-    xml_factura:       opEdit?.xml_factura       ?? '',
-    soporte_url:       opEdit?.soporte_url       ?? '',
+    pdf_factura: duplicar ? '' : (opEdit?.pdf_factura ?? ''),
+    xml_factura: duplicar ? '' : (opEdit?.xml_factura ?? ''),
+    soporte_url: duplicar ? '' : (opEdit?.soporte_url ?? ''),
     id_servicio_fk:    opEdit?.id_servicio_fk?.toString() ?? '',
   })
   // Los flujos propios por tipo de gasto se identifican por `clave` del catálogo
@@ -510,7 +513,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       .then(({ data }) => setServiciosCatalogo(data ?? []))
 
     // Cargar líneas de distribución al editar
-    if (isEdit && opEdit?.id) {
+    if ((isEdit || duplicar) && opEdit?.id) {
       dbComp.from('ordenes_pago_det').select('*').eq('id_op_fk', opEdit.id).order('id')
         .then(({ data }) => {
           if (data && data.length > 0) {
@@ -531,7 +534,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
       // 'Autorizada' (se movió a 'Enviada al Prov' al generar la OP), así que
       // no aparece en ocsDisp y nunca se restauraba en ocsSelected: el monto
       // quedaba en $0 apenas se abría el editor.
-      if (opEdit.id_oc_fk != null) {
+      if (!duplicar && opEdit.id_oc_fk != null) {
         dbComp.from('ordenes_pago_oc')
           .select('id_oc_fk, monto, ordenes_compra(folio, total, subtotal, iva, fecha_factura, folio_factura)')
           .eq('id_op_fk', opEdit.id)
@@ -580,7 +583,7 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   // partida editable en vez de dejar los campos en blanco — de lo contrario,
   // al guardar sin tocarlos, Monto se recalculaba como Subtotal(0)+IVA(0)=0.
   useEffect(() => {
-    if (!isEdit || !opEdit) return
+    if (!opEdit || (!isEdit && !duplicar)) return
     if (opEdit.id_oc_fk != null) return
     if (opEdit.subtotal != null || opEdit.iva != null) return
     if (opEdit.monto == null || opEdit.monto <= 0) return
@@ -1116,8 +1119,8 @@ function OPModal({ op: opEdit, onClose, onSaved }: { op?: any; onClose: () => vo
   }
 
   return (
-    <ModalShell modulo="compras" titulo={isEdit ? 'Editar Orden de Pago' : 'Nueva Orden de Pago'}
-      subtitulo={!isEdit ? (conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo') : undefined}
+    <ModalShell modulo="compras" titulo={isEdit ? 'Editar Orden de Pago' : duplicar ? 'Duplicar Orden de Pago' : 'Nueva Orden de Pago'}
+      subtitulo={duplicar ? `Copia de ${opEdit?.folio ?? 'OP'} — revisa monto, fechas y factura` : !isEdit ? (conOC ? '📦 Con OC vinculada' : '◇ Sin OC — Servicio / Gasto directo') : undefined}
       onClose={onClose} maxWidth={640}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Cancelar</button>
