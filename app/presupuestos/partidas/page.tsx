@@ -38,6 +38,7 @@ const MODULO_COLOR: Record<string, { bg: string; color: string }> = {
   Hospitalidad:  { bg: '#ecfdf5', color: '#065f46' },
   "Patron's":    { bg: '#f5f3ff', color: '#6d28d9' },
   Locales:       { bg: '#fefce8', color: '#a16207' },
+  Corporativo:   { bg: '#f0f9ff', color: '#0369a1' },
 }
 
 type Partida = {
