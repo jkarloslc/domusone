@@ -958,7 +958,8 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
 
     // EDITAR
     if (isEdit) {
-      const { error: err } = await dbComp.from('ordenes_pago').update(payload).eq('id', opEdit.id)
+      // saldo debe seguir al monto: CXP precarga el pago con (saldo ?? monto)
+      const { error: err } = await dbComp.from('ordenes_pago').update({ ...payload, saldo: Math.max(montoTotal - (opEdit.monto_pagado ?? 0), 0) }).eq('id', opEdit.id)
       if (err) { setError(err.message); setSaving(false); return }
       // Sincronizar vales de combustible ligados a esta OP
       await dbCtrl.from('vales_combustible').update({ id_op_fk: null }).eq('id_op_fk', opEdit.id)
