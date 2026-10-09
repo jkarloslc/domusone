@@ -20,7 +20,7 @@ export async function reabrirOPPagada({ idOp, motivo, reabiertoPor }: ReabrirOPP
   if (!motivo.trim()) throw new Error('Indica el motivo de la reapertura.')
 
   const { data: op, error: errOp } = await dbComp.from('ordenes_pago')
-    .select('id, folio, monto, status, id_oc_fk, notas').eq('id', idOp).single()
+    .select('id, folio, monto, status, id_oc_fk').eq('id', idOp).single()
   if (errOp || !op) throw new Error('No se pudo leer la OP: ' + (errOp?.message ?? 'sin datos'))
   if (!['Pagada', 'Abonada'].includes((op as any).status)) {
     throw new Error('Solo se pueden reabrir OP en status Pagada o Abonada.')
@@ -81,7 +81,6 @@ export async function reabrirOPPagada({ idOp, motivo, reabiertoPor }: ReabrirOPP
     referencia_pago:  null,
     reabierta_por:    reabiertoPor,
     fecha_reapertura: new Date().toISOString(),
-    notas:            `[Reabierta (era ${statusPrevio}) por ${reabiertoPor ?? ''}: ${motivo.trim()}]${(op as any).notas ? '\n' + (op as any).notas : ''}`,
   }).eq('id', idOp)
   if (errUp) throw new Error('No se pudo reabrir la OP: ' + errUp.message)
 
