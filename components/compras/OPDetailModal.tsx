@@ -6,6 +6,7 @@ import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import { fmt, fmtFecha, nextFolio, StatusBadge } from '@/app/compras/types'
 import { OCDetail } from '@/components/compras/OCDetailModal'
 import ModalShell from '@/components/ui/ModalShell'
+import { reabrirOPPagada } from '@/lib/reabrirOPPagada'
 import {
   Save, Loader, Printer, CheckCircle, Trash2, Edit2, Upload, ExternalLink,
   FileText, AlertTriangle, MessageSquare, Send, RotateCcw, Copy, Unlock, Tag,
@@ -89,6 +90,12 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   const [duplicarLoading, setDuplicarLoading] = useState(false)
   const [reabrirDuplicarError, setReabrirDuplicarError] = useState('')
   const [liberandoVales, setLiberandoVales] = useState(false)
+
+  // Reabrir OP Pagada/Abonada (superadmin) — anula pagos y reversa banco.
+  const [reabrirPagadaOpen, setReabrirPagadaOpen] = useState(false)
+  const [reabrirPagadaMotivo, setReabrirPagadaMotivo] = useState('')
+  const [reabrirPagadaLoading, setReabrirPagadaLoading] = useState(false)
+  const [reabrirPagadaError, setReabrirPagadaError] = useState('')
   const [folioSustituta, setFolioSustituta] = useState<string | null>(null)
   const [folioOriginal, setFolioOriginal]   = useState<string | null>(null)
 
@@ -345,6 +352,19 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   // tenía la 1ra autorización hecha (autorizado_por), o a 'Pendiente Auth'
   // si fue rechazada desde el inicio. No toca monto/saldo ni el historial
   // de quién ya autorizó.
+  const handleReabrirPagada = async () => {
+    if (!reabrirPagadaMotivo.trim()) { setReabrirPagadaError('Indica el motivo de la reapertura'); return }
+    if (!confirm(`¿Reabrir ${op.folio}? Se anularán sus pagos y se revertirán los movimientos bancarios asociados.`)) return
+    setReabrirPagadaLoading(true); setReabrirPagadaError('')
+    try {
+      await reabrirOPPagada({ idOp: op.id, motivo: reabrirPagadaMotivo, reabiertoPor: authUser?.nombre ?? null })
+      onAuthorized()
+    } catch (e: any) {
+      setReabrirPagadaError(e.message ?? 'No se pudo reabrir la OP')
+      setReabrirPagadaLoading(false)
+    }
+  }
+
   const handleReabrir = async () => {
     if (!confirm(`¿Reabrir ${op.folio}? Regresará al flujo de autorización para corregirla y volver a someterla.`)) return
     setReabrirLoading(true); setReabrirDuplicarError('')
@@ -1273,6 +1293,40 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
               fontSize: 12, color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={14} style={{ flexShrink: 0 }} />
               Esta Orden de Pago sustituye a {folioOriginal} (rechazada).
+            </div>
+          )}
+
+          {/* Reabrir OP pagada (solo superadmin) — para corregir montos */}
+          {authUser?.rol === 'superadmin' && (op.status === 'Pagada' || op.status === 'Abonada') && (
+            <div style={{ padding: '14px 16px', background: '#fffbeb', border: '1px dashed #fcd34d', borderRadius: 10 }}>
+              {!reabrirPagadaOpen ? (
+                <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setReabrirPagadaOpen(true)}>
+                  <RotateCcw size={13} /> Reabrir OP pagada para corregir montos
+                </button>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 6 }}>
+                    Reabrir {op.folio}
+                  </div>
+                  <p style={{ fontSize: 12, color: '#78350f', marginBottom: 10, lineHeight: 1.5 }}>
+                    Se anularán los pagos registrados, se devolverá el dinero a la cuenta bancaria con un movimiento de reverso
+                    y la OP quedará en <b>Pendiente</b>. Después usa <b>Editar</b> para corregir los montos y vuelve a pagarla
+                    en Tesorería &gt; CXP para generar el movimiento bancario correcto.
+                  </p>
+                  <label className="label">Motivo</label>
+                  <textarea className="input" rows={2} value={reabrirPagadaMotivo}
+                    onChange={e => setReabrirPagadaMotivo(e.target.value)} style={{ marginBottom: 10 }} />
+                  {reabrirPagadaError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{reabrirPagadaError}</p>}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleReabrirPagada} disabled={reabrirPagadaLoading}>
+                      {reabrirPagadaLoading ? <Loader size={13} className="animate-spin" /> : <RotateCcw size={13} />} Reabrir y revertir pagos
+                    </button>
+                    <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setReabrirPagadaOpen(false); setReabrirPagadaError('') }} disabled={reabrirPagadaLoading}>
+                      Cancelar
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
