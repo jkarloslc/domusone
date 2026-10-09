@@ -93,7 +93,6 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
 
   // Reabrir OP Pagada/Abonada (superadmin) — anula pagos y reversa banco.
   const [reabrirPagadaOpen, setReabrirPagadaOpen] = useState(false)
-  const [reabrirPagadaMotivo, setReabrirPagadaMotivo] = useState('')
   const [reabrirPagadaLoading, setReabrirPagadaLoading] = useState(false)
   const [reabrirPagadaError, setReabrirPagadaError] = useState('')
   const [folioSustituta, setFolioSustituta] = useState<string | null>(null)
@@ -353,11 +352,10 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
   // si fue rechazada desde el inicio. No toca monto/saldo ni el historial
   // de quién ya autorizó.
   const handleReabrirPagada = async () => {
-    if (!reabrirPagadaMotivo.trim()) { setReabrirPagadaError('Indica el motivo de la reapertura'); return }
     if (!confirm(`¿Reabrir ${op.folio}? Se anularán sus pagos y se revertirán los movimientos bancarios asociados.`)) return
     setReabrirPagadaLoading(true); setReabrirPagadaError('')
     try {
-      await reabrirOPPagada({ idOp: op.id, motivo: reabrirPagadaMotivo, reabiertoPor: authUser?.nombre ?? null })
+      await reabrirOPPagada({ idOp: op.id, reabiertoPor: authUser?.nombre ?? null })
       onAuthorized()
     } catch (e: any) {
       setReabrirPagadaError(e.message ?? 'No se pudo reabrir la OP')
@@ -1313,9 +1311,6 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized }: {
                     y la OP quedará en <b>Pendiente</b>. Después usa <b>Editar</b> para corregir los montos y vuelve a pagarla
                     en Tesorería &gt; CXP para generar el movimiento bancario correcto.
                   </p>
-                  <label className="label">Motivo</label>
-                  <textarea className="input" rows={2} value={reabrirPagadaMotivo}
-                    onChange={e => setReabrirPagadaMotivo(e.target.value)} style={{ marginBottom: 10 }} />
                   {reabrirPagadaError && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{reabrirPagadaError}</p>}
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn-primary" style={{ fontSize: 12 }} onClick={handleReabrirPagada} disabled={reabrirPagadaLoading}>

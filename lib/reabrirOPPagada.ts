@@ -4,7 +4,6 @@ import { revertirValesPorPagoOP } from '@/lib/combustible'
 
 export type ReabrirOPPagadaInput = {
   idOp:       number
-  motivo:     string
   reabiertoPor: string | null
 }
 
@@ -16,9 +15,7 @@ export type ReabrirOPPagadaInput = {
 // se edita con el botón Editar y se vuelve a pagar en Tesorería > CXP, que
 // genera el movimiento bancario correcto.
 // Los pagos agrupados (remesa) se reversan desde CXP como unidad.
-export async function reabrirOPPagada({ idOp, motivo, reabiertoPor }: ReabrirOPPagadaInput) {
-  if (!motivo.trim()) throw new Error('Indica el motivo de la reapertura.')
-
+export async function reabrirOPPagada({ idOp, reabiertoPor }: ReabrirOPPagadaInput) {
   const { data: op, error: errOp } = await dbComp.from('ordenes_pago')
     .select('id, folio, monto, status, id_oc_fk').eq('id', idOp).single()
   if (errOp || !op) throw new Error('No se pudo leer la OP: ' + (errOp?.message ?? 'sin datos'))
@@ -53,8 +50,8 @@ export async function reabrirOPPagada({ idOp, motivo, reabiertoPor }: ReabrirOPP
         monto:            a.monto,
         saldo_antes:      saldoAntes,
         saldo_despues:    saldoDespues,
-        concepto:         `Reverso por reapertura de OP ${(op as any).folio}`,
-        referencia:       motivo.trim(),
+        concepto:         `Reverso pago OP ${(op as any).folio}`,
+        referencia:       null,
         fecha_movimiento: hoy,
         created_by:       reabiertoPor,
       })
@@ -65,9 +62,6 @@ export async function reabrirOPPagada({ idOp, motivo, reabiertoPor }: ReabrirOPP
     }
     const { error: errCan } = await dbComp.from('cxp_abonos').update({
       status:         'Cancelada',
-      editado_by:     reabiertoPor,
-      editado_at:     new Date().toISOString(),
-      motivo_edicion: `Reapertura de OP: ${motivo.trim()}`,
     }).eq('id', a.id)
     if (errCan) throw new Error('No se pudo cancelar el pago: ' + errCan.message)
   }
@@ -79,8 +73,6 @@ export async function reabrirOPPagada({ idOp, motivo, reabiertoPor }: ReabrirOPP
     saldo:            (op as any).monto,
     fecha_pago:       null,
     referencia_pago:  null,
-    reabierta_por:    reabiertoPor,
-    fecha_reapertura: new Date().toISOString(),
   }).eq('id', idOp)
   if (errUp) throw new Error('No se pudo reabrir la OP: ' + errUp.message)
 
