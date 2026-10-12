@@ -317,7 +317,7 @@ export default function CalendarioPage() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           footer={
-            <a href="/hospitality/eventos" style={{ fontSize: 12, color: '#9333ea', textDecoration: 'none' }}>
+            <a href="/hipico/eventos-ecuestres" style={{ fontSize: 12, color: '#9333ea', textDecoration: 'none' }}>
               Editar en gestión de eventos →
             </a>
           }

@@ -35,6 +35,7 @@ import ReporteIngresosCuotas from './ReporteIngresosCuotas'
 import ReporteIngresosConceptoCentro from './ReporteIngresosConceptoCentro'
 import ReporteHipicoEstadoCuenta from './ReporteHipicoEstadoCuenta'
 import ReporteHipicoServicios from './ReporteHipicoServicios'
+import ReporteOcupacionInstalaciones from './ReporteOcupacionInstalaciones'
 import ReporteGolfEstadoCuenta from './ReporteGolfEstadoCuenta'
 import ReporteGolfCobranza from './ReporteGolfCobranza'
 import ReporteGolfAccesos from './ReporteGolfAccesos'
@@ -212,6 +213,7 @@ const GRUPOS = [
     reportes: [
       { id: 'locales-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Rentas de locales y propiedades cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
       { id: 'locales-proyeccion-cobranza', label: 'Proyección de Cobranza', icon: TrendingDown, desc: 'Rentas de locales y mantenimiento por mes: cargo total, cobrado y por cobrar, con flujo de cobranza (cobrado del mes, anticipado y vencido)' },
+      { id: 'hipico-ocupacion-instalaciones', label: 'Ocupación de Instalaciones', icon: MapPin, desc: 'Días ocupados y % de ocupación por pista, paddock o salón en un período, con eventos, bloqueos, empalmes y detalle' },
       { id: 'cancelaciones',        label: 'Bitácora de Cancelaciones', icon: AlertTriangle, desc: 'Recibos cancelados (Golf, Hípico, Locales, Fraccionamiento): folio, cuotas liberadas, monto, motivo y usuario' },
     ],
   },
@@ -379,6 +381,7 @@ function ReportesContent() {
       {active === 'hipico-cobranza-corriente-vencida' && <ReporteCobranzaCorrienteVencida fuente="hipico" />}
       {active === 'hipico-proyeccion-cobranza' && <ReporteProyeccionCobranza fuente="hipico" />}
       {active === 'hipico-servicios'     && <ReporteHipicoServicios />}
+      {active === 'hipico-ocupacion-instalaciones' && <ReporteOcupacionInstalaciones />}
 
       {/* Reportes locales comerciales */}
       {active === 'locales-cobranza-corriente-vencida' && <ReporteCobranzaCorrienteVencida fuente="locales" />}

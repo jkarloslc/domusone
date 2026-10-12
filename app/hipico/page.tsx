@@ -68,14 +68,6 @@ const CABALLERIZAS_MODULOS = [
 
 const EVENTOS_MODULOS = [
   {
-    key: 'eventos',
-    label: 'Eventos',
-    desc: 'Bodas, sociales, corporativos y torneos ecuestres (los torneos de golf están en Golf → Torneos)',
-    icon: Star,
-    color: '#9333ea',
-    href: '/hospitality/eventos',
-  },
-  {
     key: 'calendario',
     label: 'Calendario',
     desc: 'Vista mensual de eventos programados con acceso rápido al detalle',

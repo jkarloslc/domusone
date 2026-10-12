@@ -5,6 +5,7 @@ import {
   Home, Wrench, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark,
   Flag, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf, Briefcase,
+  MapPin,
 } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useConfig } from '@/lib/ConfigContext'
@@ -546,6 +547,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Hípico y Eventos',  href: '/hipico',                   icon: HorseIcon },
       { label: 'Polo',              href: '/polo',                     icon: PoloIcon  },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
+      { label: 'Instalaciones',     href: '/hipico/instalaciones',     icon: MapPin    },
       RPT('hipico'),
     ]},
     { section: 'Compras', items: [
@@ -561,6 +563,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Hípico y Eventos',  href: '/hipico',                   icon: HorseIcon },
       { label: 'Polo',              href: '/polo',                     icon: PoloIcon  },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
+      { label: 'Instalaciones',     href: '/hipico/instalaciones',     icon: MapPin    },
       RPT('hipico'),
     ]},
     { section: 'Compras', items: [
@@ -627,6 +630,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Hípico y Eventos',  href: '/hipico',                   icon: HorseIcon },
       { label: 'Polo',              href: '/polo',                     icon: PoloIcon  },
       { label: 'Eventos Ecuestres', href: '/hipico/eventos-ecuestres', icon: HorseIcon },
+      { label: 'Instalaciones',     href: '/hipico/instalaciones',     icon: MapPin    },
       { label: 'Reportes Hípico',   href: '/reportes?grupo=hipico',       icon: BarChart3 },
       { label: 'Reportes Eventos',  href: '/reportes?grupo=hospitality',  icon: BarChart3 },
     ]},
