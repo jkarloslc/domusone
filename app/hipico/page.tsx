@@ -49,14 +49,6 @@ const CABALLERIZAS_MODULOS = [
     href: '/hipico/cobranza',
   },
   {
-    key: 'eventos-ecuestres',
-    label: 'Torneos Ecuestres',
-    desc: 'Organización de torneos y eventos ecuestres',
-    icon: Flag,
-    color: '#ca8a04',
-    href: '/hipico/eventos-ecuestres',
-  },
-  {
     key: 'reportes',
     label: 'Reportes',
     desc: 'Estado de cuenta, cobranza y servicios por caballo',
