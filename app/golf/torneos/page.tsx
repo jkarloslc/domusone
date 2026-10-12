@@ -360,7 +360,7 @@ export default function EventosPage() {
   useEffect(() => {
     dbCtrl.from('cat_tipos_evento').select('id, nombre, color').eq('activo', true).order('nombre')
       .then(({ data }: any) => setTipos(data ?? []))
-    dbCtrl.from('cat_lugares').select('id, nombre, capacidad').eq('activo', true).order('nombre')
+    dbCtrl.from('cat_lugares').select('id, nombre, capacidad').eq('activo', true).eq('modulo', 'golf').order('nombre')
       .then(({ data }: any) => setLugares(data ?? []))
     dbComp.from('proveedores').select('id, nombre').eq('activo', true)
       .then(({ data }) => {

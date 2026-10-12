@@ -126,7 +126,7 @@ const ADMIN_MODULOS = [
   'golf-administracion', 'golf-mantto-campo', 'golf-estatus-campo',
   // Hípico
   'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
-  'hipico-contratos', 'hipico-cobranza', 'hipico-servicios',
+  'hipico-contratos', 'hipico-cobranza', 'hipico-servicios', 'hipico-instalaciones',
   // Hospitality
   'hospitality',
   // Renta de Locales Comerciales y Propiedades
@@ -142,7 +142,7 @@ const ADMIN_MODULOS = [
 // Módulos Hípico para rol dedicado
 const HIPICO_MODULOS = [
   'hipico', 'hipico-arrendatarios', 'hipico-caballerizas', 'hipico-caballos',
-  'hipico-contratos', 'hipico-cobranza', 'hipico-servicios', 'reportes',
+  'hipico-contratos', 'hipico-cobranza', 'hipico-servicios', 'hipico-instalaciones', 'reportes',
   'compras', 'requisiciones', 'transferencias',
 ]
 

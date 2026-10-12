@@ -3,7 +3,7 @@ import React, { type SVGProps } from 'react'
 import Link from 'next/link'
 import {
   Users, Home, DollarSign, ChevronRight, Flag, BarChart3,
-  Star, CalendarDays, BookOpen,
+  Star, CalendarDays, BookOpen, MapPin,
 } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 
@@ -31,6 +31,14 @@ const CABALLERIZAS_MODULOS = [
     icon: Home,
     color: '#b45309',
     href: '/hipico/caballerizas',
+  },
+  {
+    key: 'instalaciones',
+    label: 'Instalaciones',
+    desc: 'Pistas, paddocks y salones con su ocupación y calendario',
+    icon: MapPin,
+    color: '#0f766e',
+    href: '/hipico/instalaciones',
   },
   {
     key: 'cobranza',
@@ -62,7 +70,7 @@ const EVENTOS_MODULOS = [
   {
     key: 'eventos',
     label: 'Eventos',
-    desc: 'Gestión de eventos: bodas, sociales, corporativos y torneos',
+    desc: 'Bodas, sociales, corporativos y torneos ecuestres (los torneos de golf están en Golf → Torneos)',
     icon: Star,
     color: '#9333ea',
     href: '/hospitality/eventos',

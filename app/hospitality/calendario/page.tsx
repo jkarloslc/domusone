@@ -111,6 +111,7 @@ export default function CalendarioPage() {
     setLoading(true)
     const { data } = await dbCtrl.from('eventos')
       .select('id, folio, nombre, id_tipo_evento_fk, id_lugar_fk, fecha_inicio, fecha_fin, hora_inicio, hora_fin, num_asistentes, responsable, cliente_nombre, cliente_telefono, cliente_email, notas, status, cat_tipos_evento(nombre, color), cat_lugares(nombre, capacidad)')
+      .in('modulo', ['hospitality', 'hipico'])   // Golf tiene su propio módulo (/golf/torneos)
       .order('fecha_inicio')
       .order('hora_inicio')
     setEventos(((data as unknown as Evento[]) ?? []).sort(sortEventos))
