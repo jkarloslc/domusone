@@ -78,7 +78,7 @@ const EVENTOS_MODULOS = [
   {
     key: 'catalogos',
     label: 'Catálogos',
-    desc: 'Lugares / salones y tipos de evento',
+    desc: 'Tipos de evento (las instalaciones se administran en Instalaciones)',
     icon: BookOpen,
     color: '#64748b',
     href: '/hospitality/catalogos',
