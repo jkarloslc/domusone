@@ -1,7 +1,7 @@
 'use client'
 import {
   Landmark, FileText, Building2, ChevronRight,
-  Clock, Wallet
+  Clock
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
@@ -21,13 +21,7 @@ const MODULOS = [
     color: '#0f766e',
     desc:  'Saldos, movimientos y administración de cuentas bancarias',
   },
-  {
-    key:   'flujo-caja',
-    label: 'Flujo de Caja',
-    icon:  Wallet,
-    color: '#7c3aed',
-    desc:  'Proyección de posición de caja día a día por centro de costo y periodo',
-  },
+  // Flujo de Caja oculto del hub (se trabaja por fuera); la ruta /tesoreria/flujo-caja sigue existiendo.
 ]
 
 export default function TesoreriaPage() {
