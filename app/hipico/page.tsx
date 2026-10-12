@@ -68,6 +68,14 @@ const CABALLERIZAS_MODULOS = [
 
 const EVENTOS_MODULOS = [
   {
+    key: 'eventos',
+    label: 'Eventos',
+    desc: 'Gestión de eventos: bodas, sociales, corporativos y torneos ecuestres',
+    icon: Star,
+    color: '#9333ea',
+    href: '/hipico/eventos-ecuestres',
+  },
+  {
     key: 'calendario',
     label: 'Calendario',
     desc: 'Vista mensual de eventos programados con acceso rápido al detalle',
