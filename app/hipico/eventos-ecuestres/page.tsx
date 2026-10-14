@@ -3,11 +3,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, dbCtrl, dbComp, dbGolf, dbCfg } from '@/lib/supabase'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
+import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import {
   Plus, MapPin, Calendar, Users, DollarSign,
   FileText, Trash2, Edit2, Receipt, ShoppingBag,
   Printer, X, Check, Eye, TrendingUp, TrendingDown,
-  Settings, ClipboardCheck, Upload, Loader, ExternalLink,
+  Settings, ClipboardCheck, Upload, Loader, ExternalLink, User, ChevronDown, Search,
 } from 'lucide-react'
 
 const MODULE = 'hipico' as const
@@ -68,6 +69,7 @@ type Evento = {
 
 type PersonalItem = {
   id: number
+  id_colaborador_fk: number | null
   nombre_empleado: string
   dia: string
   turno: string | null
@@ -206,6 +208,87 @@ function FmFull({ label, children }: { label: string; children: React.ReactNode 
 
 // ── Component ────────────────────────────────────────────────
 
+// ── Popup selector de Colaborador (cfg.colaboradores) ───────────
+function ColaboradorPopup({ value, onChange }: {
+  value: { id: number | null; nombre: string }
+  onChange: (c: { id: number; nombre: string } | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
+  const [query, setQuery] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    dbCfg.from('colaboradores').select('*').eq('activo', true).order('nombre')
+      .then(({ data }) => setColaboradores((data ?? []) as Colaborador[]))
+  }, [open])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const filtrados = colaboradores.filter(c => {
+    const q = query.toLowerCase()
+    return nombreCompletoColaborador(c).toLowerCase().includes(q) || (c.puesto ?? '').toLowerCase().includes(q)
+  })
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+          background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6,
+          padding: '7px 10px', fontSize: 13, cursor: 'pointer',
+          color: value.nombre ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+        <User size={13} style={{ flexShrink: 0, color: 'var(--text-muted)' }} />
+        <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {value.nombre || 'Seleccionar empleado…'}
+        </span>
+        <ChevronDown size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999,
+          background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,.12)', marginTop: 4, overflow: 'hidden' }}>
+          <div style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Search size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar colaborador…"
+              style={{ border: 'none', outline: 'none', width: '100%', fontSize: 12, background: 'transparent' }} />
+          </div>
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filtrados.length === 0 ? (
+              <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-muted)' }}>
+                Sin colaboradores
+              </div>
+            ) : filtrados.map(c => {
+              const nombre = nombreCompletoColaborador(c)
+              const selected = c.id === value.id
+              return (
+                <button key={c.id} type="button"
+                  onClick={() => { onChange({ id: c.id, nombre }); setOpen(false); setQuery('') }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px',
+                    fontSize: 13, background: selected ? '#f5f3ff' : 'transparent',
+                    color: selected ? '#9333ea' : 'var(--text-primary)',
+                    border: 'none', cursor: 'pointer' }}>
+                  {nombre}
+                  {c.puesto && (
+                    <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{c.puesto}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function EventosPage() {
   // Catálogos
   const [tipos,   setTipos]   = useState<TipoEvento[]>([])
@@ -304,7 +387,7 @@ export default function EventosPage() {
 
   // Personal Operativo
   const [personal, setPersonal] = useState<PersonalItem[]>([])
-  const [personalForm, setPersonalForm] = useState({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
+  const [personalForm, setPersonalForm] = useState({ id_colaborador_fk: null as number | null, nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
   const [savingPersonal, setSavingPersonal] = useState(false)
 
   // ── Load catálogos ─────────────────────────────────────────
@@ -361,7 +444,7 @@ export default function EventosPage() {
     const [{ data: ing }, { data: eops }, { data: pers }] = await Promise.all([
       dbCtrl.from('eventos_ingresos').select('id, folio, descripcion, monto, fecha_pago, forma_pago, referencia, notas, id_venta_pos_fk').eq('id_evento_fk', evtId).order('fecha_pago'),
       dbCtrl.from('eventos_ops').select('id, id_op_fk').eq('id_evento_fk', evtId),
-      dbCtrl.from('eventos_personal').select('id, nombre_empleado, dia, turno, compensacion').eq('id_evento_fk', evtId).order('dia').order('created_at'),
+      dbCtrl.from('eventos_personal').select('id, id_colaborador_fk, nombre_empleado, dia, turno, compensacion').eq('id_evento_fk', evtId).order('dia').order('created_at'),
     ])
     setPersonal((pers as unknown as PersonalItem[]) ?? [])
     const ingRows = (ing as unknown as Ingreso[]) ?? []
@@ -478,7 +561,7 @@ export default function EventosPage() {
     setForm(blankForm())
     setIngresos([]); setOps([]); setEvtOps([])
     setPersonal([])
-    setPersonalForm({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
+    setPersonalForm({ id_colaborador_fk: null as number | null, nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
     setActiveTab('info')
     setErr('')
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
@@ -537,7 +620,7 @@ export default function EventosPage() {
       notas_personal: ev.notas_personal ?? '',
     })
     setPersonal([])
-    setPersonalForm({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
+    setPersonalForm({ id_colaborador_fk: null as number | null, nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
     setActiveTab('info')
     setErr('')
     setIngresoForm({ descripcion: '', monto: '', fecha_pago: new Date().toISOString().split('T')[0], forma_pago: 'Transferencia', referencia: '', notas: '', id_venta_pos_fk: null })
@@ -743,11 +826,12 @@ export default function EventosPage() {
   // ── Personal Operativo ─────────────────────────────────────
   const savePersonal = async () => {
     if (!editEvt) return
-    if (!personalForm.nombre_empleado.trim()) { setErr('El nombre del empleado es obligatorio'); return }
+    if (!personalForm.id_colaborador_fk || !personalForm.nombre_empleado.trim()) { setErr('Selecciona el empleado'); return }
     if (!personalForm.dia) { setErr('La fecha es obligatoria'); return }
     setSavingPersonal(true); setErr('')
     const { error } = await dbCtrl.from('eventos_personal').insert({
       id_evento_fk:    editEvt.id,
+      id_colaborador_fk: personalForm.id_colaborador_fk,
       nombre_empleado: personalForm.nombre_empleado.trim(),
       dia:             personalForm.dia,
       turno:           personalForm.turno || null,
@@ -755,7 +839,7 @@ export default function EventosPage() {
     })
     if (error) { setErr(error.message); setSavingPersonal(false); return }
     setSavingPersonal(false)
-    setPersonalForm({ nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
+    setPersonalForm({ id_colaborador_fk: null as number | null, nombre_empleado: '', dia: new Date().toLocaleDateString('en-CA'), turno: '', compensacion: '' })
     await loadEventoDetalle(editEvt.id)
   }
 
@@ -2269,10 +2353,9 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                   <div style={{ gridColumn: '1 / -1' }}>
                     <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Nombre del Empleado *</label>
-                    <input className="input" style={{ fontSize: 13, width: '100%' }}
-                      value={personalForm.nombre_empleado}
-                      onChange={e => setPersonalForm(f => ({ ...f, nombre_empleado: e.target.value }))}
-                      placeholder="Nombre completo…"
+                    <ColaboradorPopup
+                      value={{ id: personalForm.id_colaborador_fk, nombre: personalForm.nombre_empleado }}
+                      onChange={c => setPersonalForm(f => ({ ...f, id_colaborador_fk: c?.id ?? null, nombre_empleado: c?.nombre ?? '' }))}
                     />
                   </div>
                   <div>
