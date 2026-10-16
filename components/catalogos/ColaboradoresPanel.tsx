@@ -22,7 +22,7 @@ const CC_MANTENIMIENTO_RESIDENCIAL = 'Mantenimiento Residencial'
 const emptyColabForm = () => ({
   nombre: '', apellido_paterno: '', apellido_materno: '', tipo: 'Interno' as TipoColaborador, fecha_ingreso: '',
   id_puesto_fk: '', puesto: '',
-  sueldo_bruto_mensual: '', sueldo_neto_mensual: '', sueldo_diario: '',
+  sueldo_bruto_mensual: '', sueldo_neto_mensual: '', sueldo_diario: '', costo_mensual: '', no_empleado: '',
   id_centro_costo_fk: '', id_cuadrante_fk: '', id_area_fk: '',
   es_asignado: false, es_supervisor: false,
 })
@@ -109,6 +109,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
       id_puesto_fk: c.id_puesto_fk?.toString() ?? '', puesto: c.puesto ?? '',
       sueldo_bruto_mensual: c.sueldo_bruto_mensual?.toString() ?? '', sueldo_neto_mensual: c.sueldo_neto_mensual?.toString() ?? '',
       sueldo_diario: c.sueldo_diario?.toString() ?? '',
+      costo_mensual: c.costo_mensual?.toString() ?? '', no_empleado: c.no_empleado ?? '',
       id_centro_costo_fk: c.id_centro_costo_fk?.toString() ?? '',
       id_cuadrante_fk: c.id_cuadrante_fk?.toString() ?? '',
       id_area_fk: c.id_area_fk?.toString() ?? '',
@@ -135,6 +136,8 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
       sueldo_bruto_mensual: form.sueldo_bruto_mensual ? Number(form.sueldo_bruto_mensual) : null,
       sueldo_neto_mensual: form.sueldo_neto_mensual ? Number(form.sueldo_neto_mensual) : null,
       sueldo_diario: form.sueldo_diario ? Number(form.sueldo_diario) : null,
+      costo_mensual: form.costo_mensual ? Number(form.costo_mensual) : null,
+      no_empleado: form.no_empleado.trim() || null,
       id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
       id_cuadrante_fk: esManttoResidencial && form.id_cuadrante_fk ? Number(form.id_cuadrante_fk) : null,
       id_area_fk: esManttoResidencial && form.id_area_fk ? Number(form.id_area_fk) : null,
@@ -325,6 +328,14 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                   {puestos.map(p => <option key={p.id} value={p.id}>{p.puesto}</option>)}
                 </select>
               </div>
+              <div>
+                <label className="label">No. de Empleado</label>
+                <input className="input" value={form.no_empleado} onChange={e => setForm(f => ({ ...f, no_empleado: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Costo Mensual</label>
+                <input className="input" type="number" min="0" step="0.01" value={form.costo_mensual} onChange={e => setForm(f => ({ ...f, costo_mensual: e.target.value }))} placeholder="0.00" />
+              </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="label">Centro de Costo</label>
                 <select className="select" value={form.id_centro_costo_fk} onChange={e => setForm(f => ({ ...f, id_centro_costo_fk: e.target.value, id_cuadrante_fk: '', id_area_fk: '' }))}>
@@ -439,6 +450,8 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 { label: 'Sueldo Bruto', value: fmt$(viewing.sueldo_bruto_mensual) },
                 { label: 'Sueldo Neto', value: fmt$(viewing.sueldo_neto_mensual) },
                 { label: 'Sueldo Diario (jornal)', value: fmt$(viewing.sueldo_diario) },
+                { label: 'Costo Mensual', value: fmt$(viewing.costo_mensual) },
+                { label: 'No. de Empleado', value: viewing.no_empleado || '—' },
                 { label: 'Centro de Costo', value: viewing.id_centro_costo_fk ? (centrosCosto.find(c => c.id === viewing.id_centro_costo_fk)?.nombre ?? '—') : '—' },
                 ...(viewing.id_cuadrante_fk ? [{ label: 'Cuadrante', value: cuadrantes.find(c => c.id === viewing.id_cuadrante_fk)?.nombre ?? '—' }] : []),
                 ...(viewing.id_area_fk ? [{ label: 'Área Asignada', value: areas.find(a => a.id === viewing.id_area_fk)?.nombre ?? '—' }] : []),
@@ -457,6 +470,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
         <table>
           <thead>
             <tr>
+              <th>No. Emp.</th>
               <th>Nombre</th>
               <th>Tipo</th>
               <th>Puesto</th>
@@ -466,6 +480,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
               <th style={{ textAlign: 'right' }}>Sueldo Bruto</th>
               <th style={{ textAlign: 'right' }}>Sueldo Neto</th>
               <th style={{ textAlign: 'right' }}>Sueldo Diario</th>
+              <th style={{ textAlign: 'right' }}>Costo Mensual</th>
               <th style={{ textAlign: 'center' }}>Asignado</th>
               <th style={{ textAlign: 'center' }}>Supervisor</th>
               <th style={{ textAlign: 'center', width: 80 }}>Status</th>
@@ -474,15 +489,16 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={13} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={15} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={13} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={15} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 {items.length === 0 ? 'Sin colaboradores. Crea el primero.' : 'Sin resultados con los filtros aplicados.'}
               </td></tr>
             ) : filtered.map(c => (
               <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45 }}>
+                <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{c.no_empleado || '—'}</td>
                 <td style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>{nombreCompletoColaborador(c)}</td>
                 <td>
                   <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
@@ -497,6 +513,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_bruto_mensual)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_neto_mensual)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_diario)}</td>
+                <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.costo_mensual)}</td>
                 <td style={{ textAlign: 'center' }}>{c.es_asignado ? <CheckCircle size={15} style={{ color: '#0369a1' }} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                 <td style={{ textAlign: 'center' }}>{c.es_supervisor ? <CheckCircle size={15} style={{ color: '#7c3aed' }} /> : <span style={{ color: '#cbd5e1' }}>—</span>}</td>
                 <td style={{ textAlign: 'center' }}>
