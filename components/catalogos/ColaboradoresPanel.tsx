@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Edit2, Save, Loader, RefreshCw, ToggleLeft, ToggleRight,
-  CheckCircle, Search, Users, ArrowLeft, Eye,
+  CheckCircle, Search, Users, ArrowLeft, Eye, Trash2,
 } from 'lucide-react'
-import { dbCfg } from '@/lib/supabase'
+import { dbCfg, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { antiguedad } from '@/lib/dateUtils'
 import { Colaborador, TipoColaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
@@ -28,7 +28,7 @@ const emptyColabForm = () => ({
 })
 
 export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) {
-  const { authUser } = useAuth()
+  const { authUser, canDelete } = useAuth()
   const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<Colaborador[]>([])
   const [puestos, setPuestos]   = useState<{ id: number; puesto: string }[]>([])
@@ -51,6 +51,33 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
   const [filtroSupervisor, setFS]   = useState('all')
   const [filtroCC, setFCC]          = useState('all')
   const [filtroStatus, setFStatus]  = useState('activos')
+
+  // Tablas con historial ligado al colaborador (todas en schema ctrl)
+  const TABLAS_HISTORIAL: { tabla: string; label: string }[] = [
+    { tabla: 'rol_pagos_colaboradores', label: 'Rol de Pagos' },
+    { tabla: 'vigilancia_extras_guardias', label: 'Vigilancia Extras' },
+    { tabla: 'eventos_personal', label: 'Eventos (Personal Op.)' },
+    { tabla: 'ot_mano_obra', label: 'Mano de obra de OT' },
+    { tabla: 'capex_insumos', label: 'CAPEX (insumos)' },
+  ]
+
+  const handleDelete = async (c: Colaborador) => {
+    const res = await Promise.all(TABLAS_HISTORIAL.map(async t => {
+      const { count, error } = await dbCtrl.from(t.tabla).select('id', { count: 'exact', head: true }).eq('id_colaborador_fk', c.id)
+      return { ...t, count: count ?? 0, error }
+    }))
+    const fallo = res.find(r => r.error)
+    if (fallo) { alert(`No se pudo verificar el historial (${fallo.label}): ${fallo.error!.message}`); return }
+    const conHist = res.filter(r => r.count > 0)
+    if (conHist.length > 0) {
+      alert(`No se puede eliminar a ${nombreCompletoColaborador(c)}: tiene historial en ${conHist.map(r => `${r.label} (${r.count})`).join(', ')}.\n\nPuedes desactivarlo en lugar de eliminarlo.`)
+      return
+    }
+    if (!confirm(`¿Eliminar definitivamente a ${nombreCompletoColaborador(c)}? Esta acción no se puede deshacer.`)) return
+    const { error } = await dbCfg.from('colaboradores').delete().eq('id', c.id)
+    if (error) { alert('Error al eliminar: ' + error.message); return }
+    fetchAll()
+  }
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -442,7 +469,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
               <th style={{ textAlign: 'center' }}>Asignado</th>
               <th style={{ textAlign: 'center' }}>Supervisor</th>
               <th style={{ textAlign: 'center', width: 80 }}>Status</th>
-              <th style={{ textAlign: 'right', width: 90 }}>Acciones</th>
+              <th style={{ textAlign: 'right', width: 110 }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -483,6 +510,11 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                     {puedeEscribir && (
                       <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Editar" onClick={() => openEdit(c)}>
                         <Edit2 size={13} />
+                      </button>
+                    )}
+                    {puedeEscribir && canDelete() && (
+                      <button className="btn-ghost" style={{ padding: '4px 8px', color: '#dc2626' }} title="Eliminar" onClick={() => handleDelete(c)}>
+                        <Trash2 size={13} />
                       </button>
                     )}
                   </div>
