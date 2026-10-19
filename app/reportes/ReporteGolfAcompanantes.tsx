@@ -64,6 +64,7 @@ export default function ReporteGolfAcompanantes() {
   const [filtroTipo, setFiltroTipo] = useState<Tipo | ''>('')
 
   const [rows, setRows] = useState<Acomp[]>([])
+  const [salidas, setSalidas] = useState<{ id: number; fecha_entrada: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [buscado, setBuscado] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -87,10 +88,11 @@ export default function ReporteGolfAcompanantes() {
 
       // Accesos del periodo (paginado: PostgREST limita a 1000 filas)
       const accesoIds: number[] = []
+      const salidasTmp: { id: number; fecha_entrada: string }[] = []
       for (let from = 0; ; from += 1000) {
         let q = (dbGolf as any)
           .from('ctrl_accesos')
-          .select('id')
+          .select('id, fecha_entrada')
           .gte('fecha_entrada', new Date(fechaDesde + 'T00:00:00').toISOString())
           .lte('fecha_entrada', new Date(fechaHasta + 'T23:59:59').toISOString())
           .range(from, from + 999)
@@ -98,6 +100,7 @@ export default function ReporteGolfAcompanantes() {
         const { data, error: e } = await q
         if (e) throw e
         accesoIds.push(...(data ?? []).map((r: any) => r.id))
+        salidasTmp.push(...(data ?? []))
         if ((data ?? []).length < 1000) break
       }
 
@@ -114,9 +117,11 @@ export default function ReporteGolfAcompanantes() {
         out.push(...(data ?? []))
       }
       setRows(out)
+      setSalidas(salidasTmp)
     } catch (err: any) {
       setError(err?.message ?? 'Error al consultar')
       setRows([])
+      setSalidas([])
     } finally {
       setLoading(false)
     }
@@ -148,6 +153,28 @@ export default function ReporteGolfAcompanantes() {
   const socioRows = Object.values(porSocio).sort((a, b) => total(b.t) - total(a.t))
   const totFiltrado = vacio()
   filtradas.forEach(r => { totFiltrado[tipoAcomp(r)]++ })
+
+  // Agrupación por mes (hora de México): salidas y acompañantes por tipo
+  const mesDe = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-CA', { timeZone: TZ_MX }).slice(0, 7)
+  const porMes: Record<string, { salidas: number; t: Record<Tipo, number> }> = {}
+  const idsFiltro = filtroTipo ? new Set(filtradas.map(r => r.id_acceso_fk)) : null
+  salidas.forEach(a => {
+    if (idsFiltro && !idsFiltro.has(a.id)) return
+    ;(porMes[mesDe(a.fecha_entrada)] ??= { salidas: 0, t: vacio() }).salidas++
+  })
+  filtradas.forEach(r => {
+    const f = r.ctrl_accesos?.fecha_entrada
+    if (!f) return
+    ;(porMes[mesDe(f)] ??= { salidas: 0, t: vacio() }).t[tipoAcomp(r)]++
+  })
+  const mesRows = Object.entries(porMes).sort((a, b) => a[0].localeCompare(b[0]))
+  const totSalidas = mesRows.reduce((s, [, v]) => s + v.salidas, 0)
+  const fmtMes = (ym: string) => {
+    const [y, m] = ym.split('-')
+    const n = new Date(Number(y), Number(m) - 1, 1).toLocaleDateString('es-MX', { month: 'long' })
+    return `${n.charAt(0).toUpperCase()}${n.slice(1)} ${y}`
+  }
 
   const th: React.CSSProperties = { textAlign: 'right' }
   const pct = (n: number) => (totalGlobal ? ((n / totalGlobal) * 100).toFixed(1) + '%' : '—')
@@ -204,6 +231,41 @@ export default function ReporteGolfAcompanantes() {
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Total acompañantes</div>
               <div style={{ fontSize: 24, fontWeight: 700 }}>{totalGlobal}</div>
             </div>
+          </div>
+
+          <div className="card" style={{ padding: 0, overflow: 'auto', marginBottom: 20 }}>
+            <div style={{ padding: '10px 14px', fontSize: 12, fontWeight: 600 }}>Por mes</div>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>Mes</th>
+                  <th style={th}>Salidas</th>
+                  {TIPOS.map(t => <th key={t} style={th}>{t}</th>)}
+                  <th style={th}>Total acomp.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mesRows.length === 0 && (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 20 }}>Sin salidas en el periodo</td></tr>
+                )}
+                {mesRows.map(([ym, v]) => (
+                  <tr key={ym}>
+                    <td>{fmtMes(ym)}</td>
+                    <td style={th}>{v.salidas}</td>
+                    {TIPOS.map(t => <td key={t} style={th}>{v.t[t] || '—'}</td>)}
+                    <td style={{ ...th, fontWeight: 600 }}>{total(v.t)}</td>
+                  </tr>
+                ))}
+                {mesRows.length > 0 && (
+                  <tr style={{ fontWeight: 700, background: 'var(--bg-subtle, #f8fafc)' }}>
+                    <td>Total</td>
+                    <td style={th}>{totSalidas}</td>
+                    {TIPOS.map(t => <td key={t} style={th}>{totFiltrado[t]}</td>)}
+                    <td style={th}>{total(totFiltrado)}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
 
           <div className="card" id="reporte-print-area" style={{ padding: 0, overflow: 'auto', marginBottom: 20 }}>
