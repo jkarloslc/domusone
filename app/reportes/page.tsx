@@ -33,6 +33,7 @@ import ReporteIngresos from './ReporteIngresos'
 import ReporteIngresosPorFormaPago from './ReporteIngresosPorFormaPago'
 import ReporteIngresosCuotas from './ReporteIngresosCuotas'
 import ReporteIngresosConceptoCentro from './ReporteIngresosConceptoCentro'
+import ReporteRecibosIngreso from './ReporteRecibosIngreso'
 import ReporteHipicoEstadoCuenta from './ReporteHipicoEstadoCuenta'
 import ReporteHipicoServicios from './ReporteHipicoServicios'
 import ReporteOcupacionInstalaciones from './ReporteOcupacionInstalaciones'
@@ -139,6 +140,7 @@ const GRUPOS = [
       { id: 'composicion-ingreso-cuotas', label: 'Composición del Ingreso por Cuotas',       icon: BarChart3,    desc: 'Descompone el cobro de cuotas de cada mes en corriente, vencida recuperada y anticipada, y lo concilia contra lo generado del periodo — Fraccionamiento, Golf, Hípico y Locales' },
       { id: 'ingresos-tipo',            label: 'Ingresos por Tipo',                       icon: TrendingDown, desc: 'Recibos agrupados por tipo de ingreso (Golf, Cuotas, Rentas, Caballerizas)' },
       { id: 'ingresos-centro',          label: 'Ingresos por Centro',                     icon: Building2,    desc: 'Recibos agrupados por centro de ingreso con desglose de forma de pago' },
+      { id: 'recibos-ingreso',          label: 'Recibos de Ingreso',                      icon: Wallet,       desc: 'Recibos por agrupador y centro de ingreso con desglose de subtotal, IVA y total — filtrable por agrupador, centro, status y fechas' },
       { id: 'ingresos-concepto-centro', label: 'Ingresos por Concepto y Centro',          icon: BarChart3,    desc: 'Ingresos desglosados por concepto de cobro dentro de cada centro de ingreso — vista jerárquica y pivot' },
       { id: 'ingresos-formas-pago',     label: 'Ingresos por Forma de Pago',             icon: Wallet,       desc: 'Matriz de ingresos por centro de ingreso con columnas por forma de pago — filtrable por centro y forma' },
       { id: 'ingresos-cuotas',          label: 'Cuotas por Sección y Concepto',          icon: Building2,    desc: 'Cuotas residenciales desglosadas por sección y concepto — solo centros de tipo Cuotas con desglose por sección' },
@@ -336,6 +338,7 @@ function ReportesContent() {
       {/* Reportes ingresos */}
       {active === 'ingresos-tipo'            && <ReporteIngresos />}
       {active === 'ingresos-centro'          && <ReporteIngresos />}
+      {active === 'recibos-ingreso'          && <ReporteRecibosIngreso />}
       {active === 'ingresos-concepto-centro' && <ReporteIngresosConceptoCentro />}
       {active === 'ingresos-formas-pago'     && <ReporteIngresosPorFormaPago />}
       {active === 'ingresos-cuotas'          && <ReporteIngresosCuotas />}
