@@ -7,7 +7,7 @@ import {
 import { dbCfg, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { antiguedad } from '@/lib/dateUtils'
-import { Colaborador, TipoColaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
+import { Colaborador, TipoColaborador, TipoNomina, netoMensualDesdePeriodo, nombreCompletoColaborador } from '@/lib/colaboradores'
 import ModalShell from '@/components/ui/ModalShell'
 
 const TIPOS_COLABORADOR: TipoColaborador[] = ['Interno', 'Externo']
@@ -22,7 +22,7 @@ const CC_MANTENIMIENTO_RESIDENCIAL = 'Mantenimiento Residencial'
 const emptyColabForm = () => ({
   nombre: '', apellido_paterno: '', apellido_materno: '', tipo: 'Interno' as TipoColaborador, fecha_ingreso: '',
   id_puesto_fk: '', puesto: '',
-  sueldo_bruto_mensual: '', sueldo_neto_mensual: '', sueldo_diario: '', costo_mensual: '', no_empleado: '',
+  sueldo_bruto_mensual: '', sueldo_neto_mensual: '', tipo_nomina: '' as TipoNomina | '', sueldo_neto_semanal_quincenal: '', sueldo_diario: '', costo_mensual: '', no_empleado: '',
   id_centro_costo_fk: '', id_cuadrante_fk: '', id_area_fk: '',
   es_asignado: false, es_supervisor: false,
 })
@@ -108,6 +108,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
       fecha_ingreso: c.fecha_ingreso ?? '',
       id_puesto_fk: c.id_puesto_fk?.toString() ?? '', puesto: c.puesto ?? '',
       sueldo_bruto_mensual: c.sueldo_bruto_mensual?.toString() ?? '', sueldo_neto_mensual: c.sueldo_neto_mensual?.toString() ?? '',
+      tipo_nomina: (c.tipo_nomina ?? '') as TipoNomina | '', sueldo_neto_semanal_quincenal: c.sueldo_neto_semanal_quincenal?.toString() ?? '',
       sueldo_diario: c.sueldo_diario?.toString() ?? '',
       costo_mensual: c.costo_mensual?.toString() ?? '', no_empleado: c.no_empleado ?? '',
       id_centro_costo_fk: c.id_centro_costo_fk?.toString() ?? '',
@@ -134,7 +135,12 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
       id_puesto_fk: form.id_puesto_fk ? Number(form.id_puesto_fk) : null,
       puesto: form.puesto.trim() || null,
       sueldo_bruto_mensual: form.sueldo_bruto_mensual ? Number(form.sueldo_bruto_mensual) : null,
-      sueldo_neto_mensual: form.sueldo_neto_mensual ? Number(form.sueldo_neto_mensual) : null,
+      tipo_nomina: form.tipo_nomina || null,
+      sueldo_neto_semanal_quincenal: form.sueldo_neto_semanal_quincenal ? Number(form.sueldo_neto_semanal_quincenal) : null,
+      // Con tipo de nómina y neto por periodo, el mensual se calcula; si no, se conserva el capturado antes
+      sueldo_neto_mensual: (form.tipo_nomina && form.sueldo_neto_semanal_quincenal)
+        ? netoMensualDesdePeriodo(Number(form.sueldo_neto_semanal_quincenal), form.tipo_nomina)
+        : (form.sueldo_neto_mensual ? Number(form.sueldo_neto_mensual) : null),
       sueldo_diario: form.sueldo_diario ? Number(form.sueldo_diario) : null,
       costo_mensual: form.costo_mensual ? Number(form.costo_mensual) : null,
       no_empleado: form.no_empleado.trim() || null,
@@ -366,8 +372,27 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 <input className="input" type="number" min="0" step="0.01" value={form.sueldo_bruto_mensual} onChange={e => setForm(f => ({ ...f, sueldo_bruto_mensual: e.target.value }))} placeholder="0.00" />
               </div>
               <div>
+                <label className="label">Tipo de Nómina</label>
+                <select className="select" value={form.tipo_nomina} onChange={e => setForm(f => ({ ...f, tipo_nomina: e.target.value as TipoNomina | '' }))}>
+                  <option value="">— Seleccionar —</option>
+                  <option value="Semanal">Semanal</option>
+                  <option value="Quincenal">Quincenal</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">Sueldo Neto {form.tipo_nomina === 'Semanal' ? 'Semanal' : form.tipo_nomina === 'Quincenal' ? 'Quincenal' : 'Semanal/Quincenal'}</label>
+                <input className="input" type="number" min="0" step="0.01" value={form.sueldo_neto_semanal_quincenal} onChange={e => setForm(f => ({ ...f, sueldo_neto_semanal_quincenal: e.target.value }))} placeholder="0.00" />
+              </div>
+              <div>
                 <label className="label">Sueldo Neto Mensual</label>
-                <input className="input" type="number" min="0" step="0.01" value={form.sueldo_neto_mensual} onChange={e => setForm(f => ({ ...f, sueldo_neto_mensual: e.target.value }))} placeholder="0.00" />
+                {form.tipo_nomina && form.sueldo_neto_semanal_quincenal ? (
+                  <>
+                    <input className="input" readOnly value={fmt$(netoMensualDesdePeriodo(Number(form.sueldo_neto_semanal_quincenal), form.tipo_nomina))} />
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 3 }}>Calculado: {form.tipo_nomina === 'Quincenal' ? 'neto quincenal × 2' : 'neto semanal × 52 / 12'}</div>
+                  </>
+                ) : (
+                  <input className="input" type="number" min="0" step="0.01" value={form.sueldo_neto_mensual} onChange={e => setForm(f => ({ ...f, sueldo_neto_mensual: e.target.value }))} placeholder="0.00" />
+                )}
               </div>
               <div>
                 <label className="label">Sueldo Diario (jornal)</label>
@@ -448,7 +473,9 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 { label: 'Fecha de Ingreso', value: viewing.fecha_ingreso ? new Date(viewing.fecha_ingreso + 'T00:00:00').toLocaleDateString('es-MX') : '—' },
                 { label: 'Antigüedad', value: antiguedad(viewing.fecha_ingreso) || '—' },
                 { label: 'Sueldo Bruto', value: fmt$(viewing.sueldo_bruto_mensual) },
-                { label: 'Sueldo Neto', value: fmt$(viewing.sueldo_neto_mensual) },
+                { label: 'Tipo de Nómina', value: viewing.tipo_nomina ?? '—' },
+                { label: `Sueldo Neto ${viewing.tipo_nomina ?? 'Semanal/Quincenal'}`, value: fmt$(viewing.sueldo_neto_semanal_quincenal) },
+                { label: 'Sueldo Neto Mensual', value: fmt$(viewing.sueldo_neto_mensual) },
                 { label: 'Sueldo Diario (jornal)', value: fmt$(viewing.sueldo_diario) },
                 { label: 'Costo Mensual', value: fmt$(viewing.costo_mensual) },
                 { label: 'No. de Empleado', value: viewing.no_empleado || '—' },
@@ -478,7 +505,9 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
               <th>Fecha Ingreso</th>
               <th>Antigüedad</th>
               <th style={{ textAlign: 'right' }}>Sueldo Bruto</th>
-              <th style={{ textAlign: 'right' }}>Sueldo Neto</th>
+              <th style={{ textAlign: 'center' }}>Nómina</th>
+              <th style={{ textAlign: 'right' }}>Neto Sem./Quinc.</th>
+              <th style={{ textAlign: 'right' }}>Neto Mensual</th>
               <th style={{ textAlign: 'right' }}>Sueldo Diario</th>
               <th style={{ textAlign: 'right' }}>Costo Mensual</th>
               <th style={{ textAlign: 'center' }}>Asignado</th>
@@ -489,11 +518,11 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={15} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={17} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={15} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={17} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 {items.length === 0 ? 'Sin colaboradores. Crea el primero.' : 'Sin resultados con los filtros aplicados.'}
               </td></tr>
             ) : filtered.map(c => (
@@ -511,6 +540,8 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{c.fecha_ingreso ? new Date(c.fecha_ingreso + 'T00:00:00').toLocaleDateString('es-MX') : '—'}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{antiguedad(c.fecha_ingreso)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_bruto_mensual)}</td>
+                <td style={{ textAlign: 'center', fontSize: 12 }}>{c.tipo_nomina ?? '—'}</td>
+                <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_neto_semanal_quincenal)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_neto_mensual)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.sueldo_diario)}</td>
                 <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{fmt$(c.costo_mensual)}</td>

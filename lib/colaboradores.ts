@@ -1,4 +1,11 @@
 export type TipoColaborador = 'Interno' | 'Externo'
+export type TipoNomina = 'Semanal' | 'Quincenal'
+
+// Neto mensual a partir del neto por periodo: Quincenal x2, Semanal x52/12
+export const netoMensualDesdePeriodo = (periodo: number | null | undefined, tipo: TipoNomina | '' | null | undefined): number | null => {
+  if (periodo == null || !tipo) return null
+  return Math.round(periodo * (tipo === 'Quincenal' ? 2 : 52 / 12) * 100) / 100
+}
 
 export type Colaborador = {
   id: number
@@ -11,6 +18,8 @@ export type Colaborador = {
   id_puesto_fk: number | null
   sueldo_bruto_mensual: number | null
   sueldo_neto_mensual: number | null
+  tipo_nomina: TipoNomina | null
+  sueldo_neto_semanal_quincenal: number | null
   sueldo_diario: number | null
   costo_mensual: number | null
   no_empleado: string | null
