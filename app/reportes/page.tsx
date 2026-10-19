@@ -39,6 +39,7 @@ import ReporteOcupacionInstalaciones from './ReporteOcupacionInstalaciones'
 import ReporteGolfEstadoCuenta from './ReporteGolfEstadoCuenta'
 import ReporteGolfCobranza from './ReporteGolfCobranza'
 import ReporteGolfAccesos from './ReporteGolfAccesos'
+import ReporteGolfAcompanantes from './ReporteGolfAcompanantes'
 import ReporteGolfPasesInvitados from './ReporteGolfPasesInvitados'
 import ReporteGolfMiembrosCategoria from './ReporteGolfMiembrosCategoria'
 import ReporteGolfFormaPagoMembresia from './ReporteGolfFormaPagoMembresia'
@@ -181,6 +182,7 @@ const GRUPOS = [
       { id: 'golf-proyeccion-cobranza', label: 'Proyección de Cobranza', icon: TrendingDown, desc: 'Membresías y pensiones por mes: cargo total, cobrado y por cobrar con avance de cobranza' },
       { id: 'golf-pensiones-proyeccion-cobranza', label: 'Pensiones — Proyección de Cobranza', icon: TrendingDown, desc: 'Pensiones de carritos por mes: cargo total, cobrado y por cobrar, con flujo de cobranza (cobrado del mes, anticipado y vencido)' },
       { id: 'golf-accesos',       label: 'Salidas al Campo',     icon: MapPin,    desc: 'Registro de rondas por socio, espacio y forma de juego' },
+      { id: 'golf-acompanantes',   label: 'Salidas al Campo por Acompañante', icon: Users, desc: 'Acompañantes por tipo (familiar, pase, green fee, intercambio) por categoría y socio' },
       { id: 'golf-pases-invitados', label: 'Pases para Invitados',  icon: Users,     desc: 'Asignación y uso de pases por socio: asignados, usados, saldo vigente, vencidos sin usar y detalle por invitado' },
       { id: 'golf-caballos-servicios',  label: 'Caballos y Servicios',        icon: BarChart3, desc: 'Desglose por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
       { id: 'golf-ventas-historicas',   label: 'Ventas Históricas POS',       icon: Wallet,    desc: 'Ventas de cortes realizados por centro de venta, artículo/servicio y rango de fechas' },
@@ -367,6 +369,7 @@ function ReportesContent() {
       {active === 'golf-proyeccion-cobranza'    && <ReporteProyeccionCobranza fuente="golf" />}
       {active === 'golf-pensiones-proyeccion-cobranza' && <ReporteProyeccionCobranza fuente="pensiones" />}
       {active === 'golf-accesos'       && <ReporteGolfAccesos />}
+      {active === 'golf-acompanantes'  && <ReporteGolfAcompanantes />}
       {active === 'golf-pases-invitados' && <ReporteGolfPasesInvitados />}
       {active === 'golf-caballos-servicios'  && <ReporteHipicoServicios />}
       {active === 'golf-ventas-historicas'   && <ReporteGolfVentasHistoricas />}
