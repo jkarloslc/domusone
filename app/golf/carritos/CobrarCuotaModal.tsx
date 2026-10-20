@@ -97,6 +97,10 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const [formasPago, setFormasPago]     = useState<FormaPago[]>([])
   const [socioInfo, setSocioInfo]       = useState<Socio | null>(null)
   const [loadingInit, setLoadingInit]   = useState(true)
+  // Inscripción de un contrato de membresía: sin condonación ni descuento salvo superadmin/admin
+  const [esInscContrato, setEsInscContrato] = useState(false)
+  const puedeCondonar = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
+  const restringeCondonar = esInscContrato && !puedeCondonar
 
   const [seleccionadas, setSeleccionadas] = useState<Set<number>>(() => new Set(cuotas.map(c => c.id)))
 
@@ -136,6 +140,12 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
   const [orgLogo, setOrgLogo]       = useState('')
 
   // ── Carga inicial ──────────────────────────────────────────
+  useEffect(() => {
+    dbGolf.from('cxc_golf').select('id').in('id', cuotas.map(c => c.id))
+      .eq('tipo', 'INSCRIPCION').not('id_contrato_fk', 'is', null)
+      .then(({ data }) => setEsInscContrato((data ?? []).length > 0))
+  }, [cuotas])
+
   useEffect(() => {
     dbCfg.from('configuracion').select('clave, valor')
       .in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
@@ -945,6 +955,8 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                     type="number" min="0" step="0.01"
                     value={descuentoExtra}
                     onChange={e => setDescuentoExtra(e.target.value)}
+                    disabled={restringeCondonar}
+                    title={restringeCondonar ? 'Solo superadmin o admin pueden descontar la inscripción de un contrato' : undefined}
                     placeholder="0.00"
                   />
                   {descExtra > 0 && (
@@ -1028,7 +1040,7 @@ export default function CobrarCuotaModal({ cuotas, nombreSocio, idSocio, onClose
                           setPagoLinea(i, { id_forma_pago_fk: Number(e.target.value), forma_nombre: sel?.nombre ?? '' })
                         }}>
                         <option value={0}>— Forma —</option>
-                        {formasPago.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                        {formasPago.filter(f => !(restringeCondonar && norm(f.nombre).includes('condonac'))).map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
                       </select>
                       <input
                         style={{ padding: '7px 8px', fontSize: 13, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 7, background: '#fff', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }}

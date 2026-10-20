@@ -5,6 +5,8 @@ import TabCobranzaSocio from './TabCobranzaSocio'
 import TabRecibosSocio from './TabRecibosSocio'
 import { Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt, Edit2, Printer } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import ContratosMembresia from './ContratosMembresia'
+import { useAuth } from '@/lib/AuthContext'
 
 export type Socio = {
   id: number
@@ -196,6 +198,7 @@ const USOS_CFDI_SAT = [
 ]
 
 export default function SocioModal({ socio, onClose, onSaved }: Props) {
+  const { canWrite } = useAuth()
   const isNew = !socio
   const [tab, setTab]       = useState(0)
   const [saving, setSaving] = useState(false)
@@ -1087,149 +1090,9 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* ── Tab 4: Contratos ── */}
-          {tab === 4 && !isNew && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <FileCheck size={15} style={{ color: '#7c3aed' }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Contratos de membresía</span>
-                  {!loadingCon && <span style={{ fontSize: 11, color: '#64748b' }}>({contratos.length})</span>}
-                </div>
-                {!showFormCon && (
-                  <button onClick={() => { setShowFormCon(true); setErrorCon(''); setArchivoConUrl('') }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
-                    <Plus size={13} /> Nuevo contrato
-                  </button>
-                )}
-              </div>
-
-              {/* Formulario nuevo contrato */}
-              {showFormCon && (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Nuevo contrato</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    <div>
-                      <label style={labelStyle}>Año *</label>
-                      <input style={inputStyle} type="number" value={nuevoCon.anio} onChange={e => setCon('anio', e.target.value)} placeholder="2025" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Fecha inicio</label>
-                      <input style={inputStyle} type="date" value={nuevoCon.fecha_inicio} onChange={e => setCon('fecha_inicio', e.target.value)} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Cuota de Inscripción (MXN)</label>
-                      <input style={inputStyle} type="number" value={nuevoCon.monto_inscripcion} onChange={e => setCon('monto_inscripcion', e.target.value)} placeholder="0.00" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Cuota Anual (MXN)</label>
-                      <input style={inputStyle} type="number" value={nuevoCon.monto_anual} onChange={e => setCon('monto_anual', e.target.value)} placeholder="0.00" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Fecha fin</label>
-                      <input style={inputStyle} type="date" value={nuevoCon.fecha_fin} onChange={e => setCon('fecha_fin', e.target.value)} />
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={labelStyle}>Notas</label>
-                      <input style={inputStyle} value={nuevoCon.notas} onChange={e => setCon('notas', e.target.value)} placeholder="Opcional" />
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={labelStyle}>Archivo del contrato (PDF/imagen)</label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <button onClick={() => fileConRef.current?.click()} disabled={uploadingCon}
-                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#475569', opacity: uploadingCon ? 0.6 : 1 }}>
-                          {uploadingCon ? <Loader size={12} className="animate-spin" /> : <Upload size={12} />}
-                          {archivoConUrl ? 'Cambiar archivo' : 'Subir archivo'}
-                        </button>
-                        {archivoConUrl && (
-                          <span style={{ fontSize: 11, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle size={12} /> Archivo listo
-                          </span>
-                        )}
-                      </div>
-                      <input ref={fileConRef} type="file" accept="image/jpeg,image/png,application/pdf" style={{ display: 'none' }}
-                        onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadContrato(f); e.target.value = '' }} />
-                    </div>
-                  </div>
-                  {errorCon && (
-                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errorCon}</div>
-                  )}
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setShowFormCon(false); setNuevoCon(CONTRATO_VACIO); setArchivoConUrl('') }}
-                      style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                      Cancelar
-                    </button>
-                    <button onClick={handleGuardarContrato} disabled={savingCon}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer', opacity: savingCon ? 0.7 : 1 }}>
-                      {savingCon ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
-                      Guardar
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Lista de contratos */}
-              {loadingCon ? (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
-              ) : contratos.length === 0 && !showFormCon ? (
-                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>📄</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin contratos registrados</div>
-                  <div style={{ fontSize: 12, color: '#94a3b8' }}>Agrega el contrato anual de membresía del socio</div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {contratos.map(c => (
-                    <div key={c.id} style={{
-                      border: `1px solid ${c.vigente ? '#a3e635' : '#e2e8f0'}`,
-                      background: c.vigente ? '#f7fee7' : '#fff',
-                      borderRadius: 10, padding: '12px 16px',
-                      display: 'flex', alignItems: 'center', gap: 12,
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{c.anio}</span>
-                          {c.vigente && (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#84cc16', color: '#fff', letterSpacing: '0.04em' }}>
-                              VIGENTE
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#64748b', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                          {c.fecha_inicio && <span>{new Date(c.fecha_inicio + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
-                          {c.fecha_fin && <span>→ {new Date(c.fecha_fin + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
-                          {c.monto_inscripcion != null && <span style={{ color: '#16a34a', fontWeight: 600 }}>Inscripción: ${Number(c.monto_inscripcion).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>}
-                          {c.monto_anual != null && <span style={{ color: '#16a34a', fontWeight: 600 }}>Anual: ${Number(c.monto_anual).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>}
-                          {c.archivo_url && (
-                            <ContratoLink path={c.archivo_url} />
-                          )}
-                        </div>
-                        {c.notas && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>{c.notas}</div>}
-                      </div>
-                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                        {!c.vigente && (
-                          <button
-                            onClick={() => handleMarcarVigente(c.id)}
-                            disabled={marcandoVigente === c.id}
-                            title="Marcar como vigente"
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '5px 10px', border: '1px solid #84cc16', borderRadius: 7, background: '#f7fee7', color: '#4d7c0f', cursor: 'pointer', opacity: marcandoVigente === c.id ? 0.6 : 1 }}>
-                            {marcandoVigente === c.id ? <Loader size={10} className="animate-spin" /> : <CheckCircle size={11} />}
-                            Vigente
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleEliminarContrato(c.id)}
-                          disabled={eliminandoCon === c.id}
-                          title="Eliminar"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, opacity: eliminandoCon === c.id ? 0.5 : 1 }}>
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* ── Tab 4: Contratos (flujo alta/renovación) ── */}
+          {tab === 4 && !isNew && socio && (
+            <ContratosMembresia socio={socio} puedeEscribir={canWrite('golf-miembros')} />
           )}
 
           {/* ── Tab 5: Notas ── */}
