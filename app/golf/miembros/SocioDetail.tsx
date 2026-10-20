@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { dbGolf, dbCtrl } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag, ClipboardList, ExternalLink } from 'lucide-react'
+import { Edit2, User, MapPin, ShoppingCart, CreditCard, FileText, Users, NotebookText, Receipt, Target, Flag, ClipboardList, ExternalLink, Award, Printer } from 'lucide-react'
 import TabCobranzaSocio from './TabCobranzaSocio'
 import TabRecibosSocio from './TabRecibosSocio'
 import type { Socio } from './SocioModal'
@@ -25,6 +25,7 @@ const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
 
 const TABS = [
   { key: 'info',        label: 'Información',      icon: FileText      },
+  { key: 'membresia',   label: 'Membresía',         icon: Award         },
   { key: 'familiares',  label: 'Familiares',        icon: Users         },
   { key: 'accesos',     label: 'Accesos al Campo',  icon: MapPin        },
   { key: 'tee',         label: 'Tee de Práctica',   icon: Target        },
@@ -624,6 +625,92 @@ function Empty({ text, emoji }: { text: string; emoji?: string }) {
   )
 }
 
+// ── Tab Membresía ────────────────────────────────────────────
+function TabMembresia({ socio, vencido }: { socio: Socio; vencido: boolean }) {
+  const [contratos, setContratos] = useState<any[]>([])
+  const [loading, setLoading]     = useState(true)
+
+  useEffect(() => {
+    dbGolf.from('ctrl_contratos_membresia')
+      .select('id, anio, fecha_inicio, fecha_fin, monto_inscripcion, monto_anual, vigente, archivo_url, notas')
+      .eq('id_socio_fk', socio.id)
+      .order('anio', { ascending: false })
+      .then(({ data }) => { setContratos(data ?? []); setLoading(false) })
+  }, [socio.id])
+
+  const imprimir = (c: any) => {
+    const data = {
+      membresia:         socio.cat_categorias_socios?.nombre ?? '',
+      nombre:            [socio.nombre, socio.apellido_paterno, socio.apellido_materno].filter(Boolean).join(' '),
+      lugar_nacimiento:  socio.lugar_nacimiento || '',
+      fecha_nacimiento:  socio.fecha_nacimiento || '',
+      curp:              socio.curp || '',
+      domicilio:         socio.domicilio || '',
+      telefono:          socio.telefono || '',
+      email:             socio.email || '',
+      anio:              c.anio,
+      fecha_inicio:      c.fecha_inicio,
+      fecha_fin:         c.fecha_fin,
+      fecha_firma:       c.fecha_inicio,
+      monto_inscripcion: c.monto_inscripcion,
+      monto_anual:       c.monto_anual,
+    }
+    window.open(`/contrato-membresia.html?data=${encodeURIComponent(JSON.stringify(data))}`, '_blank')
+  }
+
+  const titulo = (t: string, first = false) => (
+    <div style={{ margin: first ? '4px 0 6px' : '18px 0 6px', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{t}</div>
+  )
+
+  return (
+    <>
+      {titulo('Membresía', true)}
+      <Row label="Número de socio"  value={socio.numero_socio} />
+      <Row label="Categoría"        value={socio.cat_categorias_socios?.nombre} />
+      <Row label="Ghin"             value={socio.numero_tarjeta} />
+      <Row label="Fecha de alta"    value={fmt(socio.fecha_alta)} />
+      <Row label="Vencimiento"      value={<span style={{ color: vencido ? '#dc2626' : 'inherit' }}>{fmt(socio.fecha_vencimiento)}</span>} />
+      <Row label="Estatus"          value={!socio.activo ? 'Inactivo' : vencido ? 'Vencido' : 'Activo'} />
+      <Row label="Derecho a intercambios" value={socio.derecho_intercambios ? 'Sí' : 'No'} />
+
+      {titulo('Contratos por ciclo')}
+      {loading ? (
+        <div style={{ fontSize: 13, color: '#94a3b8', padding: 12 }}>Cargando…</div>
+      ) : contratos.length === 0 ? (
+        <Empty text="Sin contratos registrados" emoji="📄" />
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: '#f8fafc', textAlign: 'left', color: '#64748b' }}>
+              {['Año', 'Inicio', 'Fin', 'Inscripción', 'Cuota anual', 'Vigente', ''].map(h => (
+                <th key={h} style={{ padding: '8px 10px', fontWeight: 600 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {contratos.map(c => (
+              <tr key={c.id} style={{ borderTop: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '8px 10px', fontWeight: 600 }}>{c.anio}</td>
+                <td style={{ padding: '8px 10px' }}>{fmt(c.fecha_inicio)}</td>
+                <td style={{ padding: '8px 10px' }}>{fmt(c.fecha_fin)}</td>
+                <td style={{ padding: '8px 10px' }}>{c.monto_inscripcion != null ? fmt$(c.monto_inscripcion) : '—'}</td>
+                <td style={{ padding: '8px 10px' }}>{c.monto_anual != null ? fmt$(c.monto_anual) : '—'}</td>
+                <td style={{ padding: '8px 10px', color: c.vigente ? '#15803d' : '#94a3b8', fontWeight: 600 }}>{c.vigente ? 'Sí' : 'No'}</td>
+                <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                  <button title="Imprimir contrato" onClick={() => imprimir(c)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#7c3aed' }}><Printer size={14} /></button>
+                  {c.archivo_url && (
+                    <a title="Ver archivo" href={c.archivo_url} target="_blank" rel="noreferrer" style={{ marginLeft: 8, color: '#2563eb' }}><ExternalLink size={14} /></a>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  )
+}
+
 // ── Main ─────────────────────────────────────────────────────
 export default function SocioDetail({ socio, onClose, onEdit }: Props) {
   const { canWrite } = useAuth()
@@ -674,13 +761,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
           {/* ── Información ── */}
           {tab === 'info' && (
             <>
-              <div style={{ margin: '4px 0 6px', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Membresía</div>
-              <Row label="Categoría"        value={socio.cat_categorias_socios?.nombre} />
-              <Row label="Número de tarjeta" value={socio.numero_tarjeta} />
-              <Row label="Fecha de alta"    value={fmt(socio.fecha_alta)} />
-              <Row label="Vencimiento"      value={<span style={{ color: vencido ? '#dc2626' : 'inherit' }}>{fmt(socio.fecha_vencimiento)}</span>} />
-
-              <div style={{ margin: '18px 0 6px', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Datos Personales</div>
+              <div style={{ margin: '4px 0 6px', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Datos Personales</div>
               <Row label="Fecha de nacimiento" value={fmt(socio.fecha_nacimiento)} />
               <Row label="RFC"    value={socio.rfc} />
               <Row label="CURP"   value={socio.curp} />
@@ -696,6 +777,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
             </>
           )}
 
+          {tab === 'membresia'   && <TabMembresia    socio={socio} vencido={!!vencido} />}
           {tab === 'familiares'  && <TabFamiliares   socioId={socio.id} />}
           {tab === 'accesos'     && <TabAccesos      socioId={socio.id} />}
           {tab === 'tee'         && <TabTeePractica  socioId={socio.id} />}
