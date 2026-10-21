@@ -233,7 +233,6 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const fileConRef = useRef<HTMLInputElement>(null)
   const [uploadingCon, setUploadingCon] = useState(false)
   const [archivoConUrl, setArchivoConUrl] = useState('')
-  const [contratoImprimirId, setContratoImprimirId] = useState<number | ''>('')
 
   // ── Federación ──
   const [federaciones, setFederaciones]         = useState<Federacion[]>([])
@@ -336,14 +335,6 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   useEffect(() => {
     if ((tab === 1 || tab === 4) && !isNew) fetchContratos()
   }, [tab])
-
-  // Preselecciona el contrato vigente (o el más reciente) para imprimir
-  useEffect(() => {
-    if (contratos.length === 0) { setContratoImprimirId(''); return }
-    setContratoImprimirId(prev =>
-      prev && contratos.some(c => c.id === prev) ? prev : (contratos.find(c => c.vigente) ?? contratos[0]).id
-    )
-  }, [contratos])
 
   // ── Federación ──
   const fetchFederaciones = async () => {
@@ -621,33 +612,6 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     fetchContratos()
   }
 
-  // ── Imprimir contrato de membresía (ciclo seleccionado) ──
-  const handleImprimirContrato = () => {
-    if (!socio || !contratoImprimirId) return
-    const contrato = contratos.find(c => c.id === contratoImprimirId)
-    if (!contrato) return
-    const categoriaNombre = categorias.find(c => c.id === form.id_categoria_fk)?.nombre
-      ?? socio.cat_categorias_socios?.nombre ?? ''
-    const data = {
-      membresia:          categoriaNombre,
-      nombre:             [form.nombre, form.apellido_paterno, form.apellido_materno].filter(Boolean).join(' '),
-      lugar_nacimiento:   form.lugar_nacimiento || '',
-      fecha_nacimiento:   form.fecha_nacimiento || '',
-      curp:               form.curp || '',
-      domicilio:          form.domicilio || '',
-      telefono:           form.telefono || '',
-      email:              form.email || '',
-      anio:               contrato.anio,
-      fecha_inicio:       contrato.fecha_inicio,
-      fecha_fin:          contrato.fecha_fin,
-      fecha_firma:        contrato.fecha_inicio,
-      monto_inscripcion:  contrato.monto_inscripcion,
-      monto_anual:        contrato.monto_anual,
-    }
-    const encoded = encodeURIComponent(JSON.stringify(data))
-    window.open(`/contrato-membresia.html?data=${encoded}`, '_blank')
-  }
-
   // ── Datos Fiscales CRUD ──
   const handleEditarFiscal = (f: DatoFiscal) => {
     setEditandoFiscalId(f.id)
@@ -864,40 +828,6 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
                 </div>
               </div>
 
-              {!isNew && (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <Printer size={15} style={{ color: '#7c3aed' }} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Contrato de membresía</span>
-                  </div>
-                  {loadingCon ? (
-                    <div style={{ fontSize: 12, color: '#94a3b8' }}>Cargando ciclos…</div>
-                  ) : contratos.length === 0 ? (
-                    <div style={{ fontSize: 12, color: '#64748b' }}>
-                      Este socio no tiene contratos registrados. Ve a la pestaña <b>Contratos</b> para agregar el ciclo.
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
-                      <div style={{ flex: '0 0 auto' }}>
-                        <label style={labelStyle}>Ciclo a imprimir</label>
-                        <select
-                          style={{ ...inputStyle, width: 'auto', minWidth: 160 }}
-                          value={contratoImprimirId}
-                          onChange={e => setContratoImprimirId(e.target.value ? Number(e.target.value) : '')}
-                        >
-                          {contratos.map(c => (
-                            <option key={c.id} value={c.id}>{c.anio}{c.vigente ? ' (Vigente)' : ''}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <button onClick={handleImprimirContrato} disabled={!contratoImprimirId}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: contratoImprimirId ? 'pointer' : 'not-allowed', opacity: contratoImprimirId ? 1 : 0.6 }}>
-                        <Printer size={13} /> Imprimir contrato
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
