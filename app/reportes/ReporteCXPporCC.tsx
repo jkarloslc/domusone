@@ -169,24 +169,27 @@ export default function ReporteCXPporCC() {
     <div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <Filter size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        <select className="select" style={{ minWidth: 200 }} value={filtroCC} onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}>
+        <select className="select" style={{ width: 210 }} value={filtroCC} onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}>
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
+        <select className="select" style={{ width: 190 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas{filtroCC ? ' del CC' : ''}</option>
           {areasDelCC.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroFrente} onChange={e => setFiltroFrente(e.target.value)}>
+        <select className="select" style={{ width: 190 }} value={filtroFrente} onChange={e => setFiltroFrente(e.target.value)}>
           <option value="">Todos los frentes</option>
           {frentes.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={campoFecha} onChange={e => setCampoFecha(e.target.value as any)}>
+        <select className="select" style={{ width: 170 }} value={campoFecha} onChange={e => setCampoFecha(e.target.value as any)}>
           <option value="fecha_vencimiento">Fecha: Vencimiento</option>
           <option value="fecha_op">Fecha: Emisión</option>
         </select>
-        <input type="date" className="input" value={desde} onChange={e => setDesde(e.target.value)} title="Desde" />
-        <input type="date" className="input" value={hasta} onChange={e => setHasta(e.target.value)} title="Hasta" />
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input type="date" className="input" value={desde} onChange={e => setDesde(e.target.value)} title="Desde" style={{ width: 145 }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>–</span>
+          <input type="date" className="input" value={hasta} onChange={e => setHasta(e.target.value)} title="Hasta" style={{ width: 145 }} />
+        </div>
         <button className="btn-ghost" onClick={fetchData} title="Recargar">
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
         </button>
