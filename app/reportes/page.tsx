@@ -20,6 +20,7 @@ import ReporteInventario from './ReporteInventario'
 import ReporteOrdenesCompra from './ReporteOrdenesCompra'
 import ReporteOrdenesPago from './ReporteOrdenesPago'
 import ReporteAntiguedadOPporCC from './ReporteAntiguedadOPporCC'
+import ReporteCXPporCC from './ReporteCXPporCC'
 import ReporteCXP from './ReporteCXP'
 import ReporteKardex from './ReporteKardex'
 import ReporteTransferencias from './ReporteTransferencias'
@@ -128,6 +129,7 @@ const GRUPOS = [
       { id: 'cxp',                  label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
       { id: 'ordenes-pago-cc',      label: 'Órdenes de Pago por CC / Área', icon: Wallet, desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
       { id: 'antiguedad-op-cc',     label: 'Antigüedad de OPs por CC / Área', icon: Clock, desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
+      { id: 'cxp-cc',               label: 'CXP por CC / Área / Frente', icon: Wallet, desc: 'Cuentas por pagar agrupadas por centro de costo, área y frente, con filtro de fechas' },
       { id: 'pagos-aplicados',      label: 'Pagos Aplicados',                 icon: Wallet, desc: 'Abonos registrados por proveedor, cuenta bancaria y rango de fechas' },
     ],
   },
@@ -160,6 +162,7 @@ const GRUPOS = [
       { id: 'compras-por-proveedor',  label: 'Compras por Proveedor',           icon: ShoppingCart, desc: 'OCs agrupadas por proveedor con totales, filtrable por CC, status y fecha' },
       { id: 'ordenes-pago-cc',   label: 'Órdenes de Pago por CC / Área', icon: Wallet,    desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
       { id: 'antiguedad-op-cc',  label: 'Antigüedad de OPs por CC / Área', icon: Clock,  desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
+      { id: 'cxp-cc',            label: 'CXP por CC / Área / Frente', icon: Wallet, desc: 'Cuentas por pagar agrupadas por centro de costo, área y frente, con filtro de fechas' },
       { id: 'ops-tipo-gasto',    label: 'OPs por Tipo de Gasto',      icon: Wallet,       desc: 'Órdenes de pago sin OC vinculada, agrupadas por tipo de gasto capturado en el encabezado' },
       { id: 'ops-clasificacion-articulos', label: 'OPs por Clasificación de Artículos', icon: Tag, desc: 'Órdenes de pago con OC vinculada, repartidas por la categoría de los artículos realmente comprados' },
       { id: 'kardex',            label: 'Kardex de Movimientos',      icon: Warehouse,    desc: 'Historial de entradas y salidas de inventario' },
@@ -352,6 +355,7 @@ function ReportesContent() {
       {active === 'ordenes-compra'   && <ReporteOrdenesCompra />}
       {active === 'ordenes-pago-cc'  && <ReporteOrdenesPago />}
       {active === 'antiguedad-op-cc' && <ReporteAntiguedadOPporCC />}
+      {active === 'cxp-cc'           && <ReporteCXPporCC />}
       {active === 'ops-tipo-gasto'   && <ReporteOPsPorTipoGasto />}
       {active === 'ops-clasificacion-articulos' && <ReporteOPsPorClasificacionArticulos />}
       {active === 'cxp'              && <ReporteCXP />}
