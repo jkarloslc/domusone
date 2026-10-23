@@ -118,6 +118,7 @@ type EventoGasto = {
   fecha: string | null
   notas: string | null
   id_op_fk: number | null
+  id_personal_fk?: number | null
 }
 
 const TIPOS_GASTO_EVT = [
@@ -126,7 +127,7 @@ const TIPOS_GASTO_EVT = [
   'Electricidad', 'Agua', 'Telefonía / Internet',
   'Honorarios', 'Asesoría', 'Capacitación', 'Entretenimiento',
   'Alimentos y Bebidas', 'Decoración', 'Sonido / Iluminación',
-  'Transporte', 'Seguridad', 'Otro',
+  'Transporte', 'Seguridad', 'Personal Operativo', 'Otro',
 ]
 
 // ── Constants ────────────────────────────────────────────────
@@ -421,7 +422,7 @@ export default function EventosPage() {
 
   const loadGastos = useCallback(async (evtId: number) => {
     const { data } = await dbCtrl.from('eventos_gastos')
-      .select('id, id_evento_fk, concepto, proveedor, tipo_gasto, monto, fecha, notas, id_op_fk')
+      .select('id, id_evento_fk, concepto, proveedor, tipo_gasto, monto, fecha, notas, id_op_fk, id_personal_fk')
       .eq('id_evento_fk', evtId)
       .order('fecha', { ascending: false })
     const rows = (data as unknown as EventoGasto[]) ?? []
@@ -2128,7 +2129,9 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                               </td>
                               <td style={{ padding: '8px 10px', fontWeight: 700, color: '#d97706', whiteSpace: 'nowrap' as const }}>{fmt$(g.monto)}</td>
                               <td style={{ padding: '8px 10px' }}>
-                                {g.id_op_fk ? (
+                                {g.id_personal_fk ? (
+                                  <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>—</span>
+                                ) : g.id_op_fk ? (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                                     <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '2px 6px', borderRadius: 6 }}>
                                       {gastoOpMap[g.id_op_fk]?.folio ?? `OP #${g.id_op_fk}`}
@@ -2149,6 +2152,9 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                                 )}
                               </td>
                               <td style={{ padding: '8px 10px' }}>
+                                {g.id_personal_fk ? (
+                                  <span style={{ fontSize: 10, color: '#7c3aed', fontWeight: 600 }} title="Se edita en la pestaña Personal Op.">Auto · Personal</span>
+                                ) : (
                                 <div style={{ display: 'flex', gap: 3 }}>
                                   <button className="btn-ghost" onClick={() => {
                                     setGastoEdit(g)
@@ -2162,6 +2168,7 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                                     <Trash2 size={11} />
                                   </button>
                                 </div>
+                                )}
                               </td>
                             </tr>
                             {vincGastoId === g.id && (
