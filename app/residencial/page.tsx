@@ -28,19 +28,19 @@ const GRUPOS_MANTTO = [
     label: 'Mantenimiento',
     color: '#b45309',
     items: [
-      { key: 'mantenimiento',  permKey: 'mantenimiento', label: 'Mantenimiento',           icon: Wrench,        desc: 'Programa anual de mantenimiento preventivo',          href: '/mantenimiento/gestion' },
-      { key: 'ot-residencial', permKey: 'mantenimiento', label: 'OT Mantto. Fraccionamiento',  icon: ClipboardList, desc: 'Órdenes de trabajo del mantenimiento del fraccionamiento',    href: '/mantenimiento/ot-residencial' },
-      { key: 'ot-generales',   permKey: 'mantenimiento', label: "OT's Generales",          icon: ClipboardCheck, desc: 'Órdenes de trabajo de la cuadrilla general',          href: '/mantenimiento/ot-generales' },
+      { key: 'mantenimiento',  permKey: 'mantenimiento', label: 'Mantenimiento',           icon: Wrench,        desc: 'Programa anual de mantenimiento preventivo',          href: '/residencial/mantenimiento/gestion' },
+      { key: 'ot-residencial', permKey: 'mantenimiento', label: 'OT Mantto. Fraccionamiento',  icon: ClipboardList, desc: 'Órdenes de trabajo del mantenimiento del fraccionamiento',    href: '/residencial/mantenimiento/ot-residencial' },
+      { key: 'ot-generales',   permKey: 'mantenimiento', label: "OT's Generales",          icon: ClipboardCheck, desc: 'Órdenes de trabajo de la cuadrilla general',          href: '/residencial/mantenimiento/ot-generales' },
       { key: 'equipo-flota',   permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria',  icon: Truck,         desc: 'Flotilla, mantenimientos y bitácora de uso',           href: '/equipo-flota' },
       { key: 'herramientas',   permKey: 'herramientas',  label: 'Equipo y Herramienta',    icon: Hammer,        desc: 'Catálogo, préstamos y mantenimiento de herramienta',   href: '/herramientas' },
-      { key: 'cat_mano_obra',  permKey: 'mantenimiento', label: 'Categorías Mano de Obra', icon: HardHat,       desc: 'Sueldo diario de referencia por categoría',            href: '/mantenimiento/categorias-mano-obra' },
+      { key: 'cat_mano_obra',  permKey: 'mantenimiento', label: 'Categorías Mano de Obra', icon: HardHat,       desc: 'Sueldo diario de referencia por categoría',            href: '/residencial/mantenimiento/categorias-mano-obra' },
     ],
   },
   {
     label: 'Capex',
     color: '#059669',
     items: [
-      { key: 'conceptos', permKey: 'mantenimiento', label: 'Catálogo de Conceptos', icon: ListChecks, desc: 'Conceptos de obra/mantenimiento y matriz de PU',   href: '/mantenimiento/conceptos' },
+      { key: 'conceptos', permKey: 'mantenimiento', label: 'Catálogo de Conceptos', icon: ListChecks, desc: 'Conceptos de obra/mantenimiento y matriz de PU',   href: '/residencial/mantenimiento/conceptos' },
       { key: 'capex',     permKey: 'capex',         label: 'Proyectos CAPEX',       icon: Building2,  desc: 'Avance y presupuesto de proyectos de inversión',    href: '/capex' },
     ],
   },
@@ -48,7 +48,7 @@ const GRUPOS_MANTTO = [
     label: 'Servicios',
     color: '#0891b2',
     items: [
-      { key: 'servicios', permKey: 'mantenimiento', label: 'Servicios', icon: Zap, desc: 'Medidores de CFE, Agua y Gas LP: consumo y facturación', href: '/mantenimiento/servicios' },
+      { key: 'servicios', permKey: 'mantenimiento', label: 'Servicios', icon: Zap, desc: 'Medidores de CFE, Agua y Gas LP: consumo y facturación', href: '/residencial/mantenimiento/servicios' },
     ],
   },
 ]

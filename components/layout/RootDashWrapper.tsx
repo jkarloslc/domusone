@@ -25,15 +25,13 @@ function getModulo(pathname: string): string | undefined {
   }
   if (SPECIAL[first]) return SPECIAL[first]
 
-  // /residencial es el hub del Fraccionamiento (incluye Mantenimiento): sin guard de URL,
-  // el hub filtra sus tarjetas con can() según el rol
-  if (first === 'residencial') return undefined
-
-  // /mantenimiento/** (el hub /mantenimiento solo redirige a /residencial)
-  if (first === 'mantenimiento' && parts[1]) return 'mantenimiento'
+  // /residencial/mantenimiento/** comparte el permiso del módulo de mantenimiento
+  if (first === 'residencial' && parts[1] === 'mantenimiento') return 'mantenimiento'
 
   // Sin control de módulo (acceso libre para cualquier usuario autenticado)
-  const NO_CHECK = ['inicio', 'tablero', 'vehiculos', 'equipo-flota', 'mantenimiento', 'hipico', 'hospitality', 'polo']
+  // 'residencial' es el hub del Fraccionamiento (incluye Mantenimiento): el hub
+  // filtra sus tarjetas con can() según el rol
+  const NO_CHECK = ['residencial', 'inicio', 'tablero', 'vehiculos', 'equipo-flota', 'mantenimiento', 'hipico', 'hospitality', 'polo']
   if (NO_CHECK.includes(first)) return undefined
 
   // Golf: sub-rutas usan 'golf-{sub}'

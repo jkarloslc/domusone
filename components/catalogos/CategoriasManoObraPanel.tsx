@@ -11,7 +11,7 @@ import ModalShell from '@/components/ui/ModalShell'
 // ══════════════════════════════════════════════════════════════
 // Categorías de Mano de Obra — cfg.cat_categorias_mano_obra
 // Sueldo diario de referencia (usado en Rol de Pagos y costeo de OT)
-// Compartido entre /catalogos y /mantenimiento/categorias-mano-obra
+// Compartido entre /catalogos y /residencial/mantenimiento/categorias-mano-obra
 // ══════════════════════════════════════════════════════════════
 type CategoriaManoObra = {
   id: number
