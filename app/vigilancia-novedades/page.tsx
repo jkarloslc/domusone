@@ -3,8 +3,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { dbCat, dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
 import { useDebounce } from '@/lib/useDebounce'
-import { ClipboardList, Plus, Search, RefreshCw, Eye, Edit2, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ClipboardList, Plus, Search, RefreshCw, Eye, Edit2, X } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
+import Paginador from '@/components/ui/Paginador'
 import ParteModal from '@/components/vigilancia/ParteModal'
 import NovedadModal from '@/components/vigilancia/NovedadModal'
 import {
@@ -13,8 +14,6 @@ import {
 } from '@/components/vigilancia/tipos'
 
 type Tab = 'partes' | 'novedades' | 'pendientes'
-const PAGE_SIZE = 31
-const NOV_PAGE_SIZE = 25
 
 export default function VigilanciaNovedadesPage() {
   const { canWrite } = useAuth()
@@ -75,6 +74,7 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
   const [conteo, setConteo] = useState<Record<number, { total: number; abiertas: number }>>({})
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(31)
   const [mes, setMes] = useState('')
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(true)
@@ -82,7 +82,7 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('vig_partes').select('*', { count: 'exact' }).order('fecha', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (mes) {
       const [y, m] = mes.split('-').map(Number)
       const fin = new Date(y, m, 0).getDate()
@@ -103,10 +103,9 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
       setConteo(c)
     } else setConteo({})
     setLoading(false)
-  }, [page, mes, status, refresh])
+  }, [page, pageSize, mes, status, refresh])
 
   useEffect(() => { fetchData() }, [fetchData])
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
     <>
@@ -150,8 +149,9 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
             </tbody>
           </table>
         </div>
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
-      <Paginador page={page} totalPages={totalPages} total={total} setPage={setPage} />
     </>
   )
 }
@@ -165,6 +165,7 @@ function NovedadesTab({ soloPendientes, refresh, tipos, ubicaciones, onChanged }
   const [lotes, setLotes] = useState<Record<number, string>>({})
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch] = useState('')
   const dSearch = useDebounce(search, 300)
   const [fTipo, setFTipo] = useState('')
@@ -180,7 +181,10 @@ function NovedadesTab({ soloPendientes, refresh, tipos, ubicaciones, onChanged }
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl.from('vig_novedades').select('*, vig_partes!inner(fecha)', { count: 'exact' })
-      .order('id', { ascending: false }).range(page * NOV_PAGE_SIZE, page * NOV_PAGE_SIZE + NOV_PAGE_SIZE - 1)
+      .order('vig_partes(fecha)', { ascending: false })  // ordena por la fecha del parte (relación a uno)
+      .order('hora', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: false })
+      .range(page * pageSize, page * pageSize + pageSize - 1)
 
     if (dSearch) q = q.or(`titulo.ilike.%${dSearch}%,descripcion.ilike.%${dSearch}%`)
     if (fTipo)   q = q.eq('id_tipo_fk', Number(fTipo))
@@ -219,10 +223,9 @@ function NovedadesTab({ soloPendientes, refresh, tipos, ubicaciones, onChanged }
       }
     } else setUbicPorNov({})
     setLoading(false)
-  }, [page, dSearch, fTipo, fClase, fCrit, fStatus, fUbic, desde, hasta, soloPendientes, tipos, ubicaciones, refresh])
+  }, [page, pageSize, dSearch, fTipo, fClase, fCrit, fStatus, fUbic, desde, hasta, soloPendientes, tipos, ubicaciones, refresh])
 
   useEffect(() => { fetchData() }, [fetchData])
-  const totalPages = Math.ceil(total / NOV_PAGE_SIZE)
   const reset = <T,>(f: (v: T) => void) => (v: T) => { f(v); setPage(0) }
 
   return (
@@ -287,8 +290,9 @@ function NovedadesTab({ soloPendientes, refresh, tipos, ubicaciones, onChanged }
             </tbody>
           </table>
         </div>
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
-      <Paginador page={page} totalPages={totalPages} total={total} setPage={setPage} />
 
       {sel && (
         <NovedadModal novedad={sel} idParte={sel.id_parte_fk} fechaParte={sel.vig_partes?.fecha ?? ''}
@@ -296,18 +300,5 @@ function NovedadesTab({ soloPendientes, refresh, tipos, ubicaciones, onChanged }
           onClose={() => setSel(null)} onSaved={() => { setSel(null); fetchData(); onChanged() }} />
       )}
     </>
-  )
-}
-
-function Paginador({ page, totalPages, total, setPage }: { page: number; totalPages: number; total: number; setPage: (n: number) => void }) {
-  if (totalPages <= 1) return <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10 }}>{total} registros</div>
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{total} registros · página {page + 1} de {totalPages}</span>
-      <div style={{ display: 'flex', gap: 6 }}>
-        <button className="btn-ghost" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronLeft size={14} /></button>
-        <button className="btn-ghost" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)}><ChevronRight size={14} /></button>
-      </div>
-    </div>
   )
 }

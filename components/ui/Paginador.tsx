@@ -3,11 +3,13 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 
 // Paginación en cliente: primera / anterior / números / siguiente / última.
 // `page` es base 0. No se renderiza si solo hay una página.
-export default function Paginador({ page, pageSize, totalItems, onChange }: {
+export default function Paginador({ page, pageSize, totalItems, onChange, onPageSizeChange, pageSizeOptions = [15, 25, 50, 100] }: {
   page: number; pageSize: number; totalItems: number; onChange: (page: number) => void
+  /** Si se pasa, muestra el selector de filas por página (y la barra aunque haya una sola página). */
+  onPageSizeChange?: (size: number) => void; pageSizeOptions?: number[]
 }) {
   const total = Math.max(1, Math.ceil(totalItems / pageSize))
-  if (total <= 1) return null
+  if (total <= 1 && !onPageSizeChange) return null
 
   // Ventana de hasta 5 números centrada en la página actual.
   const ini = Math.max(0, Math.min(page - 2, total - 5))
@@ -24,9 +26,15 @@ export default function Paginador({ page, pageSize, totalItems, onChange }: {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
       padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
       <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-        {desde}–{hasta} de {totalItems} · Pág. {page + 1} de {total}
+        {totalItems === 0 ? '0 registros' : `${desde}–${hasta} de ${totalItems} · Pág. ${page + 1} de ${total}`}
       </span>
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+        {onPageSizeChange && (
+          <select className="select" style={{ width: 92, padding: '4px 8px', fontSize: 12, marginRight: 6 }} value={pageSize}
+            onChange={e => onPageSizeChange(Number(e.target.value))} title="Filas por página">
+            {pageSizeOptions.map(n => <option key={n} value={n}>{n} / pág.</option>)}
+          </select>
+        )}
         {btn(page === 0, () => onChange(0), <ChevronsLeft size={13} />, 'Primera')}
         {btn(page === 0, () => onChange(page - 1), <ChevronLeft size={13} />, 'Anterior')}
         {nums.map(n => (
