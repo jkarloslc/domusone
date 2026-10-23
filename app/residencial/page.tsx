@@ -16,6 +16,7 @@ const MODULOS = [
   { key: 'accesos',      permKey: 'accesos',      label: 'Accesos',      icon: Shield,        color: '#0891b2', desc: 'Bitácora de accesos y vehículos registrados',   href: '/accesos'      },
   { key: 'incidencias',  permKey: 'incidencias',  label: 'Incidencias',  icon: AlertTriangle, color: '#dc2626', desc: 'Reportes de incidencias y seguimiento',         href: '/incidencias'  },
   { key: 'vigilancia-extras', permKey: 'vigilancia-extras', label: 'Vigilancia', icon: ShieldCheck, color: '#334155', desc: 'Extras de vigilancia: captura, autorización y OP', href: '/vigilancia-extras' },
+  { key: 'vigilancia-novedades', permKey: 'vigilancia-novedades', label: 'Parte de Novedades', icon: ClipboardList, color: '#475569', desc: 'Parte diario de vigilancia: novedades por lote y ubicación', href: '/vigilancia-novedades' },
   { key: 'contratos',    permKey: 'contratos',    label: 'Contratos',    icon: FileText,      color: '#7c3aed', desc: 'Gestión de contratos de compraventa',           href: '/contratos'    },
   { key: 'escrituras',   permKey: 'escrituras',   label: 'Escrituras',   icon: Building2,     color: '#d97706', desc: 'Documentos notariales y escrituración',         href: '/escrituras'   },
   { key: 'construcciones', permKey: 'construcciones', label: 'Construcciones', icon: HardHat, color: '#d97706', desc: 'Expedientes de obra: checklist, avances e incidencias', href: '/construcciones' },

@@ -392,6 +392,35 @@ const CATALOGOS: CatConfig[] = [
     desc:  'Centros de venta del POS de Golf y su mapeo al Centro de Ingreso para cortes',
     campos: [],
   },
+  {
+    key:          'vig_tipos_novedad',
+    tabla:        'vig_tipos_novedad',
+    label:        'Tipos de Novedad',
+    icon:         AlertTriangle,
+    color:        '#334155',
+    sectionLabel: 'Vigilancia',
+    desc:         'Clasificación de novedades del Parte de Vigilancia (Rutina, Acceso o Incidencia)',
+    campos: [
+      { key: 'nombre',            label: 'Nombre *', type: 'text', required: true },
+      { key: 'clase',             label: 'Clase *',  type: 'select', required: true,
+        staticOptions: ['Rutina', 'Acceso', 'Incidencia'], default: 'Incidencia' },
+      { key: 'genera_incidencia', label: 'Sugiere escalar a Incidencia', type: 'boolean' },
+    ],
+  },
+  {
+    key:          'vig_ubicaciones',
+    tabla:        'vig_ubicaciones',
+    label:        'Ubicaciones de Vigilancia',
+    icon:         MapPin,
+    color:        '#334155',
+    sectionLabel: 'Vigilancia',
+    desc:         'Casetas, secciones, zonas e instalaciones que reporta Vigilancia (independiente de Áreas Comunes de Mantenimiento)',
+    campos: [
+      { key: 'nombre', label: 'Nombre *', type: 'text', required: true },
+      { key: 'tipo',   label: 'Tipo',     type: 'select',
+        staticOptions: ['Caseta', 'Sección', 'Zona', 'Instalación', 'General'] },
+    ],
+  },
 ]
 
 // ══════════════════════════════════════════════════════════════
