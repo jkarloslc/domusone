@@ -216,7 +216,7 @@ export default function ParteModal({ parte, tipos, ubicaciones, onClose, onChang
 
         {/* Encabezado */}
         <fieldset disabled={soloLectura} style={{ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
             <div><label className="label">Fecha *</label>
               <input type="date" className="input" value={form.fecha} onChange={set('fecha')} disabled={!!actual} /></div>
             <div><label className="label">Responsable del reporte</label>
@@ -226,7 +226,7 @@ export default function ParteModal({ parte, tipos, ubicaciones, onClose, onChang
           </div>
           <div><label className="label">Destinatarios</label>
             <input className="input" value={form.destinatarios} onChange={set('destinatarios')} /></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
             <div><label className="label">Vehículos en ADV</label><input type="number" min={0} className="input" value={form.n_vehiculos_adv} onChange={set('n_vehiculos_adv')} /></div>
             <div><label className="label">Empl. en ADV</label><input type="number" min={0} className="input" value={form.n_empl_adv} onChange={set('n_empl_adv')} /></div>
             <div><label className="label">Empl. en bitácora</label><input type="number" min={0} className="input" value={form.n_empl_bitacora} onChange={set('n_empl_bitacora')} /></div>

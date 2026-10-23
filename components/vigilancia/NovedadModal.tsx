@@ -187,7 +187,7 @@ export default function NovedadModal({ novedad, idParte, fechaParte, tipos, ubic
         )}
 
         <fieldset disabled={dis} style={{ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
             <div>
               <label className="label">Tipo *</label>
               <select className="select" value={form.id_tipo_fk} onChange={set('id_tipo_fk')}>
@@ -274,7 +274,7 @@ export default function NovedadModal({ novedad, idParte, fechaParte, tipos, ubic
             <textarea className="input" rows={2} value={form.accion_tomada} onChange={set('accion_tomada')} style={{ resize: 'vertical' }} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
             <div>
               <label className="label">Resultado</label>
               <select className="select" value={form.resultado} onChange={set('resultado')}>
@@ -296,7 +296,7 @@ export default function NovedadModal({ novedad, idParte, fechaParte, tipos, ubic
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10 }}>
             <div>
               <label className="label">Hora de salida</label>
               <input type="time" className="input" value={form.hora_salida} onChange={set('hora_salida')} />

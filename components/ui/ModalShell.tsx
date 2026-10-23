@@ -228,7 +228,7 @@ export default function ModalShell({
           <div style={{
             padding: '14px 28px', borderTop: '1px solid #e2e8f0',
             background: '#f8fafc', borderRadius: '0 0 20px 20px',
-            display: 'flex', justifyContent: 'flex-end', gap: 10,
+            display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap',
             flexShrink: 0,
           }}>
             {footer}
