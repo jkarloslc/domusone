@@ -31,6 +31,15 @@ const chunk = (a, n) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) =
 if (FOTOS) {
   const cookie = process.env.MONDAY_COOKIE
   if (!cookie) { console.error('Falta MONDAY_COOKIE (cookie de sesión del navegador con Monday abierto)'); process.exit(1) }
+  const nombres = cookie.split(';').map(c => c.split('=')[0].trim()).filter(Boolean)
+  console.log(`Cookie recibida: ${cookie.length} caracteres, ${nombres.length} cookies: ${nombres.join(', ')}`)
+  const prueba = await ctrl.from('vig_novedad_evidencias').select('url').like('url', '%monday.com%').limit(1)
+  if (prueba.data?.[0]) {
+    const t = await fetch(prueba.data[0].url, { headers: { cookie }, redirect: 'manual' })
+    const loc = t.headers.get('location') ?? ''
+    console.log(`Prueba: HTTP ${t.status}${loc ? ` → ${new URL(loc, prueba.data[0].url).origin}${new URL(loc, prueba.data[0].url).pathname}` : ''}`)
+    if (/sign_in|login/.test(loc)) { console.error('La sesión no es válida con esta cookie. Detenido antes de procesar.'); process.exit(1) }
+  }
   const { data } = await ctrl.from('vig_novedad_evidencias').select('id, url').like('url', '%monday.com%').limit(5000)
   console.log(`${data?.length ?? 0} fotos pendientes de migrar`)
   let ok = 0, fail = 0
