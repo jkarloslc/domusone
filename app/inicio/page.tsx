@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { fechaLocal } from '@/lib/dateUtils'
+import { esRevisorNovedades } from '@/lib/vigilanciaNovedades'
 
 type Pendiente = {
   id: string
@@ -204,6 +205,26 @@ export default function InicioPage() {
               texto:   `${count} OP${count === 1 ? '' : 's'} vencida${count === 1 ? '' : 's'} sin pagar`,
               href:    '/compras/ordenes-pago',
               urgente: true,
+            })
+          }
+        }
+
+        // Partes de novedades de Vigilancia enviados y aún sin revisar — roles revisores
+        if (esRevisorNovedades(rol)) {
+          const { data: sinVer } = await dbCtrl.from('vig_partes')
+            .select('id').eq('status', 'Enviado/Cerrado').is('visto_at', null).limit(500)
+          const n = sinVer?.length ?? 0
+          if (n > 0) {
+            // Urgente si alguno trae novedades Alta/Crítica sin cerrar
+            const { count: graves } = await dbCtrl.from('vig_novedades')
+              .select('id', { count: 'exact', head: true })
+              .in('id_parte_fk', sinVer!.map((p: any) => p.id))
+              .in('criticidad', ['Alta', 'Crítica']).neq('status', 'Cerrado')
+            items.push({
+              id:      'vig-partes-sin-ver',
+              texto:   `${n} parte${n === 1 ? '' : 's'} de novedades de Vigilancia sin revisar` + ((graves ?? 0) > 0 ? ` · ${graves} novedad${graves === 1 ? '' : 'es'} Alta/Crítica abierta${graves === 1 ? '' : 's'}` : ''),
+              href:    '/vigilancia-novedades?sin_revisar=1',
+              urgente: (graves ?? 0) > 0,
             })
           }
         }

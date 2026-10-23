@@ -33,6 +33,8 @@ export type Parte = {
   n_empl_adv: number | null
   n_empl_bitacora: number | null
   enviado_at: string | null
+  visto_por: string | null
+  visto_at: string | null
 }
 
 export const TURNOS = ['Diurno', 'Mixto', 'Nocturno']

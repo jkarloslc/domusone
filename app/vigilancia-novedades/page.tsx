@@ -77,7 +77,11 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
   const [pageSize, setPageSize] = useState(31)
   const [mes, setMes] = useState('')
   const [status, setStatus] = useState('')
+  const [sinRevisar, setSinRevisar] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  // Enlace desde Inicio: /vigilancia-novedades?sin_revisar=1
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('sin_revisar')) setSinRevisar(true) }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -89,6 +93,7 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
       q = q.gte('fecha', `${mes}-01`).lte('fecha', `${mes}-${String(fin).padStart(2, '0')}`)
     }
     if (status) q = q.eq('status', status)
+    if (sinRevisar) q = q.eq('status', 'Enviado/Cerrado').is('visto_at', null)
     const { data, count, error } = await q
     if (error) { setLoading(false); return }
     const lista = (data ?? []) as Parte[]
@@ -103,7 +108,7 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
       setConteo(c)
     } else setConteo({})
     setLoading(false)
-  }, [page, pageSize, mes, status, refresh])
+  }, [page, pageSize, mes, status, sinRevisar, refresh])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -115,17 +120,20 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
           <option value="">Todos los status</option>
           <option>Borrador</option><option>Enviado/Cerrado</option>
         </select>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+          <input type="checkbox" checked={sinRevisar} onChange={e => { setSinRevisar(e.target.checked); setPage(0) }} /> Solo sin revisar
+        </label>
         <button className="btn-ghost" onClick={fetchData} title="Actualizar"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
       </div>
       <div className="card" style={{ overflow: 'hidden' }}>
         <div className="table-wrapper">
           <table>
-            <thead><tr><th>Fecha</th><th>Responsable</th><th>Supervisor</th><th style={{ textAlign: 'right' }}>Novedades</th><th style={{ textAlign: 'right' }}>Sin cerrar</th><th>Status</th><th style={{ width: 80 }}></th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Responsable</th><th>Supervisor</th><th style={{ textAlign: 'right' }}>Novedades</th><th style={{ textAlign: 'right' }}>Sin cerrar</th><th>Status</th><th>Revisión</th><th style={{ width: 80 }}></th></tr></thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
               ) : partes.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin partes registrados</td></tr>
+                <tr><td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin partes registrados</td></tr>
               ) : partes.map(p => {
                 const c = conteo[p.id] ?? { total: 0, abiertas: 0 }
                 return (
@@ -136,6 +144,9 @@ function PartesTab({ refresh, onOpen }: { refresh: number; onOpen: (p: Parte) =>
                     <td style={{ textAlign: 'right', fontSize: 13 }}>{c.total}</td>
                     <td style={{ textAlign: 'right', fontSize: 13, color: c.abiertas ? '#dc2626' : 'var(--text-muted)', fontWeight: c.abiertas ? 600 : 400 }}>{c.abiertas}</td>
                     <td><Pill txt={p.status} c={p.status === 'Borrador' ? { bg: '#fffbeb', color: '#d97706' } : { bg: '#f0fdf4', color: '#15803d' }} /></td>
+                    <td>{p.status !== 'Enviado/Cerrado' ? <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      : p.visto_at ? <span title={p.visto_por ?? ''} style={{ fontSize: 12, color: 'var(--text-muted)' }}>Visto</span>
+                      : <Pill txt="Sin revisar" c={{ bg: '#fef2f2', color: '#dc2626' }} />}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <button className="btn-ghost" style={{ padding: 5 }} title="Ver" onClick={() => onOpen(p)}><Eye size={13} /></button>

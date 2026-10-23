@@ -6,6 +6,7 @@ import { Save, Loader, Plus, Eye, Edit2, Trash2, Send, Printer, X, User, Message
 import ModalShell from '@/components/ui/ModalShell'
 import { Colaborador, nombreCompletoColaborador } from '@/lib/colaboradores'
 import NovedadModal from './NovedadModal'
+import { esRevisorNovedades } from '@/lib/vigilanciaNovedades'
 import {
   Parte, Novedad, Tipo, Ubicacion, PLANTILLAS, CRIT_COLOR, STATUS_NOV_COLOR, Pill,
   fmtFecha, fmtHora, hoyISO, horaActual,
@@ -87,6 +88,16 @@ export default function ParteModal({ parte, tipos, ubicaciones, onClose, onChang
   }, [ubicaciones])
 
   useEffect(() => { if (actual) cargarDetalle(actual.id) }, [actual?.id, cargarDetalle])
+
+  // Un parte enviado que un revisor abre queda como visto (deja de ser pendiente en Inicio)
+  useEffect(() => {
+    if (!parte || parte.status !== 'Enviado/Cerrado' || parte.visto_at || !esRevisorNovedades(authUser?.rol)) return
+    const vistoAt = new Date().toISOString()
+    dbCtrl.from('vig_partes').update({ visto_por: authUser?.nombre ?? null, visto_por_id: authUser?.user.id ?? null, visto_at: vistoAt })
+      .eq('id', parte.id).is('visto_at', null)
+      .then(({ error }) => { if (!error) { setActual(a => a && { ...a, visto_por: authUser?.nombre ?? null, visto_at: vistoAt }); onChanged() } })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parte?.id, authUser?.rol])
 
   const num = (v: string) => (v.trim() === '' ? null : Number(v))
 
@@ -199,7 +210,7 @@ export default function ParteModal({ parte, tipos, ubicaciones, onClose, onChang
 
   return (
     <ModalShell modulo="accesos" titulo={actual ? `Parte de Novedades · ${fmtFecha(actual.fecha)}` : 'Nuevo Parte de Novedades'}
-      subtitulo={cerrado ? 'Enviado / Cerrado' : actual ? 'Borrador' : undefined} onClose={onClose} maxWidth={980}
+      subtitulo={cerrado ? `Enviado / Cerrado${actual?.visto_at ? ` · Visto por ${actual.visto_por ?? '—'} el ${new Date(actual.visto_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}` : ' · Sin revisar'}` : actual ? 'Borrador' : undefined} onClose={onClose} maxWidth={980}
       footer={<>
         <button className="btn-secondary" onClick={onClose}>Cerrar</button>
         {actual && <button className="btn-ghost" onClick={imprimir}><Printer size={13} /> Imprimir</button>}
