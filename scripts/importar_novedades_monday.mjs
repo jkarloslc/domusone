@@ -36,7 +36,13 @@ if (FOTOS) {
   let ok = 0, fail = 0
   for (const ev of data ?? []) {
     try {
-      const r = await fetch(ev.url, { headers: { cookie }, redirect: 'manual' })
+      let r = await fetch(ev.url, { headers: { cookie }, redirect: 'manual' })
+      // Con sesión válida Monday redirige a una URL firmada (sin cookie); sin sesión, a sign_in
+      if (r.status >= 300 && r.status < 400) {
+        const loc = r.headers.get('location') ?? ''
+        if (/sign_in|login/.test(loc)) throw new Error('Sesión no válida: redirige a sign_in (cookie caducada o incompleta)')
+        r = await fetch(new URL(loc, ev.url).toString(), { redirect: 'follow' })
+      }
       if (r.status !== 200) throw new Error(`HTTP ${r.status}`)
       const buf = Buffer.from(await r.arrayBuffer())
       const ext = (ev.url.split('?')[0].split('.').pop() || 'jpg').toLowerCase()
