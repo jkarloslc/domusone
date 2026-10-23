@@ -114,7 +114,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
@@ -152,7 +152,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
@@ -190,7 +190,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
@@ -227,7 +227,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
@@ -264,7 +264,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
@@ -297,7 +297,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
@@ -329,7 +329,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
+      RPT('residencial,vigilancia'),
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
@@ -361,7 +361,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -380,14 +380,14 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   atencion_residentes: [
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
   ],
 
   cobranza: [
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
+      RPT('residencial,vigilancia'),
     ]},
     { section: 'Finanzas', items: [
       { label: 'Ingresos',       href: '/ingresos',       icon: DollarSign    },
@@ -430,7 +430,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
   ],
 
@@ -440,7 +440,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial,mantenimiento'),
+      RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -540,7 +540,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   usuario_organismo: [
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
+      RPT('residencial,vigilancia'),
     ]},
   ],
 

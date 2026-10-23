@@ -70,6 +70,7 @@ import ReporteOPsPorTipoGasto from './ReporteOPsPorTipoGasto'
 import ReporteOPsPorClasificacionArticulos from './ReporteOPsPorClasificacionArticulos'
 import ReporteCancelaciones from './ReporteCancelaciones'
 import ReporteComposicionIngresoCuotas from './ReporteComposicionIngresoCuotas'
+import ReporteVigilanciaNovedades from './ReporteVigilanciaNovedades'
 
 const GRUPOS = [
   {
@@ -94,6 +95,15 @@ const GRUPOS = [
       { id: 'incidencias-seccion',  label: 'Incidencias por Sección',    icon: AlertTriangle, desc: 'Incidencias agrupadas por sección residencial con conteo y status' },
       { id: 'visitantes',           label: 'Visitantes por Lote',        icon: Eye,           desc: 'Visitantes autorizados por lote' },
       { id: 'vehiculos',            label: 'Vehículos por Lote',         icon: Car,           desc: 'Vehículos autorizados por lote' },
+    ],
+  },
+  {
+    slug:   'vigilancia',
+    modulo: 'vigilancia-novedades',
+    label: 'Vigilancia',
+    color: '#475569',
+    reportes: [
+      { id: 'vigilancia-novedades-estadisticas', label: 'Estadísticas de Novedades de Vigilancia', icon: ClipboardList, desc: 'Novedades por clase, tipo, criticidad, turno, hora, ubicación y lote; tendencia mensual, pendientes con antigüedad y cumplimiento de partes. Exporta a Excel' },
     ],
   },
   {
@@ -321,6 +331,9 @@ function ReportesContent() {
       {active === 'incidencias-seccion'  && <ReporteIncidenciasSeccion />}
       {active === 'visitantes'           && <ReporteVisitantes />}
       {active === 'vehiculos'            && <ReporteVehiculos />}
+
+      {/* Reportes vigilancia */}
+      {active === 'vigilancia-novedades-estadisticas' && <ReporteVigilanciaNovedades />}
 
       {/* Reportes mantenimiento */}
       {active === 'ordenes-trabajo'         && <ReporteOrdenesTrabajo />}
