@@ -249,7 +249,7 @@ function ReportesContent() {
 
   // Si viene ?grupo= filtramos además por slug
   const gruposVisibles = grupoParam
-    ? gruposPermitidos.filter(g => g.slug === grupoParam)
+    ? gruposPermitidos.filter(g => grupoParam.split(',').includes(g.slug))
     : gruposPermitidos
   const grupoActivo = gruposVisibles[0]
 
@@ -261,12 +261,12 @@ function ReportesContent() {
         variant="xl"
         icon={BarChart3}
         color={grupoActivo?.color ?? 'var(--blue)'}
-        eyebrowLabel={grupoParam ? (grupoActivo?.label ?? 'Módulo') : 'Módulo'}
+        eyebrowLabel={grupoParam ? (gruposVisibles.length > 1 ? 'Fraccionamiento' : (grupoActivo?.label ?? 'Módulo')) : 'Módulo'}
         title="Reportes"
         subtitle={active && current ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={handleBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue)', fontSize: 13, padding: 0 }}>
-              {grupoParam ? (grupoActivo?.label ?? 'Reportes') : 'Todos los reportes'}
+              {grupoParam ? (gruposVisibles.length > 1 ? 'Reportes' : (grupoActivo?.label ?? 'Reportes')) : 'Todos los reportes'}
             </button>
             <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />
             <span>{current.label}</span>

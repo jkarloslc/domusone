@@ -114,8 +114,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
@@ -153,8 +152,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
@@ -192,8 +190,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
@@ -230,8 +227,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
     { section: 'HR', items: [
       { label: 'HR',             href: '/hr',              icon: Briefcase     },
@@ -268,8 +264,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
@@ -302,8 +297,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
     { section: 'Club', items: [
       { label: 'Punto de Venta',  href: '/golf/pos',            icon: Store     },
@@ -367,8 +361,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -387,8 +380,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   atencion_residentes: [
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
   ],
 
@@ -438,8 +430,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
   ],
 
@@ -449,8 +440,7 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
-      RPT('residencial'),
-      RPT('mantenimiento'),
+      RPT('residencial,mantenimiento'),
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
