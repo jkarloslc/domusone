@@ -45,24 +45,25 @@ if (FOTOS) {
   const pend = (data ?? []).map(e => ({ ...e, asset: e.url.match(/resources\/(\d+)\//)?.[1] })).filter(e => e.asset)
   console.log(`${pend.length} fotos pendientes de migrar`)
   let ok = 0, fail = 0
-  const falla = (id, msg) => { fail++; if (fail <= 5) console.error('Falló', id, msg) }
+  const falla = (id, e) => { fail++; if (fail <= 5) console.error('Falló', id, e.message, e.cause?.code ?? e.cause?.message ?? '') }
+  const reintenta = async fn => { let err; for (let i = 0; i < 3; i++) { try { return await fn() } catch (e) { err = e; await new Promise(r => setTimeout(r, 800 * (i + 1))) } } throw err }
   for (const lote of chunk(pend, 50)) {
     let urls
     try { urls = await gql([...new Set(lote.map(e => e.asset))]) } catch (e) { console.error('API Monday:', e.message); process.exit(1) }
-    await Promise.all(lote.map(async ev => {
+    for (const sub of chunk(lote, 6)) await Promise.all(sub.map(async ev => {
       try {
         const pub = urls.get(ev.asset); if (!pub) throw new Error('Archivo no encontrado en Monday')
-        const r = await fetch(pub); if (r.status !== 200) throw new Error(`HTTP ${r.status}`)
-        const buf = Buffer.from(await r.arrayBuffer())
+        const r = await reintenta(async () => { const x = await fetch(pub); if (x.status !== 200) throw new Error(`HTTP ${x.status}`); return x })
+        const buf = Buffer.from(await reintenta(() => r.arrayBuffer()))
         const ext = (ev.url.split('?')[0].split('.').pop() || 'jpg').toLowerCase()
         const path = `vigilancia-novedades/monday/${ev.id}_${ev.asset}.${ext}`
-        const up = await sb.storage.from('domusone-files').upload(path, buf, { contentType: r.headers.get('content-type') ?? 'image/jpeg', upsert: true })
+        const up = await reintenta(() => sb.storage.from('domusone-files').upload(path, buf, { contentType: r.headers.get('content-type') ?? 'image/jpeg', upsert: true }))
         if (up.error) throw up.error
         const url = sb.storage.from('domusone-files').getPublicUrl(path).data.publicUrl
         const { error } = await ctrl.from('vig_novedad_evidencias').update({ url, url_origen: ev.url }).eq('id', ev.id)
         if (error) throw error
         ok++
-      } catch (e) { falla(ev.id, e.message) }
+      } catch (e) { falla(ev.id, e) }
     }))
     if ((ok + fail) % 500 < 50) console.log(`  ${ok + fail}/${pend.length} (ok ${ok}, fallidas ${fail})`)
   }
