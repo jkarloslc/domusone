@@ -27,41 +27,44 @@ const file = args.find(a => a.endsWith('.xlsx'))
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 const chunk = (a, n) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n))
 
-// ── Fotos: Monday → Storage (requiere cookie de sesión de Monday) ────────────
+// ── Fotos: Monday → Storage (usa un token de API personal de Monday) ─────────
+// Monday > avatar > Developers > My access tokens. El ID del archivo viene en la URL (resources/<id>/).
 if (FOTOS) {
-  const cookie = process.env.MONDAY_COOKIE
-  if (!cookie) { console.error('Falta MONDAY_COOKIE (cookie de sesión del navegador con Monday abierto)'); process.exit(1) }
-  const nombres = cookie.split(';').map(c => c.split('=')[0].trim()).filter(Boolean)
-  console.log(`Cookie recibida: ${cookie.length} caracteres, ${nombres.length} cookies: ${nombres.join(', ')}`)
-  const prueba = await ctrl.from('vig_novedad_evidencias').select('url').like('url', '%monday.com%').limit(1)
-  if (prueba.data?.[0]) {
-    const t = await fetch(prueba.data[0].url, { headers: { cookie }, redirect: 'manual' })
-    const loc = t.headers.get('location') ?? ''
-    console.log(`Prueba: HTTP ${t.status}${loc ? ` → ${new URL(loc, prueba.data[0].url).origin}${new URL(loc, prueba.data[0].url).pathname}` : ''}`)
-    if (/sign_in|login/.test(loc)) { console.error('La sesión no es válida con esta cookie. Detenido antes de procesar.'); process.exit(1) }
+  const token = process.env.MONDAY_TOKEN
+  if (!token) { console.error('Falta MONDAY_TOKEN (token de API personal de Monday)'); process.exit(1) }
+  const gql = async ids => {
+    const r = await fetch('https://api.monday.com/v2', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: token, 'API-Version': '2025-04' },
+      body: JSON.stringify({ query: `query { assets(ids: [${ids.join(',')}]) { id public_url } }` }),
+    })
+    const j = await r.json()
+    if (j.errors || !j.data) throw new Error(JSON.stringify(j.errors ?? j).slice(0, 300))
+    return new Map(j.data.assets.map(a => [String(a.id), a.public_url]))
   }
-  const { data } = await ctrl.from('vig_novedad_evidencias').select('id, url').like('url', '%monday.com%').limit(5000)
-  console.log(`${data?.length ?? 0} fotos pendientes de migrar`)
+  const { data } = await ctrl.from('vig_novedad_evidencias').select('id, url').like('url', '%monday.com%').limit(6000)
+  const pend = (data ?? []).map(e => ({ ...e, asset: e.url.match(/resources\/(\d+)\//)?.[1] })).filter(e => e.asset)
+  console.log(`${pend.length} fotos pendientes de migrar`)
   let ok = 0, fail = 0
-  for (const ev of data ?? []) {
-    try {
-      let r = await fetch(ev.url, { headers: { cookie }, redirect: 'manual' })
-      // Con sesión válida Monday redirige a una URL firmada (sin cookie); sin sesión, a sign_in
-      if (r.status >= 300 && r.status < 400) {
-        const loc = r.headers.get('location') ?? ''
-        if (/sign_in|login/.test(loc)) throw new Error('Sesión no válida: redirige a sign_in (cookie caducada o incompleta)')
-        r = await fetch(new URL(loc, ev.url).toString(), { redirect: 'follow' })
-      }
-      if (r.status !== 200) throw new Error(`HTTP ${r.status}`)
-      const buf = Buffer.from(await r.arrayBuffer())
-      const ext = (ev.url.split('?')[0].split('.').pop() || 'jpg').toLowerCase()
-      const path = `vigilancia-novedades/monday/${ev.id}_${Date.now()}.${ext}`
-      const up = await sb.storage.from('domusone-files').upload(path, buf, { contentType: r.headers.get('content-type') ?? 'image/jpeg', upsert: true })
-      if (up.error) throw up.error
-      const pub = sb.storage.from('domusone-files').getPublicUrl(path).data.publicUrl
-      await ctrl.from('vig_novedad_evidencias').update({ url: pub, url_origen: ev.url }).eq('id', ev.id)
-      ok++
-    } catch (e) { fail++; if (fail <= 3) console.error('Falló', ev.id, e.message) }
+  const falla = (id, msg) => { fail++; if (fail <= 5) console.error('Falló', id, msg) }
+  for (const lote of chunk(pend, 50)) {
+    let urls
+    try { urls = await gql([...new Set(lote.map(e => e.asset))]) } catch (e) { console.error('API Monday:', e.message); process.exit(1) }
+    await Promise.all(lote.map(async ev => {
+      try {
+        const pub = urls.get(ev.asset); if (!pub) throw new Error('Archivo no encontrado en Monday')
+        const r = await fetch(pub); if (r.status !== 200) throw new Error(`HTTP ${r.status}`)
+        const buf = Buffer.from(await r.arrayBuffer())
+        const ext = (ev.url.split('?')[0].split('.').pop() || 'jpg').toLowerCase()
+        const path = `vigilancia-novedades/monday/${ev.id}_${ev.asset}.${ext}`
+        const up = await sb.storage.from('domusone-files').upload(path, buf, { contentType: r.headers.get('content-type') ?? 'image/jpeg', upsert: true })
+        if (up.error) throw up.error
+        const url = sb.storage.from('domusone-files').getPublicUrl(path).data.publicUrl
+        const { error } = await ctrl.from('vig_novedad_evidencias').update({ url, url_origen: ev.url }).eq('id', ev.id)
+        if (error) throw error
+        ok++
+      } catch (e) { falla(ev.id, e.message) }
+    }))
+    if ((ok + fail) % 500 < 50) console.log(`  ${ok + fail}/${pend.length} (ok ${ok}, fallidas ${fail})`)
   }
   console.log(`Migradas ${ok}, fallidas ${fail}`)
   process.exit(0)
