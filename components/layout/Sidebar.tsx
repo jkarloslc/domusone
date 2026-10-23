@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Home, Wrench, ShoppingCart,
+  Home, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark,
   Flag, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf, Briefcase,
 } from 'lucide-react'
@@ -115,9 +115,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
     { section: 'HR', items: [
@@ -157,9 +154,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
     { section: 'HR', items: [
@@ -199,9 +193,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
     { section: 'HR', items: [
@@ -240,9 +231,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
     { section: 'HR', items: [
@@ -281,9 +269,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
     { section: 'Club', items: [
@@ -318,9 +303,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
     { section: 'Club', items: [
@@ -386,9 +368,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
@@ -409,9 +388,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
   ],
@@ -437,8 +413,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
       RPT('compras'),
     ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
     ]},
   ],
 
@@ -463,9 +439,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
   ],
@@ -477,9 +450,6 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
       RPT('residencial'),
-    ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
       RPT('mantenimiento'),
     ]},
     { section: 'Compras', items: [
@@ -588,8 +558,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
     ]},
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
     ]},
     { section: 'Finanzas', items: [
       { label: 'Tesorería',      href: '/tesoreria',      icon: Landmark      },
@@ -611,8 +581,8 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   ],
 
   aux_organismo: [
-    { section: 'Operaciones', items: [
-      { label: 'Mantenimiento',  href: '/mantenimiento',  icon: Wrench        },
+    { section: 'Fraccionamiento', items: [
+      { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },

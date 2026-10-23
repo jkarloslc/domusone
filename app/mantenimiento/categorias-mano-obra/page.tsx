@@ -7,7 +7,7 @@ export default function MantenimientoCategoriasManoObraPage() {
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      <CategoriasManoObraPanel onBack={() => router.push('/mantenimiento')} />
+      <CategoriasManoObraPanel onBack={() => router.push('/residencial')} />
     </div>
   )
 }

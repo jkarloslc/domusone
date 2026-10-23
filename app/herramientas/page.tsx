@@ -23,7 +23,7 @@ export default function HerramientasPage() {
   return (
     <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
       <PageHeader
-        backHref="/mantenimiento"
+        backHref="/residencial"
         title="Equipo & Herramienta"
         subtitle="Catálogo de herramienta menor, bitácora de préstamos y servicios de mantenimiento"
       />

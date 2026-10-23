@@ -21,10 +21,16 @@ function getModulo(pathname: string): string | undefined {
 
   // Mapeos especiales
   const SPECIAL: Record<string, string> = {
-    residencial:   'lotes',
     usuarios:      'admin',
   }
   if (SPECIAL[first]) return SPECIAL[first]
+
+  // /residencial es el hub del Fraccionamiento (incluye Mantenimiento): sin guard de URL,
+  // el hub filtra sus tarjetas con can() según el rol
+  if (first === 'residencial') return undefined
+
+  // /mantenimiento/** (el hub /mantenimiento solo redirige a /residencial)
+  if (first === 'mantenimiento' && parts[1]) return 'mantenimiento'
 
   // Sin control de módulo (acceso libre para cualquier usuario autenticado)
   const NO_CHECK = ['inicio', 'tablero', 'vehiculos', 'equipo-flota', 'mantenimiento', 'hipico', 'hospitality', 'polo']
