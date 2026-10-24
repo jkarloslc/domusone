@@ -81,10 +81,17 @@ export default function CXPPage() {
   const [remesas, setRemesas]           = useState<any[]>([])
   const [loadingRemesas, setLoadingRemesas] = useState(false)
   const [detailRemesa, setDetailRemesa] = useState<any | null>(null)
+  const [centros, setCentros]   = useState<any[]>([])
+  const [areas, setAreas]       = useState<any[]>([])
+  const [frentes, setFrentes]   = useState<any[]>([])
+  const [lineasOP, setLineasOP] = useState<Record<number, { id_area_fk: number | null; id_frente_fk: number | null }[]>>({})
+  const [filterCC, setFilterCC]         = useState('')
+  const [filterArea, setFilterArea]     = useState('')
+  const [filterFrente, setFilterFrente] = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [{ data: provs }, { data: allOps }, { data: alms }] = await Promise.all([
+    const [{ data: provs }, { data: allOps }, { data: alms }, { data: ccs }, { data: ars }, { data: frs }] = await Promise.all([
       dbComp.from('proveedores').select('id, nombre, rfc, condiciones_pago').eq('activo', true).order('nombre'),
       dbComp.from('ordenes_pago').select('*')
         .neq('status', 'Cancelada')
@@ -94,9 +101,24 @@ export default function CXPPage() {
         .neq('status', 'Sustituida')
         .order('fecha_vencimiento'),
       dbComp.from('almacenes').select('id, nombre'),
+      dbCfg.from('centros_costo').select('id, nombre').order('nombre'),
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').order('nombre'),
+      dbCfg.from('frentes').select('id, nombre').order('nombre'),
     ])
     setProvs(provs ?? [])
     setOps(allOps ?? [])
+    setCentros(ccs ?? [])
+    setAreas(ars ?? [])
+    setFrentes(frs ?? [])
+    // OP con distribución por líneas: CC/Área/Frente viven en ordenes_pago_det
+    const ids = (allOps ?? []).filter((o: any) => !o.id_area_fk || !o.id_frente_fk).map((o: any) => o.id)
+    const lm: Record<number, { id_area_fk: number | null; id_frente_fk: number | null }[]> = {}
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data: dets } = await dbComp.from('ordenes_pago_det')
+        .select('id_op_fk, id_area_fk, id_frente_fk').in('id_op_fk', ids.slice(i, i + 200)).limit(5000)
+      ;(dets ?? []).forEach((d: any) => { (lm[d.id_op_fk] ??= []).push({ id_area_fk: d.id_area_fk, id_frente_fk: d.id_frente_fk }) })
+    }
+    setLineasOP(lm)
     const am: Record<number,string> = {}
     ;(alms ?? []).forEach((a:any) => { am[a.id] = a.nombre })
     setAlmMap(am)
@@ -112,18 +134,50 @@ export default function CXPPage() {
       .order('created_at', { ascending: false })
     const ids = (remRows ?? []).map((r: any) => r.id)
     const countMap: Record<number, number> = {}
+    const opIdsMap: Record<number, number[]> = {}
     if (ids.length > 0) {
       const { data: abonoRows } = await dbComp.from('cxp_abonos')
-        .select('id_remesa_fk').in('id_remesa_fk', ids).eq('status', 'Aplicado')
-      ;(abonoRows ?? []).forEach((a: any) => { countMap[a.id_remesa_fk] = (countMap[a.id_remesa_fk] ?? 0) + 1 })
+        .select('id_remesa_fk, id_op_fk').in('id_remesa_fk', ids).eq('status', 'Aplicado')
+      ;(abonoRows ?? []).forEach((a: any) => {
+        countMap[a.id_remesa_fk] = (countMap[a.id_remesa_fk] ?? 0) + 1
+        ;(opIdsMap[a.id_remesa_fk] ??= []).push(a.id_op_fk)
+      })
     }
-    setRemesas((remRows ?? []).map((r: any) => ({ ...r, _numOps: countMap[r.id] ?? 0 })))
+    setRemesas((remRows ?? []).map((r: any) => ({ ...r, _numOps: countMap[r.id] ?? 0, _opIds: opIdsMap[r.id] ?? [] })))
     setLoadingRemesas(false)
   }, [])
 
   useEffect(() => { if (tab === 'remesas') fetchRemesas() }, [tab, fetchRemesas])
 
-  const opsPendientes  = ops.filter(o => o.status !== 'Pagada' && o.status !== 'Pendiente Auth' && o.status !== 'Pendiente Auth Finanzas' && o.status !== 'Rechazada' && o.status !== 'Sustituida')
+  const areaCC = useMemo(() => {
+    const m: Record<number, number> = {}
+    areas.forEach(a => { m[a.id] = a.id_centro_costo_fk })
+    return m
+  }, [areas])
+  const areasFiltro = filterCC ? areas.filter(a => a.id_centro_costo_fk === Number(filterCC)) : areas
+  const hayFiltro = !!(filterCC || filterArea || filterFrente)
+
+  // Una OP coincide si su encabezado o alguna de sus líneas de distribución cumple los tres filtros
+  const opCoincide = useCallback((o: any) => {
+    if (!filterCC && !filterArea && !filterFrente) return true
+    const fuentes = [
+      { cc: o.id_centro_costo_fk ?? (o.id_area_fk ? areaCC[o.id_area_fk] : null), area: o.id_area_fk, frente: o.id_frente_fk },
+      ...(lineasOP[o.id] ?? []).map(l => ({ cc: l.id_area_fk ? areaCC[l.id_area_fk] : null, area: l.id_area_fk, frente: l.id_frente_fk })),
+    ]
+    return fuentes.some(f =>
+      (!filterCC || f.cc === Number(filterCC)) &&
+      (!filterArea || f.area === Number(filterArea)) &&
+      (!filterFrente || f.frente === Number(filterFrente)))
+  }, [filterCC, filterArea, filterFrente, areaCC, lineasOP])
+
+  const opsFiltradas = useMemo(() => ops.filter(opCoincide), [ops, opCoincide])
+  const remesasFiltradas = useMemo(() => {
+    if (!hayFiltro) return remesas
+    const okIds = new Set(opsFiltradas.map(o => o.id))
+    return remesas.filter(r => (r._opIds ?? []).some((id: number) => okIds.has(id)))
+  }, [remesas, opsFiltradas, hayFiltro])
+
+  const opsPendientes  = opsFiltradas.filter(o => o.status !== 'Pagada' && o.status !== 'Pendiente Auth' && o.status !== 'Pendiente Auth Finanzas' && o.status !== 'Rechazada' && o.status !== 'Sustituida')
   const totalPorPagar  = opsPendientes.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
   const totalVencido   = opsPendientes.filter(o => diasVencido(o.fecha_vencimiento) > 0)
                           .reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
@@ -205,6 +259,26 @@ export default function CXPPage() {
           color={proximoColor}
           icon={Calendar}
         />
+      </div>
+
+      {/* Filtros CC / Área / Frente (aplican a todas las vistas) */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+        <select className="input" style={{ width: 200 }} value={filterCC}
+          onChange={e => { setFilterCC(e.target.value); setFilterArea('') }}>
+          <option value="">Todos los CC</option>
+          {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </select>
+        <select className="input" style={{ width: 200 }} value={filterArea} onChange={e => setFilterArea(e.target.value)}>
+          <option value="">Todas las áreas</option>
+          {areasFiltro.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+        </select>
+        <select className="input" style={{ width: 200 }} value={filterFrente} onChange={e => setFilterFrente(e.target.value)}>
+          <option value="">Todos los frentes</option>
+          {frentes.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+        </select>
+        {hayFiltro && (
+          <button className="btn-ghost" onClick={() => { setFilterCC(''); setFilterArea(''); setFilterFrente('') }}>Limpiar filtros</button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -426,7 +500,7 @@ export default function CXPPage() {
         <div className="card" style={{ overflow: 'hidden' }}>
           {loadingRemesas ? (
             <div style={{ textAlign: 'center', padding: 48 }}><RefreshCw size={20} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></div>
-          ) : remesas.length === 0 ? (
+          ) : remesasFiltradas.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
               Sin remesas de pago registradas. Se crean desde "Por Proveedor" al seleccionar varias OPs y pagarlas juntas.
             </div>
@@ -440,7 +514,7 @@ export default function CXPPage() {
                 </tr>
               </thead>
               <tbody>
-                {remesas.map(r => (
+                {remesasFiltradas.map(r => (
                   <tr key={r.id}>
                     <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                     <td style={{ fontSize: 13 }}>{r.proveedores?.nombre ?? '—'}</td>
@@ -468,6 +542,7 @@ export default function CXPPage() {
           prov={detailProv}
           almMap={almMap}
           refreshKey={provRefresh}
+          opCoincide={opCoincide}
           onClose={() => { setDetailProv(null); fetchData() }}
           onOpenOP={op => setDetailOP(op)}
         />
@@ -505,7 +580,7 @@ function RemesaStatusBadge({ status }: { status: string }) {
 // ════════════════════════════════════════════════════════════
 // Vista de OPs por proveedor + estado de cuenta imprimible
 // ════════════════════════════════════════════════════════════
-function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: any; almMap: Record<number,string>; refreshKey: number; onClose: () => void; onOpenOP: (op: any) => void }) {
+function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP }: { prov: any; almMap: Record<number,string>; refreshKey: number; opCoincide: (o: any) => boolean; onClose: () => void; onOpenOP: (op: any) => void }) {
   const { canWrite } = useAuth()
   const [ops, setOps]         = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -525,7 +600,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, onClose, onOpenOP }: { prov: a
   useEffect(() => { setSelected(new Set()) }, [prov.id, filterStatus])
 
   const statusDisponibles = Array.from(new Set(ops.map(o => o.status).filter(Boolean))) as string[]
-  const opsFiltradas = filterStatus ? ops.filter(o => o.status === filterStatus) : ops
+  const opsFiltradas = ops.filter(o => opCoincide(o) && (!filterStatus || o.status === filterStatus))
   const elegibles = opsFiltradas.filter(o => o.status === 'Pendiente' || o.status === 'Abonada')
 
   const saldoTotal  = opsFiltradas.filter(o => o.status !== 'Pagada').reduce((a,o) => a + (o.saldo ?? o.monto ?? 0), 0)
