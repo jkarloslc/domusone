@@ -50,11 +50,11 @@ export default function ReporteOrdenesCompra() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <select className="select" style={{ minWidth: 150 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 150 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
           <option value="">Todos los status</option>
           {STATUS.map(s => <option key={s}>{s}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 200 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
           <option value="">Todos los proveedores</option>
           {provs.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>

@@ -112,16 +112,16 @@ export default function ReporteLotesPorSeccionClasif() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-          <select className="select" style={{ minWidth: 180 }} value={filterSec} onChange={e => setFilterSec(e.target.value)}>
+          <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filterSec} onChange={e => setFilterSec(e.target.value)}>
             <option value="">Todas las secciones</option>
             {secciones.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
           </select>
         </div>
-        <select className="select" style={{ minWidth: 180 }} value={filterClasif} onChange={e => setFilterClasif(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filterClasif} onChange={e => setFilterClasif(e.target.value)}>
           <option value="">Todas las clasificaciones</option>
           {clasificaciones.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 140 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 140 }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
           <option value="">Todos los status</option>
           {['Vendido', 'Libre', 'Bloqueado'].map(s => <option key={s}>{s}</option>)}
         </select>

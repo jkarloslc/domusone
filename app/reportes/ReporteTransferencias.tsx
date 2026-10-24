@@ -87,15 +87,15 @@ export default function ReporteTransferencias() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <Filter size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        <select className="select" style={{ minWidth: 190 }} value={filtroOrigen} onChange={e => setFiltroOrigen(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 190 }} value={filtroOrigen} onChange={e => setFiltroOrigen(e.target.value)}>
           <option value="">Todos los orígenes</option>
           {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 190 }} value={filtroDestino} onChange={e => setFiltroDestino(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 190 }} value={filtroDestino} onChange={e => setFiltroDestino(e.target.value)}>
           <option value="">Todos los destinos</option>
           {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 150 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
           <option value="">Todos los status</option>
           {STATUS.map(s => <option key={s}>{s}</option>)}
         </select>

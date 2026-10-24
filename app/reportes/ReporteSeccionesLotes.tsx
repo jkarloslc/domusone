@@ -51,7 +51,7 @@ export default function ReporteSeccionesLotes() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-          <select className="select" style={{ minWidth: 210 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+          <select className="select" style={{ width: 'auto', minWidth: 210 }} value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
             <option value="">Todos los tipos de sección</option>
             {tipoSec.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
           </select>

@@ -404,7 +404,7 @@ export default function CapturaPpto({ soloFlujo = false }: { soloFlujo?: boolean
               <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>
                 Presupuesto:
               </span>
-              <select className="input" style={{ minWidth: 260 }}
+              <select className="input" style={{ width: 'auto', minWidth: 260 }}
                 value={selId ?? ''} onChange={e => {
                   const id = Number(e.target.value)
                   setSelId(id)

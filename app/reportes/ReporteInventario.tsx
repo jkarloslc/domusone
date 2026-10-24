@@ -61,11 +61,11 @@ export default function ReporteInventario() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <select className="select" style={{ minWidth: 200 }} value={filtroAlm} onChange={e => setFiltroAlm(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroAlm} onChange={e => setFiltroAlm(e.target.value)}>
           <option value="">Todos los almacenes</option>
           {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroCat} onChange={e => setFiltroCat(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroCat} onChange={e => setFiltroCat(e.target.value)}>
           <option value="">Todas las categorías</option>
           {catTG.activos.filter(t => t.es_articulo).map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
         </select>

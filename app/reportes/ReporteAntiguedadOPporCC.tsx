@@ -255,19 +255,19 @@ export default function ReporteAntiguedadOPporCC() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <Filter size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        <select className="select" style={{ minWidth: 200 }} value={filtroCC} onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}>
+        <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroCC} onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}>
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas{filtroCC ? ' del CC' : ''}</option>
           {areasDelCC.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 220 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 220 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
           <option value="">Todos los proveedores</option>
           {provs.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filtroBanda} onChange={e => setFiltroBanda(e.target.value as BandaKey | '')}>
+        <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroBanda} onChange={e => setFiltroBanda(e.target.value as BandaKey | '')}>
           <option value="">Todas las bandas</option>
           {BANDAS.map(b => <option key={b.key} value={b.key}>{b.label}</option>)}
         </select>

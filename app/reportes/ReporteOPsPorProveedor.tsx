@@ -148,7 +148,7 @@ export default function ReporteOPsPorProveedor() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16, alignItems: 'flex-end' }}>
         <div>
           <label className="label">Proveedor</label>
-          <select className="select" style={{ minWidth: 180 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
+          <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
             <option value="">Todos</option>
             {provs.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
           </select>
@@ -162,7 +162,7 @@ export default function ReporteOPsPorProveedor() {
         </div>
         <div>
           <label className="label">Tipo de Gasto</label>
-          <select className="select" style={{ minWidth: 160 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+          <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
             <option value="">Todos</option>
             {tiposGasto.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
           </select>

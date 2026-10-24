@@ -93,12 +93,12 @@ export default function ReporteConsumoSeccion() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-          <select className="select" style={{ minWidth: 200 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)}>
+          <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)}>
             <option value="">Todas las áreas</option>
             {areas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
           </select>
         </div>
-        <select className="select" style={{ minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
           {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
         </select>

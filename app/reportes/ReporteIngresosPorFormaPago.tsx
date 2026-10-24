@@ -130,7 +130,7 @@ export default function ReporteIngresosPorFormaPago() {
     <div>
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <select className="select" style={{ minWidth: 150 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 150 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
           <option value="">Todos los status</option>
           <option value="Confirmado">Confirmado</option>
           <option value="Borrador">Borrador</option>

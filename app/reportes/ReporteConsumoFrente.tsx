@@ -101,18 +101,18 @@ export default function ReporteConsumoFrente() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-          <select className="select" style={{ minWidth: 180 }} value={filtroArea}
+          <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroArea}
             onChange={e => setFiltroArea(e.target.value)}>
             <option value="">Todas las áreas</option>
             {areas.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
           </select>
         </div>
-        <select className="select" style={{ minWidth: 180 }} value={filtroFre}
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroFre}
           onChange={e => setFiltroFre(e.target.value)}>
           <option value="">Todos los frentes</option>
           {frentes.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
           {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
         </select>

@@ -116,7 +116,7 @@ export default function ReporteKardex() {
             </div>
           )}
         </div>
-        <select className="select" style={{ minWidth: 180 }} value={filtroAlm} onChange={e => setFiltroAlm(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroAlm} onChange={e => setFiltroAlm(e.target.value)}>
           <option value="">Todos los almacenes</option>
           {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>

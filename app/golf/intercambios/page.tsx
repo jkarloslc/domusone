@@ -755,7 +755,7 @@ export default function IntercambiosPage() {
                   placeholder="Buscar por socio, folio o club…"
                   value={searchC} onChange={e => setSearchC(e.target.value)} />
               </div>
-              <select className="select" style={{ minWidth: 200 }}
+              <select className="select" style={{ width: 'auto', minWidth: 200 }}
                 value={filtroClub} onChange={e => setFiltroClub(e.target.value)}>
                 <option value="">Todos los clubes</option>
                 {clubes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}

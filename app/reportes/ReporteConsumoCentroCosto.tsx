@@ -91,11 +91,11 @@ export default function ReporteConsumoCentroCosto() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <Filter size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        <select className="select" style={{ minWidth: 200 }} value={filtroCC} onChange={e => setFiltroCC(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroCC} onChange={e => setFiltroCC(e.target.value)}>
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
           {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
         </select>

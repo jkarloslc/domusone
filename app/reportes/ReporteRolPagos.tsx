@@ -213,11 +213,11 @@ export default function ReporteRolPagos() {
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <Filter size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        <select className="select" style={{ minWidth: 200 }} value={filtroCC} onChange={e => setFiltroCC(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroCC} onChange={e => setFiltroCC(e.target.value)}>
           <option value="">Todos los Centros</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
           <option value="">Todos los status</option>
           {STATUS_ROL.map(s => <option key={s} value={s}>{s}</option>)}
         </select>

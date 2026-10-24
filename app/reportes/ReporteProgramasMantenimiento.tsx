@@ -136,29 +136,29 @@ export default function ReporteProgramasMantenimiento() {
     <div>
       {/* Filtros: Cuadrante → Área → Área Común (jerarquía vigente desde 2026-06-09) */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <select className="select" style={{ minWidth: 100 }} value={filtroAnio} onChange={e => setFiltroAnio(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 100 }} value={filtroAnio} onChange={e => setFiltroAnio(e.target.value)}>
           <option value="">Todos los años</option>
           {anios.map(a => <option key={a}>{a}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 150 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filtroCuad}
+        <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroCuad}
           onChange={e => { setFiltroCuad(e.target.value); setFiltroArea(''); setFiltroAC('') }}>
           <option value="">Todos los cuadrantes</option>
           {cuadrantes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filtroArea}
+        <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroArea}
           onChange={e => { setFiltroArea(e.target.value); setFiltroAC('') }}>
           <option value="">Todas las áreas</option>
           {areas.filter(a => !filtroCuad || relAreaCuad.some(r => r.id_area === a.id && r.id_cuadrante === Number(filtroCuad))).map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 170 }} value={filtroAC} onChange={e => setFiltroAC(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 170 }} value={filtroAC} onChange={e => setFiltroAC(e.target.value)}>
           <option value="">Todas las áreas comunes</option>
           {areasComunes.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 130 }} value={filtroCrit} onChange={e => setFiltroCrit(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 130 }} value={filtroCrit} onChange={e => setFiltroCrit(e.target.value)}>
           <option value="">Crítico y Rutinario</option>
           <option value="critico">Solo Crítico</option>
           <option value="rutinario">Solo Rutinario</option>

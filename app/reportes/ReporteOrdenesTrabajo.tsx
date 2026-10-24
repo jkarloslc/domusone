@@ -77,31 +77,31 @@ export default function ReporteOrdenesTrabajo() {
     <div>
       {/* Filtros: CC → Sección → Frente */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <select className="select" style={{ minWidth: 150, fontWeight: filtroEmpresa ? 600 : 400 }}
+        <select className="select" style={{ width: 'auto', minWidth: 150, fontWeight: filtroEmpresa ? 600 : 400 }}
           value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)}>
           <option value="">Todas las empresas</option>
           <option value="Balvanera">Balvanera</option>
           <option value="Oitydisa">Oitydisa</option>
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 150 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
           <option value="">Todos los status</option>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 150 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos</option>
           {TIPOS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroCc} onChange={e => { setFiltroCc(e.target.value); setFiltroArea(''); setFiltroFr('') }}>
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroCc} onChange={e => { setFiltroCc(e.target.value); setFiltroArea(''); setFiltroFr('') }}>
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 160 }} value={filtroArea} onChange={e => { setFiltroArea(e.target.value); setFiltroFr('') }}>
+        <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroArea} onChange={e => { setFiltroArea(e.target.value); setFiltroFr('') }}>
           <option value="">Todas las áreas</option>
           {(areas as any[])
             .filter(s => !filtroCc || s.id_centro_costo_fk === Number(filtroCc))
             .map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 150 }} value={filtroFr} onChange={e => setFiltroFr(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 150 }} value={filtroFr} onChange={e => setFiltroFr(e.target.value)}>
           <option value="">Todos los frentes</option>
           {(() => {
             const aId = Number(filtroArea)
@@ -113,7 +113,7 @@ export default function ReporteOrdenesTrabajo() {
               .map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)
           })()}
         </select>
-        <select className="select" style={{ minWidth: 130 }} value={filtroPrio} onChange={e => setFiltroPrio(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 130 }} value={filtroPrio} onChange={e => setFiltroPrio(e.target.value)}>
           <option value="">Todas las prioridades</option>
           {PRIORIDADES.map(p => <option key={p}>{p}</option>)}
         </select>

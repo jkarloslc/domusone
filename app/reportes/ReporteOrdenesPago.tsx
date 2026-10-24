@@ -369,15 +369,15 @@ export default function ReporteOrdenesPago() {
       {/* Filtros fila 1 */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <Filter size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        <select className="select" style={{ minWidth: 160 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 160 }} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
           <option value="">Todos los status</option>
           {STATUS_OP.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 200 }} value={filtroCC} onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}>
+        <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroCC} onChange={e => { setFiltroCC(e.target.value); setFiltroArea('') }}>
           <option value="">Todos los centros de costo</option>
           {centrosCosto.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
+        <select className="select" style={{ width: 'auto', minWidth: 180 }} value={filtroArea} onChange={e => setFiltroArea(e.target.value)} disabled={areasDelCC.length === 0}>
           <option value="">Todas las áreas{filtroCC ? ' del CC' : ''}</option>
           {areasDelCC.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
         </select>
@@ -393,11 +393,11 @@ export default function ReporteOrdenesPago() {
 
       {/* Filtros fila 2 */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <select className="select" style={{ minWidth: 220 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 220 }} value={filtroProv} onChange={e => setFiltroProv(e.target.value)}>
           <option value="">Todos los proveedores</option>
           {provs.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
-        <select className="select" style={{ minWidth: 200 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
+        <select className="select" style={{ width: 'auto', minWidth: 200 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
           <option value="">Todos los tipos de gasto</option>
           {catTG.activos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
         </select>
