@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { Plus, RefreshCw, Search, X, ChevronDown, ChevronRight, Settings, Save, Loader, AlertTriangle, Trash2 } from 'lucide-react'
 import InvitadoModal from './InvitadoModal'
 import PageHeader from '@/components/layout/PageHeader'
+import Paginador from '@/components/ui/Paginador'
 
 type Invitado = {
   id: number
@@ -44,6 +45,8 @@ export default function InvitadosPage() {
   const [loading, setLoading]       = useState(true)
   const [busqueda, setBusqueda]     = useState('')
   const [soloActivos, setSoloActivos] = useState(true)
+  const [page, setPage]           = useState(0)
+  const [pageSize, setPageSize]     = useState(25)
 
   const [expandido, setExpandido]   = useState<number | null>(null)
   const [showModal, setShowModal]   = useState(false)
@@ -123,6 +126,12 @@ export default function InvitadosPage() {
     if (!busqueda.trim()) return true
     return nombreCompletoInv(i).toLowerCase().includes(busqueda.toLowerCase())
   })
+
+  // Paginación en cliente; el filtro vuelve a la primera página y, tras eliminar
+  // o filtrar, se acota la página actual para no quedar en una vacía.
+  useEffect(() => { setPage(0) }, [busqueda, soloActivos])
+  const curPage = Math.min(page, Math.max(0, Math.ceil(invitadosFiltrados.length / pageSize) - 1))
+  const invitadosPagina = invitadosFiltrados.slice(curPage * pageSize, (curPage + 1) * pageSize)
 
   const stats = {
     total: invitados.length,
@@ -231,7 +240,7 @@ export default function InvitadosPage() {
                   <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin invitados registrados</div>
                   <div style={{ fontSize: 12 }}>Se dan de alta automáticamente al registrar una salida al campo, o desde &quot;Nuevo Invitado&quot;</div>
                 </td></tr>
-              ) : invitadosFiltrados.map(inv => {
+              ) : invitadosPagina.map(inv => {
                 const abierto = expandido === inv.id
                 const visitas = visitasPorInvitado[inv.id] ?? []
                 const anfitriones = Array.from(new Set(visitas.map(v => v.anfitrion)))
@@ -324,6 +333,8 @@ export default function InvitadosPage() {
             </tbody>
           </table>
         </div>
+        <Paginador page={curPage} pageSize={pageSize} totalItems={invitadosFiltrados.length} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {showModal && (
