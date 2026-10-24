@@ -375,6 +375,10 @@ export default function EventosPage() {
 
   // Gastos manuales
   const [gastos,       setGastos]       = useState<EventoGasto[]>([])
+  useEffect(() => {
+    if (activeTab === 'gastos' && editEvt) cargarOPsDisponibles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, editEvt?.id, evtOps, gastos])
   const [modalGasto,   setModalGasto]   = useState(false)
   const [gastoEdit,    setGastoEdit]    = useState<EventoGasto | null>(null)
   const [gastoForm,    setGastoForm]    = useState({ concepto:'', proveedor:'', tipo_gasto:'', monto:'', fecha:'', notas:'' })
@@ -960,25 +964,38 @@ ${form.justificacion_gasto_personal || form.notas_personal ? `
     setTimeout(() => win.print(), 400)
   }
 
-  // ── Buscar OPs para vincular ───────────────────────────────
-  const buscarOPs = async () => {
-    if (!busqOP.trim()) return
+  // ── OPs disponibles para vincular: CC Eventos, sin vínculo a ningún evento ──
+  const cargarOPsDisponibles = async () => {
     setLoadingOps(true)
-    const term = busqOP.trim()
-    // Busca por concepto OR por folio (ambos campos relevantes)
-    const { data, error } = await dbComp.from('ordenes_pago')
-      .select('id, folio, concepto, monto, saldo, status, id_proveedor_fk')
-      .or(`concepto.ilike.%${term}%,folio.ilike.%${term}%`)
-      .limit(20)
-    if (error) console.error('Error buscando OPs:', error)
-    setOpsComp((data as unknown as OP[]) ?? [])
+    const { data: cc } = await dbCfg.from('centros_costo').select('id').eq('nombre', 'Eventos').eq('activo', true).maybeSingle()
+    if (!cc) { setOpsComp([]); setLoadingOps(false); return }
+    const [{ data: ops }, { data: vinc }, { data: vincG }] = await Promise.all([
+      dbComp.from('ordenes_pago')
+        .select('id, folio, concepto, monto, saldo, status, id_proveedor_fk')
+        .eq('id_centro_costo_fk', (cc as { id: number }).id)
+        .not('status', 'in', '("Cancelada","Rechazada","Sustituida")')
+        .order('folio', { ascending: false })
+        .limit(500),
+      dbCtrl.from('eventos_ops').select('id_op_fk'),
+      dbCtrl.from('eventos_gastos').select('id_op_fk').not('id_op_fk', 'is', null),
+    ])
+    const usadas = new Set<number>([
+      ...((vinc as { id_op_fk: number }[]) ?? []).map(v => v.id_op_fk),
+      ...((vincG as { id_op_fk: number }[]) ?? []).map(v => v.id_op_fk),
+    ])
+    setOpsComp(((ops as unknown as OP[]) ?? []).filter(o => !usadas.has(o.id)))
     setLoadingOps(false)
   }
 
   const vincularOP = async (op: OP) => {
     if (!editEvt) return
     if (evtOps.find(e => e.id_op_fk === op.id)) return // ya vinculada
-    await dbCtrl.from('eventos_ops').insert({ id_evento_fk: editEvt.id, id_op_fk: op.id })
+    const { error } = await dbCtrl.from('eventos_ops').insert({ id_evento_fk: editEvt.id, id_op_fk: op.id })
+    if (error) {
+      setErr(error.code === '23505' ? 'Esa OP ya está vinculada a un evento' : error.message)
+      cargarOPsDisponibles()
+      return
+    }
     loadEventoDetalle(editEvt.id)
   }
 
@@ -2243,36 +2260,39 @@ ${viewEvt.notas ? `<div class="sec"><div class="sec-title">Notas Generales</div>
                 <div className="card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', marginBottom: 12 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: '#15803d', marginBottom: 8 }}>Vincular Orden de Pago existente</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                    <input className="input" placeholder="Buscar por concepto o folio…" value={busqOP} onChange={e => setBusqOP(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && buscarOPs()} style={{ flex: 1, fontSize: 12 }} />
-                    <button className="btn-primary" onClick={buscarOPs} disabled={loadingOps} style={{ fontSize: 12, background: '#16a34a' }}>
-                      {loadingOps ? '…' : 'Buscar'}
+                    <input className="input" placeholder="Filtrar por concepto o folio…" value={busqOP} onChange={e => setBusqOP(e.target.value)}
+                      style={{ flex: 1, fontSize: 12 }} />
+                    <button className="btn-ghost" onClick={cargarOPsDisponibles} disabled={loadingOps} style={{ fontSize: 12 }}>
+                      {loadingOps ? '…' : 'Actualizar'}
                     </button>
                   </div>
-                  {opsComp.length > 0 && (
-                    <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
-                      {opsComp.map(op => {
-                        const yaVinculada = evtOps.some(e => e.id_op_fk === op.id)
-                        return (
+                  {(() => {
+                    const q = busqOP.trim().toLowerCase()
+                    const lista = q ? opsComp.filter(o => (o.folio ?? '').toLowerCase().includes(q) || (o.concepto ?? '').toLowerCase().includes(q)) : opsComp
+                    if (lista.length === 0) return (
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 0' }}>
+                        {loadingOps ? 'Cargando…' : 'No hay OPs disponibles del centro de costo Eventos'}
+                      </div>
+                    )
+                    return (
+                      <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, background: '#fff' }}>
+                        {lista.map(op => (
                           <div key={op.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
                             <div>
                               <span style={{ fontWeight: 700, color: '#16a34a', marginRight: 8, fontFamily: 'monospace' }}>{op.folio}</span>
                               <span style={{ color: 'var(--text-primary)' }}>{op.concepto}</span>
                               <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{op.id_proveedor_fk ? (provMap[op.id_proveedor_fk] ?? '') : ''}</span>
+                              <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 8 }}>{op.status}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontWeight: 700 }}>{fmt$(op.monto)}</span>
-                              {yaVinculada ? (
-                                <span style={{ fontSize: 10, color: '#16a34a' }}>✓ Vinculada</span>
-                              ) : (
-                                <button className="btn-primary" onClick={() => vincularOP(op)} style={{ fontSize: 11, padding: '3px 8px', background: '#16a34a' }}>Vincular</button>
-                              )}
+                              <button className="btn-primary" onClick={() => vincularOP(op)} style={{ fontSize: 11, padding: '3px 8px', background: '#16a34a' }}>Vincular</button>
                             </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {/* OPs vinculadas */}
