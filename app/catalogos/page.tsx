@@ -385,6 +385,19 @@ const CATALOGOS: CatConfig[] = [
     campos: [],
   },
   {
+    key:    'agrupadores_venta',
+    tabla:  'agrupadores_venta',
+    label:  'Agrupadores de Centros de Venta',
+    icon:   Store,
+    color:  '#0d9488',
+    desc:   'Agrupa centros de venta del POS para filtrar y totalizar como "Agrupador/Centro de Venta" en reportes y vistas',
+    sortBy: 'orden',
+    campos: [
+      { key: 'nombre', label: 'Nombre *',           type: 'text',   required: true },
+      { key: 'orden',  label: 'Orden de aparición', type: 'number' },
+    ],
+  },
+  {
     key:   'centros_venta_pos',
     tabla: '__custom__',
     label: 'Centros de Venta POS',
@@ -906,7 +919,7 @@ function CuotaPreciosModal({ cuota, puedeEscribir, onClose }: {
 // ══════════════════════════════════════════════════════════════
 // Centros de Venta POS — panel custom con mapeo a Centro de Ingreso
 // ══════════════════════════════════════════════════════════════
-type CentroVentaPos = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number; serie_factura: string | null }
+type CentroVentaPos = { id: number; nombre: string; descripcion: string | null; activo: boolean; orden: number; serie_factura: string | null; id_agrupador_fk?: number | null }
 type CentroIngresoOpt = { id: number; nombre: string; activo: boolean }
 type IngresoMapRow   = { id: number; id_centro_venta_fk: number; id_centro_ingreso_fk: number; activo: boolean; genera_recibo_automatico: boolean }
 
@@ -920,7 +933,7 @@ function CuotasGolfPanel() {
 }
 
 // ── Centros de Venta POS ──────────────────────────────────────
-const emptyCVForm = () => ({ nombre: '', descripcion: '', orden: 1, id_centro_ingreso_fk: '' as string | number, genera_recibo_automatico: false, serie_factura: '' })
+const emptyCVForm = () => ({ nombre: '', descripcion: '', orden: 1, id_centro_ingreso_fk: '' as string | number, genera_recibo_automatico: false, serie_factura: '', id_agrupador_fk: '' as string | number })
 
 const inputSt: React.CSSProperties = { width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#1e293b', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }
 const labelSt: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }
@@ -931,6 +944,7 @@ function CentrosVentaPOSPanel() {
   const [items, setItems]           = useState<CentroVentaPos[]>([])
   const [centrosIng, setCentrosIng] = useState<CentroIngresoOpt[]>([])
   const [maps, setMaps]             = useState<IngresoMapRow[]>([])
+  const [agrupadores, setAgrupadores] = useState<{ id: number; nombre: string }[]>([])
   const [loading, setLoading]       = useState(true)
   const [showForm, setShowForm]     = useState(false)
   const [editing, setEditing]       = useState<CentroVentaPos | null>(null)
@@ -941,11 +955,16 @@ function CentrosVentaPOSPanel() {
   const fetchAll = useCallback(async () => {
     setLoading(true)
     const [{ data: cvs }, { data: cis }, { data: ms }] = await Promise.all([
-      dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden, serie_factura').order('orden'),
+      dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden, serie_factura, id_agrupador_fk').order('orden'),
       dbCfg.from('centros_ingreso').select('id, nombre, activo').eq('activo', true).order('nombre'),
       dbGolf.from('pos_centros_ingreso_map').select('id, id_centro_venta_fk, id_centro_ingreso_fk, activo, genera_recibo_automatico'),
     ])
-    setItems((cvs as CentroVentaPos[]) ?? [])
+    // Tolera migración de agrupadores pendiente: si falla el select con agrupador, recarga sin él
+    let cvsOk: any = cvs
+    if (!cvsOk) cvsOk = (await dbGolf.from('cat_centros_venta').select('id, nombre, descripcion, activo, orden, serie_factura').order('orden')).data
+    const { data: agrs } = await dbCfg.from('agrupadores_venta').select('id, nombre').eq('activo', true).order('orden').order('nombre')
+    setAgrupadores((agrs as any[]) ?? [])
+    setItems((cvsOk as CentroVentaPos[]) ?? [])
     setCentrosIng((cis as CentroIngresoOpt[]) ?? [])
     setMaps((ms as IngresoMapRow[]) ?? [])
     setLoading(false)
@@ -961,14 +980,14 @@ function CentrosVentaPOSPanel() {
   const openEdit = (item: CentroVentaPos) => {
     const m = getMap(item.id)
     setEditing(item)
-    setForm({ nombre: item.nombre, descripcion: item.descripcion ?? '', orden: item.orden, id_centro_ingreso_fk: m?.id_centro_ingreso_fk ?? '', genera_recibo_automatico: m?.genera_recibo_automatico ?? false, serie_factura: item.serie_factura ?? '' })
+    setForm({ nombre: item.nombre, descripcion: item.descripcion ?? '', orden: item.orden, id_centro_ingreso_fk: m?.id_centro_ingreso_fk ?? '', genera_recibo_automatico: m?.genera_recibo_automatico ?? false, serie_factura: item.serie_factura ?? '', id_agrupador_fk: item.id_agrupador_fk ?? '' })
     setError(''); setShowForm(true)
   }
 
   const handleSave = async () => {
     if (!form.nombre.trim()) { setError('El nombre es obligatorio'); return }
     setSaving(true); setError('')
-    const payload: any = { nombre: form.nombre.trim(), descripcion: form.descripcion || null, orden: Number(form.orden), serie_factura: form.serie_factura.trim().toUpperCase() || null }
+    const payload: any = { nombre: form.nombre.trim(), descripcion: form.descripcion || null, orden: Number(form.orden), serie_factura: form.serie_factura.trim().toUpperCase() || null, id_agrupador_fk: form.id_agrupador_fk ? Number(form.id_agrupador_fk) : null }
     let centroId: number
     if (editing) {
       const { error: err } = await dbGolf.from('cat_centros_venta').update(payload).eq('id', editing.id)
@@ -1070,6 +1089,13 @@ function CentrosVentaPOSPanel() {
               </select>
             </div>
             <div>
+              <label style={labelSt}>Agrupador (reportes y vistas)</label>
+              <select style={{ ...inputSt, cursor: 'pointer' }} value={String(form.id_agrupador_fk)} onChange={e => setForm(f => ({ ...f, id_agrupador_fk: e.target.value }))}>
+                <option value="">Sin agrupador</option>
+                {agrupadores.map(a => <option key={a.id} value={String(a.id)}>{a.nombre}</option>)}
+              </select>
+            </div>
+            <div>
               <label style={labelSt}>Serie de Factura</label>
               <input style={{ ...inputSt, fontFamily: 'monospace', textTransform: 'uppercase' }}
                 value={form.serie_factura} onChange={e => setForm(f => ({ ...f, serie_factura: e.target.value }))}
@@ -1115,6 +1141,7 @@ function CentrosVentaPOSPanel() {
               <th>Nombre</th>
               <th>Descripción</th>
               <th style={{ width: 60, textAlign: 'center' }}>Orden</th>
+              <th>Agrupador</th>
               <th>Centro de Ingreso</th>
               <th style={{ width: 100, textAlign: 'center' }}>Serie Factura</th>
               <th style={{ width: 100, textAlign: 'center' }}>Recibo Auto</th>
@@ -1124,11 +1151,11 @@ function CentrosVentaPOSPanel() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40 }}>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40 }}>
                 <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} />
               </td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 Sin centros. Haz clic en "Nuevo" para agregar.
               </td></tr>
             ) : items.map(item => {
@@ -1144,6 +1171,9 @@ function CentrosVentaPOSPanel() {
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{item.descripcion ?? '—'}</td>
                   <td style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)' }}>{item.orden}</td>
+                  <td style={{ fontSize: 12 }}>
+                    {agrupadores.find(a => a.id === item.id_agrupador_fk)?.nombre ?? <span style={{ color: '#cbd5e1' }}>—</span>}
+                  </td>
                   <td>
                     {ciNombre
                       ? <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 20, background: '#dcfce7', color: '#15803d' }}>{ciNombre}</span>

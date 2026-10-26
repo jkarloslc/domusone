@@ -4,6 +4,9 @@ import { dbGolf } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, FileSpreadsheet, LayoutList, Grid3x3, PieChart } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
+import { cargarCentrosVentaAgrupados, AgrupadorVenta } from '@/lib/centrosVenta'
+import { idsCentrosFiltro } from '@/lib/centrosIngreso'
 
 const fmt  = (n: number) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
 const fmtF = (s: string | null) => {
@@ -22,10 +25,12 @@ export default function ReporteGolfCuadreFormasPago() {
   const [ventas,  setVentas]  = useState<any[]>([])
   const [pagos,   setPagos]   = useState<any[]>([])
   const [centros, setCentros] = useState<any[]>([])
+  const [agrupadores, setAgrupadores] = useState<AgrupadorVenta[]>([])
   const [loading, setLoading] = useState(true)
   const [tab,     setTab]     = useState<Tab>('matriz')
 
   // Filtros
+  const [filtroAgr,    setFiltroAgr]    = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<EstadoCorte>('')
   const [filtroDe,     setFiltroDe]     = useState(hoy())
@@ -34,10 +39,9 @@ export default function ReporteGolfCuadreFormasPago() {
   const fetchData = useCallback(async () => {
     setLoading(true)
 
-    const { data: centrosData } = await dbGolf
-      .from('cat_centros_venta')
-      .select('id, nombre')
-      .order('orden')
+    const { centros: centrosRaw, agrupadores: agrData } = await cargarCentrosVentaAgrupados()
+    const centrosData = centrosRaw.map(c => ({ id: c.id, nombre: c.label, id_agrupador_fk: c.id_agrupador_fk, agrupador: c.agrupador, agr_cuotas: false, label: c.label }))
+    const idsCentros = idsCentrosFiltro(centrosRaw, filtroAgr, filtroCentro)
 
     // Ventas PAGADA de todos los centros — SIN condición de corte
     // (el objetivo es cuadrar formas de pago contra TPV/caja antes de cortar)
@@ -46,7 +50,7 @@ export default function ReporteGolfCuadreFormasPago() {
       .eq('status', 'PAGADA')
       .order('fecha', { ascending: false })
 
-    if (filtroCentro) q = (q as any).eq('id_centro_fk', Number(filtroCentro))
+    if (idsCentros) q = (q as any).in('id_centro_fk', Array.from(idsCentros))
     if (filtroEstado === 'pendiente') q = (q as any).is('id_corte_fk', null)
     if (filtroEstado === 'cortada')   q = (q as any).not('id_corte_fk', 'is', null)
     if (filtroDe) q = (q as any).gte('fecha', filtroDe + 'T00:00:00')
@@ -63,7 +67,8 @@ export default function ReporteGolfCuadreFormasPago() {
       pagosData = p ?? []
     }
 
-    setCentros(centrosData ?? [])
+    setCentros(centrosData)
+    setAgrupadores(agrData)
     setVentas(ventasData ?? [])
     setPagos(pagosData)
     setLoading(false)
@@ -289,10 +294,9 @@ export default function ReporteGolfCuadreFormasPago() {
 
         <div>
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Centro de Venta</div>
-          <select style={{ ...selStyle, width: 200 }} value={filtroCentro} onChange={e => setFiltroCentro(e.target.value)}>
-            <option value="">Todos</option>
-            {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <FiltroAgrupadorCentro centros={centros} agrupadores={agrupadores} filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr} filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro} textoTodos="Todos" minWidth={200} />
+          </div>
         </div>
 
         <div>

@@ -2,8 +2,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dbGolf } from '@/lib/supabase'
 import { PrintBar } from './utils'
-import { RefreshCw, FileSpreadsheet, LayoutList, Grid3x3, Package } from 'lucide-react'
+import { RefreshCw, FileSpreadsheet, LayoutList, Grid3x3, Package, Layers } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
+import { cargarCentrosVentaAgrupados, CentroVentaAgr, AgrupadorVenta } from '@/lib/centrosVenta'
+import { idsCentrosFiltro } from '@/lib/centrosIngreso'
 
 const fmt  = (n: number) => n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })
 const fmtF = (s: string | null) => s
@@ -13,7 +16,7 @@ const pct = (val: number, total: number) => total > 0 ? ((val / total) * 100).to
 const hoy = () => new Date().toISOString().slice(0, 10)
 const inicioMes = () => hoy().slice(0, 8) + '01'
 
-type Tab = 'resumen' | 'operaciones' | 'productos'
+type Tab = 'resumen' | 'agrupadores' | 'operaciones' | 'productos'
 type EstadoCorte = '' | 'pendiente' | 'cortada'
 
 // PostgREST limita filas por request y la URL de .in() — se consulta por lotes y páginas
@@ -32,11 +35,13 @@ export default function ReporteVentasPOS() {
   const [ventas,  setVentas]  = useState<any[]>([])
   const [dets,    setDets]    = useState<any[]>([])
   const [pagos,   setPagos]   = useState<any[]>([])
-  const [centros, setCentros] = useState<any[]>([])
+  const [centros, setCentros] = useState<CentroVentaAgr[]>([])
+  const [agrupadores, setAgrupadores] = useState<AgrupadorVenta[]>([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState('')
   const [tab,     setTab]     = useState<Tab>('resumen')
 
+  const [filtroAgr,    setFiltroAgr]    = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
   const [filtroEstado, setFiltroEstado] = useState<EstadoCorte>('')
   const [filtroDe,     setFiltroDe]     = useState(inicioMes())
@@ -46,7 +51,8 @@ export default function ReporteVentasPOS() {
   const fetchData = useCallback(async () => {
     setLoading(true); setError('')
 
-    const { data: centrosData } = await dbGolf.from('cat_centros_venta').select('id, nombre').order('orden')
+    const { centros: centrosData, agrupadores: agrData } = await cargarCentrosVentaAgrupados()
+    const idsCentros = idsCentrosFiltro(centrosData, filtroAgr, filtroCentro)
 
     // Ventas PAGADA paginadas de 1000 en 1000
     const ventasAcc: any[] = []
@@ -56,7 +62,7 @@ export default function ReporteVentasPOS() {
         .eq('status', 'PAGADA')
         .order('fecha', { ascending: false })
         .range(from, from + 999)
-      if (filtroCentro) q = (q as any).eq('id_centro_fk', Number(filtroCentro))
+      if (idsCentros) q = (q as any).in('id_centro_fk', Array.from(idsCentros))
       if (filtroEstado === 'pendiente') q = (q as any).is('id_corte_fk', null)
       if (filtroEstado === 'cortada')   q = (q as any).not('id_corte_fk', 'is', null)
       if (filtroDe) q = (q as any).gte('fecha', filtroDe + 'T00:00:00')
@@ -75,17 +81,20 @@ export default function ReporteVentasPOS() {
         ])
       : [[], []]
 
-    setCentros(centrosData ?? [])
+    setCentros(centrosData)
+    setAgrupadores(agrData)
     setVentas(ventasAcc)
     setDets(detsData)
     setPagos(pagosData)
     setLoading(false)
-  }, [filtroCentro, filtroEstado, filtroDe, filtroA])
+  }, [filtroAgr, filtroCentro, filtroEstado, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const centroMap = useMemo(() => Object.fromEntries(centros.map(c => [c.id, c.nombre])), [centros])
+  // Etiqueta "Agrupador/Centro" — el agrupador es solo para reportes y vistas
+  const centroMap = useMemo(() => Object.fromEntries(centros.map(c => [c.id, c.label])), [centros])
   const nombreCentro = useCallback((id: number | null) => (id != null && centroMap[id]) || 'Sin centro', [centroMap])
+  const agrDeCentro = useMemo(() => Object.fromEntries(centros.map(c => [c.id, c.agrupador || 'Sin agrupador'])), [centros])
 
   // Formas de pago por venta
   const pagosPorVenta = useMemo(() => {
@@ -113,20 +122,20 @@ export default function ReporteVentasPOS() {
   const pagosF = useMemo(() => pagos.filter(p => idsFiltrados.has(p.id_venta_fk)), [pagos, idsFiltrados])
   const detsF  = useMemo(() => dets.filter(d => idsFiltrados.has(d.id_venta_fk)), [dets, idsFiltrados])
 
-  // ── Matriz Centro × Forma de Pago (con # de operaciones y total vendido por centro) ──
-  const matriz = useMemo(() => {
+  // ── Matriz (Centro | Agrupador) × Forma de Pago, con # de operaciones y total vendido ──
+  const construirMatriz = useCallback((claveDe: (idCentro: number | null) => string) => {
     const columnas = Array.from(new Set(pagosF.map(p => p.forma_nombre ?? 'Sin especificar')))
       .sort((a, b) => a.localeCompare(b, 'es'))
     const filasMap = new Map<string, { nombre: string; ops: number; vendido: number; celdas: Record<string, number>; cobrado: number }>()
     ventasFiltradas.forEach(v => {
-      const k = nombreCentro(v.id_centro_fk)
+      const k = claveDe(v.id_centro_fk)
       const f = filasMap.get(k) ?? { nombre: k, ops: 0, vendido: 0, celdas: {}, cobrado: 0 }
       f.ops += 1; f.vendido += v.total ?? 0
       filasMap.set(k, f)
     })
     pagosF.forEach(p => {
       const v = ventaMap[p.id_venta_fk]; if (!v) return
-      const f = filasMap.get(nombreCentro(v.id_centro_fk))!
+      const f = filasMap.get(claveDe(v.id_centro_fk))!
       const c = p.forma_nombre ?? 'Sin especificar'
       f.celdas[c] = (f.celdas[c] ?? 0) + (p.monto ?? 0)
       f.cobrado += p.monto ?? 0
@@ -140,7 +149,13 @@ export default function ReporteVentasPOS() {
       totalVendido: filas.reduce((s, f) => s + f.vendido, 0),
       totalCobrado: filas.reduce((s, f) => s + f.cobrado, 0),
     }
-  }, [ventasFiltradas, pagosF, ventaMap, nombreCentro])
+  }, [ventasFiltradas, pagosF, ventaMap])
+
+  const matrizCentro = useMemo(() => construirMatriz(nombreCentro), [construirMatriz, nombreCentro])
+  const matrizAgr = useMemo(
+    () => construirMatriz(id => (id != null && agrDeCentro[id]) || 'Sin agrupador'),
+    [construirMatriz, agrDeCentro])
+  const matriz = tab === 'agrupadores' ? matrizAgr : matrizCentro
 
   // ── Productos: agrupado por concepto (y centro) ──
   const productos = useMemo(() => {
@@ -166,17 +181,21 @@ export default function ReporteVentasPOS() {
     total: productos.reduce((s, p) => s + p.total, 0),
   }), [productos])
 
-  const totalVendido = matriz.totalVendido
+  const totalVendido = matrizCentro.totalVendido
   const ticketProm = ventasFiltradas.length ? totalVendido / ventasFiltradas.length : 0
   const pendientes = ventasFiltradas.filter(v => v.id_corte_fk == null).length
 
   const exportXLSX = () => {
-    const header = ['Centro de Venta', 'Operaciones', 'Vendido', ...matriz.columnas, 'Cobrado']
-    const rows: any[][] = [header]
-    matriz.filas.forEach(f => rows.push([f.nombre, f.ops, f.vendido, ...matriz.columnas.map(c => f.celdas[c] ?? 0), f.cobrado]))
-    rows.push(['TOTAL', matriz.totalOps, matriz.totalVendido, ...matriz.columnas.map(c => matriz.totalesCol[c] ?? 0), matriz.totalCobrado])
-    const wsRes = XLSX.utils.aoa_to_sheet(rows)
-    wsRes['!cols'] = [{ wch: 24 }, { wch: 12 }, { wch: 16 }, ...matriz.columnas.map(() => ({ wch: 16 })), { wch: 16 }]
+    const hojaMatriz = (m: typeof matrizCentro, etiqueta: string) => {
+      const rows: any[][] = [[etiqueta, 'Operaciones', 'Vendido', ...m.columnas, 'Cobrado']]
+      m.filas.forEach(f => rows.push([f.nombre, f.ops, f.vendido, ...m.columnas.map(c => f.celdas[c] ?? 0), f.cobrado]))
+      rows.push(['TOTAL', m.totalOps, m.totalVendido, ...m.columnas.map(c => m.totalesCol[c] ?? 0), m.totalCobrado])
+      const ws = XLSX.utils.aoa_to_sheet(rows)
+      ws['!cols'] = [{ wch: 24 }, { wch: 12 }, { wch: 16 }, ...m.columnas.map(() => ({ wch: 16 })), { wch: 16 }]
+      return ws
+    }
+    const wsRes = hojaMatriz(matrizCentro, 'Centro de Venta')
+    const wsAgr = hojaMatriz(matrizAgr, 'Agrupador')
 
     const wsOps = XLSX.utils.json_to_sheet(ventasFiltradas.map(v => ({
       'Folio': v.id,
@@ -213,6 +232,7 @@ export default function ReporteVentasPOS() {
 
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, wsRes,  'Resumen Centro x Forma')
+    XLSX.utils.book_append_sheet(wb, wsAgr,  'Por Agrupador')
     XLSX.utils.book_append_sheet(wb, wsOps,  'Operaciones')
     XLSX.utils.book_append_sheet(wb, wsProd, 'Productos')
     XLSX.utils.book_append_sheet(wb, wsDet,  'Detalle Productos')
@@ -237,22 +257,25 @@ export default function ReporteVentasPOS() {
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'resumen',     label: 'Resumen por Centro y Forma de Pago', icon: <Grid3x3 size={13} /> },
+    { key: 'agrupadores', label: 'Por Agrupador',                     icon: <Layers size={13} /> },
     { key: 'operaciones', label: 'Detalle de Operaciones',             icon: <LayoutList size={13} /> },
     { key: 'productos',   label: 'Detalle de Productos',               icon: <Package size={13} /> },
   ]
   const ACC = '#2563eb'
 
-  const count = tab === 'resumen' ? matriz.filas.length : tab === 'operaciones' ? ventasFiltradas.length : productos.length
+  const count = (tab === 'resumen' || tab === 'agrupadores') ? matriz.filas.length : tab === 'operaciones' ? ventasFiltradas.length : productos.length
 
   return (
     <div>
       <div className="card" style={{ padding: '14px 18px', marginBottom: 18, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
         <div>
-          <div style={lbl}>Centro de Venta</div>
-          <select style={{ ...selStyle, width: 200 }} value={filtroCentro} onChange={e => setFiltroCentro(e.target.value)}>
-            <option value="">Todos los centros</option>
-            {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
+          <div style={lbl}>Agrupador / Centro de Venta</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <FiltroAgrupadorCentro centros={centros} agrupadores={agrupadores}
+              filtroAgr={filtroAgr} setFiltroAgr={setFiltroAgr}
+              filtroCentro={filtroCentro} setFiltroCentro={setFiltroCentro}
+              textoTodos="Todos los centros" minWidth={220} />
+          </div>
         </div>
         <div>
           <div style={lbl}>Estado de Corte</div>
@@ -310,7 +333,7 @@ export default function ReporteVentasPOS() {
       <div className="card" style={{ overflow: 'hidden' }} id="reporte-print-area">
         <div style={{ padding: '14px 18px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <PrintBar title="Ventas-POS" count={count}
-            reportTitle={`Ventas por Centro de Venta — ${filtroCentro ? nombreCentro(Number(filtroCentro)) : 'Todos los centros'} (${filtroDe || '…'} a ${filtroA || '…'})`}
+            reportTitle={`Ventas por Centro de Venta — ${filtroCentro ? nombreCentro(Number(filtroCentro)) : filtroAgr ? (agrupadores.find(a => String(a.id) === filtroAgr)?.nombre ?? 'Sin agrupador') : 'Todos los centros'} (${filtroDe || '…'} a ${filtroA || '…'})`}
             hideCSV />
           <button className="btn-secondary" onClick={exportXLSX} style={{ fontSize: 12 }}>
             <FileSpreadsheet size={13} /> Exportar Excel
@@ -321,12 +344,12 @@ export default function ReporteVentasPOS() {
           <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)', fontSize: 13 }}>Cargando…</div>
         ) : ventasFiltradas.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)', fontSize: 13 }}>Sin ventas con los filtros seleccionados</div>
-        ) : tab === 'resumen' ? (
+        ) : (tab === 'resumen' || tab === 'agrupadores') ? (
           <div style={{ overflowX: 'auto' }}>
             <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th style={th(true)}>Centro de Venta</th>
+                  <th style={th(true)}>{tab === 'agrupadores' ? 'Agrupador' : 'Centro de Venta'}</th>
                   <th style={th()}>Ops.</th>
                   <th style={th()}>Vendido</th>
                   <th style={th()}>% </th>
