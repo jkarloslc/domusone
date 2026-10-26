@@ -1,11 +1,10 @@
 'use client'
-import { ShieldCheck, Users, Wallet, ChevronRight, Briefcase } from 'lucide-react'
+import { Users, Wallet, ChevronRight, Briefcase } from 'lucide-react'
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
 
 import PageHeader from '@/components/layout/PageHeader'
 const MODULOS = [
-  { key: 'vigilancia',   permKey: 'vigilancia-extras', label: 'Vigilancia',              icon: ShieldCheck, color: '#334155', desc: 'Extras de vigilancia: captura, autorización y OP', href: '/vigilancia-extras' },
   { key: 'rol-pagos',    permKey: 'hr',                label: 'Rol de Pagos',            icon: Wallet,      color: '#b45309', desc: 'Asistencia semanal de colaboradores y monto a pagar', href: '/hr/rol-de-pagos' },
   { key: 'colaboradores',permKey: 'hr',                label: 'Colaboradores',           icon: Users,       color: '#b45309', desc: 'Catálogo de personal operativo — sueldos y puesto',  href: '/hr/colaboradores' },
 ]
@@ -33,7 +32,7 @@ export default function HRPage() {
         eyebrowLabel="Módulo"
         variant="xl"
         title="HR"
-        subtitle="Vigilancia, catálogos de personal y rol de pagos"
+        subtitle="Catálogos de personal y rol de pagos"
       />
 
       {/* Grid de módulos */}
