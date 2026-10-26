@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
 import { colorAgrupador } from '@/lib/centrosIngreso'
 
+import PageHeader from '@/components/layout/PageHeader'
 type Centro = {
   id: number
   nombre: string
@@ -151,28 +152,19 @@ export default function CentrosIngresoPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <button onClick={() => router.push('/ingresos')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, marginBottom: 6, padding: 0 }}>
-            <ChevronLeft size={14} /> Ingresos
+      <PageHeader backHref="/ingresos"
+        icon={Tag}
+        color="#7c3aed"
+        eyebrowLabel="Catálogo"
+        variant="xl"
+        title="Centros de Ingreso"
+        subtitle="Configura los centros y su tipo de captura"
+        actions={puedeEscribir ? (
+          <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
+            <Plus size={14} /> Nuevo Centro
           </button>
-          <div className="page-eyebrow">
-            <Tag size={16} style={{ color: '#7c3aed' }} />
-            <span className="page-eyebrow-label">Catálogo</span>
-          </div>
-          <h1 className="page-title-xl">Centros de Ingreso</h1>
-          <p className="page-subtitle">
-            Configura los centros y su tipo de captura
-          </p>
-        </div>
-        {puedeEscribir && (
-          <div className="page-header-actions">
-            <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}>
-              <Plus size={14} /> Nuevo Centro
-            </button>
-          </div>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Lista */}
       <div className="card" style={{ overflow: 'hidden' }}>

@@ -20,7 +20,7 @@ function AccesosContent({ embedded }: { embedded?: boolean }) {
 
       {/* Header — oculto cuando está dentro de /residencial */}
       {!embedded && (
-        <PageHeader
+        <PageHeader backHref="/residencial"
           variant="xl"
           icon={Shield}
           color="var(--gold)"

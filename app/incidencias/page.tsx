@@ -124,7 +124,7 @@ export default function IncidenciasPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <PageHeader
+      <PageHeader backHref="/residencial"
         variant="xl"
         icon={AlertTriangle}
         color="var(--gold)"

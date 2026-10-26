@@ -12,6 +12,7 @@ import FacturaDetail from './FacturaDetail'
 
 
 import Paginador from '@/components/ui/Paginador'
+import PageHeader from '@/components/layout/PageHeader'
 const fmt = (v: number | null | undefined) =>
   v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
 const fmtFecha = (d: string | null | undefined) =>
@@ -53,21 +54,19 @@ export default function FacturasPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <FileText size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Facturas</h1>
-          <p className="page-subtitle">Comprobantes Fiscales Digitales (CFDI)</p>
-        </div>
-        <div className="page-header-actions">
+      <PageHeader backHref="/residencial"
+        icon={FileText}
+        color="var(--blue)"
+        eyebrowLabel="Módulo"
+        variant="xl"
+        title="Facturas"
+        subtitle="Comprobantes Fiscales Digitales (CFDI)"
+        actions={<>
           <button className="btn-primary" onClick={() => setModalOpen(true)}>
             <Plus size={14} /> Nueva Factura
           </button>
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Banner PAC */}
       <div style={{ padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>

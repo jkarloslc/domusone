@@ -100,7 +100,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
       {/* Tabs (solo en ruta directa /lotes, no cuando está embebido en /residencial) */}
       {!embedded && <LotesTabs />}
 
-      <PageHeader
+      <PageHeader backHref="/residencial"
         variant="xl"
         icon={MapPin}
         color="var(--gold)"

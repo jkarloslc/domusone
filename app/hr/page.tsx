@@ -3,6 +3,7 @@ import { ShieldCheck, Users, Wallet, ChevronRight, Briefcase } from 'lucide-reac
 import { useAuth } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
 
+import PageHeader from '@/components/layout/PageHeader'
 const MODULOS = [
   { key: 'vigilancia',   permKey: 'vigilancia-extras', label: 'Vigilancia',              icon: ShieldCheck, color: '#334155', desc: 'Extras de vigilancia: captura, autorización y OP', href: '/vigilancia-extras' },
   { key: 'rol-pagos',    permKey: 'hr',                label: 'Rol de Pagos',            icon: Wallet,      color: '#b45309', desc: 'Asistencia semanal de colaboradores y monto a pagar', href: '/hr/rol-de-pagos' },
@@ -27,16 +28,13 @@ export default function HRPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <Briefcase size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">HR</h1>
-          <p className="page-subtitle">Vigilancia, catálogos de personal y rol de pagos</p>
-        </div>
-      </div>
+      <PageHeader icon={Briefcase}
+        color="var(--blue)"
+        eyebrowLabel="Módulo"
+        variant="xl"
+        title="HR"
+        subtitle="Vigilancia, catálogos de personal y rol de pagos"
+      />
 
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>

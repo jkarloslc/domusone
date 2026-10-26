@@ -10,7 +10,7 @@ export default function LotesListadoPage() {
   return (
     <div className="page-pad" style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
       <LotesTabs />
-      <PageHeader
+      <PageHeader backHref="/residencial"
         variant="xl"
         icon={Table2}
         color="var(--gold)"

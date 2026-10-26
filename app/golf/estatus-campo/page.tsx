@@ -95,7 +95,7 @@ export default function EstatusCampoPage() {
   return (
     <div style={{ padding: '32px 36px' }}>
       <PageHeader
-        onBack={() => router.push('/golf/mantto-campo')}
+        backHref="/golf/mantto-campo"
         title="Estatus del Campo"
         subtitle={`Bitácora de apertura / cierre del campo y de los caminos · ${rows.length} registros`}
         actions={<>

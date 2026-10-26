@@ -12,6 +12,7 @@ import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
 import { esCentroCuotas, colorAgrupador, cargarCentrosAgrupados, idsCentrosFiltro, AgrupadorIngreso } from '@/lib/centrosIngreso'
 
 import Paginador from '@/components/ui/Paginador'
+import PageHeader from '@/components/layout/PageHeader'
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = {
   id: number; nombre: string; codigo: string | null
@@ -1265,25 +1266,20 @@ export default function IngresosPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <TrendingUp size={16} style={{ color: '#059669' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Ingresos</h1>
-          <p className="page-subtitle">
-            {total} recibos · {fmt(totalMes)} en los filtros actuales
-          </p>
-        </div>
-        <div className="page-header-actions" style={{ display: 'flex', gap: 8 }}>
+      <PageHeader icon={TrendingUp}
+        color="#059669"
+        eyebrowLabel="Módulo"
+        variant="xl"
+        title="Ingresos"
+        subtitle={<>{total} recibos · {fmt(totalMes)} en los filtros actuales</>}
+        actions={<>
           {canWrite('ingresos') && (
             <button className="btn-primary" onClick={() => setModal(true)}>
               <Plus size={14} /> Nuevo Recibo
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>

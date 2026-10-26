@@ -211,7 +211,7 @@ function ExpedienteContent({ embedded }: { embedded?: boolean }) {
       {/* Tabs (solo en ruta directa /lotes/expediente, no cuando está embebido) */}
       {!embedded && <LotesTabs />}
 
-      <PageHeader
+      <PageHeader backHref="/residencial"
         variant="xl"
         icon={MapPinned}
         eyebrowLabel="Consulta"

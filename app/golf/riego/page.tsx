@@ -579,7 +579,7 @@ export default function RiegoPage() {
     <div style={{ padding:'24px 28px', animation:'fadeIn 0.3s ease-out' }}>
 
       <PageHeader
-        backHref="/golf"
+        backHref="/golf/mantto-campo"
         icon={Droplets}
         color="#0ea5e9"
         eyebrowLabel="Riego"

@@ -498,7 +498,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
 
       {!embedded && (
         <PageHeader
-          backHref="/golf"
+          backHref="/golf/administracion"
           icon={Receipt}
           color="#0891b2"
           eyebrowLabel="Club"

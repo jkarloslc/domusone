@@ -6,6 +6,7 @@ import CuotasTab    from './CuotasTab'
 import AgendaCobranza from '@/components/cobranza/AgendaCobranza'
 import { FileText, Receipt, AlertTriangle, Calendar } from 'lucide-react'
 
+import PageHeader from '@/components/layout/PageHeader'
 type Tab = 'cargos' | 'recibos' | 'excepciones' | 'agenda'
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
@@ -21,16 +22,10 @@ function CobranzaContent({ embedded }: { embedded?: boolean }) {
   return (
     <div style={{ padding: '28px 32px' }}>
       {!embedded && (
-        <div className="page-header">
-          <div className="page-header-left" style={{ display: 'block' }}>
-            <h1 className="page-title" style={{ fontWeight: 400, color: 'var(--gold-light)', fontSize: 28 }}>
-              Cobranza
-            </h1>
-            <p className="page-subtitle">
-              Generación de cargos y registro de pagos
-            </p>
-          </div>
-        </div>
+        <PageHeader backHref="/residencial"
+          title="Cobranza"
+          subtitle="Generación de cargos y registro de pagos"
+        />
       )}
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border)' }}>

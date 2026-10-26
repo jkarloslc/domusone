@@ -4,6 +4,7 @@ import { Stethoscope } from 'lucide-react'
 import CaballosTab from './CaballosTab'
 import ServiciosTab from './ServiciosTab'
 
+import PageHeader from '@/components/layout/PageHeader'
 const PoloIcon = ({ size = 18, ...props }: { size?: number } & SVGProps<SVGSVGElement>) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
     <circle cx="12" cy="8" r="3"/>
@@ -33,16 +34,13 @@ export default function PoloPage() {
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
       {/* Header */}
-      <div className="page-header">
-        <div className="page-header-left" style={{ display: 'block' }}>
-          <div className="page-eyebrow">
-            <PoloIcon size={16} style={{ color: 'var(--blue)' }} />
-            <span className="page-eyebrow-label">Módulo</span>
-          </div>
-          <h1 className="page-title-xl">Polo</h1>
-          <p className="page-subtitle">Caballos de polo y bitácora de servicios veterinarios</p>
-        </div>
-      </div>
+      <PageHeader icon={PoloIcon}
+        color="var(--blue)"
+        eyebrowLabel="Módulo"
+        variant="xl"
+        title="Polo"
+        subtitle="Caballos de polo y bitácora de servicios veterinarios"
+      />
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: 20, gap: 0, overflowX: 'auto' }}>

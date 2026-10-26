@@ -7,6 +7,7 @@ import {
   Clock, DollarSign, ShoppingBag, Phone, Mail, Calendar, Lock,
 } from 'lucide-react'
 
+import PageHeader from '@/components/layout/PageHeader'
 // ── Types ────────────────────────────────────────────────────
 
 type Evento = {
@@ -152,15 +153,12 @@ export default function CalendarioPage() {
   // ── Render ─────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
-      {/* Back + nav */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/hipico" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 13, textDecoration: 'none' }}>
-            <ChevronLeft size={15} /> Hípico y Eventos
-          </a>
-          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>/</span>
-          <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>Calendario</span>
-        </div>
+      <PageHeader backHref="/hipico"
+        title="Calendario"
+        subtitle="Hípico y Eventos — ocupación de lugares por mes"
+      />
+      {/* Navegación de mes */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className="btn-ghost" onClick={prevMes} style={{ padding: '6px 10px' }}>
             <ChevronLeft size={16} />

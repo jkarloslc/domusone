@@ -94,7 +94,7 @@ export default function ContratosPage() {
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
-      <PageHeader
+      <PageHeader backHref="/residencial"
         variant="xl"
         icon={FileText}
         color="var(--gold)"
