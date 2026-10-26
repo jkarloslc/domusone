@@ -11,13 +11,14 @@ import PropietarioModal from './PropietarioModal'
 import PropietarioDetail from './PropietarioDetail'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 20
 
+import Paginador from '@/components/ui/Paginador'
 export default function PropietariosPage() {
   const { canWrite, canDelete } = useAuth()
   const [propietarios, setPropietarios] = useState<Propietario[]>([])
   const [total, setTotal]   = useState(0)
   const [page, setPage]     = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [loading, setLoading]     = useState(true)
@@ -32,7 +33,7 @@ export default function PropietariosPage() {
       .from('propietarios')
       .select('*', { count: 'exact' })
       .order('apellido_paterno', { ascending: true })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
 
     if (debouncedSearch) {
       const words = debouncedSearch.trim().split(/\s+/).filter(Boolean)
@@ -44,7 +45,7 @@ export default function PropietariosPage() {
     const { data, count, error } = await q
     if (!error) { setPropietarios(data as Propietario[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, debouncedSearch])
+  }, [page, pageSize, debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -56,7 +57,6 @@ export default function PropietariosPage() {
     fetchData()
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -172,21 +172,8 @@ export default function PropietariosPage() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Página {page + 1} de {totalPages} · {total} registros
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-                <ChevronLeft size={13} />
-              </button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
-                <ChevronRight size={13} />
-              </button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modalOpen && (

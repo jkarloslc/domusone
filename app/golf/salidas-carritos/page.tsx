@@ -8,6 +8,7 @@ import BitacoraModal from './BitacoraModal'
 import { abrirTicketSalidaCarrito } from './ticket'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 type Salida = {
   id: number
   fecha_salida: string
@@ -73,6 +74,8 @@ export default function SalidasCarritosPage() {
   const puedeEscribir = canWrite('golf-carritos')
 
   const [tab, setTab] = useState<Tab>('salidas')
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
 
   const [salidas, setSalidas]     = useState<Salida[]>([])
   const [loading, setLoading]     = useState(true)
@@ -236,6 +239,10 @@ export default function SalidasCarritosPage() {
     { key: 'bitacora', label: 'Bitácora',          icon: BookOpen       },
   ]
 
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(salidas.length / pgSize) - 1))
+  const salidasPag = salidas.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [salidas.length])
+
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
@@ -348,7 +355,7 @@ export default function SalidasCarritosPage() {
                       <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin registros para este día</div>
                       <div style={{ fontSize: 12 }}>Registra la primera salida de carrito a ronda de juego</div>
                     </td></tr>
-                  ) : salidas.map(s => {
+                  ) : salidasPag.map(s => {
                     const carDesc = [s.cat_carritos?.marca, s.cat_carritos?.modelo].filter(Boolean).join(' ') || 'Carrito'
                     const enRonda = !s.fecha_regreso
                     const isRegreso = registrandoRegreso === s.id
@@ -428,6 +435,8 @@ export default function SalidasCarritosPage() {
                 </tbody>
               </table>
             </div>
+            <Paginador page={curPg} pageSize={pgSize} totalItems={salidas.length} onChange={setPgIdx}
+              onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
           </div>
         </>
       )}

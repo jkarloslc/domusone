@@ -6,6 +6,7 @@ import { Plus, RefreshCw, ChevronLeft, ChevronRight, X, Pencil } from 'lucide-re
 import ReservacionModal from './ReservacionModal'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 type Reservacion = {
   id: number
   fecha_reservacion: string
@@ -47,6 +48,8 @@ export default function ReservacionesPage() {
   const puedeEscribir = canWrite('golf-reservaciones')
 
   const [reservaciones, setReservaciones] = useState<Reservacion[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [espacios, setEspacios]           = useState<Espacio[]>([])
   const [loading, setLoading]             = useState(true)
   const [showModal, setShowModal]         = useState(false)
@@ -115,6 +118,10 @@ export default function ReservacionesPage() {
   const nc = (r: Reservacion) => r.es_externo
     ? (r.nombre_externo || 'Visitante')
     : r.cat_socios ? [r.cat_socios.nombre, r.cat_socios.apellido_paterno, r.cat_socios.apellido_materno].filter(Boolean).join(' ') : '—'
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(reservaciones.length / pgSize) - 1))
+  const reservacionesPag = reservaciones.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [reservaciones.length])
 
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -202,7 +209,7 @@ export default function ReservacionesPage() {
                   <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin reservaciones para este día</div>
                   <div style={{ fontSize: 12 }}>Crea la primera reservación del día</div>
                 </td></tr>
-              ) : reservaciones.map(r => {
+              ) : reservacionesPag.map(r => {
                 const montoTotal = (r.monto ?? 0) + (r.carro_golf ? (r.monto_carro_golf ?? 0) : 0)
                 return (
                   <tr key={r.id}
@@ -264,6 +271,8 @@ export default function ReservacionesPage() {
             </tbody>
           </table>
         </div>
+        <Paginador page={curPg} pageSize={pgSize} totalItems={reservaciones.length} onChange={setPgIdx}
+          onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
       </div>
 
       {showModal && (

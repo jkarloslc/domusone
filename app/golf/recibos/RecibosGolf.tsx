@@ -11,6 +11,7 @@ import { inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Tipos ─────────────────────────────────────────────────────
 type Recibo = {
   id: number
@@ -81,7 +82,6 @@ const STATUS_COLOR: Record<string, { bg: string; color: string; label: string }>
   CANCELADO: { bg: '#fee2e2', color: '#dc2626', label: 'Cancelado' },
 }
 
-const PAGE_SIZE = 50
 
 // ── Componente principal ───────────────────────────────────────
 // embedded: sin breadcrumb/header propio (para usarse como tab de otra página)
@@ -96,6 +96,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
   const [busqueda, setBusqueda]       = useState('')
   const [filtroStatus, setFiltroStatus] = useState('VIGENTE')
   const [pagina, setPagina]           = useState(1)
+  const [pageSize, setPageSize]       = useState(25)
 
   // Modal detalle
   const [detalle, setDetalle]         = useState<Recibo | null>(null)
@@ -148,8 +149,7 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
     return true
   })
 
-  const totalPages = Math.ceil(recibosF.length / PAGE_SIZE)
-  const recibosPag = recibosF.slice((pagina - 1) * PAGE_SIZE, pagina * PAGE_SIZE)
+  const recibosPag = recibosF.slice((pagina - 1) * pageSize, pagina * pageSize)
 
   // KPIs
   const totalVigente   = recibos.filter(r => r.status === 'VIGENTE').reduce((a, r) => a + r.total, 0)
@@ -632,21 +632,10 @@ export default function RecibosGolf({ embedded = false, soloMembresias = false }
         </div>
       </div>
 
-      {/* Paginación */}
-      {totalPages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 16 }}>
-          <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}
-            style={{ padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: pagina === 1 ? 'default' : 'pointer', color: '#475569', opacity: pagina === 1 ? 0.4 : 1 }}>‹</button>
-          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map(p => (
-            <button key={p} onClick={() => setPagina(p)}
-              style={{ padding: '6px 10px', border: `1px solid ${pagina === p ? '#0891b2' : '#e2e8f0'}`, borderRadius: 6, background: pagina === p ? '#0891b2' : '#fff', color: pagina === p ? '#fff' : '#475569', cursor: 'pointer', fontWeight: pagina === p ? 700 : 400, fontSize: 13 }}>
-              {p}
-            </button>
-          ))}
-          <button onClick={() => setPagina(p => Math.min(totalPages, p + 1))} disabled={pagina === totalPages}
-            style={{ padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', cursor: pagina === totalPages ? 'default' : 'pointer', color: '#475569', opacity: pagina === totalPages ? 0.4 : 1 }}>›</button>
-        </div>
-      )}
+      <div className="card" style={{ marginTop: 12, padding: 0 }}>
+        <Paginador page={pagina - 1} pageSize={pageSize} totalItems={recibosF.length} onChange={p => setPagina(p + 1)}
+          onPageSizeChange={n => { setPageSize(n); setPagina(1) }} />
+      </div>
 
       {/* ── Modal Detalle ──────────────────────────────────────── */}
       {detalle && (

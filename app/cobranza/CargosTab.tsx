@@ -11,8 +11,8 @@ import {
 import { type Cargo, fmt, STATUS_CARGO_COLOR, MESES } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 
-const PAGE_SIZE = 30
 
+import Paginador from '@/components/ui/Paginador'
 // ─────────────────────────────────────────────────────────────────────────────
 export default function CargosTab() {
   const { canWrite } = useAuth()
@@ -20,6 +20,7 @@ export default function CargosTab() {
   const [loteMap, setLoteMap]       = useState<Record<number, string>>({})
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]         = useState('')
   const debouncedSearch             = useDebounce(search, 300)
   const [filterStatus, setFilter]   = useState('Pendiente')
@@ -32,7 +33,7 @@ export default function CargosTab() {
     let q = dbCtrl.from('cargos')
       .select('*', { count: 'exact' })
       .order('fecha_cargo', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (debouncedSearch) q = q.ilike('concepto', `%${debouncedSearch}%`)
     const { data, count, error } = await q
@@ -53,11 +54,11 @@ export default function CargosTab() {
       console.error(error)
     }
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus])
+  }, [page, pageSize, debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const totalPages  = Math.ceil(total / PAGE_SIZE)
+  const totalPages  = Math.ceil(total / pageSize)
   const totalMonto  = cargos.reduce((a, c) => a + (c.monto ?? 0), 0)
   const totalPagado = cargos.reduce((a, c) => a + (c.monto_pagado ?? 0), 0)
   const totalSaldo  = cargos.reduce((a, c) => a + (c.saldo ?? 0), 0)
@@ -157,15 +158,8 @@ export default function CargosTab() {
           </tbody>
         </table>
 
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages} · {total} registros</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modalMasivo && <GenerarCargosModal onClose={() => setModalMasivo(false)} onSaved={() => { setModalMasivo(false); fetchData() }} />}

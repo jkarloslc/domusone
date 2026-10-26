@@ -11,8 +11,8 @@ import ContratoModal from './ContratoModal'
 import ContratoDetail from './ContratoDetail'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 20
 
+import Paginador from '@/components/ui/Paginador'
 export type Contrato = {
   id: number
   id_lote_fk: number
@@ -46,6 +46,7 @@ export default function ContratosPage() {
   const [loteMap, setLoteMap]     = useState<Record<number, string>>({})
   const [total, setTotal]         = useState(0)
   const [page, setPage]           = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]       = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [loading, setLoading]     = useState(true)
@@ -59,7 +60,7 @@ export default function ContratosPage() {
       .from('contratos')
       .select('*', { count: 'exact' })
       .order('fecha', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
 
     if (debouncedSearch) q = q.or(`propietario_contrato.ilike.%${debouncedSearch}%,tipo_contrato.ilike.%${debouncedSearch}%,sucesivo.ilike.%${debouncedSearch}%`)
 
@@ -79,7 +80,7 @@ export default function ContratosPage() {
       console.error(error)
     }
     setLoading(false)
-  }, [page, debouncedSearch])
+  }, [page, pageSize, debouncedSearch])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -89,7 +90,6 @@ export default function ContratosPage() {
     fetchData()
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -164,15 +164,8 @@ export default function ContratosPage() {
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages} · {total} registros</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modalOpen && <ContratoModal contrato={editing} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); fetchData() }} />}

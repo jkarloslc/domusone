@@ -20,6 +20,7 @@ import { cancelarCFDI } from '@/lib/pacService'
 import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import { verificarNoFacturada } from '@/lib/cancelacionCobranza'
 
+import Paginador from '@/components/ui/Paginador'
 const MOTIVOS_CANCELACION_CFDI = [
   { clave: '01', desc: 'Comprobante emitido con errores con relación' },
   { clave: '02', desc: 'Comprobante emitido sin relación' },
@@ -68,7 +69,6 @@ type CfgPos = { id: number; razon_social: string; rfc: string | null; direccion:
 type Tab = 'pos' | 'ventas' | 'cortes' | 'catalogo' | 'config' | 'mesa' | 'facturas'
 type LineaPago = { id_forma_fk: number | null; forma_nombre: string; monto: string }
 
-const CORTES_PAGE_SIZE = 20
 
 // El bloqueo de venta directa ya no depende de nombres de centro/producto
 // hardcodeados: cada producto declara explícitamente en su catálogo
@@ -143,6 +143,7 @@ export default function POSPage() {
   const [filtroCorteHasta, setFiltroCorteHasta] = useState('')
   const [filtroCorteCentro, setFiltroCorteCentro] = useState('')
   const [pageC,            setPageC]            = useState(0)
+  const [pageSizeC,        setPageSizeC]        = useState(25)
   const [totalC,           setTotalC]           = useState(0)
   const [facturasCorteModal, setFacturasCorteModal] = useState<Corte | null>(null)
   const [facturasCorteData,  setFacturasCorteData]  = useState<any[]>([])
@@ -295,8 +296,8 @@ export default function POSPage() {
   // ── Fetch cortes ─────────────────────────────────────────
   const fetchCortes = useCallback(async () => {
     setLoadingC(true)
-    const from = pageC * CORTES_PAGE_SIZE
-    const to   = from + CORTES_PAGE_SIZE - 1
+    const from = pageC * pageSizeC
+    const to   = from + pageSizeC - 1
     let q = dbGolf.from('ctrl_cortes_caja')
       .select('*', { count: 'exact' })
       .order('fecha_corte', { ascending: false })
@@ -308,7 +309,7 @@ export default function POSPage() {
     setCortes((data as Corte[]) ?? [])
     setTotalC(count ?? 0)
     setLoadingC(false)
-  }, [filtroCorteDesde, filtroCorteHasta, filtroCorteCentro, pageC])
+  }, [filtroCorteDesde, filtroCorteHasta, filtroCorteCentro, pageC, pageSizeC])
 
   // ── Fetch config ─────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
@@ -1971,15 +1972,10 @@ ${facturasCorte.length > 0 ? `
             </div>
           )}
 
-          {totalC > CORTES_PAGE_SIZE && (
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-              <button className="btn-ghost" disabled={pageC === 0} onClick={() => setPageC(p => p - 1)}>Anterior</button>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>
-                Pág. {pageC + 1} / {Math.ceil(totalC / CORTES_PAGE_SIZE)}
-              </span>
-              <button className="btn-ghost" disabled={pageC >= Math.ceil(totalC / CORTES_PAGE_SIZE) - 1} onClick={() => setPageC(p => p + 1)}>Siguiente</button>
-            </div>
-          )}
+          <div className="card" style={{ marginTop: 12, padding: 0 }}>
+            <Paginador page={pageC} pageSize={pageSizeC} totalItems={totalC} onChange={setPageC}
+              onPageSizeChange={n => { setPageSizeC(n); setPageC(0) }} />
+          </div>
         </>
       )}
 

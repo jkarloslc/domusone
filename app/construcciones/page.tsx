@@ -11,8 +11,8 @@ import { ETAPAS, MOTIVOS, STATUS_CONSTRUCCION, STATUS_COLOR, fmtFecha } from './
 import ConstruccionModal from './ConstruccionModal'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 20
 
+import Paginador from '@/components/ui/Paginador'
 type Construccion = {
   id: number
   id_lote_fk: number
@@ -35,6 +35,7 @@ export default function ConstruccionesPage() {
   const [loteMap, setLoteMap]       = useState<Record<number, string>>({})
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]         = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilterStatus] = useState('')
@@ -48,7 +49,7 @@ export default function ConstruccionesPage() {
     let q = dbCtrl.from('construcciones')
       .select('*, construcciones_checklist(completado)', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (debouncedSearch) q = q.or(`responsable_obra.ilike.%${debouncedSearch}%,descripcion.ilike.%${debouncedSearch}%`)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterMotivo) q = q.eq('motivo', filterMotivo)
@@ -68,7 +69,7 @@ export default function ConstruccionesPage() {
       console.error(error)
     }
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterMotivo])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterMotivo])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -78,7 +79,6 @@ export default function ConstruccionesPage() {
     fetchData()
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   if (!can('construcciones')) {
     return <div style={{ padding: '48px 36px', textAlign: 'center', color: 'var(--text-muted)' }}>Sin acceso a este módulo.</div>
@@ -170,15 +170,8 @@ export default function ConstruccionesPage() {
             })}
           </tbody>
         </table>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages} · {total} registros</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modalOpen && (

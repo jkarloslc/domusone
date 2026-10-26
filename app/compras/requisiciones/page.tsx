@@ -12,8 +12,8 @@ import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 import { type Articulo, fmt, fmtFecha, folioGen, StatusBadge, UNIDADES } from '../types'
 
-const PAGE_SIZE = 20
 
+import Paginador from '@/components/ui/Paginador'
 type Det = { id?: number; id_articulo_fk: number | null; descripcion: string; cantidad: string; unidad: string; notas: string }
 
 const ESTADOS_NO_CANCELABLES = ['Cancelada', 'Rechazada', 'Cerrada']
@@ -25,6 +25,7 @@ export default function RequisicionesPage() {
   const [rows, setRows]       = useState<any[]>([])
   const [total, setTotal]     = useState(0)
   const [page, setPage]       = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]   = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
@@ -46,7 +47,7 @@ export default function RequisicionesPage() {
     setLoading(true)
     let q = dbComp.from('requisiciones').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
@@ -55,7 +56,7 @@ export default function RequisicionesPage() {
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,area_solicitante.ilike.%${debouncedSearch}%,solicitante.ilike.%${debouncedSearch}%`)
     const { data, count } = await q
     setRows(data ?? []); setTotal(count ?? 0); setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterArea, filterFechaDesde, filterFechaHasta])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filterFechaDesde, filterFechaHasta])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -65,7 +66,6 @@ export default function RequisicionesPage() {
       .then(({ data }) => setAreaFiltros((data ?? []) as { id: number; nombre: string; id_centro_costo_fk: number }[]))
   }, [])
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const handleAuth = async (id: number, aprobar: boolean, comentario = '') => {
     await dbComp.from('requisiciones').update({
@@ -222,15 +222,8 @@ export default function RequisicionesPage() {
           </tbody>
         </table>
         </div>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pág. {page+1} de {totalPages}</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page===0} onClick={() => setPage(p=>p-1)}><ChevronLeft size={13}/></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page>=totalPages-1} onClick={() => setPage(p=>p+1)}><ChevronRight size={13}/></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modal !== null && <RequisicionModal row={modal==='new'?null:modal} esAdminPleno={esAdminPleno} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}

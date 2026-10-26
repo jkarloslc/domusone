@@ -13,6 +13,7 @@ import { fmt, fmtFecha, folioGen, StatusBadge, nextFolio } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Stepper visual ────────────────────────────────────────────
 const PASOS = [
   { key: 'Solicitada',  label: 'Solicitud',    icon: ClipboardList },
@@ -63,6 +64,8 @@ export default function TransferenciasPage() {
   const router = useRouter()
   const { authUser, canAuth, canWrite } = useAuth()
   const [rows, setRows]         = useState<any[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [almMap, setAlmMap]     = useState<Record<number, string>>({})
   const [total, setTotal]       = useState(0)
   const [loading, setLoading]   = useState(true)
@@ -154,6 +157,10 @@ export default function TransferenciasPage() {
     s === 'Completada'  ? '#15803d' :
     s === 'Rechazada'   ? '#dc2626' : '#64748b'
 
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(rows.length / pgSize) - 1))
+  const rowsPag = rows.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [rows.length])
+
   return (
     <div style={{ padding: '32px 36px' }}>
       <PageHeader
@@ -220,7 +227,7 @@ export default function TransferenciasPage() {
               <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                 Sin transferencias registradas
               </td></tr>
-            ) : rows.map(r => (
+            ) : rowsPag.map(r => (
               <tr key={r.id}>
                 <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>{r.folio}</td>
                 <td>
@@ -251,6 +258,8 @@ export default function TransferenciasPage() {
           </tbody>
         </table>
         </div>
+        <Paginador page={curPg} pageSize={pgSize} totalItems={rows.length} onChange={setPgIdx}
+          onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
       </div>
 
       {modal && (

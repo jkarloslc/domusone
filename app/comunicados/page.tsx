@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Helpers ────────────────────────────────────────────────────
 const fmtFecha = (d: string | null | undefined) =>
   d ? new Date(d).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
@@ -66,6 +67,8 @@ const buildEmailHtml = (titulo: string, cuerpo: string, tipo: string, fromName: 
 export default function ComunicadosPage() {
   const { authUser } = useAuth()
   const [comunicados, setComunicados] = useState<any[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [loading, setLoading]         = useState(true)
   const [modalNew, setModalNew]       = useState(false)
   const [envioModal, setEnvioModal]   = useState<any | null>(null)
@@ -89,6 +92,10 @@ export default function ComunicadosPage() {
 
   const enviados   = comunicados.filter(c => c.estado === 'Enviado').length
   const borradores = comunicados.filter(c => c.estado === 'Borrador').length
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(comunicados.length / pgSize) - 1))
+  const comunicadosPag = comunicados.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [comunicados.length])
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -159,7 +166,7 @@ export default function ComunicadosPage() {
               <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
                 Sin comunicados. Haz clic en "Nuevo Comunicado" para empezar.
               </td></tr>
-            ) : comunicados.map(c => (
+            ) : comunicadosPag.map(c => (
               <tr key={c.id}>
                 <td style={{ fontWeight: 600, fontSize: 14 }}>{c.titulo}</td>
                 <td><TipoBadge tipo={c.tipo} /></td>
@@ -199,6 +206,8 @@ export default function ComunicadosPage() {
           </tbody>
         </table>
       </div>
+      <Paginador page={curPg} pageSize={pgSize} totalItems={comunicados.length} onChange={setPgIdx}
+        onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
 
       {/* Modales */}
       {modalNew && (

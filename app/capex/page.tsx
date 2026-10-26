@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { nombreCompletoColaborador } from '@/lib/colaboradores'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type CC   = { id: number; nombre: string }
 type Area = { id: number; nombre: string; id_centro_costo_fk: number }
@@ -85,7 +86,6 @@ const STATUS_COLOR: Record<string, { bg: string; color: string }> = {
   'Cancelado':     { bg: '#fee2e2', color: '#991b1b' },
 }
 
-const PAGE_SIZE = 15
 
 const fmt = (v: number | null | undefined) =>
   v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
@@ -104,6 +104,7 @@ export default function CapexPage() {
   const [proyectos, setProyectos] = useState<CapexProyecto[]>([])
   const [total, setTotal]         = useState(0)
   const [page, setPage]           = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [loading, setLoading]     = useState(true)
 
   const [search, setSearch]       = useState('')
@@ -131,7 +132,7 @@ export default function CapexPage() {
     let q = dbCtrl.from('capex_proyectos')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (dSearch)      q = q.or(`nombre.ilike.%${dSearch}%,folio.ilike.%${dSearch}%`)
     if (filterCC)     q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea)   q = q.eq('id_area_fk', Number(filterArea))
@@ -140,7 +141,7 @@ export default function CapexPage() {
     const { data, count, error } = await q
     if (!error) { setProyectos(data as CapexProyecto[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, dSearch, filterCC, filterArea, filterTipo, filterStatus])
+  }, [page, pageSize, dSearch, filterCC, filterArea, filterTipo, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => { setPage(0) }, [dSearch, filterCC, filterArea, filterTipo, filterStatus])
@@ -151,7 +152,6 @@ export default function CapexPage() {
     fetchData()
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
   const montoTotal = proyectos.reduce((s, p) => s + (p.monto_presupuestado ?? 0), 0)
   const areasFiltradas = filterCC
     ? areas.filter(a => a.id_centro_costo_fk === Number(filterCC))
@@ -294,15 +294,8 @@ export default function CapexPage() {
             }
           </tbody>
         </table>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages} · {total} registros</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>‹</button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>›</button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modal && (

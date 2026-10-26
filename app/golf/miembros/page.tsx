@@ -8,8 +8,8 @@ import SocioDetail from './SocioDetail'
 import type { Socio } from './SocioModal'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 20
 
+import Paginador from '@/components/ui/Paginador'
 type Categoria = { id: number; nombre: string }
 type StatCat   = { id: number; nombre: string; count: number }
 
@@ -33,6 +33,7 @@ export default function MiembrosPage() {
   const [socios, setSocios]           = useState<Socio[]>([])
   const [total, setTotal]             = useState(0)
   const [page, setPage]               = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]           = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [loading, setLoading]         = useState(true)
@@ -61,8 +62,8 @@ export default function MiembrosPage() {
 
   const fetchSocios = useCallback(async () => {
     setLoading(true)
-    const from = page * PAGE_SIZE
-    const to   = from + PAGE_SIZE - 1
+    const from = page * pageSize
+    const to   = from + pageSize - 1
     const hoy  = new Date().toLocaleDateString('en-CA')
 
     // Obtener IDs con adeudo si el filtro de cobranza lo requiere
@@ -121,7 +122,7 @@ export default function MiembrosPage() {
     }
 
     setLoading(false)
-  }, [page, search, filtroCat, filtroCobranza])
+  }, [page, pageSize, search, filtroCat, filtroCobranza])
 
   const fetchStats = useCallback(async () => {
     const { data } = await dbGolf
@@ -189,7 +190,6 @@ export default function MiembrosPage() {
   const openEdit = (s: Socio) => { setDetailSocio(null); setEditSocio(s); setShowModal(true) }
   const openNew  = () => { setEditSocio(null); setShowModal(true) }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const statusOf = (s: Socio) => {
     if (!s.activo) return 'inactivo'
@@ -428,25 +428,8 @@ export default function MiembrosPage() {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div style={{
-            padding: '12px 16px', borderTop: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            fontSize: 12, color: 'var(--text-muted)',
-          }}>
-            <span>Mostrando {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} de {total} · Página {page + 1} de {totalPages}</span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Primera página" disabled={page === 0} onClick={() => setPage(0)}>
-                <ChevronsLeft size={14} />
-              </button>
-              <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: 12 }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>← Anterior</button>
-              <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: 12 }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Siguiente →</button>
-              <button className="btn-ghost" style={{ padding: '4px 8px' }} title="Última página" disabled={page >= totalPages - 1} onClick={() => setPage(totalPages - 1)}>
-                <ChevronsRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {/* Modals */}

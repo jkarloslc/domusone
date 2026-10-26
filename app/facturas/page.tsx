@@ -10,8 +10,8 @@ import {
 import FacturaModal from './FacturaModal'
 import FacturaDetail from './FacturaDetail'
 
-const PAGE_SIZE = 25
 
+import Paginador from '@/components/ui/Paginador'
 const fmt = (v: number | null | undefined) =>
   v != null ? '$' + v.toLocaleString('es-MX', { minimumFractionDigits: 2 }) : '—'
 const fmtFecha = (d: string | null | undefined) =>
@@ -21,6 +21,7 @@ export default function FacturasPage() {
   const [facturas, setFacturas]     = useState<any[]>([])
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]         = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter]   = useState('')
@@ -33,17 +34,16 @@ export default function FacturasPage() {
     let q = dbCtrl.from('facturas')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (debouncedSearch) q = q.or(`folio_interno.ilike.%${debouncedSearch}%,rfc_receptor.ilike.%${debouncedSearch}%,razon_social_receptor.ilike.%${debouncedSearch}%,folio_fiscal.ilike.%${debouncedSearch}%`)
     const { data, count, error } = await q
     if (!error) { setFacturas(data ?? []); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus])
+  }, [page, pageSize, debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   // Stats de la página actual
   const vigentes   = facturas.filter(f => f.status === 'Vigente').length
@@ -180,15 +180,8 @@ export default function FacturasPage() {
           </tbody>
         </table>
 
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages} · {total} registros</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modalOpen && <FacturaModal onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); fetchData() }} />}

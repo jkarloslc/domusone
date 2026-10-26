@@ -11,6 +11,7 @@ import { fechaLocal } from '@/lib/dateUtils'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Tipos ──────────────────────────────────────────────────────
 type Socio = {
   id: number
@@ -602,6 +603,8 @@ export default function IntercambiosPage() {
   const puedeEliminar  = canDelete()
 
   const [tab, setTab] = useState<'cartas' | 'clubes'>('cartas')
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
 
   // ── Cartas ─────────────────────────────────────────────────
   const [cartas,   setCartas]   = useState<Carta[]>([])
@@ -689,6 +692,10 @@ export default function IntercambiosPage() {
     fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.05em',
   }
   const tdStyle: React.CSSProperties = { padding: '9px 12px', fontSize: 13 }
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(cartasFiltradas.length / pgSize) - 1))
+  const cartasFiltradasPag = cartasFiltradas.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [cartasFiltradas.length])
 
   return (
     <div style={{ padding: '28px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -788,7 +795,7 @@ export default function IntercambiosPage() {
                     <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: '#94a3b8' }}>
                       {searchC || filtroClub ? 'Sin resultados para los filtros aplicados' : 'No hay cartas de intercambio emitidas aún'}
                     </td></tr>
-                  ) : cartasFiltradas.map((c, i) => (
+                  ) : cartasFiltradasPag.map((c, i) => (
                     <tr key={c.id} style={{ borderBottom: '1px solid var(--border)',
                       background: i % 2 === 0 ? 'transparent' : 'var(--surface-800)' }}>
                       <td style={tdStyle}>
@@ -842,6 +849,8 @@ export default function IntercambiosPage() {
                 </tbody>
               </table>
               </div>
+              <Paginador page={curPg} pageSize={pgSize} totalItems={cartasFiltradas.length} onChange={setPgIdx}
+                onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
             </div>
           </>
         )}

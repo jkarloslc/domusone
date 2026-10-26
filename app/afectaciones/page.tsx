@@ -10,6 +10,7 @@ import {
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 type Afectacion = {
   id: number
   id_lote_fk: number
@@ -60,6 +61,8 @@ const fmt = (v: number | null) =>
 export default function AfectacionesPage() {
   const { canWrite } = useAuth()
   const [afectaciones, setAfectaciones] = useState<Afectacion[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [loteMap, setLoteMap]           = useState<Record<number, string>>({})
   const [total, setTotal]               = useState(0)
   const [search, setSearch]             = useState('')
@@ -102,6 +105,10 @@ export default function AfectacionesPage() {
     await dbCtrl.from('afectaciones_proyectos').delete().eq('id', id)
     fetchData()
   }
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(afectaciones.length / pgSize) - 1))
+  const afectacionesPag = afectaciones.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [afectaciones.length])
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -173,7 +180,7 @@ export default function AfectacionesPage() {
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
             ) : afectaciones.length === 0 ? (
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin afectaciones registradas</td></tr>
-            ) : afectaciones.map(a => (
+            ) : afectacionesPag.map(a => (
               <tr key={a.id}>
                 <td style={{ fontWeight: 600, color: 'var(--blue)' }}>{loteMap[a.id_lote_fk] ?? `#${a.id_lote_fk}`}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{a.tipo ?? '—'}</td>
@@ -214,6 +221,8 @@ export default function AfectacionesPage() {
           </tbody>
         </table>
       </div>
+      <Paginador page={curPg} pageSize={pgSize} totalItems={afectaciones.length} onChange={setPgIdx}
+        onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
 
       {modalOpen && (
         <AfectacionModal

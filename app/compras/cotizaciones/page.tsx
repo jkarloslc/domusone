@@ -12,14 +12,15 @@ import { fmt, fmtFecha, folioGen, StatusBadge, type Proveedor, FORMAS_PAGO_COMP,
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 20
 
+import Paginador from '@/components/ui/Paginador'
 export default function CotizacionesPage() {
   const { canWrite, canDelete } = useAuth()
   const router = useRouter()
   const [rows, setRows]     = useState<any[]>([])
   const [total, setTotal]   = useState(0)
   const [page, setPage]     = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterFechaDesde, setFilterFechaDesde] = useState('')
@@ -33,7 +34,7 @@ export default function CotizacionesPage() {
     setLoading(true)
     let q = dbComp.from('rfq').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (debouncedSearch) q = q.ilike('folio', `%${debouncedSearch}%`)
     if (filterFechaDesde) q = q.gte('created_at', `${filterFechaDesde}T00:00:00`)
     if (filterFechaHasta) q = q.lte('created_at', `${filterFechaHasta}T23:59:59`)
@@ -46,7 +47,7 @@ export default function CotizacionesPage() {
     ;(provs ?? []).forEach((p: any) => { pm[p.id] = p.nombre })
     setProvMap(pm)
     setLoading(false)
-  }, [page, debouncedSearch, filterFechaDesde, filterFechaHasta])
+  }, [page, pageSize, debouncedSearch, filterFechaDesde, filterFechaHasta])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -124,6 +125,8 @@ export default function CotizacionesPage() {
           </tbody>
         </table>
         </div>
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modal !== null && <RFQModal row={modal === 'new' ? null : modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}

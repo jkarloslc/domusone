@@ -6,8 +6,8 @@ import { Plus, Search, RefreshCw, Edit2, Trash2, Eye, UserCheck, X } from 'lucid
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 25
 
+import Paginador from '@/components/ui/Paginador'
 export type Arrendatario = {
   id: number
   nombre: string
@@ -53,6 +53,7 @@ export default function ArrendatariosLocalesPage() {
   const [items, setItems]           = useState<Arrendatario[]>([])
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]         = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
@@ -76,8 +77,8 @@ export default function ArrendatariosLocalesPage() {
 
   const fetchItems = useCallback(async () => {
     setLoading(true)
-    const from = page * PAGE_SIZE
-    const to   = from + PAGE_SIZE - 1
+    const from = page * pageSize
+    const to   = from + pageSize - 1
     let q = dbCtrl
       .from('loc_arrendatarios')
       .select('*', { count: 'exact' })
@@ -126,7 +127,7 @@ export default function ArrendatariosLocalesPage() {
       fisicas: all.filter(x => x.tipo_persona !== 'Moral').length,
     })
     setLoading(false)
-  }, [page, search, filtroTipo, filtroActivo])
+  }, [page, pageSize, search, filtroTipo, filtroActivo])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
@@ -217,7 +218,6 @@ export default function ArrendatariosLocalesPage() {
     </div>
   )
 
-  const totalPags = Math.ceil(total / PAGE_SIZE)
 
   return (
     <div style={{ padding: '24px 28px' }}>
@@ -318,16 +318,9 @@ export default function ArrendatariosLocalesPage() {
           </tbody>
         </table>
         </div>
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
-
-      {/* Paginación */}
-      {totalPags > 1 && (
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-          <button className="btn-ghost" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</button>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>Pág. {page + 1} / {totalPags}</span>
-          <button className="btn-ghost" disabled={page >= totalPags - 1} onClick={() => setPage(p => p + 1)}>Siguiente</button>
-        </div>
-      )}
 
       {/* Modal detalle */}
       {detailItem && (

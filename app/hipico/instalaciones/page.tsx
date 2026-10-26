@@ -6,6 +6,7 @@ import { Plus, RefreshCw, Edit2, Eye, Trash2, ChevronLeft, ChevronRight, MapPin,
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Types ────────────────────────────────────────────────────
 
 type Lugar = {
@@ -54,6 +55,8 @@ export default function InstalacionesPage() {
 
   const hoyStr = iso(new Date())
   const [tab, setTab] = useState<'catalogo' | 'calendario'>('catalogo')
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [lugares, setLugares] = useState<Lugar[]>([])
   const [ocups, setOcups] = useState<Ocup[]>([])
   const [loading, setLoading] = useState(true)
@@ -206,6 +209,10 @@ export default function InstalacionesPage() {
     ? (ocupPorLugar[ocupLugar.id] ?? []).filter(o => verPasadas || o.fin >= hoyStr)
     : []
 
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(lugaresVis.length / pgSize) - 1))
+  const lugaresVisPag = lugaresVis.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [lugaresVis.length])
+
   return (
     <div style={{ padding: '24px 28px' }}>
       <PageHeader
@@ -247,7 +254,7 @@ export default function InstalacionesPage() {
                   <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Cargando…</td></tr>
                 ) : lugaresVis.length === 0 ? (
                   <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sin instalaciones</td></tr>
-                ) : lugaresVis.map((l, i) => {
+                ) : lugaresVisPag.map((l, i) => {
                   const hoyO = estadoHoy(l)
                   const prox = proxima(l)
                   return (
@@ -278,6 +285,8 @@ export default function InstalacionesPage() {
               </tbody>
             </table>
           </div>
+          <Paginador page={curPg} pageSize={pgSize} totalItems={lugaresVis.length} onChange={setPgIdx}
+            onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
         </div>
       )}
 

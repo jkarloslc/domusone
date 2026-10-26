@@ -11,6 +11,7 @@ import ModalShell from '@/components/ui/ModalShell'
 import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
 import { esCentroCuotas, colorAgrupador, cargarCentrosAgrupados, idsCentrosFiltro, AgrupadorIngreso } from '@/lib/centrosIngreso'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Tipos ──────────────────────────────────────────────────────
 type Centro = {
   id: number; nombre: string; codigo: string | null
@@ -73,7 +74,6 @@ const CENTRO_COLOR: Record<string, string> = {
   golf: '#059669', cuotas: '#2563eb', rentas_espacios: '#7c3aed', caballerizas: '#d97706', otro: '#64748b',
 }
 
-const PAGE_SIZE = 25
 
 // ── Modal Nuevo / Ver / Cancelar ───────────────────────────────
 function ReciboModal({
@@ -1196,6 +1196,7 @@ export default function IngresosPage() {
   const [centrosMap, setCentrosMap] = useState<Record<number, Centro>>({})
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]     = useState('')
   const [filterCentro, setFilterCentro] = useState('')
   const [filterAgr, setFilterAgr]       = useState('')
@@ -1233,7 +1234,7 @@ export default function IngresosPage() {
       .select('*', { count: 'exact' })
       .order('fecha', { ascending: false })
       .order('created_at', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
 
     if (filterStatus)   q = q.eq('status', filterStatus)
     const idsC = idsCentrosFiltro(centrosPermitidos as any, filterAgr, filterCentro)
@@ -1249,11 +1250,11 @@ export default function IngresosPage() {
     setRows((data ?? []) as Recibo[])
     setTotal(count ?? 0)
     setLoading(false)
-  }, [page, filterStatus, filterAgr, filterCentro, centros, filterFechaIni, filterFechaFin, search, esCobranza, cuotasCentroIds.join(',')])
+  }, [page, pageSize, filterStatus, filterAgr, filterCentro, centros, filterFechaIni, filterFechaFin, search, esCobranza, cuotasCentroIds.join(',')])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const totalPages        = Math.ceil(total / PAGE_SIZE)
+  const totalPages        = Math.ceil(total / pageSize)
   const totalConfirmado   = rows.filter(r => r.status === 'Confirmado').reduce((a, r) => a + (r.monto_total ?? 0), 0)
   const totalBorrador     = rows.filter(r => r.status === 'Borrador').reduce((a, r) => a + (r.monto_total ?? 0), 0)
   const totalCancelado    = rows.filter(r => r.status === 'Cancelado').reduce((a, r) => a + (r.monto_total ?? 0), 0)
@@ -1408,21 +1409,8 @@ export default function IngresosPage() {
         </div>
 
         {/* Paginación */}
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Página {page + 1} de {totalPages} · {total} registros
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>
-                <ChevronLeft size={13} />
-              </button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
-                <ChevronRight size={13} />
-              </button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {/* Modal nuevo */}

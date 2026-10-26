@@ -10,6 +10,7 @@ import {
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 type Status = 'abierto' | 'cerrado' | 'parcial'
 
 type Estatus = {
@@ -60,6 +61,8 @@ export default function EstatusCampoPage() {
   const router = useRouter()
 
   const [fechaDesde, setFechaDesde] = useState(getIniMes())
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [fechaHasta, setFechaHasta] = useState(new Date().toISOString().slice(0, 10))
   const [rows, setRows]       = useState<Estatus[]>([])
   const [loading, setLoading] = useState(true)
@@ -84,6 +87,10 @@ export default function EstatusCampoPage() {
     await dbGolf.from('estatus_campo').delete().eq('id', id)
     fetchData()
   }
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(rows.length / pgSize) - 1))
+  const rowsPag = rows.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [rows.length])
 
   return (
     <div style={{ padding: '32px 36px' }}>
@@ -132,7 +139,7 @@ export default function EstatusCampoPage() {
                 <CloudRain size={28} style={{ opacity: 0.3, marginBottom: 8 }} /><br />
                 Sin registros en el período seleccionado
               </td></tr>
-            ) : rows.map(r => (
+            ) : rowsPag.map(r => (
               <tr key={r.id}>
                 <td style={{ fontWeight: 600, color: '#1e293b' }}>{r.fecha}</td>
                 <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.franja ?? '—'}</td>
@@ -152,6 +159,8 @@ export default function EstatusCampoPage() {
           </tbody>
         </table>
         </div>
+        <Paginador page={curPg} pageSize={pgSize} totalItems={rows.length} onChange={setPgIdx}
+          onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
       </div>
 
       {modal !== null && (

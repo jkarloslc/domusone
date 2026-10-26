@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
+import Paginador from '@/components/ui/Paginador'
 const TIPOS_SERVICIO = ['Preventivo', 'Correctivo', 'Reparación']
 const STATUS_SERVICIO = ['Abierto', 'En Proceso', 'Cerrado']
 
@@ -49,6 +50,8 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
 }) {
   const { canWrite, canDelete } = useAuth()
   const [registros, setRegistros] = useState<any[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [loading,   setLoading]   = useState(true)
   const [filterHerr,   setFilterHerr]   = useState('')
   const [filterTipo,   setFilterTipo]   = useState('')
@@ -79,6 +82,10 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
   const abiertos   = registros.filter(m => m.status !== 'Cerrado')
   const cerrados   = registros.filter(m => m.status === 'Cerrado')
   const costoTotal = registros.reduce((acc, m) => acc + Number(m.costo_total ?? 0), 0)
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(registros.length / pgSize) - 1))
+  const registrosPag = registros.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [registros.length])
 
   return (
     <div>
@@ -155,7 +162,7 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
               <tr><td colSpan={10} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
                 Sin servicios registrados. Usa <strong>Nuevo Servicio</strong> para comenzar.
               </td></tr>
-            ) : registros.map(m => {
+            ) : registrosPag.map(m => {
               const h = herrMap[m.id_herramienta_fk]
               return (
                 <tr key={m.id}>
@@ -191,6 +198,8 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
           </tbody>
         </table>
       </div>
+      <Paginador page={curPg} pageSize={pgSize} totalItems={registros.length} onChange={setPgIdx}
+        onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
 
       {modal.open && (
         <ServicioModal m={modal.m} herramientas={herramientas}

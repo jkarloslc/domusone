@@ -8,9 +8,12 @@ import FileUpload from '@/components/FileUpload'
 import { type Visitante, type VisitanteAutorizado, TIPOS_VISITANTE, TIPOS_PASE } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 
+import Paginador from '@/components/ui/Paginador'
 export default function VisitantesTab() {
   const { canWrite, canDelete } = useAuth()
   const [visitantes, setVisitantes] = useState<Visitante[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [total, setTotal]           = useState(0)
   const [search, setSearch]         = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -41,6 +44,10 @@ export default function VisitantesTab() {
     await dbCat.from('visitantes').delete().eq('id', id)
     fetchData()
   }
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(visitantes.length / pgSize) - 1))
+  const visitantesPag = visitantes.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [visitantes.length])
 
   return (
     <div>
@@ -75,7 +82,7 @@ export default function VisitantesTab() {
                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
               ) : visitantes.length === 0 ? (
                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin visitantes registrados</td></tr>
-              ) : visitantes.map(v => (
+              ) : visitantesPag.map(v => (
                 <tr key={v.id}>
                   <td style={{ fontWeight: 500 }}>{v.nombre} {v.apellido_paterno ?? ''} {v.apellido_materno ?? ''}</td>
                   <td><span className="badge badge-default">{v.tipo_visitante ?? '—'}</span></td>
@@ -101,6 +108,8 @@ export default function VisitantesTab() {
               ))}
             </tbody>
           </table>
+          <Paginador page={curPg} pageSize={pgSize} totalItems={visitantes.length} onChange={setPgIdx}
+            onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
         </div>
       </div>
 

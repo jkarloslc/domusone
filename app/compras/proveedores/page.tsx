@@ -13,6 +13,7 @@ import { type Proveedor, CONDICIONES_PAGO_PROV, nextFolio } from '../types'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Documentos requeridos ─────────────────────────────────
 const DOCS = [
   { key: 'csf_url',          label: 'CSF',                      desc: 'Constancia de Situación Fiscal',     color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
@@ -32,7 +33,7 @@ export default function ProveedoresPage() {
   const debouncedSearch = useDebounce(search, 300)
   const [modal, setModal]     = useState<any | null | 'new'>(null)
   const [page, setPage]       = useState(1)
-  const ROWS_PER_PAGE = 20
+  const [pageSize, setPageSize] = useState(25)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -48,8 +49,7 @@ export default function ProveedoresPage() {
   // Contar documentos cargados de un proveedor
   const docsCount = (r: any) => DOCS.filter(d => r[d.key]).length
 
-  const totalPages = Math.ceil(rows.length / ROWS_PER_PAGE)
-  const paginatedRows = rows.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE)
+  const paginatedRows = rows.slice((page - 1) * pageSize, page * pageSize)
 
   return (
     <div style={{ padding: '32px 36px' }}>
@@ -135,31 +135,8 @@ export default function ProveedoresPage() {
         </table>
         </div>
 
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderTop: '1px solid #e2e8f0', background: '#fafafa' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-              Mostrando {(page - 1) * ROWS_PER_PAGE + 1} - {Math.min(page * ROWS_PER_PAGE, rows.length)} de {rows.length}
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button 
-                className="btn-ghost" 
-                style={{ padding: '6px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
-                disabled={page === 1}
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-              >
-                <ChevronLeft size={14} /> Anterior
-              </button>
-              <button 
-                className="btn-ghost" 
-                style={{ padding: '6px 12px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
-                disabled={page === totalPages}
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              >
-                Siguiente <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page - 1} pageSize={pageSize} totalItems={rows.length} onChange={p => setPage(p + 1)}
+          onPageSizeChange={n => { setPageSize(n); setPage(1) }} />
       </div>
 
       {modal !== null && (

@@ -13,8 +13,8 @@ import { fmt, fmtFecha, folioGen, nextFolio, StatusBadge, type Proveedor, UNIDAD
 import { OCDetail } from '@/components/compras/OCDetailModal'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 20
 
+import Paginador from '@/components/ui/Paginador'
 export default function OrdenesPage() {
   const { authUser, canWrite, canAuth: canAuthFn } = useAuth()
   const router = useRouter()
@@ -22,6 +22,7 @@ export default function OrdenesPage() {
   const [provMap, setProvMap] = useState<Record<number, string>>({})
   const [total, setTotal]     = useState(0)
   const [page, setPage]       = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]   = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter] = useState('')
@@ -40,7 +41,7 @@ export default function OrdenesPage() {
     setLoading(true)
     let q = dbComp.from('ordenes_compra').select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (filterStatus) q = q.eq('status', filterStatus)
     if (filterCC) q = q.eq('id_centro_costo_fk', Number(filterCC))
     if (filterArea) q = q.eq('id_area_fk', Number(filterArea))
@@ -55,7 +56,7 @@ export default function OrdenesPage() {
     ;(provs ?? []).forEach((p: any) => { m[p.id] = p.nombre })
     setProvMap(m)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterFechaDesde, filterFechaHasta])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterCC, filterArea, filterProv, filterFechaDesde, filterFechaHasta])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => {
@@ -66,7 +67,6 @@ export default function OrdenesPage() {
   }, [])
 
   const canAuth = canAuthFn('ordenes')
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   const handleAuth = async (id: number, aprobar: boolean, comentario = '') => {
     await dbComp.from('ordenes_compra').update({
@@ -172,15 +172,8 @@ export default function OrdenesPage() {
           </tbody>
         </table>
         </div>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pág. {page + 1} de {totalPages}</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modal !== null && <OCModal row={modal === 'new' ? null : modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetchData() }} />}

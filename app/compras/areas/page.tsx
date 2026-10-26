@@ -10,12 +10,15 @@ import { useRouter } from 'next/navigation'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 type Area = { id: number; nombre: string; responsable: string | null; activo: boolean }
 
 export default function AreasPage() {
   const { canWrite, canDelete } = useAuth()
   const router = useRouter()
   const [rows, setRows]       = useState<Area[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [loading, setLoading] = useState(true)
   const [modal, setModal]     = useState<Area | null | 'new'>(null)
 
@@ -38,6 +41,10 @@ export default function AreasPage() {
     await dbComp.from('areas_solicitantes').delete().eq('id', id)
     fetchData()
   }
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(rows.length / pgSize) - 1))
+  const rowsPag = rows.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [rows.length])
 
   return (
     <div style={{ padding: '32px 36px' }}>
@@ -69,7 +76,7 @@ export default function AreasPage() {
               </td></tr>
             ) : rows.length === 0 ? (
               <tr><td colSpan={4} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>Sin áreas registradas</td></tr>
-            ) : rows.map(r => (
+            ) : rowsPag.map(r => (
               <tr key={r.id} style={{ opacity: r.activo ? 1 : 0.45 }}>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -96,6 +103,8 @@ export default function AreasPage() {
           </tbody>
         </table>
         </div>
+        <Paginador page={curPg} pageSize={pgSize} totalItems={rows.length} onChange={setPgIdx}
+          onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
       </div>
 
       {modal !== null && (

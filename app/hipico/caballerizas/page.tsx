@@ -6,8 +6,8 @@ import { Plus, Search, RefreshCw, Edit2, Trash2 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 25
 
+import Paginador from '@/components/ui/Paginador'
 type Caballeriza = {
   id: number
   clave: string
@@ -43,6 +43,7 @@ export default function CaballerizasPage() {
   const [items, setItems]       = useState<Caballeriza[]>([])
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]         = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('')
@@ -70,7 +71,7 @@ export default function CaballerizasPage() {
     const { data } = await q
     const sorted = ((data as Caballeriza[]) ?? []).sort((a, b) => naturalSort(a.clave, b.clave))
     setTotal(sorted.length)
-    setItems(sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE))
+    setItems(sorted.slice(page * pageSize, (page + 1) * pageSize))
     setKpis({
       libres: sorted.filter(x => x.status === 'Libre').length,
       rentadas: sorted.filter(x => x.status === 'Rentada').length,
@@ -78,7 +79,7 @@ export default function CaballerizasPage() {
       mantenimiento: sorted.filter(x => x.status === 'Mantenimiento').length,
     })
     setLoading(false)
-  }, [page, search, filtroStatus])
+  }, [page, pageSize, search, filtroStatus])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
@@ -128,7 +129,6 @@ export default function CaballerizasPage() {
     </div>
   )
 
-  const totalPags = Math.ceil(total / PAGE_SIZE)
 
   return (
     <div style={{ padding: '24px 28px' }}>
@@ -213,15 +213,9 @@ export default function CaballerizasPage() {
           </tbody>
         </table>
         </div>
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
-
-      {totalPags > 1 && (
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-          <button className="btn-ghost" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</button>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>Pág. {page + 1} / {totalPags}</span>
-          <button className="btn-ghost" disabled={page >= totalPags - 1} onClick={() => setPage(p => p + 1)}>Siguiente</button>
-        </div>
-      )}
 
       {showModal && (
         <ModalShell modulo="hipico" titulo={editItem ? `Editar — ${editItem.clave}` : 'Nueva Caballeriza'}

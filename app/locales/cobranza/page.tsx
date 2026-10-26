@@ -13,6 +13,7 @@ import CobrarModal, { type CuotaPendiente, printReciboLoc, resolveConceptosPorCu
 import PageHeader from '@/components/layout/PageHeader'
 import ModalShell from '@/components/ui/ModalShell'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Tipos ──────────────────────────────────────────────────────
 type Tab = 'asignaciones' | 'cobranza' | 'recibos' | 'cuotas'
 
@@ -182,7 +183,7 @@ export default function CobranzaLocalesPage() {
   const [filtroStatusQ, setFiltroStatusQ]   = useState<'todas' | 'PENDIENTE' | 'PAGADO' | 'PAGO_PARCIAL' | 'CANCELADO'>('todas')
   const [eliminandoQ, setEliminandoQ]       = useState<number | null>(null)
   const [paginaQ, setPaginaQ]               = useState(1)
-  const PAGE_SIZE_Q = 50
+  const [pageSizeQ, setPageSizeQ] = useState(25)
   const esSuperadmin = authUser?.rol === 'superadmin'
   const puedeEliminarCuota = esSuperadmin || authUser?.rol === 'admin_tesoreria'
 
@@ -807,9 +808,9 @@ export default function CobranzaLocalesPage() {
     const q = norm(busquedaQ)
     return norm(fmtNombre(c.cat_arrendatarios)).includes(q) || norm(c.concepto).includes(q) || norm(c.periodo ?? '').includes(q)
   })
-  const totalPaginasQ  = Math.max(1, Math.ceil(cuotasAllFiltradas.length / PAGE_SIZE_Q))
+  const totalPaginasQ  = Math.max(1, Math.ceil(cuotasAllFiltradas.length / pageSizeQ))
   const paginaQSafe    = Math.min(paginaQ, totalPaginasQ)
-  const cuotasPagina   = cuotasAllFiltradas.slice((paginaQSafe - 1) * PAGE_SIZE_Q, paginaQSafe * PAGE_SIZE_Q)
+  const cuotasPagina   = cuotasAllFiltradas.slice((paginaQSafe - 1) * pageSizeQ, paginaQSafe * pageSizeQ)
 
   const TABS: { key: Tab; label: string; icon: any }[] = [
     { key: 'asignaciones', label: 'Asignaciones', icon: AlertCircle },
@@ -1408,33 +1409,8 @@ export default function CobranzaLocalesPage() {
                 </tbody>
               </table>
             </div>
-            {cuotasAllFiltradas.length > 0 && (
-              <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  {((paginaQSafe - 1) * PAGE_SIZE_Q) + 1}–{Math.min(paginaQSafe * PAGE_SIZE_Q, cuotasAllFiltradas.length)} de {cuotasAllFiltradas.length} cuota{cuotasAllFiltradas.length !== 1 ? 's' : ''}
-                </span>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {([
-                    { label: '«', title: 'Primera', onClick: () => setPaginaQ(1),               disabled: paginaQSafe === 1 },
-                    { label: '‹', title: 'Anterior', onClick: () => setPaginaQ(p => p - 1),    disabled: paginaQSafe === 1 },
-                    { label: '›', title: 'Siguiente', onClick: () => setPaginaQ(p => p + 1),   disabled: paginaQSafe === totalPaginasQ },
-                    { label: '»', title: 'Última',   onClick: () => setPaginaQ(totalPaginasQ),  disabled: paginaQSafe === totalPaginasQ },
-                  ]).map(btn => (
-                    <button key={btn.title} title={btn.title} onClick={btn.onClick} disabled={btn.disabled} style={{
-                      width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 14, fontWeight: 600, border: '1px solid #e2e8f0', borderRadius: 6,
-                      background: btn.disabled ? '#f8fafc' : '#fff', color: btn.disabled ? '#cbd5e1' : '#475569',
-                      cursor: btn.disabled ? 'default' : 'pointer', transition: 'all 0.1s',
-                    }}>
-                      {btn.label}
-                    </button>
-                  ))}
-                  <span style={{ display: 'flex', alignItems: 'center', fontSize: 12, color: 'var(--text-muted)', padding: '0 4px' }}>
-                    Pág. {paginaQSafe} / {totalPaginasQ}
-                  </span>
-                </div>
-              </div>
-            )}
+            <Paginador page={paginaQSafe - 1} pageSize={pageSizeQ} totalItems={cuotasAllFiltradas.length} onChange={p => setPaginaQ(p + 1)}
+              onPageSizeChange={n => { setPageSizeQ(n); setPaginaQ(1) }} />
           </div>
         </>
       )}

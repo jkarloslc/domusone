@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 type Usuario = { id: string; nombre: string; rol: string; activo: boolean; created_at: string; email?: string }
 
 const ROLES = [
@@ -40,6 +41,8 @@ const ROLES = [
 export default function UsuariosPage() {
   const { authUser } = useAuth()
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [loading, setLoading]   = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing]   = useState<Usuario | null>(null)
@@ -64,6 +67,9 @@ export default function UsuariosPage() {
     )
   }
 
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(usuarios.length / pgSize) - 1))
+  const usuariosPag = usuarios.slice(curPg * pgSize, (curPg + 1) * pgSize)
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -94,7 +100,7 @@ export default function UsuariosPage() {
               <tr><td colSpan={5} style={{ textAlign: 'center', padding: 40 }}><Loader size={18} className="animate-spin" style={{ margin: '0 auto', color: 'var(--blue)' }} /></td></tr>
             ) : usuarios.length === 0 ? (
               <tr><td colSpan={5} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin usuarios registrados</td></tr>
-            ) : usuarios.map(u => (
+            ) : usuariosPag.map(u => (
               <tr key={u.id}>
                 <td style={{ fontWeight: 500 }}>{u.nombre}</td>
                 <td>
@@ -119,6 +125,8 @@ export default function UsuariosPage() {
           </tbody>
         </table>
       </div>
+      <Paginador page={curPg} pageSize={pgSize} totalItems={usuarios.length} onChange={setPgIdx}
+        onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
 
       {modalOpen && <UsuarioModal usuario={editing} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); fetchData() }} />}
     </div>

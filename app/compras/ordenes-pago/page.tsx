@@ -16,6 +16,7 @@ import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 import { OPDetail, Sec, DI, URGENCIA_COLOR } from '@/components/compras/OPDetailModal'
 
+import Paginador from '@/components/ui/Paginador'
 const PAGE_SIZES = [10, 25, 50, 100]
 
 type RolTipoOp = { id_tipo_gasto_fk: number; modo: string; solo_propios: boolean }
@@ -185,7 +186,6 @@ export default function OrdenesPagoPage() {
       .then(({ data }) => setRolRestricciones(data ?? []))
   }, [authUser?.rol])
 
-  const totalPages = Math.ceil(total / pageSize)
 
   return (
     <div style={{ padding: '32px 36px' }}>
@@ -372,25 +372,8 @@ export default function OrdenesPagoPage() {
           })()}
         </table>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Mostrar</span>
-            <select className="select" style={{ width: 72, padding: '4px 8px', fontSize: 12 }}
-              value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(0) }}>
-              {PAGE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              · {total === 0 ? '0' : `${page * pageSize + 1}–${Math.min(page * pageSize + pageSize, total)}`} de {total} registros
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13}/></button>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center', minWidth: 60, textAlign: 'center' }}>
-              Pág. {page + 1} de {Math.max(totalPages, 1)}
-            </span>
-            <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13}/></button>
-          </div>
-        </div>
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage} pageSizeOptions={PAGE_SIZES}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modal  && <OPModal   op={editOp} duplicar={duplicando} onClose={() => { setModal(false); setEditOp(null); setDuplicando(false) }} onSaved={() => { setModal(false); setEditOp(null); setDuplicando(false); fetchData() }} />}

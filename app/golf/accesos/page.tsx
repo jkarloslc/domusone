@@ -7,6 +7,7 @@ import ModalShell from '@/components/ui/ModalShell'
 import AccesoModal from './AccesoModal'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 type Acceso = {
   id: number
   fecha_entrada: string
@@ -28,6 +29,8 @@ export default function AccesosPage() {
   const puedeEscribir = canWrite('golf-accesos')
 
   const [accesos, setAccesos]       = useState<Acceso[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [espacios, setEspacios]     = useState<Espacio[]>([])
   const [loading, setLoading]       = useState(true)
   const [showModal, setShowModal]       = useState(false)
@@ -164,6 +167,10 @@ export default function AccesosPage() {
 
   const esHoy = fecha === localToday()
 
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(accesos.length / pgSize) - 1))
+  const accesosPag = accesos.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [accesos.length])
+
   return (
     <div style={{ padding: '28px 32px', animation: 'fadeIn 0.3s ease-out' }}>
 
@@ -255,7 +262,7 @@ export default function AccesosPage() {
                   <div style={{ fontWeight: 500, marginBottom: 4 }}>Sin registros para este día</div>
                   <div style={{ fontSize: 12 }}>Registra la primera salida al campo</div>
                 </td></tr>
-              ) : accesos.map(a => {
+              ) : accesosPag.map(a => {
                 const socio = a.cat_socios
                 const nombreSocio = socio ? [socio.nombre, socio.apellido_paterno, socio.apellido_materno].filter(Boolean).join(' ') : '—'
                 const enCampo = !a.fecha_salida
@@ -323,6 +330,8 @@ export default function AccesosPage() {
             </tbody>
           </table>
         </div>
+        <Paginador page={curPg} pageSize={pgSize} totalItems={accesos.length} onChange={setPgIdx}
+          onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
       </div>
 
       {showModal && <AccesoModal onClose={() => setShowModal(false)} onSaved={handleSaved} />}

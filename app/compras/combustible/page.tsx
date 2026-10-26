@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 type TipoComb = 'magna' | 'premium' | 'diesel'
 type TipoMov  = 'ENTRADA' | 'SALIDA' | 'AJUSTE'
 
@@ -62,6 +63,8 @@ export default function CombustiblePage() {
   const router        = useRouter()
   const { authUser }  = useAuth()
   const [tab,       setTab]      = useState<TipoComb>('magna')
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [movs,      setMovs]     = useState<Movimiento[]>([])
   const [loading,   setLoading]  = useState(true)
   const [saving,    setSaving]   = useState(false)
@@ -137,6 +140,10 @@ export default function CombustiblePage() {
   }
 
   const combActiva = COMBUSTIBLES.find(c => c.key === tab)!
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(movsConSaldo.length / pgSize) - 1))
+  const movsConSaldoPag = movsConSaldo.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [movsConSaldo.length])
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -245,6 +252,7 @@ export default function CombustiblePage() {
             </button>
           </div>
         ) : (
+          <>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
@@ -262,7 +270,7 @@ export default function CombustiblePage() {
                 </tr>
               </thead>
               <tbody>
-                {movsConSaldo.map((m, i) => {
+                {movsConSaldoPag.map((m, i) => {
                   const meta  = MOV_META[m.tipo_mov]
                   const delta = meta.signo * m.litros
                   return (
@@ -306,6 +314,9 @@ export default function CombustiblePage() {
               </tbody>
             </table>
           </div>
+          <Paginador page={curPg} pageSize={pgSize} totalItems={movsConSaldo.length} onChange={setPgIdx}
+            onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
+          </>
         )}
       </div>
 

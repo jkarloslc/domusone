@@ -6,8 +6,8 @@ import { Plus, Search, RefreshCw, X, ChevronLeft, ChevronRight, LogIn, LogOut } 
 import { type Acceso, type Visitante, TURNOS } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 
-const PAGE_SIZE = 30
 
+import Paginador from '@/components/ui/Paginador'
 export default function BitacoraTab() {
   const { canWrite, canDelete } = useAuth()
   const [accesos, setAccesos]   = useState<Acceso[]>([])
@@ -15,6 +15,7 @@ export default function BitacoraTab() {
   const [visitanteMap, setVisitanteMap] = useState<Record<number, any>>({})
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]     = useState('')
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -25,7 +26,7 @@ export default function BitacoraTab() {
       .from('accesos')
       .select('*', { count: 'exact' })
       .order('fecha_hora', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
 
     const { data, count, error } = await q
     if (!error) {
@@ -52,11 +53,10 @@ export default function BitacoraTab() {
       console.error(error)
     }
     setLoading(false)
-  }, [page, search])
+  }, [page, pageSize, search])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
   const entradas = accesos.filter(a => a.tipo === 'Entrada').length
   const salidas  = accesos.filter(a => a.tipo === 'Salida').length
 
@@ -147,15 +147,8 @@ export default function BitacoraTab() {
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages} · {total} registros</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {showForm && <RegistrarAccesoModal onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); fetchData() }} />}

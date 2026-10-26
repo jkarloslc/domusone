@@ -8,8 +8,8 @@ import FileUpload from '@/components/FileUpload'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 20
 
+import Paginador from '@/components/ui/Paginador'
 type Escritura = {
   id: number
   id_lote_fk: number
@@ -40,6 +40,7 @@ export default function EscriturasPage() {
   const [loteMap, setLoteMap]       = useState<Record<number, string>>({})
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]         = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter]   = useState('')
@@ -53,7 +54,7 @@ export default function EscriturasPage() {
       .from('escrituras')
       .select('*', { count: 'exact' })
       .order('fecha', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
 
     if (debouncedSearch)       q = q.or(`no_escritura.ilike.%${debouncedSearch}%,propietario.ilike.%${debouncedSearch}%,notario.ilike.%${debouncedSearch}%`)
     if (filterStatus) q = q.eq('status', filterStatus)
@@ -74,7 +75,7 @@ export default function EscriturasPage() {
       console.error(error)
     }
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus])
+  }, [page, pageSize, debouncedSearch, filterStatus])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -84,7 +85,6 @@ export default function EscriturasPage() {
     fetchData()
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   // Stats por status
   const porStatus = STATUS_ESCRITURA.map(s => ({ label: s, count: escrituras.filter(e => e.status === s).length }))
@@ -172,15 +172,8 @@ export default function EscriturasPage() {
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages} · {total} registros</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modalOpen && (

@@ -9,6 +9,7 @@ import {
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Tipos ────────────────────────────────────────────────────
 type Socio = {
   id: number
@@ -348,6 +349,8 @@ export default function TeePracticaPage() {
   const puedeEscribir = canWrite('golf-tee-practica')
 
   const [fecha, setFecha]           = useState(localToday)
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [entradas, setEntradas]     = useState<Entrada[]>([])
   const [loading, setLoading]       = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -372,6 +375,10 @@ export default function TeePracticaPage() {
   useEffect(() => { fetchEntradas() }, [fetchEntradas])
 
   const totalBolas = entradas.reduce((a, e) => a + e.num_bolas, 0)
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(entradas.length / pgSize) - 1))
+  const entradasPag = entradas.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [entradas.length])
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -437,6 +444,7 @@ export default function TeePracticaPage() {
             )}
           </div>
         ) : (
+          <>
           <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -450,7 +458,7 @@ export default function TeePracticaPage() {
               </tr>
             </thead>
             <tbody>
-              {entradas.map((e, idx) => (
+              {entradasPag.map((e, idx) => (
                 <tr key={e.id} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}
                   onMouseEnter={ev => (ev.currentTarget.style.background = '#f0fdf4')}
                   onMouseLeave={ev => (ev.currentTarget.style.background = idx % 2 === 0 ? '#fff' : '#fafafa')}>
@@ -489,6 +497,9 @@ export default function TeePracticaPage() {
             </tbody>
           </table>
           </div>
+          <Paginador page={curPg} pageSize={pgSize} totalItems={entradas.length} onChange={setPgIdx}
+            onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
+          </>
         )}
       </div>
 

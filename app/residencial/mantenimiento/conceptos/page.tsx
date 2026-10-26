@@ -10,6 +10,7 @@ import {
   ClipboardList, Boxes,
 } from 'lucide-react'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 type Categoria = { id: number; codigo: string; nombre: string; orden: number; activo: boolean }
 
@@ -52,7 +53,6 @@ const fmt  = (v: number | null | undefined) => v != null ? '$' + v.toLocaleStrin
 const fmtC = (v: number | null | undefined) => v != null ? v.toLocaleString('es-MX', { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : '—'
 const fmtPct = (v: number) => `${(v * 100).toFixed(0)}%`
 
-const PAGE_SIZE = 20
 
 // ═════════════════════════════════════════════════════════════════════════════
 // Página principal
@@ -67,6 +67,7 @@ export default function ConceptosPage() {
   const [conceptos, setConceptos]   = useState<ConceptoRow[]>([])
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [loading, setLoading]       = useState(true)
 
   const [search, setSearch]           = useState('')
@@ -85,13 +86,13 @@ export default function ConceptosPage() {
     setLoading(true)
     let q = dbCtrl.from('mant_conceptos').select('*', { count: 'exact' })
       .order('codigo')
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (dSearch) q = q.or(`codigo.ilike.%${dSearch}%,descripcion.ilike.%${dSearch}%`)
     if (filterCategoria) q = q.eq('id_categoria_fk', Number(filterCategoria))
     const { data, count, error } = await q
     if (!error) { setConceptos(data as ConceptoRow[]); setTotal(count ?? 0) }
     setLoading(false)
-  }, [page, dSearch, filterCategoria])
+  }, [page, pageSize, dSearch, filterCategoria])
 
   useEffect(() => { fetchCategorias() }, [fetchCategorias])
   useEffect(() => { fetchConceptos() }, [fetchConceptos])
@@ -103,7 +104,6 @@ export default function ConceptosPage() {
     fetchConceptos()
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
   const catMap = Object.fromEntries(categorias.map(c => [c.id, c]))
   const promedioVenta = conceptos.length ? conceptos.reduce((s, c) => s + (c.pu_venta ?? 0), 0) / conceptos.length : 0
 
@@ -228,15 +228,8 @@ export default function ConceptosPage() {
                 }
               </tbody>
             </table>
-            {totalPages > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages} · {total} registros</span>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}>‹</button>
-                  <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>›</button>
-                </div>
-              </div>
-            )}
+            <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
           </div>
         </>
       )}

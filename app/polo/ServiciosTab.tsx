@@ -5,8 +5,8 @@ import { useAuth } from '@/lib/AuthContext'
 import { Plus, RefreshCw, Edit2, Trash2, Eye, Search } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
-const PAGE_SIZE = 30
 
+import Paginador from '@/components/ui/Paginador'
 type CaballoCat    = { id: number; nombre: string }
 type ArrendCat     = { id: number; nombre: string; apellido_paterno: string | null; razon_social: string | null; tipo_persona: string }
 type TipoServCat   = { id: number; nombre: string; tipo: string }
@@ -82,6 +82,7 @@ export default function ServiciosTab() {
   const [items, setItems]       = useState<Servicio[]>([])
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
@@ -128,8 +129,8 @@ export default function ServiciosTab() {
 
   const fetchItems = useCallback(async () => {
     setLoading(true)
-    const from = page * PAGE_SIZE
-    const to   = from + PAGE_SIZE - 1
+    const from = page * pageSize
+    const to   = from + pageSize - 1
     let q = dbHip
       .from('ctrl_servicios')
       .select('*, cat_caballos(nombre), cat_arrendatarios(nombre, apellido_paterno, razon_social, tipo_persona), cat_tipos_servicio(nombre)', { count: 'exact' })
@@ -163,7 +164,7 @@ export default function ServiciosTab() {
       montoFacturable: facturables.reduce((s, x) => s + Number(x.costo ?? 0), 0),
     })
     setLoading(false)
-  }, [page, search, filtroTipo, filtroCaballo, filtroArr])
+  }, [page, pageSize, search, filtroTipo, filtroCaballo, filtroArr])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
@@ -228,7 +229,6 @@ export default function ServiciosTab() {
     fetchItems()
   }
 
-  const totalPags = Math.ceil(total / PAGE_SIZE)
   const readOnly = modalMode === 'view'
 
   return (
@@ -333,15 +333,9 @@ export default function ServiciosTab() {
           </tbody>
         </table>
         </div>
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
-
-      {totalPags > 1 && (
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-          <button className="btn-ghost" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</button>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>Pág. {page + 1} / {totalPags}</span>
-          <button className="btn-ghost" disabled={page >= totalPags - 1} onClick={() => setPage(p => p + 1)}>Siguiente</button>
-        </div>
-      )}
 
       {/* Modal */}
       {showModal && (

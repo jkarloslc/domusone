@@ -17,6 +17,7 @@ import { cerrarOCsDeOP } from '@/lib/cxpCascade'
 import { aplicarPagoRemesa, reversarPagoRemesa } from '@/lib/pagoRemesa'
 import { editarPagoCxp } from '@/lib/editarPagoCxp'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Antigüedad de saldo ────────────────────────────────────
 const diasVencido = (fecha: string | null) => {
   if (!fecha) return 0
@@ -583,6 +584,8 @@ function RemesaStatusBadge({ status }: { status: string }) {
 function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP }: { prov: any; almMap: Record<number,string>; refreshKey: number; opCoincide: (o: any) => boolean; onClose: () => void; onOpenOP: (op: any) => void }) {
   const { canWrite } = useAuth()
   const [ops, setOps]         = useState<any[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('')
   const [selected, setSelected]     = useState<Set<number>>(new Set())
@@ -690,6 +693,10 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
     }, 300)
   }
 
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(opsFiltradas.length / pgSize) - 1))
+  const opsFiltradasPag = opsFiltradas.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [opsFiltradas.length])
+
   return (
     <>
     <ModalShell modulo="tesoreria" titulo={prov.nombre} onClose={onClose} maxWidth={1100}
@@ -753,7 +760,7 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
                 <tr><td colSpan={12} style={{ textAlign: 'center', padding: 32 }}><RefreshCw size={16} className="animate-spin" style={{ margin: '0 auto', color: 'var(--text-muted)' }} /></td></tr>
               ) : opsFiltradas.length === 0 ? (
                 <tr><td colSpan={12} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>Sin OPs con este status</td></tr>
-              ) : opsFiltradas.map(op => {
+              ) : opsFiltradasPag.map(op => {
                 const dias = diasVencido(op.fecha_vencimiento)
                 const vencido = dias > 0 && op.status !== 'Pagada'
                 const esElegible = op.status === 'Pendiente' || op.status === 'Abonada'
@@ -806,6 +813,8 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
             </tbody>
           </table>
           </div>
+          <Paginador page={curPg} pageSize={pgSize} totalItems={opsFiltradas.length} onChange={setPgIdx}
+            onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
         </div>
     </ModalShell>
     {showPagoRemesa && (

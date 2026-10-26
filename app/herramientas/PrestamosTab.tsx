@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 
+import Paginador from '@/components/ui/Paginador'
 const CONDICIONES = ['Bueno', 'Regular', 'Dañado']
 
 const STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
@@ -55,6 +56,8 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
 }) {
   const { canWrite, canDelete, authUser } = useAuth()
   const [registros, setRegistros] = useState<any[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [loading,   setLoading]   = useState(true)
   const [filterHerr,   setFilterHerr]   = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -147,6 +150,10 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
     if (w) { w.document.write(html); w.document.close(); w.focus() }
   }
 
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(registros.length / pgSize) - 1))
+  const registrosPag = registros.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [registros.length])
+
   return (
     <div>
       {/* KPIs */}
@@ -222,7 +229,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
               <tr><td colSpan={9} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
                 Sin préstamos registrados. Usa <strong>Nuevo Préstamo</strong> para comenzar.
               </td></tr>
-            ) : registros.map(p => {
+            ) : registrosPag.map(p => {
               const h = herrMap[p.id_herramienta_fk]
               const estado = estadoVisual(p)
               return (
@@ -273,6 +280,8 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
           </tbody>
         </table>
       </div>
+      <Paginador page={curPg} pageSize={pgSize} totalItems={registros.length} onChange={setPgIdx}
+        onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
 
       {/* Modal: Nuevo / Editar préstamo */}
       {modal.open && (

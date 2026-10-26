@@ -10,6 +10,7 @@ import PrestamosTab from './PrestamosTab'
 import MantenimientoTab from './MantenimientoTab'
 import ModalShell from '@/components/ui/ModalShell'
 
+import Paginador from '@/components/ui/Paginador'
 const TIPOS_HERRAMIENTA = [
   'Desbrozadora', 'Podadora', 'Motosierra', 'Sopladora', 'Bomba de Agua',
   'Generador', 'Compresor', 'Taladro', 'Esmeril', 'Otro',
@@ -43,6 +44,8 @@ const fmtF = (d: string | null) =>
 export default function HerramientasTab() {
   const { canWrite, canDelete } = useAuth()
   const [subTab, setSubTab] = useState<'catalogo' | 'prestamos' | 'mantenimiento'>('catalogo')
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
 
   const [herramientas, setHerramientas] = useState<any[]>([])
   const [areaMap,      setAreaMap]      = useState<Record<number, string>>({})
@@ -98,6 +101,10 @@ export default function HerramientasTab() {
     await dbCfg.from('herramientas').update({ activo: false }).eq('id', id)
     fetchHerramientas()
   }
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(filtered.length / pgSize) - 1))
+  const filteredPag = filtered.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [filtered.length])
 
   return (
     <div>
@@ -196,7 +203,7 @@ export default function HerramientasTab() {
                   <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
                     Sin herramientas registradas
                   </td></tr>
-                ) : filtered.map(h => (
+                ) : filteredPag.map(h => (
                   <tr key={h.id} style={{ opacity: h.status === 'Baja' ? 0.55 : 1 }}>
                     <td style={{ padding: '8px 10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -243,6 +250,8 @@ export default function HerramientasTab() {
               </tbody>
             </table>
           </div>
+          <Paginador page={curPg} pageSize={pgSize} totalItems={filtered.length} onChange={setPgIdx}
+            onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
         </div>
       )}
 

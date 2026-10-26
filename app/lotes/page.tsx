@@ -14,13 +14,13 @@ import { useAuth } from '@/lib/AuthContext'
 import PageHeader from '@/components/layout/PageHeader'
 import LotesTabs from './LotesTabs'
 
+import Paginador from '@/components/ui/Paginador'
 const STATUS_COLORS: Record<string, string> = {
   'Vendido':   'badge-vendido',
   'Libre':     'badge-libre',
   'Bloqueado': 'badge-bloqueado',
 }
 
-const PAGE_SIZE = 20
 
 function LotesContent({ embedded }: { embedded?: boolean }) {
   const { canWrite, canDelete } = useAuth()
@@ -29,6 +29,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
   const [clasificaciones, setClasifs]   = useState<Record<number, string>>({})
   const [total, setTotal]               = useState(0)
   const [page, setPage]               = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]           = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter]     = useState('')
@@ -66,7 +67,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
       .select('*', { count: 'exact' })
       .order('id_seccion_fk', { ascending: true })
       .order('lote', { ascending: true })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
 
     if (debouncedSearch) q = q.or(`cve_lote.ilike.%${debouncedSearch}%,lote::text.ilike.%${debouncedSearch}%`)
     if (filterStatus)    q = q.eq('status_lote', filterStatus)
@@ -80,7 +81,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
       setTotal(count ?? 0)
     }
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterSeccion, filterClasif, debouncedDir])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterSeccion, filterClasif, debouncedDir])
 
   useEffect(() => { fetchLotes() }, [fetchLotes])
 
@@ -92,7 +93,6 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
     fetchLotes()
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -267,30 +267,8 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
         </div>
 
         {/* Paginación */}
-        {totalPages > 1 && (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '12px 16px', borderTop: '1px solid var(--border)',
-          }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Página {page + 1} de {totalPages} · {total} registros
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(0)} title="Primera página">
-                <ChevronsLeft size={13} />
-              </button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)} title="Página anterior">
-                <ChevronLeft size={13} />
-              </button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} title="Página siguiente">
-                <ChevronRight size={13} />
-              </button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(totalPages - 1)} title="Última página">
-                <ChevronsRight size={13} />
-              </button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {/* Modal alta/edición */}

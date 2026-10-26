@@ -10,6 +10,7 @@ import ReembolsoDetail from './ReembolsoDetail'
 import PageHeader from '@/components/layout/PageHeader'
 import KpiCard from '@/components/ui/KpiCard'
 
+import Paginador from '@/components/ui/Paginador'
 const STATUS_COLORS: Record<string, string> = {
   'Borrador':       'badge-default',
   'Pendiente Auth': 'badge-bloqueado',
@@ -33,6 +34,8 @@ export default function CajaChicaPage() {
   const isAdmin = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'compras_supervisor'
 
   const [fondos,      setFondos]      = useState<any[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [reembolsos,  setReembolsos]  = useState<any[]>([])
   const [fondoModal,  setFondoModal]  = useState<{ open: boolean; fondo?: any }>({ open: false })
   const [remModal,    setRemModal]    = useState<{ open: boolean; rem?: any; fondo?: any }>({ open: false })
@@ -65,6 +68,10 @@ export default function CajaChicaPage() {
   const autorizados = reembolsos.filter(r => r.status === 'Autorizado').length
   const totalPendiente = reembolsos.filter(r => r.status === 'Pendiente Auth' || r.status === 'Autorizado')
     .reduce((a, r) => a + (r.total ?? 0), 0)
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(filtered.length / pgSize) - 1))
+  const filteredPag = filtered.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [filtered.length])
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -174,7 +181,7 @@ export default function CajaChicaPage() {
               <tbody>
                 {filtered.length === 0
                   ? <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 24 }}>Sin reembolsos</td></tr>
-                  : filtered.map(r => (
+                  : filteredPag.map(r => (
                     <tr key={r.id} style={{ opacity: r.status === 'Rechazado' || r.status === 'Cancelado' ? 0.5 : 1 }}>
                       <td style={{ fontFamily: 'monospace', fontSize: 13 }}>{r.folio ?? `#${r.id}`}</td>
                       <td style={{ fontSize: 13 }}>{r.usuario_nombre ?? r.id_usuario_fk}</td>
@@ -208,6 +215,8 @@ export default function CajaChicaPage() {
               </tbody>
             </table>
             </div>
+            <Paginador page={curPg} pageSize={pgSize} totalItems={filtered.length} onChange={setPgIdx}
+              onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
           </div>
         </>
       )}

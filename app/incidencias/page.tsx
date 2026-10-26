@@ -13,6 +13,7 @@ import MultiImageUpload from '@/components/MultiImageUpload'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Tipos ─────────────────────────────────────────────────────
 type Incidencia = {
   id: number
@@ -44,7 +45,6 @@ const STATUS_COLOR: Record<string, string> = {
   'Cancelada':  'badge-default',
 }
 
-const PAGE_SIZE = 25
 const fmtFecha = (d: string | null) =>
   d ? new Date(d.includes('T') ? d : d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
@@ -55,6 +55,7 @@ export default function IncidenciasPage() {
   const [tipos,    setTipos]    = useState<string[]>([])
   const [origenes, setOrigenes] = useState<string[]>([])
   const [page, setPage]               = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]           = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterStatus, setFilter]     = useState('')
@@ -70,7 +71,7 @@ export default function IncidenciasPage() {
       .from('incidencias')
       .select('*', { count: 'exact' })
       .order('fecha', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
 
     if (debouncedSearch) q = q.or(`descripcion.ilike.%${debouncedSearch}%,responsable.ilike.%${debouncedSearch}%`)
     if (filterStatus)    q = q.eq('status', filterStatus)
@@ -95,7 +96,7 @@ export default function IncidenciasPage() {
     setIncidencias(enriched as Incidencia[])
     setTotal(count ?? 0)
     setLoading(false)
-  }, [page, debouncedSearch, filterStatus, filterTipo])
+  }, [page, pageSize, debouncedSearch, filterStatus, filterTipo])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -112,7 +113,6 @@ export default function IncidenciasPage() {
     fetchData()
   }
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   // Stats
   const abiertas   = incidencias.filter(i => i.status === 'Abierta').length
@@ -251,15 +251,8 @@ export default function IncidenciasPage() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages} · {total} registros</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modalOpen && (

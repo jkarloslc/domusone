@@ -18,6 +18,7 @@ import CuotasConfigPanel from '@/components/golf/CuotasConfigPanel'
 import ClaveProdServPicker from '@/components/ui/ClaveProdServPicker'
 import ProductoPosSelect from '@/components/ui/ProductoPosSelect'
 
+import Paginador from '@/components/ui/Paginador'
 // ── Tipos ─────────────────────────────────────────────────────
 type CatConfig = {
   key:      string
@@ -1265,8 +1266,6 @@ export default function CatalogosPage() {
 // ══════════════════════════════════════════════════════════════
 // Tabla genérica
 // ══════════════════════════════════════════════════════════════
-const PAGE_SIZE = 25
-
 function CatalogoTable({ config }: { config: CatConfig }) {
   const db = config.schema === 'comp' ? dbComp : config.schema === 'golf' ? dbGolf : dbCfg
   const [rows, setRows]       = useState<any[]>([])
@@ -1276,6 +1275,7 @@ function CatalogoTable({ config }: { config: CatConfig }) {
   const [detailAreasRow, setDetailAreasRow] = useState<any | null>(null)
   const [detailAdminRow, setDetailAdminRow] = useState<any | null>(null)
   const [page, setPage]       = useState(1)
+  const [pageSize, setPageSize] = useState(25)
   // Mapa de selects: { campo_key: { id: nombre } }
   const [selectMaps, setSelectMaps] = useState<Record<string, Record<number, string>>>({})
 
@@ -1327,9 +1327,9 @@ function CatalogoTable({ config }: { config: CatConfig }) {
 
   const activos     = rows.filter(r => r.activo).length
   const inactivos   = rows.filter(r => !r.activo).length
-  const totalPages  = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const totalPages  = Math.max(1, Math.ceil(rows.length / pageSize))
   const safePage    = Math.min(page, totalPages)
-  const pagedRows   = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const pagedRows   = rows.slice((safePage - 1) * pageSize, safePage * pageSize)
   const Icon = config.icon
 
   return (
@@ -1451,39 +1451,9 @@ function CatalogoTable({ config }: { config: CatConfig }) {
             ))}
           </tbody>
         </table>
+  <Paginador page={safePage - 1} pageSize={pageSize} totalItems={rows.length} onChange={p => setPage(p + 1)}
+          onPageSizeChange={n => { setPageSize(n); setPage(1) }} />
       </div>
-
-      {/* ── Paginación ── */}
-      {rows.length > PAGE_SIZE && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginTop: 12, padding: '8px 12px', background: 'var(--bg-card)',
-          border: '1px solid var(--border)', borderRadius: 10 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            Mostrando {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, rows.length)} de <strong>{rows.length}</strong> registros
-          </span>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {[
-              { label: '«', title: 'Primera página',   action: () => setPage(1),              disabled: safePage === 1 },
-              { label: '‹', title: 'Página anterior',  action: () => setPage(p => p - 1),     disabled: safePage === 1 },
-              { label: '›', title: 'Página siguiente', action: () => setPage(p => p + 1),     disabled: safePage === totalPages },
-              { label: '»', title: 'Última página',    action: () => setPage(totalPages),     disabled: safePage === totalPages },
-            ].map(btn => (
-              <button key={btn.label} title={btn.title} onClick={btn.action} disabled={btn.disabled}
-                style={{ width: 32, height: 32, borderRadius: 7, border: '1px solid var(--border)',
-                  background: 'var(--bg)', cursor: btn.disabled ? 'default' : 'pointer',
-                  fontSize: 15, fontWeight: 600,
-                  color: btn.disabled ? 'var(--text-muted)' : 'var(--text-primary)',
-                  opacity: btn.disabled ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {btn.label}
-              </button>
-            ))}
-            <span style={{ display: 'flex', alignItems: 'center', padding: '0 8px',
-              fontSize: 12, color: 'var(--text-secondary)', gap: 4 }}>
-              Pág. <strong>{safePage}</strong> / {totalPages}
-            </span>
-          </div>
-        </div>
-      )}
 
       {modal !== null && (
         <CatalogoModal

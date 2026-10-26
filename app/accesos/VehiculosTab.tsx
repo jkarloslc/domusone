@@ -7,9 +7,12 @@ import { Plus, Search, RefreshCw, Edit2, Trash2, X, Save, Loader, Car } from 'lu
 import { type Vehiculo, TIPOS_VEHICULO } from './types'
 import ModalShell from '@/components/ui/ModalShell'
 
+import Paginador from '@/components/ui/Paginador'
 export default function VehiculosTab() {
   const { canWrite, canDelete } = useAuth()
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [marcas, setMarcas]       = useState<any[]>([])
   const [marcaMap, setMarcaMap]   = useState<Record<number, string>>({})
   const [loading, setLoading]     = useState(true)
@@ -47,6 +50,10 @@ export default function VehiculosTab() {
     fetchData()
   }
 
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(vehiculos.length / pgSize) - 1))
+  const vehiculosPag = vehiculos.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [vehiculos.length])
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -82,7 +89,7 @@ export default function VehiculosTab() {
                 <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}><RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto' }} /></td></tr>
               ) : vehiculos.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Sin vehículos registrados</td></tr>
-              ) : vehiculos.map(v => (
+              ) : vehiculosPag.map(v => (
                 <tr key={v.id}>
                   <td style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--gold-light)' }}>{v.placas ?? '—'}</td>
                   <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -109,6 +116,8 @@ export default function VehiculosTab() {
               ))}
             </tbody>
           </table>
+          <Paginador page={curPg} pageSize={pgSize} totalItems={vehiculos.length} onChange={setPgIdx}
+            onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
         </div>
       </div>
 

@@ -13,8 +13,8 @@ import { useCatalogoTiposGasto } from '@/lib/tiposGasto'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 
-const PAGE_SIZE = 50
 
+import Paginador from '@/components/ui/Paginador'
 export default function ArticulosPage() {
   const { canWrite, canDelete } = useAuth()
   const router = useRouter()
@@ -23,6 +23,7 @@ export default function ArticulosPage() {
   const [inventario, setInv]    = useState<Record<number, number>>({})  // articuloId → saldo total
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
   const debouncedSearch = useDebounce(search, 300)
@@ -33,7 +34,7 @@ export default function ArticulosPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     let q = dbComp.from('articulos').select('*', { count: 'exact' }).order('clave')
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (debouncedSearch) q = q.or(`clave.ilike.%${debouncedSearch}%,nombre.ilike.%${debouncedSearch}%,descripcion.ilike.%${debouncedSearch}%`)
     if (filterCat)       q = q.eq('id_tipo_gasto_fk', Number(filterCat))
     const { data, count } = await q
@@ -52,7 +53,7 @@ export default function ArticulosPage() {
       setInv(saldos)
     }
     setLoading(false)
-  }, [page, debouncedSearch, filterCat])
+  }, [page, pageSize, debouncedSearch, filterCat])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -205,23 +206,8 @@ export default function ArticulosPage() {
         </table>
         </div>
         {/* Paginación */}
-        {total > PAGE_SIZE && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderTop: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Pág. {page + 1} de {Math.ceil(total / PAGE_SIZE)} · {total} artículos
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }}
-                disabled={page === 0} onClick={() => setPage(0)}>«</button>
-              <button className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }}
-                disabled={page === 0} onClick={() => setPage(p => p - 1)}>‹ Ant</button>
-              <button className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }}
-                disabled={page >= Math.ceil(total / PAGE_SIZE) - 1} onClick={() => setPage(p => p + 1)}>Sig ›</button>
-              <button className="btn-secondary" style={{ padding: '5px 12px', fontSize: 12 }}
-                disabled={page >= Math.ceil(total / PAGE_SIZE) - 1} onClick={() => setPage(Math.ceil(total / PAGE_SIZE) - 1)}>»</button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modal !== null && (

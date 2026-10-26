@@ -10,6 +10,7 @@ import { antiguedad } from '@/lib/dateUtils'
 import { Colaborador, TipoColaborador, TipoNomina, netoMensualDesdePeriodo, nombreCompletoColaborador } from '@/lib/colaboradores'
 import ModalShell from '@/components/ui/ModalShell'
 
+import Paginador from '@/components/ui/Paginador'
 const TIPOS_COLABORADOR: TipoColaborador[] = ['Interno', 'Externo']
 
 // ══════════════════════════════════════════════════════════════
@@ -31,6 +32,8 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
   const { authUser, canDelete } = useAuth()
   const puedeEscribir = authUser?.rol === 'superadmin' || authUser?.rol === 'admin' || authUser?.rol === 'admin_low_level' || authUser?.rol === 'admin_organismo'
   const [items, setItems]       = useState<Colaborador[]>([])
+  const [pgIdx, setPgIdx]   = useState(0)
+  const [pgSize, setPgSize] = useState(25)
   const [puestos, setPuestos]   = useState<{ id: number; puesto: string }[]>([])
   const [centrosCosto, setCentrosCosto] = useState<{ id: number; nombre: string }[]>([])
   const [areas, setAreas] = useState<{ id: number; nombre: string; id_centro_costo_fk: number | null }[]>([])
@@ -184,6 +187,10 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
   const activos      = items.filter(i => i.activo).length
   const asignados    = items.filter(i => i.activo && i.es_asignado).length
   const supervisores = items.filter(i => i.activo && i.es_supervisor).length
+
+  const curPg = Math.min(pgIdx, Math.max(0, Math.ceil(filtered.length / pgSize) - 1))
+  const filteredPag = filtered.slice(curPg * pgSize, (curPg + 1) * pgSize)
+  useEffect(() => { setPgIdx(0) }, [filtered.length])
 
   return (
     <div>
@@ -525,7 +532,7 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
               <tr><td colSpan={17} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                 {items.length === 0 ? 'Sin colaboradores. Crea el primero.' : 'Sin resultados con los filtros aplicados.'}
               </td></tr>
-            ) : filtered.map(c => (
+            ) : filteredPag.map(c => (
               <tr key={c.id} style={{ opacity: c.activo ? 1 : 0.45 }}>
                 <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{c.no_empleado || '—'}</td>
                 <td style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>{nombreCompletoColaborador(c)}</td>
@@ -572,6 +579,8 @@ export default function ColaboradoresPanel({ onBack }: { onBack?: () => void }) 
           </tbody>
         </table>
       </div>
+      <Paginador page={curPg} pageSize={pgSize} totalItems={filtered.length} onChange={setPgIdx}
+        onPageSizeChange={n => { setPgSize(n); setPgIdx(0) }} />
     </div>
   )
 }

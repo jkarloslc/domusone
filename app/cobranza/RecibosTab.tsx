@@ -10,14 +10,15 @@ import ReciboDetail from './ReciboDetail'
 import EstadoCuenta from './EstadoCuenta'
 import FacturaModal from '../facturas/FacturaModal'
 
-const PAGE_SIZE = 25
 
+import Paginador from '@/components/ui/Paginador'
 export default function RecibosTab() {
   const { canWrite, canDelete } = useAuth()
   const [recibos, setRecibos]       = useState<any[]>([])
   const [loteMap, setLoteMap]       = useState<Record<number, string>>({})
   const [total, setTotal]           = useState(0)
   const [page, setPage]             = useState(0)
+  const [pageSize, setPageSize] = useState(25)
   const [search, setSearch]         = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const [filterActivo, setFilter]   = useState('true')
@@ -31,7 +32,7 @@ export default function RecibosTab() {
     setLoading(true)
     let q = dbCtrl.from('recibos').select('*', { count: 'exact' })
       .order('fecha_recibo', { ascending: false })
-      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+      .range(page * pageSize, page * pageSize + pageSize - 1)
     if (filterActivo !== '') q = q.eq('activo', filterActivo === 'true')
     if (debouncedSearch) q = q.or(`folio.ilike.%${debouncedSearch}%,propietario.ilike.%${debouncedSearch}%`)
     const { data, count, error } = await q
@@ -52,11 +53,10 @@ export default function RecibosTab() {
       console.error(error)
     }
     setLoading(false)
-  }, [page, debouncedSearch, filterActivo])
+  }, [page, pageSize, debouncedSearch, filterActivo])
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
   const sumActivos = recibos.filter(r => r.activo).reduce((a: number, r: any) => a + (r.monto ?? 0), 0)
 
   return (
@@ -146,15 +146,8 @@ export default function RecibosTab() {
             ))}
           </tbody>
         </table>
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e2e8f0' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Página {page + 1} de {totalPages}</span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-              <button className="btn-secondary" style={{ padding: '5px 10px' }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
-            </div>
-          </div>
-        )}
+        <Paginador page={page} pageSize={pageSize} totalItems={total} onChange={setPage}
+          onPageSizeChange={n => { setPageSize(n); setPage(0) }} />
       </div>
 
       {modalOpen  && <ReciboModal onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); fetchData() }} />}

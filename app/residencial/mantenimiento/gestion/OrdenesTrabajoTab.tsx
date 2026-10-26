@@ -12,6 +12,7 @@ import ModalShell from '@/components/ui/ModalShell'
 import ColaboradorPicker from '@/components/ui/ColaboradorPicker'
 import { nombreCompletoColaborador } from '@/lib/colaboradores'
 
+import Paginador from '@/components/ui/Paginador'
 const TIPOS      = ['Jardinería','Plomería','Electricidad','Limpieza','Obra Civil','Pintura','Fumigación','Herrería','Carpintería','Mantto. Lineas Sanitarias','Otro']
 const PRIORIDADES = ['Urgente','Alta','Media','Baja']
 const STATUSES    = ['Pendiente','En Proceso','En Pausa','Completada','Cancelada']
@@ -94,10 +95,10 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
   empresa?: 'Balvanera' | 'Cuadrilla'; modulo: Modulo
 }) {
   const { canWrite, canDelete } = useAuth()
-  const PAGE_SIZE = 20
   const [rows, setRows]           = useState<any[]>([])
   const [total, setTotal]         = useState(0)
   const [page, setPage]           = useState(1)
+  const [pageSize, setPageSize]   = useState(25)
   const [loading, setLoading]     = useState(true)
   const [kpis, setKpis]           = useState({ pendientes: 0, enProceso: 0, completadas: 0, urgentes: 0 })
   const [areas, setAreas] = useState<any[]>([])
@@ -157,11 +158,11 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
       if (filterArea)     q = q.eq('id_area_fk', Number(filterArea))
       if (filterAC)       q = q.eq('id_area_comun_fk', Number(filterAC))
     }
-    const from = (page - 1) * PAGE_SIZE
-    const { data, count } = await q.range(from, from + PAGE_SIZE - 1)
+    const from = (page - 1) * pageSize
+    const { data, count } = await q.range(from, from + pageSize - 1)
     setRows(data ?? []); setTotal(count ?? 0)
     setLoading(false)
-  }, [empresa, modulo, usaCcFrente, debouncedSearch, filterStatus, filterTipo, filterCuad, filterArea, filterAC, filterCC, filterFrente, page])
+  }, [empresa, modulo, usaCcFrente, debouncedSearch, filterStatus, filterTipo, filterCuad, filterArea, filterAC, filterCC, filterFrente, page, pageSize])
 
   useEffect(() => {
     Promise.all([
@@ -374,12 +375,9 @@ export default function OrdenesTrabajoTab({ empresa = 'Balvanera', modulo }: {
             ))}
           </tbody>
         </table>
+  <Paginador page={page - 1} pageSize={pageSize} totalItems={total} onChange={p => setPage(p + 1)}
+          onPageSizeChange={n => { setPageSize(n); setPage(1) }} />
       </div>
-
-      {/* Paginación */}
-      {total > PAGE_SIZE && (
-        <PaginationNav page={page} total={total} pageSize={PAGE_SIZE} onChange={setPage} />
-      )}
 
       {modal  && <OTModal areas={areas} cuadrantes={cuadrantes} areasComunes={areasComunes} areaToAcs={areaToAcs}
         centrosCosto={centrosCosto} frentes={frentes} areaToFrentes={areaToFrentes} areaToCuadrantes={areaToCuadrantes} usaCcFrente={usaCcFrente}
@@ -2022,64 +2020,6 @@ ${todosRecursos.length > 0 ? `
         </div>
 
     </ModalShell>
-  )
-}
-
-// ── PaginationNav ─────────────────────────────────────────────
-function PaginationNav({ page, total, pageSize, onChange }: {
-  page: number; total: number; pageSize: number; onChange: (p: number) => void
-}) {
-  const lastPage = Math.ceil(total / pageSize)
-  const from = (page - 1) * pageSize + 1
-  const to   = Math.min(page * pageSize, total)
-
-  // Páginas a mostrar (ventana de 5 centrada en la actual)
-  const pages: (number | '...')[] = []
-  if (lastPage <= 7) {
-    for (let i = 1; i <= lastPage; i++) pages.push(i)
-  } else {
-    pages.push(1)
-    if (page > 4) pages.push('...')
-    for (let i = Math.max(2, page - 1); i <= Math.min(lastPage - 1, page + 1); i++) pages.push(i)
-    if (page < lastPage - 3) pages.push('...')
-    pages.push(lastPage)
-  }
-
-  const btn = (label: React.ReactNode, target: number, disabled: boolean, active = false) => (
-    <button
-      key={String(label)}
-      onClick={() => !disabled && onChange(target)}
-      disabled={disabled}
-      style={{
-        minWidth: 30, height: 30, padding: '0 8px', borderRadius: 6, border: '1px solid',
-        borderColor: active ? 'var(--blue)' : '#e2e8f0',
-        background: active ? 'var(--blue)' : disabled ? '#f8fafc' : '#fff',
-        color: active ? '#fff' : disabled ? '#94a3b8' : 'var(--text-secondary)',
-        fontWeight: active ? 700 : 400, fontSize: 12, cursor: disabled ? 'default' : 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-      }}>
-      {label}
-    </button>
-  )
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
-      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-        {from}–{to} de <strong>{total}</strong> registros
-      </span>
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-        {btn('««', 1,        page === 1)}
-        {btn('‹',  page - 1, page === 1)}
-        {pages.map((p, i) =>
-          p === '...'
-            ? <span key={`e${i}`} style={{ padding: '0 4px', color: 'var(--text-muted)', fontSize: 12 }}>…</span>
-            : btn(p, p as number, false, p === page)
-        )}
-        {btn('›',  page + 1, page === lastPage)}
-        {btn('»»', lastPage, page === lastPage)}
-      </div>
-    </div>
   )
 }
 
