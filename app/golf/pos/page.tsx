@@ -21,6 +21,9 @@ import { fechaLocal, inicioDelDia, finDelDia } from '@/lib/dateUtils'
 import { verificarNoFacturada } from '@/lib/cancelacionCobranza'
 
 import Paginador from '@/components/ui/Paginador'
+import FiltroAgrupadorCentro from '@/components/ui/FiltroAgrupadorCentro'
+import { cargarCentrosVentaAgrupados, CentroVentaAgr, AgrupadorVenta } from '@/lib/centrosVenta'
+import { idsCentrosFiltro } from '@/lib/centrosIngreso'
 const MOTIVOS_CANCELACION_CFDI = [
   { clave: '01', desc: 'Comprobante emitido con errores con relación' },
   { clave: '02', desc: 'Comprobante emitido sin relación' },
@@ -109,6 +112,13 @@ export default function POSPage() {
   const [origenPorVenta, setOrigenPorVenta] = useState<Map<number, { folio: string | null; ruta: string }>>(new Map())
   const [busquedaV,      setBusquedaV]      = useState('')
   const [filtroStatus,   setFiltroStatus]   = useState('')
+  // Agrupadores de centros de venta (solo para filtrar vistas)
+  const [centrosAgr,   setCentrosAgr]   = useState<CentroVentaAgr[]>([])
+  const [agrupadores,  setAgrupadores]  = useState<AgrupadorVenta[]>([])
+  const [filtroAgr,     setFiltroAgr]     = useState('')
+  const [filtroAgrFact, setFiltroAgrFact] = useState('')
+  const [filtroAgrCorte, setFiltroAgrCorte] = useState('')
+  const [filtroAgrCat,  setFiltroAgrCat]  = useState('')
   const [filtroCentro,   setFiltroCentro]   = useState('')
   const [filtroFechaDesde, setFiltroFechaDesde] = useState(fechaLocal())
   const [filtroFechaHasta, setFiltroFechaHasta] = useState(fechaLocal())
@@ -189,6 +199,10 @@ export default function POSPage() {
   const [ingresosMes, setIngresosMes] = useState(0)
   const [dbError, setDbError]   = useState('')
 
+  useEffect(() => {
+    cargarCentrosVentaAgrupados().then(r => { setCentrosAgr(r.centros); setAgrupadores(r.agrupadores) })
+  }, [])
+
   // ── Cargar centros de venta ─────────────────────────────
   useEffect(() => {
     if (!authUser) return   // esperar a que la sesión esté lista
@@ -251,7 +265,8 @@ export default function POSPage() {
       .order('fecha', { ascending: false })
       .limit(200)
     if (filtroStatus)  q = q.eq('status', filtroStatus)
-    if (filtroCentro)  q = q.eq('id_centro_fk', Number(filtroCentro))
+    const idsC = idsCentrosFiltro(centrosAgr, filtroAgr, filtroCentro)
+    if (idsC) q = q.in('id_centro_fk', Array.from(idsC))
     if (filtroFechaDesde) q = q.gte('fecha', inicioDelDia(filtroFechaDesde))
     if (filtroFechaHasta) q = q.lte('fecha', finDelDia(filtroFechaHasta))
     const { data, error } = await q
@@ -274,7 +289,7 @@ export default function POSPage() {
     for (const r of (rl ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Locales › Cobranza › Recibos' })
     for (const r of (rr ?? []) as any[]) map.set(r.id_venta_pos_fk, { folio: r.folio, ruta: 'Fraccionamiento › Cobranza › Recibos' })
     setOrigenPorVenta(map)
-  }, [filtroStatus, filtroCentro, filtroFechaDesde, filtroFechaHasta])
+  }, [filtroStatus, filtroAgr, filtroCentro, centrosAgr, filtroFechaDesde, filtroFechaHasta])
 
   // ── Fetch ventas Mesa de Control ─────────────────────────
   const fetchVentasMesa = useCallback(async () => {
@@ -304,12 +319,13 @@ export default function POSPage() {
       .range(from, to)
     if (filtroCorteDesde) q = q.gte('fecha_corte', inicioDelDia(filtroCorteDesde))
     if (filtroCorteHasta) q = q.lte('fecha_corte', finDelDia(filtroCorteHasta))
-    if (filtroCorteCentro) q = q.eq('id_centro_fk', Number(filtroCorteCentro))
+    const idsCo = idsCentrosFiltro(centrosAgr, filtroAgrCorte, filtroCorteCentro)
+    if (idsCo) q = q.in('id_centro_fk', Array.from(idsCo))
     const { data, count } = await q
     setCortes((data as Corte[]) ?? [])
     setTotalC(count ?? 0)
     setLoadingC(false)
-  }, [filtroCorteDesde, filtroCorteHasta, filtroCorteCentro, pageC, pageSizeC])
+  }, [filtroCorteDesde, filtroCorteHasta, filtroAgrCorte, filtroCorteCentro, centrosAgr, pageC, pageSizeC])
 
   // ── Fetch config ─────────────────────────────────────────
   const fetchConfig = useCallback(async () => {
@@ -366,7 +382,8 @@ export default function POSPage() {
       .gte('fecha', inicioDelDia(fechaFact))
       .lte('fecha', finDelDia(fin))
       .order('fecha', { ascending: false })
-    if (filtroCentroFact) q = q.eq('id_centro_fk', Number(filtroCentroFact))
+    const idsF = idsCentrosFiltro(centrosAgr, filtroAgrFact, filtroCentroFact)
+    if (idsF) q = q.in('id_centro_fk', Array.from(idsF))
     const { data } = await q
     const ids = (data ?? []).map((v: any) => v.id)
     // ctrl_ventas_cfdi puede tener varias filas por venta (historial de cancelaciones/re-timbrados);
@@ -390,7 +407,7 @@ export default function POSPage() {
     }
     setFacturas(facts)
     setLoadingF(false)
-  }, [fechaFact, fechaFactFin, filtroCentroFact, filtroFormaPagoFact, formasPago])
+  }, [fechaFact, fechaFactFin, filtroAgrFact, filtroCentroFact, centrosAgr, filtroFormaPagoFact, formasPago])
 
   useEffect(() => { fetchStats() }, [fetchStats])
   useEffect(() => { if (tab === 'ventas')   fetchVentas() }, [tab, fetchVentas])
@@ -1199,6 +1216,9 @@ ${facturasCorte.length > 0 ? `
   // Un centro se bloquea para venta directa cuando TODOS sus productos
   // activos están marcados como "solo venta por recibo" — se calcula al
   // vuelo a partir del catálogo, sin nombres de centro hardcodeados.
+  const idsCat = idsCentrosFiltro(centrosAgr, filtroAgrCat, filtroCatalogoCentro)
+  const pasaCatalogo = (p: { id_centro_fk: number | null }) => !idsCat || (p.id_centro_fk != null && idsCat.has(p.id_centro_fk))
+
   const centroVentaDirectaBloqueada = (centroId: number) => {
     const prodsCentro = productos.filter(p => p.id_centro_fk === centroId && p.activo)
     return prodsCentro.length > 0 && prodsCentro.every(p => p.solo_venta_por_recibo)
@@ -1336,11 +1356,7 @@ ${facturasCorte.length > 0 ? `
                 min={filtroFechaDesde}
                 style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
-            <select value={filtroCentro} onChange={e => setFiltroCentro(e.target.value)}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
-              <option value="">Todos los centros</option>
-              {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
+            <FiltroAgrupadorCentro centros={centrosAgr} agrupadores={agrupadores} filtroAgr={filtroAgr} setFiltroAgr={v => { setFiltroAgr(v) }} filtroCentro={filtroCentro} setFiltroCentro={v => { setFiltroCentro(v) }} />
             <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
               style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
               <option value="">Todos</option>
@@ -1667,11 +1683,7 @@ ${facturasCorte.length > 0 ? `
                 min={fechaFact}
                 style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
-            <select value={filtroCentroFact} onChange={e => setFiltroCentroFact(e.target.value)}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
-              <option value="">Todos los centros</option>
-              {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
+            <FiltroAgrupadorCentro centros={centrosAgr} agrupadores={agrupadores} filtroAgr={filtroAgrFact} setFiltroAgr={v => { setFiltroAgrFact(v) }} filtroCentro={filtroCentroFact} setFiltroCentro={v => { setFiltroCentroFact(v) }} />
             <select value={filtroFormaPagoFact} onChange={e => setFiltroFormaPagoFact(e.target.value)}
               style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
               <option value="">Todas las formas de pago</option>
@@ -1848,11 +1860,7 @@ ${facturasCorte.length > 0 ? `
                 min={filtroCorteDesde}
                 style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }} />
             </div>
-            <select value={filtroCorteCentro} onChange={e => { setFiltroCorteCentro(e.target.value); setPageC(0) }}
-              style={{ padding: '7px 10px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontFamily: 'inherit', outline: 'none' }}>
-              <option value="">Todos los centros</option>
-              {centros.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
+            <FiltroAgrupadorCentro centros={centrosAgr} agrupadores={agrupadores} filtroAgr={filtroAgrCorte} setFiltroAgr={v => { setFiltroAgrCorte(v); setPageC(0) }} filtroCentro={filtroCorteCentro} setFiltroCentro={v => { setFiltroCorteCentro(v); setPageC(0) }} />
             <span style={{ fontSize: 12, color: '#94a3b8' }}>{totalC} corte{totalC !== 1 ? 's' : ''}</span>
             <div style={{ flex: 1 }} />
             <button className="btn-ghost" onClick={fetchCortes} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
@@ -1989,14 +1997,10 @@ ${facturasCorte.length > 0 ? `
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Productos y Servicios</div>
-                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{productos.filter(p => !filtroCatalogoCentro || String(p.id_centro_fk ?? '') === filtroCatalogoCentro).length} registros · el precio es el monto final cobrado al cliente</div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{productos.filter(pasaCatalogo).length} registros · el precio es el monto final cobrado al cliente</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <select value={filtroCatalogoCentro} onChange={e => setFiltroCatalogoCentro(e.target.value)}
-                    style={{ padding: '7px 10px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', background: '#fff', color: '#475569' }}>
-                    <option value="">Todos los centros</option>
-                    {centros.map(c => <option key={c.id} value={String(c.id)}>{c.nombre}</option>)}
-                  </select>
+                  <FiltroAgrupadorCentro centros={centrosAgr} agrupadores={agrupadores} filtroAgr={filtroAgrCat} setFiltroAgr={v => { setFiltroAgrCat(v) }} filtroCentro={filtroCatalogoCentro} setFiltroCentro={v => { setFiltroCatalogoCentro(v) }} />
                   {puedeEditarCatalogo && (
                     <button onClick={() => setEditingProd({ tipo: 'SERVICIO', aplica_iva: true, iva_pct: 16, activo: true, precio: 0, costo: 0, precio_variable: false, id_centro_fk: centros[0]?.id ?? null })}
                       style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 13, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
@@ -2105,7 +2109,7 @@ ${facturasCorte.length > 0 ? `
 
               {/* Lista */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {productos.filter(p => !filtroCatalogoCentro || String(p.id_centro_fk ?? '') === filtroCatalogoCentro).map(p => {
+                {productos.filter(pasaCatalogo).map(p => {
                   const centro = centros.find(c => c.id === p.id_centro_fk)
                   const concepto = conceptosIngreso.find(co => co.id === p.id_concepto_ingreso_fk)
                   return (
@@ -2155,7 +2159,7 @@ ${facturasCorte.length > 0 ? `
                     Sin productos configurados. Usa el botón "Nuevo producto / servicio" para agregar.
                   </div>
                 )}
-                {productos.length > 0 && filtroCatalogoCentro && productos.filter(p => String(p.id_centro_fk ?? '') === filtroCatalogoCentro).length === 0 && (
+                {productos.length > 0 && (filtroCatalogoCentro || filtroAgrCat) && productos.filter(pasaCatalogo).length === 0 && (
                   <div style={{ textAlign: 'center', padding: '32px 0', color: '#94a3b8', fontSize: 13 }}>
                     Sin productos para el centro de venta seleccionado.
                   </div>
