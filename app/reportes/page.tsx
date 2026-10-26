@@ -52,6 +52,7 @@ import ReporteEstadoCuentaProveedor from './ReporteEstadoCuentaProveedor'
 import ReportePagosAplicados from './ReportePagosAplicados'
 import ReporteGolfVentasHistoricas from './ReporteGolfVentasHistoricas'
 import ReporteGolfCuadreFormasPago from './ReporteGolfCuadreFormasPago'
+import ReporteVentasPOS from './ReporteVentasPOS'
 import ReporteGolfAuditoriaSlots from './ReporteGolfAuditoriaSlots'
 import ReporteGolfSlotsOcupacion from './ReporteGolfSlotsOcupacion'
 import ReporteRiegoConsumo from './ReporteRiegoConsumo'
@@ -201,6 +202,7 @@ const GRUPOS = [
       { id: 'golf-pases-invitados', label: 'Pases para Invitados',  icon: Users,     desc: 'Asignación y uso de pases por socio: asignados, usados, saldo vigente, vencidos sin usar y detalle por invitado' },
       { id: 'golf-caballos-servicios',  label: 'Caballos y Servicios',        icon: BarChart3, desc: 'Desglose por caballo y tipo de servicio, con filtros por fechas, caballo y tipo' },
       { id: 'golf-ventas-historicas',   label: 'Ventas Históricas POS',       icon: Wallet,    desc: 'Ventas de cortes realizados por centro de venta, artículo/servicio y rango de fechas' },
+      { id: 'ventas-pos',               label: 'Ventas POS por Centro',       icon: Wallet,    desc: 'Ventas de todos los centros (o uno) con formas de pago, detalle de operaciones y detalle de productos' },
       { id: 'golf-cuadre-formas-pago',  label: 'Cuadre de Formas de Pago (Pre-Corte)', icon: Wallet, desc: 'Ventas de todos los centros por forma de pago, sin importar si ya se cortaron — para cuadrar contra TPV/caja antes del corte' },
       { id: 'golf-auditoria-slots',     label: 'Auditoría de Slots',          icon: ClipboardList, desc: 'Comparativo sistema vs. físico de cajones asignados, vacantes y diferencias por categoría' },
       { id: 'golf-slots-ocupacion',     label: 'Ocupación de Slots / Cajones', icon: BarChart3, desc: 'Porcentaje de ocupación y disponibilidad de cajones por categoría y período' },
@@ -393,6 +395,7 @@ function ReportesContent() {
       {active === 'golf-pases-invitados' && <ReporteGolfPasesInvitados />}
       {active === 'golf-caballos-servicios'  && <ReporteHipicoServicios />}
       {active === 'golf-ventas-historicas'   && <ReporteGolfVentasHistoricas />}
+      {active === 'ventas-pos'               && <ReporteVentasPOS />}
       {active === 'golf-cuadre-formas-pago'  && <ReporteGolfCuadreFormasPago />}
       {active === 'golf-auditoria-slots'     && <ReporteGolfAuditoriaSlots />}
       {active === 'golf-slots-ocupacion'     && <ReporteGolfSlotsOcupacion />}
