@@ -13,7 +13,6 @@ const MODULOS = [
   { key: 'cotizaciones',  label: 'Cotizaciones (RFQ)',icon: FileText,      color: '#7c3aed', desc: 'Solicitudes y comparación de cotizaciones' },
   { key: 'ordenes',       label: 'Órdenes de Compra', icon: ShoppingCart,  color: '#059669', desc: 'OC y control de compras' },
   { key: 'ordenes-pago',  label: 'Órdenes de Pago',   icon: FileText,      color: '#0891b2', desc: 'Pagos con y sin OC — servicios y compras' },
-  { key: 'cxp',           label: 'Cuentas por Pagar', icon: Wallet,        color: '#0f766e', desc: 'Saldos, antigüedad y programación de pago' },
   { key: 'recepciones',   label: 'Recepción',         icon: Truck,         color: '#0891b2', desc: 'Entrada de mercancías a almacén' },
   { key: 'transferencias',label: 'Transferencias',    icon: ArrowLeftRight,color: '#d97706', desc: 'Movimientos entre almacenes' },
   { key: 'inventario',    label: 'Inventario',        icon: Warehouse,     color: '#dc2626', desc: 'Saldos y kardex por almacén' },
@@ -45,7 +44,7 @@ export default function ComprasPage() {
           const Icon = m.icon
           return (
             <button key={m.key}
-              onClick={() => router.push(m.key === 'cxp' ? '/tesoreria/cxp' : `/compras/${m.key}`)}
+              onClick={() => router.push(`/compras/${m.key}`)}
               className="card card-hover"
               style={{ padding: '18px 20px', textAlign: 'left', background: 'none', border: '1px solid #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: m.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
