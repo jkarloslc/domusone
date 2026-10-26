@@ -34,7 +34,6 @@ const GRUPOS_MANTTO = [
       { key: 'ot-generales',   permKey: 'mantenimiento', label: "OT's Generales",          icon: ClipboardCheck, desc: 'Órdenes de trabajo de la cuadrilla general',          href: '/residencial/mantenimiento/ot-generales' },
       { key: 'equipo-flota',   permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria',  icon: Truck,         desc: 'Flotilla, mantenimientos y bitácora de uso',           href: '/equipo-flota' },
       { key: 'herramientas',   permKey: 'herramientas',  label: 'Equipo y Herramienta',    icon: Hammer,        desc: 'Catálogo, préstamos y mantenimiento de herramienta',   href: '/herramientas' },
-      { key: 'cat_mano_obra',  permKey: 'mantenimiento', label: 'Categorías Mano de Obra', icon: HardHat,       desc: 'Sueldo diario de referencia por categoría',            href: '/residencial/mantenimiento/categorias-mano-obra' },
     ],
   },
   {
@@ -43,6 +42,7 @@ const GRUPOS_MANTTO = [
     items: [
       { key: 'conceptos', permKey: 'mantenimiento', label: 'Catálogo de Conceptos', icon: ListChecks, desc: 'Conceptos de obra/mantenimiento y matriz de PU',   href: '/residencial/mantenimiento/conceptos' },
       { key: 'capex',     permKey: 'capex',         label: 'Proyectos CAPEX',       icon: Building2,  desc: 'Avance y presupuesto de proyectos de inversión',    href: '/capex' },
+      { key: 'cat_mano_obra',  permKey: 'mantenimiento', label: 'Categorías Mano de Obra', icon: HardHat,       desc: 'Sueldo diario de referencia por categoría',            href: '/residencial/mantenimiento/categorias-mano-obra' },
     ],
   },
   {
