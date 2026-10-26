@@ -72,7 +72,7 @@ export default function ReporteGolfCuadreFormasPago() {
     setVentas(ventasData ?? [])
     setPagos(pagosData)
     setLoading(false)
-  }, [filtroCentro, filtroEstado, filtroDe, filtroA])
+  }, [filtroAgr, filtroCentro, filtroEstado, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 

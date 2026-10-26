@@ -92,7 +92,7 @@ export default function ReporteGolfVentasHistoricas() {
     setDets(detsData)
     setPagos(pagosData)
     setLoading(false)
-  }, [filtroCentro, filtroDe, filtroA])
+  }, [filtroAgr, filtroCentro, filtroDe, filtroA])
 
   useEffect(() => { fetchData() }, [fetchData])
 
