@@ -193,9 +193,14 @@ export default function OrdenesPagoPage() {
         onBack={() => router.push('/compras')}
         title="Órdenes de Pago"
         subtitle={`Con o sin OC relacionada · ${total} registros`}
-        actions={canWrite('ordenes-pago') ? (
-          <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>
-        ) : undefined}
+        actions={(
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-ghost" onClick={() => router.push('/compras/ordenes-pago/pre-ordenes')}><FileText size={14} /> Pre-órdenes</button>
+            {canWrite('ordenes-pago') && (
+              <button className="btn-primary" onClick={() => setModal(true)}><Plus size={14} /> Nueva Orden de Pago</button>
+            )}
+          </div>
+        )}
       />
 
       {/* Filtros */}
