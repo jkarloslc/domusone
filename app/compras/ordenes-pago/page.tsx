@@ -249,25 +249,23 @@ export default function OrdenesPagoPage() {
               .map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
           </select>
         )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Creación:</span>
+          <input className="input" type="date" style={{ width: 140 }}
+            value={filterFechaDesde}
+            onChange={e => { setFilterFechaDesde(e.target.value); setPage(0) }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
+          <input className="input" type="date" style={{ width: 140 }}
+            value={filterFechaHasta}
+            onChange={e => { setFilterFechaHasta(e.target.value); setPage(0) }} />
+          {(filterFechaDesde || filterFechaHasta) && (
+            <button className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px' }}
+              onClick={() => { setFilterFechaDesde(''); setFilterFechaHasta(''); setPage(0) }}>
+              Limpiar
+            </button>
+          )}
+        </div>
         <button className="btn-ghost" onClick={fetchData}><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
-      </div>
-
-      {/* Filtro de rango de fechas */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Fecha creación:</span>
-        <input className="input" type="date" style={{ width: 150 }}
-          value={filterFechaDesde}
-          onChange={e => { setFilterFechaDesde(e.target.value); setPage(0) }} />
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
-        <input className="input" type="date" style={{ width: 150 }}
-          value={filterFechaHasta}
-          onChange={e => { setFilterFechaHasta(e.target.value); setPage(0) }} />
-        {(filterFechaDesde || filterFechaHasta) && (
-          <button className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px' }}
-            onClick={() => { setFilterFechaDesde(''); setFilterFechaHasta(''); setPage(0) }}>
-            Limpiar fechas
-          </button>
-        )}
       </div>
 
       {/* Tabla */}
