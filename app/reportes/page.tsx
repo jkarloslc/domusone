@@ -19,6 +19,7 @@ import ReporteConsumoFrente from './ReporteConsumoFrente'
 import ReporteInventario from './ReporteInventario'
 import ReporteOrdenesCompra from './ReporteOrdenesCompra'
 import ReporteOrdenesPago from './ReporteOrdenesPago'
+import ReportePreOrdenes from './ReportePreOrdenes'
 import ReporteAntiguedadOPporCC from './ReporteAntiguedadOPporCC'
 import ReporteCXPporCC from './ReporteCXPporCC'
 import ReporteCXP from './ReporteCXP'
@@ -139,6 +140,7 @@ const GRUPOS = [
       { id: 'estado-cuenta',        label: 'Estado de Cuenta',           icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
       { id: 'cxp',                  label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
       { id: 'ordenes-pago-cc',      label: 'Órdenes de Pago por CC / Área', icon: Wallet, desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
+      { id: 'pre-ordenes-pago', label: 'Pre-órdenes de Pago por Mes / CC', icon: Clock, desc: 'Compromisos futuros cotizados (no afectan flujo ni presupuesto), agrupados por mes de pago estimado y centro de costo' },
       { id: 'antiguedad-op-cc',     label: 'Antigüedad de OPs por CC / Área', icon: Clock, desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
       { id: 'cxp-cc',               label: 'CXP por CC / Área / Frente', icon: Wallet, desc: 'Cuentas por pagar agrupadas por centro de costo, área y frente, con filtro de fechas' },
       { id: 'pagos-aplicados',      label: 'Pagos Aplicados',                 icon: Wallet, desc: 'Abonos registrados por proveedor, cuenta bancaria y rango de fechas' },
@@ -172,6 +174,7 @@ const GRUPOS = [
       { id: 'ordenes-compra',         label: 'Órdenes de Compra',               icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
       { id: 'compras-por-proveedor',  label: 'Compras por Proveedor',           icon: ShoppingCart, desc: 'OCs agrupadas por proveedor con totales, filtrable por CC, status y fecha' },
       { id: 'ordenes-pago-cc',   label: 'Órdenes de Pago por CC / Área', icon: Wallet,    desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
+      { id: 'pre-ordenes-pago', label: 'Pre-órdenes de Pago por Mes / CC', icon: Clock, desc: 'Compromisos futuros cotizados (no afectan flujo ni presupuesto), agrupados por mes de pago estimado y centro de costo' },
       { id: 'antiguedad-op-cc',  label: 'Antigüedad de OPs por CC / Área', icon: Clock,  desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
       { id: 'cxp-cc',            label: 'CXP por CC / Área / Frente', icon: Wallet, desc: 'Cuentas por pagar agrupadas por centro de costo, área y frente, con filtro de fechas' },
       { id: 'ops-tipo-gasto',    label: 'OPs por Tipo de Gasto',      icon: Wallet,       desc: 'Órdenes de pago sin OC vinculada, agrupadas por tipo de gasto capturado en el encabezado' },
@@ -370,6 +373,7 @@ function ReportesContent() {
       {active === 'ordenes-compra'   && <ReporteOrdenesCompra />}
       {active === 'ordenes-pago-cc'  && <ReporteOrdenesPago />}
       {active === 'antiguedad-op-cc' && <ReporteAntiguedadOPporCC />}
+      {active === 'pre-ordenes-pago' && <ReportePreOrdenes />}
       {active === 'cxp-cc'           && <ReporteCXPporCC />}
       {active === 'ops-tipo-gasto'   && <ReporteOPsPorTipoGasto />}
       {active === 'ops-clasificacion-articulos' && <ReporteOPsPorClasificacionArticulos />}
