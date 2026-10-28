@@ -27,7 +27,7 @@ type TipoMatriz = TipoInsumoBase | 'herramienta_menor'
 
 type InsumoBase = {
   id: number; codigo: string; descripcion: string; unidad: string
-  costo: number; tipo: TipoInsumoBase; id_articulo_fk: number | null; activo: boolean
+  costo: number; tipo: TipoInsumoBase; id_articulo_fk: number | null; factor_equivalencia?: number; activo: boolean
 }
 
 type ArticuloPrecio = {
@@ -824,6 +824,7 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
     costo:       insumo ? String(insumo.costo) : '',
     tipo:        insumo?.tipo        ?? 'material' as TipoInsumoBase,
     id_articulo_fk: insumo?.id_articulo_fk ?? null as number | null,
+    factor: insumo?.id_articulo_fk ? String(insumo.factor_equivalencia ?? 1) : '',
     search: '',
   })
   const [results, setResults] = useState<any[]>([])
@@ -840,12 +841,20 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
       .then(({ data }) => {
         const a = data as ArticuloPrecio | null
         setArticulo(a)
-        const p = a ? precioArticulo(a).precio : null
-        if (p != null) setForm(f => ({ ...f, costo: String(p) }))
       })
   }, [form.id_articulo_fk])
 
-  const costoDeArticulo = !!articulo && precioArticulo(articulo).precio != null
+  const precioArt = articulo ? precioArticulo(articulo).precio : null
+  const costoDeArticulo = precioArt != null
+  const factorNum = Number(form.factor)
+  const factorOk = factorNum > 0
+  const mismaUnidad = !!articulo && articulo.unidad.trim().toLowerCase() === form.unidad.trim().toLowerCase()
+
+  // costo = precio del artículo ÷ equivalencia (1 u. artículo = N u. insumo)
+  useEffect(() => {
+    if (precioArt == null) return
+    setForm(f => ({ ...f, costo: factorOk ? String(Math.round(precioArt / factorNum * 10000) / 10000) : '' }))
+  }, [precioArt, factorNum, factorOk])
 
   useEffect(() => {
     if (form.tipo !== 'material' || dSearch.length < 2) { setResults([]); return }
@@ -855,12 +864,14 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
   }, [dSearch, form.tipo])
 
   const handleSave = async () => {
+    if (form.tipo === 'material' && form.id_articulo_fk && !factorOk) { setError('Indica la equivalencia de unidades entre el artículo y el insumo'); return }
     if (!form.codigo.trim() || !form.descripcion.trim() || !form.costo) { setError('Código, descripción y costo son obligatorios'); return }
     setSaving(true); setError('')
     const payload = {
       codigo: form.codigo.trim().toUpperCase(), descripcion: form.descripcion.trim(),
       unidad: form.unidad, costo: Number(form.costo), tipo: form.tipo,
       id_articulo_fk: form.tipo === 'material' ? form.id_articulo_fk : null,
+      factor_equivalencia: form.tipo === 'material' && form.id_articulo_fk ? factorNum : 1,
     }
     const q = isNew
       ? dbCtrl.from('mant_insumos').insert(payload)
@@ -898,20 +909,39 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
         {form.tipo === 'material' && (
           <div style={{ position: 'relative' }}>
             <label className="label">Vincular a artículo del catálogo (opcional)</label>
-            <input className="input" placeholder="Buscar artículo…" value={form.search} onChange={e => setForm(f => ({ ...f, search: e.target.value, id_articulo_fk: null }))} />
+            <input className="input" placeholder="Buscar artículo…" value={form.search} onChange={e => setForm(f => ({ ...f, search: e.target.value, id_articulo_fk: null, factor: '' }))} />
             {form.id_articulo_fk && (
               <div style={{ fontSize: 11, marginTop: 3, color: costoDeArticulo ? '#15803d' : '#d97706' }}>
                 {articulo
                   ? <>Vinculado ✓ {articulo.clave} — {articulo.nombre}. {costoDeArticulo
-                      ? `Costo = ${precioArticulo(articulo).origen}; se actualiza solo con cada compra.`
+                      ? `Costo = ${precioArticulo(articulo).origen} ÷ equivalencia; se actualiza solo con cada compra.`
                       : 'El artículo aún no tiene precio de compra ni de referencia; captura el costo manualmente.'}</>
                   : 'Vinculado ✓'}
+              </div>
+            )}
+            {articulo && (
+              <div style={{ marginTop: 8, padding: 10, borderRadius: 6, background: mismaUnidad ? '#f0fdf4' : '#fffbeb', border: `1px solid ${mismaUnidad ? '#bbf7d0' : '#fde68a'}` }}>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
+                  Equivalencia de unidades{!mismaUnidad && ' — el artículo y el insumo usan unidades distintas'}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, flexWrap: 'wrap' }}>
+                  <span>1 <strong>{articulo.unidad}</strong> (artículo) =</span>
+                  <input className="input" type="number" step="0.0001" min="0" style={{ width: 100, fontSize: 12 }} value={form.factor}
+                    onChange={e => setForm(f => ({ ...f, factor: e.target.value }))} placeholder="¿cuántos?" />
+                  <span><strong>{form.unidad || 'unidad'}</strong> (insumo)</span>
+                </div>
+                {factorOk && precioArt != null && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                    {fmt(precioArt)} / {fmtC(factorNum)} = {fmtC(precioArt / factorNum)} por {form.unidad}
+                  </div>
+                )}
               </div>
             )}
             {results.length > 0 && (
               <div className="card" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, maxHeight: 160, overflowY: 'auto', padding: '4px 0' }}>
                 {results.map(r => (
-                  <button key={r.id} onClick={() => { setForm(f => ({ ...f, id_articulo_fk: r.id, search: `${r.clave} — ${r.nombre}`, unidad: f.unidad || r.unidad })); setResults([]) }}
+                  <button key={r.id} onClick={() => { setForm(f => ({ ...f, id_articulo_fk: r.id, search: `${r.clave} — ${r.nombre}`, unidad: f.unidad || r.unidad,
+                  factor: (f.unidad || r.unidad).trim().toLowerCase() === String(r.unidad).trim().toLowerCase() ? '1' : '' })); setResults([]) }}
                     style={{ display: 'flex', width: '100%', textAlign: 'left', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}>
                     <span style={{ color: 'var(--blue)', fontWeight: 600 }}>{r.clave}</span><span style={{ flex: 1 }}>{r.nombre}</span>
                   </button>
