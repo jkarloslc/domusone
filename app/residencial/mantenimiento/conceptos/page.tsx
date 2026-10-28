@@ -30,6 +30,19 @@ type InsumoBase = {
   costo: number; tipo: TipoInsumoBase; id_articulo_fk: number | null; activo: boolean
 }
 
+type ArticuloPrecio = {
+  id: number; clave: string; nombre: string; unidad: string
+  precio_ref: number | null; precio_ultima_compra: number | null; fecha_ultima_compra: string | null
+}
+
+// Precio real de un artículo de Compras: última compra (OP autorizada); si no
+// hay compra aún, cae al precio de referencia.
+const precioArticulo = (a: ArticuloPrecio): { precio: number | null; origen: string } => {
+  if (a.precio_ultima_compra) return { precio: Number(a.precio_ultima_compra), origen: `última compra${a.fecha_ultima_compra ? ` (${a.fecha_ultima_compra})` : ''}` }
+  if (a.precio_ref) return { precio: Number(a.precio_ref), origen: 'precio de referencia del artículo' }
+  return { precio: null, origen: '' }
+}
+
 type ConceptoInsumoRow = {
   id: number; id_concepto_fk: number; tipo: TipoMatriz; id_insumo_fk: number | null
   descripcion: string; unidad: string | null; cantidad: number; costo_unitario: number
@@ -679,6 +692,9 @@ function InsumosBaseTab({ puedeEscribir, puedeEliminar }: { puedeEscribir: boole
   const [filterTipo, setFilterTipo] = useState('')
   const [modal, setModal] = useState(false)
   const [editing, setEditing] = useState<InsumoBase | null>(null)
+  const [artMap, setArtMap] = useState<Record<number, ArticuloPrecio>>({})
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -686,9 +702,23 @@ function InsumosBaseTab({ puedeEscribir, puedeEliminar }: { puedeEscribir: boole
     if (dSearch) q = q.or(`codigo.ilike.%${dSearch}%,descripcion.ilike.%${dSearch}%`)
     if (filterTipo) q = q.eq('tipo', filterTipo)
     const { data } = await q
-    setInsumos((data ?? []) as InsumoBase[])
+    const list = (data ?? []) as InsumoBase[]
+    setInsumos(list)
+    const artIds = Array.from(new Set(list.map(i => i.id_articulo_fk).filter((x): x is number => !!x)))
+    if (artIds.length > 0) {
+      const { data: arts } = await dbComp.from('articulos').select('id, clave, nombre, unidad, precio_ref, precio_ultima_compra, fecha_ultima_compra').in('id', artIds)
+      setArtMap(Object.fromEntries((arts ?? []).map((a: any) => [a.id, a as ArticuloPrecio])))
+    } else setArtMap({})
     setLoading(false)
   }, [dSearch, filterTipo])
+
+  const sincronizarPrecios = async () => {
+    setSyncing(true); setSyncMsg('')
+    const { data, error } = await dbCtrl.rpc('fn_sync_precios_articulos_mant', { p_articulos: null })
+    setSyncMsg(error ? `Error: ${error.message}` : `Precios sincronizados · ${data ?? 0} concepto(s) recalculado(s)`)
+    setSyncing(false)
+    fetchData()
+  }
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -714,9 +744,17 @@ function InsumosBaseTab({ puedeEscribir, puedeEliminar }: { puedeEscribir: boole
           </select>
           <button className="btn-ghost" onClick={fetchData} title="Actualizar"><RefreshCw size={13} className={loading ? 'animate-spin' : ''} /></button>
         </div>
-        {puedeEscribir && (
-          <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}><Plus size={14} /> Nuevo Insumo</button>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {syncMsg && <span style={{ fontSize: 11, color: syncMsg.startsWith('Error') ? '#dc2626' : '#15803d' }}>{syncMsg}</span>}
+          {puedeEscribir && (
+            <button className="btn-secondary" onClick={sincronizarPrecios} disabled={syncing} title="Toma el precio de última compra de los artículos vinculados y recalcula APU y explosión">
+              {syncing ? <Loader size={13} className="animate-spin" /> : <RefreshCw size={13} />} Sincronizar precios de Compras
+            </button>
+          )}
+          {puedeEscribir && (
+            <button className="btn-primary" onClick={() => { setEditing(null); setModal(true) }}><Plus size={14} /> Nuevo Insumo</button>
+          )}
+        </div>
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -746,7 +784,16 @@ function InsumosBaseTab({ puedeEscribir, puedeEliminar }: { puedeEscribir: boole
                       <td><span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: tc.bg, color: tc.color }}>{tc.label}</span></td>
                       <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{i.unidad}</td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmt(i.costo)}</td>
-                      <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>{i.id_articulo_fk ? 'Sí' : '—'}</td>
+                      <td style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {i.id_articulo_fk && artMap[i.id_articulo_fk]
+                          ? <>
+                              <span style={{ color: 'var(--blue)', fontWeight: 600 }}>{artMap[i.id_articulo_fk].clave}</span>{' '}
+                              {precioArticulo(artMap[i.id_articulo_fk]).precio != null
+                                ? <span title={precioArticulo(artMap[i.id_articulo_fk]).origen} style={{ color: '#15803d' }}>● precio real</span>
+                                : <span style={{ color: '#d97706' }}>sin precio de compra</span>}
+                            </>
+                          : i.tipo === 'material' ? <span style={{ color: '#d97706' }}>Sin vincular</span> : '—'}
+                      </td>
                       <td>
                         <div style={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
                           {puedeEscribir && <button className="btn-ghost" style={{ padding: '4px 6px' }} onClick={() => { setEditing(i); setModal(true) }}><Edit2 size={13} /></button>}
@@ -780,9 +827,25 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
     search: '',
   })
   const [results, setResults] = useState<any[]>([])
+  const [articulo, setArticulo] = useState<ArticuloPrecio | null>(null)
   const dSearch = useDebounce(form.search, 250)
   const [saving, setSaving] = useState(false)
   const [error, setError]   = useState('')
+
+  // Artículo vinculado: su precio real manda sobre el costo capturado
+  useEffect(() => {
+    if (!form.id_articulo_fk) { setArticulo(null); return }
+    dbComp.from('articulos').select('id, clave, nombre, unidad, precio_ref, precio_ultima_compra, fecha_ultima_compra')
+      .eq('id', form.id_articulo_fk).maybeSingle()
+      .then(({ data }) => {
+        const a = data as ArticuloPrecio | null
+        setArticulo(a)
+        const p = a ? precioArticulo(a).precio : null
+        if (p != null) setForm(f => ({ ...f, costo: String(p) }))
+      })
+  }, [form.id_articulo_fk])
+
+  const costoDeArticulo = !!articulo && precioArticulo(articulo).precio != null
 
   useEffect(() => {
     if (form.tipo !== 'material' || dSearch.length < 2) { setResults([]); return }
@@ -830,17 +893,25 @@ function InsumoBaseModal({ insumo, onClose, onSaved }: { insumo: InsumoBase | nu
         <div><label className="label">Descripción *</label><input className="input" value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} /></div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div><label className="label">Unidad</label><input className="input" value={form.unidad} onChange={e => setForm(f => ({ ...f, unidad: e.target.value }))} /></div>
-          <div><label className="label">Costo *</label><input className="input" type="number" step="0.01" value={form.costo} onChange={e => setForm(f => ({ ...f, costo: e.target.value }))} /></div>
+          <div><label className="label">Costo *</label><input className="input" type="number" step="0.01" value={form.costo} disabled={costoDeArticulo} onChange={e => setForm(f => ({ ...f, costo: e.target.value }))} /></div>
         </div>
         {form.tipo === 'material' && (
           <div style={{ position: 'relative' }}>
             <label className="label">Vincular a artículo del catálogo (opcional)</label>
             <input className="input" placeholder="Buscar artículo…" value={form.search} onChange={e => setForm(f => ({ ...f, search: e.target.value, id_articulo_fk: null }))} />
-            {form.id_articulo_fk && <div style={{ fontSize: 11, color: '#15803d', marginTop: 3 }}>Vinculado ✓</div>}
+            {form.id_articulo_fk && (
+              <div style={{ fontSize: 11, marginTop: 3, color: costoDeArticulo ? '#15803d' : '#d97706' }}>
+                {articulo
+                  ? <>Vinculado ✓ {articulo.clave} — {articulo.nombre}. {costoDeArticulo
+                      ? `Costo = ${precioArticulo(articulo).origen}; se actualiza solo con cada compra.`
+                      : 'El artículo aún no tiene precio de compra ni de referencia; captura el costo manualmente.'}</>
+                  : 'Vinculado ✓'}
+              </div>
+            )}
             {results.length > 0 && (
               <div className="card" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, maxHeight: 160, overflowY: 'auto', padding: '4px 0' }}>
                 {results.map(r => (
-                  <button key={r.id} onClick={() => setForm(f => ({ ...f, id_articulo_fk: r.id, search: `${r.clave} — ${r.nombre}` }))}
+                  <button key={r.id} onClick={() => { setForm(f => ({ ...f, id_articulo_fk: r.id, search: `${r.clave} — ${r.nombre}`, unidad: f.unidad || r.unidad })); setResults([]) }}
                     style={{ display: 'flex', width: '100%', textAlign: 'left', gap: 8, padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11 }}>
                     <span style={{ color: 'var(--blue)', fontWeight: 600 }}>{r.clave}</span><span style={{ flex: 1 }}>{r.nombre}</span>
                   </button>
