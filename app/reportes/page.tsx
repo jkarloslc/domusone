@@ -31,6 +31,7 @@ import ReporteOTFinanciero from './ReporteOTFinanciero'
 import ReporteOTCumplimiento from './ReporteOTCumplimiento'
 import ReporteEstadoCuenta from './ReporteEstadoCuenta'
 import ReporteComprasPorProveedor from './ReporteComprasPorProveedor'
+import ReporteComprasPorProducto from './ReporteComprasPorProducto'
 import ReporteIngresos from './ReporteIngresos'
 import ReporteIngresosPorFormaPago from './ReporteIngresosPorFormaPago'
 import ReporteIngresosCuotas from './ReporteIngresosCuotas'
@@ -173,6 +174,7 @@ const GRUPOS = [
       { id: 'inventario',      label: 'Inventario Actual',           icon: Package,      desc: 'Existencias por almacén con alertas de stock mínimo' },
       { id: 'ordenes-compra',         label: 'Órdenes de Compra',               icon: ShoppingCart, desc: 'OC por proveedor, status y período' },
       { id: 'compras-por-proveedor',  label: 'Compras por Proveedor',           icon: ShoppingCart, desc: 'OCs agrupadas por proveedor con totales, filtrable por CC, status y fecha' },
+      { id: 'compras-por-producto',   label: 'Compras por Producto',            icon: Package,      desc: 'Compras por artículo con desglose por proveedor: cantidad, precio promedio/mín/máx/último e importe' },
       { id: 'ordenes-pago-cc',   label: 'Órdenes de Pago por CC / Área', icon: Wallet,    desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
       { id: 'pre-ordenes-pago', label: 'Pre-órdenes de Pago por Mes / CC', icon: Clock, desc: 'Compromisos futuros cotizados (no afectan flujo ni presupuesto), agrupados por mes de pago estimado y centro de costo' },
       { id: 'antiguedad-op-cc',  label: 'Antigüedad de OPs por CC / Área', icon: Clock,  desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
@@ -381,6 +383,7 @@ function ReportesContent() {
       {active === 'kardex'           && <ReporteKardex />}
       {active === 'transferencias'        && <ReporteTransferencias />}
       {active === 'compras-por-proveedor'       && <ReporteComprasPorProveedor />}
+      {active === 'compras-por-producto'        && <ReporteComprasPorProducto />}
       {active === 'ops-por-proveedor'           && <ReporteOPsPorProveedor />}
       {active === 'estado-cuenta-proveedor'     && <ReporteEstadoCuentaProveedor />}
 
