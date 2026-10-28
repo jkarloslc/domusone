@@ -16,6 +16,11 @@ const TIPO_MOV_COLOR: Record<string, string> = {
   'AJUSTE':           '#7c3aed',
 }
 
+// Valuación: precio de última compra del artículo; si aún no tiene, el costo
+// registrado en el inventario del almacén y, en último caso, el precio de referencia.
+const costoUnit = (item: any, art: any) =>
+  Number(art?.precio_ultima_compra) || Number(item.costo_promedio) || Number(art?.precio_ref) || 0
+
 const ROLES_ADMIN = ['superadmin', 'admin', 'admin_low_level']
 
 export default function InventarioPage() {
@@ -49,7 +54,7 @@ export default function InventarioPage() {
     // Cargar artículos
     const artIds = Array.from(new Set((inv ?? []).map((i: any) => i.id_articulo_fk)))
     if (artIds.length) {
-      const { data: arts } = await dbComp.from('articulos').select('id, clave, nombre, unidad, stock_minimo').in('id', artIds)
+      const { data: arts } = await dbComp.from('articulos').select('id, clave, nombre, unidad, stock_minimo, precio_ultima_compra, precio_ref').in('id', artIds)
       const am2: Record<number, any> = {}
       ;(arts ?? []).forEach((a: any) => { am2[a.id] = a })
       setArticulos(am2)
@@ -126,13 +131,15 @@ export default function InventarioPage() {
                     <th>Clave</th><th>Artículo</th><th>Unidad</th>
                     <th style={{ textAlign: 'right' }}>Stock Mín.</th>
                     <th style={{ textAlign: 'right' }}>Existencia</th>
+                    <th style={{ textAlign: 'right' }}>Costo Unit.</th>
+                    <th style={{ textAlign: 'right' }}>Valor</th>
                     <th>Alerta</th>
                     <th style={{ width: 60 }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {g.items.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 12 }}>Sin artículos</td></tr>
+                    <tr><td colSpan={9} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)', fontSize: 12 }}>Sin artículos</td></tr>
                   ) : g.items.map(item => {
                     const art = articulos[item.id_articulo_fk]
                     const bajominimo = art && item.cantidad <= (art.stock_minimo ?? 0)
@@ -145,6 +152,12 @@ export default function InventarioPage() {
                         <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: 14,
                           color: bajominimo ? '#dc2626' : item.cantidad > 0 ? '#15803d' : 'var(--text-muted)' }}>
                           {Number(item.cantidad).toLocaleString('es-MX', { maximumFractionDigits: 3 })}
+                        </td>
+                        <td style={{ textAlign: 'right', fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>
+                          {costoUnit(item, art) ? fmt(costoUnit(item, art)) : '—'}
+                        </td>
+                        <td style={{ textAlign: 'right', fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                          {fmt(Number(item.cantidad) * costoUnit(item, art))}
                         </td>
                         <td>
                           {bajominimo && (
@@ -162,6 +175,17 @@ export default function InventarioPage() {
                     )
                   })}
                 </tbody>
+                {g.items.length > 0 && (
+                  <tfoot>
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'right', fontWeight: 600, fontSize: 12 }}>Valor del almacén</td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                        {fmt(g.items.reduce((a: number, i: any) => a + Number(i.cantidad) * costoUnit(i, articulos[i.id_articulo_fk]), 0))}
+                      </td>
+                      <td></td><td></td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
               </div>
             </div>

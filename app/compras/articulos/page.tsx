@@ -128,7 +128,7 @@ export default function ArticulosPage() {
               <th style={{ textAlign: 'center' }}>Unidad</th>
               <th style={{ textAlign: 'right' }}>Stock Mín.</th>
               <th style={{ textAlign: 'right' }}>Existencia</th>
-              <th style={{ textAlign: 'right' }}>Precio Ref.</th>
+              <th style={{ textAlign: 'right' }}>Últ. Compra</th>
               <th>Status</th>
               <th style={{ width: 50 }}></th>
             </tr>
@@ -187,7 +187,7 @@ export default function ArticulosPage() {
                     </div>
                   </td>
                   <td style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
-                    {r.precio_ref ? fmt(r.precio_ref) : '—'}
+                    {r.precio_ultima_compra ? fmt(r.precio_ultima_compra) : r.precio_ref ? fmt(r.precio_ref) : '—'}
                   </td>
                   <td>
                     <span className={`badge ${r.activo ? 'badge-vendido' : 'badge-default'}`}>
@@ -393,6 +393,11 @@ function ArticuloModal({ row, onClose, onSaved }: { row: Articulo | null; onClos
                 <div>
                   <label className="label">Precio Referencia</label>
                   <input className="input" type="number" step="0.01" min="0" value={form.precio_ref} onChange={set('precio_ref')} style={{ textAlign: 'right' }} placeholder="$0.00" />
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                    {row?.precio_ultima_compra
+                      ? `Última compra: ${fmt(row.precio_ultima_compra)}${row.fecha_ultima_compra ? ` (${row.fecha_ultima_compra})` : ''} — se actualiza solo al autorizarse la OP`
+                      : 'Última compra: sin OP autorizada aún'}
+                  </div>
                 </div>
               </div>
               <div>

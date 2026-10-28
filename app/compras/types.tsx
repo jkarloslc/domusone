@@ -4,6 +4,7 @@ export type Articulo = {
   id: number; clave: string; nombre: string; descripcion: string | null
   unidad: string; categoria: string | null; id_tipo_gasto_fk: number | null; stock_minimo: number
   stock_maximo: number | null; precio_ref: number | null; activo: boolean
+  precio_ultima_compra?: number | null; fecha_ultima_compra?: string | null; id_oc_ultima_fk?: number | null
 }
 
 export type Proveedor = {
