@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf, dbHip, dbCtrl } from '@/lib/supabase'
 import { PrintBar } from './utils'
-import { TrendingUp, CreditCard, CheckCircle, Clock, CalendarClock, AlertTriangle } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
+import { Search, X, TrendingUp, CreditCard, CheckCircle, Clock, CalendarClock, AlertTriangle } from 'lucide-react'
 import { clasificarBanda } from '@/lib/clasificacionCobranza'
 
 // ── Proyección de Cobranza — Golf / Pensiones / Hípico / Locales ──────
@@ -173,16 +174,19 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
   const [filtroTipo, setFiltroTipo] = useState<string>('TODOS')
   const [filtroStatus, setFiltroStatus] = useState<'TODOS' | 'PENDIENTE' | 'PAGADO'>('TODOS')
   const [busqueda, setBusqueda]     = useState('')
-  const [filas, setFilas]           = useState<Fila[]>([])
+  const [clienteSel, setClienteSel] = useState<string | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerQ, setPickerQ]       = useState('')
+  const [filasAll, setFilas]        = useState<Fila[]>([])
   const [loading, setLoading]       = useState(false)
 
   // Reset de filtros locales al cambiar de fuente (evita quedarse con un tipo
   // seleccionado que no existe en el nuevo módulo)
-  useEffect(() => { setFiltroTipo('TODOS'); setFiltroStatus('TODOS'); setBusqueda('') }, [fuente])
+  useEffect(() => { setFiltroTipo('TODOS'); setFiltroStatus('TODOS'); setBusqueda(''); setClienteSel(null) }, [fuente])
 
   // Flujo de cobranza del mes (cobrado / anticipado / vencido)
-  const [cobrosMes, setCobrosMes]   = useState<CobroRow[]>([])
-  const [vencidos, setVencidos]     = useState<CobroRow[]>([])
+  const [cobrosMesAll, setCobrosMes] = useState<CobroRow[]>([])
+  const [vencidosAll, setVencidos]   = useState<CobroRow[]>([])
   const [loadingFlujo, setLoadingFlujo] = useState(false)
 
   // Rango propio del Flujo de Cobranza ('YYYY-MM'). Mientras no se toque, sigue
@@ -272,6 +276,14 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
   }, [mes, cfg])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  // Filtro por cliente (popup): acota filas, KPIs y flujo
+  const filas     = clienteSel ? filasAll.filter(f => f.cliente === clienteSel) : filasAll
+  const cobrosMes = clienteSel ? cobrosMesAll.filter(c => c.cliente === clienteSel) : cobrosMesAll
+  const vencidos  = clienteSel ? vencidosAll.filter(c => c.cliente === clienteSel) : vencidosAll
+  const clientesOpc = Array.from(new Set([...filasAll, ...cobrosMesAll, ...vencidosAll].map(r => r.cliente).filter(c => c && c !== '—')))
+    .sort((a, b) => a.localeCompare(b, 'es'))
+    .filter(c => !pickerQ.trim() || c.toLowerCase().includes(pickerQ.trim().toLowerCase()))
 
   // Filtros locales (rápidos, sin ir a BD)
   const filtradas = filas.filter(f => {
@@ -394,6 +406,23 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
           </div>
         </div>
 
+        {/* Cliente (popup) */}
+        <div>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>{cfg.clienteLabel}</label>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button onClick={() => { setPickerQ(''); setPickerOpen(true) }}
+              style={{ padding: '8px 12px', fontSize: 13, border: '1px solid', borderColor: clienteSel ? '#2563eb' : '#e2e8f0', borderRadius: 8, background: clienteSel ? '#eff6ff' : '#fff', color: clienteSel ? '#1d4ed8' : '#64748b', fontFamily: 'inherit', cursor: 'pointer', minWidth: 200, maxWidth: 280, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+              <Search size={13} /> {clienteSel ?? `Todos los ${cfg.clienteLabel.toLowerCase()}s`}
+            </button>
+            {clienteSel && (
+              <button onClick={() => setClienteSel(null)} title="Quitar filtro"
+                style={{ padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#64748b' }}>
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Búsqueda */}
         <div style={{ flex: 1, minWidth: 200 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Buscar {cfg.clienteLabel.toLowerCase()}</label>
@@ -411,6 +440,27 @@ export default function ReporteProyeccionCobranza({ fuente = 'golf' }: { fuente?
           reportTitle={`${cfg.titulo} — ${labelMes(mes)}`}
         />
       </div>
+
+
+      {pickerOpen && (
+        <ModalShell modulo={fuente === 'hipico' ? 'hipico' : fuente === 'locales' ? 'locales' : 'golf'} titulo={`Filtrar por ${cfg.clienteLabel.toLowerCase()}`} onClose={() => setPickerOpen(false)}>
+          <input autoFocus placeholder="Buscar nombre…" value={pickerQ} onChange={e => setPickerQ(e.target.value)}
+            style={{ width: '100%', padding: '8px 12px', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const, marginBottom: 10 }} />
+          <div style={{ maxHeight: 360, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <button onClick={() => { setClienteSel(null); setPickerOpen(false) }}
+              style={{ textAlign: 'left', padding: '8px 12px', fontSize: 13, border: 'none', borderRadius: 6, background: !clienteSel ? '#eff6ff' : 'transparent', fontWeight: !clienteSel ? 700 : 500, cursor: 'pointer', color: '#334155' }}>
+              Todos
+            </button>
+            {clientesOpc.map(c => (
+              <button key={c} onClick={() => { setClienteSel(c); setPickerOpen(false) }}
+                style={{ textAlign: 'left', padding: '8px 12px', fontSize: 13, border: 'none', borderRadius: 6, background: clienteSel === c ? '#eff6ff' : 'transparent', fontWeight: clienteSel === c ? 700 : 500, cursor: 'pointer', color: '#334155' }}>
+                {c}
+              </button>
+            ))}
+            {clientesOpc.length === 0 && <div style={{ padding: 12, fontSize: 12, color: '#94a3b8' }}>Sin resultados</div>}
+          </div>
+        </ModalShell>
+      )}
 
       {/* ── KPIs generales ──────────────────────────────────── */}
       {!loading && filas.length > 0 && (
