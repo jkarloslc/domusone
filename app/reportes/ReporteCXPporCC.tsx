@@ -4,7 +4,7 @@ import { dbComp, dbCfg } from '@/lib/supabase'
 import { PrintBar } from './utils'
 import { RefreshCw, Filter, ChevronDown, ChevronRight } from 'lucide-react'
 
-// Cuentas por pagar = OPs con saldo > 0 y status vivo. Se agrupan CC → Área → Frente.
+// Cuentas por pagar = OPs con saldo > 0 y status vivo (ya autorizadas, igual que Tesorería > CXP). Se agrupan CC → Área → Frente.
 type OP = {
   id: number
   folio: string
@@ -75,7 +75,7 @@ export default function ReporteCXPporCC() {
       dbComp.from('proveedores').select('id, nombre'),
       dbComp.from('ordenes_pago')
         .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk, id_frente_fk')
-        .not('status', 'in', '("Pagada","Cancelada","Rechazada","Sustituida")'),
+        .not('status', 'in', '("Pagada","Cancelada","Rechazada","Sustituida","Pendiente Auth","Pendiente Auth Finanzas")'),
       dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, id_frente_fk, monto'),
     ])
     if (error) console.error('ReporteCXPporCC:', error.message)

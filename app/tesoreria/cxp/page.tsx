@@ -85,7 +85,7 @@ export default function CXPPage() {
   const [centros, setCentros]   = useState<any[]>([])
   const [areas, setAreas]       = useState<any[]>([])
   const [frentes, setFrentes]   = useState<any[]>([])
-  const [lineasOP, setLineasOP] = useState<Record<number, { id_area_fk: number | null; id_frente_fk: number | null }[]>>({})
+  const [lineasOP, setLineasOP] = useState<Record<number, { id_area_fk: number | null; id_frente_fk: number | null; monto: number }[]>>({})
   const [filterCC, setFilterCC]         = useState('')
   const [filterArea, setFilterArea]     = useState('')
   const [filterFrente, setFilterFrente] = useState('')
@@ -112,12 +112,12 @@ export default function CXPPage() {
     setAreas(ars ?? [])
     setFrentes(frs ?? [])
     // OP con distribución por líneas: CC/Área/Frente viven en ordenes_pago_det
-    const ids = (allOps ?? []).filter((o: any) => !o.id_area_fk || !o.id_frente_fk).map((o: any) => o.id)
-    const lm: Record<number, { id_area_fk: number | null; id_frente_fk: number | null }[]> = {}
+    const ids = (allOps ?? []).map((o: any) => o.id)
+    const lm: Record<number, { id_area_fk: number | null; id_frente_fk: number | null; monto: number }[]> = {}
     for (let i = 0; i < ids.length; i += 200) {
       const { data: dets } = await dbComp.from('ordenes_pago_det')
-        .select('id_op_fk, id_area_fk, id_frente_fk').in('id_op_fk', ids.slice(i, i + 200)).limit(5000)
-      ;(dets ?? []).forEach((d: any) => { (lm[d.id_op_fk] ??= []).push({ id_area_fk: d.id_area_fk, id_frente_fk: d.id_frente_fk }) })
+        .select('id_op_fk, id_area_fk, id_frente_fk, monto').in('id_op_fk', ids.slice(i, i + 200)).limit(5000)
+      ;(dets ?? []).forEach((d: any) => { (lm[d.id_op_fk] ??= []).push({ id_area_fk: d.id_area_fk, id_frente_fk: d.id_frente_fk, monto: Number(d.monto) || 0 }) })
     }
     setLineasOP(lm)
     const am: Record<number,string> = {}
@@ -158,18 +158,28 @@ export default function CXPPage() {
   const areasFiltro = filterCC ? areas.filter(a => a.id_centro_costo_fk === Number(filterCC)) : areas
   const hayFiltro = !!(filterCC || filterArea || filterFrente)
 
-  // Una OP coincide si su encabezado o alguna de sus líneas de distribución cumple los tres filtros
-  const opCoincide = useCallback((o: any) => {
-    if (!filterCC && !filterArea && !filterFrente) return true
-    const fuentes = [
-      { cc: o.id_centro_costo_fk ?? (o.id_area_fk ? areaCC[o.id_area_fk] : null), area: o.id_area_fk, frente: o.id_frente_fk },
-      ...(lineasOP[o.id] ?? []).map(l => ({ cc: l.id_area_fk ? areaCC[l.id_area_fk] : null, area: l.id_area_fk, frente: l.id_frente_fk })),
-    ]
-    return fuentes.some(f =>
-      (!filterCC || f.cc === Number(filterCC)) &&
-      (!filterArea || f.area === Number(filterArea)) &&
-      (!filterFrente || f.frente === Number(filterFrente)))
+  // Fracción del saldo de la OP que corresponde a los filtros CC/Área/Frente.
+  // Igual que Reportes > CXP por CC: si la OP está distribuida, cada línea aporta su parte
+  // proporcional; si no, el encabezado aporta el 100%.
+  const fraccionOP = useCallback((o: any) => {
+    if (!filterCC && !filterArea && !filterFrente) return 1
+    const ok = (cc: number | null | undefined, area: number | null, frente: number | null) =>
+      (!filterCC || cc === Number(filterCC)) &&
+      (!filterArea || area === Number(filterArea)) &&
+      (!filterFrente || frente === Number(filterFrente))
+    const lineas = lineasOP[o.id] ?? []
+    if (lineas.length === 0) {
+      return ok(o.id_centro_costo_fk ?? (o.id_area_fk ? areaCC[o.id_area_fk] : null), o.id_area_fk, o.id_frente_fk) ? 1 : 0
+    }
+    const total = lineas.reduce((a, l) => a + l.monto, 0) || Number(o.monto ?? 0) || 1
+    return lineas.reduce((a, l) => {
+      const cc = l.id_area_fk != null ? (areaCC[l.id_area_fk] ?? o.id_centro_costo_fk) : o.id_centro_costo_fk
+      return ok(cc, l.id_area_fk, l.id_frente_fk) ? a + l.monto / total : a
+    }, 0)
   }, [filterCC, filterArea, filterFrente, areaCC, lineasOP])
+  const opCoincide = useCallback((o: any) => fraccionOP(o) > 0, [fraccionOP])
+  // Saldo atribuible a los filtros activos (sin filtros = saldo completo)
+  const sd = (o: any) => (o.saldo ?? o.monto ?? 0) * fraccionOP(o)
 
   const opsFiltradas = useMemo(() => ops.filter(opCoincide), [ops, opCoincide])
   const remesasFiltradas = useMemo(() => {
@@ -179,11 +189,11 @@ export default function CXPPage() {
   }, [remesas, opsFiltradas, hayFiltro])
 
   const opsPendientes  = opsFiltradas.filter(o => o.status !== 'Pagada' && o.status !== 'Pendiente Auth' && o.status !== 'Pendiente Auth Finanzas' && o.status !== 'Rechazada' && o.status !== 'Sustituida')
-  const totalPorPagar  = opsPendientes.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
+  const totalPorPagar  = opsPendientes.reduce((a, o) => a + sd(o), 0)
   const totalVencido   = opsPendientes.filter(o => diasVencido(o.fecha_vencimiento) > 0)
-                          .reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
+                          .reduce((a, o) => a + sd(o), 0)
   const totalPorVencer = opsPendientes.filter(o => diasVencido(o.fecha_vencimiento) <= 0)
-                          .reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
+                          .reduce((a, o) => a + sd(o), 0)
 
   // OPs Pendiente/Abonada agrupadas por su martes de pago programado
   const gruposPago = useMemo(() => {
@@ -195,7 +205,7 @@ export default function CXPPage() {
       if (!map.has(key)) map.set(key, { fechaPago: ciclo.fechaPago, ops: [], total: 0 })
       const g = map.get(key)!
       g.ops.push(o)
-      g.total += (o.saldo ?? o.monto ?? 0)
+      g.total += sd(o)
     })
     return Array.from(map.values()).sort((a, b) => a.fechaPago.getTime() - b.fechaPago.getTime())
   }, [opsPendientes])
@@ -205,9 +215,9 @@ export default function CXPPage() {
 
   const porProveedor = proveedores.map(prov => {
     const misOps = opsPendientes.filter(o => o.id_proveedor_fk === prov.id)
-    const saldo  = misOps.reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
+    const saldo  = misOps.reduce((a, o) => a + sd(o), 0)
     const vencido = misOps.filter(o => diasVencido(o.fecha_vencimiento) > 0)
-                     .reduce((a, o) => a + (o.saldo ?? o.monto ?? 0), 0)
+                     .reduce((a, o) => a + sd(o), 0)
     return { ...prov, ops: misOps, saldo, vencido, count: misOps.length }
   }).filter(p => p.count > 0)
 
@@ -230,7 +240,7 @@ export default function CXPPage() {
       if (max === null) return d >= min
       return d >= min && d <= max
     })
-    return { ...b, total: filtradas.reduce((a,o) => a + (o.saldo ?? o.monto ?? 0), 0), count: filtradas.length, ops: filtradas }
+    return { ...b, total: filtradas.reduce((a,o) => a + sd(o), 0), count: filtradas.length, ops: filtradas }
   })
 
   const tabs = [
