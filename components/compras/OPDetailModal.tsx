@@ -294,8 +294,10 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
       updatePayload.autorizado_por     = authUser?.nombre ?? null
       updatePayload.fecha_autorizacion = new Date().toISOString()
     }
-    await dbComp.from('ordenes_pago').update(updatePayload).eq('id', op.id)
+    // Solo transiciona si sigue en 1ra autorización (evita saltarse pasos con datos viejos)
+    const { data: upd, error: errAuth } = await dbComp.from('ordenes_pago').update(updatePayload).eq('id', op.id).eq('status', 'Pendiente Auth').select('id')
     setAuthLd(false)
+    if (errAuth || !upd?.length) { alert('No se pudo autorizar: la OP ya no está en "Pendiente Auth". Actualiza la pantalla.'); onAuthorized(); return }
     onAuthorized()
   }
 
@@ -313,8 +315,10 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
       updatePayload.autorizado_finanzas_por     = authUser?.nombre ?? null
       updatePayload.fecha_autorizacion_finanzas = new Date().toISOString()
     }
-    await dbComp.from('ordenes_pago').update(updatePayload).eq('id', op.id)
+    // Solo entra a CXP si ya tiene la 1ra autorización y sigue esperando la de Finanzas
+    const { data: upd, error: errAuth } = await dbComp.from('ordenes_pago').update(updatePayload).eq('id', op.id).eq('status', 'Pendiente Auth Finanzas').not('autorizado_por', 'is', null).select('id')
     setAuthLd(false)
+    if (errAuth || !upd?.length) { alert('No se pudo autorizar: la OP no tiene la 1ra autorización o ya no está en "Pendiente Auth Finanzas". Actualiza la pantalla.'); onAuthorized(); return }
     onAuthorized()
   }
 

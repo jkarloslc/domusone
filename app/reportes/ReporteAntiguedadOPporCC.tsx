@@ -119,7 +119,7 @@ export default function ReporteAntiguedadOPporCC() {
       dbComp.from('proveedores').select('id, nombre').order('nombre'),
       dbComp.from('ordenes_pago')
         .select('id, folio, concepto, monto, saldo, fecha_op, fecha_vencimiento, status, id_proveedor_fk, id_centro_costo_fk, id_area_fk')
-        .not('status', 'in', '("Pagada","Cancelada","Rechazada","Sustituida")')
+        .not('status', 'in', '("Pagada","Cancelada","Rechazada","Sustituida","Pendiente Auth","Pendiente Auth Finanzas")')
         .order('fecha_vencimiento', { ascending: true, nullsFirst: false }),
       dbComp.from('ordenes_pago_det').select('id_op_fk, id_area_fk, monto'),
     ])

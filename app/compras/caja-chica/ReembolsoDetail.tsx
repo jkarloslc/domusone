@@ -124,7 +124,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
         saldo:             r.total,
         fecha_vencimiento: new Date().toISOString().slice(0, 10),
         forma_pago:        'Cheque',
-        status:            'Pendiente',
+        status:            'Pendiente Auth', // como toda OP: doble autorización antes de entrar a CXP
         id_centro_costo_fk: null,
         id_area_fk:         null,
         id_frente_fk:       null,
@@ -170,7 +170,7 @@ export default function ReembolsoDetail({ reembolso: r, canAuth, onClose, onUpda
         alert(`Error al verificar la Orden de Pago asociada: ${opFetchErr.message}`)
         setCancelando(false); return
       }
-      if (opRow && opRow.status !== 'Pendiente') {
+      if (opRow && !['Pendiente', 'Pendiente Auth', 'Pendiente Auth Finanzas'].includes(opRow.status)) {
         alert(opRow.status === 'Pagada'
           ? 'No se puede cancelar: la Orden de Pago asociada ya fue pagada.'
           : `No se puede cancelar: la Orden de Pago asociada está en status "${opRow.status}". Ajústala manualmente en Tesorería primero.`)

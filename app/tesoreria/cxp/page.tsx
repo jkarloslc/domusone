@@ -606,6 +606,10 @@ function ProveedorCXP({ prov, almMap, refreshKey, opCoincide, onClose, onOpenOP 
     dbComp.from('ordenes_pago').select('*')
       .eq('id_proveedor_fk', prov.id)
       .neq('status', 'Cancelada')
+      .neq('status', 'Pendiente Auth')
+      .neq('status', 'Pendiente Auth Finanzas')
+      .neq('status', 'Rechazada')
+      .neq('status', 'Sustituida')
       .order('folio', { ascending: true })
       .then(({ data }) => { setOps(data ?? []); setLoading(false) })
   }, [prov.id, refreshKey, localRefresh])
@@ -1280,6 +1284,7 @@ function OPCXPDetail({ op, onClose }: { op: any; onClose: () => void }) {
     const { data: opBD, error: errOp } = await dbComp.from('ordenes_pago')
       .select('monto, monto_pagado, saldo, status').eq('id', op.id).single()
     if (errOp || !opBD) { setError('No se pudo verificar el estado actual de la OP: ' + (errOp?.message ?? 'sin datos')); setSaving(false); return }
+    if (['Pendiente Auth', 'Pendiente Auth Finanzas', 'Rechazada', 'Cancelada', 'Sustituida'].includes(opBD.status)) { setError(`Esta OP está en status "${opBD.status}" y no puede pagarse hasta completar sus dos autorizaciones.`); setSaving(false); return }
     if (opBD.status === 'Pagada') { setError('Esta OP ya está pagada; no se registró el abono. Cierra y vuelve a abrir para ver los datos actualizados.'); setSaving(false); return }
     const saldoBD = opBD.saldo ?? opBD.monto ?? 0
     if (Number(form.monto) > saldoBD + 0.01) { setError(`El pago excede el saldo real de la OP (${fmt(saldoBD)}). Cierra y vuelve a abrir para ver los datos actualizados.`); setSaving(false); return }
