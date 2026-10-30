@@ -330,6 +330,7 @@ export default function ServiciosTab() {
         <ReporteConTabs
           catalogo={catalogo}
           catalogoFiltrado={filteredCat}
+          tipoFiltro={filterTipo}
           servicioId={filterNoServicio ? Number(filterNoServicio) : null}
           onSelectServicio={id => setFilterNoServicio(String(id))}
           registros={registros}
@@ -621,8 +622,8 @@ export default function ServiciosTab() {
 // ════════════════════════════════════════════════════════════
 // Reporte: Resumen mensual (existente) + Informe por servicio
 // ════════════════════════════════════════════════════════════
-function ReporteConTabs({ catalogo, catalogoFiltrado, servicioId, onSelectServicio, registros, ccMap, centrosCosto, areas }: {
-  catalogo: any[]; catalogoFiltrado: any[]; servicioId: number | null; onSelectServicio: (id: number) => void; registros: Record<number, any[]>; ccMap: Record<number, string>
+function ReporteConTabs({ catalogo, catalogoFiltrado, tipoFiltro, servicioId, onSelectServicio, registros, ccMap, centrosCosto, areas }: {
+  catalogo: any[]; catalogoFiltrado: any[]; tipoFiltro: string; servicioId: number | null; onSelectServicio: (id: number) => void; registros: Record<number, any[]>; ccMap: Record<number, string>
   centrosCosto: any[]; areas: any[]
 }) {
   const [vista, setVista] = useState<'resumen' | 'informe'>('informe')
@@ -639,7 +640,7 @@ function ReporteConTabs({ catalogo, catalogoFiltrado, servicioId, onSelectServic
         </button>
       </div>
       {vista === 'resumen'
-        ? <ReporteServicios catalogo={catalogo} registros={registros} ccMap={ccMap} centrosCosto={centrosCosto} />
+        ? <ReporteServicios catalogo={catalogoFiltrado} registros={registros} ccMap={ccMap} tipoFiltro={tipoFiltro} />
         : <InformeServicio catalogo={catalogoFiltrado} registros={registros} ccMap={ccMap}
             servicioId={servicioId} onSelect={onSelectServicio}
             areaMap={Object.fromEntries(areas.map((a: any) => [a.id, a.nombre]))} />}
@@ -651,17 +652,15 @@ function ReporteConTabs({ catalogo, catalogoFiltrado, servicioId, onSelectServic
 // Reporte de consumo por servicio
 // ════════════════════════════════════════════════════════════
 function ReporteServicios({
-  catalogo, registros, ccMap, centrosCosto,
+  catalogo, registros, ccMap, tipoFiltro,
 }: {
   catalogo: any[]
   registros: Record<number, any[]>
   ccMap: Record<number, string>
-  centrosCosto: any[]
+  tipoFiltro: string
 }) {
   const currentYear = new Date().getFullYear()
   const [filterAnio,  setFilterAnio]  = useState(String(currentYear))
-  const [filterTipoR, setFilterTipoR] = useState('')
-  const [filterCCR,   setFilterCCR]   = useState('')
 
   const servicioInfo: Record<number, { tipo: string; cc: number | null }> = {}
   catalogo.forEach(c => { servicioInfo[c.id] = { tipo: c.tipo_servicio, cc: c.id_centro_costo_fk } })
@@ -683,8 +682,6 @@ function ReporteServicios({
 
   const filtered = todos.filter(r => {
     if (filterAnio && !r.fecha.startsWith(filterAnio)) return false
-    if (filterTipoR && r.tipo !== filterTipoR) return false
-    if (filterCCR && String(r.cc) !== filterCCR) return false
     return true
   })
 
@@ -708,6 +705,7 @@ function ReporteServicios({
   const totalConsuGasLP = filtered.filter(r => r.tipo === 'Gas LP' && r.consumo != null).reduce((a, r) => a + (r.consumo ?? 0), 0)
   const totalGeneral    = totalCFE + totalAgua + totalGasLP
 
+  const filterTipoR = tipoFiltro
   const showCFE   = !filterTipoR || filterTipoR === 'CFE'
   const showAgua  = !filterTipoR || filterTipoR === 'Agua'
   const showGasLP = !filterTipoR || filterTipoR === 'Gas LP'
@@ -760,25 +758,6 @@ function ReporteServicios({
           <option value="">Todos</option>
           {anosDisp.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
-        <select className="select"
-          style={{ width: 112, fontSize: 12, padding: '3px 8px', height: 28 }}
-          value={filterTipoR} onChange={e => setFilterTipoR(e.target.value)}>
-          <option value="">CFE + Agua + Gas LP</option>
-          {TIPOS_SERVICIO.map(t => <option key={t}>{t}</option>)}
-        </select>
-        <select className="select"
-          style={{ flex: '1 1 150px', maxWidth: 210, fontSize: 12, padding: '3px 8px', height: 28 }}
-          value={filterCCR} onChange={e => setFilterCCR(e.target.value)}>
-          <option value="">Todos los centros</option>
-          {centrosCosto.map((c: any) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
-        {(filterTipoR || filterCCR) && (
-          <button className="btn-ghost"
-            style={{ fontSize: 11, padding: '3px 8px', height: 28, color: '#dc2626' }}
-            onClick={() => { setFilterTipoR(''); setFilterCCR('') }}>
-            <X size={11} /> Limpiar
-          </button>
-        )}
       </div>
 
       {/* KPIs */}
