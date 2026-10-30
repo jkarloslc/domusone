@@ -72,7 +72,7 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'caja_organismo':
       return '/ingresos'
     case 'aux_organismo':
-      return '/residencial'
+      return '/residencial/mantenimiento'
     case 'usuariogolf':
       return '/golf'
     case 'usuariohipico':

@@ -93,14 +93,14 @@ const ACCESOS: Record<Rol, Acceso[]> = {
   ],
   usuariomantto: [
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Mantenimiento',    href: '/residencial',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
+    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
     { label: 'Vehículos',        href: '/equipo-flota',        icon: Truck,           color: '#64748b', bg: '#f8fafc' },
     { label: 'Compras',          href: '/compras',             icon: ShoppingCart,    color: '#1d4ed8', bg: '#eff6ff' },
     { label: 'Dashboard',       href: '/dashboards',            icon: LayoutDashboard, color: '#4f46e5', bg: '#ede9fe' },
   ],
   atencion_residentes: [
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
-    { label: 'Mantenimiento',    href: '/residencial',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
+    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
     { label: 'Comunicados',      href: '/comunicados',         icon: MessageSquare,   color: '#0284c7', bg: '#f0f9ff' },
     { label: 'Reportes',         href: '/reportes',            icon: BarChart3,       color: '#dc2626', bg: '#fef2f2' },
   ],
@@ -125,7 +125,7 @@ const ACCESOS: Record<Rol, Acceso[]> = {
     { label: 'Transferencias',   href: '/compras/transferencias', icon: ArrowLeftRight, color: '#7c3aed', bg: '#f5f3ff' },
   ],
   mantenimiento: [
-    { label: 'Mantenimiento',    href: '/residencial',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
+    { label: 'Mantenimiento',    href: '/residencial/mantenimiento',       icon: Wrench,          color: '#b45309', bg: '#fffbeb' },
     { label: 'Vehículos',        href: '/equipo-flota',        icon: Truck,           color: '#64748b', bg: '#f8fafc' },
     { label: 'Fraccionamiento',      href: '/residencial',         icon: Home,            color: '#0f766e', bg: '#f0fdfa' },
   ],

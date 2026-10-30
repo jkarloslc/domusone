@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Home, ShoppingCart,
+  Home, Wrench, Zap, Building2, ShoppingCart,
   BarChart3, Settings, LogOut, User, Users, X, Landmark,
   Flag, DollarSign, MessageCircle, LayoutDashboard, BookOpen, Store, Leaf, Briefcase,
 } from 'lucide-react'
@@ -65,7 +65,7 @@ type Rol =
   | 'caja_organismo'
   | 'aux_organismo'
 
-type NavItem = { label: string; href: string; icon: any }
+type NavItem = { label: string; href: string; icon: any; exact?: boolean }
 type NavSection = { section: string; items: NavItem[] }
 
 const ROL_LABEL: Record<Rol, string> = {
@@ -106,6 +106,21 @@ const RPT = (grupo: string): NavItem => ({
   icon:  BarChart3,
 })
 
+// Los hubs de Fraccionamiento comparten prefijo de URL: cada ítem se activa solo en sus rutas
+const MANTTO_BASE = '/residencial/mantenimiento'
+const CAPEX_RUTAS = [`${MANTTO_BASE}/capex`, `${MANTTO_BASE}/conceptos`, `${MANTTO_BASE}/categorias-mano-obra`, '/capex']
+function isActiveNav(pathname: string, href: string): boolean {
+  if (href === '/residencial') return pathname === '/residencial'
+  if (href === `${MANTTO_BASE}/servicios`) return pathname.startsWith(href)
+  if (href === `${MANTTO_BASE}/capex`) return CAPEX_RUTAS.some(r => pathname.startsWith(r))
+  if (href === MANTTO_BASE) {
+    return pathname.startsWith(MANTTO_BASE)
+      && !pathname.startsWith(`${MANTTO_BASE}/servicios`)
+      && !CAPEX_RUTAS.some(r => pathname.startsWith(r))
+  }
+  return pathname.startsWith(href)
+}
+
 const NAV_POR_ROL: Record<Rol, NavSection[]> = {
 
   superadmin: [
@@ -114,6 +129,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'HR', items: [
@@ -152,6 +170,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'HR', items: [
@@ -190,6 +211,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'HR', items: [
@@ -227,6 +251,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'HR', items: [
@@ -264,6 +291,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'Club', items: [
@@ -297,6 +327,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'Club', items: [
@@ -361,6 +394,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'Compras', items: [
@@ -380,6 +416,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   atencion_residentes: [
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
   ],
@@ -407,6 +446,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
     ]},
   ],
 
@@ -430,6 +472,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
   ],
@@ -440,6 +485,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
     ]},
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
       RPT('residencial,mantenimiento,vigilancia'),
     ]},
     { section: 'Compras', items: [
@@ -573,6 +621,9 @@ const NAV_POR_ROL: Record<Rol, NavSection[]> = {
   aux_organismo: [
     { section: 'Fraccionamiento', items: [
       { label: 'Fraccionamiento',    href: '/residencial',    icon: Home          },
+      { label: 'Mantenimiento',      href: '/residencial/mantenimiento',        icon: Wrench        },
+      { label: 'Servicios',           href: '/residencial/mantenimiento/servicios', icon: Zap           },
+      { label: 'Capex',               href: '/residencial/mantenimiento/capex',     icon: Building2     },
     ]},
     { section: 'Compras', items: [
       { label: 'Compras',        href: '/compras',        icon: ShoppingCart  },
@@ -681,7 +732,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               const isRpt  = item.label === 'Reportes'
               const active = isRpt
                 ? pathname.startsWith('/reportes')
-                : pathname.startsWith(item.href)
+                : isActiveNav(pathname, item.href)
               return (
                 <Link
                   key={item.href}
