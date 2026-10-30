@@ -8,6 +8,8 @@ import {
   History, Network, BarChart2, List
 } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
+import CamposCFE, { DETALLE_CFE_VACIO, detalleCFEPayload, type DetalleCFE } from '@/components/servicios/CamposCFE'
+import InformeServicio from '@/components/servicios/InformeServicio'
 
 // ── Constantes ───────────────────────────────────────────────
 const TIPOS_SERVICIO  = ['CFE', 'Agua', 'Gas LP'] as const
@@ -75,6 +77,8 @@ export default function ServiciosTab() {
   const [filterNoServicio, setFilterNoServicio] = useState('')
   const [expandidos,    setExpandidos]    = useState<Record<number, boolean>>({})
   const [vistaReporte,  setVistaReporte]  = useState(false)
+  const [areas,         setAreas]         = useState<any[]>([])
+  const [detalleReg,    setDetalleReg]    = useState<Record<number, DetalleCFE>>({})
   const [modalCat,      setModalCat]      = useState(false)
   const [editingCat,    setEditingCat]    = useState<any | null>(null)
 
@@ -121,6 +125,11 @@ export default function ServiciosTab() {
         ;(data ?? []).forEach((c: any) => { m[c.id] = c.nombre })
         setCcMap(m)
       })
+  }, [])
+
+  useEffect(() => {
+    dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre')
+      .then(({ data }) => setAreas(data ?? []))
   }, [])
 
   const filteredCat = catalogo.filter(c => {
@@ -170,8 +179,14 @@ export default function ServiciosTab() {
       fecha_fin:       f.fechaFin || null,
       consumo_periodo: f.consumo ? Number(f.consumo) : null,
       monto_periodo:   Number(f.monto),
+      ...(servicio.tipo_servicio === 'CFE' ? detalleCFEPayload(detalleReg[servicio.id] ?? DETALLE_CFE_VACIO) : {}),
     })
     setFormReg(prev => {
+      const next = { ...prev }
+      delete next[servicio.id]
+      return next
+    })
+    setDetalleReg(prev => {
       const next = { ...prev }
       delete next[servicio.id]
       return next
@@ -303,11 +318,12 @@ export default function ServiciosTab() {
       </div>
 
       {vistaReporte && (
-        <ReporteServicios
+        <ReporteConTabs
           catalogo={catalogo}
           registros={registros}
           ccMap={ccMap}
           centrosCosto={centrosCosto}
+          areas={areas}
         />
       )}
 
@@ -433,9 +449,9 @@ export default function ServiciosTab() {
 
                     {/* Mini-form para nuevo registro */}
                     {canWrite('mantenimiento') && (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 12,
-                        padding: '10px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0',
-                        borderRadius: 8 }}>
+                      <div style={{ marginBottom: 12, padding: '10px 12px', background: '#f0fdf4',
+                        border: '1px solid #bbf7d0', borderRadius: 8 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                         <div style={{ flexShrink: 0 }}>
                           <div style={{ fontSize: 10, color: '#15803d', fontWeight: 600,
                             marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -491,6 +507,18 @@ export default function ServiciosTab() {
                             : <Save size={11} />}
                           Guardar
                         </button>
+                      </div>
+                      {servicio.tipo_servicio === 'CFE' && (
+                        <details style={{ marginTop: 8 }}>
+                          <summary style={{ fontSize: 11, color: '#15803d', cursor: 'pointer', fontWeight: 600 }}>
+                            Detalle del recibo CFE (opcional)
+                          </summary>
+                          <div style={{ marginTop: 8 }}>
+                            <CamposCFE value={detalleReg[servicio.id] ?? DETALLE_CFE_VACIO}
+                              onChange={(k, v) => setDetalleReg(d => ({ ...d, [servicio.id]: { ...(d[servicio.id] ?? DETALLE_CFE_VACIO), [k]: v } }))} />
+                          </div>
+                        </details>
+                      )}
                       </div>
                     )}
 
@@ -574,6 +602,34 @@ export default function ServiciosTab() {
           onSaved={() => { setModalCat(false); fetchCatalogo() }}
         />
       )}
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// Reporte: Resumen mensual (existente) + Informe por servicio
+// ════════════════════════════════════════════════════════════
+function ReporteConTabs({ catalogo, registros, ccMap, centrosCosto, areas }: {
+  catalogo: any[]; registros: Record<number, any[]>; ccMap: Record<number, string>
+  centrosCosto: any[]; areas: any[]
+}) {
+  const [vista, setVista] = useState<'resumen' | 'informe'>('informe')
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+        <button className={vista === 'informe' ? 'btn-primary' : 'btn-ghost'}
+          style={{ fontSize: 12, padding: '4px 12px', height: 28 }} onClick={() => setVista('informe')}>
+          Informe por servicio
+        </button>
+        <button className={vista === 'resumen' ? 'btn-primary' : 'btn-ghost'}
+          style={{ fontSize: 12, padding: '4px 12px', height: 28 }} onClick={() => setVista('resumen')}>
+          Resumen mensual
+        </button>
+      </div>
+      {vista === 'resumen'
+        ? <ReporteServicios catalogo={catalogo} registros={registros} ccMap={ccMap} centrosCosto={centrosCosto} />
+        : <InformeServicio catalogo={catalogo} registros={registros} ccMap={ccMap}
+            areaMap={Object.fromEntries(areas.map((a: any) => [a.id, a.nombre]))} />}
     </div>
   )
 }
@@ -981,6 +1037,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
   const [error,           setError]           = useState('')
   const [internos,        setInternos]        = useState<{ id: number; nombre: string }[]>([])
   const [centrosCosto,    setCentrosCosto]    = useState<any[]>([])
+  const [areas,           setAreas]           = useState<any[]>([])
 
   // Puntos de conexión
   const [puntos,          setPuntos]          = useState<any[]>([])
@@ -1000,9 +1057,11 @@ function CatalogoModal({ row, onClose, onSaved }: {
     Promise.all([
       dbComp.from('proveedores').select('id, nombre').eq('interno', true).eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
-    ]).then(([{ data: provs }, { data: ccs }]) => {
+      dbCfg.from('areas').select('id, nombre, id_centro_costo_fk').eq('activo', true).order('nombre'),
+    ]).then(([{ data: provs }, { data: ccs }, { data: ars }]) => {
       setInternos(provs ?? [])
       setCentrosCosto(ccs ?? [])
+      setAreas(ars ?? [])
     })
   }, [])
 
@@ -1055,6 +1114,11 @@ function CatalogoModal({ row, onClose, onSaved }: {
     ubicacion:           row?.ubicacion                     ?? '',
     titular:             row?.titular                       ?? '',
     id_centro_costo_fk:  row?.id_centro_costo_fk?.toString() ?? '',
+    id_area_fk:          row?.id_area_fk?.toString()         ?? '',
+    tarifa:              row?.tarifa                         ?? '',
+    medidor:             row?.medidor                        ?? '',
+    carga_kw:            row?.carga_kw?.toString()           ?? '',
+    responsable:         row?.responsable                    ?? '',
     tipo_servicio:       row?.tipo_servicio                 ?? 'CFE',
     modalidad:           row?.modalidad                     ?? 'Mensual',
     notas:               row?.notas                         ?? '',
@@ -1073,6 +1137,11 @@ function CatalogoModal({ row, onClose, onSaved }: {
       ubicacion:          form.ubicacion.trim() || null,
       titular:            form.titular.trim() || null,
       id_centro_costo_fk: form.id_centro_costo_fk ? Number(form.id_centro_costo_fk) : null,
+      id_area_fk:         form.id_area_fk ? Number(form.id_area_fk) : null,
+      tarifa:             form.tarifa.trim() || null,
+      medidor:            form.medidor.trim() || null,
+      carga_kw:           form.carga_kw !== '' ? Number(form.carga_kw) : null,
+      responsable:        form.responsable.trim() || null,
       tipo_servicio:      form.tipo_servicio,
       modalidad:          form.modalidad,
       notas:              form.notas.trim() || null,
@@ -1142,6 +1211,41 @@ function CatalogoModal({ row, onClose, onSaved }: {
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="label" style={{ fontSize: 11 }}>Área</label>
+          <select className="select" style={{ fontSize: 13 }}
+            value={form.id_area_fk} onChange={setF('id_area_fk')}>
+            <option value="">— Sin asignar —</option>
+            {areas
+              .filter((a: any) => !form.id_centro_costo_fk || String(a.id_centro_costo_fk) === form.id_centro_costo_fk)
+              .map((a: any) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+          </select>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Tarifa</label>
+            <input className="input" style={{ fontSize: 13 }} placeholder="PDBT, GDMTO…"
+              value={form.tarifa} onChange={setF('tarifa')} />
+          </div>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Medidor</label>
+            <input className="input" style={{ fontSize: 13, fontFamily: 'monospace' }}
+              value={form.medidor} onChange={setF('medidor')} />
+          </div>
+          <div>
+            <label className="label" style={{ fontSize: 11 }}>Carga (kW)</label>
+            <input className="input" type="number" step="0.01" style={{ fontSize: 13 }}
+              value={form.carga_kw} onChange={setF('carga_kw')} />
+          </div>
+        </div>
+
+        <div>
+          <label className="label" style={{ fontSize: 11 }}>Responsable</label>
+          <input className="input" style={{ fontSize: 13 }}
+            value={form.responsable} onChange={setF('responsable')} />
         </div>
 
         <div>

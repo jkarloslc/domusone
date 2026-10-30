@@ -17,6 +17,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import { OPDetail, Sec, DI, URGENCIA_COLOR } from '@/components/compras/OPDetailModal'
 
 import Paginador from '@/components/ui/Paginador'
+import CamposCFE, { DETALLE_CFE_VACIO, detalleCFEPayload, type DetalleCFE } from '@/components/servicios/CamposCFE'
 const PAGE_SIZES = [10, 25, 50, 100]
 
 type RolTipoOp = { id_tipo_gasto_fk: number; modo: string; solo_propios: boolean }
@@ -1664,6 +1665,7 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
 
   const [servicio, setServicio] = useState<any>(null)
   const [form, setForm] = useState({ fechaInicio: iniDef, fechaFin: finDef, consumo: '', monto: montoSugerido.toString() })
+  const [detalle, setDetalle] = useState<DetalleCFE>(DETALLE_CFE_VACIO)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
 
@@ -1691,6 +1693,7 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
       fecha_fin:       form.fechaFin || null,
       consumo_periodo: form.consumo ? Number(form.consumo) : null,
       monto_periodo:   Number(form.monto),
+      ...(servicio?.tipo_servicio === 'CFE' ? detalleCFEPayload(detalle) : {}),
     }
     // Una OP genera un solo registro de consumo: si ya existe, actualizarlo
     const { data: previo } = await dbCtrl.from('servicios_registros').select('id').eq('id_op_fk', opId).limit(1)
@@ -1728,7 +1731,7 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
       titulo="Registrar Consumo de Servicio"
       subtitulo={servLabel}
       onClose={bloquearCierre}
-      maxWidth={480}
+      maxWidth={560}
       footer={<>
         <button className="btn-primary" onClick={handleSave} disabled={saving || !puedeGuardar}>
           {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
@@ -1767,6 +1770,14 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
               value={form.monto} onChange={setF('monto')} />
           </div>
         </div>
+        {servicio?.tipo_servicio === 'CFE' && (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+              Detalle del recibo CFE <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(opcional — alimenta las alertas del informe)</span>
+            </div>
+            <CamposCFE value={detalle} onChange={(k, v) => setDetalle(d => ({ ...d, [k]: v }))} />
+          </div>
+        )}
       </div>
     </ModalShell>
   )
