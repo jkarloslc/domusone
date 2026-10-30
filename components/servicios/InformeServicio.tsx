@@ -52,9 +52,11 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap }:
 
   const calcs = useMemo<Calc[]>(() => catalogo.map(s => {
     const regs = [...(registros[s.id] ?? [])].sort((a, b) => (b.fecha_inicio ?? '').localeCompare(a.fecha_inicio ?? ''))
-    const ult = regs[0], ant = regs[1]
-    const prev = regs.slice(1, 12)
-    const precioDe = (r: any) => (r?.consumo_periodo > 0 ? r.monto_periodo / r.consumo_periodo : null)
+    const conImporte = regs.filter(r => r.monto_periodo > 0)
+    const ult = conImporte[0] ?? regs[0], ant = conImporte[1] ?? regs[1]
+    const prev = regs.slice(regs.indexOf(ult) + 1, regs.indexOf(ult) + 12)
+    // Registros de histórico "solo consumo" traen monto 0: no cuentan para precio
+    const precioDe = (r: any) => (r?.consumo_periodo > 0 && r?.monto_periodo > 0 ? r.monto_periodo / r.consumo_periodo : null)
     const consumo = ult?.consumo_periodo ?? null
     const costo = ult?.monto_periodo ?? 0
     const precio = precioDe(ult)
