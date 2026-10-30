@@ -136,7 +136,7 @@ export default function ServiciosTab() {
     if (filterTipo       && c.tipo_servicio !== filterTipo) return false
     if (filterUbic       && !c.ubicacion?.toLowerCase().includes(filterUbic.toLowerCase())) return false
     if (filterCC         && String(c.id_centro_costo_fk) !== filterCC) return false
-    if (filterNoServicio && !c.no_servicio?.toLowerCase().includes(filterNoServicio.toLowerCase())) return false
+    if (filterNoServicio && String(c.id) !== filterNoServicio) return false
     return true
   })
 
@@ -281,10 +281,19 @@ export default function ServiciosTab() {
           {TIPOS_SERVICIO.map(t => <option key={t}>{t}</option>)}
         </select>
 
-        <input className="input"
-          style={{ flex: '1 1 120px', maxWidth: 180, fontSize: 12, padding: '3px 8px', height: 28 }}
-          placeholder="No. Servicio…"
-          value={filterNoServicio} onChange={e => setFilterNoServicio(e.target.value)} />
+        <select className="select"
+          style={{ flex: '1 1 200px', maxWidth: 300, fontSize: 12, padding: '3px 8px', height: 28 }}
+          value={filterNoServicio} onChange={e => setFilterNoServicio(e.target.value)}>
+          <option value="">Servicio</option>
+          {catalogo
+            .filter(c => (!filterTipo || c.tipo_servicio === filterTipo)
+              && (!filterCC || String(c.id_centro_costo_fk) === filterCC))
+            .map(c => (
+              <option key={c.id} value={c.id}>
+                {c.no_servicio}{c.ubicacion ? ` · ${c.ubicacion}` : ''}
+              </option>
+            ))}
+        </select>
 
         <input className="input"
           style={{ flex: '1 1 120px', maxWidth: 180, fontSize: 12, padding: '3px 8px', height: 28 }}
@@ -320,6 +329,9 @@ export default function ServiciosTab() {
       {vistaReporte && (
         <ReporteConTabs
           catalogo={catalogo}
+          catalogoFiltrado={filteredCat}
+          servicioId={filterNoServicio ? Number(filterNoServicio) : null}
+          onSelectServicio={id => setFilterNoServicio(String(id))}
           registros={registros}
           ccMap={ccMap}
           centrosCosto={centrosCosto}
@@ -609,8 +621,8 @@ export default function ServiciosTab() {
 // ════════════════════════════════════════════════════════════
 // Reporte: Resumen mensual (existente) + Informe por servicio
 // ════════════════════════════════════════════════════════════
-function ReporteConTabs({ catalogo, registros, ccMap, centrosCosto, areas }: {
-  catalogo: any[]; registros: Record<number, any[]>; ccMap: Record<number, string>
+function ReporteConTabs({ catalogo, catalogoFiltrado, servicioId, onSelectServicio, registros, ccMap, centrosCosto, areas }: {
+  catalogo: any[]; catalogoFiltrado: any[]; servicioId: number | null; onSelectServicio: (id: number) => void; registros: Record<number, any[]>; ccMap: Record<number, string>
   centrosCosto: any[]; areas: any[]
 }) {
   const [vista, setVista] = useState<'resumen' | 'informe'>('informe')
@@ -628,7 +640,8 @@ function ReporteConTabs({ catalogo, registros, ccMap, centrosCosto, areas }: {
       </div>
       {vista === 'resumen'
         ? <ReporteServicios catalogo={catalogo} registros={registros} ccMap={ccMap} centrosCosto={centrosCosto} />
-        : <InformeServicio catalogo={catalogo} registros={registros} ccMap={ccMap}
+        : <InformeServicio catalogo={catalogoFiltrado} registros={registros} ccMap={ccMap}
+            servicioId={servicioId} onSelect={onSelectServicio}
             areaMap={Object.fromEntries(areas.map((a: any) => [a.id, a.nombre]))} />}
     </div>
   )

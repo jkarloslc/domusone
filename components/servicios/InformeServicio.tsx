@@ -33,16 +33,14 @@ type Calc = {
   mensual: number; alertas: { nivel: 'warn' | 'info' | 'ok'; txt: string }[]
 }
 
-export default function InformeServicio({ catalogo, registros, ccMap, areaMap }: {
+export default function InformeServicio({ catalogo, registros, ccMap, areaMap, servicioId, onSelect }: {
   catalogo: any[]; registros: Record<number, any[]>
   ccMap: Record<number, string>; areaMap: Record<number, string>
+  servicioId: number | null; onSelect: (id: number) => void
 }) {
   const [umbAm, setUmbAm] = useState(15)
   const [umbRo, setUmbRo] = useState(30)
   const [metaFP, setMetaFP] = useState(90)
-  const [filtroTipo, setFiltroTipo] = useState('')
-  const [filtroCC, setFiltroCC] = useState('')
-  const [sel, setSel] = useState<number | null>(null)
 
   const sem = (v: number | null): Sem =>
     v == null ? null : v >= umbRo / 100 ? 'ROJO' : v >= umbAm / 100 ? 'AMARILLO' : 'VERDE'
@@ -85,10 +83,7 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap }:
       varConsumo, varPrecio, varCostoAnt, mensual: (costo / d) * 30.4, alertas }
   }), [catalogo, registros, umbAm, metaFP])
 
-  const lista = calcs.filter(c =>
-    (!filtroTipo || c.s.tipo_servicio === filtroTipo) &&
-    (!filtroCC || String(c.s.id_centro_costo_fk ?? '') === filtroCC))
-    .sort((a, b) => b.costo - a.costo)
+  const lista = [...calcs].sort((a, b) => b.costo - a.costo)
   const totalUlt = lista.reduce((a, c) => a + c.costo, 0)
 
   // Totales por centro de costo (decisión que soporta el informe: asignación del gasto)
@@ -102,7 +97,7 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap }:
     return Object.entries(m).sort((a, b) => b[1].costo - a[1].costo)
   }, [lista, ccMap])
 
-  const cur = calcs.find(c => c.s.id === sel) ?? null
+  const cur = calcs.find(c => c.s.id === servicioId) ?? null
 
   const exportarExcel = () => {
     const wb = XLSX.utils.book_new()
@@ -180,15 +175,6 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap }:
       {/* Filtros y parámetros */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, padding: '8px 12px',
         background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, flexWrap: 'wrap' }}>
-        <select className="select" style={{ ...inpS, width: 120 }} value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)}>
-          <option value="">Todos los tipos</option>
-          {['CFE', 'Agua', 'Gas LP'].map(t => <option key={t}>{t}</option>)}
-        </select>
-        <select className="select" style={{ ...inpS, maxWidth: 210 }} value={filtroCC} onChange={e => setFiltroCC(e.target.value)}>
-          <option value="">Todos los centros</option>
-          {Object.entries(ccMap).map(([id, n]) => <option key={id} value={id}>{n}</option>)}
-        </select>
-        <div style={{ width: 1, height: 18, background: '#e2e8f0' }} />
         <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Umbral amarillo %
           <input className="input" type="number" style={{ ...inpS, width: 60, marginLeft: 4 }} value={umbAm} onChange={e => setUmbAm(Number(e.target.value))} /></label>
         <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>rojo %
@@ -205,14 +191,6 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap }:
         (amarillo ≥ +{umbAm}%, rojo ≥ +{umbRo}%). Los umbrales son una propuesta — validar con Dirección.
       </div>
 
-      {/* Selector de servicio */}
-      <div style={{ marginBottom: 12 }}>
-        <select className="select" style={{ fontSize: 13, height: 32, maxWidth: 520 }} value={sel ?? ''}
-          onChange={e => setSel(e.target.value ? Number(e.target.value) : null)}>
-          <option value="">Vista general (todos los servicios)</option>
-          {lista.map(c => <option key={c.s.id} value={c.s.id}>{etiqueta(c.s)}</option>)}
-        </select>
-      </div>
 
       {!cur ? (
         <div id="reporte-print-area">
@@ -249,7 +227,7 @@ export default function InformeServicio({ catalogo, registros, ccMap, areaMap }:
                 <tbody>{lista.map((c, i) => {
                   const warns = c.alertas.filter(a => a.nivel === 'warn').length
                   return (
-                    <tr key={c.s.id} onClick={() => setSel(c.s.id)} style={{ cursor: 'pointer' }}>
+                    <tr key={c.s.id} onClick={() => onSelect(c.s.id)} style={{ cursor: 'pointer' }}>
                       <td>{i + 1}</td>
                       <td style={{ fontWeight: 600 }}>{etiqueta(c.s)}</td>
                       <td>{c.s.tipo_servicio}</td>
