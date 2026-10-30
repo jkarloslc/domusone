@@ -992,9 +992,18 @@ function OPModal({ op: opEdit, duplicar = false, onClose, onSaved }: { op?: any;
         )
       }
       if (servicioAplica && form.id_servicio_fk) {
-        setSavedOpForConsumo({ opId: opEdit.id, servicioId: Number(form.id_servicio_fk), monto: montoTotal })
-        setSaving(false)
-        return
+        // Si la OP ya tiene registro de consumo, no volver a pedirlo ni duplicarlo:
+        // solo se mantiene sincronizado el servicio y el monto del periodo.
+        const { data: regs } = await dbCtrl.from('servicios_registros').select('id').eq('id_op_fk', opEdit.id)
+        if (regs && regs.length > 0) {
+          await dbCtrl.from('servicios_registros')
+            .update({ id_servicio_fk: Number(form.id_servicio_fk), monto_periodo: montoTotal })
+            .eq('id_op_fk', opEdit.id)
+        } else {
+          setSavedOpForConsumo({ opId: opEdit.id, servicioId: Number(form.id_servicio_fk), monto: montoTotal })
+          setSaving(false)
+          return
+        }
       }
       setSaving(false); onSaved()
       return
@@ -1682,6 +1691,15 @@ function ConsumoAfterOPModal({ servicioId, opId, montoSugerido, onDone }: {
       fecha_fin:       form.fechaFin || null,
       consumo_periodo: form.consumo ? Number(form.consumo) : null,
       monto_periodo:   Number(form.monto),
+    }
+    // Una OP genera un solo registro de consumo: si ya existe, actualizarlo
+    const { data: previo } = await dbCtrl.from('servicios_registros').select('id').eq('id_op_fk', opId).limit(1)
+    if (previo && previo.length > 0) {
+      const { error: errUp } = await dbCtrl.from('servicios_registros').update(payload).eq('id', previo[0].id)
+      if (errUp) { setSaveError(errUp.message); setSaving(false); return }
+      setSaving(false)
+      onDone()
+      return
     }
     // Intentar con id_op_fk; si falla por columna faltante, reintentar sin él
     let { error: err } = await dbCtrl.from('servicios_registros').insert({ ...payload, id_op_fk: opId })
