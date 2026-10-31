@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, agrupadoresUsados, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
@@ -1143,6 +1143,8 @@ export default function ComparativoPage() {
                     ingRowsConcepto={agruparPorConcepto(ing)} egrRowsConcepto={agruparPorConcepto(egr)}
                     ingRowsAgrupado={agrupar(ing)} egrRowsAgrupado={agrupar(egr)}
                     vista={vista} canWriteManual={canWrite('presupuestos')}
+                    nombreCC={id => centrosCostoF.find(c => c.id === id)?.nombre ?? `CC ${id}`}
+                    nombreArea={id => areasF.find(a => a.id === id)?.nombre ?? `Área ${id}`}
                     onManual={handleManual} onDrill={handleDrill} onDrillOps={handleDrillOps}
                   />
                 )
@@ -1472,7 +1474,9 @@ function FallbackMark() {
     style={{ color: '#7c3aed', fontWeight: 700, marginLeft: 3, cursor: 'help' }}>*</span>
 }
 
-function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRowsConcepto, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, onManual, onDrill, onDrillOps }: {
+function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRowsConcepto, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, nombreCC, nombreArea, onManual, onDrill, onDrillOps }: {
+  nombreCC: (id: number) => string
+  nombreArea: (id: number) => string
   labels: { ingresos: string; egresos: string; balance: string }
   ingRows: FilaPartida[]; egrRows: FilaPartida[]
   ingRowsConcepto: FilaGrupo[]; egrRowsConcepto: FilaGrupo[]
@@ -1486,6 +1490,21 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
   if (ingRows.length === 0 && egrRows.length === 0) return null
   const ingGrupo = vista === 'concepto' ? ingRowsConcepto : ingRowsAgrupado
   const egrGrupo = vista === 'concepto' ? egrRowsConcepto : egrRowsAgrupado
+  // Egresos en detalle: una banda por CC · Área, para que partidas con el
+  // mismo nombre en áreas distintas no parezcan duplicadas.
+  const egrPorArea = (() => {
+    const m = new Map<string, { key: string; label: string; rows: FilaPartida[] }>()
+    for (const r of egrRows) {
+      const key = `${r.id_centro_costo_fk ?? 0}|${r.id_area_fk ?? 0}`
+      if (!m.has(key)) {
+        const cc = r.id_centro_costo_fk != null ? nombreCC(r.id_centro_costo_fk) : null
+        const ar = r.id_area_fk != null ? nombreArea(r.id_area_fk) : null
+        m.set(key, { key, label: [cc, ar].filter(Boolean).join(' · ') || 'Sin centro de costo / área', rows: [] })
+      }
+      m.get(key)!.rows.push(r)
+    }
+    return Array.from(m.values()).sort((x, y) => x.label.localeCompare(y.label, 'es'))
+  })()
   return (
     <>
       {ingRows.length > 0 && (
@@ -1569,7 +1588,15 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
               {labels.egresos}
             </td>
           </tr>
-          {vista === 'detalle' ? egrRows.map((p, i) => (
+          {vista === 'detalle' ? egrPorArea.map(g => (
+            <Fragment key={g.key}>
+            <tr style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+              <td style={{ ...td, fontWeight: 700, color: '#475569', fontSize: 12 }}>{g.label}</td>
+              <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSeccionRows(g.rows, 'pptoVal'))}</td>
+              <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSeccionRows(g.rows, 'realVal'))}</td>
+              <td style={td}></td><td style={td}></td><td style={td}></td>
+            </tr>
+            {g.rows.map((p, i) => (
             <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
               <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>{p.descripcion && <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{p.descripcion}</span>}</td>
@@ -1597,6 +1624,8 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
                 )}
               </td>
             </tr>
+            ))}
+            </Fragment>
           )) : egrGrupo.map((g, i) => (
             <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
