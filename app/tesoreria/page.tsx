@@ -1,10 +1,11 @@
 'use client'
 import {
   Landmark, FileText, Building2, ChevronRight,
-  Clock
+  Clock, Waves
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
+import { useAuth } from '@/lib/AuthContext'
 
 const MODULOS = [
   {
@@ -21,11 +22,21 @@ const MODULOS = [
     color: '#0f766e',
     desc:  'Saldos, movimientos y administración de cuentas bancarias',
   },
+  {
+    key:   'flujo-efectivo',
+    label: 'Flujo de Efectivo',
+    icon:  Waves,
+    color: '#0369a1',
+    desc:  'Flujo proyectado desde Presupuestos vs. real clasificado del banco (solo Administradores)',
+    soloAdmin: true,
+  },
   // Flujo de Caja oculto del hub (se trabaja por fuera); la ruta /tesoreria/flujo-caja sigue existiendo.
 ]
 
 export default function TesoreriaPage() {
   const router = useRouter()
+  const { authUser } = useAuth()
+  const esAdmin = authUser?.rol === 'superadmin' || authUser?.rol === 'admin'
 
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
@@ -40,7 +51,7 @@ export default function TesoreriaPage() {
 
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
-        {MODULOS.map(m => {
+        {MODULOS.filter(m => !(m as any).soloAdmin || esAdmin).map(m => {
           const Icon = m.icon
           return (
             <button key={m.key}
