@@ -223,8 +223,16 @@ export default function PartidasPage() {
       ? await dbCtrl.from('ppto_partidas').update(payload).eq('id', edit.id)
       : await dbCtrl.from('ppto_partidas').insert(payload)
     setSaving(false)
-    if (error) { setErrorMsg(error.message); return }
+    if (error) { setErrorMsg(msgErrorPartida(error)); return }
     setModal(false); load()
+  }
+
+  // 23505 = ux_ppto_partidas_egreso_area_tipo_gasto: una sola partida de
+  // egreso activa por área + tipo de gasto.
+  function msgErrorPartida(error: { code?: string; message: string }) {
+    return error.code === '23505'
+      ? 'Ya existe una partida de egreso activa para esa área con ese tipo de gasto. Edita la existente o desactívala primero.'
+      : error.message
   }
 
   function openDup(p: Partida) {
@@ -274,7 +282,7 @@ export default function PartidasPage() {
     }))
     const { error } = await dbCtrl.from('ppto_partidas').insert(payload)
     setDupSaving(false)
-    if (error) { setDupError(error.message); return }
+    if (error) { setDupError(msgErrorPartida(error)); return }
     setDupModal(false)
     load()
   }
