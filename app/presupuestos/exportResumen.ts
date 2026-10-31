@@ -1,6 +1,8 @@
 import * as XLSX from 'xlsx'
+import { agruparPorArea } from './agrupaArea'
 
-export type FilaResumen = { nombre: string; ppto: number; real: number }
+/** banda = renglón de subtotal CC · Área; no suma en los totales. */
+export type FilaResumen = { nombre: string; ppto: number; real: number; banda?: boolean }
 export type SeccionResumen = {
   ingresos: string; egresos: string; balance: string
   ing: FilaResumen[]; egr: FilaResumen[]
@@ -15,7 +17,7 @@ export function exportarResumenExcel({ titulo, secciones, netoLabel, archivo }: 
     ['Partida', 'Presupuestado', 'Real', 'Variación', '% Ejercido'],
   ]
   const pct = (real: number, ppto: number) => ppto > 0 ? real / ppto : null
-  const suma = (rows: FilaResumen[], k: 'ppto' | 'real') => rows.reduce((s, r) => s + r[k], 0)
+  const suma = (rows: FilaResumen[], k: 'ppto' | 'real') => rows.reduce((s, r) => s + (r.banda ? 0 : r[k]), 0)
   const linea = (nombre: string, ppto: number, real: number) =>
     aoa.push([nombre, ppto, real, real - ppto, pct(real, ppto)])
   const bloque = (label: string, rows: FilaResumen[]) => {
@@ -46,4 +48,14 @@ export function exportarResumenExcel({ titulo, secciones, netoLabel, archivo }: 
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Resumen')
   XLSX.writeFile(wb, `${archivo}_${new Date().toISOString().slice(0, 10)}.xlsx`)
+}
+
+/** Egresos en vista Detalle: renglón de banda CC · Área + sus partidas con sangría. */
+export function lineasEgresoPorArea<T extends { nombre: string; pptoVal: number; realVal: number; id_centro_costo_fk: number | null; id_area_fk: number | null }>(
+  rows: T[], nombreCC: (id: number) => string, nombreArea: (id: number) => string,
+): FilaResumen[] {
+  return agruparPorArea(rows, nombreCC, nombreArea).flatMap(b => [
+    { nombre: b.label, ppto: b.rows.reduce((s, r) => s + r.pptoVal, 0), real: b.rows.reduce((s, r) => s + r.realVal, 0), banda: true },
+    ...b.rows.map(r => ({ nombre: `    ${r.nombre}`, ppto: r.pptoVal, real: r.realVal })),
+  ])
 }

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, agrupadoresUsados, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
@@ -13,7 +13,8 @@ import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
 import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
-import { exportarResumenExcel } from '../exportResumen'
+import { exportarResumenExcel, lineasEgresoPorArea } from '../exportResumen'
+import { agruparPorArea, nombresDe } from '../agrupaArea'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
@@ -565,6 +566,7 @@ export default function FlujoEfectivoPage() {
   // Flujo Neto final (grand total) al pie de la tabla.
   const ingRows = filas.filter(p => p.tipo === 'ingreso')
   const egrRows = filas.filter(p => p.tipo === 'egreso')
+  const nombres = nombresDe(centrosCostoF, areasF)
 
   function totalSeccion(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
     return rows.reduce((s, r) => s + r[field], 0)
@@ -675,7 +677,9 @@ export default function FlujoEfectivoPage() {
       secciones: CLASIFICACIONES.map(clas => ({
         ...CLASIFICACION_LABELS[clas],
         ing: lineas(porClasificacion(ingRows, clas)),
-        egr: lineas(porClasificacion(egrRows, clas)),
+        egr: vista === 'detalle'
+          ? lineasEgresoPorArea(porClasificacion(egrRows, clas), nombres.nombreCC, nombres.nombreArea)
+          : lineas(porClasificacion(egrRows, clas)),
       })),
       netoLabel: 'Flujo Neto de Efectivo', archivo: 'Flujo-de-Efectivo',
     })
@@ -903,7 +907,7 @@ export default function FlujoEfectivoPage() {
           )}
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
-            <GridMensual filas={filas} detMap={detMap} realMap={realMap} vista={vista} agrupadores={agrupadores}
+            <GridMensual {...nombres} filas={filas} detMap={detMap} realMap={realMap} vista={vista} agrupadores={agrupadores}
               archivo="Flujo-de-Efectivo" onCelda={handleCelda} labels={CLASIFICACION_LABELS} netoLabel="Flujo Neto de Efectivo" />
           ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -929,6 +933,7 @@ export default function FlujoEfectivoPage() {
                     ingRowsConcepto={agruparPorConcepto(ing)} egrRowsConcepto={agruparPorConcepto(egr)}
                     ingRowsAgrupado={agrupar(ing)} egrRowsAgrupado={agrupar(egr)}
                     vista={vista} canWriteManual={canWrite('presupuestos')}
+                    {...nombres}
                     onManual={handleManual} onDrill={handleDrill} onDrillOps={handleDrillOps}
                   />
                 )
@@ -1217,7 +1222,9 @@ function totalSeccionRows(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
   return rows.reduce((s, r) => s + r[field], 0)
 }
 
-function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRowsConcepto, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, onManual, onDrill, onDrillOps }: {
+function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRowsConcepto, ingRowsAgrupado, egrRowsAgrupado, vista, canWriteManual, nombreCC, nombreArea, onManual, onDrill, onDrillOps }: {
+  nombreCC: (id: number) => string
+  nombreArea: (id: number) => string
   labels: { ingresos: string; egresos: string; balance: string }
   ingRows: FilaPartida[]; egrRows: FilaPartida[]
   ingRowsConcepto: FilaGrupo[]; egrRowsConcepto: FilaGrupo[]
@@ -1231,6 +1238,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
   if (ingRows.length === 0 && egrRows.length === 0) return null
   const ingGrupo = vista === 'concepto' ? ingRowsConcepto : ingRowsAgrupado
   const egrGrupo = vista === 'concepto' ? egrRowsConcepto : egrRowsAgrupado
+  const egrPorArea = agruparPorArea(egrRows, nombreCC, nombreArea)
   return (
     <>
       {ingRows.length > 0 && (
@@ -1314,7 +1322,15 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
               {labels.egresos}
             </td>
           </tr>
-          {vista === 'detalle' ? egrRows.map((p, i) => (
+          {vista === 'detalle' ? egrPorArea.map(g => (
+            <Fragment key={g.key}>
+            <tr style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+              <td style={{ ...td, fontWeight: 700, color: '#475569', fontSize: 12 }}>{g.label}</td>
+              <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSeccionRows(g.rows, 'pptoVal'))}</td>
+              <td style={{ ...td, textAlign: 'right', fontWeight: 700, color: '#475569', fontVariantNumeric: 'tabular-nums' }}>{fmt(totalSeccionRows(g.rows, 'realVal'))}</td>
+              <td style={td}></td><td style={td}></td><td style={td}></td>
+            </tr>
+            {g.rows.map((p, i) => (
             <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
               <td style={td}><span style={{ fontWeight: 600, color: '#1e293b' }}>{p.nombre}</span>{p.descripcion && <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{p.descripcion}</span>}</td>
@@ -1342,6 +1358,8 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
                 )}
               </td>
             </tr>
+            ))}
+            </Fragment>
           )) : egrGrupo.map((g, i) => (
             <tr key={g.id} style={{ borderBottom: '1px solid #f1f5f9',
               background: i % 2 === 0 ? '#fff' : '#fafafa' }}>

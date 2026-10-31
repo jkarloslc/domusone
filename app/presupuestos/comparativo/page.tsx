@@ -13,7 +13,8 @@ import { OPDetail } from '@/components/compras/OPDetailModal'
 import { useRouter } from 'next/navigation'
 import { esComodin } from '@/lib/pptoComodin'
 import { cargarTiposGasto, armarCatalogo } from '@/lib/tiposGasto'
-import { exportarResumenExcel } from '../exportResumen'
+import { exportarResumenExcel, lineasEgresoPorArea } from '../exportResumen'
+import { agruparPorArea, nombresDe } from '../agrupaArea'
 import GridMensual, { type CeldaInfo } from '../GridMensual'
 import { fetchDevengadoSinIvaPorPartida } from '@/lib/cobranzaCuotas'
 
@@ -698,6 +699,7 @@ export default function ComparativoPage() {
   // Balance Neto final (grand total) al pie de la tabla.
   const ingRows = filas.filter(p => p.tipo === 'ingreso')
   const egrRows = filas.filter(p => p.tipo === 'egreso')
+  const nombres = nombresDe(centrosCostoF, areasF)
 
   // Totales de sección
   function totalSeccion(rows: FilaPartida[], field: 'pptoVal' | 'realVal') {
@@ -838,7 +840,9 @@ export default function ComparativoPage() {
       secciones: CLASIFICACIONES.map(clas => ({
         ...CLASIFICACION_LABELS[clas],
         ing: lineas(porClasificacion(ingRows, clas)),
-        egr: lineas(porClasificacion(egrRows, clas)),
+        egr: vista === 'detalle'
+          ? lineasEgresoPorArea(porClasificacion(egrRows, clas), nombres.nombreCC, nombres.nombreArea)
+          : lineas(porClasificacion(egrRows, clas)),
       })),
       netoLabel: 'Balance Neto', archivo: 'Comparativo-Presupuesto-vs-Real',
     })
@@ -1116,7 +1120,7 @@ export default function ComparativoPage() {
           )}
           <div id="reporte-print-area" className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {modo === 'mensual' ? (
-            <GridMensual filas={filas} detMap={pptoMensual} realMap={realMensual}
+            <GridMensual {...nombres} filas={filas} detMap={pptoMensual} realMap={realMensual}
               vista={vista} agrupadores={agrupadores}
               archivo="Comparativo-Presupuesto-vs-Real" onCelda={handleCelda} pptoFallback={pptoFallbackMes} labels={CLASIFICACION_LABELS} netoLabel="Balance Neto" />
           ) : (
@@ -1143,8 +1147,7 @@ export default function ComparativoPage() {
                     ingRowsConcepto={agruparPorConcepto(ing)} egrRowsConcepto={agruparPorConcepto(egr)}
                     ingRowsAgrupado={agrupar(ing)} egrRowsAgrupado={agrupar(egr)}
                     vista={vista} canWriteManual={canWrite('presupuestos')}
-                    nombreCC={id => centrosCostoF.find(c => c.id === id)?.nombre ?? `CC ${id}`}
-                    nombreArea={id => areasF.find(a => a.id === id)?.nombre ?? `Área ${id}`}
+                    {...nombres}
                     onManual={handleManual} onDrill={handleDrill} onDrillOps={handleDrillOps}
                   />
                 )
@@ -1490,21 +1493,7 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
   if (ingRows.length === 0 && egrRows.length === 0) return null
   const ingGrupo = vista === 'concepto' ? ingRowsConcepto : ingRowsAgrupado
   const egrGrupo = vista === 'concepto' ? egrRowsConcepto : egrRowsAgrupado
-  // Egresos en detalle: una banda por CC · Área, para que partidas con el
-  // mismo nombre en áreas distintas no parezcan duplicadas.
-  const egrPorArea = (() => {
-    const m = new Map<string, { key: string; label: string; rows: FilaPartida[] }>()
-    for (const r of egrRows) {
-      const key = `${r.id_centro_costo_fk ?? 0}|${r.id_area_fk ?? 0}`
-      if (!m.has(key)) {
-        const cc = r.id_centro_costo_fk != null ? nombreCC(r.id_centro_costo_fk) : null
-        const ar = r.id_area_fk != null ? nombreArea(r.id_area_fk) : null
-        m.set(key, { key, label: [cc, ar].filter(Boolean).join(' · ') || 'Sin centro de costo / área', rows: [] })
-      }
-      m.get(key)!.rows.push(r)
-    }
-    return Array.from(m.values()).sort((x, y) => x.label.localeCompare(y.label, 'es'))
-  })()
+  const egrPorArea = agruparPorArea(egrRows, nombreCC, nombreArea)
   return (
     <>
       {ingRows.length > 0 && (

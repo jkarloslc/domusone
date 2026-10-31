@@ -2,12 +2,13 @@
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { Download } from 'lucide-react'
+import { agruparPorArea } from './agrupaArea'
 
 type Clasificacion = 'operativo' | 'financiero' | 'intercompanias'
 type DetMap = Record<number, Record<number, number>>
 export type FilaGrid = {
   id: number; nombre: string; tipo: 'ingreso' | 'egreso'; clasificacion: Clasificacion
-  orden: number; tipo_gasto: string | null; id_tipo_gasto_fk: number | null; id_centro_costo_fk: number | null; id_agrupador_fk: number | null
+  orden: number; tipo_gasto: string | null; id_tipo_gasto_fk: number | null; id_centro_costo_fk: number | null; id_area_fk: number | null; id_agrupador_fk: number | null
 }
 export type CeldaInfo = { ids: number[]; nombre: string; tipo: 'ingreso' | 'egreso'; meses: number[] }
 export type Vista = 'detalle' | 'concepto' | 'agrupado'
@@ -28,7 +29,9 @@ const NUM: React.CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabu
 
 const SIN_AGRUPADOR = 'Sin Agrupador'
 
-export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback }: {
+export default function GridMensual({ filas, detMap, realMap, vista, agrupadores, labels: LABELS, netoLabel, archivo, onCelda, pptoFallback, nombreCC, nombreArea }: {
+  /** Con ambos, los egresos en vista Detalle se agrupan en bandas CC · Área. */
+  nombreCC?: (id: number) => string; nombreArea?: (id: number) => string
   filas: FilaGrid[]; detMap: DetMap; realMap: DetMap
   labels: LabelsClas; netoLabel: string; archivo: string
   /** Clic en un monto Real: abre el detalle de movimientos (solo métrica Real). */
@@ -72,6 +75,11 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
     })
     return Array.from(map.values()).sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre))
   }
+  // Egresos en Detalle: sub-bandas CC · Área; el resto, una sola banda sin título.
+  const bandasDe = (rows: FilaGrid[], tipo: 'ingreso' | 'egreso') =>
+    tipo === 'egreso' && vista === 'detalle' && nombreCC && nombreArea
+      ? agruparPorArea(rows, nombreCC, nombreArea)
+      : [{ key: 'todo', label: '', rows }]
   const valorLinea = (l: Linea, m: number) => l.ids.reduce((s, id) => s + valor(id, m), 0)
   const totalLinea = (l: Linea) => meses.reduce((s, m) => s + l.ids.reduce((a, id) => a + valorMes(id, m), 0), 0)
 
@@ -119,7 +127,15 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
       <>
         <tr><td colSpan={meses.length + 2} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, letterSpacing: '.06em',
           textTransform: 'uppercase', color: fg, background: bg }}>{label}</td></tr>
-        {lineasDe(rows).map(r => {
+        {bandasDe(rows, tipo).map(b => [
+          b.label && (
+            <tr key={`b-${b.key}`} style={{ background: '#f8fafc' }}>
+              <td style={{ ...stickyBase, background: '#f8fafc', padding: '6px 12px', fontSize: 12, fontWeight: 700, color: '#475569' }}>{b.label}</td>
+              {meses.map(m => { const v = sumaFilas(b.rows, m); return <td key={m} style={cell(v, tipo, true, metrica === 'var' ? undefined : '#475569')}>{show(v)}</td> })}
+              <td style={{ ...cell(totalFila(b.rows), tipo, true, metrica === 'var' ? undefined : '#475569'), borderLeft: '1px solid #e2e8f0' }}>{show(totalFila(b.rows))}</td>
+            </tr>
+          ),
+          ...lineasDe(b.rows).map(r => {
           const t = totalLinea(r)
           return (
             <tr key={r.key} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -129,7 +145,7 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
               <td style={{ ...cell(t, tipo, true), borderLeft: '1px solid #e2e8f0', background: '#f8fafc' }}><Monto v={t} l={r} tipo={tipo} ms={mesesTodos} /></td>
             </tr>
           )
-        })}
+        })])}
         <FilaTotales label={`Total ${label.replace(/ \(.*\)/, '')}`} rows={rows} tipo={tipo} bg="#f8fafc" fg="#1e293b" />
       </>
     )
@@ -179,7 +195,11 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
     const bloque = (label: string, rows: FilaGrid[]) => {
       if (rows.length === 0) return
       aoa.push([label.toUpperCase()])
-      lineasDe(rows).forEach(l => aoa.push([l.nombre, ...meses.map(m => valorLinea(l, m)), totalLinea(l)]))
+      const tipo = rows[0].tipo
+      bandasDe(rows, tipo).forEach(b => {
+        if (b.label) aoa.push([b.label, ...meses.map(m => sumaFilas(b.rows, m)), totalFila(b.rows)])
+        lineasDe(b.rows).forEach(l => aoa.push([b.label ? `    ${l.nombre}` : l.nombre, ...meses.map(m => valorLinea(l, m)), totalLinea(l)]))
+      })
       aoa.push([`Total ${label.replace(/ \(.*\)/, '')}`, ...meses.map(m => sumaFilas(rows, m)), totalFila(rows)])
     }
     const neto = (label: string, ing: FilaGrid[], egr: FilaGrid[]) =>
