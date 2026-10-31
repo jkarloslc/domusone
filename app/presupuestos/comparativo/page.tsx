@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, Fragment } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { cargarCentrosAgrupados, idsCentrosFiltro, centrosDeAgrupador, agrupadoresUsados, CentroIngresoAgr, AgrupadorIngreso } from '@/lib/centrosIngreso'
 import { cargarPartidasPresupuesto } from '@/lib/pptoPartidasPresupuesto'
-import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2, CalendarRange, Download } from 'lucide-react'
+import { Loader, RefreshCw, BookOpen, Layers, List, Trash2, Save, Building2, CalendarRange, Download, Sigma } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import PageHeader from '@/components/layout/PageHeader'
 import { useAuth } from '@/lib/AuthContext'
@@ -61,7 +61,7 @@ const CLASIFICACION_LABELS: Record<Clasificacion, { ingresos: string; egresos: s
 }
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-const VISTA_LABEL = { detalle: 'Detalle', concepto: 'Concepto', agrupado: 'Agrupado' } as const
+const VISTA_LABEL = { detalle: 'Detalle', concepto: 'Concepto', consolidado: 'Consolidado', agrupado: 'Agrupado' } as const
 
 const fmt = (n: number) =>
   '$' + Math.abs(n).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
@@ -211,7 +211,7 @@ export default function ComparativoPage() {
   // Filtros
   const [filterTipo, setFilterTipo] = useState<'' | 'ingreso' | 'egreso'>('')
   const [filterMes,  setFilterMes]  = useState<number>(0) // 0 = Acumulado
-  const [vista, setVista] = useState<'detalle' | 'concepto' | 'agrupado'>('detalle')
+  const [vista, setVista] = useState<'detalle' | 'concepto' | 'consolidado' | 'agrupado'>('detalle')
   const [modo, setModo] = useState<'resumen' | 'mensual'>('resumen')
   const [drillGrupo, setDrillGrupo] = useState<{ nombre: string; tipo: 'ingreso' | 'egreso'; partidas: FilaPartida[] } | null>(null)
 
@@ -739,10 +739,12 @@ export default function ComparativoPage() {
   // general). Partidas sin tipo_gasto (ingreso por sección/concepto/manual)
   // no tienen "concepto" que compartir con nadie más, así que quedan como
   // grupos de 1 (misma fila que en Detalle).
-  function agruparPorConcepto(rows: FilaPartida[]): FilaGrupo[] {
+  // Concepto: tipo de gasto por CC. Consolidado (porCC = false): tipo de gasto
+  // en toda la empresa — una sola Nómina, etc.; el drill muestra el CC · Área.
+  function agruparPorConcepto(rows: FilaPartida[], porCC = true): FilaGrupo[] {
     const map = new Map<string, { nombre: string; orden: number; pptoVal: number; realVal: number; partidas: FilaPartida[] }>()
     rows.forEach(r => {
-      const key = r.id_tipo_gasto_fk ? `${r.id_centro_costo_fk ?? 0}-${r.id_tipo_gasto_fk}` : `p-${r.id}`
+      const key = r.id_tipo_gasto_fk ? `${porCC ? r.id_centro_costo_fk ?? 0 : 0}-${r.id_tipo_gasto_fk}` : `p-${r.id}`
       if (!map.has(key)) {
         map.set(key, { nombre: r.tipo_gasto ?? r.nombre, orden: r.orden, pptoVal: 0, realVal: 0, partidas: [] })
       }
@@ -834,7 +836,7 @@ export default function ComparativoPage() {
     const grupoDe = (g: FilaGrupo) => ({ nombre: g.nombre, ppto: g.pptoVal, real: g.realVal })
     const lineas = (rows: FilaPartida[]) =>
       vista === 'detalle' ? rows.map(filaDe)
-        : (vista === 'concepto' ? agruparPorConcepto(rows) : agrupar(rows)).map(grupoDe)
+        : (vista === 'agrupado' ? agrupar(rows) : agruparPorConcepto(rows, vista === 'concepto')).map(grupoDe)
     exportarResumenExcel({
       titulo: `Comparativo Presupuesto vs Real — ${mesLabel} · ${selPpto?.nombre ?? ''} · Vista ${VISTA_LABEL[vista]}`,
       secciones: CLASIFICACIONES.map(clas => ({
@@ -1035,11 +1037,12 @@ export default function ComparativoPage() {
           ))}
         </div>
 
-        {/* Vista: Detalle / Concepto (CC) / Agrupado */}
+        {/* Vista: Detalle / Concepto (CC) / Consolidado (empresa) / Agrupado */}
         <div style={{ display: 'flex', gap: 6, background: '#f1f5f9', borderRadius: 22, padding: '3px 4px', flex: '0 0 auto' }}>
           {([
             { v: 'detalle',  label: 'Detalle',  icon: List },
             { v: 'concepto', label: 'Concepto', icon: Building2 },
+            { v: 'consolidado', label: 'Consolidado', icon: Sigma },
             { v: 'agrupado', label: 'Agrupado', icon: Layers },
           ] as const).map(({ v, label, icon: Icon }) => (
             <button key={v} onClick={() => setVista(v)}
@@ -1144,7 +1147,7 @@ export default function ComparativoPage() {
                   <SeccionClasificacion key={clas}
                     labels={CLASIFICACION_LABELS[clas]}
                     ingRows={ing} egrRows={egr}
-                    ingRowsConcepto={agruparPorConcepto(ing)} egrRowsConcepto={agruparPorConcepto(egr)}
+                    ingRowsConcepto={agruparPorConcepto(ing, vista !== 'consolidado')} egrRowsConcepto={agruparPorConcepto(egr, vista !== 'consolidado')}
                     ingRowsAgrupado={agrupar(ing)} egrRowsAgrupado={agrupar(egr)}
                     vista={vista} canWriteManual={canWrite('presupuestos')}
                     {...nombres}
@@ -1317,7 +1320,14 @@ export default function ComparativoPage() {
                   .map((p, i) => (
                     <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9',
                       background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                      <td style={td}>{p.nombre}</td>
+                      <td style={td}>{p.nombre}
+                        {p.tipo === 'egreso' && (p.id_centro_costo_fk != null || p.id_area_fk != null) && (
+                          <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>
+                            {[p.id_centro_costo_fk != null ? nombres.nombreCC(p.id_centro_costo_fk) : null,
+                              p.id_area_fk != null ? nombres.nombreArea(p.id_area_fk) : null].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
+                      </td>
                       <td style={{ ...td, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#475569' }}>
                         {p.pptoVal > 0 ? <>{fmt(p.pptoVal)}{p.pptoFallback && <FallbackMark />}</> : <span style={{ color: '#cbd5e1' }}>—</span>}
                       </td>
@@ -1484,15 +1494,16 @@ function SeccionClasificacion({ labels, ingRows, egrRows, ingRowsConcepto, egrRo
   ingRows: FilaPartida[]; egrRows: FilaPartida[]
   ingRowsConcepto: FilaGrupo[]; egrRowsConcepto: FilaGrupo[]
   ingRowsAgrupado: FilaGrupo[]; egrRowsAgrupado: FilaGrupo[]
-  vista: 'detalle' | 'concepto' | 'agrupado'
+  vista: 'detalle' | 'concepto' | 'consolidado' | 'agrupado'
   canWriteManual: boolean
   onManual: (pid: number) => void
   onDrill: (nombre: string, tipo: 'ingreso' | 'egreso', partidas: FilaPartida[]) => void
   onDrillOps: (p: FilaPartida) => void
 }) {
   if (ingRows.length === 0 && egrRows.length === 0) return null
-  const ingGrupo = vista === 'concepto' ? ingRowsConcepto : ingRowsAgrupado
-  const egrGrupo = vista === 'concepto' ? egrRowsConcepto : egrRowsAgrupado
+  const porTipo  = vista === 'concepto' || vista === 'consolidado'
+  const ingGrupo = porTipo ? ingRowsConcepto : ingRowsAgrupado
+  const egrGrupo = porTipo ? egrRowsConcepto : egrRowsAgrupado
   const egrPorArea = agruparPorArea(egrRows, nombreCC, nombreArea)
   return (
     <>

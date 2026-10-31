@@ -11,7 +11,7 @@ export type FilaGrid = {
   orden: number; tipo_gasto: string | null; id_tipo_gasto_fk: number | null; id_centro_costo_fk: number | null; id_area_fk: number | null; id_agrupador_fk: number | null
 }
 export type CeldaInfo = { ids: number[]; nombre: string; tipo: 'ingreso' | 'egreso'; meses: number[] }
-export type Vista = 'detalle' | 'concepto' | 'agrupado'
+export type Vista = 'detalle' | 'concepto' | 'consolidado' | 'agrupado'
 type Linea = { key: string; nombre: string; orden: number; ids: number[] }
 type Metrica = 'real' | 'ppto' | 'var'
 
@@ -54,15 +54,18 @@ export default function GridMensual({ filas, detMap, realMap, vista, agrupadores
   const valor = (pid: number, m: number) =>
     acum ? mesesTodos.filter(k => k <= m).reduce((s, k) => s + valorMes(pid, k), 0) : valorMes(pid, m)
 
-  // Líneas visibles según la vista: partida, concepto (tipo_gasto por CC) o agrupador.
+  // Líneas visibles según la vista: partida, concepto (tipo_gasto por CC),
+  // consolidado (tipo_gasto en toda la empresa) o agrupador.
   // Misma lógica de agrupación que la vista Resumen.
   function lineasDe(rows: FilaGrid[]): Linea[] {
     if (vista === 'detalle') return rows.map(r => ({ key: `p-${r.id}`, nombre: r.nombre, orden: r.orden, ids: [r.id] }))
     const map = new Map<string, Linea>()
     rows.forEach(r => {
       let key: string, nombre: string, orden: number
-      if (vista === 'concepto') {
-        key = r.id_tipo_gasto_fk ? `${r.id_centro_costo_fk ?? 0}-${r.id_tipo_gasto_fk}` : `p-${r.id}`
+      if (vista === 'concepto' || vista === 'consolidado') {
+        // Consolidado: mismo tipo de gasto en todos los CC → una sola línea
+        const cc = vista === 'concepto' ? r.id_centro_costo_fk ?? 0 : 0
+        key = r.id_tipo_gasto_fk ? `${cc}-${r.id_tipo_gasto_fk}` : `p-${r.id}`
         nombre = r.tipo_gasto ?? r.nombre; orden = r.orden
       } else {
         const ag = r.id_agrupador_fk ? agrupadores.find(a => a.id === r.id_agrupador_fk) : null
