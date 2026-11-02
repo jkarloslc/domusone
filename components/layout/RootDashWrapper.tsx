@@ -25,6 +25,10 @@ function getModulo(pathname: string): string | undefined {
   }
   if (SPECIAL[first]) return SPECIAL[first]
 
+  // El hub /residencial/mantenimiento filtra sus tarjetas con can() según el rol
+  // (ej. compras solo ve Vehículos y Maquinaria), así que no exige 'mantenimiento'
+  if (first === 'residencial' && parts[1] === 'mantenimiento' && parts.length === 2) return undefined
+
   // /residencial/mantenimiento/** comparte el permiso del módulo de mantenimiento
   if (first === 'residencial' && parts[1] === 'mantenimiento') return 'mantenimiento'
 
