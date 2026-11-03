@@ -85,6 +85,7 @@ export default function ServiciosTab() {
   // Mini-form inline por servicio
   const [formReg,  setFormReg]  = useState<Record<number, { fechaInicio: string; fechaFin: string; consumo: string; monto: string }>>({})
   const [savingReg, setSavingReg] = useState<number | null>(null)
+  const [opFolios, setOpFolios] = useState<Record<number, string>>({})
 
   const fetchCatalogo = useCallback(async () => {
     setLoading(true)
@@ -109,6 +110,12 @@ export default function ServiciosTab() {
       if (!regMap[r.id_servicio_fk]) regMap[r.id_servicio_fk] = []
       regMap[r.id_servicio_fk].push(r)
     })
+
+    const opIds = Array.from(new Set((regs ?? []).map((r: any) => r.id_op_fk).filter(Boolean)))
+    if (opIds.length) {
+      const { data: ops } = await dbComp.from('ordenes_pago').select('id, folio').in('id', opIds)
+      setOpFolios(Object.fromEntries((ops ?? []).map((o: any) => [o.id, o.folio])))
+    } else setOpFolios({})
 
     setCatalogo(cats)
     setRegistros(regMap)
@@ -551,6 +558,7 @@ export default function ServiciosTab() {
                               Consumo ({UNIDAD_CONSUMO[servicio.tipo_servicio as TipoServicio] ?? '—'})
                             </th>
                             <th style={{ textAlign: 'right' }}>Monto</th>
+                            <th>Origen</th>
                             <th style={{ fontSize: 10, color: 'var(--text-muted)' }}>Notas</th>
                             {canDelete() && <th style={{ width: 40 }}></th>}
                           </tr>
@@ -580,6 +588,17 @@ export default function ServiciosTab() {
                                 fontVariantNumeric: 'tabular-nums',
                                 color: i === 0 ? (ts?.color ?? 'var(--blue)') : 'var(--text-primary)' }}>
                                 {fmt(r.monto_periodo)}
+                              </td>
+                              <td style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+                                {r.id_op_fk ? (
+                                  <span style={{ padding: '1px 7px', borderRadius: 8, background: '#dbeafe', color: '#1d4ed8', fontWeight: 600 }}>
+                                    OP {opFolios[r.id_op_fk] ?? `#${r.id_op_fk}`}
+                                  </span>
+                                ) : (
+                                  <span style={{ padding: '1px 7px', borderRadius: 8, background: '#f1f5f9', color: '#475569' }}>
+                                    Ingreso manual
+                                  </span>
+                                )}
                               </td>
                               <td style={{ fontSize: 11, color: 'var(--text-muted)',
                                 maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
