@@ -396,8 +396,19 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
       const catTG = armarCatalogo(await cargarTiposGasto())
       const idTipoPersonal = catTG.idPorClave('personal_externo')
       if (idTipoPersonal == null) throw new Error('El catálogo de tipos de gasto no tiene el tipo "Pagos a Personal Externo" (clave personal_externo)')
+      // Encabezado: mismo contrato que el editor de OP — si todas las líneas caen
+      // en un solo CC (modo 'mismo_cc') el encabezado lleva ese CC; si hay varios
+      // ('multi_cc') queda null y cada línea resuelve su CC por su Área. El
+      // id_area_fk del encabezado siempre es null cuando hay líneas.
+      const lineas = trabajadores.filter(t => costoTrabajador(t) > 0)
+      const ccsLineas = Array.from(new Set(lineas.map(t => ccDeArea(t.id_area_fk))))
+      if (ccsLineas.some(c => c == null)) throw new Error('Hay colaboradores cuya Área no tiene Centro de Costo; corrige el catálogo de Áreas')
+      const ccEncabezado = ccsLineas.length === 1 ? (ccsLineas[0] as number) : null
       const { data: op, error: opErr } = await dbComp.from('ordenes_pago').insert({
         folio,
+        id_centro_costo_fk: ccEncabezado,
+        id_area_fk: null,
+        id_frente_fk: null,
         concepto: `Rol de Pagos ${lote.folio} · ${fmtFecha(fechaDesde)} – ${fmtFecha(fechaHasta)}`,
         id_tipo_gasto_fk: idTipoPersonal,
         forma_pago: 'Transferencia',
@@ -413,7 +424,7 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
       }).select('id, folio, status').single()
       if (opErr) { setError(opErr.message); setGenerandoOp(false); return }
 
-      const detRows = trabajadores.filter(t => costoTrabajador(t) > 0).map(t => ({
+      const detRows = lineas.map(t => ({
         id_op_fk:     op.id,
         descripcion:  `${t.nombre}${t.puesto ? ' · ' + t.puesto : ''}`,
         id_area_fk:   t.id_area_fk   ? Number(t.id_area_fk)   : null,
@@ -428,6 +439,8 @@ function LoteModal({ lote, duplicarDe, puedeCapturar, puedeAutorizar, onClose, o
       await dbCtrl.from('rol_pagos_lotes').update({ id_op_fk: op.id }).eq('id', lote.id)
       setIdOpFk(op.id)
       setOpGenerada({ folio: op.folio, status: op.status })
+    } catch (e: any) {
+      setError(e?.message ?? 'Error al generar la OP')
     } finally {
       setGenerandoOp(false)
     }
