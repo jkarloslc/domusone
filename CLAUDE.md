@@ -26,6 +26,12 @@ por permisos del sistema de archivos montado. Si el push falla con "index.lock e
 - Supabase (múltiples clientes: `dbCtrl`, `dbComp`, `dbCfg`)
 - CSS-in-JS con estilos inline y clases globales (`card`, `btn-primary`, `btn-ghost`, etc.)
 
+## Dominios (middleware.ts)
+- `domusone.app` = Fraccionamiento; `golf-one.mx` = Club (golf, hipico, hospitality, polo, locales). Tenant por subdominio (`balvanera.`).
+- `middleware.ts` redirige (307) rutas fuera de su dominio, conservando tenant y path. **Apagado por defecto**: se activa con `DOMAIN_SPLIT=on` en Vercel.
+- Al crear un módulo nuevo (primer segmento de URL) agregarlo a `SOLO_CLUB` o `SOLO_FRACC`; si no está en ninguno, se sirve en ambos dominios.
+- Solo separa rutas; datos y permisos por rol son los mismos. El middleware agrega el header `x-dominio` (`club` | `fraccionamiento`) para filtrar datos en módulos compartidos.
+
 ## Ramas
 - Rama principal: `main`
 - Repositorio: https://github.com/jkarloslc/domusone.git
