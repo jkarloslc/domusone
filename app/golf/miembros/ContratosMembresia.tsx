@@ -331,10 +331,10 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
 
             {puedeEscribir && flujo && (
               <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                {['BORRADOR', 'IMPRESO'].includes(c.estado) && (
+                {c.estado !== 'CANCELADO' && (
                   <button onClick={() => imprimir(c)} disabled={busy === c.id}
                     style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, border: 'none', borderRadius: 8, background: '#7c3aed', color: '#fff', cursor: 'pointer' }}>
-                    <Printer size={13} /> {c.estado === 'BORRADOR' ? 'Imprimir contrato' : 'Reimprimir'}
+                    <Printer size={13} /> {c.estado === 'BORRADOR' ? 'Imprimir contrato' : 'Reimprimir contrato'}
                   </button>
                 )}
                 {c.estado === 'IMPRESO' && firmaId !== c.id && (
