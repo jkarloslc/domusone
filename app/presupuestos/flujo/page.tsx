@@ -251,6 +251,7 @@ export default function FlujoEfectivoPage() {
             .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, id_tipo_gasto_fk, status, monto, id_oc_fk, folio, concepto, id_proveedor_fk)')
             .in('ordenes_pago.id_area_fk', areaIds)
             .neq('ordenes_pago.status', 'Cancelada')
+            .eq('status', 'Aplicado')
             .gte('fecha_abono', `${anio}-01-01`)
             .lte('fecha_abono', `${anio}-12-31`)
         : Promise.resolve({ data: [] }),
@@ -266,6 +267,7 @@ export default function FlujoEfectivoPage() {
         .select('id_op_fk, monto, fecha_abono, ordenes_pago!inner(id_area_fk, id_tipo_gasto_fk, status, monto, folio, concepto, id_proveedor_fk)')
         .is('ordenes_pago.id_area_fk', null)
         .neq('ordenes_pago.status', 'Cancelada')
+        .eq('status', 'Aplicado')
         .gte('fecha_abono', `${anio}-01-01`)
         .lte('fecha_abono', `${anio}-12-31`)
       const opIdsDist = Array.from(new Set((abonosDist ?? []).map((a: any) => a.id_op_fk)))

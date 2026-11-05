@@ -1149,10 +1149,11 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
                 {loadingAbonos ? (
                   <div style={{ padding: 10, fontSize: 12, color: 'var(--text-muted)' }}>Cargando pagos...</div>
                 ) : abonos.map(a => (
-                  <div key={a.id} style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div key={a.id} style={{ padding: '10px 14px', background: a.status === 'Cancelada' ? '#f8fafc' : '#f0fdf4', border: `1px solid ${a.status === 'Cancelada' ? '#e2e8f0' : '#bbf7d0'}`, opacity: a.status === 'Cancelada' ? 0.65 : 1, borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d', fontVariantNumeric: 'tabular-nums', marginBottom: 2 }}>
-                        {fmt(a.monto)}
+                        <span style={a.status === 'Cancelada' ? { textDecoration: 'line-through', color: '#64748b' } : undefined}>{fmt(a.monto)}</span>
+                        {a.status === 'Cancelada' && <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Cancelado</span>}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                         {fmtFecha(a.fecha_abono)} · {a.forma_pago}

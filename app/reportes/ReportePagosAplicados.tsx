@@ -28,7 +28,7 @@ export default function ReportePagosAplicados() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     const [{ data: ab }, { data: opRows }, { data: provRows }, { data: cbRows }] = await Promise.all([
-      dbComp.from('cxp_abonos').select('*').order('fecha_abono', { ascending: false }),
+      dbComp.from('cxp_abonos').select('*').eq('status', 'Aplicado').order('fecha_abono', { ascending: false }),
       dbComp.from('ordenes_pago').select('id, folio, concepto, id_proveedor_fk'),
       dbComp.from('proveedores').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('cuentas_bancarias').select('id, banco').order('banco'),
