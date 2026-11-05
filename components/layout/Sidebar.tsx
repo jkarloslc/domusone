@@ -68,7 +68,7 @@ type Rol =
 type NavItem = { label: string; href: string; icon: any; exact?: boolean }
 type NavSection = { section: string; items: NavItem[] }
 
-const ROL_LABEL: Record<Rol, string> = {
+const ROL_LABEL: Record<string, string> = {
   superadmin:          'Super Administrador',
   admin:               'Administrador',
   admin_lector:        'Admin Solo Lectura',
@@ -97,6 +97,50 @@ const ROL_LABEL: Record<Rol, string> = {
   admin_organismo:     'Administrador (Organismo)',
   caja_organismo:      'Caja (Organismo)',
   aux_organismo:       'Auxiliar (Organismo)',
+  admin_golf:            'Admin Golf',
+  admin_golf_lector:     'Admin Golf (Lectura)',
+  admin_golf_finanzas:   'Admin Golf (Finanzas)',
+  admin_golf_tesoreria:  'Admin Golf (Tesorería)',
+  admin_golf_low_level:  'Admin Golf (Bajo Nivel)',
+  admin_fracc:           'Admin Fraccionamiento',
+  admin_fracc_lector:    'Admin Fracc. (Lectura)',
+  admin_fracc_finanzas:  'Admin Fracc. (Finanzas)',
+  admin_fracc_tesoreria: 'Admin Fracc. (Tesorería)',
+  admin_fracc_low_level: 'Admin Fracc. (Bajo Nivel)',
+}
+
+// ── Filtro del menú para roles por lado (admin_golf_*, admin_fracc_*) ──────────
+// Hubs/rutas exclusivos de cada lado; lo compartido (compras, finanzas, hr,
+// mantenimiento, catálogos…) se queda en ambos.
+const RUTAS_CLUB   = ['/golf', '/hipico', '/hospitality', '/polo', '/locales']
+const RUTAS_FRACC  = ['/residencial', '/lotes', '/propietarios', '/cobranza', '/facturas', '/escrituras',
+                      '/contratos', '/afectaciones', '/construcciones', '/accesos', '/incidencias',
+                      '/comunicados', '/vigilancia-extras', '/vigilancia-novedades']
+const empiezaEn = (href: string, bases: string[], exacto = false) =>
+  bases.some(b => href === b || (!exacto && (href.startsWith(b + '/') || href.startsWith(b + '?'))))
+
+function filtrarPorLado(sections: NavSection[], lado: 'golf' | 'fracc' | null): NavSection[] {
+  if (!lado) return sections
+  return sections
+    .map(sec => {
+      const items = sec.items
+        .filter(it => {
+          const h = it.href.split('?')[0]
+          if (lado === 'fracc') return !empiezaEn(h, RUTAS_CLUB)
+          // golf: quita el hub de Fraccionamiento (sus sub-rutas de mantenimiento se conservan)
+          if (h === '/residencial') return false
+          return !empiezaEn(h, RUTAS_FRACC.filter(r => r !== '/residencial'))
+        })
+        .map(it => {
+          // Reporte combinado del bloque Fraccionamiento → solo la parte compartida
+          if (lado === 'golf' && it.href === '/reportes?grupo=residencial,mantenimiento,vigilancia')
+            return { ...it, href: '/reportes?grupo=mantenimiento' }
+          return it
+        })
+      const seccion = lado === 'golf' && sec.section === 'Fraccionamiento' ? 'Mantenimiento' : sec.section
+      return { ...sec, section: seccion, items }
+    })
+    .filter(sec => sec.items.length > 0)
 }
 
 // Ítem de reportes con estilo diferenciado (pie de sección)
@@ -656,8 +700,8 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const { config } = useConfig()
 
   const rol      = (authUser?.rol ?? 'vigilancia') as Rol
-  const sections = NAV_POR_ROL[rol] ?? []
-  const label    = authUser?.rol ? (ROL_LABEL[authUser.rol as Rol] ?? authUser.rol) : '—'
+  const sections = filtrarPorLado(NAV_POR_ROL[rol] ?? [], authUser?.lado ?? null)
+  const label    = authUser?.rolReal ? (ROL_LABEL[authUser.rolReal] ?? authUser.rolReal) : '—'
 
   const bg          = config.color_sidebar_bg
   const acento      = config.color_sidebar_acento

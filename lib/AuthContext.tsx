@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import type { User } from '@supabase/supabase-js'
 
-type Rol =
+type RolBase =
   | 'superadmin'
   | 'admin'
   | 'admin_lector'
@@ -33,10 +33,61 @@ type Rol =
   | 'caja_organismo'
   | 'aux_organismo'
 
+/**
+ * Roles "por lado": mismo poder que su rol base, pero sin ver los módulos del
+ * otro lado (Club vs Fraccionamiento). Ver ROLES_LADO.
+ */
+type RolLado =
+  | 'admin_golf'  | 'admin_golf_lector'  | 'admin_golf_finanzas'  | 'admin_golf_tesoreria'  | 'admin_golf_low_level'
+  | 'admin_fracc' | 'admin_fracc_lector' | 'admin_fracc_finanzas' | 'admin_fracc_tesoreria' | 'admin_fracc_low_level'
+
+/** Rol tal como está guardado en cfg.usuarios */
+type Rol = RolBase | RolLado
+
+type Lado = 'golf' | 'fracc'
+
+/** Rol por lado → rol base cuyos permisos hereda + lado al que se restringe */
+const ROLES_LADO: Record<RolLado, { base: RolBase; lado: Lado }> = {
+  admin_golf:            { base: 'admin',           lado: 'golf'  },
+  admin_golf_lector:     { base: 'admin_lector',    lado: 'golf'  },
+  admin_golf_finanzas:   { base: 'admin_finanzas',  lado: 'golf'  },
+  admin_golf_tesoreria:  { base: 'admin_tesoreria', lado: 'golf'  },
+  admin_golf_low_level:  { base: 'admin_low_level', lado: 'golf'  },
+  admin_fracc:           { base: 'admin',           lado: 'fracc' },
+  admin_fracc_lector:    { base: 'admin_lector',    lado: 'fracc' },
+  admin_fracc_finanzas:  { base: 'admin_finanzas',  lado: 'fracc' },
+  admin_fracc_tesoreria: { base: 'admin_tesoreria', lado: 'fracc' },
+  admin_fracc_low_level: { base: 'admin_low_level', lado: 'fracc' },
+}
+
+// Módulos exclusivos de cada lado. Todo lo demás (compras, tesorería, ingresos,
+// presupuestos, reportes, catálogos, hr, capex, mantenimiento…) es compartido.
+const MODS_SOLO_FRACC = new Set([
+  'lotes', 'propietarios', 'contratos', 'escrituras', 'cobranza', 'facturas',
+  'accesos', 'incidencias', 'vigilancia-extras', 'vigilancia-novedades',
+  'afectaciones', 'construcciones', 'comunicados',
+])
+const esModuloClub = (m: string) =>
+  m === 'golf' || m.startsWith('golf-') || m.startsWith('hipico') ||
+  m === 'hospitality' || m === 'locales' || m === 'polo'
+
+/** ¿El módulo es visible para ese lado? (null = sin restricción) */
+function moduloVisibleParaLado(lado: Lado | null, modulo: string): boolean {
+  if (lado === 'golf')  return !MODS_SOLO_FRACC.has(modulo)
+  if (lado === 'fracc') return !esModuloClub(modulo)
+  return true
+}
+
 type AuthUser = {
-  user:   User
-  nombre: string
-  rol:    Rol
+  user:    User
+  nombre:  string
+  /** Rol EFECTIVO: para roles por lado es su rol base (admin_golf → 'admin'),
+   *  así los checks de rol existentes siguen funcionando. */
+  rol:     RolBase
+  /** Rol tal como está en la BD (admin_golf, admin, …). Úsalo para etiquetas y home. */
+  rolReal: Rol
+  /** Lado al que está restringido (null = sin restricción) */
+  lado:    Lado | null
 }
 
 export function getHomeRouteByRole(rol?: Rol): string {
@@ -74,7 +125,18 @@ export function getHomeRouteByRole(rol?: Rol): string {
     case 'aux_organismo':
       return '/residencial/mantenimiento'
     case 'usuariogolf':
+    case 'admin_golf':
+    case 'admin_golf_lector':
+    case 'admin_golf_finanzas':
+    case 'admin_golf_tesoreria':
+    case 'admin_golf_low_level':
       return '/golf'
+    case 'admin_fracc':
+    case 'admin_fracc_lector':
+    case 'admin_fracc_finanzas':
+    case 'admin_fracc_tesoreria':
+    case 'admin_fracc_low_level':
+      return '/residencial'
     case 'usuariohipico':
       return '/hipico'
     case 'usuariohospitality':
@@ -185,7 +247,7 @@ const ADMIN_ORGANISMO_MODULOS = [
 ]
 
 // ── Lectura (visibilidad sidebar) ─────────────────────────────────────────────
-const LEER: Record<Rol, string[] | '*'> = {
+const LEER: Record<RolBase, string[] | '*'> = {
   superadmin:          '*',
   admin:               [...ADMIN_MODULOS, 'hr'],
   admin_lector:        ADMIN_MODULOS,   // igual que admin, solo lectura
@@ -221,7 +283,7 @@ const LEER: Record<Rol, string[] | '*'> = {
 }
 
 // ── Escritura (Nuevo / Editar) ─────────────────────────────────────────────────
-const ESCRIBIR: Record<Rol, string[] | '*'> = {
+const ESCRIBIR: Record<RolBase, string[] | '*'> = {
   superadmin:          '*',
   admin:               [...ADMIN_MODULOS, 'hr'],
   admin_lector:        [],              // sin escritura
@@ -259,7 +321,7 @@ const ESCRIBIR: Record<Rol, string[] | '*'> = {
 // ── Reportes permitidos por rol (solo para roles con acceso restringido) ────────
 // Si el rol NO aparece aquí puede ver todos los reportes de los grupos que can() permite.
 // Si aparece, solo puede ver los IDs listados.
-const REPORTES_PERMITIDOS: Partial<Record<Rol, string[]>> = {
+const REPORTES_PERMITIDOS: Partial<Record<RolBase, string[]>> = {
   usuario_organismo: [
     'secciones-lotes',
     'lotes',
@@ -271,13 +333,13 @@ const REPORTES_PERMITIDOS: Partial<Record<Rol, string[]>> = {
 }
 
 // ── Superadmin y admin pueden eliminar ─────────────────────────────────────────
-const ROLES_DELETE: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_low_level', 'admin_tesoreria', 'admin_organismo']
+const ROLES_DELETE: RolBase[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_low_level', 'admin_tesoreria', 'admin_organismo']
 
 // ── Roles que pueden autorizar documentos (1ra autorización) ──────────────────
-const ROLES_AUTH: Rol[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_low_level', 'admin_tesoreria', 'usuarioadmin', 'usuariomantto', 'compras_supervisor', 'fraccionamiento', 'tesoreria', 'admin_organismo']
+const ROLES_AUTH: RolBase[] = ['superadmin', 'admin', 'admin_finanzas', 'admin_low_level', 'admin_tesoreria', 'usuarioadmin', 'usuariomantto', 'compras_supervisor', 'fraccionamiento', 'tesoreria', 'admin_organismo']
 
 // ── Roles que pueden dar la 2da autorización de Órdenes de Pago (envío a CXP) ─
-const ROLES_AUTH_FINANZAS: Rol[] = ['superadmin', 'admin_finanzas']
+const ROLES_AUTH_FINANZAS: RolBase[] = ['superadmin', 'admin_finanzas']
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthCtx>({
@@ -307,7 +369,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single()
 
     if (data) {
-      setAuthUser({ user, nombre: data.nombre, rol: data.rol as Rol })
+      const rolReal = data.rol as Rol
+      const lado = ROLES_LADO[rolReal as RolLado]
+      setAuthUser({
+        user,
+        nombre:  data.nombre,
+        rol:     (lado ? lado.base : rolReal) as RolBase,
+        rolReal,
+        lado:    lado ? lado.lado : null,
+      })
     } else {
       await supabase.auth.signOut()
       setAuthUser(null)
@@ -340,6 +410,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const can = (modulo: string): boolean => {
     if (!authUser) return false
+    if (!moduloVisibleParaLado(authUser.lado, modulo)) return false
     const perms = LEER[authUser.rol]
     if (perms === '*') return true
     return (perms as string[]).includes(modulo)
@@ -347,6 +418,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const canWrite = (modulo: string): boolean => {
     if (!authUser) return false
+    if (!moduloVisibleParaLado(authUser.lado, modulo)) return false
     const perms = ESCRIBIR[authUser.rol]
     if (perms === '*') return true
     return (perms as string[]).includes(modulo)

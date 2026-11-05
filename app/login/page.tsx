@@ -15,7 +15,7 @@ export default function LoginPage() {
 
   // Si ya está autenticado, redirigir a la ruta correcta según rol
   useEffect(() => {
-    if (!loading && authUser) router.replace(getHomeRouteByRole(authUser.rol))
+    if (!loading && authUser) router.replace(getHomeRouteByRole(authUser.rolReal))
   }, [authUser, loading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {

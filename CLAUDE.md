@@ -106,6 +106,13 @@ Reglas de derivación actuales:
       en `getModulo()` (preferible si la página comparte permisos con un módulo existente)
 - [ ] Usar la misma clave en el `canWrite()` de la página y en el `modulo` de `ModalShell`
 
+### Roles por lado (2026-11-04): `admin_golf*` y `admin_fracc*`
+10 roles (`admin_golf`, `_lector`, `_finanzas`, `_tesoreria`, `_low_level` y lo mismo con `admin_fracc`). Mismo poder que su rol base pero sin ver los módulos del otro lado (Club vs Fraccionamiento).
+- Se definen en `ROLES_LADO` de `lib/AuthContext.tsx`: **`authUser.rol` es el rol BASE** (admin_golf → `admin`) para que los checks de rol existentes sigan funcionando; `authUser.rolReal` es el de la BD y `authUser.lado` es `'golf' | 'fracc' | null`.
+- `can()`/`canWrite()` filtran por lado (`MODS_SOLO_FRACC` / `esModuloClub`); el Sidebar filtra con `filtrarPorLado()`. Home: `getHomeRouteByRole(authUser.rolReal)` (usar rolReal, no rol).
+- Al agregar un módulo exclusivo de un lado, añadirlo a `MODS_SOLO_FRACC` (o dejar que `esModuloClub` lo cubra) **y** a `SOLO_CLUB`/`SOLO_FRACC` de `middleware.ts`.
+- Un rol base nuevo con variante por lado requiere entrada en `ROLES_LADO`, `app/usuarios/page.tsx`, `ROL_LABEL` y el CHECK de `cfg.usuarios`.
+
 ### Roles existentes (2026-05-11)
 
 | Valor | Label | Acceso |

@@ -16,7 +16,7 @@ export default function AuthGuard({ children, modulo }: { children: React.ReactN
     }
     // Si el usuario no tiene permiso para este módulo, redirigir a su home
     if (modulo && !can(modulo)) {
-      router.replace(getHomeRouteByRole(authUser.rol))
+      router.replace(getHomeRouteByRole(authUser.rolReal))
     }
   }, [authUser, loading, modulo, router, can])
 

@@ -277,7 +277,7 @@ export default function InicioPage() {
         }
 
         // Accesos de golf del día (socios principales + acompañantes)
-        if (rol === 'usuariogolf' || rol === 'superadmin' || rol === 'admin') {
+        if ((rol === 'usuariogolf' || rol === 'superadmin' || rol === 'admin') && authUser?.lado !== 'fracc') {
           // 1) IDs de accesos de hoy
           const { data: accesosHoy, count: cntSocios } = await dbGolf.from('ctrl_accesos')
             .select('id', { count: 'exact' })
