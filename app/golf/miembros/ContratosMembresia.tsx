@@ -329,7 +329,7 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
               </div>
             )}
 
-            {puedeEscribir && flujo && (
+            {(puedeEscribir && flujo || c.estado !== 'CANCELADO') && (
               <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 {c.estado !== 'CANCELADO' && (
                   <button onClick={() => imprimir(c)} disabled={busy === c.id}
@@ -337,13 +337,13 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
                     <Printer size={13} /> {c.estado === 'BORRADOR' ? 'Imprimir contrato' : 'Reimprimir contrato'}
                   </button>
                 )}
-                {c.estado === 'IMPRESO' && firmaId !== c.id && (
+                {puedeEscribir && flujo && c.estado === 'IMPRESO' && firmaId !== c.id && (
                   <button onClick={() => { setFirmaId(c.id); setArchivo(''); setFechaFirma(hoyLocal()); setError('') }}
                     style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, border: '1px solid #16a34a', borderRadius: 8, background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
                     <FileCheck size={13} /> Registrar contrato firmado
                   </button>
                 )}
-                {c.estado === 'FIRMADO' && insc && insc.status !== 'PAGADO' && (
+                {puedeEscribir && flujo && c.estado === 'FIRMADO' && insc && insc.status !== 'PAGADO' && (
                   <button onClick={() => setCobrar(insc)}
                     style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', fontSize: 12.5, fontWeight: 600, border: 'none', borderRadius: 8, background: '#059669', color: '#fff', cursor: 'pointer' }}>
                     <Receipt size={13} /> Cobrar inscripción · {fmt$(insc.saldo ?? insc.monto_final)}
