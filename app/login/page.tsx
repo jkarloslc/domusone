@@ -12,6 +12,12 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false)
   const [error, setError]       = useState('')
   const [signing, setSigning]   = useState(false)
+  // Marca Golf-One solo cuando se entra por golf-one.mx (se resuelve en el cliente)
+  const [esClub, setEsClub]     = useState(false)
+  useEffect(() => {
+    const h = window.location.hostname.toLowerCase()
+    setEsClub(h === 'golf-one.mx' || h.endsWith('.golf-one.mx'))
+  }, [])
 
   // Si ya está autenticado, redirigir a la ruta correcta según rol
   useEffect(() => {
@@ -41,6 +47,7 @@ export default function LoginPage() {
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'linear-gradient(135deg, #eff6ff 0%, #f1f5f9 50%, #e0f2fe 100%)',
       fontFamily: 'var(--font-body)',
+      position: 'relative',
     }}>
       <div style={{ width: '100%', maxWidth: 400, padding: '0 20px' }}>
 
@@ -51,6 +58,11 @@ export default function LoginPage() {
             alt="DomusOne"
             style={{ height: 100, width: 'auto', marginBottom: 4, mixBlendMode: 'multiply', display: 'block', margin: '0 auto 4px' }}
           />
+          {esClub && (
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.02em', margin: '4px 0 2px' }}>
+              Golf-One
+            </div>
+          )}
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
             Administración Club de Golf y Fraccionamiento
           </div>
@@ -121,6 +133,10 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--text-muted)' }}>
           Acceso restringido · Solo usuarios autorizados
         </div>
+      </div>
+
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 16, textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', padding: '0 20px' }}>
+        Un software de Asesoría en Sistemas y Administración JK SAS de CV
       </div>
     </div>
   )
