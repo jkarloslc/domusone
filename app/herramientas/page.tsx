@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { Hammer } from 'lucide-react'
 import HerramientasTab from './HerramientasTab'
 import PageHeader from '@/components/layout/PageHeader'
+import { AmbitoProvider } from '@/lib/AmbitoContext'
 
 const ROLES_PERMITIDOS = ['superadmin', 'admin', 'admin_lector', 'usuariomantto', 'mantenimiento']
 
@@ -21,13 +22,15 @@ export default function HerramientasPage() {
   if (!authUser || !ROLES_PERMITIDOS.includes(authUser.rol)) return null
 
   return (
+    <AmbitoProvider ambito="campo">
     <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
       <PageHeader
-        backHref="/residencial"
+        backHref="/golf/mantto-campo"
         title="Equipo & Herramienta"
         subtitle="Catálogo de herramienta menor, bitácora de préstamos y servicios de mantenimiento"
       />
       <HerramientasTab />
     </div>
+    </AmbitoProvider>
   )
 }

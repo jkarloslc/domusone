@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { useTablas, useAmbito } from '@/lib/AmbitoContext'
 import {
   Plus, X, Save, Loader, RefreshCw, Edit2, Trash2,
   Filter, CheckCircle, Wrench,
@@ -48,6 +49,7 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
   herrMap: Record<number, any>
   onChanged: () => void
 }) {
+  const T = useTablas()
   const { canWrite, canDelete } = useAuth()
   const [registros, setRegistros] = useState<any[]>([])
   const [pgIdx, setPgIdx]   = useState(0)
@@ -60,7 +62,7 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
 
   const fetchRegistros = useCallback(async () => {
     setLoading(true)
-    let q = dbCtrl.from('mantenimiento_herramientas').select('*').eq('activo', true)
+    let q = dbCtrl.from(T.mantenimiento_herramientas).select('*').eq('activo', true)
       .order('fecha_inicio', { ascending: false }).order('id', { ascending: false })
     if (filterHerr)   q = q.eq('id_herramienta_fk', Number(filterHerr))
     if (filterTipo)   q = q.eq('tipo', filterTipo)
@@ -74,7 +76,7 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este registro de servicio?')) return
-    await dbCtrl.from('mantenimiento_herramientas').update({ activo: false }).eq('id', id)
+    await dbCtrl.from(T.mantenimiento_herramientas).update({ activo: false }).eq('id', id)
     fetchRegistros()
   }
 
@@ -216,6 +218,7 @@ export default function MantenimientoTab({ herramientas, herrMap, onChanged }: {
 function ServicioModal({ m, herramientas, onClose, onSaved }: {
   m?: any; herramientas: any[]; onClose: () => void; onSaved: () => void
 }) {
+  const T = useTablas()
   const { authUser } = useAuth()
   const isNew = !m?.id
   const [saving, setSaving] = useState(false)
@@ -256,20 +259,20 @@ function ServicioModal({ m, herramientas, onClose, onSaved }: {
     }
 
     if (isNew) {
-      const { count } = await dbCtrl.from('mantenimiento_herramientas').select('id', { count: 'exact', head: true })
+      const { count } = await dbCtrl.from(T.mantenimiento_herramientas).select('id', { count: 'exact', head: true })
       const folio = `SERV-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, '0')}`
-      const { error: err } = await dbCtrl.from('mantenimiento_herramientas').insert({
+      const { error: err } = await dbCtrl.from(T.mantenimiento_herramientas).insert({
         ...payloadBase, folio, created_by: authUser?.nombre ?? null,
       })
       if (err) { setError(err.message); setSaving(false); return }
     } else {
-      const { error: err } = await dbCtrl.from('mantenimiento_herramientas').update(payloadBase).eq('id', m.id)
+      const { error: err } = await dbCtrl.from(T.mantenimiento_herramientas).update(payloadBase).eq('id', m.id)
       if (err) { setError(err.message); setSaving(false); return }
     }
 
     // Sincroniza el status de la herramienta según el status del servicio
     const nuevoStatusHerr = form.status === 'Cerrado' ? 'Disponible' : 'En Mantenimiento'
-    await dbCfg.from('herramientas').update({ status: nuevoStatusHerr }).eq('id', idHerr)
+    await dbCfg.from(T.herramientas).update({ status: nuevoStatusHerr }).eq('id', idHerr)
 
     setSaving(false); onSaved()
   }

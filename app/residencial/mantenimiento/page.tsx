@@ -6,8 +6,8 @@ const ITEMS = [
   { key: 'mantenimiento',  permKey: 'mantenimiento', label: 'Mantenimiento',           icon: Wrench,         desc: 'Programa anual de mantenimiento preventivo',               href: '/residencial/mantenimiento/gestion' },
   { key: 'ot-residencial', permKey: 'mantenimiento', label: 'OT Mantto. Fraccionamiento', icon: ClipboardList, desc: 'Órdenes de trabajo del mantenimiento del fraccionamiento', href: '/residencial/mantenimiento/ot-residencial' },
   { key: 'ot-generales',   permKey: 'mantenimiento', label: "OT's Generales",          icon: ClipboardCheck, desc: 'Órdenes de trabajo de la cuadrilla general',               href: '/residencial/mantenimiento/ot-generales' },
-  { key: 'equipo-flota',   permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria',  icon: Truck,          desc: 'Flotilla, mantenimientos y bitácora de uso',               href: '/equipo-flota' },
-  { key: 'herramientas',   permKey: 'herramientas',  label: 'Equipo y Herramienta',    icon: Hammer,         desc: 'Catálogo, préstamos y mantenimiento de herramienta',       href: '/herramientas' },
+  { key: 'equipo-flota',   permKey: 'equipo-flota',  label: 'Vehículos y Maquinaria',  icon: Truck,          desc: 'Flotilla, mantenimientos y bitácora de uso',               href: '/residencial/mantenimiento/vehiculos' },
+  { key: 'herramientas',   permKey: 'herramientas',  label: 'Equipo y Herramienta',    icon: Hammer,         desc: 'Catálogo, préstamos y mantenimiento de herramienta',       href: '/residencial/mantenimiento/herramientas' },
 ]
 
 export default function MantenimientoHubPage() {

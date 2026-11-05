@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { useTablas, useAmbito } from '@/lib/AmbitoContext'
 import {
   Plus, X, Save, Loader, RefreshCw, Edit2, Trash2, Printer,
   Filter, CheckCircle, RotateCcw, AlertTriangle,
@@ -54,6 +55,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
   areas: any[]
   onChanged: () => void
 }) {
+  const T = useTablas()
   const { canWrite, canDelete, authUser } = useAuth()
   const [registros, setRegistros] = useState<any[]>([])
   const [pgIdx, setPgIdx]   = useState(0)
@@ -68,7 +70,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
 
   const fetchRegistros = useCallback(async () => {
     setLoading(true)
-    let q = dbCtrl.from('prestamos_herramientas').select('*').eq('activo', true)
+    let q = dbCtrl.from(T.prestamos_herramientas).select('*').eq('activo', true)
       .order('fecha_prestamo', { ascending: false }).order('id', { ascending: false })
     if (filterHerr)   q = q.eq('id_herramienta_fk', Number(filterHerr))
     if (filterStatus) q = q.eq('status', filterStatus)
@@ -88,7 +90,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
       return
     }
     if (!confirm('¿Eliminar este registro de préstamo?')) return
-    await dbCtrl.from('prestamos_herramientas').update({ activo: false }).eq('id', id)
+    await dbCtrl.from(T.prestamos_herramientas).update({ activo: false }).eq('id', id)
     fetchRegistros()
   }
 
@@ -306,6 +308,7 @@ export default function PrestamosTab({ herramientas, herrMap, areaMap, areas, on
 function PrestamoModal({ p, herramientas, areas, onClose, onSaved }: {
   p?: any; herramientas: any[]; areas: any[]; onClose: () => void; onSaved: () => void
 }) {
+  const T = useTablas()
   const { authUser } = useAuth()
   const isNew = !p?.id
   const [saving, setSaving] = useState(false)
@@ -348,22 +351,22 @@ function PrestamoModal({ p, herramientas, areas, onClose, onSaved }: {
     if (isNew) {
       // La solicitud de préstamo permanece abierta hasta registrar la devolución:
       // no se permite un nuevo préstamo de la misma herramienta mientras exista uno abierto
-      const { data: abiertos } = await dbCtrl.from('prestamos_herramientas')
+      const { data: abiertos } = await dbCtrl.from(T.prestamos_herramientas)
         .select('id, folio').eq('id_herramienta_fk', idHerr).eq('status', 'Prestado').eq('activo', true).limit(1)
       if (abiertos && abiertos.length > 0) {
         setError(`Esta herramienta ya tiene un préstamo abierto (folio ${abiertos[0].folio}). Registra la devolución antes de generar uno nuevo.`)
         setSaving(false); return
       }
 
-      const { count } = await dbCtrl.from('prestamos_herramientas').select('id', { count: 'exact', head: true })
+      const { count } = await dbCtrl.from(T.prestamos_herramientas).select('id', { count: 'exact', head: true })
       const folio = `PRES-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, '0')}`
-      const { error: err } = await dbCtrl.from('prestamos_herramientas').insert({
+      const { error: err } = await dbCtrl.from(T.prestamos_herramientas).insert({
         ...payloadBase, folio, status: 'Prestado', created_by: authUser?.nombre ?? null,
       })
       if (err) { setError(err.message); setSaving(false); return }
-      await dbCfg.from('herramientas').update({ status: 'Prestado' }).eq('id', idHerr)
+      await dbCfg.from(T.herramientas).update({ status: 'Prestado' }).eq('id', idHerr)
     } else {
-      const { error: err } = await dbCtrl.from('prestamos_herramientas').update(payloadBase).eq('id', p.id)
+      const { error: err } = await dbCtrl.from(T.prestamos_herramientas).update(payloadBase).eq('id', p.id)
       if (err) { setError(err.message); setSaving(false); return }
     }
     setSaving(false); onSaved()
@@ -451,6 +454,7 @@ function PrestamoModal({ p, herramientas, areas, onClose, onSaved }: {
 function DevolucionModal({ p, herrMap, onClose, onSaved }: {
   p: any; herrMap: Record<number, any>; onClose: () => void; onSaved: () => void
 }) {
+  const T = useTablas()
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
@@ -472,7 +476,7 @@ function DevolucionModal({ p, herrMap, onClose, onSaved }: {
     const notasFinal = [p.notas, form.notas.trim() ? `Devolución: ${form.notas.trim()}` : '']
       .filter(Boolean).join(' · ') || null
 
-    const { error: err } = await dbCtrl.from('prestamos_herramientas').update({
+    const { error: err } = await dbCtrl.from(T.prestamos_herramientas).update({
       status:               'Devuelto',
       fecha_devolucion:     form.fecha_devolucion,
       hora_devolucion:      form.hora_devolucion || null,
@@ -484,7 +488,7 @@ function DevolucionModal({ p, herrMap, onClose, onSaved }: {
 
     // El equipo regresa a Disponible, salvo que la condición indique daño (pasa a mantenimiento)
     const nuevoStatus = form.condicion_devolucion === 'Dañado' ? 'En Mantenimiento' : 'Disponible'
-    await dbCfg.from('herramientas').update({ status: nuevoStatus }).eq('id', p.id_herramienta_fk)
+    await dbCfg.from(T.herramientas).update({ status: nuevoStatus }).eq('id', p.id_herramienta_fk)
 
     setSaving(false); onSaved()
   }

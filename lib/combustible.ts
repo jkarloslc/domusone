@@ -1,15 +1,17 @@
 import { dbCtrl, dbComp } from '@/lib/supabase'
+import { tablasAmbito, type Ambito } from '@/lib/ambito'
 
 // Un vale se puede "sacar" desde dos lugares: la Carga registrada en el propio
 // tab Combustible (compra directa / recepción de garrafa) y la Bitácora de Uso
 // de Vehículos y Maquinaria (consumo real por equipo, medido en litros).
 // El status del vale es 100% derivado de la suma de ambas fuentes — nunca se
 // elige a mano.
-export async function recomputeValeCombustible(idVale: number) {
+export async function recomputeValeCombustible(idVale: number, ambito: Ambito = 'campo') {
+  const T = tablasAmbito(ambito)
   const [{ data: cargas }, { data: usos }, { data: vale }] = await Promise.all([
-    dbCtrl.from('cargas_combustible').select('litros').eq('id_vale_fk', idVale).eq('activo', true),
-    dbCtrl.from('bitacora_uso_equipos').select('litros').eq('id_vale_combustible_fk', idVale).eq('activo', true),
-    dbCtrl.from('vales_combustible').select('litros_autorizados, status').eq('id', idVale).single(),
+    dbCtrl.from(T.cargas_combustible).select('litros').eq('id_vale_fk', idVale).eq('activo', true),
+    dbCtrl.from(T.bitacora_uso_equipos).select('litros').eq('id_vale_combustible_fk', idVale).eq('activo', true),
+    dbCtrl.from(T.vales_combustible).select('litros_autorizados, status').eq('id', idVale).single(),
   ])
   if (!vale || vale.status === 'Cancelado') return
 
@@ -18,7 +20,7 @@ export async function recomputeValeCombustible(idVale: number) {
 
   const nuevoStatus = total <= 0 ? 'Emitido' : total >= (vale.litros_autorizados ?? 0) ? 'Completado' : 'Parcial'
 
-  await dbCtrl.from('vales_combustible')
+  await dbCtrl.from(T.vales_combustible)
     .update({ litros_usados: total, status: nuevoStatus, updated_at: new Date().toISOString() })
     .eq('id', idVale)
 }
@@ -84,7 +86,8 @@ export async function revertirValesPorPagoOP(idOp: number) {
 
 // Al cancelar un vale se elimina la entrada que pudo haber generado en el Kardex
 // (vale Garrafa pagado). Las salidas de bitácora no se tocan: son consumos reales.
-export async function eliminarEntradaKardexVale(idVale: number) {
-  await dbComp.from('combustible_movimientos').delete()
+export async function eliminarEntradaKardexVale(idVale: number, ambito: Ambito = 'campo') {
+  const T = tablasAmbito(ambito)
+  await dbComp.from(T.combustible_movimientos).delete()
     .eq('id_vale_combustible_fk', idVale).eq('tipo_mov', 'ENTRADA')
 }

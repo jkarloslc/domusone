@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { Truck } from 'lucide-react'
 import EquipoFlotaTab from './EquipoFlotaTab'
 import PageHeader from '@/components/layout/PageHeader'
+import { AmbitoProvider } from '@/lib/AmbitoContext'
 
 const ROLES_PERMITIDOS = ['superadmin', 'admin', 'admin_lector', 'usuariomantto', 'mantenimiento', 'compras']
 
@@ -21,13 +22,15 @@ export default function EquipoFlotaPage() {
   if (!authUser || !ROLES_PERMITIDOS.includes(authUser.rol)) return null
 
   return (
+    <AmbitoProvider ambito="campo">
     <div style={{ padding: '20px 24px', maxWidth: 1400, margin: '0 auto' }}>
       <PageHeader
-        backHref="/residencial"
+        backHref="/golf/mantto-campo"
         title="Equipo & Vehículos"
         subtitle="Catálogo de equipos, bitácora de mantenimiento y control de combustible"
       />
       <EquipoFlotaTab />
     </div>
+    </AmbitoProvider>
   )
 }

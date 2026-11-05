@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { useTablas, useAmbito } from '@/lib/AmbitoContext'
 import {
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2, Trash2,
   Hammer, ClipboardList, Wrench, Filter, Search, Upload,
@@ -42,6 +43,7 @@ const fmtF = (d: string | null) =>
 
 // ══════════════════════════════════════════════════════════════
 export default function HerramientasTab() {
+  const T = useTablas()
   const { canWrite, canDelete } = useAuth()
   const [subTab, setSubTab] = useState<'catalogo' | 'prestamos' | 'mantenimiento'>('catalogo')
   const [pgIdx, setPgIdx]   = useState(0)
@@ -61,7 +63,7 @@ export default function HerramientasTab() {
   const fetchHerramientas = useCallback(async () => {
     setLoading(true)
     const [{ data: hs }, { data: ar }] = await Promise.all([
-      dbCfg.from('herramientas').select('*').eq('activo', true).order('descripcion'),
+      dbCfg.from(T.herramientas).select('*').eq('activo', true).order('descripcion'),
       dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
     ])
     setHerramientas(hs ?? [])
@@ -98,7 +100,7 @@ export default function HerramientasTab() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar esta herramienta del catálogo?')) return
-    await dbCfg.from('herramientas').update({ activo: false }).eq('id', id)
+    await dbCfg.from(T.herramientas).update({ activo: false }).eq('id', id)
     fetchHerramientas()
   }
 
@@ -286,6 +288,7 @@ export default function HerramientasTab() {
 function HerramientaModal({ h, areas, onClose, onSaved }: {
   h?: any; areas: any[]; onClose: () => void; onSaved: () => void
 }) {
+  const T = useTablas()
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState('')
   const [uploading, setUploading] = useState(false)
@@ -338,8 +341,8 @@ function HerramientaModal({ h, areas, onClose, onSaved }: {
       updated_at:        new Date().toISOString(),
     }
     const { error: err } = h
-      ? await dbCfg.from('herramientas').update(payload).eq('id', h.id)
-      : await dbCfg.from('herramientas').insert(payload)
+      ? await dbCfg.from(T.herramientas).update(payload).eq('id', h.id)
+      : await dbCfg.from(T.herramientas).insert(payload)
     if (err) { setError(err.message); setSaving(false); return }
     onSaved()
   }

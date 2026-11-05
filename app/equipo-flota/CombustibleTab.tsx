@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, dbCtrl, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { useTablas, useAmbito } from '@/lib/AmbitoContext'
+import type { TablasAmbito } from '@/lib/ambito'
 import { recomputeValeCombustible, eliminarEntradaKardexVale } from '@/lib/combustible'
 import { nombreCompletoColaborador } from '@/lib/colaboradores'
 import ModalShell from '@/components/ui/ModalShell'
@@ -58,8 +60,9 @@ async function imprimirVale(
   vale: any,
   ccMap: Record<number, string>,
   equipoMap: Record<number, string>,
+  T: TablasAmbito,
 ) {
-  const { data: cargas } = await dbCtrl.from('cargas_combustible')
+  const { data: cargas } = await dbCtrl.from(T.cargas_combustible)
     .select('*')
     .eq('id_vale_fk', vale.id).eq('activo', true)
     .order('fecha', { ascending: false })
@@ -187,6 +190,8 @@ async function imprimirVale(
 
 // ══════════════════════════════════════════════════════════════
 export default function CombustibleTab() {
+  const T = useTablas()
+  const ambito = useAmbito()
   const { canWrite, authUser } = useAuth()
   const [subTab, setSubTab] = useState<'vales' | 'cargas'>('vales')
 
@@ -220,7 +225,7 @@ export default function CombustibleTab() {
 
   const fetchCatalogos = useCallback(async () => {
     const [{ data: eqs }, { data: ars }, { data: ccs }, { data: cols }] = await Promise.all([
-      dbCfg.from('equipos').select('id, nombre, placa, unidad_odometro').eq('activo', true).order('nombre'),
+      dbCfg.from(T.equipos).select('id, nombre, placa, unidad_odometro').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('centros_costo').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('colaboradores').select('id, nombre, apellido_paterno, apellido_materno').eq('activo', true).order('nombre'),
@@ -241,7 +246,7 @@ export default function CombustibleTab() {
     setLoadingV(true)
     // Nota: sin embed de `areas` — PostgREST no resuelve relaciones cross-schema
     // (ctrl → cfg) por FK; el nombre del área se resuelve con areaMap.
-    let q = dbCtrl.from('vales_combustible')
+    let q = dbCtrl.from(T.vales_combustible)
       .select('*')
       .eq('activo', true).order('created_at', { ascending: false })
     if (filterTipoV) q = q.eq('tipo_suministro', filterTipoV)
@@ -256,7 +261,7 @@ export default function CombustibleTab() {
     setLoadingC(true)
     // `vales:id_vale_fk(folio)` es un embed dentro del mismo schema (ctrl) y sí
     // funciona; área/equipo se resuelven con areaMap/equipoMap (ver nota arriba).
-    let q = dbCtrl.from('cargas_combustible')
+    let q = dbCtrl.from(T.cargas_combustible)
       .select('*, vales:id_vale_fk(folio)')
       .eq('activo', true).order('fecha', { ascending: false })
     if (filterTipoC) q = q.eq('tipo_carga', filterTipoC)
@@ -527,6 +532,8 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
   vale?: any; centrosCosto: any[]; colaboradores: any[]; ccMap: Record<number, string>; equipoMap: Record<number, string>
   onClose: () => void; onSaved: () => void
 }) {
+  const T = useTablas()
+  const ambito = useAmbito()
   const { authUser } = useAuth()
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
@@ -605,7 +612,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
   const generarFolioVale = async () => {
     const anio = new Date().getFullYear()
     const prefijo = `VAL-${anio}-`
-    const { data } = await dbCtrl.from('vales_combustible')
+    const { data } = await dbCtrl.from(T.vales_combustible)
       .select('folio').ilike('folio', `${prefijo}%`)
       .order('folio', { ascending: false }).limit(1)
     const ultimo = data?.[0]?.folio ? Number(data[0].folio.slice(prefijo.length)) : 0
@@ -631,8 +638,8 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
       if (isNew) payload.folio = await generarFolioVale()
 
       const { error: err } = isNew
-        ? await dbCtrl.from('vales_combustible').insert(payload)
-        : await dbCtrl.from('vales_combustible').update(payload).eq('id', vale.id)
+        ? await dbCtrl.from(T.vales_combustible).insert(payload)
+        : await dbCtrl.from(T.vales_combustible).update(payload).eq('id', vale.id)
 
       if (!err) { onSaved(); return }
       if (isNew && err.code === '23505' && intento < 2) continue
@@ -644,7 +651,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
     if (!validar()) return
     setSaving(true); setError('')
     const payload = { ...buildPayload(), status: 'Emitido', emitido_por: authUser?.nombre ?? null }
-    const { error: err } = await dbCtrl.from('vales_combustible').update(payload).eq('id', vale.id)
+    const { error: err } = await dbCtrl.from(T.vales_combustible).update(payload).eq('id', vale.id)
     if (err) { setError(err.message); setSaving(false); return }
     onSaved()
   }
@@ -652,10 +659,10 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
   const handleCancelar = async () => {
     if (!confirm('¿Cancelar este vale? Ya no podrá usarse para registrar cargas.')) return
     setSaving(true); setError('')
-    const { error: err } = await dbCtrl.from('vales_combustible')
+    const { error: err } = await dbCtrl.from(T.vales_combustible)
       .update({ status: 'Cancelado', updated_at: new Date().toISOString() }).eq('id', vale.id)
     if (err) { setError(err.message); setSaving(false); return }
-    await eliminarEntradaKardexVale(vale.id)
+    await eliminarEntradaKardexVale(vale.id, ambito)
     onSaved()
   }
 
@@ -664,7 +671,7 @@ function ValeModal({ vale, centrosCosto, colaboradores, ccMap, equipoMap, onClos
 
   const handleImprimir = async () => {
     setPrinting(true)
-    try { await imprimirVale(vale, ccMap, equipoMap) }
+    try { await imprimirVale(vale, ccMap, equipoMap, T) }
     finally { setPrinting(false) }
   }
 
@@ -835,6 +842,8 @@ function CargaModal({ carga, equipos, areas, centrosCosto, vales, onClose, onSav
   carga?: any; equipos: any[]; areas: any[]; centrosCosto: any[]; vales: any[]
   onClose: () => void; onSaved: () => void
 }) {
+  const T = useTablas()
+  const ambito = useAmbito()
   const { authUser } = useAuth()
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState('')
@@ -915,12 +924,12 @@ function CargaModal({ carga, equipos, areas, centrosCosto, vales, onClose, onSav
     }
 
     const { error: err } = carga
-      ? await dbCtrl.from('cargas_combustible').update(payload).eq('id', carga.id)
-      : await dbCtrl.from('cargas_combustible').insert(payload)
+      ? await dbCtrl.from(T.cargas_combustible).update(payload).eq('id', carga.id)
+      : await dbCtrl.from(T.cargas_combustible).insert(payload)
     if (err) { setError(err.message); setSaving(false); return }
 
     // El status del vale se deriva solo: suma cargas + bitácora de uso vinculadas.
-    if (payload.id_vale_fk) await recomputeValeCombustible(payload.id_vale_fk)
+    if (payload.id_vale_fk) await recomputeValeCombustible(payload.id_vale_fk, ambito)
 
     onSaved()
   }
@@ -1046,13 +1055,15 @@ function CargaModal({ carga, equipos, areas, centrosCosto, vales, onClose, onSav
 function ValeDetail({ vale, ccMap, equipoMap, onClose }: {
   vale: any; ccMap: Record<number, string>; equipoMap: Record<number, string>; onClose: () => void
 }) {
+  const T = useTablas()
+  const ambito = useAmbito()
   const [cargas, setCargas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [printing, setPrinting] = useState(false)
 
   useEffect(() => {
     // Sin embed de `equipos` — cross-schema (ctrl → cfg), se resuelve con equipoMap.
-    dbCtrl.from('cargas_combustible')
+    dbCtrl.from(T.cargas_combustible)
       .select('*')
       .eq('id_vale_fk', vale.id).eq('activo', true)
       .order('fecha', { ascending: false })
@@ -1067,7 +1078,7 @@ function ValeDetail({ vale, ccMap, equipoMap, onClose }: {
 
   const handleImprimir = async () => {
     setPrinting(true)
-    try { await imprimirVale(vale, ccMap, equipoMap) }
+    try { await imprimirVale(vale, ccMap, equipoMap, T) }
     finally { setPrinting(false) }
   }
 

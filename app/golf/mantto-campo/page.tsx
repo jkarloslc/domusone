@@ -1,7 +1,8 @@
 'use client'
 import Link from 'next/link'
-import { Leaf, Droplets, CloudRain, ChevronRight } from 'lucide-react'
+import { Leaf, Droplets, CloudRain, ChevronRight, Truck, Hammer, Zap } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
+import { useAuth } from '@/lib/AuthContext'
 
 const MODULOS = [
   {
@@ -28,9 +29,37 @@ const MODULOS = [
     color: '#7c3aed',
     href: '/golf/estatus-campo',
   },
-]
+  {
+    key: 'equipo-flota',
+    label: 'Vehículos y Maquinaria',
+    desc: 'Flotilla, mantenimientos, bitácora de uso y combustible',
+    icon: Truck,
+    color: '#b45309',
+    href: '/equipo-flota',
+    perm: 'equipo-flota',
+  },
+  {
+    key: 'herramientas',
+    label: 'Equipo y Herramienta',
+    desc: 'Catálogo, préstamos y mantenimiento de herramienta',
+    icon: Hammer,
+    color: '#475569',
+    href: '/herramientas',
+    perm: 'herramientas',
+  },
+  {
+    key: 'servicios',
+    label: 'Servicios',
+    desc: 'Medidores de CFE, Agua y Gas LP: consumo y facturación',
+    icon: Zap,
+    color: '#d97706',
+    href: '/golf/servicios',
+  },
+] as { key: string; label: string; desc: string; icon: any; color: string; href: string; perm?: string }[]
 
 export default function GolfManttoCampoPage() {
+  const { can } = useAuth()
+  const modulos = MODULOS.filter(m => !m.perm || can(m.perm))
   return (
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
 
@@ -39,12 +68,12 @@ export default function GolfManttoCampoPage() {
         icon={Leaf}
         eyebrowLabel="Módulo"
         title="Mantto. Campo"
-        subtitle="Riego y mantenimiento del campo de golf"
+        subtitle="Riego, mantenimiento del campo, vehículos, herramienta y servicios"
       />
 
       {/* Grid de módulos */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-        {MODULOS.map(m => {
+        {modulos.map(m => {
           const Icon = m.icon
           return (
             <Link

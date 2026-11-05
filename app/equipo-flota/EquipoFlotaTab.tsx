@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCfg, dbCtrl, dbComp, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { useTablas, useAmbito } from '@/lib/AmbitoContext'
 import {
   Plus, X, Save, Loader, RefreshCw, Eye, Edit2, Trash2,
   Truck, Wrench, Filter, Search, Camera, ExternalLink, CheckCircle,
@@ -50,6 +51,7 @@ const fmtF = (d: string | null) =>
 
 // ══════════════════════════════════════════════════════════════
 export default function EquipoFlotaTab() {
+  const T = useTablas()
   const { canWrite, canDelete, authUser } = useAuth()
   const [subTab, setSubTab]     = useState<'catalogo' | 'bitacora' | 'uso' | 'combustible'>('catalogo')
 
@@ -76,7 +78,7 @@ export default function EquipoFlotaTab() {
   const fetchEquipos = useCallback(async () => {
     setLoadingEq(true)
     const [{ data: eqs }, { data: areas }] = await Promise.all([
-      dbCfg.from('equipos').select('*, marcas_vehiculos(id, nombre)').eq('activo', true).order('nombre'),
+      dbCfg.from(T.equipos).select('*, marcas_vehiculos(id, nombre)').eq('activo', true).order('nombre'),
       dbCfg.from('areas').select('id, nombre').eq('activo', true),
     ])
     setEquipos(eqs ?? [])
@@ -91,7 +93,7 @@ export default function EquipoFlotaTab() {
 
   const fetchBitacora = useCallback(async () => {
     setLoadingBit(true)
-    let q = dbCtrl.from('bitacora_equipos').select('*').eq('activo', true)
+    let q = dbCtrl.from(T.bitacora_equipos).select('*').eq('activo', true)
       .order('created_at', { ascending: false })
     if (filterEquipo) q = q.eq('id_equipo_fk', Number(filterEquipo))
     if (filterTipoM)  q = q.eq('tipo', filterTipoM)
@@ -131,13 +133,13 @@ export default function EquipoFlotaTab() {
 
   const handleDeleteEq = async (id: number) => {
     if (!confirm('¿Eliminar este equipo?')) return
-    await dbCfg.from('equipos').update({ activo: false }).eq('id', id)
+    await dbCfg.from(T.equipos).update({ activo: false }).eq('id', id)
     fetchEquipos()
   }
 
   const handleDeleteBit = async (id: number) => {
     if (!confirm('¿Eliminar esta entrada de bitácora?')) return
-    await dbCtrl.from('bitacora_equipos').update({ activo: false }).eq('id', id)
+    await dbCtrl.from(T.bitacora_equipos).update({ activo: false }).eq('id', id)
     fetchBitacora()
   }
 
@@ -450,6 +452,7 @@ export default function EquipoFlotaTab() {
 function EquipoModal({ eq, areaMap, onClose, onSaved }: {
   eq?: any; areaMap: Record<number, string>; onClose: () => void; onSaved: () => void
 }) {
+  const T = useTablas()
   const [saving,    setSaving]    = useState(false)
   const [error,     setError]     = useState('')
   const [uploading, setUploading] = useState(false)
@@ -523,8 +526,8 @@ function EquipoModal({ eq, areaMap, onClose, onSaved }: {
       operador_asignado: form.operador_asignado.trim() || null,
     }
     const { error: err } = eq
-      ? await dbCfg.from('equipos').update(payload).eq('id', eq.id)
-      : await dbCfg.from('equipos').insert(payload)
+      ? await dbCfg.from(T.equipos).update(payload).eq('id', eq.id)
+      : await dbCfg.from(T.equipos).insert(payload)
     if (err) { setError(err.message); setSaving(false); return }
     onSaved()
   }
@@ -719,6 +722,7 @@ function EquipoDetail({ eq, areaMap, bitacora, onClose, onNewBit }: {
 function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
   bit?: any; equipos: any[]; areaMap: Record<number, string>; onClose: () => void; onSaved: () => void
 }) {
+  const T = useTablas()
   const { authUser } = useAuth()
   const isNew = !bit?.folio
   const [saving,    setSaving]    = useState(false)
@@ -762,8 +766,8 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
   useEffect(() => {
     if (!isNew && bit?.id) {
       Promise.all([
-        dbCtrl.from('bitacora_equipo_ops').select('*, ordenes_pago:id_op_fk(id, folio, concepto, monto)').eq('id_bitacora_fk', bit.id),
-        dbCtrl.from('bitacora_equipo_evidencias').select('*').eq('id_bitacora_fk', bit.id).order('created_at'),
+        dbCtrl.from(T.bitacora_equipo_ops).select('*, ordenes_pago:id_op_fk(id, folio, concepto, monto)').eq('id_bitacora_fk', bit.id),
+        dbCtrl.from(T.bitacora_equipo_evidencias).select('*').eq('id_bitacora_fk', bit.id).order('created_at'),
       ]).then(([{ data: linkedOps }, { data: evs }]) => {
         setSelectedOps((linkedOps ?? []).map((lo: any) => ({
           id:          lo.id_op_fk,
@@ -816,9 +820,9 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
 
     let bitId = bit?.id
     if (isNew) {
-      const { count } = await dbCtrl.from('bitacora_equipos').select('id', { count: 'exact', head: true })
+      const { count } = await dbCtrl.from(T.bitacora_equipos).select('id', { count: 'exact', head: true })
       const folio = `BIT-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4,'0')}`
-      const { data: newBit, error: err } = await dbCtrl.from('bitacora_equipos').insert({
+      const { data: newBit, error: err } = await dbCtrl.from(T.bitacora_equipos).insert({
         folio, id_equipo_fk: Number(form.id_equipo_fk),
         tipo: form.tipo, descripcion: form.descripcion.trim() || null,
         fecha_inicio: form.fecha_inicio, fecha_fin: form.fecha_fin || null,
@@ -833,7 +837,7 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
       if (err) { setError(err.message); setSaving(false); return }
       bitId = newBit.id
     } else {
-      const { error: err } = await dbCtrl.from('bitacora_equipos').update({
+      const { error: err } = await dbCtrl.from(T.bitacora_equipos).update({
         id_equipo_fk: Number(form.id_equipo_fk),
         tipo: form.tipo, descripcion: form.descripcion.trim() || null,
         fecha_inicio: form.fecha_inicio, fecha_fin: form.fecha_fin || null,
@@ -847,12 +851,12 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
       }).eq('id', bit.id)
       if (err) { setError(err.message); setSaving(false); return }
       // Limpiar y re-insertar OPs vinculadas
-      await dbCtrl.from('bitacora_equipo_ops').delete().eq('id_bitacora_fk', bit.id)
+      await dbCtrl.from(T.bitacora_equipo_ops).delete().eq('id_bitacora_fk', bit.id)
     }
 
     // Insertar OPs
     if (selectedOps.length && bitId) {
-      await dbCtrl.from('bitacora_equipo_ops').insert(
+      await dbCtrl.from(T.bitacora_equipo_ops).insert(
         selectedOps.map(o => ({ id_bitacora_fk: bitId, id_op_fk: o.id, monto: Number(o.monto || 0) }))
       )
     }
@@ -860,19 +864,19 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
     // Insertar evidencias nuevas (sin URL ya guardada como linkId)
     const newEvs = evidencias.filter(ev => !ev.linkId)
     if (newEvs.length && bitId) {
-      await dbCtrl.from('bitacora_equipo_evidencias').insert(
+      await dbCtrl.from(T.bitacora_equipo_evidencias).insert(
         newEvs.map(ev => ({ id_bitacora_fk: bitId, url: ev.url, nombre: ev.nombre }))
       )
     }
 
     // Actualizar odómetro del equipo si se cerró
     if (form.status === 'Cerrado' && form.odometro_fin) {
-      await dbCfg.from('equipos').update({
+      await dbCfg.from(T.equipos).update({
         odometro_actual: Number(form.odometro_fin),
         status: 'Activo',
       }).eq('id', Number(form.id_equipo_fk))
     } else if (form.status === 'En Proceso' || form.status === 'Abierto') {
-      await dbCfg.from('equipos').update({ status: 'En Mantenimiento' }).eq('id', Number(form.id_equipo_fk))
+      await dbCfg.from(T.equipos).update({ status: 'En Mantenimiento' }).eq('id', Number(form.id_equipo_fk))
     }
 
     setSaving(false); onSaved()
@@ -1058,16 +1062,17 @@ function BitacoraModal({ bit, equipos, areaMap, onClose, onSaved }: {
 function BitacoraDetail({ bit, equipoMap, onClose, onEdit }: {
   bit: any; equipoMap: Record<number, any>; onClose: () => void; onEdit: (b: any) => void
 }) {
+  const T = useTablas()
   const [ops,       setOps]       = useState<any[]>([])
   const [evidencias,setEvidencias]= useState<any[]>([])
   const [loading,   setLoading]   = useState(true)
 
   useEffect(() => {
     Promise.all([
-      dbCtrl.from('bitacora_equipo_ops')
+      dbCtrl.from(T.bitacora_equipo_ops)
         .select('*, op:id_op_fk(folio, concepto, monto)')
         .eq('id_bitacora_fk', bit.id),
-      dbCtrl.from('bitacora_equipo_evidencias')
+      dbCtrl.from(T.bitacora_equipo_evidencias)
         .select('*').eq('id_bitacora_fk', bit.id).order('created_at'),
     ]).then(([{ data: o }, { data: e }]) => {
       setOps(o ?? [])

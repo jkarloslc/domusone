@@ -2,11 +2,13 @@
 import { Zap } from 'lucide-react'
 import ServiciosTab from '../gestion/ServiciosTab'
 import PageHeader from '@/components/layout/PageHeader'
+import { AmbitoProvider } from '@/lib/AmbitoContext'
 
 export default function ServiciosPage() {
   return (
+    <AmbitoProvider ambito="mantto">
     <div style={{ padding: '32px 36px', animation: 'fadeIn 0.3s ease-out' }}>
-      <PageHeader backHref="/residencial"
+      <PageHeader backHref="/residencial/mantenimiento"
         variant="xl"
         icon={Zap}
         eyebrowLabel="Mantenimiento"
@@ -16,5 +18,6 @@ export default function ServiciosPage() {
 
       <ServiciosTab />
     </div>
+    </AmbitoProvider>
   )
 }

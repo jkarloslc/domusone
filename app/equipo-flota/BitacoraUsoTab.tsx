@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCtrl, dbCfg, dbComp, supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { useTablas, useAmbito } from '@/lib/AmbitoContext'
 import { recomputeValeCombustible } from '@/lib/combustible'
 import {
   Plus, X, Save, Loader, RefreshCw, Edit2, Trash2,
@@ -43,6 +44,8 @@ export default function BitacoraUsoTab({
   equipos: any[]
   equipoMap: Record<number, any>
 }) {
+  const T = useTablas()
+  const ambito = useAmbito()
   const { canWrite, canDelete } = useAuth()
   const [registros,   setRegistros]   = useState<any[]>([])
   const [loading,     setLoading]     = useState(true)
@@ -55,7 +58,7 @@ export default function BitacoraUsoTab({
   const fetchRegistros = useCallback(async () => {
     setLoading(true)
     let q = dbCtrl
-      .from('bitacora_uso_equipos')
+      .from(T.bitacora_uso_equipos)
       .select('*')
       .eq('activo', true)
       .order('fecha', { ascending: false })
@@ -75,12 +78,12 @@ export default function BitacoraUsoTab({
   const handleDelete = async (id: number) => {
     if (!confirm('¿Eliminar este registro?')) return
     const reg = registros.find(r => r.id === id)
-    await dbCtrl.from('bitacora_uso_equipos').update({ activo: false }).eq('id', id)
+    await dbCtrl.from(T.bitacora_uso_equipos).update({ activo: false }).eq('id', id)
     if (reg?.id_combustible_mov_fk) {
-      await dbComp.from('combustible_movimientos').delete().eq('id', reg.id_combustible_mov_fk)
+      await dbComp.from(T.combustible_movimientos).delete().eq('id', reg.id_combustible_mov_fk)
     }
     if (reg?.id_vale_combustible_fk) {
-      await recomputeValeCombustible(reg.id_vale_combustible_fk)
+      await recomputeValeCombustible(reg.id_vale_combustible_fk, ambito)
     }
     fetchRegistros()
   }
@@ -366,6 +369,8 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const T = useTablas()
+  const ambito = useAmbito()
   const { authUser } = useAuth()
   const isNew = !reg?.id
   const [saving, setSaving] = useState(false)
@@ -412,7 +417,7 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
   // cross-schema (ctrl -> cfg) por FK; el nombre se resuelve aparte con un mapa.
   useEffect(() => {
     Promise.all([
-      dbCtrl.from('vales_combustible')
+      dbCtrl.from(T.vales_combustible)
         .select('id, folio, tipo_suministro, tipo_combustible, periodo, litros_autorizados, litros_usados, id_centro_costo_fk')
         .in('status', ['Emitido', 'Parcial']).order('created_at', { ascending: false }),
       dbCfg.from('centros_costo').select('id, nombre'),
@@ -465,11 +470,11 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
 
     let regId = reg?.id
     if (isNew) {
-      const { data, error: err } = await dbCtrl.from('bitacora_uso_equipos').insert(payload).select('id').single()
+      const { data, error: err } = await dbCtrl.from(T.bitacora_uso_equipos).insert(payload).select('id').single()
       if (err) { setError(err.message); setSaving(false); return }
       regId = data.id
     } else {
-      const { error: err } = await dbCtrl.from('bitacora_uso_equipos').update(payload).eq('id', reg.id)
+      const { error: err } = await dbCtrl.from(T.bitacora_uso_equipos).update(payload).eq('id', reg.id)
       if (err) { setError(err.message); setSaving(false); return }
     }
 
@@ -477,25 +482,25 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
     if (form.odometro_fin && equipo) {
       const newOdo = Number(form.odometro_fin)
       if (newOdo > (equipo.odometro_actual ?? 0)) {
-        await dbCfg.from('equipos').update({ odometro_actual: newOdo }).eq('id', equipo.id)
+        await dbCfg.from(T.equipos).update({ odometro_actual: newOdo }).eq('id', equipo.id)
       }
     }
 
     // Sincroniza la salida en el Kardex de Combustible (comp.combustible_movimientos):
     // si ya había una ligada a este registro, se reemplaza para reflejar el cambio.
     if (reg?.id_combustible_mov_fk) {
-      await dbComp.from('combustible_movimientos').delete().eq('id', reg.id_combustible_mov_fk)
+      await dbComp.from(T.combustible_movimientos).delete().eq('id', reg.id_combustible_mov_fk)
     }
     // Vale de Gasolinería = consumo en estación, no sale del tanque: sin salida en Kardex.
     let valeGasolineria = false
     if (payload.id_vale_combustible_fk) {
-      const { data: vk } = await dbCtrl.from('vales_combustible')
+      const { data: vk } = await dbCtrl.from(T.vales_combustible)
         .select('tipo_suministro').eq('id', payload.id_vale_combustible_fk).single()
       valeGasolineria = vk?.tipo_suministro === 'Gasolinería'
     }
     const tipoKardex = payload.litros && !valeGasolineria ? KARDEX_TIPO_MAP[payload.tipo_combustible ?? ''] : undefined
     if (tipoKardex && payload.litros) {
-      const { data: mov, error: movErr } = await dbComp.from('combustible_movimientos').insert({
+      const { data: mov, error: movErr } = await dbComp.from(T.combustible_movimientos).insert({
         tipo_combustible: tipoKardex,
         tipo_mov:         'SALIDA',
         fecha:            payload.fecha,
@@ -506,21 +511,21 @@ function UsoModal({ reg, equipos, equipoMap, onClose, onSaved }: {
         created_by:       authUser?.nombre ?? null,
       }).select('id').single()
       if (movErr) {
-        await dbCtrl.from('bitacora_uso_equipos').update({ id_combustible_mov_fk: null }).eq('id', regId)
+        await dbCtrl.from(T.bitacora_uso_equipos).update({ id_combustible_mov_fk: null }).eq('id', regId)
         // Se avisa y se sigue: el registro ya existe, reintentar desde el modal lo duplicaría.
         alert('El registro se guardó, pero la salida no se pudo registrar en el Kardex: ' + movErr.message)
       }
       if (mov) {
-        await dbCtrl.from('bitacora_uso_equipos').update({ id_combustible_mov_fk: mov.id }).eq('id', regId)
+        await dbCtrl.from(T.bitacora_uso_equipos).update({ id_combustible_mov_fk: mov.id }).eq('id', regId)
       }
     } else if (reg?.id_combustible_mov_fk) {
-      await dbCtrl.from('bitacora_uso_equipos').update({ id_combustible_mov_fk: null }).eq('id', regId)
+      await dbCtrl.from(T.bitacora_uso_equipos).update({ id_combustible_mov_fk: null }).eq('id', regId)
     }
 
     // Recalcula el status del vale ligado (y del anterior, si se cambió o quitó el vínculo).
-    if (payload.id_vale_combustible_fk) await recomputeValeCombustible(payload.id_vale_combustible_fk)
+    if (payload.id_vale_combustible_fk) await recomputeValeCombustible(payload.id_vale_combustible_fk, ambito)
     if (valeAnteriorId && valeAnteriorId !== payload.id_vale_combustible_fk) {
-      await recomputeValeCombustible(valeAnteriorId)
+      await recomputeValeCombustible(valeAnteriorId, ambito)
     }
 
     onSaved()

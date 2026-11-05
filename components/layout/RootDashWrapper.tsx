@@ -25,6 +25,12 @@ function getModulo(pathname: string): string | undefined {
   }
   if (SPECIAL[first]) return SPECIAL[first]
 
+  // Vehículos y Equipo/Herramienta de Mantenimiento (Fracc.) heredan el control de sus
+  // páginas hermanas de Golf: /equipo-flota no exige módulo (la página valida roles) y
+  // /herramientas usa su propia clave
+  if (first === 'residencial' && parts[1] === 'mantenimiento' && parts[2] === 'vehiculos') return undefined
+  if (first === 'residencial' && parts[1] === 'mantenimiento' && parts[2] === 'herramientas') return 'herramientas'
+
   // El hub /residencial/mantenimiento filtra sus tarjetas con can() según el rol
   // (ej. compras solo ve Vehículos y Maquinaria), así que no exige 'mantenimiento'
   if (first === 'residencial' && parts[1] === 'mantenimiento' && parts.length === 2) return undefined
@@ -41,6 +47,8 @@ function getModulo(pathname: string): string | undefined {
   // Golf: sub-rutas usan 'golf-{sub}'
   // Excepción: salidas-carritos comparte permiso con el módulo de carritos
   if (first === 'golf' && parts[1] === 'salidas-carritos') return 'golf-carritos'
+  // Servicios (medidores) vive dentro de Mantto. de Campo y comparte su permiso
+  if (first === 'golf' && parts[1] === 'servicios') return 'golf-mantto-campo'
   if (first === 'golf' && parts[1]) return `golf-${parts[1]}`
 
   // tesoreria/cxp usa su propio permiso 'cxp' para que roles de Compras

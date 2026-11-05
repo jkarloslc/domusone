@@ -32,6 +32,15 @@ por permisos del sistema de archivos montado. Si el push falla con "index.lock e
 - Al crear un módulo nuevo (primer segmento de URL) agregarlo a `SOLO_CLUB` o `SOLO_FRACC`; si no está en ninguno, se sirve en ambos dominios.
 - Solo separa rutas; datos y permisos por rol son los mismos. El middleware agrega el header `x-dominio` (`club` | `fraccionamiento`) para filtrar datos en módulos compartidos.
 
+## Mantenimiento: dos ámbitos con tablas separadas (2026-11-04)
+Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, préstamos) y Servicios existen en dos versiones:
+- **Campo / Golf** (`ambito='campo'`): tablas originales (`equipos`, `herramientas`, `vales_combustible`, `servicios_*`…), ligadas a OP y Capex. Cards dentro de **Golf → Mantto. Campo**: `/equipo-flota`, `/herramientas`, `/golf/servicios`.
+- **Mantenimiento Fraccionamiento** (`ambito='mantto'`): 14 tablas nuevas con sufijo `_mantto` y relaciones propias (migración `20261104150000`). Rutas: `/residencial/mantenimiento/{vehiculos,herramientas,servicios}`. Nacen vacías.
+- Mismo código para ambos: `lib/ambito.ts` (`tablasAmbito`) + `lib/AmbitoContext.tsx` (`AmbitoProvider`, `useTablas()`). En componentes usar `dbCtrl.from(T.vales_combustible)`, nunca el nombre literal. Cada página envuelve su contenido en `<AmbitoProvider ambito="…">`.
+- `lib/combustible.ts`: `recomputeValeCombustible` y `eliminarEntradaKardexVale` reciben `ambito` (default `'campo'`).
+- **Pendiente**: OP (`id_servicio_fk`, vales, bitácoras) y Capex siguen leyendo solo las tablas originales; integrarlas con las `_mantto` cuando Fracc. las empiece a usar.
+- Si cambias el esquema de una tabla original, replicarlo en su `_mantto`.
+
 ## Ramas
 - Rama principal: `main`
 - Repositorio: https://github.com/jkarloslc/domusone.git

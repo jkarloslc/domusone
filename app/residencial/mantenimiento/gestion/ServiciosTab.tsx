@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { dbCtrl, dbComp, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
+import { useTablas, useAmbito } from '@/lib/AmbitoContext'
 import {
   Plus, RefreshCw, Filter, X, Save, Loader,
   Zap, Droplets, Flame, Edit2, Trash2, ChevronDown, ChevronRight,
@@ -65,6 +66,7 @@ const periodoFinDefault = () => {
 
 // ════════════════════════════════════════════════════════════
 export default function ServiciosTab() {
+  const T = useTablas()
   const { canWrite, canDelete } = useAuth()
   const [catalogo,      setCatalogo]      = useState<any[]>([])
   const [registros,     setRegistros]     = useState<Record<number, any[]>>({})
@@ -90,7 +92,7 @@ export default function ServiciosTab() {
   const fetchCatalogo = useCallback(async () => {
     setLoading(true)
     const { data: cats } = await dbCtrl
-      .from('servicios_catalogo')
+      .from(T.servicios_catalogo)
       .select('*')
       .eq('activo', true)
       .order('tipo_servicio')
@@ -100,7 +102,7 @@ export default function ServiciosTab() {
 
     const ids = cats.map((c: any) => c.id)
     const { data: regs } = await dbCtrl
-      .from('servicios_registros')
+      .from(T.servicios_registros)
       .select('*')
       .in('id_servicio_fk', ids)
       .order('fecha_inicio', { ascending: false })
@@ -180,7 +182,7 @@ export default function ServiciosTab() {
     if (!f?.monto || Number(f.monto) <= 0) return
     setSavingReg(servicio.id)
     const { authUser } = { authUser: null } // hook solo disponible en render — usamos ref local
-    await dbCtrl.from('servicios_registros').insert({
+    await dbCtrl.from(T.servicios_registros).insert({
       id_servicio_fk:  servicio.id,
       fecha_inicio:    f.fechaInicio,
       fecha_fin:       f.fechaFin || null,
@@ -204,13 +206,13 @@ export default function ServiciosTab() {
 
   const handleDeleteReg = async (regId: number) => {
     if (!confirm('¿Eliminar este registro?')) return
-    await dbCtrl.from('servicios_registros').delete().eq('id', regId)
+    await dbCtrl.from(T.servicios_registros).delete().eq('id', regId)
     fetchCatalogo()
   }
 
   const handleDeleteServicio = async (id: number) => {
     if (!confirm('¿Desactivar este servicio del catálogo?')) return
-    await dbCtrl.from('servicios_catalogo').update({ activo: false }).eq('id', id)
+    await dbCtrl.from(T.servicios_catalogo).update({ activo: false }).eq('id', id)
     fetchCatalogo()
   }
 
@@ -1043,6 +1045,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const T = useTablas()
   const { authUser } = useAuth()
   const [saving,          setSaving]          = useState(false)
   const [error,           setError]           = useState('')
@@ -1059,7 +1062,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
   const [savingPunto,     setSavingPunto]     = useState(false)
 
   const reloadPuntos = async () => {
-    const { data } = await dbCtrl.from('servicios_puntos_conexion')
+    const { data } = await dbCtrl.from(T.servicios_puntos_conexion)
       .select('*').eq('id_servicio_fk', row!.id).eq('activo', true).order('id')
     setPuntos(data ?? [])
   }
@@ -1079,7 +1082,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
   useEffect(() => {
     if (!row?.id) return
     setPuntosLoading(true)
-    dbCtrl.from('servicios_puntos_conexion')
+    dbCtrl.from(T.servicios_puntos_conexion)
       .select('*').eq('id_servicio_fk', row.id).eq('activo', true).order('id')
       .then(({ data }) => { setPuntos(data ?? []); setPuntosLoading(false) })
   }, [row?.id])
@@ -1087,7 +1090,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
   const handleAddPunto = async () => {
     if (!newPuntoForm?.nombre.trim()) return
     setSavingPunto(true)
-    await dbCtrl.from('servicios_puntos_conexion').insert({
+    await dbCtrl.from(T.servicios_puntos_conexion).insert({
       id_servicio_fk: row!.id,
       nombre:         newPuntoForm.nombre.trim(),
       tipo:           newPuntoForm.tipo || null,
@@ -1102,7 +1105,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
   const handleEditPunto = async (id: number) => {
     if (!editPuntoForm.nombre.trim()) return
     setSavingPunto(true)
-    await dbCtrl.from('servicios_puntos_conexion').update({
+    await dbCtrl.from(T.servicios_puntos_conexion).update({
       nombre:     editPuntoForm.nombre.trim(),
       tipo:       editPuntoForm.tipo || null,
       referencia: editPuntoForm.referencia.trim() || null,
@@ -1116,7 +1119,7 @@ function CatalogoModal({ row, onClose, onSaved }: {
 
   const handleDeletePunto = async (id: number) => {
     if (!confirm('¿Eliminar este punto de conexión?')) return
-    await dbCtrl.from('servicios_puntos_conexion').update({ activo: false }).eq('id', id)
+    await dbCtrl.from(T.servicios_puntos_conexion).update({ activo: false }).eq('id', id)
     setPuntos(prev => prev.filter(p => p.id !== id))
   }
 
@@ -1160,10 +1163,10 @@ function CatalogoModal({ row, onClose, onSaved }: {
     }
 
     if (row) {
-      const { error: err } = await dbCtrl.from('servicios_catalogo').update(payload).eq('id', row.id)
+      const { error: err } = await dbCtrl.from(T.servicios_catalogo).update(payload).eq('id', row.id)
       if (err) { setError(err.message); setSaving(false); return }
     } else {
-      const { error: err } = await dbCtrl.from('servicios_catalogo')
+      const { error: err } = await dbCtrl.from(T.servicios_catalogo)
         .insert({ ...payload, created_by: authUser?.nombre ?? null })
       if (err) { setError(err.message); setSaving(false); return }
     }
