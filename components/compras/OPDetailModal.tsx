@@ -30,6 +30,8 @@ const VALE_STATUS_COLOR: Record<string, { color: string; bg: string; border: str
 }
 
 // OP en proceso (aún sin pagar): se pueden cancelar incluso durante autorizaciones
+const MOSTRAR_REABRIR_PAGADA = false
+
 const STATUS_CANCELABLES = ['Pendiente Auth', 'Pendiente Auth Finanzas', 'Pendiente']
 
 export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDuplicar }: {
