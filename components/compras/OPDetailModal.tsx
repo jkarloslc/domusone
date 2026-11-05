@@ -1306,8 +1306,9 @@ export function OPDetail({ op, onClose, onCanceled, onEdit, onAuthorized, onDupl
             </div>
           )}
 
-          {/* Reabrir OP pagada (solo superadmin) — para corregir montos */}
-          {authUser?.rol === 'superadmin' && (op.status === 'Pagada' || op.status === 'Abonada') && (
+          {/* Reabrir OP pagada (solo superadmin) — para corregir montos.
+              OCULTO por decisión del usuario (2026-11-04); poner MOSTRAR_REABRIR_PAGADA=true para reactivar. */}
+          {MOSTRAR_REABRIR_PAGADA && authUser?.rol === 'superadmin' && (op.status === 'Pagada' || op.status === 'Abonada') && (
             <div style={{ padding: '14px 16px', background: '#fffbeb', border: '1px dashed #fcd34d', borderRadius: 10 }}>
               {!reabrirPagadaOpen ? (
                 <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setReabrirPagadaOpen(true)}>
