@@ -41,7 +41,7 @@ function getModulo(pathname: string): string | undefined {
   // Sin control de módulo (acceso libre para cualquier usuario autenticado)
   // 'residencial' es el hub del Fraccionamiento (incluye Mantenimiento): el hub
   // filtra sus tarjetas con can() según el rol
-  const NO_CHECK = ['residencial', 'inicio', 'tablero', 'vehiculos', 'equipo-flota', 'mantenimiento', 'hipico', 'hospitality', 'polo']
+  const NO_CHECK = ['residencial', 'inicio', 'tablero', 'vehiculos', 'equipo-flota', 'mantenimiento', 'hipico', 'hospitality', 'eventos', 'polo']
   if (NO_CHECK.includes(first)) return undefined
 
   // Golf: sub-rutas usan 'golf-{sub}'

@@ -244,7 +244,7 @@ const GRUPOS = [
   {
     slug:   'hospitality',
     modulo: 'hospitality',
-    label: 'Hospitality',
+    label: 'Eventos',
     color: '#9333ea',
     reportes: [
       { id: 'hospitality-eventos', label: 'Eventos — Ingresos vs Gastos', icon: Star, desc: 'Resumen financiero por evento (Hospitality, Golf Torneos, Hípico): ingresos cobrados, OPs + gastos manuales y balance neto. Filtrable por módulo.' },

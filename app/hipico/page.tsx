@@ -3,7 +3,7 @@ import React, { type SVGProps } from 'react'
 import Link from 'next/link'
 import {
   Users, Home, DollarSign, ChevronRight, Flag, BarChart3,
-  Star, CalendarDays, BookOpen, MapPin,
+  Star, MapPin,
 } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 
@@ -41,6 +41,14 @@ const CABALLERIZAS_MODULOS = [
     href: '/hipico/instalaciones',
   },
   {
+    key: 'eventos-ecuestres',
+    label: 'Eventos Ecuestres',
+    desc: 'Concursos, torneos y eventos ecuestres con ingresos y gastos',
+    icon: Star,
+    color: '#9333ea',
+    href: '/hipico/eventos-ecuestres',
+  },
+  {
     key: 'cobranza',
     label: 'Cobranza',
     desc: 'Cargos, pagos y estado de cuenta por socio',
@@ -58,32 +66,6 @@ const CABALLERIZAS_MODULOS = [
   },
 ]
 
-const EVENTOS_MODULOS = [
-  {
-    key: 'eventos',
-    label: 'Eventos',
-    desc: 'Gestión de eventos: bodas, sociales, corporativos y torneos ecuestres',
-    icon: Star,
-    color: '#9333ea',
-    href: '/hipico/eventos-ecuestres',
-  },
-  {
-    key: 'calendario',
-    label: 'Calendario',
-    desc: 'Vista mensual de eventos programados con acceso rápido al detalle',
-    icon: CalendarDays,
-    color: '#0369a1',
-    href: '/hospitality/calendario',
-  },
-  {
-    key: 'catalogos',
-    label: 'Catálogos',
-    desc: 'Tipos de evento (las instalaciones se administran en Instalaciones)',
-    icon: BookOpen,
-    color: '#64748b',
-    href: '/hospitality/catalogos',
-  },
-]
 
 type Modulo = { key: string; label: string; desc: string; icon: (p: { size?: number }) => React.ReactNode; color: string; href: string }
 
@@ -122,7 +104,7 @@ function ModuloCard({ m }: { m: Modulo }) {
   )
 }
 
-function SectionSeparator({ label, color, icon: Icon }: { label: string; color: string; icon: (p: { size?: number }) => React.ReactNode }) {
+function _SectionSeparator({ label, color, icon: Icon }: { label: string; color: string; icon: (p: { size?: number }) => React.ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -144,8 +126,8 @@ export default function HipicoPage() {
         variant="xl"
         icon={HorseIcon}
         eyebrowLabel="Módulo"
-        title="Hípico y Eventos"
-        subtitle="Caballerizas, cobranza, torneos ecuestres y gestión de eventos"
+        title="Hípico"
+        subtitle="Caballerizas, instalaciones, cobranza y eventos ecuestres"
       />
 
       {/* Sección Caballerizas */}
@@ -153,11 +135,6 @@ export default function HipicoPage() {
         {CABALLERIZAS_MODULOS.map(m => <ModuloCard key={m.key} m={m} />)}
       </div>
 
-      {/* Sección Eventos */}
-      <SectionSeparator label="Eventos" color="#b45309" icon={Star} />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 12 }}>
-        {EVENTOS_MODULOS.map(m => <ModuloCard key={m.key} m={m} />)}
-      </div>
 
     </div>
   )

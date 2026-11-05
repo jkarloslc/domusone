@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import {
-  Users, Tag, Car, Receipt, CreditCard, ChevronRight, Building2, UserPlus, FileText,
+  Users, Tag, Car, Receipt, CreditCard, ChevronRight, UserPlus, FileText,
 } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 
@@ -61,14 +61,6 @@ const MODULOS = [
     icon: FileText,
     color: '#0d9488',
     href: '/golf/recibos',
-  },
-  {
-    key: 'locales',
-    label: 'Locales y Propiedades',
-    desc: 'Renta de locales comerciales y propiedades — arrendatarios, catálogo y cobranza',
-    icon: Building2,
-    color: '#0f766e',
-    href: '/locales',
   },
 ]
 

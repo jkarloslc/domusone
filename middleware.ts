@@ -20,7 +20,7 @@ const DOMINIO_FRACC = 'domusone.app'
 const DOMINIO_CLUB = 'golf-one.mx'
 
 // Primer segmento de la URL → a qué dominio pertenece. Lo no listado = ambos.
-const SOLO_CLUB = new Set(['golf', 'hipico', 'hospitality', 'polo', 'locales'])
+const SOLO_CLUB = new Set(['golf', 'hipico', 'hospitality', 'eventos', 'polo', 'locales'])
 
 const SOLO_FRACC = new Set([
   'residencial', 'lotes', 'propietarios', 'cobranza', 'facturas', 'escrituras',

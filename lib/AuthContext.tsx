@@ -69,7 +69,7 @@ const MODS_SOLO_FRACC = new Set([
 ])
 const esModuloClub = (m: string) =>
   m === 'golf' || m.startsWith('golf-') || m.startsWith('hipico') ||
-  m === 'hospitality' || m === 'locales' || m === 'polo'
+  m === 'hospitality' || m === 'eventos' || m === 'locales' || m === 'polo'
 
 /** ¿El módulo es visible para ese lado? (null = sin restricción) */
 function moduloVisibleParaLado(lado: Lado | null, modulo: string): boolean {
