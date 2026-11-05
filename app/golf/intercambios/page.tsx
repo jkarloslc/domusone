@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, Edit2, Trash2,
   Printer, ArrowRightLeft, Building2, Users, Save,
-  Loader, AlertTriangle, Check
+  Loader, AlertTriangle, Check, CalendarDays, ChevronLeft, ChevronRight, ShieldAlert
 } from 'lucide-react'
 import { fechaLocal } from '@/lib/dateUtils'
 import ModalShell from '@/components/ui/ModalShell'
@@ -35,6 +35,9 @@ type Club = {
   email_rep: string | null
   notas: string | null
   activo: boolean
+  max_intercambios_dia: number | null
+  max_intercambios_dia_finsemana: number | null
+  alerta_pct: number
 }
 
 type Carta = {
@@ -57,6 +60,29 @@ const fmtNombre = (s: Partial<Socio>) =>
   [s.nombre, s.apellido_paterno].filter(Boolean).join(' ')
 const fmtFecha = (d: string | null) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+
+// ── Política de máximos por día ────────────────────────────────
+// NULL = sin límite. Sábado/domingo usan su propio máximo si está definido.
+const maxDelDia = (club: Partial<Club> | undefined | null, fecha: string): number | null => {
+  if (!club) return null
+  const dow = new Date(fecha + 'T12:00:00').getDay()
+  const finde = dow === 0 || dow === 6
+  if (finde && club.max_intercambios_dia_finsemana != null) return club.max_intercambios_dia_finsemana
+  return club.max_intercambios_dia ?? null
+}
+type NivelCupo = 'libre' | 'ok' | 'alerta' | 'lleno'
+const nivelCupo = (ocupados: number, max: number | null, pct: number): NivelCupo => {
+  if (max == null) return 'libre'
+  if (ocupados >= max) return 'lleno'
+  if (max > 0 && ocupados / max * 100 >= pct) return 'alerta'
+  return 'ok'
+}
+const NIVEL_CFG: Record<NivelCupo, { bg: string; border: string; color: string; label: string }> = {
+  libre:  { bg: '#f8fafc', border: '#e2e8f0', color: '#64748b', label: 'Sin límite' },
+  ok:     { bg: '#f0fdf4', border: '#bbf7d0', color: '#15803d', label: 'Disponible' },
+  alerta: { bg: '#fffbeb', border: '#fde68a', color: '#b45309', label: 'Por llenarse' },
+  lleno:  { bg: '#fef2f2', border: '#fecaca', color: '#dc2626', label: 'Cupo lleno' },
+}
 
 // ── Texto base por defecto ─────────────────────────────────────
 const TEXTO_BASE = `Por medio de la presente, Balvanera Golf, Polo & Country Club se complace en presentar a su distinguido socio, quien visitará sus instalaciones en la fecha indicada.
@@ -99,6 +125,25 @@ function CartaModal({
 
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
 
+  // ── Cupo del club en la fecha de visita ──
+  const [ocupados, setOcupados] = useState<number | null>(null)
+  const clubSel = clubes.find(c => String(c.id) === form.id_club_fk)
+  const maxDia  = form.fecha_visita ? maxDelDia(clubSel, form.fecha_visita) : null
+  useEffect(() => {
+    setOcupados(null)
+    if (!form.id_club_fk || !form.fecha_visita) return
+    let vivo = true
+    let q = dbGolf.from('cartas_intercambio').select('id', { count: 'exact', head: true })
+      .eq('id_club_fk', Number(form.id_club_fk)).eq('fecha_visita', form.fecha_visita)
+    if (carta?.id) q = q.neq('id', carta.id)
+    q.then(({ count }) => { if (vivo) setOcupados(count ?? 0) })
+    return () => { vivo = false }
+  }, [form.id_club_fk, form.fecha_visita, carta?.id])
+  // Esta carta ocuparía un lugar más
+  const nivel: NivelCupo | null = ocupados == null || !form.fecha_visita ? null
+    : nivelCupo(ocupados + 1, maxDia, clubSel?.alerta_pct ?? 80)
+  const cupoLleno = ocupados != null && maxDia != null && ocupados >= maxDia
+
   // Cargar socio actual si es edición
   useEffect(() => {
     if (carta?.id_socio_fk) {
@@ -139,6 +184,7 @@ function CartaModal({
     if (!form.id_club_fk) { setError('Selecciona un club destino'); return }
     if (!form.fecha_elaboracion) { setError('La fecha de elaboración es obligatoria'); return }
     if (socioSel && !socioSel.derecho_intercambios) { setError('El socio no tiene derecho a cartas de intercambio'); return }
+    if (cupoLleno) { setError(`El club ya alcanzó su máximo de ${maxDia} intercambios para esa fecha. Elige otro día.`); return }
 
     setSaving(true); setError('')
 
@@ -185,7 +231,7 @@ function CartaModal({
       subtitulo="Balvanera Golf, Polo & Country Club" icono={ArrowRightLeft} size="lg" onClose={onClose}
       footer={<>
         <button onClick={onClose} className="btn-ghost" disabled={saving}>Cancelar</button>
-        <button onClick={handleSave} className="btn-primary" disabled={saving || (!!socioSel && !socioSel.derecho_intercambios)}>
+        <button onClick={handleSave} className="btn-primary" disabled={saving || cupoLleno || (!!socioSel && !socioSel.derecho_intercambios)}>
           {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
           {isNew ? 'Guardar carta' : 'Guardar cambios'}
         </button>
@@ -279,6 +325,21 @@ function CartaModal({
                 onChange={e => set('fecha_visita', e.target.value)} />
             </div>
           </div>
+          {nivel && ocupados != null && maxDia != null && (nivel === 'alerta' || nivel === 'lleno' || cupoLleno) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 8,
+              background: NIVEL_CFG[cupoLleno ? 'lleno' : 'alerta'].bg, border: `1px solid ${NIVEL_CFG[cupoLleno ? 'lleno' : 'alerta'].border}`,
+              color: NIVEL_CFG[cupoLleno ? 'lleno' : 'alerta'].color, fontSize: 12.5, fontWeight: 500 }}>
+              <ShieldAlert size={14} style={{ flexShrink: 0 }} />
+              {cupoLleno
+                ? `Cupo lleno: ${clubSel?.nombre} ya tiene ${ocupados} de ${maxDia} intercambios ese día. No se puede emitir la carta.`
+                : `Atención: con esta carta serán ${ocupados + 1} de ${maxDia} intercambios permitidos por ${clubSel?.nombre} ese día.`}
+            </div>
+          )}
+          {nivel === 'ok' && ocupados != null && maxDia != null && (
+            <div style={{ fontSize: 12, color: '#15803d' }}>
+              Cupo disponible: {maxDia - ocupados} de {maxDia} lugares ese día.
+            </div>
+          )}
 
           {/* Texto de la carta */}
           <div>
@@ -332,6 +393,9 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
     email_rep:    club?.email_rep    ?? '',
     notas:        club?.notas        ?? '',
     activo:       club?.activo       ?? true,
+    max_dia:      club?.max_intercambios_dia?.toString()           ?? '',
+    max_finde:    club?.max_intercambios_dia_finsemana?.toString() ?? '',
+    alerta_pct:   String(club?.alerta_pct ?? 80),
   })
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
@@ -352,6 +416,9 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
       email_rep:    form.email_rep    || null,
       notas:        form.notas        || null,
       activo:       form.activo,
+      max_intercambios_dia:           form.max_dia   !== '' ? Number(form.max_dia)   : null,
+      max_intercambios_dia_finsemana: form.max_finde !== '' ? Number(form.max_finde) : null,
+      alerta_pct:   Math.min(100, Math.max(1, Number(form.alerta_pct) || 80)),
     }
     const { error: err } = club
       ? await dbGolf.from('cat_clubes_intercambio').update(payload).eq('id', club.id)
@@ -421,6 +488,32 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
                 <label style={lbl}>Email</label>
                 <input style={inp} type="email" value={form.email_rep} onChange={e => set('email_rep', e.target.value)} />
               </div>
+            </div>
+          </div>
+
+          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#2563eb', marginBottom: 10,
+              textTransform: 'uppercase', letterSpacing: '0.06em' }}>Política de máximos por día</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={lbl}>Máx. entre semana</label>
+                <input style={inp} type="number" min={0} value={form.max_dia} placeholder="Sin límite"
+                  onChange={e => set('max_dia', e.target.value)} />
+              </div>
+              <div>
+                <label style={lbl}>Máx. sáb / dom</label>
+                <input style={inp} type="number" min={0} value={form.max_finde} placeholder="Igual que semana"
+                  onChange={e => set('max_finde', e.target.value)} />
+              </div>
+              <div>
+                <label style={lbl}>Alertar al (%)</label>
+                <input style={inp} type="number" min={1} max={100} value={form.alerta_pct}
+                  onChange={e => set('alerta_pct', e.target.value)} />
+              </div>
+            </div>
+            <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 6, lineHeight: 1.5 }}>
+              Número máximo de cartas (intercambios) que el club acepta por día de visita. Vacío = sin límite.
+              Se avisa al llegar al porcentaje indicado y se bloquea la emisión al alcanzar el máximo.
             </div>
           </div>
 
@@ -595,6 +688,183 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
 }
 
 // ══════════════════════════════════════════════════════════════
+// ALERTAS DE CUPO (próximos 60 días)
+// ══════════════════════════════════════════════════════════════
+const isoLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+function AlertasCupo({ clubes, refreshKey, onVer }: { clubes: Club[]; refreshKey: number; onVer: (idClub: number, fecha: string) => void }) {
+  const [filas, setFilas] = useState<{ club: Club; fecha: string; ocupados: number; max: number; nivel: NivelCupo }[]>([])
+  useEffect(() => {
+    const hoy = new Date(); const fin = new Date(); fin.setDate(fin.getDate() + 60)
+    ;(dbGolf.from('cartas_intercambio') as any).select('id_club_fk, fecha_visita')
+      .gte('fecha_visita', isoLocal(hoy)).lte('fecha_visita', isoLocal(fin))
+      .then(({ data }: any) => {
+        const cnt = new Map<string, number>()
+        ;(data ?? []).forEach((r: any) => { const k = `${r.id_club_fk}|${r.fecha_visita}`; cnt.set(k, (cnt.get(k) ?? 0) + 1) })
+        const out: typeof filas = []
+        cnt.forEach((n, k) => {
+          const [id, fecha] = k.split('|')
+          const club = clubes.find(c => c.id === Number(id))
+          const max = maxDelDia(club, fecha)
+          if (!club || max == null) return
+          const nivel = nivelCupo(n, max, club.alerta_pct ?? 80)
+          if (nivel === 'alerta' || nivel === 'lleno') out.push({ club, fecha, ocupados: n, max, nivel })
+        })
+        out.sort((a, b) => a.fecha.localeCompare(b.fecha))
+        setFilas(out)
+      })
+  }, [clubes, refreshKey])
+  if (filas.length === 0) return null
+  return (
+    <div style={{ marginBottom: 16, border: '1px solid #fde68a', background: '#fffbeb', borderRadius: 10, padding: '10px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 700, color: '#b45309', marginBottom: 6 }}>
+        <ShieldAlert size={14} /> Alertas de cupo · próximos 60 días ({filas.length})
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {filas.slice(0, 8).map(f => (
+          <button key={`${f.club.id}${f.fecha}`} onClick={() => onVer(f.club.id, f.fecha)}
+            style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 12.5, padding: 0 }}>
+            <span style={{ fontWeight: 600, color: NIVEL_CFG[f.nivel].color, minWidth: 92 }}>{f.nivel === 'lleno' ? 'CUPO LLENO' : 'Por llenarse'}</span>
+            <span style={{ color: '#1e293b' }}>{f.club.nombre}</span>
+            <span style={{ color: '#64748b' }}>{fmtFecha(f.fecha)}</span>
+            <span style={{ color: '#64748b' }}>{f.ocupados}/{f.max}</span>
+          </button>
+        ))}
+        {filas.length > 8 && <span style={{ fontSize: 11.5, color: '#94a3b8' }}>y {filas.length - 8} más… revisa el calendario del club.</span>}
+      </div>
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
+// CALENDARIO POR CLUB
+// ══════════════════════════════════════════════════════════════
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+const DIAS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
+
+function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refreshKey: number; inicial: { idClub: number; fecha: string } | null }) {
+  const hoy = new Date()
+  const [idClub, setIdClub] = useState<number | ''>(inicial?.idClub ?? '')
+  const [anio, setAnio] = useState(inicial ? Number(inicial.fecha.slice(0, 4)) : hoy.getFullYear())
+  const [mes, setMes]   = useState(inicial ? Number(inicial.fecha.slice(5, 7)) - 1 : hoy.getMonth())
+  const [cartas, setCartas] = useState<Carta[]>([])
+  const [loading, setLoading] = useState(false)
+  const [diaSel, setDiaSel] = useState<string | null>(inicial?.fecha ?? null)
+
+  useEffect(() => {
+    if (idClub === '' && clubes.length) setIdClub((clubes.find(c => c.activo) ?? clubes[0]).id)
+  }, [clubes, idClub])
+
+  useEffect(() => {
+    if (idClub === '') return
+    setLoading(true)
+    const desde = `${anio}-${String(mes + 1).padStart(2, '0')}-01`
+    const hasta = isoLocal(new Date(anio, mes + 1, 0))
+    ;(dbGolf.from('cartas_intercambio') as any)
+      .select('id, folio, id_socio_fk, id_club_fk, fecha_elaboracion, fecha_visita, texto_carta, elaborado_por, notas, created_at, cat_socios(nombre, apellido_paterno, numero_socio)')
+      .eq('id_club_fk', idClub).gte('fecha_visita', desde).lte('fecha_visita', hasta)
+      .order('created_at')
+      .then(({ data }: any) => { setCartas((data as Carta[]) ?? []); setLoading(false) })
+  }, [idClub, anio, mes, refreshKey])
+
+  const club = clubes.find(c => c.id === idClub)
+  const porDia = new Map<string, Carta[]>()
+  cartas.forEach(c => { if (c.fecha_visita) porDia.set(c.fecha_visita, [...(porDia.get(c.fecha_visita) ?? []), c]) })
+
+  const primer = new Date(anio, mes, 1)
+  const offset = (primer.getDay() + 6) % 7 // lunes = 0
+  const diasMes = new Date(anio, mes + 1, 0).getDate()
+  const celdas: (string | null)[] = [
+    ...Array(offset).fill(null),
+    ...Array.from({ length: diasMes }, (_, i) => `${anio}-${String(mes + 1).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`),
+  ]
+  while (celdas.length % 7) celdas.push(null)
+
+  const mover = (d: number) => {
+    const f = new Date(anio, mes + d, 1); setAnio(f.getFullYear()); setMes(f.getMonth()); setDiaSel(null)
+  }
+  const hoyIso = isoLocal(hoy)
+  const totalOcupados = cartas.length
+  const diasLlenos = club ? Array.from(porDia.entries()).filter(([f, l]) => nivelCupo(l.length, maxDelDia(club, f), club.alerta_pct) === 'lleno').length : 0
+  const sel = diaSel ? (porDia.get(diaSel) ?? []) : []
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <select className="select" style={{ width: 'auto', minWidth: 240 }} value={idClub}
+          onChange={e => { setIdClub(Number(e.target.value)); setDiaSel(null) }}>
+          {clubes.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.activo ? '' : ' (inactivo)'}</option>)}
+        </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button className="btn-ghost" onClick={() => mover(-1)}><ChevronLeft size={14} /></button>
+          <span style={{ fontSize: 14, fontWeight: 700, minWidth: 140, textAlign: 'center' }}>{MESES[mes]} {anio}</span>
+          <button className="btn-ghost" onClick={() => mover(1)}><ChevronRight size={14} /></button>
+          <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setAnio(hoy.getFullYear()); setMes(hoy.getMonth()) }}>Hoy</button>
+        </div>
+        {loading && <Loader size={14} className="animate-spin" style={{ color: '#94a3b8' }} />}
+        {club && (
+          <div style={{ fontSize: 12, color: '#64748b', marginLeft: 'auto' }}>
+            Política: <b>{club.max_intercambios_dia ?? 'sin límite'}</b> entre semana · <b>{club.max_intercambios_dia_finsemana ?? club.max_intercambios_dia ?? 'sin límite'}</b> sáb/dom · alerta al {club.alerta_pct}%
+            {' '}· {totalOcupados} en el mes{diasLlenos > 0 && <span style={{ color: '#dc2626', fontWeight: 600 }}> · {diasLlenos} día(s) llenos</span>}
+          </div>
+        )}
+      </div>
+
+      <div className="card" style={{ padding: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+          {DIAS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#64748b', padding: '4px 0' }}>{d}</div>)}
+          {celdas.map((f, i) => {
+            if (!f) return <div key={i} />
+            const lista = porDia.get(f) ?? []
+            const max = maxDelDia(club, f)
+            const nivel = nivelCupo(lista.length, max, club?.alerta_pct ?? 80)
+            const cfg = NIVEL_CFG[nivel]
+            const disp = max != null ? Math.max(0, max - lista.length) : null
+            return (
+              <button key={f} onClick={() => setDiaSel(f === diaSel ? null : f)}
+                style={{ textAlign: 'left', minHeight: 74, padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
+                  background: cfg.bg, border: `${f === diaSel ? 2 : 1}px solid ${f === diaSel ? '#2563eb' : cfg.border}`,
+                  outline: f === hoyIso ? '2px solid #93c5fd' : 'none', outlineOffset: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1e293b' }}>{Number(f.slice(8))}</div>
+                <div style={{ fontSize: 11, color: cfg.color, fontWeight: 600, marginTop: 2 }}>
+                  {lista.length} ocupado{lista.length === 1 ? '' : 's'}
+                </div>
+                <div style={{ fontSize: 11, color: cfg.color }}>
+                  {disp != null ? `${disp} disponible${disp === 1 ? '' : 's'}` : 'sin límite'}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+        <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 11.5, color: '#64748b', flexWrap: 'wrap' }}>
+          {(['ok', 'alerta', 'lleno', 'libre'] as NivelCupo[]).map(n => (
+            <span key={n} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <span style={{ width: 11, height: 11, borderRadius: 3, background: NIVEL_CFG[n].bg, border: `1px solid ${NIVEL_CFG[n].border}` }} />{NIVEL_CFG[n].label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {diaSel && (
+        <div className="card" style={{ marginTop: 12, padding: '12px 16px' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+            {fmtFecha(diaSel)} · {sel.length} intercambio{sel.length === 1 ? '' : 's'}
+            {maxDelDia(club, diaSel) != null && ` de ${maxDelDia(club, diaSel)}`}
+          </div>
+          {sel.length === 0 ? <div style={{ fontSize: 12.5, color: '#94a3b8' }}>Sin intercambios ese día.</div> : sel.map(c => (
+            <div key={c.id} style={{ display: 'flex', gap: 12, fontSize: 12.5, padding: '4px 0', borderTop: '1px solid #f1f5f9' }}>
+              <span style={{ fontWeight: 600, minWidth: 110 }}>{c.folio ?? `#${c.id}`}</span>
+              <span>{[c.cat_socios?.nombre, c.cat_socios?.apellido_paterno].filter(Boolean).join(' ')}</span>
+              {c.cat_socios?.numero_socio && <span style={{ color: '#94a3b8' }}>#{c.cat_socios.numero_socio}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════
 // PÁGINA PRINCIPAL
 // ══════════════════════════════════════════════════════════════
 export default function IntercambiosPage() {
@@ -602,7 +872,9 @@ export default function IntercambiosPage() {
   const puedeEscribir  = canWrite('golf-intercambios')
   const puedeEliminar  = canDelete()
 
-  const [tab, setTab] = useState<'cartas' | 'clubes'>('cartas')
+  const [tab, setTab] = useState<'cartas' | 'calendario' | 'clubes'>('cartas')
+  const [verCal, setVerCal] = useState<{ idClub: number; fecha: string } | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
   const [pgIdx, setPgIdx]   = useState(0)
   const [pgSize, setPgSize] = useState(25)
 
@@ -727,6 +999,7 @@ export default function IntercambiosPage() {
           background: '#f1f5f9', borderRadius: 10, padding: 4, width: 'fit-content' }}>
           {([
             { key: 'cartas', label: 'Cartas emitidas', icon: ArrowRightLeft },
+            { key: 'calendario', label: 'Calendario por club', icon: CalendarDays },
             { key: 'clubes', label: 'Clubes', icon: Building2 },
           ] as const).map(t => {
             const Icon = t.icon
@@ -749,6 +1022,14 @@ export default function IntercambiosPage() {
             )
           })}
         </div>
+
+        <AlertasCupo clubes={clubes} refreshKey={refreshKey + cartas.length}
+          onVer={(idClub, fecha) => { setVerCal({ idClub, fecha }); setTab('calendario') }} />
+
+        {/* ══ TAB: CALENDARIO ══════════════════════════════════ */}
+        {tab === 'calendario' && (
+          <CalendarioClub clubes={clubes} refreshKey={refreshKey + cartas.length} inicial={verCal} />
+        )}
 
         {/* ══ TAB: CARTAS ══════════════════════════════════════ */}
         {tab === 'cartas' && (
@@ -880,17 +1161,18 @@ export default function IntercambiosPage() {
                     <th style={thStyle}>Ubicación</th>
                     <th style={thStyle}>Representante</th>
                     <th style={thStyle}>Teléfono / Email</th>
+                    <th style={thStyle}>Máx. por día</th>
                     <th style={thStyle}>Estado</th>
                     <th style={{ ...thStyle, textAlign: 'right' }}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loadingCl ? (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40 }}>
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 40 }}>
                       <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto', color: '#94a3b8' }} />
                     </td></tr>
                   ) : clubesFiltrados.length === 0 ? (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: 48, color: '#94a3b8' }}>
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 48, color: '#94a3b8' }}>
                       {searchCl ? 'Sin resultados' : 'No hay clubes registrados. Agrega el primer club.'}
                     </td></tr>
                   ) : clubesFiltrados.map((cl, i) => (
@@ -912,6 +1194,10 @@ export default function IntercambiosPage() {
                         {cl.telefono_rep && <div>{cl.telefono_rep}</div>}
                         {cl.email_rep && <div style={{ color: '#2563eb' }}>{cl.email_rep}</div>}
                         {!cl.telefono_rep && !cl.email_rep && <span style={{ color: '#94a3b8' }}>—</span>}
+                      </td>
+                      <td style={{ ...tdStyle, fontSize: 12 }}>
+                        <div>Sem: <b>{cl.max_intercambios_dia ?? '∞'}</b></div>
+                        <div>Sáb/Dom: <b>{cl.max_intercambios_dia_finsemana ?? cl.max_intercambios_dia ?? '∞'}</b></div>
                       </td>
                       <td style={tdStyle}>
                         <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 10,
@@ -952,7 +1238,7 @@ export default function IntercambiosPage() {
           carta={editCarta}
           clubes={clubes}
           onClose={() => setShowCartaModal(false)}
-          onSaved={() => { setShowCartaModal(false); fetchCartas() }}
+          onSaved={() => { setShowCartaModal(false); setRefreshKey(k => k + 1); fetchCartas() }}
         />
       )}
       {showClubModal && (
