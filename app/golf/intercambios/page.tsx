@@ -125,7 +125,7 @@ function CartaModal({
     fecha_elaboracion: carta?.fecha_elaboracion          ?? fechaLocal(),
     fecha_visita:      carta?.fecha_visita               ?? '',
     texto_carta:       carta?.texto_carta                ?? TEXTO_BASE,
-    elaborado_por:     carta?.elaborado_por              ?? '',
+    elaborado_por:     carta?.elaborado_por              ?? authUser?.nombre ?? '',
     notas:             carta?.notas                      ?? '',
   })
 
