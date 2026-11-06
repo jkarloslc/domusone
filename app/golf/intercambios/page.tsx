@@ -822,15 +822,20 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
 }
 
 // ══════════════════════════════════════════════════════════════
-// PDF DE LA CARTA (jsPDF, en el navegador; texto vectorial, 1 hoja A4)
+// PDF DE LA CARTA (jsPDF, en el navegador; texto vectorial, 1 hoja A4; logo reducido)
 // ══════════════════════════════════════════════════════════════
 async function cargarLogo(url: string): Promise<{ data: string; fmt: string; w: number; h: number } | null> {
   try {
     const blob = await (await fetch(url)).blob()
-    const data: string = await new Promise((ok, ko) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result)); fr.onerror = ko; fr.readAsDataURL(blob) })
-    const dim: { w: number; h: number } = await new Promise((ok, ko) => { const im = new Image(); im.onload = () => ok({ w: im.naturalWidth, h: im.naturalHeight }); im.onerror = ko; im.src = data })
-    const fmt = /png/i.test(blob.type) ? 'PNG' : /jpe?g/i.test(blob.type) ? 'JPEG' : ''
-    return fmt ? { data, fmt, ...dim } : null   // webp/svg no los soporta jsPDF
+    const src: string = await new Promise((ok, ko) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result)); fr.onerror = ko; fr.readAsDataURL(blob) })
+    const im: HTMLImageElement = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = src })
+    // Reduce a máx. 320 px de ancho/alto para que el PDF pese poco (acepta PNG/JPG/WebP/SVG del navegador)
+    const esc = Math.min(1, 320 / Math.max(im.naturalWidth, im.naturalHeight))
+    const w = Math.max(1, Math.round(im.naturalWidth * esc)), h = Math.max(1, Math.round(im.naturalHeight * esc))
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h
+    const ctx = cv.getContext('2d'); if (!ctx) return null
+    ctx.drawImage(im, 0, 0, w, h)
+    return { data: cv.toDataURL('image/png'), fmt: 'PNG', w, h }
   } catch { return null }
 }
 
@@ -1016,7 +1021,7 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
         }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(json.error ?? 'No se pudo enviar el correo'); setSending(false); return }
+      if (!res.ok) { setError(json.error ?? `No se pudo enviar el correo (HTTP ${res.status}${res.status === 413 ? ': el archivo es demasiado grande' : ''})`); setSending(false); return }
       await dbGolf.from('cartas_intercambio')
         .update({ enviada_at: new Date().toISOString(), enviada_a: to.join(', ') }).eq('id', carta.id)
       setSending(false)
