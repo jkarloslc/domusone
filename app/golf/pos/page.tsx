@@ -1,4 +1,5 @@
 'use client'
+import { fetchConAuth } from '@/lib/authFetch'
 import { useState, useEffect, useCallback } from 'react'
 import { dbGolf, dbCtrl, dbCfg, dbHip } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
@@ -607,7 +608,7 @@ export default function POSPage() {
       <p style="margin-top:12px;color:#64748b;font-size:12px">Los archivos XML y PDF se encuentran adjuntos.</p>
     `
 
-    const res = await fetch('/api/send-email', {
+    const res = await fetchConAuth('/api/send-email', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to: emailDest, subject: `Factura ${v.folio_fiscal}`, html, adjuntos }),
     })

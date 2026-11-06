@@ -34,8 +34,23 @@ type Adjunto = {
   contentType: string
 }
 
+// Exige una sesión válida de Supabase (token en Authorization: Bearer)
+async function sesionValida(req: NextRequest): Promise<boolean> {
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) return false
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const { data, error } = await supabase.auth.getUser(token)
+  return !error && !!data.user
+}
+
 export async function POST(req: NextRequest) {
   try {
+    if (!(await sesionValida(req))) {
+      return NextResponse.json({ error: 'No autorizado: inicia sesión para enviar correos.' }, { status: 401 })
+    }
     const body = await req.json()
     const { to, cc, perfil, subject, html, text, adjuntos } = body as {
       cc?:       string | string[]

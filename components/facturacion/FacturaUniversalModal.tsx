@@ -1,4 +1,5 @@
 'use client'
+import { fetchConAuth } from '@/lib/authFetch'
 import { useState, useEffect } from 'react'
 import { dbCfg } from '@/lib/supabase'
 import { Loader, CheckCircle, FileCheck, Send, X, ChevronRight } from 'lucide-react'
@@ -313,7 +314,7 @@ export default function FacturaUniversalModal({
     `
 
     try {
-      const res = await fetch('/api/send-email', {
+      const res = await fetchConAuth('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

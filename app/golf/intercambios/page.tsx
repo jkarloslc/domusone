@@ -1,4 +1,5 @@
 'use client'
+import { fetchConAuth } from '@/lib/authFetch'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbGolf, dbCfg } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
@@ -1013,7 +1014,7 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
       const htmlCuerpo = await htmlCarta(carta, socio, club ?? {}, 'correo')
       const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1e293b;white-space:pre-wrap;margin-bottom:20px">${esc(mensaje)}</div>${htmlCuerpo}`
       const pdf64 = await pdfCartaBase64(carta, socio, club ?? {})
-      const res = await fetch('/api/send-email', {
+      const res = await fetchConAuth('/api/send-email', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           perfil: 'intercambios', to, cc: copia, subject: asunto.trim(), html, text: mensaje,

@@ -1,4 +1,5 @@
 'use client'
+import { fetchConAuth } from '@/lib/authFetch'
 import { useState } from 'react'
 import { dbCtrl } from '@/lib/supabase'
 import { X, Printer, Mail, XCircle, Download, CheckCircle, Loader, AlertTriangle } from 'lucide-react'
@@ -99,7 +100,7 @@ export default function FacturaDetail({ factura: f, onClose, onCanceled }: Props
     `
 
     try {
-      const res = await fetch('/api/send-email', {
+      const res = await fetchConAuth('/api/send-email', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

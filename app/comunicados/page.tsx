@@ -1,4 +1,5 @@
 'use client'
+import { fetchConAuth } from '@/lib/authFetch'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { dbCtrl, dbCat } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
@@ -401,7 +402,7 @@ function EnvioModal({ comunicado, authUser, onClose }:
 
     const html = buildEmailHtml(comunicado.titulo, comunicado.cuerpo, comunicado.tipo, 'DomusOne')
 
-    const res = await fetch('/api/send-email', {
+    const res = await fetchConAuth('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to: selectedCorreo, subject: `[${comunicado.tipo}] ${comunicado.titulo}`, html }),
@@ -437,7 +438,7 @@ function EnvioModal({ comunicado, authUser, onClose }:
       const dest = masivoList[i]
       const html = buildEmailHtml(comunicado.titulo, comunicado.cuerpo, comunicado.tipo, 'DomusOne')
       try {
-        const res = await fetch('/api/send-email', {
+        const res = await fetchConAuth('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ to: dest.correo, subject: `[${comunicado.tipo}] ${comunicado.titulo}`, html }),
