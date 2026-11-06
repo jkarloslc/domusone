@@ -65,6 +65,7 @@ type FamiliarMin = {
   activo?: boolean
 }
 const fmtFam = (f: Partial<FamiliarMin>) => [f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ')
+const personasCarta = (c: Carta) => 1 + (c.cartas_intercambio_familiares ?? []).length
 const famsDeCarta = (c: Carta): FamiliarMin[] =>
   (c.cartas_intercambio_familiares ?? []).map(x => x.cat_familiares).filter(Boolean) as FamiliarMin[]
 
@@ -170,16 +171,20 @@ function CartaModal({
     setOcupados(null)
     if (!form.id_club_fk || !form.fecha_visita) return
     let vivo = true
-    let q = dbGolf.from('cartas_intercambio').select('id', { count: 'exact', head: true })
+    let q: any = dbGolf.from('cartas_intercambio').select('id, cartas_intercambio_familiares(id)')
       .eq('id_club_fk', Number(form.id_club_fk)).eq('fecha_visita', form.fecha_visita)
     if (carta?.id) q = q.neq('id', carta.id)
-    q.then(({ count }) => { if (vivo) setOcupados(count ?? 0) })
+    q.then(({ data }: any) => {
+      if (!vivo) return
+      setOcupados((data ?? []).reduce((n: number, c: any) => n + 1 + (c.cartas_intercambio_familiares?.length ?? 0), 0))
+    })
     return () => { vivo = false }
   }, [form.id_club_fk, form.fecha_visita, carta?.id])
-  // Esta carta ocuparía un lugar más
+  // Esta carta ocupa un lugar por persona (titular + familiares)
+  const misLugares = 1 + (acompanado ? famSel.length : 0)
   const nivel: NivelCupo | null = ocupados == null || !form.fecha_visita ? null
-    : nivelCupo(ocupados + 1, maxDia, clubSel?.alerta_pct ?? 80)
-  const cupoLleno = ocupados != null && maxDia != null && ocupados >= maxDia
+    : nivelCupo(ocupados + misLugares, maxDia, clubSel?.alerta_pct ?? 80)
+  const cupoLleno = ocupados != null && maxDia != null && ocupados + misLugares > maxDia
 
   // Cargar socio actual si es edición
   useEffect(() => {
@@ -222,7 +227,7 @@ function CartaModal({
     if (!form.fecha_elaboracion) { setError('La fecha de elaboración es obligatoria'); return }
     if (socioSel && !socioSel.derecho_intercambios) { setError('El socio no tiene derecho a cartas de intercambio'); return }
     if (acompanado && famSel.length === 0) { setError('Selecciona al menos un familiar o cambia a "Socio titular solo"'); return }
-    if (cupoLleno) { setError(`El club ya alcanzó su máximo de ${maxDia} intercambios para esa fecha. Elige otro día.`); return }
+    if (cupoLleno) { setError(`El club solo admite ${maxDia} personas ese día y ya hay ${ocupados} registradas; esta carta suma ${misLugares}. Reduce acompañantes o elige otro día.`); return }
 
     setSaving(true); setError('')
 
@@ -422,13 +427,13 @@ function CartaModal({
               color: NIVEL_CFG[cupoLleno ? 'lleno' : 'alerta'].color, fontSize: 12.5, fontWeight: 500 }}>
               <ShieldAlert size={14} style={{ flexShrink: 0 }} />
               {cupoLleno
-                ? `Cupo lleno: ${clubSel?.nombre} ya tiene ${ocupados} de ${maxDia} intercambios ese día. No se puede emitir la carta.`
-                : `Atención: con esta carta serán ${ocupados + 1} de ${maxDia} intercambios permitidos por ${clubSel?.nombre} ese día.`}
+                ? `Cupo insuficiente: ${clubSel?.nombre} tiene ${ocupados} de ${maxDia} personas ese día y esta carta suma ${misLugares}. No se puede emitir la carta.`
+                : `Atención: con esta carta serán ${ocupados + misLugares} de ${maxDia} personas permitidas por ${clubSel?.nombre} ese día.`}
             </div>
           )}
           {nivel === 'ok' && ocupados != null && maxDia != null && (
             <div style={{ fontSize: 12, color: '#15803d' }}>
-              Cupo disponible: {maxDia - ocupados} de {maxDia} lugares ese día.
+              Cupo disponible: {maxDia - ocupados} de {maxDia} lugares ese día (esta carta usa {misLugares}).
             </div>
           )}
 
@@ -603,7 +608,7 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
               </div>
             </div>
             <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 6, lineHeight: 1.5 }}>
-              Número máximo de cartas (intercambios) que el club acepta por día de visita. Vacío = sin límite.
+              Número máximo de personas (socio + familiares) que el club acepta por día de visita. Vacío = sin límite.
               Se avisa al llegar al porcentaje indicado y se bloquea la emisión al alcanzar el máximo.
             </div>
           </div>
@@ -791,11 +796,11 @@ function AlertasCupo({ clubes, refreshKey, onVer }: { clubes: Club[]; refreshKey
   const [filas, setFilas] = useState<{ club: Club; fecha: string; ocupados: number; max: number; nivel: NivelCupo }[]>([])
   useEffect(() => {
     const hoy = new Date(); const fin = new Date(); fin.setDate(fin.getDate() + 60)
-    ;(dbGolf.from('cartas_intercambio') as any).select('id_club_fk, fecha_visita')
+    ;(dbGolf.from('cartas_intercambio') as any).select('id_club_fk, fecha_visita, cartas_intercambio_familiares(id)')
       .gte('fecha_visita', isoLocal(hoy)).lte('fecha_visita', isoLocal(fin))
       .then(({ data }: any) => {
         const cnt = new Map<string, number>()
-        ;(data ?? []).forEach((r: any) => { const k = `${r.id_club_fk}|${r.fecha_visita}`; cnt.set(k, (cnt.get(k) ?? 0) + 1) })
+        ;(data ?? []).forEach((r: any) => { const k = `${r.id_club_fk}|${r.fecha_visita}`; cnt.set(k, (cnt.get(k) ?? 0) + 1 + (r.cartas_intercambio_familiares?.length ?? 0)) })
         const out: typeof filas = []
         cnt.forEach((n, k) => {
           const [id, fecha] = k.split('|')
@@ -879,8 +884,9 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
     const f = new Date(anio, mes + d, 1); setAnio(f.getFullYear()); setMes(f.getMonth()); setDiaSel(null)
   }
   const hoyIso = isoLocal(hoy)
-  const totalOcupados = cartas.length
-  const diasLlenos = club ? Array.from(porDia.entries()).filter(([f, l]) => nivelCupo(l.length, maxDelDia(club, f), club.alerta_pct) === 'lleno').length : 0
+  const totalOcupados = cartas.reduce((n, c) => n + personasCarta(c), 0)
+  const ocupDia = (l: Carta[]) => l.reduce((n, c) => n + personasCarta(c), 0)
+  const diasLlenos = club ? Array.from(porDia.entries()).filter(([f, l]) => nivelCupo(ocupDia(l), maxDelDia(club, f), club.alerta_pct) === 'lleno').length : 0
   const sel = diaSel ? (porDia.get(diaSel) ?? []) : []
 
   return (
@@ -900,7 +906,7 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
         {club && (
           <div style={{ fontSize: 12, color: '#64748b', marginLeft: 'auto' }}>
             Política: <b>{club.max_intercambios_dia ?? 'sin límite'}</b> entre semana · <b>{club.max_intercambios_dia_finsemana ?? club.max_intercambios_dia ?? 'sin límite'}</b> sáb/dom · alerta al {club.alerta_pct}%
-            {' '}· {totalOcupados} en el mes{diasLlenos > 0 && <span style={{ color: '#dc2626', fontWeight: 600 }}> · {diasLlenos} día(s) llenos</span>}
+            {' '}· {totalOcupados} persona(s) en el mes{diasLlenos > 0 && <span style={{ color: '#dc2626', fontWeight: 600 }}> · {diasLlenos} día(s) llenos</span>}
           </div>
         )}
       </div>
@@ -912,9 +918,10 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
             if (!f) return <div key={i} />
             const lista = porDia.get(f) ?? []
             const max = maxDelDia(club, f)
-            const nivel = nivelCupo(lista.length, max, club?.alerta_pct ?? 80)
+            const ocup = ocupDia(lista)
+            const nivel = nivelCupo(ocup, max, club?.alerta_pct ?? 80)
             const cfg = NIVEL_CFG[nivel]
-            const disp = max != null ? Math.max(0, max - lista.length) : null
+            const disp = max != null ? Math.max(0, max - ocup) : null
             return (
               <button key={f} onClick={() => setDiaSel(f === diaSel ? null : f)}
                 style={{ textAlign: 'left', minHeight: 74, padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
@@ -922,7 +929,7 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
                   outline: f === hoyIso ? '2px solid #93c5fd' : 'none', outlineOffset: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#1e293b' }}>{Number(f.slice(8))}</div>
                 <div style={{ fontSize: 11, color: cfg.color, fontWeight: 600, marginTop: 2 }}>
-                  {lista.length} ocupado{lista.length === 1 ? '' : 's'}
+                  {ocup} ocupado{ocup === 1 ? '' : 's'}
                 </div>
                 <div style={{ fontSize: 11, color: cfg.color }}>
                   {disp != null ? `${disp} disponible${disp === 1 ? '' : 's'}` : 'sin límite'}
@@ -943,7 +950,7 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
       {diaSel && (
         <div className="card" style={{ marginTop: 12, padding: '12px 16px' }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
-            {fmtFecha(diaSel)} · {sel.length} intercambio{sel.length === 1 ? '' : 's'}
+            {fmtFecha(diaSel)} · {ocupDia(sel)} persona{ocupDia(sel) === 1 ? '' : 's'} ({sel.length} carta{sel.length === 1 ? '' : 's'})
             {maxDelDia(club, diaSel) != null && ` de ${maxDelDia(club, diaSel)}`}
           </div>
           {sel.length === 0 ? <div style={{ fontSize: 12.5, color: '#94a3b8' }}>Sin intercambios ese día.</div> : sel.map(c => (
