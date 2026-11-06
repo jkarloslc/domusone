@@ -33,6 +33,7 @@ type Club = {
   cargo_rep: string | null
   telefono_rep: string | null
   email_rep: string | null
+  contacto?: string | null
   notas: string | null
   activo: boolean
   max_intercambios_dia: number | null
@@ -50,7 +51,6 @@ type Carta = {
   texto_carta: string | null
   elaborado_por: string | null
   notas: string | null
-  contacto?: string | null
   created_at: string
   cat_socios?: { nombre: string; apellido_paterno: string | null; numero_socio: string | null } | null
   cat_clubes_intercambio?: { nombre: string; ciudad: string | null; estado: string | null } | null
@@ -128,7 +128,6 @@ function CartaModal({
     texto_carta:       carta?.texto_carta                ?? TEXTO_BASE,
     elaborado_por:     carta?.elaborado_por              ?? authUser?.nombre ?? '',
     notas:             carta?.notas                      ?? '',
-    contacto:          carta?.contacto                   ?? '',
   })
 
   // Búsqueda de socio
@@ -262,7 +261,6 @@ function CartaModal({
       texto_carta:       form.texto_carta  || null,
       elaborado_por:     form.elaborado_por || authUser?.nombre || null,
       notas:             form.notas        || null,
-      contacto:          form.contacto.trim() || null,
       ...(isNew && folio ? { folio } : {}),
     }
 
@@ -479,13 +477,6 @@ function CartaModal({
             </div>
           </div>
 
-          <div>
-            <label style={lbl}>Contacto (solo referencia, no se imprime)</label>
-            <input style={inp} value={form.contacto}
-              onChange={e => set('contacto', e.target.value)}
-              placeholder="Teléfono, correo o persona de contacto" />
-          </div>
-
           {error && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8,
               padding: '10px 14px', color: '#dc2626', fontSize: 13, fontWeight: 500 }}>
@@ -510,6 +501,7 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
     cargo_rep:    club?.cargo_rep    ?? '',
     telefono_rep: club?.telefono_rep ?? '',
     email_rep:    club?.email_rep    ?? '',
+    contacto:     club?.contacto     ?? '',
     notas:        club?.notas        ?? '',
     activo:       club?.activo       ?? true,
     max_dia:      club?.max_intercambios_dia?.toString()           ?? '',
@@ -533,6 +525,7 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
       cargo_rep:    form.cargo_rep    || null,
       telefono_rep: form.telefono_rep || null,
       email_rep:    form.email_rep    || null,
+      contacto:     form.contacto.trim() || null,
       notas:        form.notas        || null,
       activo:       form.activo,
       max_intercambios_dia:           form.max_dia   !== '' ? Number(form.max_dia)   : null,
@@ -606,6 +599,11 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
               <div>
                 <label style={lbl}>Email</label>
                 <input style={inp} type="email" value={form.email_rep} onChange={e => set('email_rep', e.target.value)} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={lbl}>Contacto (solo referencia)</label>
+                <input style={inp} value={form.contacto} onChange={e => set('contacto', e.target.value)}
+                  placeholder="Persona o dato de contacto para coordinar visitas" />
               </div>
             </div>
           </div>
@@ -1043,7 +1041,7 @@ export default function IntercambiosPage() {
       .select(`
         id, folio, id_socio_fk, id_club_fk,
         fecha_elaboracion, fecha_visita, texto_carta,
-        elaborado_por, notas, contacto, created_at,
+        elaborado_por, notas, created_at,
         cat_socios(nombre, apellido_paterno, numero_socio),
         cat_clubes_intercambio(nombre, ciudad, estado),
         cartas_intercambio_familiares(id_familiar_fk, cat_familiares(id, nombre, apellido_paterno, apellido_materno, parentesco))
@@ -1331,7 +1329,8 @@ export default function IntercambiosPage() {
                       <td style={{ ...tdStyle, fontSize: 12 }}>
                         {cl.telefono_rep && <div>{cl.telefono_rep}</div>}
                         {cl.email_rep && <div style={{ color: '#2563eb' }}>{cl.email_rep}</div>}
-                        {!cl.telefono_rep && !cl.email_rep && <span style={{ color: '#94a3b8' }}>—</span>}
+                        {cl.contacto && <div style={{ color: '#64748b' }}>Contacto: {cl.contacto}</div>}
+                        {!cl.telefono_rep && !cl.email_rep && !cl.contacto && <span style={{ color: '#94a3b8' }}>—</span>}
                       </td>
                       <td style={{ ...tdStyle, fontSize: 12 }}>
                         <div>Sem: <b>{cl.max_intercambios_dia ?? '∞'}</b></div>
