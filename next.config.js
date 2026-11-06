@@ -13,5 +13,10 @@ const nextConfig = {
     // Reduce bundle size by tree-shaking large icon/utility packages
     optimizePackageImports: ['lucide-react'],
   },
+  webpack: (config) => {
+    // jsPDF importa canvg (solo para SVG) de forma opcional; no lo usamos
+    config.resolve.alias = { ...config.resolve.alias, canvg: false }
+    return config
+  },
 }
 module.exports = nextConfig
