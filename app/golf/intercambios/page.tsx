@@ -677,50 +677,53 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Georgia',serif;font-size:13px;color:#1e293b;padding:0}
-    .page{width:210mm;min-height:297mm;margin:0 auto;padding:20mm 22mm;position:relative}
+    @page{size:A4;margin:0}
+    html,body{width:210mm;height:297mm}
+    .page{width:210mm;height:297mm;margin:0 auto;padding:14mm 20mm 24mm;position:relative;overflow:hidden;page-break-after:avoid;page-break-inside:avoid}
     /* Encabezado */
-    .org-header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #0D4F80;padding-bottom:14px;margin-bottom:24px}
+    .org-header{display:flex;align-items:center;gap:16px;border-bottom:2px solid #0D4F80;padding-bottom:14px;margin-bottom:16px}
     .org-nombre{font-size:18px;font-weight:700;color:#0D4F80;margin:0 0 2px}
     .org-sub{font-size:11px;color:#64748b}
     .doc-title{font-size:14px;font-weight:600;color:#0D4F80;margin-bottom:2px}
     .folio-lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em}
     .folio-val{font-size:18px;font-weight:700;color:#0D4F80;letter-spacing:1px}
     /* Tipo documento */
-    .doc-type{text-align:center;margin-bottom:22px}
+    .doc-type{text-align:center;margin-bottom:14px}
     .doc-type h1{font-size:17px;font-weight:700;color:#0D4F80;letter-spacing:2px;text-transform:uppercase;border:2px solid #0D4F80;display:inline-block;padding:6px 24px;border-radius:4px}
     /* Fechas */
-    .fechas{display:flex;gap:32px;margin-bottom:22px;font-size:12px;color:#475569}
+    .fechas{display:flex;gap:32px;margin-bottom:14px;font-size:12px;color:#475569}
     .fecha-item span{font-weight:600;color:#1e293b}
     /* Destinatario */
-    .destinatario{margin-bottom:22px;background:#f8fafc;border-left:3px solid #2563eb;padding:12px 16px;border-radius:0 8px 8px 0}
+    .destinatario{margin-bottom:14px;background:#f8fafc;border-left:3px solid #2563eb;padding:12px 16px;border-radius:0 8px 8px 0}
     .dest-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:6px}
     .dest-nombre{font-size:14px;font-weight:700;color:#0D4F80}
     .dest-cargo{font-size:12px;color:#475569}
     .dest-club{font-size:13px;font-weight:600;color:#2563eb;margin-top:2px}
     .dest-lugar{font-size:11px;color:#64748b}
     /* Saludo */
-    .saludo{margin-bottom:16px;font-size:13px}
+    .saludo{margin-bottom:10px;font-size:13px}
     /* Cuerpo */
-    .cuerpo{line-height:1.8;font-size:13px;text-align:justify;color:#334155;margin-bottom:22px;white-space:pre-wrap}
+    .cuerpo{line-height:1.6;font-size:13px;text-align:justify;color:#334155;margin-bottom:14px;white-space:pre-wrap}
     /* Socio box */
-    .socio-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;margin-bottom:26px}
+    .socio-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 16px;margin-bottom:16px}
     .socio-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#3b82f6;margin-bottom:6px}
     .socio-nombre{font-size:15px;font-weight:700;color:#0D4F80}
     .socio-num{font-size:11px;color:#3b82f6;margin-top:2px}
     /* Firma */
-    .firma{display:flex;justify-content:space-between;align-items:flex-end;margin-top:40px}
+    .firma{display:flex;justify-content:space-between;align-items:flex-end;margin-top:24px}
     .firma-bloque{text-align:center;width:200px}
-    .firma-linea{border-top:1px solid #0D4F80;padding-top:8px;margin-top:50px}
+    .firma-linea{border-top:1px solid #0D4F80;padding-top:6px;margin-top:36px}
     .firma-nombre{font-size:12px;font-weight:700;color:#1e293b}
     .firma-cargo{font-size:10px;color:#64748b}
     /* Pie */
-    .pie{position:absolute;bottom:15mm;left:22mm;right:22mm;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px}
+    .pie{position:absolute;bottom:10mm;left:20mm;right:20mm;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px}
     .vigencia{font-size:10px;color:#dc2626;font-style:italic;margin-top:4px}
     @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}button{display:none}}
   </style>
 </head>
 <body>
 <div class="page">
+<div id="contenido">
   <!-- Encabezado institucional -->
   <div class="org-header">
     ${logoHtml}
@@ -781,13 +784,22 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
 
   ${carta.fecha_visita ? `<div class="vigencia" style="margin-top:18px">* La presente carta es válida exclusivamente para la fecha de visita indicada.</div>` : ''}
 
+</div>
   <!-- Pie de página -->
   <div class="pie">
     Balvanera Golf, Polo &amp; Country Club, Corregidora, Querétaro, México<br/>
     Folio: ${carta.folio ?? '—'} · Emitida: ${fmtFecha(carta.fecha_elaboracion)}
   </div>
 </div>
-<script>window.onload=()=>window.print()</script>
+<script>
+window.onload=()=>{
+  const page=document.querySelector('.page'), c=document.getElementById('contenido');
+  const cs=getComputedStyle(page);
+  const disp=page.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
+  if(c.scrollHeight>disp){ c.style.zoom=Math.max(0.5,disp/c.scrollHeight); }
+  window.print();
+}
+</script>
 </body>
 </html>`
   win.document.write(html)
