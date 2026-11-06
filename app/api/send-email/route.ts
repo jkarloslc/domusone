@@ -3,7 +3,9 @@ import nodemailer from 'nodemailer'
 import { createClient } from '@supabase/supabase-js'
 
 // Leer config SMTP desde cfg.configuracion
-async function getSmtpConfig() {
+// perfil: 'default' (facturación/general) o 'intercambios' (claves smtp_intercambios_*)
+async function getSmtpConfig(perfil: 'default' | 'intercambios' = 'default') {
+  const pre = perfil === 'intercambios' ? 'smtp_intercambios_' : 'smtp_'
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -11,10 +13,10 @@ async function getSmtpConfig() {
   const db = supabase.schema('cfg' as any)
   const { data } = await db.from('configuracion')
     .select('clave, valor')
-    .in('clave', ['smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_pass', 'smtp_from_name', 'smtp_from_email'])
+    .in('clave', ['host', 'port', 'secure', 'user', 'pass', 'from_name', 'from_email'].map(k => pre + k))
 
   const cfg: Record<string, string> = {}
-  ;(data ?? []).forEach((r: any) => { cfg[r.clave] = r.valor ?? '' })
+  ;(data ?? []).forEach((r: any) => { cfg['smtp_' + String(r.clave).slice(pre.length)] = r.valor ?? '' })
   return cfg
 }
 
@@ -35,7 +37,9 @@ type Adjunto = {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { to, subject, html, text, adjuntos } = body as {
+    const { to, cc, perfil, subject, html, text, adjuntos } = body as {
+      cc?:       string | string[]
+      perfil?:   'default' | 'intercambios'
       to:        string | string[]
       subject:   string
       html:      string
@@ -47,11 +51,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Faltan campos requeridos: to, subject, html' }, { status: 400 })
     }
 
-    const cfg = await getSmtpConfig()
+    const cfg = await getSmtpConfig(perfil === 'intercambios' ? 'intercambios' : 'default')
 
     if (!cfg.smtp_host || !cfg.smtp_user || !cfg.smtp_pass) {
       return NextResponse.json({
-        error: 'Servidor SMTP no configurado. Ve a Configuración → Servidor de Correo y completa los datos.'
+        error: 'Servidor SMTP no configurado. Ve a Configuración → Servidor de Correo' + (perfil === 'intercambios' ? ' (campos "Intercambios")' : '') + ' y completa los datos.'
       }, { status: 503 })
     }
 
@@ -63,7 +67,7 @@ export async function POST(req: NextRequest) {
       tls:  { rejectUnauthorized: false },
     })
 
-    const fromName  = cfg.smtp_from_name  || 'DomusOne'
+    const fromName  = cfg.smtp_from_name  || (perfil === 'intercambios' ? 'Balvanera Golf' : 'DomusOne')
     const fromEmail = cfg.smtp_from_email || cfg.smtp_user
 
     // Construir adjuntos para nodemailer
@@ -76,6 +80,7 @@ export async function POST(req: NextRequest) {
     const info = await transporter.sendMail({
       from:    `"${fromName}" <${fromEmail}>`,
       to:      Array.isArray(to) ? to.join(', ') : to,
+      ...(cc && (Array.isArray(cc) ? cc.length : String(cc).trim()) ? { cc: Array.isArray(cc) ? cc.join(', ') : cc } : {}),
       subject,
       html,
       text:    text ?? html.replace(/<[^>]+>/g, ''),

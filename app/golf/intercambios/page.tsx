@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import {
   Plus, Search, RefreshCw, Eye, Edit2, Trash2,
   Printer, ArrowRightLeft, Building2, Users, Save,
-  Loader, AlertTriangle, Check, CalendarDays, ChevronLeft, ChevronRight, ShieldAlert
+  Loader, AlertTriangle, Check, CalendarDays, ChevronLeft, ChevronRight, ShieldAlert, Mail
 } from 'lucide-react'
 import { fechaLocal } from '@/lib/dateUtils'
 import ModalShell from '@/components/ui/ModalShell'
@@ -51,6 +51,8 @@ type Carta = {
   texto_carta: string | null
   elaborado_por: string | null
   notas: string | null
+  enviada_at?: string | null
+  enviada_a?: string | null
   created_at: string
   cat_socios?: { nombre: string; apellido_paterno: string | null; numero_socio: string | null } | null
   cat_clubes_intercambio?: { nombre: string; ciudad: string | null; estado: string | null } | null
@@ -658,7 +660,7 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
 // ══════════════════════════════════════════════════════════════
 // IMPRESIÓN DE CARTA
 // ══════════════════════════════════════════════════════════════
-async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club>) {
+async function htmlCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club>, modo: 'impresion' | 'correo'): Promise<string> {
   let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = '', textoBase = TEXTO_BASE
   try {
     const { data: cfgRows } = await dbCfg.from('configuracion')
@@ -673,11 +675,9 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
   const logoHtml = orgLogo
     ? `<img src="${orgLogo}" style="height:52px;max-width:160px;object-fit:contain;" />`
     : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
-  const win = window.open('', '_blank', 'width=800,height=700')
-  if (!win) return
   const fams = famsDeCarta(carta)
   const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
@@ -727,6 +727,7 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
     .pie{position:absolute;bottom:10mm;left:20mm;right:20mm;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px}
     .vigencia{font-size:10px;color:#dc2626;font-style:italic;margin-top:4px}
     @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}button{display:none}}
+    ${modo === 'correo' ? 'html,body{width:auto;height:auto}.page{width:auto;max-width:680px;height:auto;padding:24px;overflow:visible}.pie{position:static;margin-top:24px}' : ''}
   </style>
 </head>
 <body>
@@ -799,7 +800,7 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
     Folio: ${carta.folio ?? '—'} · Emitida: ${fmtFecha(carta.fecha_elaboracion)}
   </div>
 </div>
-<script>
+${modo === 'correo' ? '' : `<script>
 window.onload=()=>{
   const page=document.querySelector('.page'), c=document.getElementById('contenido');
   const cs=getComputedStyle(page);
@@ -807,11 +808,111 @@ window.onload=()=>{
   if(c.scrollHeight>disp){ c.style.zoom=Math.max(0.5,disp/c.scrollHeight); }
   window.print();
 }
-</script>
+</script>`}
 </body>
 </html>`
+}
+
+async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club>) {
+  const win = window.open('', '_blank', 'width=800,height=700')
+  if (!win) return
+  const html = await htmlCarta(carta, socio, club, 'impresion')
   win.document.write(html)
   win.document.close()
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODAL ENVÍO POR CORREO
+// ══════════════════════════════════════════════════════════════
+function EnviarCartaModal({ carta, club, onClose, onSent }: {
+  carta: Carta; club: Club | undefined; onClose: () => void; onSent: () => void
+}) {
+  const socio: Partial<Socio> = carta.cat_socios ?? {}
+  const nombreSocio = [socio.nombre, socio.apellido_paterno].filter(Boolean).join(' ')
+  const [para,    setPara]    = useState(carta.enviada_a ?? club?.email_rep ?? '')
+  const [cc,      setCc]      = useState('')
+  const [asunto,  setAsunto]  = useState(`Carta de Intercambio ${carta.folio ?? ''} — ${nombreSocio}`.replace('  ', ' '))
+  const [mensaje, setMensaje] = useState(
+    `Estimados,\n\nAdjuntamos la carta de intercambio ${carta.folio ?? ''} de nuestro socio ${nombreSocio}` +
+    `${carta.fecha_visita ? `, con fecha de visita ${fmtFecha(carta.fecha_visita)}` : ''}.\n\nQuedamos a sus órdenes.\n\nSaludos cordiales.`)
+  const [sending, setSending] = useState(false)
+  const [error,   setError]   = useState('')
+
+  const listaMails = (t: string) => t.split(/[;,\s]+/).map(x => x.trim()).filter(Boolean)
+  const mailOk = (m: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)
+
+  const enviar = async () => {
+    const to = listaMails(para), copia = listaMails(cc)
+    if (to.length === 0) { setError('Indica al menos un destinatario'); return }
+    const malo = [...to, ...copia].find(m => !mailOk(m))
+    if (malo) { setError(`Correo inválido: ${malo}`); return }
+    if (!asunto.trim()) { setError('El asunto es obligatorio'); return }
+    setSending(true); setError('')
+    try {
+      const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      const htmlCuerpo = await htmlCarta(carta, socio, club ?? {}, 'correo')
+      const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1e293b;white-space:pre-wrap;margin-bottom:20px">${esc(mensaje)}</div>${htmlCuerpo}`
+      const htmlImprimible = await htmlCarta(carta, socio, club ?? {}, 'impresion')
+      const res = await fetch('/api/send-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          perfil: 'intercambios', to, cc: copia, subject: asunto.trim(), html, text: mensaje,
+          adjuntos: [{ filename: `Carta-${carta.folio ?? carta.id}.html`, content: htmlImprimible.replace('window.print();', ''), contentType: 'text/html' }],
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(json.error ?? 'No se pudo enviar el correo'); setSending(false); return }
+      await dbGolf.from('cartas_intercambio')
+        .update({ enviada_at: new Date().toISOString(), enviada_a: to.join(', ') }).eq('id', carta.id)
+      setSending(false)
+      onSent()
+    } catch (e: any) {
+      setSending(false); setError(e?.message ?? 'Error al enviar')
+    }
+  }
+
+  const inp: React.CSSProperties = { width: '100%', padding: '8px 10px', borderRadius: 7, border: '1px solid #e2e8f0', fontSize: 13, background: '#fff', outline: 'none', boxSizing: 'border-box' }
+  const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }
+
+  return (
+    <ModalShell modulo="golf-pos" titulo={`Enviar carta ${carta.folio ?? ''}`} subtitulo={club?.nombre} icono={Mail} size="md" onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="btn-ghost" disabled={sending}>Cancelar</button>
+        <button onClick={enviar} className="btn-primary" disabled={sending}>
+          {sending ? <Loader size={13} className="animate-spin" /> : <Mail size={13} />} Enviar correo
+        </button>
+      </>}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {carta.enviada_at && (
+          <div style={{ fontSize: 12, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 7, padding: '8px 10px' }}>
+            Ya se envió el {new Date(carta.enviada_at).toLocaleString('es-MX')} a {carta.enviada_a}. Se enviará de nuevo.
+          </div>
+        )}
+        <div>
+          <label style={lbl}>Para * (separa varios con coma)</label>
+          <input style={inp} value={para} onChange={e => setPara(e.target.value)} placeholder="correo@club.com" />
+          {!club?.email_rep && <div style={{ fontSize: 11.5, color: '#94a3b8', marginTop: 4 }}>El club no tiene correo de representante registrado.</div>}
+        </div>
+        <div>
+          <label style={lbl}>CC</label>
+          <input style={inp} value={cc} onChange={e => setCc(e.target.value)} placeholder="Opcional" />
+        </div>
+        <div>
+          <label style={lbl}>Asunto *</label>
+          <input style={inp} value={asunto} onChange={e => setAsunto(e.target.value)} />
+        </div>
+        <div>
+          <label style={lbl}>Mensaje</label>
+          <textarea style={{ ...inp, minHeight: 130, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
+            value={mensaje} onChange={e => setMensaje(e.target.value)} />
+        </div>
+        <div style={{ fontSize: 11.5, color: '#64748b' }}>
+          La carta se incluye en el cuerpo del correo y como archivo adjunto imprimible. Se envía desde el correo configurado para Intercambios.
+        </div>
+        {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '9px 12px', color: '#dc2626', fontSize: 13 }}>{error}</div>}
+      </div>
+    </ModalShell>
+  )
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1016,6 +1117,7 @@ export default function IntercambiosPage() {
   const [showCartaModal, setShowCartaModal] = useState(false)
   const [editCarta,      setEditCarta]      = useState<Carta | null>(null)
   const [deletingC, setDeletingC] = useState<number | null>(null)
+  const [enviarCarta, setEnviarCarta] = useState<Carta | null>(null)
 
   // ── Clubes ─────────────────────────────────────────────────
   const [clubes,   setClubes]   = useState<Club[]>([])
@@ -1041,7 +1143,7 @@ export default function IntercambiosPage() {
       .select(`
         id, folio, id_socio_fk, id_club_fk,
         fecha_elaboracion, fecha_visita, texto_carta,
-        elaborado_por, notas, created_at,
+        elaborado_por, notas, enviada_at, enviada_a, created_at,
         cat_socios(nombre, apellido_paterno, numero_socio),
         cat_clubes_intercambio(nombre, ciudad, estado),
         cartas_intercambio_familiares(id_familiar_fk, cat_familiares(id, nombre, apellido_paterno, apellido_materno, parentesco))
@@ -1247,6 +1349,13 @@ export default function IntercambiosPage() {
                             <Printer size={13} />
                           </button>
                           {puedeEscribir && (
+                            <button className="btn-ghost" style={{ padding: '5px 7px', color: c.enviada_at ? '#15803d' : undefined }}
+                              title={c.enviada_at ? `Enviada ${new Date(c.enviada_at).toLocaleDateString('es-MX')} a ${c.enviada_a}. Reenviar` : 'Enviar por correo'}
+                              onClick={() => setEnviarCarta(c)}>
+                              <Mail size={13} />
+                            </button>
+                          )}
+                          {puedeEscribir && (
                             <button className="btn-ghost" style={{ padding: '5px 7px' }} title="Editar"
                               onClick={() => { setEditCarta(c); setShowCartaModal(true) }}>
                               <Edit2 size={13} />
@@ -1376,6 +1485,14 @@ export default function IntercambiosPage() {
           clubes={clubes}
           onClose={() => setShowCartaModal(false)}
           onSaved={() => { setShowCartaModal(false); setRefreshKey(k => k + 1); fetchCartas() }}
+        />
+      )}
+      {enviarCarta && (
+        <EnviarCartaModal
+          carta={enviarCarta}
+          club={clubes.find(cl => cl.id === enviarCarta.id_club_fk)}
+          onClose={() => setEnviarCarta(null)}
+          onSent={() => { setEnviarCarta(null); fetchCartas() }}
         />
       )}
       {showClubModal && (
