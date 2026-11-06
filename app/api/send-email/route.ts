@@ -87,7 +87,15 @@ export async function POST(req: NextRequest) {
       attachments,
     })
 
-    return NextResponse.json({ ok: true, messageId: info.messageId })
+    const aceptados = (info.accepted ?? []).map(String)
+    const rechazados = (info.rejected ?? []).map(String)
+    if (aceptados.length === 0) {
+      return NextResponse.json({ error: `El servidor rechazó a todos los destinatarios: ${rechazados.join(', ') || 'sin detalle'}` }, { status: 502 })
+    }
+    return NextResponse.json({
+      ok: true, messageId: info.messageId, aceptados, rechazados,
+      respuesta: info.response, remitente: fromEmail,
+    })
   } catch (err: any) {
     return NextResponse.json({ error: err.message ?? 'Error al enviar el correo' }, { status: 500 })
   }

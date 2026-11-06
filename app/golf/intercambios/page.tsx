@@ -991,6 +991,7 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
     `${carta.fecha_visita ? `, con fecha de visita ${fmtFecha(carta.fecha_visita)}` : ''}.\n\nQuedamos a sus órdenes.\n\nSaludos cordiales.`)
   const [sending, setSending] = useState(false)
   const [error,   setError]   = useState('')
+  const [resultado, setResultado] = useState('')
 
   const listaMails = (t: string) => t.split(/[;,\s]+/).map(x => x.trim()).filter(Boolean)
   const mailOk = (m: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)
@@ -1019,7 +1020,9 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
       await dbGolf.from('cartas_intercambio')
         .update({ enviada_at: new Date().toISOString(), enviada_a: to.join(', ') }).eq('id', carta.id)
       setSending(false)
-      onSent()
+      setResultado(`Enviado desde ${json.remitente ?? '—'} · aceptado por el servidor para: ${(json.aceptados ?? []).join(', ')}` +
+        `${(json.rechazados ?? []).length ? ` · RECHAZADO: ${json.rechazados.join(', ')}` : ''}` +
+        `${json.respuesta ? ` · Respuesta: ${json.respuesta}` : ''}`)
     } catch (e: any) {
       setSending(false); setError(e?.message ?? 'Error al enviar')
     }
@@ -1031,10 +1034,14 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
   return (
     <ModalShell modulo="golf-pos" titulo={`Enviar carta ${carta.folio ?? ''}`} subtitulo={club?.nombre} icono={Mail} size="md" onClose={onClose}
       footer={<>
-        <button onClick={onClose} className="btn-ghost" disabled={sending}>Cancelar</button>
-        <button onClick={enviar} className="btn-primary" disabled={sending}>
-          {sending ? <Loader size={13} className="animate-spin" /> : <Mail size={13} />} Enviar correo
-        </button>
+        {resultado ? (
+          <button onClick={onSent} className="btn-primary">Cerrar</button>
+        ) : <>
+          <button onClick={onClose} className="btn-ghost" disabled={sending}>Cancelar</button>
+          <button onClick={enviar} className="btn-primary" disabled={sending}>
+            {sending ? <Loader size={13} className="animate-spin" /> : <Mail size={13} />} Enviar correo
+          </button>
+        </>}
       </>}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {carta.enviada_at && (
@@ -1064,6 +1071,7 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
           La carta se incluye en el cuerpo del correo y como archivo PDF adjunto. Se envía desde el correo configurado para Intercambios.
         </div>
         {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '9px 12px', color: '#dc2626', fontSize: 13 }}>{error}</div>}
+        {resultado && <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '9px 12px', color: '#15803d', fontSize: 12.5, wordBreak: 'break-word' }}>{resultado}</div>}
       </div>
     </ModalShell>
   )
