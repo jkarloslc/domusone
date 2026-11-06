@@ -822,6 +822,160 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
 }
 
 // ══════════════════════════════════════════════════════════════
+// PDF DE LA CARTA (jsPDF, en el navegador; texto vectorial, 1 hoja A4)
+// ══════════════════════════════════════════════════════════════
+async function cargarLogo(url: string): Promise<{ data: string; fmt: string; w: number; h: number } | null> {
+  try {
+    const blob = await (await fetch(url)).blob()
+    const data: string = await new Promise((ok, ko) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result)); fr.onerror = ko; fr.readAsDataURL(blob) })
+    const dim: { w: number; h: number } = await new Promise((ok, ko) => { const im = new Image(); im.onload = () => ok({ w: im.naturalWidth, h: im.naturalHeight }); im.onerror = ko; im.src = data })
+    const fmt = /png/i.test(blob.type) ? 'PNG' : /jpe?g/i.test(blob.type) ? 'JPEG' : ''
+    return fmt ? { data, fmt, ...dim } : null   // webp/svg no los soporta jsPDF
+  } catch { return null }
+}
+
+async function pdfCartaBase64(carta: Carta, socio: Partial<Socio>, club: Partial<Club>): Promise<string> {
+  const { jsPDF } = await import('jspdf')
+  let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = '', textoBase = TEXTO_BASE
+  try {
+    const { data: cfgRows } = await dbCfg.from('configuracion')
+      .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url', CLAVE_TEXTO])
+    ;(cfgRows ?? []).forEach((r: any) => {
+      if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
+      if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
+      if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      if (r.clave === CLAVE_TEXTO && r.valor) textoBase = r.valor
+    })
+  } catch {}
+  const logo = orgLogo ? await cargarLogo(orgLogo) : null
+  const fams = famsDeCarta(carta)
+  const texto = carta.texto_carta ?? textoBase
+
+  const M = 20, W = 210 - M * 2, LIM = 297 - 24   // límite inferior antes del pie
+  const AZUL: [number, number, number] = [13, 79, 128]
+  const GRIS: [number, number, number] = [100, 116, 139]
+  const OSC:  [number, number, number] = [30, 41, 59]
+
+  // Dibuja la carta con un factor de tamaño; devuelve el doc y la altura usada
+  const dibujar = (k: number) => {
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    let y = 16
+    const fs = (n: number) => doc.setFontSize(n * k)
+    const col = (c: [number, number, number]) => doc.setTextColor(c[0], c[1], c[2])
+
+    // Encabezado
+    let xTxt = M
+    if (logo) {
+      const h = 14 * Math.min(1, k + 0.1), w = Math.min(40, h * logo.w / logo.h)
+      const hh = Math.min(h, w * logo.h / logo.w), ww = hh * logo.w / logo.h
+      try { doc.addImage(logo.data, logo.fmt, M, y - 2, ww, hh); xTxt = M + ww + 4 } catch {}
+    }
+    doc.setFont('helvetica', 'bold'); fs(15); col(AZUL); doc.text(orgNombre, xTxt, y + 4)
+    if (orgSubtitulo) { doc.setFont('helvetica', 'normal'); fs(9); col(GRIS); doc.text(orgSubtitulo, xTxt, y + 9) }
+    doc.setFont('helvetica', 'bold'); fs(10); col(AZUL); doc.text('Carta de Intercambio', 210 - M, y + 1, { align: 'right' })
+    doc.setFont('helvetica', 'normal'); fs(7); col(GRIS); doc.text('FOLIO', 210 - M, y + 5.5, { align: 'right' })
+    doc.setFont('helvetica', 'bold'); fs(14); col(AZUL); doc.text(carta.folio ?? '—', 210 - M, y + 11, { align: 'right' })
+    y += 17
+    doc.setDrawColor(...AZUL); doc.setLineWidth(0.5); doc.line(M, y, 210 - M, y)
+    y += 9
+
+    // Título en recuadro
+    doc.setFont('helvetica', 'bold'); fs(14); col(AZUL)
+    const tit = 'CARTA DE INTERCAMBIO', tw = doc.getTextWidth(tit) + 14
+    doc.setLineWidth(0.5); doc.roundedRect(105 - tw / 2, y - 6, tw, 10, 1.5, 1.5)
+    doc.text(tit, 105, y + 0.8, { align: 'center' })
+    y += 12
+
+    // Fechas
+    doc.setFont('helvetica', 'normal'); fs(10); col(GRIS)
+    let x = M
+    const par = (lbl: string, val: string) => {
+      doc.setFont('helvetica', 'normal'); col(GRIS); doc.text(lbl + ' ', x, y)
+      x += doc.getTextWidth(lbl + ' ')
+      doc.setFont('helvetica', 'bold'); col(OSC); doc.text(val, x, y); x += doc.getTextWidth(val) + 10
+    }
+    par('Fecha de elaboración:', fmtFecha(carta.fecha_elaboracion))
+    if (carta.fecha_visita) par('Fecha de visita:', fmtFecha(carta.fecha_visita))
+    y += 7
+
+    // Destinatario
+    const lugar = [club.ciudad, club.estado, club.pais].filter(Boolean).join(', ')
+    const lineasDest: { t: string; b?: boolean; sz: number; c: [number, number, number] }[] = []
+    if (club.representante) lineasDest.push({ t: club.representante, b: true, sz: 11, c: AZUL })
+    if (club.cargo_rep)     lineasDest.push({ t: club.cargo_rep, sz: 9.5, c: GRIS })
+    lineasDest.push({ t: club.nombre ?? '—', b: true, sz: 10.5, c: [37, 99, 235] })
+    if (lugar)              lineasDest.push({ t: lugar, sz: 9, c: GRIS })
+    const hDest = 6 + lineasDest.length * 5 * k
+    doc.setFillColor(248, 250, 252); doc.rect(M, y - 3, W, hDest, 'F')
+    doc.setFillColor(37, 99, 235); doc.rect(M, y - 3, 0.9, hDest, 'F')
+    let yy = y + 2
+    lineasDest.forEach(l => { doc.setFont('helvetica', l.b ? 'bold' : 'normal'); fs(l.sz); col(l.c); doc.text(l.t, M + 5, yy); yy += 5 * k })
+    y += hDest + 4
+
+    // Saludo
+    doc.setFont('helvetica', 'normal'); fs(10.5); col(OSC)
+    doc.text(`Estimado(a) ${club.representante ? club.representante.split(' ')[0] : 'representante'}:`, M, y)
+    y += 7
+
+    // Cuerpo
+    fs(10.5); col([51, 65, 85])
+    const lh = 5.3 * k
+    texto.split('\n').forEach(par => {
+      if (!par.trim()) { y += lh * 0.6; return }
+      const ls = doc.splitTextToSize(par, W) as string[]
+      ls.forEach((ln, i) => { doc.text(ln, M, y + i * lh, i < ls.length - 1 ? { maxWidth: W, align: 'justify' } : undefined) })
+      // justificado excepto última línea
+      y += ls.length * lh
+    })
+    y += 5
+
+    // Datos del socio
+    const hSoc = 12 + (socio.numero_socio ? 5 : 0) * k + (fams.length ? (7 + fams.length * 5) * k : 0)
+    doc.setFillColor(239, 246, 255); doc.setDrawColor(191, 219, 254); doc.setLineWidth(0.3)
+    doc.roundedRect(M, y - 3, W, hSoc, 2, 2, 'FD')
+    let ys = y + 2
+    doc.setFont('helvetica', 'bold'); fs(7.5); col([59, 130, 246]); doc.text(fams.length ? 'DATOS DEL SOCIO TITULAR' : 'DATOS DEL SOCIO', M + 5, ys); ys += 5.5 * k
+    fs(12); col(AZUL); doc.text(fmtNombre(socio), M + 5, ys); ys += 5 * k
+    if (socio.numero_socio) { doc.setFont('helvetica', 'normal'); fs(9); col([59, 130, 246]); doc.text(`Número de socio: #${socio.numero_socio}`, M + 5, ys); ys += 5 * k }
+    if (fams.length) {
+      ys += 2 * k
+      doc.setFont('helvetica', 'bold'); fs(7.5); col([59, 130, 246]); doc.text('ACOMPAÑADO(A) POR', M + 5, ys); ys += 5 * k
+      fams.forEach(f => {
+        doc.setFont('helvetica', 'bold'); fs(10); col(AZUL)
+        const n = fmtFam(f); doc.text(n, M + 5, ys)
+        if (f.parentesco) { const w0 = doc.getTextWidth(n); doc.setFont('helvetica', 'normal'); fs(8.5); col(GRIS); doc.text(`(${f.parentesco})`, M + 7 + w0, ys) }
+        ys += 5 * k
+      })
+    }
+    y += hSoc + 8
+
+    // Firma
+    y += 14 * k
+    doc.setDrawColor(...AZUL); doc.setLineWidth(0.3); doc.line(M, y, M + 60, y)
+    doc.setFont('helvetica', 'bold'); fs(10); col(OSC); doc.text(carta.elaborado_por ?? 'Dirección General', M, y + 5)
+    doc.setFont('helvetica', 'normal'); fs(8); col(GRIS); doc.text('Balvanera Golf, Polo & Country Club', M, y + 9.5)
+    y += 14
+
+    if (carta.fecha_visita) {
+      doc.setFont('helvetica', 'italic'); fs(8); doc.setTextColor(220, 38, 38)
+      doc.text('* La presente carta es válida exclusivamente para la fecha de visita indicada.', M, y + 2); y += 6
+    }
+
+    // Pie
+    doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.2); doc.line(M, 297 - 18, 210 - M, 297 - 18)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); col([148, 163, 184])
+    doc.text('Balvanera Golf, Polo & Country Club, Corregidora, Querétaro, México', 105, 297 - 13.5, { align: 'center' })
+    doc.text(`Folio: ${carta.folio ?? '—'} · Emitida: ${fmtFecha(carta.fecha_elaboracion)}`, 105, 297 - 9.5, { align: 'center' })
+    return { doc, y }
+  }
+
+  // Reduce el tamaño hasta que todo quepa en una hoja
+  let k = 1, res = dibujar(k)
+  while (res.y > LIM && k > 0.6) { k = Math.round((k - 0.05) * 100) / 100; res = dibujar(k) }
+  return res.doc.output('datauristring').split(',')[1]
+}
+
+// ══════════════════════════════════════════════════════════════
 // MODAL ENVÍO POR CORREO
 // ══════════════════════════════════════════════════════════════
 function EnviarCartaModal({ carta, club, onClose, onSent }: {
@@ -852,12 +1006,12 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
       const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       const htmlCuerpo = await htmlCarta(carta, socio, club ?? {}, 'correo')
       const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1e293b;white-space:pre-wrap;margin-bottom:20px">${esc(mensaje)}</div>${htmlCuerpo}`
-      const htmlImprimible = await htmlCarta(carta, socio, club ?? {}, 'impresion')
+      const pdf64 = await pdfCartaBase64(carta, socio, club ?? {})
       const res = await fetch('/api/send-email', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           perfil: 'intercambios', to, cc: copia, subject: asunto.trim(), html, text: mensaje,
-          adjuntos: [{ filename: `Carta-${carta.folio ?? carta.id}.html`, content: htmlImprimible.replace('window.print();', ''), contentType: 'text/html' }],
+          adjuntos: [{ filename: `Carta-${carta.folio ?? carta.id}.pdf`, content: pdf64, encoding: 'base64', contentType: 'application/pdf' }],
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -907,7 +1061,7 @@ function EnviarCartaModal({ carta, club, onClose, onSent }: {
             value={mensaje} onChange={e => setMensaje(e.target.value)} />
         </div>
         <div style={{ fontSize: 11.5, color: '#64748b' }}>
-          La carta se incluye en el cuerpo del correo y como archivo adjunto imprimible. Se envía desde el correo configurado para Intercambios.
+          La carta se incluye en el cuerpo del correo y como archivo PDF adjunto. Se envía desde el correo configurado para Intercambios.
         </div>
         {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '9px 12px', color: '#dc2626', fontSize: 13 }}>{error}</div>}
       </div>
