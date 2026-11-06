@@ -748,7 +748,6 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
 
   <!-- Destinatario -->
   <div class="destinatario">
-    <div class="dest-label">A quien corresponda</div>
     ${club.representante ? `<div class="dest-nombre">${club.representante}</div>` : ''}
     ${club.cargo_rep ? `<div class="dest-cargo">${club.cargo_rep}</div>` : ''}
     <div class="dest-club">${club.nombre ?? '—'}</div>
@@ -776,12 +775,6 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
       <div class="firma-linea">
         <div class="firma-nombre">${carta.elaborado_por ?? 'Dirección General'}</div>
         <div class="firma-cargo">Balvanera Golf, Polo & Country Club</div>
-      </div>
-    </div>
-    <div class="firma-bloque">
-      <div class="firma-linea">
-        <div class="firma-nombre">Sello del Club</div>
-        <div class="firma-cargo"></div>
       </div>
     </div>
   </div>
