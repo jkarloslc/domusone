@@ -50,6 +50,7 @@ type Carta = {
   texto_carta: string | null
   elaborado_por: string | null
   notas: string | null
+  contacto?: string | null
   created_at: string
   cat_socios?: { nombre: string; apellido_paterno: string | null; numero_socio: string | null } | null
   cat_clubes_intercambio?: { nombre: string; ciudad: string | null; estado: string | null } | null
@@ -127,6 +128,7 @@ function CartaModal({
     texto_carta:       carta?.texto_carta                ?? TEXTO_BASE,
     elaborado_por:     carta?.elaborado_por              ?? authUser?.nombre ?? '',
     notas:             carta?.notas                      ?? '',
+    contacto:          carta?.contacto                   ?? '',
   })
 
   // Búsqueda de socio
@@ -260,6 +262,7 @@ function CartaModal({
       texto_carta:       form.texto_carta  || null,
       elaborado_por:     form.elaborado_por || authUser?.nombre || null,
       notas:             form.notas        || null,
+      contacto:          form.contacto.trim() || null,
       ...(isNew && folio ? { folio } : {}),
     }
 
@@ -474,6 +477,13 @@ function CartaModal({
                 onChange={e => set('notas', e.target.value)}
                 placeholder="Observaciones opcionales" />
             </div>
+          </div>
+
+          <div>
+            <label style={lbl}>Contacto (solo referencia, no se imprime)</label>
+            <input style={inp} value={form.contacto}
+              onChange={e => set('contacto', e.target.value)}
+              placeholder="Teléfono, correo o persona de contacto" />
           </div>
 
           {error && (
@@ -1033,7 +1043,7 @@ export default function IntercambiosPage() {
       .select(`
         id, folio, id_socio_fk, id_club_fk,
         fecha_elaboracion, fecha_visita, texto_carta,
-        elaborado_por, notas, created_at,
+        elaborado_por, notas, contacto, created_at,
         cat_socios(nombre, apellido_paterno, numero_socio),
         cat_clubes_intercambio(nombre, ciudad, estado),
         cartas_intercambio_familiares(id_familiar_fk, cat_familiares(id, nombre, apellido_paterno, apellido_materno, parentesco))
