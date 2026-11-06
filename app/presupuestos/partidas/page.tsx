@@ -195,12 +195,14 @@ export default function PartidasPage() {
   async function handleSave() {
     if (!form.nombre.trim()) return
     setSaving(true); setErrorMsg(null)
+    const egresoManual = form.tipo === 'egreso' && form.clasificacion !== 'operativo' && form.fuente_real === 'manual'
     const payload = {
       nombre:               form.nombre.trim(),
       descripcion:          descripcionAuto(form.tipo, form.modulo, form.tipo === 'egreso' ? areaMap[form.id_area_fk ?? -1] : null),
       tipo:                 form.tipo,
       modulo:               form.modulo,
-      fuente_real:          form.tipo === 'egreso' ? 'op_area' : form.fuente_real,
+      // Egreso Financiero/Intercompañías puede ser captura directa (manual), sin vínculo a OP.
+      fuente_real:          form.tipo === 'egreso' ? (egresoManual ? 'manual' : 'op_area') : form.fuente_real,
       id_agrupador_fk:      form.id_agrupador_fk,
       clasificacion:        form.clasificacion,
       orden:                form.orden,
@@ -209,9 +211,9 @@ export default function PartidasPage() {
       incluir_flujo:        form.incluir_flujo,
       iva_pct:              Number(form.iva_pct) || 0,
       // Egresos
-      id_centro_costo_fk:   form.tipo === 'egreso' ? form.id_centro_costo_fk : null,
-      id_area_fk:           form.tipo === 'egreso' ? form.id_area_fk         : null,
-      id_tipo_gasto_fk:     form.tipo === 'egreso' ? form.id_tipo_gasto_fk : null,
+      id_centro_costo_fk:   form.tipo === 'egreso' && !egresoManual ? form.id_centro_costo_fk : null,
+      id_area_fk:           form.tipo === 'egreso' && !egresoManual ? form.id_area_fk         : null,
+      id_tipo_gasto_fk:     form.tipo === 'egreso' && !egresoManual ? form.id_tipo_gasto_fk : null,
       // Ingresos
       id_centro_ingreso_fk: form.tipo === 'ingreso' ? form.id_centro_ingreso_fk : null,
       id_seccion_fk:        (form.tipo === 'ingreso' && form.fuente_real === 'seccion')  ? form.id_seccion_fk  : null,
@@ -635,7 +637,9 @@ export default function PartidasPage() {
                 onChange={e => setForm(f => {
                   const clasificacion = e.target.value as Clasificacion
                   // Financiero/Intercompañías son movimientos netos (bancarios): sin IVA.
-                  return { ...f, clasificacion, iva_pct: clasificacion === 'operativo' ? f.iva_pct : 0 }
+                  // Egreso no operativo nace como captura directa (sin OP); al volver a operativo regresa a OP por área.
+                  const fuente_real: FuenteReal = f.tipo !== 'egreso' ? f.fuente_real : (clasificacion === 'operativo' ? 'op_area' : 'manual')
+                  return { ...f, clasificacion, fuente_real, iva_pct: clasificacion === 'operativo' ? f.iva_pct : 0 }
                 })}>
                 {(Object.keys(CLASIFICACION_LABEL) as Clasificacion[]).map(c => (
                   <option key={c} value={c}>{CLASIFICACION_LABEL[c]}</option>
@@ -677,7 +681,23 @@ export default function PartidasPage() {
             </label>
 
             {/* ── EGRESO ── */}
-            {form.tipo === 'egreso' && (
+            {form.tipo === 'egreso' && form.clasificacion !== 'operativo' && (
+              <label style={lbl}>
+                Fuente del Real
+                <select className="input" value={form.fuente_real}
+                  onChange={e => setForm(f => ({ ...f, fuente_real: e.target.value as FuenteReal }))}>
+                  <option value="manual">Captura directa (sin vínculo a OP)</option>
+                  <option value="op_area">Órdenes de Pago por Área</option>
+                </select>
+              </label>
+            )}
+            {form.tipo === 'egreso' && form.fuente_real === 'manual' && form.clasificacion !== 'operativo' && (
+              <div style={{ padding: '10px 14px', borderRadius: 8, background: '#eff6ff',
+                border: '1px solid #bfdbfe', fontSize: 12, color: '#1e40af' }}>
+                Sin vínculo a OP: el presupuesto se captura en <strong>Captura Flujo</strong> y el real con <strong>+ Manual</strong> en Flujo de Efectivo.
+              </div>
+            )}
+            {form.tipo === 'egreso' && !(form.clasificacion !== 'operativo' && form.fuente_real === 'manual') && (
               <>
                 <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef3c7',
                   border: '1px solid #fde68a', fontSize: 12, color: '#92400e' }}>
