@@ -53,7 +53,20 @@ type Carta = {
   created_at: string
   cat_socios?: { nombre: string; apellido_paterno: string | null; numero_socio: string | null } | null
   cat_clubes_intercambio?: { nombre: string; ciudad: string | null; estado: string | null } | null
+  cartas_intercambio_familiares?: { id_familiar_fk: number; cat_familiares: FamiliarMin | null }[] | null
 }
+
+type FamiliarMin = {
+  id: number
+  nombre: string
+  apellido_paterno: string | null
+  apellido_materno?: string | null
+  parentesco: string | null
+  activo?: boolean
+}
+const fmtFam = (f: Partial<FamiliarMin>) => [f.nombre, f.apellido_paterno, f.apellido_materno].filter(Boolean).join(' ')
+const famsDeCarta = (c: Carta): FamiliarMin[] =>
+  (c.cartas_intercambio_familiares ?? []).map(x => x.cat_familiares).filter(Boolean) as FamiliarMin[]
 
 // ── Helpers ────────────────────────────────────────────────────
 const fmtNombre = (s: Partial<Socio>) =>
@@ -123,6 +136,30 @@ function CartaModal({
   const [saving,       setSaving]       = useState(false)
   const [error,        setError]        = useState('')
 
+  // Familiares (beneficiarios) acompañantes
+  const [acompanado,   setAcompanado]   = useState(famsDeCarta(carta ?? ({} as Carta)).length > 0)
+  const [familiares,   setFamiliares]   = useState<FamiliarMin[]>([])
+  const [famSel,       setFamSel]       = useState<number[]>(famsDeCarta(carta ?? ({} as Carta)).map(f => f.id))
+  const [loadingFam,   setLoadingFam]   = useState(false)
+  useEffect(() => {
+    if (!socioId) { setFamiliares([]); return }
+    let vivo = true
+    setLoadingFam(true)
+    dbGolf.from('cat_familiares')
+      .select('id, nombre, apellido_paterno, apellido_materno, parentesco, activo')
+      .eq('id_socio_fk', Number(socioId)).eq('activo', true).order('nombre')
+      .then(({ data }) => {
+        if (!vivo) return
+        const lista = (data as FamiliarMin[]) ?? []
+        setFamiliares(lista)
+        setFamSel(sel => sel.filter(id => lista.some(f => f.id === id)))
+        setLoadingFam(false)
+      })
+    return () => { vivo = false }
+  }, [socioId])
+  const toggleFam = (id: number) =>
+    setFamSel(sel => sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id])
+
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   // ── Cupo del club en la fecha de visita ──
@@ -184,6 +221,7 @@ function CartaModal({
     if (!form.id_club_fk) { setError('Selecciona un club destino'); return }
     if (!form.fecha_elaboracion) { setError('La fecha de elaboración es obligatoria'); return }
     if (socioSel && !socioSel.derecho_intercambios) { setError('El socio no tiene derecho a cartas de intercambio'); return }
+    if (acompanado && famSel.length === 0) { setError('Selecciona al menos un familiar o cambia a "Socio titular solo"'); return }
     if (cupoLleno) { setError(`El club ya alcanzó su máximo de ${maxDia} intercambios para esa fecha. Elige otro día.`); return }
 
     setSaving(true); setError('')
@@ -207,12 +245,27 @@ function CartaModal({
       ...(isNew && folio ? { folio } : {}),
     }
 
-    const { error: err } = isNew
-      ? await dbGolf.from('cartas_intercambio').insert(payload)
-      : await dbGolf.from('cartas_intercambio').update(payload).eq('id', carta!.id)
+    let idCarta = carta?.id
+    let err: any = null
+    if (isNew) {
+      const res = await dbGolf.from('cartas_intercambio').insert(payload).select('id').single()
+      err = res.error; idCarta = (res.data as any)?.id
+    } else {
+      const res = await dbGolf.from('cartas_intercambio').update(payload).eq('id', carta!.id)
+      err = res.error
+    }
+    if (err || !idCarta) { setSaving(false); setError(err?.message ?? 'No se pudo guardar la carta'); return }
+
+    // Reemplazar familiares de la carta
+    const { error: eDel } = await dbGolf.from('cartas_intercambio_familiares').delete().eq('id_carta_fk', idCarta)
+    if (eDel) { setSaving(false); setError(eDel.message); return }
+    if (acompanado && famSel.length > 0) {
+      const { error: eFam } = await dbGolf.from('cartas_intercambio_familiares')
+        .insert(famSel.map(id => ({ id_carta_fk: idCarta, id_familiar_fk: id })))
+      if (eFam) { setSaving(false); setError(eFam.message); return }
+    }
 
     setSaving(false)
-    if (err) { setError(err.message); return }
     onSaved()
   }
 
@@ -298,6 +351,44 @@ function CartaModal({
               </div>
             )}
           </div>
+
+          {/* Acompañantes */}
+          {socioId !== '' && (
+            <div>
+              <label style={lbl}>Asistentes</label>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                {([[false, 'Socio titular solo'], [true, 'Titular acompañado']] as const).map(([val, txt]) => (
+                  <button key={txt} type="button" onClick={() => setAcompanado(val)}
+                    style={{ flex: 1, padding: '8px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                      border: `1px solid ${acompanado === val ? '#2563eb' : '#e2e8f0'}`,
+                      background: acompanado === val ? '#eff6ff' : '#fff',
+                      color: acompanado === val ? '#2563eb' : '#64748b' }}>
+                    {txt}
+                  </button>
+                ))}
+              </div>
+              {acompanado && (
+                loadingFam ? <div style={{ fontSize: 12, color: '#94a3b8' }}>Cargando familiares…</div>
+                : familiares.length === 0 ? (
+                  <div style={{ fontSize: 12, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 7, padding: '8px 10px' }}>
+                    El socio no tiene familiares activos registrados. Agrégalos en su expediente (pestaña Familiares).
+                  </div>
+                ) : (
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
+                    {familiares.map(f => (
+                      <label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                        borderBottom: '1px solid #f1f5f9', cursor: 'pointer', background: famSel.includes(f.id) ? '#f8fbff' : '#fff' }}>
+                        <input type="checkbox" checked={famSel.includes(f.id)} onChange={() => toggleFam(f.id)}
+                          style={{ width: 15, height: 15 }} />
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>{fmtFam(f)}</span>
+                        {f.parentesco && <span style={{ fontSize: 11, color: '#94a3b8' }}>{f.parentesco}</span>}
+                      </label>
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
+          )}
 
           {/* Club destino */}
           <div>
@@ -557,6 +648,8 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
     : `<div style="width:52px;height:52px;background:#e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#94a3b8;">🏢</div>`
   const win = window.open('', '_blank', 'width=800,height=700')
   if (!win) return
+  const fams = famsDeCarta(carta)
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -651,9 +744,11 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
 
   <!-- Datos del socio -->
   <div class="socio-box">
-    <div class="socio-label">Datos del socio</div>
+    <div class="socio-label">Datos del socio${fams.length > 0 ? ' titular' : ''}</div>
     <div class="socio-nombre">${fmtNombre(socio)}</div>
     ${socio.numero_socio ? `<div class="socio-num">Número de socio: #${socio.numero_socio}</div>` : ''}
+    ${fams.length > 0 ? `<div class="socio-label" style="margin-top:12px">Acompañado(a) por</div>
+      ${fams.map(f => `<div class="socio-nombre" style="font-size:13px;font-weight:600">${esc(fmtFam(f))}${f.parentesco ? ` <span style="font-weight:400;color:#64748b;font-size:11px">(${esc(f.parentesco)})</span>` : ''}</div>`).join('')}` : ''}
   </div>
 
   <!-- Firma -->
@@ -761,7 +856,7 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
     const desde = `${anio}-${String(mes + 1).padStart(2, '0')}-01`
     const hasta = isoLocal(new Date(anio, mes + 1, 0))
     ;(dbGolf.from('cartas_intercambio') as any)
-      .select('id, folio, id_socio_fk, id_club_fk, fecha_elaboracion, fecha_visita, texto_carta, elaborado_por, notas, created_at, cat_socios(nombre, apellido_paterno, numero_socio)')
+      .select('id, folio, id_socio_fk, id_club_fk, fecha_elaboracion, fecha_visita, texto_carta, elaborado_por, notas, created_at, cat_socios(nombre, apellido_paterno, numero_socio), cartas_intercambio_familiares(id_familiar_fk, cat_familiares(id, nombre, apellido_paterno, parentesco))')
       .eq('id_club_fk', idClub).gte('fecha_visita', desde).lte('fecha_visita', hasta)
       .order('created_at')
       .then(({ data }: any) => { setCartas((data as Carta[]) ?? []); setLoading(false) })
@@ -856,6 +951,7 @@ function CalendarioClub({ clubes, refreshKey, inicial }: { clubes: Club[]; refre
               <span style={{ fontWeight: 600, minWidth: 110 }}>{c.folio ?? `#${c.id}`}</span>
               <span>{[c.cat_socios?.nombre, c.cat_socios?.apellido_paterno].filter(Boolean).join(' ')}</span>
               {c.cat_socios?.numero_socio && <span style={{ color: '#94a3b8' }}>#{c.cat_socios.numero_socio}</span>}
+              {famsDeCarta(c).length > 0 && <span style={{ color: '#2563eb' }}>+ {famsDeCarta(c).map(f => f.nombre).join(', ')}</span>}
             </div>
           ))}
         </div>
@@ -913,7 +1009,8 @@ export default function IntercambiosPage() {
         fecha_elaboracion, fecha_visita, texto_carta,
         elaborado_por, notas, created_at,
         cat_socios(nombre, apellido_paterno, numero_socio),
-        cat_clubes_intercambio(nombre, ciudad, estado)
+        cat_clubes_intercambio(nombre, ciudad, estado),
+        cartas_intercambio_familiares(id_familiar_fk, cat_familiares(id, nombre, apellido_paterno, apellido_materno, parentesco))
       `)
       .order('created_at', { ascending: false })
     if (filtroClub) q = q.eq('id_club_fk', Number(filtroClub))
@@ -1087,6 +1184,11 @@ export default function IntercambiosPage() {
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 600 }}>{[c.cat_socios?.nombre, c.cat_socios?.apellido_paterno].filter(Boolean).join(' ')}</div>
                         {c.cat_socios?.numero_socio && <div style={{ fontSize: 11, color: '#94a3b8' }}>#{c.cat_socios.numero_socio}</div>}
+                        {famsDeCarta(c).length > 0 && (
+                          <div style={{ fontSize: 11, color: '#2563eb', marginTop: 2 }}>
+                            + {famsDeCarta(c).map(f => f.nombre).join(', ')}
+                          </div>
+                        )}
                       </td>
                       <td style={tdStyle}>
                         <div style={{ fontWeight: 500 }}>{c.cat_clubes_intercambio?.nombre ?? '—'}</div>
