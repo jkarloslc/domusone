@@ -15,6 +15,7 @@ const GRUPOS: Record<string, string> = {
   fiscal:       'Datos Fiscales del Emisor (CFDI)',
   pac:          'PAC — Proveedor Autorizado de Certificación',
   cobranza:     'Cobranza — Arranque Operativo por Módulo',
+  golf:         'Golf',
 }
 
 export default function ConfiguracionPage() {
@@ -161,6 +162,10 @@ export default function ConfiguracionPage() {
                           onChange={e => setValues(v => ({ ...v, [row.clave]: e.target.value }))}
                           style={{ fontFamily: 'monospace', maxWidth: 120 }} />
                       </div>
+                    ) : row.tipo === 'textarea' ? (
+                      <textarea className="input" rows={9} value={values[row.clave] ?? ''}
+                        onChange={e => setValues(v => ({ ...v, [row.clave]: e.target.value }))}
+                        style={{ resize: 'vertical', lineHeight: 1.6, fontFamily: 'inherit' }} />
                     ) : row.tipo === 'password' ? (
                       <input className="input" type="password" value={values[row.clave] ?? ''}
                         onChange={e => setValues(v => ({ ...v, [row.clave]: e.target.value }))}

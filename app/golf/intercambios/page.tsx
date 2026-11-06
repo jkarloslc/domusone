@@ -98,7 +98,8 @@ const NIVEL_CFG: Record<NivelCupo, { bg: string; border: string; color: string; 
   lleno:  { bg: '#fef2f2', border: '#fecaca', color: '#dc2626', label: 'Cupo lleno' },
 }
 
-// ── Texto base por defecto ─────────────────────────────────────
+// ── Texto base por defecto (respaldo; el vigente vive en cfg.configuracion) ──
+const CLAVE_TEXTO = 'golf_intercambio_texto_carta'
 const TEXTO_BASE = `Por medio de la presente, Balvanera Golf, Polo & Country Club se complace en presentar a su distinguido socio, quien visitará sus instalaciones en la fecha indicada.
 
 Hacemos constar que el portador cuenta con los derechos plenos de socio activo de este club y que la presente carta tiene una vigencia de 30 días naturales a partir de su fecha de elaboración.
@@ -185,6 +186,18 @@ function CartaModal({
   const nivel: NivelCupo | null = ocupados == null || !form.fecha_visita ? null
     : nivelCupo(ocupados + misLugares, maxDia, clubSel?.alerta_pct ?? 80)
   const cupoLleno = ocupados != null && maxDia != null && ocupados + misLugares > maxDia
+
+  // Texto base vigente desde Configuración (solo cartas nuevas)
+  useEffect(() => {
+    if (!isNew) return
+    let vivo = true
+    dbCfg.from('configuracion').select('valor').eq('clave', CLAVE_TEXTO).maybeSingle()
+      .then(({ data }) => {
+        const v = (data as any)?.valor
+        if (vivo && v) setForm(f => f.texto_carta === TEXTO_BASE ? { ...f, texto_carta: v } : f)
+      })
+    return () => { vivo = false }
+  }, [isNew])
 
   // Cargar socio actual si es edición
   useEffect(() => {
@@ -638,14 +651,15 @@ function ClubModal({ club, onClose, onSaved }: { club: Club | null; onClose: () 
 // IMPRESIÓN DE CARTA
 // ══════════════════════════════════════════════════════════════
 async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<Club>) {
-  let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = ''
+  let orgNombre = 'Organización', orgSubtitulo = '', orgLogo = '', textoBase = TEXTO_BASE
   try {
     const { data: cfgRows } = await dbCfg.from('configuracion')
-      .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url'])
+      .select('clave, valor').in('clave', ['org_nombre', 'org_subtitulo', 'org_logo_url', CLAVE_TEXTO])
     ;(cfgRows ?? []).forEach((r: any) => {
       if (r.clave === 'org_nombre')    orgNombre    = r.valor ?? orgNombre
       if (r.clave === 'org_subtitulo') orgSubtitulo = r.valor ?? ''
       if (r.clave === 'org_logo_url')  orgLogo      = r.valor ?? ''
+      if (r.clave === CLAVE_TEXTO && r.valor) textoBase = r.valor
     })
   } catch {}
   const logoHtml = orgLogo
@@ -745,7 +759,7 @@ async function imprimirCarta(carta: Carta, socio: Partial<Socio>, club: Partial<
   <div class="saludo">Estimado(a) ${club.representante ? club.representante.split(' ')[0] : 'representante'}:</div>
 
   <!-- Cuerpo de la carta -->
-  <div class="cuerpo">${(carta.texto_carta ?? TEXTO_BASE).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+  <div class="cuerpo">${(carta.texto_carta ?? textoBase).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
 
   <!-- Datos del socio -->
   <div class="socio-box">
