@@ -39,6 +39,7 @@ import ReporteIngresosConceptoCentro from './ReporteIngresosConceptoCentro'
 import ReporteRecibosIngreso from './ReporteRecibosIngreso'
 import ReporteHipicoEstadoCuenta from './ReporteHipicoEstadoCuenta'
 import ReporteHipicoServicios from './ReporteHipicoServicios'
+import ReporteHipicoArrendatarios from './ReporteHipicoArrendatarios'
 import ReporteOcupacionInstalaciones from './ReporteOcupacionInstalaciones'
 import ReporteGolfEstadoCuenta from './ReporteGolfEstadoCuenta'
 import ReporteGolfCobranza from './ReporteGolfCobranza'
@@ -222,6 +223,7 @@ const GRUPOS = [
     label: 'Hípico',
     color: '#92400e',
     reportes: [
+      { id: 'hipico-arrendatarios', label: 'Arrendatarios', icon: Users, desc: 'Por arrendatario: no. de caballerizas asignadas, pagos hechos en un período y pendiente por pagar vencido' },
       { id: 'hipico-estado-cuenta', label: 'Estado de Cuenta', icon: FileText,  desc: 'Cargos y pagos por arrendatario en un período' },
       { id: 'hipico-cobranza-corriente-vencida', label: 'Cobranza Corriente vs Vencida', icon: Wallet, desc: 'Rentas de caballerizas cobradas clasificadas por fecha de pago: corriente (del mes en curso) vs vencida (de meses anteriores)' },
       { id: 'hipico-proyeccion-cobranza', label: 'Proyección de Cobranza', icon: TrendingDown, desc: 'Rentas de caballerizas por mes: cargo total, cobrado y por cobrar, con flujo de cobranza (cobrado del mes, anticipado y vencido)' },
@@ -410,6 +412,7 @@ function ReportesContent() {
       {active === 'golf-estatus-campo'       && <ReporteEstatusCampo />}
 
       {/* Reportes hípico */}
+      {active === 'hipico-arrendatarios' && <ReporteHipicoArrendatarios />}
       {active === 'hipico-estado-cuenta' && <ReporteHipicoEstadoCuenta />}
       {active === 'hipico-cobranza-corriente-vencida' && <ReporteCobranzaCorrienteVencida fuente="hipico" />}
       {active === 'hipico-proyeccion-cobranza' && <ReporteProyeccionCobranza fuente="hipico" />}
