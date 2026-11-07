@@ -41,6 +41,14 @@ const COLS = 'id, anio, tipo_movimiento, estado, fecha_firma, fecha_inicio, fech
 const fmt$ = (v: number | null | undefined) => `$${Number(v ?? 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
 const fmtF = (d: string | null) => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 const hoyLocal = () => new Date().toLocaleDateString('en-CA')
+const MESES_NOM = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+const round2 = (n: number) => Math.round(n * 100) / 100
+// Mes de inicio sugerido: ciclo en curso → mes actual si hoy es día ≤15, si no el siguiente (tope diciembre); otro ciclo → enero
+const mesSugerido = (anio: number) => {
+  const h = new Date()
+  if (anio !== h.getFullYear()) return 1
+  return Math.min(h.getDate() <= 15 ? h.getMonth() + 1 : h.getMonth() + 2, 12)
+}
 
 const ESTADO_CFG: Record<string, { label: string; bg: string; color: string }> = {
   BORRADOR:  { label: 'Pendiente de imprimir', bg: '#f1f5f9', color: '#475569' },
@@ -88,6 +96,10 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
   const [anio, setAnio]           = useState('2027')
   const [tipoMov, setTipoMov]     = useState<'ALTA' | 'RENOVACION'>('RENOVACION')
   const [creando, setCreando]     = useState(false)
+  const [mesInicio, setMesInicio] = useState(1)
+  const [lista, setLista]         = useState<{ insc: number; mens: number } | null>(null)
+  const [errLista, setErrLista]   = useState('')
+  const esAdmin = ['superadmin', 'admin'].includes(authUser?.rol ?? '')
 
   // firma
   const [firmaId, setFirmaId]     = useState<number | null>(null)
@@ -122,6 +134,9 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
   // Si ya hay algún contrato, lo natural es una renovación; si no, un alta
   useEffect(() => { setTipoMov(contratos.length > 0 ? 'RENOVACION' : 'ALTA') }, [contratos.length])
 
+  // Al abrir el formulario o cambiar de ciclo, sugerir el mes de inicio
+  useEffect(() => { if (showNuevo) setMesInicio(mesSugerido(Number(anio))) }, [showNuevo, anio])
+
   // ── Alta / Renovación: crea el contrato en BORRADOR con los montos resueltos ──
   const resolverMonto = async (tipo: 'INSCRIPCION' | 'MENSUALIDAD', periodo: string) => {
     if (socio.id_categoria_fk == null) throw new Error('El socio no tiene categoría asignada')
@@ -144,20 +159,24 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
     if (!a || a < 2020) { setError('Año inválido'); return }
     setCreando(true); setError('')
     try {
-      const insc = await resolverMonto('INSCRIPCION', `${a}-01`)
-      const mens = await resolverMonto('MENSUALIDAD', `${a}-01`)
+      const mm = String(mesInicio).padStart(2, '0')
+      const meses = 13 - mesInicio                       // meses restantes del año, incluido el de inicio
+      const insc = await resolverMonto('INSCRIPCION', `${a}-${mm}`)
+      const mens = await resolverMonto('MENSUALIDAD', `${a}-${mm}`)
       if (!(mens.monto > 0)) throw new Error('La mensualidad resuelta es $0; revisa la cuota o la tarifa pactada')
+      // Inscripción proporcional a los meses que restan del ciclo al 31 de diciembre
+      const inscProrrateada = round2(insc.monto * meses / 12)
       const { error: err } = await dbGolf.from('ctrl_contratos_membresia').insert({
         id_socio_fk: socio.id,
         anio: a,
         tipo_movimiento: tipoMov,
         estado: 'BORRADOR',
         vigente: false,
-        fecha_inicio: `${a}-01-01`,
+        fecha_inicio: `${a}-${mm}-01`,
         fecha_fin: `${a}-12-31`,
-        monto_inscripcion: insc.monto,
+        monto_inscripcion: inscProrrateada,
         monto_mensualidad: mens.monto,
-        monto_anual: Math.round(mens.monto * 12 * 100) / 100,
+        monto_anual: round2(mens.monto * meses),
         id_cuota_inscripcion_fk: insc.cfgId,
         id_cuota_mensualidad_fk: mens.cfgId,
         usuario_crea: authUser?.nombre ?? null,
@@ -170,6 +189,20 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
     }
     setCreando(false)
   }
+
+  // Precio de lista (o tarifa pactada) del ciclo para la vista previa del prorrateo
+  useEffect(() => {
+    const a = Number(anio)
+    if (!showNuevo || !a || a < 2020) return
+    let cancel = false
+    setErrLista('')
+    const per = `${a}-${String(mesInicio).padStart(2, '0')}`
+    Promise.all([resolverMonto('INSCRIPCION', per), resolverMonto('MENSUALIDAD', per)])
+      .then(([i, m]) => { if (!cancel) setLista({ insc: i.monto, mens: m.monto }) })
+      .catch(e => { if (!cancel) { setLista(null); setErrLista(e.message ?? 'No se pudo calcular') } })
+    return () => { cancel = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showNuevo, anio, mesInicio, socio.id])
 
   // ── Impresión: el contrato pasa a IMPRESO ──
   const imprimir = async (c: Contrato) => {
@@ -265,9 +298,31 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
               </select>
             </div>
           </div>
+          <div style={{ marginTop: 10 }}>
+            <label style={labelStyle}>Mes de inicio del ciclo</label>
+            <select style={inputStyle} value={mesInicio} disabled={!esAdmin} onChange={e => setMesInicio(Number(e.target.value))}>
+              {MESES_NOM.map((m, i) => <option key={i} value={i + 1}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
+            </select>
+            {!esAdmin && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>El mes de inicio se sugiere según la fecha de hoy; solo admin puede cambiarlo.</div>}
+          </div>
+          {errLista && <div style={{ fontSize: 12, color: '#dc2626', marginTop: 8 }}>{errLista}</div>}
+          {lista && (() => {
+            const meses = 13 - mesInicio
+            const prorr = meses < 12
+            return (
+              <div style={{ marginTop: 10, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: '#475569', lineHeight: 1.7 }}>
+                <div>Meses del ciclo: <b>{meses}</b> de 12 ({MESES_NOM[mesInicio - 1]} → diciembre {anio})</div>
+                <div>
+                  Inscripción: {prorr && <span style={{ color: '#94a3b8' }}>{fmt$(lista.insc)} × {meses}/12 = </span>}
+                  <b style={{ color: '#16a34a' }}>{fmt$(round2(lista.insc * meses / 12))}</b>
+                </div>
+                <div>Mensualidad: <b>{fmt$(lista.mens)}</b> × {meses} = {fmt$(round2(lista.mens * meses))}</div>
+              </div>
+            )
+          })()}
           <div style={{ fontSize: 11.5, color: '#64748b', marginTop: 10, lineHeight: 1.5 }}>
             Los montos de inscripción y mensualidad se toman de la tarifa pactada del socio o, si no hay, del precio de lista de su categoría.
-            La inscripción se cobra al registrar el contrato firmado; las mensualidades se generan al quedar pagada.
+            Si el ciclo inicia después de enero, la inscripción se cobra proporcional a los meses que restan al 31 de diciembre. La inscripción se cobra al registrar el contrato firmado; las mensualidades se generan al quedar pagada.
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
             <button onClick={() => setShowNuevo(false)}
@@ -316,6 +371,9 @@ export default function ContratosMembresia({ socio, puedeEscribir }: { socio: So
             <div style={{ fontSize: 11.5, color: '#64748b', display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
               <span>Inscripción: <b style={{ color: '#16a34a' }}>{fmt$(c.monto_inscripcion)}</b></span>
               {c.monto_mensualidad != null && <span>Mensualidad: <b style={{ color: '#16a34a' }}>{fmt$(c.monto_mensualidad)}</b></span>}
+              {c.tipo_movimiento && c.fecha_inicio && Number(c.fecha_inicio.slice(5, 7)) > 1 && (
+                <span style={{ color: '#b45309' }}>Proporcional: {13 - Number(c.fecha_inicio.slice(5, 7))} meses (desde {MESES_NOM[Number(c.fecha_inicio.slice(5, 7)) - 1]})</span>
+              )}
               {c.fecha_firma && <span>Firmado: {fmtF(c.fecha_firma)}</span>}
             </div>
 
