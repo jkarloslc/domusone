@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getHomeRouteByRole, useAuth } from '@/lib/AuthContext'
-import { LogIn, Loader, Eye, EyeOff } from 'lucide-react'
+import { LogIn, Loader, Eye, EyeOff, X } from 'lucide-react'
 
 export default function LoginPage() {
   const { signIn, authUser, loading } = useAuth()
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [signing, setSigning]   = useState(false)
   // Marca Golf-One solo cuando se entra por golf-one.mx (se resuelve en el cliente)
   const [esClub, setEsClub]     = useState(false)
+  const [verAviso, setVerAviso] = useState(false)
   useEffect(() => {
     const h = window.location.hostname.toLowerCase()
     setEsClub(h === 'golf-one.mx' || h.endsWith('.golf-one.mx'))
@@ -137,7 +138,41 @@ export default function LoginPage() {
 
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 16, textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', padding: '0 20px' }}>
         Un software de Asesoría en Sistemas y Administración JK SAS de CV
+        <div style={{ marginTop: 4 }}>
+          <button type="button" onClick={() => setVerAviso(true)}
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 11, color: 'var(--blue)', textDecoration: 'underline' }}>
+            Aviso de Privacidad
+          </button>
+        </div>
       </div>
+
+      {verAviso && (
+        <div onClick={() => setVerAviso(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 1000 }}>
+          <div onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Aviso de Privacidad"
+            style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 640, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 50px rgba(0,0,0,0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #e2e8f0' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Aviso de Privacidad</h3>
+              <button type="button" onClick={() => setVerAviso(false)} aria-label="Cerrar"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding: '16px 20px', overflowY: 'auto', fontSize: 13, lineHeight: 1.6, color: 'var(--text-primary)', textAlign: 'left' }}>
+              <p><strong>Responsable.</strong> Asesoría en Sistemas y Administración JK SAS de CV (en adelante, “el Responsable”), titular de la plataforma DomusOne / Golf-One, es responsable del tratamiento de sus datos personales, conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).</p>
+              <p><strong>Datos que se recaban.</strong> Datos de identificación y contacto (nombre, correo electrónico, teléfono, domicilio), datos de acceso a la plataforma, datos relacionados con lotes, membresías, cuotas y pagos, y datos fiscales para facturación.</p>
+              <p><strong>Finalidades.</strong> Administrar el acceso y uso de la plataforma; gestionar la relación con propietarios, socios, residentes, proveedores y colaboradores; cobranza, facturación y conciliación de pagos; control de accesos y seguridad; comunicación de avisos operativos; y cumplimiento de obligaciones legales y contractuales.</p>
+              <p><strong>Transferencias.</strong> Sus datos no se transferirán a terceros sin su consentimiento, salvo a autoridades competentes cuando la ley lo exija y a proveedores de servicios necesarios para la operación de la plataforma (alojamiento, facturación electrónica y similares), quienes están obligados a guardar confidencialidad.</p>
+              <p><strong>Medidas de seguridad.</strong> Se mantienen medidas administrativas, técnicas y físicas para proteger sus datos contra daño, pérdida, alteración, acceso o tratamiento no autorizado.</p>
+              <p><strong>Derechos ARCO.</strong> Usted puede acceder, rectificar o cancelar sus datos personales, oponerse a su tratamiento y revocar su consentimiento, solicitándolo por escrito a la administración de su club o fraccionamiento, o al Responsable.</p>
+              <p><strong>Cambios al aviso.</strong> El presente aviso puede modificarse; cualquier cambio se dará a conocer en esta plataforma.</p>
+            </div>
+            <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+              <button type="button" className="btn-primary" onClick={() => setVerAviso(false)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
