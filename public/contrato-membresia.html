@@ -8,8 +8,8 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Times New Roman', Georgia, serif;
-    font-size: 11.5pt;
-    line-height: 1.42;
+    font-size: 6pt;
+    line-height: 1.15;
     color: #000;
     background: #e2e8f0;
     padding: 24px 0 60px;
@@ -17,41 +17,27 @@
   .page {
     background: #fff;
     width: 21.59cm;
-    min-height: 27.94cm;
+    height: 27.94cm;
     margin: 0 auto 24px;
-    padding: 2cm 2.2cm;
+    padding: 0.9cm 1cm;
     box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    overflow: hidden;
+    display: flex; flex-direction: column;
   }
-  .membresia-header {
-    text-align: right;
-    font-size: 11pt;
-    margin-bottom: 14px;
-  }
-  h1 {
-    font-size: 12.5pt;
-    text-align: justify;
-    text-transform: uppercase;
-    font-weight: bold;
-    margin-bottom: 16px;
-  }
-  h2.section {
-    font-size: 11.5pt;
-    text-align: center;
-    font-weight: bold;
-    letter-spacing: 2px;
-    margin: 18px 0 10px;
-  }
-  p { text-align: justify; margin-bottom: 9px; }
-  .fld { text-decoration: underline; font-weight: bold; padding: 0 2px; }
-  .campo-block { margin: 4px 0 12px 0; }
-  .campo-block div { margin-bottom: 3px; }
-  .firma-wrap { margin-top: 36px; }
-  .firmas { display: flex; justify-content: space-between; gap: 40px; margin-top: 44px; text-align: center; }
+  .membresia-header { text-align: right; font-size: 7.5pt; margin-bottom: 3px; }
+  h1 { font-size: 7pt; text-align: justify; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+  .cols { column-count: 3; column-gap: 0.5cm; column-rule: 0.5px solid #999; flex: 1 1 auto; min-height: 0; column-fill: auto; overflow: hidden; }
+  h2.section { font-size: 6.8pt; text-align: center; font-weight: bold; letter-spacing: 1.5px; margin: 4px 0 3px; break-after: avoid; }
+  p { text-align: justify; hyphens: auto; -webkit-hyphens: auto; margin-bottom: 2.5px; }
+  .fld { text-decoration: underline; font-weight: bold; padding: 0 1px; }
+  .campo-block { margin: 1px 0 3px 0; }
+  .campo-block div { margin-bottom: 0.5px; }
+  .final-caps { text-transform: uppercase; text-align: justify; font-weight: bold; margin: 6px 0 2px; font-size: 6.5pt; }
+  .firmas { display: flex; justify-content: space-between; gap: 0.5cm; text-align: center; font-size: 6.5pt; }
   .firma-col { flex: 1; }
-  .firma-linea { border-top: 1px solid #000; margin: 40px auto 6px; width: 80%; }
-  .firma-nombre { font-weight: bold; text-transform: uppercase; margin-top: 4px; }
-  .testigos { display: flex; justify-content: space-between; gap: 40px; margin-top: 50px; text-align: center; }
-  .final-caps { text-transform: uppercase; text-align: center; font-weight: bold; margin: 24px 0; }
+  .firma-col > div:first-child { height: 9px; }
+  .firma-linea { border-top: 1px solid #000; margin: 26px auto 3px; width: 85%; }
+  .firma-nombre { font-weight: bold; text-transform: uppercase; margin-top: 2px; min-height: 8px; }
 
   .btn-print {
     position: fixed; bottom: 20px; right: 20px;
@@ -63,8 +49,7 @@
 
   @media print {
     body { background: #fff; padding: 0; }
-    .page { box-shadow: none; margin: 0; width: auto; min-height: 0; padding: 1.6cm 2cm; }
-    .page + .page { page-break-before: always; }
+    .page { box-shadow: none; margin: 0; }
     .no-print { display: none !important; }
     @page { size: letter; margin: 0; }
   }
@@ -77,6 +62,7 @@
 
   <h1>Contrato privado que confiere el uso de instalaciones deportivas y recreativas del Club de Golf Balvanera (Membresía) que celebran, por una parte la empresa denominada Balvanera Polo y Country Club, S.A. de C.V., representada a través de su apoderado legal el Sr. Jorge Diego Villaseñor Mandujano, en adelante “Balvanera Polo y Country Club”, y por la otra parte, el señor (a) <span class="fld" id="d-nombre-1">______________________</span> a quien en lo sucesivo se le denominará como el “Membresista”; el cual sujetan al tenor de las siguientes declaraciones y cláusulas:</h1>
 
+<div class="cols">
   <h2 class="section">D E C L A R A C I O N E S</h2>
 
   <p><b>I.- DECLARA “BALVANERA POLO”, POR CONDUCTO DE SU APODERADO LEGAL Y BAJO PROTESTA DE DECIR VERDAD:</b></p>
@@ -101,11 +87,11 @@
   </div>
 
   <p><b>II.2.-</b> Que cuenta con la capacidad necesaria y suficiente para obligarse en los términos del presente contrato y asumir todas las obligaciones derivadas del mismo. Y se encuentra al corriente en el pago de todos los impuestos, derechos y demás obligaciones a su cargo cuyo incumplimiento pudiere afectar en forma sustancial y adversa su situación financiera.</p>
-  <p><b>III.3.-</b> Que se encuentra al corriente en el pago de todos los derechos, impuestos y demás obligaciones a su cargo cuyo cumplimiento pudiere afectar en forma substancial y adversa el cumplimiento del presente contrato.</p>
-  <p><b>III.4.-</b> Que cuenta con los recursos económicos necesarios para dar cumplimiento a todas y cada una de las obligaciones que asumirá por virtud del presente instrumento.</p>
-  <p><b>III.5.-</b> Que conoce plenamente las instalaciones y servicios del Club de Golf Balvanera, ubicadas en Km.10 de la Carretera Libre a Celaya, Corregidora Qro. y expresamente manifiesta su interés en celebrar el presente contrato que le dará derecho a ser considerado como un usuario del mismo.</p>
-  <p><b>III.6.-</b> Que a partir de la firma del presente instrumento se obliga a cubrir la inscripción y las mensualidades correspondientes al periodo comprendido dentro del mes de <span class="fld" id="d-mes-inicio">______________</span> del año <span class="fld" id="d-anio-inicio">______</span> al mes <span class="fld" id="d-mes-fin">______________</span> del año <span class="fld" id="d-anio-fin">______</span>, de la membresía contratada.</p>
-  <p><b>III.7.-</b> Que señala como su domicilio para todos los efectos del presente instrumento, el ubicado en mismo.</p>
+  <p><b>II.3.-</b> Que se encuentra al corriente en el pago de todos los derechos, impuestos y demás obligaciones a su cargo cuyo cumplimiento pudiere afectar en forma substancial y adversa el cumplimiento del presente contrato.</p>
+  <p><b>II.4.-</b> Que cuenta con los recursos económicos necesarios para dar cumplimiento a todas y cada una de las obligaciones que asumirá por virtud del presente instrumento.</p>
+  <p><b>II.5.-</b> Que conoce plenamente las instalaciones y servicios del Club de Golf Balvanera, ubicadas en Km.10 de la Carretera Libre a Celaya, Corregidora Qro. y expresamente manifiesta su interés en celebrar el presente contrato que le dará derecho a ser considerado como un usuario del mismo.</p>
+  <p><b>II.6.-</b> Que a partir de la firma del presente instrumento se obliga a cubrir la inscripción y las mensualidades correspondientes al periodo comprendido dentro del mes de <span class="fld" id="d-mes-inicio">______________</span> del año <span class="fld" id="d-anio-inicio">______</span> al mes <span class="fld" id="d-mes-fin">______________</span> del año <span class="fld" id="d-anio-fin">______</span>, de la membresía contratada.</p>
+  <p><b>II.7.-</b> Que señala como su domicilio para todos los efectos del presente instrumento, el señalado en el numeral II.1 anterior.</p>
 
   <p>VISTAS LAS DECLARACIONES VERTIDAS POR AMBAS PARTES, ESTAS SE SOMETEN A LAS SIGUIENTES:</p>
 
@@ -128,10 +114,6 @@
   <p><b>QUINTA. - HORARIOS:</b> Los horarios para que el “MEMBRESISTA” haga uso del Campo de Golf, son exclusivamente los siguientes: los lunes de 07:00 a 15:00, de martes a viernes de las 07:00 a las 19:00 horas, los sábados de las 07:00 a las 17:00 horas y los domingos de las 07:00 a las 15:00 horas.</p>
   <p>En invierno, el horario se encuentra sujeto a cambios debido a las condiciones climáticas (lluvias ó heladas), por lo que se necesitará autorización del “GREEN KEEPER” ó “SUPERVISOR” para salir al Campo de Golf.</p>
   <p>En verano, el horario podrá extenderse previo aviso por parte de la Gerencia de Golf y de acuerdo con lo que indique el Reglamento en uso. Durante la temporada de lluvias, el Club de Golf Balvanera se reserva el derecho de cerrar el Campo sin previo aviso, si así lo considera conveniente, con el objetivo de salvaguardar la seguridad de los “MEMBRESISTAS”, así como las condiciones óptimas de Fairway’s, Tees de salida, Green’s e instalaciones del Campo de Golf.</p>
-</div>
-
-<div class="page">
-  <div class="membresia-header">MEMBRESÍA: <span class="fld fld-membresia">____________</span></div>
 
   <p><b>SEXTA. - OBLIGACIONES DEL “MEMBRESISTA”. -</b> El “MEMBRESISTA” se obliga a cumplir y respetar los lineamientos y disposiciones emitidas por “BALVANERA POLO” o contenidas en el reglamento interno, las que, de forma enunciativa y no limitativa, consisten en lo siguiente:</p>
 
@@ -144,7 +126,7 @@
 
   <p><b>B) CARROS DE GOLF:</b></p>
   <p><b>PROPIOS</b></p>
-  <p>d.1) Al ingresar un nuevo carro se tendrá que registrar en la Administración para darlo de alta. En caso de no tener el registro del carro, se sacará del área establecida y no dependerá del Club de Golf Balvanera su carga o cuidado. El precio mensual de la pensión del Carrito de Golf es de $800.00 (ochocientos pesos 00/ MN)</p>
+  <p>b.1) Al ingresar un nuevo carro se tendrá que registrar en la Administración para darlo de alta. En caso de no tener el registro del carro, se sacará del área establecida y no dependerá del Club de Golf Balvanera su carga o cuidado. El precio mensual de la pensión del Carrito de Golf es de $800.00 (ochocientos pesos 00/ MN)</p>
   <p>b.2) Se deberá de cumplir con las cuotas establecidas por “BALVANERA POLO”, para contar con el servicio de pensión en el área establecida. En el caso de incumplimiento del pago de la cuota de pensión por más de 1 mes, se retirará el Carro de golf del área establecida para pensión y se pondrá a disposición del propietario sin responsabilidad alguna para “BALVANERA POLO”.</p>
   <p>b.3) Se deberá entregar una lista de los usuarios del carro y solamente éstos tendrán derecho de usar o disponer del vehículo, en el supuesto de que una persona ajena a la lista quiera hacer uso del citado Carro, tendrá que mostrar y entregar una autorización por escrito del Titular.</p>
   <p>b.4) Si se requiere retirar el Carrito de las instalaciones del Club, tendrá que hacerlo el titular previo aviso por escrito a la administración y bajo su responsabilidad.</p>
@@ -170,40 +152,32 @@
 
   <p><b>DÉCIMA PRIMERA. - DOMICILIOS:</b> Para todos los efectos del presente Contrato las partes señalan como sus domicilios los estipuladas en el apartado de declaraciones del presente contrato, obligándose a comunicar por escrito y con 15 días de anticipación cualquier cambio que hicieren de dichos domicilios, en el entendido de que, en caso de no hacerlo, las notificaciones realizadas en los domicilios antes señalados surtirán efectos y se tendrán por realizadas.</p>
 
+</div>
+
   <p class="final-caps">
     SE FIRMA EL PRESENTE CONTRATO Y REGLAMENTO POR VOLUNTAD DE LAS PARTES POR DUPLICADO EN EL MUNICIPIO DE CORREGIDORA, QRO., A LOS <span class="fld" id="d-firma-dia">___</span> DÍAS DEL MES DE <span class="fld" id="d-firma-mes">______________</span> DE <span class="fld" id="d-firma-anio">______</span>.
   </p>
 
-  <div class="firma-wrap">
-    <div class="firmas">
-      <div class="firma-col">
-        <div>“EL MEMBRESISTA”</div>
-        <div class="firma-linea"></div>
-        <div class="firma-nombre" id="d-nombre-firma">&nbsp;</div>
-        <div>POR PROPIO DERECHO</div>
-      </div>
-      <div class="firma-col">
-        <div>“BALVANERA POLO”</div>
-        <div class="firma-linea"></div>
-        <div class="firma-nombre">SR. JORGE DIEGO VILLASEÑOR MANDUJANO</div>
-        <div>Apoderado Legal de la empresa denominada</div>
-        <div>BALVANERA POLO Y COUNTRY CLUB, S.A. DE C.V.</div>
-      </div>
+  <div class="firmas">
+    <div class="firma-col">
+      <div>“EL MEMBRESISTA”</div>
+      <div class="firma-linea"></div>
+      <div class="firma-nombre" id="d-nombre-firma">&nbsp;</div>
+      <div>POR PROPIO DERECHO</div>
     </div>
-
-    <div class="testigos">
-      <div class="firma-col">
-        <div>TESTIGO</div>
-        <div class="firma-linea"></div>
-        <div class="firma-nombre">MIGUEL VALDES DEL TORO</div>
-        <div>VENTAS</div>
-      </div>
-      <div class="firma-col">
-        <div>TESTIGO</div>
-        <div class="firma-linea"></div>
-        <div class="firma-nombre">LIC. JUAN CARLOS LOPEZ CELIS</div>
-        <div>OPERACIONES</div>
-      </div>
+    <div class="firma-col">
+      <div>“BALVANERA POLO”</div>
+      <div class="firma-linea"></div>
+      <div class="firma-nombre">SR. JORGE DIEGO VILLASEÑOR MANDUJANO</div>
+      <div>Apoderado Legal de BALVANERA POLO Y COUNTRY CLUB, S.A. DE C.V.</div>
+    </div>
+    <div class="firma-col">
+      <div>TESTIGO</div>
+      <div class="firma-linea"></div>
+    </div>
+    <div class="firma-col">
+      <div>TESTIGO</div>
+      <div class="firma-linea"></div>
     </div>
   </div>
 </div>
