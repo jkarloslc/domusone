@@ -27,7 +27,6 @@ const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
 const TABS = [
   { key: 'info',        label: 'Información',      icon: FileText      },
   { key: 'membresia',   label: 'Membresía',         icon: Award         },
-  { key: 'contratos',   label: 'Contratos',         icon: FileText      },
   { key: 'familiares',  label: 'Familiares',        icon: Users         },
   { key: 'accesos',     label: 'Accesos al Campo',  icon: MapPin        },
   { key: 'tee',         label: 'Tee de Práctica',   icon: Target        },
@@ -628,7 +627,7 @@ function Empty({ text, emoji }: { text: string; emoji?: string }) {
 }
 
 // ── Tab Membresía ────────────────────────────────────────────
-function TabMembresia({ socio, vencido }: { socio: Socio; vencido: boolean }) {
+function TabMembresia({ socio, vencido, puedeEscribir }: { socio: Socio; vencido: boolean; puedeEscribir: boolean }) {
   const titulo = (t: string, first = false) => (
     <div style={{ margin: first ? '4px 0 6px' : '18px 0 6px', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{t}</div>
   )
@@ -643,6 +642,9 @@ function TabMembresia({ socio, vencido }: { socio: Socio; vencido: boolean }) {
       <Row label="Vencimiento"      value={<span style={{ color: vencido ? '#dc2626' : 'inherit' }}>{fmt(socio.fecha_vencimiento)}</span>} />
       <Row label="Estatus"          value={!socio.activo ? 'Inactivo' : vencido ? 'Vencido' : 'Activo'} />
       <Row label="Derecho a intercambios" value={socio.derecho_intercambios ? 'Sí' : 'No'} />
+
+      {titulo('Alta / Renovación por ciclo')}
+      <ContratosMembresia socio={socio} puedeEscribir={puedeEscribir} />
     </>
   )
 }
@@ -713,8 +715,7 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
             </>
           )}
 
-          {tab === 'membresia'   && <TabMembresia    socio={socio} vencido={!!vencido} />}
-          {tab === 'contratos'   && <ContratosMembresia socio={socio} puedeEscribir={canWrite('golf-miembros')} />}
+          {tab === 'membresia'   && <TabMembresia    socio={socio} vencido={!!vencido} puedeEscribir={canWrite('golf-miembros')} />}
           {tab === 'familiares'  && <TabFamiliares   socioId={socio.id} />}
           {tab === 'accesos'     && <TabAccesos      socioId={socio.id} />}
           {tab === 'tee'         && <TabTeePractica  socioId={socio.id} />}
