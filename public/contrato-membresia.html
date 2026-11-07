@@ -17,16 +17,14 @@
   .page {
     background: #fff;
     width: 21.59cm;
-    height: 27.6cm;
     margin: 0 auto 24px;
-    padding: 0.9cm 1cm;
+    padding: 0.8cm 1cm;
     box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-    overflow: hidden;
     break-inside: avoid; page-break-inside: avoid;
   }
   .membresia-header { text-align: right; font-size: 7.5pt; margin-bottom: 3px; }
   h1 { font-size: 7pt; text-align: justify; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
-  .cols { column-count: 3; column-gap: 0.5cm; column-rule: 0.5px solid #999; height: 21.3cm; column-fill: auto; overflow: hidden; }
+  .cols { column-count: 3; column-gap: 0.5cm; column-rule: 0.5px solid #999; column-fill: balance; }
   h2.section { font-size: 6.8pt; text-align: center; font-weight: bold; letter-spacing: 1.5px; margin: 4px 0 3px; break-after: avoid; }
   p { text-align: justify; hyphens: auto; -webkit-hyphens: auto; margin-bottom: 2.5px; }
   .fld { text-decoration: underline; font-weight: bold; padding: 0 1px; }
@@ -36,7 +34,7 @@
   .firmas { display: flex; justify-content: space-between; gap: 0.5cm; text-align: center; font-size: 6.5pt; }
   .firma-col { flex: 1; }
   .firma-col > div:first-child { height: 9px; }
-  .firma-linea { border-top: 1px solid #000; margin: 26px auto 3px; width: 85%; }
+  .firma-linea { border-top: 1px solid #000; margin: 20px auto 3px; width: 85%; }
   .firma-nombre { font-weight: bold; text-transform: uppercase; margin-top: 2px; min-height: 8px; }
 
   .btn-print {
@@ -50,7 +48,7 @@
   @media print {
     body { background: #fff; padding: 0; }
     html, body { margin: 0; padding: 0; }
-    .page { box-shadow: none; margin: 0; }
+    .page { box-shadow: none; margin: 0; padding: 0.5cm 1cm; }
     .no-print { display: none !important; }
     @page { size: letter; margin: 0; }
   }
