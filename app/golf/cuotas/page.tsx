@@ -135,6 +135,7 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
   useEffect(() => {
     dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true)
       .neq('tipo', 'PENSION_CARRITO')   // pensiones se cargan desde PensionModal
+      .neq('tipo', 'INSCRIPCION')       // la inscripción nace solo del contrato firmado (Socio → Contratos)
       .order('tipo').order('nombre')
       .then(({ data }) => { setConfigs((data as CuotaConfig[]) ?? []); setLoadingCfg(false) })
   }, [])
@@ -470,7 +471,6 @@ function NuevaCuotaModal({ onClose, onSaved, authUser }: { onClose: () => void; 
                   (PensionModal) para que lleven id_pension_fk y se controlen por carrito */}
               <select style={inp} value={tipo} onChange={e => setTipo(e.target.value)}>
                 <option value="MENSUALIDAD">Mensualidad</option>
-                <option value="INSCRIPCION">Inscripción</option>
               </select>
             </div>
           )}
@@ -637,6 +637,7 @@ function GenerarMasivoModal({ onClose, onSaved, authUser }: { onClose: () => voi
   useEffect(() => {
     dbGolf.from('cat_cuotas_config').select('*, cat_categorias_socios(nombre)').eq('activo', true)
       .neq('tipo', 'PENSION_CARRITO')   // pensiones se cargan desde PensionModal
+      .neq('tipo', 'INSCRIPCION')       // la inscripción nace solo del contrato firmado (Socio → Contratos)
       .order('nombre')
       .then(({ data }) => setConfigs((data as CuotaConfig[]) ?? []))
   }, [])
