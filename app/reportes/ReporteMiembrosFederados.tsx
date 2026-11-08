@@ -6,11 +6,14 @@ import { Award, Search, RefreshCw } from 'lucide-react'
 
 type FedRow = {
   id: number
-  clave: string | null
   periodo: number
   comprobante_url: string | null
-  notas: string | null
+  monto: number | null
+  fecha_pago: string | null
+  beneficiarios: string | null
   cat_socios: {
+    federacion_clave: string | null
+    federacion_codigo: string | null
     numero_socio: string | null
     nombre: string
     apellido_paterno: string | null
@@ -34,9 +37,9 @@ export default function ReporteMiembrosFederados() {
     let q = dbGolf
       .from('ctrl_federacion')
       .select(`
-        id, clave, periodo, comprobante_url, notas,
+        id, periodo, comprobante_url, monto, fecha_pago, beneficiarios,
         cat_socios (
-          numero_socio, nombre, apellido_paterno, apellido_materno, email,
+          federacion_clave, federacion_codigo, numero_socio, nombre, apellido_paterno, apellido_materno, email,
           cat_categorias_socios ( nombre )
         )
       `)
@@ -55,7 +58,7 @@ export default function ReporteMiembrosFederados() {
   const filtered = search.trim()
     ? rows.filter(r => {
         const s = r.cat_socios
-        const txt = [s?.numero_socio, s?.nombre, s?.apellido_paterno, s?.apellido_materno, r.clave]
+        const txt = [s?.numero_socio, s?.nombre, s?.apellido_paterno, s?.apellido_materno, s?.federacion_clave, s?.federacion_codigo]
           .filter(Boolean).join(' ').toLowerCase()
         return search.trim().toLowerCase().split(/\s+/).every(w => txt.includes(w))
       })
@@ -141,7 +144,7 @@ export default function ReporteMiembrosFederados() {
               <table id="reporte-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                    {['#', 'Socio', 'Categoría', 'Período', 'Clave Federación', 'Notas', 'Email'].map(h => (
+                    {['#', 'Socio', 'Categoría', 'Período', 'Clave', 'Código', 'Monto', 'Pago', 'Beneficiarios', 'Email'].map(h => (
                       <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                         {h}
                       </th>
@@ -175,10 +178,19 @@ export default function ReporteMiembrosFederados() {
                         {r.periodo}
                       </td>
                       <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: '#1e293b' }}>
-                        {r.clave ?? <span style={{ color: '#94a3b8' }}>—</span>}
+                        {r.cat_socios?.federacion_clave ?? <span style={{ color: '#94a3b8' }}>—</span>}
+                      </td>
+                      <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12, color: '#1e293b' }}>
+                        {r.cat_socios?.federacion_codigo ?? <span style={{ color: '#94a3b8' }}>—</span>}
+                      </td>
+                      <td style={{ padding: '10px 14px', fontSize: 12, color: '#1e293b' }}>
+                        {r.monto != null ? `$${Number(r.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '—'}
                       </td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b' }}>
-                        {r.notas ?? '—'}
+                        {r.fecha_pago ? new Date(r.fecha_pago + 'T12:00:00').toLocaleDateString('es-MX') : 'Pendiente'}
+                      </td>
+                      <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b' }}>
+                        {r.beneficiarios ?? '—'}
                       </td>
                       <td style={{ padding: '10px 14px', fontSize: 12, color: '#64748b' }}>
                         {r.cat_socios?.email ?? '—'}
