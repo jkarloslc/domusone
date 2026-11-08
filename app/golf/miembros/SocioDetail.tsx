@@ -9,6 +9,7 @@ import type { Socio } from './SocioModal'
 import BitacoraCobranzaTab from '@/components/cobranza/BitacoraCobranzaTab'
 import ModalShell from '@/components/ui/ModalShell'
 import ContratosMembresia from './ContratosMembresia'
+import TabFederacion from './TabFederacion'
 
 type Props = { socio: Socio; onClose: () => void; onEdit: () => void }
 
@@ -36,6 +37,7 @@ const TABS = [
   { key: 'seguimiento', label: 'Seguimiento',        icon: ClipboardList },
   { key: 'notas',       label: 'Notas',             icon: NotebookText  },
   { key: 'fiscal',      label: 'Datos Fiscales',    icon: Receipt       },
+  { key: 'federacion',  label: 'Federación',        icon: Award         },
   { key: 'facturas',   label: 'Facturas',           icon: FileText      },
   { key: 'cobranza',  label: 'Cobranza',           icon: CreditCard    },
   { key: 'recibos',   label: 'Recibos',            icon: Receipt       },
@@ -750,6 +752,9 @@ export default function SocioDetail({ socio, onClose, onEdit }: Props) {
 
           {/* ── Datos Fiscales ── */}
           {tab === 'fiscal'   && <TabDatosFiscales socioId={socio.id} />}
+
+          {/* ── Federación ── */}
+          {tab === 'federacion' && <TabFederacion socioId={socio.id} editable={false} />}
 
           {/* ── Facturas ── */}
           {tab === 'facturas'  && <TabFacturas      socioId={socio.id} />}

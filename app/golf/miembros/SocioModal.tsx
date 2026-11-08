@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase, dbGolf } from '@/lib/supabase'
 import TabCobranzaSocio from './TabCobranzaSocio'
 import TabRecibosSocio from './TabRecibosSocio'
+import TabFederacion from './TabFederacion'
 import { Save, Loader, Plus, Trash2, Users, Upload, FileText, Image, CheckCircle, ExternalLink, FileCheck, Award, Receipt, Edit2, Printer } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import ContratosMembresia from './ContratosMembresia'
@@ -121,16 +122,6 @@ const CONTRATO_VACIO: ContratoForm = {
   notas: '',
 }
 
-type Federacion = {
-  id: number
-  id_socio_fk: number
-  clave: string | null
-  periodo: number
-  comprobante_url: string | null
-  notas: string | null
-  created_at: string
-}
-
 type DatoFiscal = {
   id: number
   id_socio_fk: number
@@ -157,18 +148,6 @@ type DatoFiscalForm = {
 
 const DATO_FISCAL_VACIO: DatoFiscalForm = {
   alias: '', rfc: '', razon_social_fiscal: '', cp_fiscal: '', regimen_fiscal: '626', uso_cfdi: 'G03', email_fiscal: '',
-}
-
-type FederacionForm = {
-  clave: string
-  periodo: string
-  notas: string
-}
-
-const FEDERACION_VACIA: FederacionForm = {
-  clave: '',
-  periodo: String(new Date().getFullYear()),
-  notas: '',
 }
 
 type Props = {
@@ -234,17 +213,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const [uploadingCon, setUploadingCon] = useState(false)
   const [archivoConUrl, setArchivoConUrl] = useState('')
 
-  // ── Federación ──
-  const [federaciones, setFederaciones]         = useState<Federacion[]>([])
-  const [loadingFed, setLoadingFed]             = useState(false)
-  const [showFormFed, setShowFormFed]           = useState(false)
-  const [savingFed, setSavingFed]               = useState(false)
-  const [errorFed, setErrorFed]                 = useState('')
-  const [nuevoFed, setNuevoFed]                 = useState<FederacionForm>(FEDERACION_VACIA)
-  const [eliminandoFed, setEliminandoFed]       = useState<number | null>(null)
-  const fileFedRef = useRef<HTMLInputElement>(null)
-  const [uploadingFed, setUploadingFed]         = useState(false)
-  const [comprobanteFedUrl, setComprobanteFedUrl] = useState('')
+  const [fedCount, setFedCount] = useState(0)
 
   // ── Datos Fiscales ──
   const [fiscales, setFiscales]                 = useState<DatoFiscal[]>([])
@@ -286,7 +255,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
   const set    = (k: keyof typeof form, v: any)     => setForm(f => ({ ...f, [k]: v }))
   const setFam = (k: keyof FamiliarForm, v: string)  => setNuevoFam(f => ({ ...f, [k]: v }))
   const setCon = (k: keyof ContratoForm, v: string)  => setNuevoCon(f => ({ ...f, [k]: v }))
-  const setFed = (k: keyof FederacionForm, v: string) => setNuevoFed(f => ({ ...f, [k]: v }))
+
   const setFiscal = (k: keyof DatoFiscalForm, v: string) => setNuevoFiscal(f => ({ ...f, [k]: v }))
 
   useEffect(() => {
@@ -334,23 +303,6 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
 
   useEffect(() => {
     if ((tab === 1 || tab === 4) && !isNew) fetchContratos()
-  }, [tab])
-
-  // ── Federación ──
-  const fetchFederaciones = async () => {
-    if (!socio) return
-    setLoadingFed(true)
-    const { data } = await dbGolf
-      .from('ctrl_federacion')
-      .select('id, id_socio_fk, clave, periodo, comprobante_url, notas, created_at')
-      .eq('id_socio_fk', socio.id)
-      .order('periodo', { ascending: false })
-    setFederaciones((data as Federacion[]) ?? [])
-    setLoadingFed(false)
-  }
-
-  useEffect(() => {
-    if (tab === 7 && !isNew) fetchFederaciones()
   }, [tab])
 
   // ── Datos Fiscales ──
@@ -570,40 +522,6 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
     fetchContratos()
   }
 
-  // ── Federación CRUD ──
-  const handleUploadComprobanteFed = async (file: File) => {
-    if (!socio) return
-    setUploadingFed(true)
-    const ext  = file.name.split('.').pop()?.toLowerCase() ?? 'pdf'
-    const path = `federacion/socio_${socio.id}_${nuevoFed.periodo}_${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage.from('golf-docs').upload(path, file, { upsert: true })
-    if (!upErr) setComprobanteFedUrl(path)
-    setUploadingFed(false)
-  }
-
-  const handleGuardarFederacion = async () => {
-    if (!nuevoFed.periodo) { setErrorFed('El período (año) es obligatorio'); return }
-    setSavingFed(true); setErrorFed('')
-    const { error: err } = await dbGolf.from('ctrl_federacion').upsert({
-      id_socio_fk:     socio!.id,
-      periodo:         Number(nuevoFed.periodo),
-      clave:           nuevoFed.clave   || null,
-      comprobante_url: comprobanteFedUrl || null,
-      notas:           nuevoFed.notas   || null,
-    }, { onConflict: 'id_socio_fk,periodo' })
-    if (err) { setErrorFed(err.message); setSavingFed(false); return }
-    setNuevoFed(FEDERACION_VACIA); setComprobanteFedUrl(''); setShowFormFed(false); setSavingFed(false)
-    fetchFederaciones()
-  }
-
-  const handleEliminarFederacion = async (id: number) => {
-    if (!confirm('¿Eliminar este registro de federación?')) return
-    setEliminandoFed(id)
-    await dbGolf.from('ctrl_federacion').delete().eq('id', id)
-    setEliminandoFed(null)
-    fetchFederaciones()
-  }
-
   const handleEliminarContrato = async (id: number) => {
     if (!confirm('¿Eliminar este contrato?')) return
     setEliminandoCon(id)
@@ -695,7 +613,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
       : i === 3 && !isNew && idUrl ? '✓'
       : i === 4 && !isNew && contratos.some(c => c.vigente) ? contratos.length
       : i === 6 && !isNew && fiscales.length > 0 ? fiscales.length
-      : i === 7 && !isNew && federaciones.length > 0 ? federaciones.length
+      : i === 7 && !isNew && fedCount > 0 ? fedCount
       : i === 8 && !isNew && facturasSocio.length > 0 ? facturasSocio.length
       : undefined
     ),
@@ -1040,113 +958,7 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
 
           {/* ── Tab 7: Federación ── */}
           {tab === 7 && !isNew && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Award size={15} style={{ color: '#d97706' }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>Inscripciones Federación Mexicana de Golf</span>
-                  {!loadingFed && <span style={{ fontSize: 11, color: '#64748b' }}>({federaciones.length})</span>}
-                </div>
-                {!showFormFed && (
-                  <button onClick={() => { setShowFormFed(true); setErrorFed(''); setComprobanteFedUrl('') }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
-                    <Plus size={13} /> Nueva inscripción
-                  </button>
-                )}
-              </div>
-
-              {/* Formulario nueva inscripción */}
-              {showFormFed && (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '16px' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginBottom: 12 }}>Nueva inscripción federación</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    <div>
-                      <label style={labelStyle}>Período (Año) *</label>
-                      <input style={inputStyle} type="number" min={2000} max={2100} value={nuevoFed.periodo}
-                        onChange={e => setFed('periodo', e.target.value)} placeholder="2025" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Clave de federación</label>
-                      <input style={inputStyle} value={nuevoFed.clave}
-                        onChange={e => setFed('clave', e.target.value)} placeholder="Ej. FMG-00001" />
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={labelStyle}>Notas</label>
-                      <input style={inputStyle} value={nuevoFed.notas}
-                        onChange={e => setFed('notas', e.target.value)} placeholder="Opcional" />
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={labelStyle}>Comprobante de pago (PDF/imagen)</label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <button onClick={() => fileFedRef.current?.click()} disabled={uploadingFed}
-                          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', cursor: 'pointer', color: '#475569', opacity: uploadingFed ? 0.6 : 1 }}>
-                          {uploadingFed ? <Loader size={12} className="animate-spin" /> : <Upload size={12} />}
-                          {comprobanteFedUrl ? 'Cambiar archivo' : 'Subir comprobante'}
-                        </button>
-                        {comprobanteFedUrl && (
-                          <span style={{ fontSize: 11, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle size={12} /> Archivo listo
-                          </span>
-                        )}
-                      </div>
-                      <input ref={fileFedRef} type="file" accept="image/jpeg,image/png,application/pdf" style={{ display: 'none' }}
-                        onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadComprobanteFed(f); e.target.value = '' }} />
-                    </div>
-                  </div>
-                  {errorFed && (
-                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>{errorFed}</div>
-                  )}
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setShowFormFed(false); setNuevoFed(FEDERACION_VACIA); setComprobanteFedUrl(''); setErrorFed('') }}
-                      style={{ padding: '7px 14px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', color: '#475569', cursor: 'pointer' }}>
-                      Cancelar
-                    </button>
-                    <button onClick={handleGuardarFederacion} disabled={savingFed}
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 8, background: '#d97706', color: '#fff', cursor: 'pointer', opacity: savingFed ? 0.7 : 1 }}>
-                      {savingFed ? <Loader size={12} className="animate-spin" /> : <Save size={12} />}
-                      Guardar
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Lista de inscripciones */}
-              {loadingFed ? (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: 13 }}>Cargando…</div>
-              ) : federaciones.length === 0 && !showFormFed ? (
-                <div style={{ textAlign: 'center', padding: '32px 20px', background: '#f8fafc', borderRadius: 10, border: '1px dashed #e2e8f0' }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>🏌️</div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 4 }}>Sin inscripciones registradas</div>
-                  <div style={{ fontSize: 12, color: '#94a3b8' }}>Registra la inscripción anual a la Federación Mexicana de Golf</div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {federaciones.map(f => (
-                    <div key={f.id} style={{ border: '1px solid #fde68a', background: '#fffbeb', borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <Award size={18} style={{ color: '#d97706', flexShrink: 0 }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                          <span style={{ fontSize: 15, fontWeight: 700, color: '#1e293b' }}>{f.periodo}</span>
-                          {f.clave && (
-                            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: '#fef3c7', color: '#92400e', fontFamily: 'monospace' }}>
-                              {f.clave}
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 11, color: '#64748b', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-                          {f.notas && <span>{f.notas}</span>}
-                          {f.comprobante_url && <FederacionComprobanteLink path={f.comprobante_url} />}
-                        </div>
-                      </div>
-                      <button onClick={() => handleEliminarFederacion(f.id)} disabled={eliminandoFed === f.id}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 4, opacity: eliminandoFed === f.id ? 0.5 : 1 }} title="Eliminar">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <TabFederacion socioId={socio!.id} editable={true} onChange={n => setFedCount(n)} />
           )}
 
           {/* ── Tab 6: Datos Fiscales ── */}
@@ -1404,22 +1216,6 @@ export default function SocioModal({ socio, onClose, onSaved }: Props) {
             </div>
           )}
     </ModalShell>
-  )
-}
-
-// Sub-componente para abrir comprobante de federación
-function FederacionComprobanteLink({ path }: { path: string }) {
-  const [url, setUrl] = useState<string | null>(null)
-  useEffect(() => {
-    supabase.storage.from('golf-docs').createSignedUrl(path, 3600)
-      .then(({ data }) => setUrl(data?.signedUrl ?? null))
-  }, [path])
-  if (!url) return null
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#d97706', textDecoration: 'none', fontSize: 11, fontWeight: 600 }}>
-      <ExternalLink size={10} /> Ver comprobante
-    </a>
   )
 }
 
