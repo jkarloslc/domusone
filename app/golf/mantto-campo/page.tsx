@@ -42,7 +42,7 @@ export default function GolfManttoCampoPage() {
         icon={Leaf}
         eyebrowLabel="Módulo"
         title="Mantto. Campo"
-        subtitle="Riego, mantenimiento del campo, vehículos, herramienta y servicios"
+        subtitle="Riego, mantenimiento y estatus del campo"
       />
 
       {/* Grid de módulos */}
