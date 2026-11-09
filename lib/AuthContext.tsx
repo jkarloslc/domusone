@@ -296,7 +296,7 @@ const ESCRIBIR: Record<RolBase, string[] | '*'> = {
                         'incidencias', 'afectaciones', 'construcciones', 'mantenimiento', 'comunicados'],
   cobranza:            ['cobranza', 'facturas', 'ingresos'],
   vigilancia:          ['accesos', 'incidencias', 'vigilancia-extras', 'vigilancia-novedades'],
-  compras:             ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores', 'articulos', 'mantenimiento'],
+  compras:             ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores', 'articulos', 'mantenimiento', 'equipo-flota', 'herramientas'],
   compras_supervisor:  ['compras', 'requisiciones', 'cotizaciones', 'ordenes', 'ordenes-pago', 'proveedores', 'articulos'],
   almacen:             ['compras', 'articulos', 'almacenes', 'areas'],
   mantenimiento:       ['mantenimiento', 'capex'],
