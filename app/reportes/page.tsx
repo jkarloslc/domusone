@@ -23,6 +23,7 @@ import ReportePreOrdenes from './ReportePreOrdenes'
 import ReporteAntiguedadOPporCC from './ReporteAntiguedadOPporCC'
 import ReporteCXPporCC from './ReporteCXPporCC'
 import ReporteCXP from './ReporteCXP'
+import ReporteCXPTesoreria from './ReporteCXPTesoreria'
 import ReporteKardex from './ReporteKardex'
 import ReporteTransferencias from './ReporteTransferencias'
 import ReporteOrdenesTrabajo from './ReporteOrdenesTrabajo'
@@ -141,6 +142,7 @@ const GRUPOS = [
     reportes: [
       { id: 'estado-cuenta',        label: 'Estado de Cuenta',           icon: Building2, desc: 'Movimientos por cuenta bancaria con saldo inicial, cargos, abonos y saldo final del período' },
       { id: 'cxp',                  label: 'Antigüedad de Saldos CXP',  icon: FileText,  desc: 'Cuentas por pagar con bandas de vencimiento' },
+      { id: 'cxp-tesoreria',        label: 'Cuentas por Pagar (CXP)',   icon: Wallet,    desc: 'Misma estructura que Tesorería > CXP: programación de pago por martes, saldos por proveedor, antigüedad y remesas — filtrable por CC, área, frente y proveedor, con export a Excel' },
       { id: 'ordenes-pago-cc',      label: 'Órdenes de Pago por CC / Área', icon: Wallet, desc: 'OPs agrupadas por centro de costo y área, con filtros por status y rango de fechas' },
       { id: 'pre-ordenes-pago', label: 'Pre-órdenes de Pago por Mes / CC', icon: Clock, desc: 'Compromisos futuros cotizados (no afectan flujo ni presupuesto), agrupados por mes de pago estimado y centro de costo' },
       { id: 'antiguedad-op-cc',     label: 'Antigüedad de OPs por CC / Área', icon: Clock, desc: 'Saldos pendientes por banda de vencimiento (0-30, 31-60, 61-90, +90), agrupados por CC y Área' },
@@ -382,6 +384,7 @@ function ReportesContent() {
       {active === 'ops-tipo-gasto'   && <ReporteOPsPorTipoGasto />}
       {active === 'ops-clasificacion-articulos' && <ReporteOPsPorClasificacionArticulos />}
       {active === 'cxp'              && <ReporteCXP />}
+      {active === 'cxp-tesoreria'    && <ReporteCXPTesoreria />}
       {active === 'kardex'           && <ReporteKardex />}
       {active === 'transferencias'        && <ReporteTransferencias />}
       {active === 'compras-por-proveedor'       && <ReporteComprasPorProveedor />}
