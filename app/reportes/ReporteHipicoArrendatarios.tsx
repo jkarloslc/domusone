@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { dbHip } from '@/lib/supabase'
 import { PrintBar } from './utils'
+import ReporteHipicoArrendatariosMensual, { fetchAll } from './ReporteHipicoArrendatariosMensual'
 
 type Arrendatario = {
   id: number
@@ -35,21 +36,7 @@ const fmt$ = (v: number) => '$' + v.toLocaleString('es-MX', { minimumFractionDig
 const fmtFecha = (d: string) =>
   new Date(d + 'T12:00:00').toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
 
-// Supabase limita a 1000 filas por consulta: se pagina hasta agotar resultados.
-async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ data: any; error: any }>): Promise<T[]> {
-  const out: T[] = []
-  const PAGE = 1000
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await build(from, from + PAGE - 1)
-    if (error) throw new Error(error.message)
-    const rows = (data ?? []) as T[]
-    out.push(...rows)
-    if (rows.length < PAGE) break
-  }
-  return out
-}
-
-export default function ReporteHipicoArrendatarios() {
+function ReporteResumen() {
   const hoy = new Date()
   const hoyIso = hoy.toISOString().split('T')[0]
   const inicioAnio = `${hoy.getFullYear()}-01-01`
@@ -254,6 +241,21 @@ export default function ReporteHipicoArrendatarios() {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+export default function ReporteHipicoArrendatarios() {
+  const [vista, setVista] = useState<'resumen' | 'mensual'>('resumen')
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        {([['resumen', 'Resumen'], ['mensual', 'Vista mensual']] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setVista(id)} className={vista === id ? 'btn-primary' : 'btn-ghost'}
+            style={{ fontSize: 13, height: 34, padding: '0 16px' }}>{label}</button>
+        ))}
+      </div>
+      {vista === 'resumen' ? <ReporteResumen /> : <ReporteHipicoArrendatariosMensual />}
     </div>
   )
 }
