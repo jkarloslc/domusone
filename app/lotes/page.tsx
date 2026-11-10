@@ -237,7 +237,7 @@ function LotesContent({ embedded }: { embedded?: boolean }) {
                     {(l as any).id_clasificacion_fk ? (clasificaciones[(l as any).id_clasificacion_fk] ?? '—') : '—'}
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
-                    {zonasCat.zonaDeSeccion(l.id_seccion_fk)?.nombre ?? '—'}
+                    {zonasCat.zonasDeSeccion(l.id_seccion_fk).map(z => z.nombre).join(', ') || '—'}
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>
                     {l.id_seccion_fk ? (secciones[l.id_seccion_fk] ?? '—') : '—'}

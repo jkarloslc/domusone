@@ -43,7 +43,7 @@ Vehículos y Maquinaria, Equipo y Herramienta (con combustible, bitácoras, pré
 
 ## Zonas (antes "Cuadrantes", 2026-11-10)
 - Solo cambió el nombre visible: la tabla sigue siendo `cfg.cuadrantes` y las columnas `id_cuadrante_fk`.
-- Zona agrupa **Secciones** (1:N, `cfg.secciones.id_cuadrante_fk`) y **Áreas** (N:M, `cfg.rel_area_cuadrante`). El **Lote** hereda la zona de su sección (no tiene columna propia).
+- Zona agrupa **Secciones** (N:M, `cfg.rel_seccion_cuadrante`, migr. `20261110120000`; `cfg.secciones.id_cuadrante_fk` queda como respaldo legado) y **Áreas** (N:M, `cfg.rel_area_cuadrante`). El **Lote** hereda las zonas de su sección (no tiene columna propia); una sección en 2 zonas cuenta en ambas.
 - `lib/zonas.tsx`: `useZonas()` (`seccionEnZona`, `areaEnZona`, `seccionesDeZona`, `areasDeZona`, `zonaDeSeccion`) + `<SelectZona>`. Llamar `invalidarZonas()` al editar el catálogo.
 - Filtro Zona → Sección en páginas de ingresos y Zona → Área en páginas de costos. Al crear una página nueva con filtro de Sección o Área, agregar Zona antes.
 

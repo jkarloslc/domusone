@@ -73,13 +73,12 @@ const CATALOGOS: CatConfig[] = [
     label:     'Secciones',
     icon:      MapPin,
     color:     '#2563eb',
-    desc:      'Secciones del fraccionamiento — pertenecen a una Zona y se relacionan con lotes, cobranza y mantenimiento',
+    desc:      'Secciones del fraccionamiento — se agrupan en una o varias Zonas (catálogo Zonas) y se relacionan con lotes, cobranza y mantenimiento',
     hasDetail: true,
     campos: [
       { key: 'id_empresa_fk',       label: 'Empresa',              type: 'select', selectTabla: 'proveedores', selectSchema: 'comp', selectFilter: { interno: true } },
       { key: 'nombre',              label: 'Nombre *',             type: 'text',   required: true },
       { key: 'clave_alfa',          label: 'Abreviatura',          type: 'text' },
-      { key: 'id_cuadrante_fk',     label: 'Zona',                 type: 'select', selectTabla: 'cuadrantes' },
       { key: 'descripcion',         label: 'Descripción',          type: 'textarea' },
       { key: 'id_tipo_seccion_fk',  label: 'Tipo de Sección',      type: 'select', selectTabla: 'tipo_secciones' },
       { key: 'cantidad_lotes',      label: 'Cantidad de Lotes',    type: 'number' },
@@ -1793,14 +1792,15 @@ function CuentaBancariaDetail({ cuenta, onClose }: { cuenta: any; onClose: () =>
 }
 
 // ══════════════════════════════════════════════════════════════
-// CuadranteSecciones — Zona: asigna secciones (1:N), áreas (N:M) y colaboradores
+// CuadranteSecciones — Zona: asigna secciones (N:M), áreas (N:M) y colaboradores
 // ══════════════════════════════════════════════════════════════
 function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: () => void }) {
   const [tab, setTab] = useState<'secciones' | 'areas' | 'colaboradores'>('secciones')
 
-  // ── Secciones (1:N vía cfg.secciones.id_cuadrante_fk) ──
+  // ── Secciones (N:M vía cfg.rel_seccion_cuadrante) ──
   const [todasSecs,    setTodasSecs]    = useState<any[]>([])
   const [zonaNombres,  setZonaNombres]  = useState<Record<number, string>>({})
+  const [otrasZonas,   setOtrasZonas]   = useState<Record<number, number[]>>({})
   const [selSecs,      setSelSecs]      = useState<Set<number>>(new Set())
   const [inicialSecs,  setInicialSecs]  = useState<Set<number>>(new Set())
   const [busqSecs,     setBusqSecs]     = useState('')
@@ -1812,10 +1812,15 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
   useEffect(() => {
     setLoadingSecs(true)
     Promise.all([
-      dbCfg.from('secciones').select('id, nombre, id_cuadrante_fk').eq('activo', true).order('nombre'),
+      dbCfg.from('secciones').select('id, nombre').eq('activo', true).order('nombre'),
       dbCfg.from('cuadrantes').select('id, nombre'),
-    ]).then(async ([{ data: secs }, { data: zs }]) => {
+      dbCfg.from('rel_seccion_cuadrante').select('id_seccion, id_cuadrante'),
+    ]).then(async ([{ data: secs }, { data: zs }, { data: rels, error: eRel }]) => {
+      if (eRel) setErrorSecs('Falta ejecutar la migración 20261110120000_rel_seccion_cuadrante_nm.sql: ' + eRel.message)
       setTodasSecs(secs ?? [])
+      const otras: Record<number, number[]> = {}
+      for (const r of (rels ?? []) as any[]) if (r.id_cuadrante !== cuadrante.id) (otras[r.id_seccion] ??= []).push(r.id_cuadrante)
+      setOtrasZonas(otras)
       // Lotes por sección: el lote hereda la zona de su sección
       const cnt: Record<number, number> = {}
       await Promise.all((secs ?? []).map(async (x: any) => {
@@ -1824,7 +1829,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
       }))
       setLotesPorSec(cnt)
       setZonaNombres(Object.fromEntries((zs ?? []).map((z: any) => [z.id, z.nombre])))
-      const asignadas = new Set<number>((secs ?? []).filter((x: any) => x.id_cuadrante_fk === cuadrante.id).map((x: any) => Number(x.id)))
+      const asignadas = new Set<number>(((rels ?? []) as any[]).filter(r => r.id_cuadrante === cuadrante.id).map(r => Number(r.id_seccion)))
       setSelSecs(new Set(asignadas)); setInicialSecs(new Set(asignadas))
       setLoadingSecs(false)
     })
@@ -1837,15 +1842,16 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
     const added   = Array.from(selSecs).filter(id => !inicialSecs.has(id))
     const removed = Array.from(inicialSecs).filter(id => !selSecs.has(id))
     if (added.length > 0) {
-      const { error: e } = await dbCfg.from('secciones').update({ id_cuadrante_fk: cuadrante.id }).in('id', added)
+      const { error: e } = await dbCfg.from('rel_seccion_cuadrante')
+        .insert(added.map(id => ({ id_seccion: id, id_cuadrante: cuadrante.id })))
       if (e) { setErrorSecs(e.message); setSavingSecs(false); return }
     }
     if (removed.length > 0) {
-      const { error: e } = await dbCfg.from('secciones').update({ id_cuadrante_fk: null }).in('id', removed)
+      const { error: e } = await dbCfg.from('rel_seccion_cuadrante')
+        .delete().eq('id_cuadrante', cuadrante.id).in('id_seccion', removed)
       if (e) { setErrorSecs(e.message); setSavingSecs(false); return }
     }
     invalidarZonas()
-    setTodasSecs(prev => prev.map(x => added.includes(x.id) ? { ...x, id_cuadrante_fk: cuadrante.id } : removed.includes(x.id) ? { ...x, id_cuadrante_fk: null } : x))
     setInicialSecs(new Set(selSecs)); setSavingSecs(false)
   }
   const filtSecs = todasSecs.filter(x => x.nombre.toLowerCase().includes(busqSecs.toLowerCase()))
@@ -1961,14 +1967,14 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
         </button>
       </div>
 
-      {/* Tab Secciones — una sección pertenece a UNA sola zona */}
+      {/* Tab Secciones — N:M: una sección puede estar en varias zonas */}
       {tab === 'secciones' && (
         <>
           <div style={{ padding: '10px 16px', borderBottom: '1px solid #e2e8f0' }}>
             <input className="input" placeholder="Buscar sección…" value={busqSecs}
               onChange={e => setBusqSecs(e.target.value)} style={{ fontSize: 13 }} />
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-              Una sección pertenece a una sola zona; si ya está en otra, al guardar se mueve a esta.
+              Una sección puede pertenecer a varias zonas; sus lotes cuentan en cada una.
             </div>
           </div>
           <div style={{ overflowY: 'auto', maxHeight: 'calc(90vh - 260px)', padding: '8px 0' }}>
@@ -1980,7 +1986,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
               <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)', fontSize: 13 }}>Sin secciones</div>
             ) : filtSecs.map(x => {
               const checked = selSecs.has(x.id)
-              const otraZona = x.id_cuadrante_fk && x.id_cuadrante_fk !== cuadrante.id ? zonaNombres[x.id_cuadrante_fk] : null
+              const otraZona = (otrasZonas[x.id] ?? []).map(z => zonaNombres[z] ?? `#${z}`).join(', ') || null
               return (
                 <label key={x.id}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px',
@@ -1992,7 +1998,7 @@ function CuadranteSecciones({ cuadrante, onClose }: { cuadrante: any; onClose: (
                     {x.nombre}
                   </span>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{lotesPorSec[x.id] ?? 0} lotes</span>
-                  {otraZona && !checked && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>en {otraZona}</span>}
+                  {otraZona && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>también en {otraZona}</span>}
                   {checked && <CheckCircle size={14} style={{ color: '#15803d', marginLeft: 'auto', flexShrink: 0 }} />}
                 </label>
               )

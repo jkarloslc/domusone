@@ -199,7 +199,7 @@ export default function LoteModal({ lote, onClose, onSaved }: Props) {
                 <CapacidadIndicador capacidad={capacidad} loading={loadingCap} />
                 {form.id_seccion_fk && (
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Zona: <b>{zonasCat.zonaDeSeccion(Number(form.id_seccion_fk))?.nombre ?? 'sin zona (asígnala en Catálogos › Zonas)'}</b>
+                    Zona: <b>{zonasCat.zonasDeSeccion(Number(form.id_seccion_fk)).map(z => z.nombre).join(', ') || 'sin zona (asígnala en Catálogos › Zonas)'}</b>
                   </div>
                 )}
               </Field>
